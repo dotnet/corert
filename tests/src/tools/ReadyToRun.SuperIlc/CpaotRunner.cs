@@ -10,6 +10,8 @@ using System.Collections.Generic;
 /// </summary>
 class CpaotRunner : CompilerRunner
 {
+    public override CompilerIndex Index => CompilerIndex.CPAOT;
+
     protected override string CompilerFileName => "ilc.exe";
 
     public CpaotRunner(string compilerFolder, string inputFolder, string outputFolder, IReadOnlyList<string> referenceFolders) : base(compilerFolder, inputFolder, outputFolder, referenceFolders) {}

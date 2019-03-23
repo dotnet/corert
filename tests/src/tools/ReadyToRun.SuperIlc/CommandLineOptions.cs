@@ -23,17 +23,13 @@ namespace ReadyToRun.SuperIlc
                 new Command("compile-directory", "Compile all assemblies in directory", 
                     new Option[] 
                     {
-                        ToolPath(),
                         InputDirectory(),
                         OutputDirectory(),
-                        UseCrossgen(),
-                        UseCpaot(),
+                        CrossgenDirectory(),
+                        CpaotDirectory(),
                         ReferencePath()
                     },
-                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, bool, DirectoryInfo[]>(CompileDirectoryCommand.CompileDirectory));
-
-            Option ToolPath() =>
-                new Option(new[] {"--tool-directory", "-t"}, "Directory containing the selected optimizing compiler", new Argument<DirectoryInfo>().ExistingOnly());
+                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo[]>(CompileDirectoryCommand.CompileDirectory));
 
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
@@ -43,11 +39,11 @@ namespace ReadyToRun.SuperIlc
             Option OutputDirectory() =>
                 new Option(new [] {"--output-directory", "-out"}, "Folder to emit compiled assemblies", new Argument<DirectoryInfo>().LegalFilePathsOnly());
 
-            Option UseCrossgen() =>
-                new Option("--crossgen", "Compile with CoreCLR Crossgen", new Argument<bool>());
+            Option CrossgenDirectory() =>
+                new Option(new[] { "--crossgen-directory", "-crossgen" }, "Folder containing the Crossgen compiler", new Argument<DirectoryInfo>().ExistingOnly());
 
-            Option UseCpaot() =>
-                new Option("--cpaot", "Compile with CoreRT CPAOT", new Argument<bool>());
+            Option CpaotDirectory() =>
+                new Option(new[] { "--cpaot-directory", "-cpaot" }, "Folder containing the CPAOT compiler", new Argument<DirectoryInfo>().ExistingOnly());
 
             Option ReferencePath() =>
                 new Option(new[] {"--reference-path", "-r"}, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>(){Arity = ArgumentArity.ZeroOrMore}.ExistingOnly());
