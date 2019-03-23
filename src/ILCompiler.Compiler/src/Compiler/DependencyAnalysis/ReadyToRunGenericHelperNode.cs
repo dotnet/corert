@@ -166,6 +166,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencies = new DependencyList();
 
+            if (_dictionaryOwner is TypeDesc type)
+            {
+                // The generic lookup will need to consult the vtable of the owning type to find the
+                // vtable slot where the generic dictionary is placed - report the dependency.
+                dependencies.Add(factory.VTable(type), "Owning type vtable");
+            }
+
             dependencies.Add(factory.GenericDictionaryLayout(_dictionaryOwner), "Layout");
 
             foreach (DependencyNodeCore<NodeFactory> dependency in _lookupSignature.NonRelocDependenciesFromUsage(factory))
