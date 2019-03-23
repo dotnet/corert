@@ -103,6 +103,34 @@ namespace ILCompiler
                 }
             }
 
+            if ((_removedFeature & RemovedFeature.Globalization) != 0)
+            {
+                if (owningType is Internal.TypeSystem.Ecma.EcmaType mdType
+                    && mdType.Module == method.Context.SystemModule)
+                {
+                    if (method.Signature.IsStatic &&
+                        mdType.Name == "GlobalizationMode" && mdType.Namespace == "System.Globalization" &&
+                        method.Name == "get_Invariant")
+                    {
+                        return RemoveAction.ConvertToTrueStub;
+                    }
+
+                    if (method.IsConstructor &&
+                        method.Signature.Length == 3 &&
+                        mdType.Name == "CalendarData" && mdType.Namespace == "System.Globalization")
+                    {
+                        return RemoveAction.ConvertToThrow;
+                    }
+
+                    if (method.Signature.Length == 1 &&
+                        method.Name == "GetCalendarInstanceRare" &&
+                        mdType.Name == "CultureInfo" && mdType.Namespace == "System.Globalization")
+                    {
+                        return RemoveAction.ConvertToThrow;
+                    }
+                }
+            }
+
             return RemoveAction.Nothing;
         }
 
@@ -110,7 +138,7 @@ namespace ILCompiler
         private bool IsEventSourceType(TypeDesc type)
         {
             if (_eventSourceType == null)
-                _eventSourceType = type.Context.SystemModule.GetType("System.Diagnostics.Tracing", "EventSource") ?? new object();
+                _eventSourceType = type.Context.SystemModule.GetType("System.Diagnostics.Tracing", "EventSource", false) ?? new object();
 
             return Object.ReferenceEquals(type, _eventSourceType);
         }
@@ -150,5 +178,6 @@ namespace ILCompiler
     {
         Etw = 0x1,
         FrameworkResources = 0x2,
+        Globalization = 0x4,
     }
 }

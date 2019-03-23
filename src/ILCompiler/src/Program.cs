@@ -491,6 +491,8 @@ namespace ILCompiler
                     removedFeatures |= RemovedFeature.Etw;
                 else if (feature == "FrameworkStrings")
                     removedFeatures |= RemovedFeature.FrameworkResources;
+                else if (feature == "Globalization")
+                    removedFeatures |= RemovedFeature.Globalization;
             }
 
             ILProvider ilProvider = _isReadyToRunCodeGen ? (ILProvider)new ReadyToRunILProvider() : new CoreRTILProvider();
