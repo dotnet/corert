@@ -31,15 +31,15 @@ public class ProcessInfo
     public string OutputFileName;
     public long CompilationCostHeuristic;
     public bool CollectJittedMethods;
-    public ICollection<string> MonitorModules;
-    public ICollection<string> MonitorFolders;
+    public IEnumerable<string> MonitorModules;
+    public IEnumerable<string> MonitorFolders;
 
     public bool Finished;
     public bool Succeeded;
     public bool TimedOut;
     public int DurationMilliseconds;
     public int ExitCode;
-    public IReadOnlyDictionary<string, HashSet<string>> JittedMethods;
+    public Dictionary<string, HashSet<string>> JittedMethods;
 }
 
 public class ProcessRunner : IDisposable
@@ -58,9 +58,7 @@ public class ProcessRunner : IDisposable
 
     private Process _process;
 
-    private TraceEventSession _traceEventSession;
-
-    private ReadyToRunJittedMethods _r2rMethodFilter;
+    private ReadyToRunJittedMethods _jittedMethods;
 
     private readonly Stopwatch _stopwatch;
 
@@ -73,10 +71,11 @@ public class ProcessRunner : IDisposable
 
     private CancellationTokenSource _cancellationTokenSource;
 
-    public ProcessRunner(ProcessInfo processInfo, int processIndex, AutoResetEvent processExitEvent)
+    public ProcessRunner(ProcessInfo processInfo, int processIndex, ReadyToRunJittedMethods jittedMethods, AutoResetEvent processExitEvent)
     {
         _processInfo = processInfo;
         _processIndex = processIndex;
+        _jittedMethods = jittedMethods;
         _processExitEvent = processExitEvent;
 
         _cancellationTokenSource = new CancellationTokenSource();
@@ -115,17 +114,10 @@ public class ProcessRunner : IDisposable
 
         Interlocked.Exchange(ref _state, StateRunning);
 
-        if (_processInfo.CollectJittedMethods)
-        {
-            _traceEventSession = new TraceEventSession("ReadyToRunTestSession");
-            _traceEventSession.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
-        }
-
         _process.Start();
-
         if (_processInfo.CollectJittedMethods)
         {
-            _r2rMethodFilter = new ReadyToRunJittedMethods(_traceEventSession, _processInfo.MonitorModules, _processInfo.MonitorFolders, _process.Id);
+            _jittedMethods.SetProcessId(_processInfo, _process.Id);
         }
 
         _process.OutputDataReceived += new DataReceivedEventHandler(StandardOutputEventHandler);
@@ -141,7 +133,6 @@ public class ProcessRunner : IDisposable
     {
         CleanupProcess();
         CleanupLogWriter();
-        CleanupEventTracing();
     }
 
     private void TimeoutWatchdog()
@@ -181,15 +172,6 @@ public class ProcessRunner : IDisposable
         }
     }
 
-    private void CleanupEventTracing()
-    {
-        if (_traceEventSession != null)
-        {
-            _traceEventSession.Dispose();
-            _traceEventSession = null;
-        }
-    }
-
     private void ExitEventHandler(object sender, EventArgs eventArgs)
     {
         StopProcessAtomic();
@@ -201,8 +183,8 @@ public class ProcessRunner : IDisposable
         {
             _cancellationTokenSource.Cancel();
             _processInfo.DurationMilliseconds = (int)_stopwatch.ElapsedMilliseconds;
+
             _processExitEvent?.Set();
-            _traceEventSession?.Stop();
         }
     }
 
@@ -275,37 +257,7 @@ public class ProcessRunner : IDisposable
                 $"{_processInfo.ProcessPath} {_processInfo.Arguments}");
         }
 
-        if (_processInfo.CollectJittedMethods)
-        {
-            // Block, processing callbacks for events we subscribed to
-            _traceEventSession.Source.Process();
-            _processInfo.JittedMethods = _r2rMethodFilter.JittedMethods;
-
-            _logWriter.WriteLine($"Jitted methods ({_processInfo.JittedMethods.Count} total):");
-            foreach (KeyValuePair<string, HashSet<string>> jittedMethodAndModules in _processInfo.JittedMethods)
-            {
-                _logWriter.Write(jittedMethodAndModules.Key);
-                _logWriter.Write(": ");
-                bool first = true;
-                foreach (string module in jittedMethodAndModules.Value)
-                {
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        _logWriter.Write(", ");
-                    }
-                    _logWriter.Write(module);
-                }
-                _logWriter.WriteLine();
-            }
-
-            CleanupProcess();
-
-            CleanupEventTracing();
-        }
+        CleanupProcess();
 
         _processInfo.Finished = true;
 

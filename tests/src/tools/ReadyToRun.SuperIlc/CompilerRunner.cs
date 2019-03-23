@@ -60,7 +60,7 @@ public abstract class CompilerRunner
         return processInfo;
     }
 
-    public ProcessInfo ExecutionProcess(string appPath, ICollection<string> modules, ICollection<string> folders, string coreRunPath)
+    public ProcessInfo ExecutionProcess(string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath)
     {
         string exeToRun = GetOutputFileName(appPath);
         ProcessInfo processInfo = new ProcessInfo();

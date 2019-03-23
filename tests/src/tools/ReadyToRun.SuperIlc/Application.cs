@@ -31,7 +31,7 @@ namespace ReadyToRun.SuperIlc
 
             _compilations = new List<ProcessInfo[]>();
 
-            ;            foreach (string file in _compilationInputFiles)
+            foreach (string file in _compilationInputFiles)
             {
                 ProcessInfo[] fileCompilations = new ProcessInfo[(int)CompilerIndex.Count];
                 foreach (CompilerRunner runner in compilerRunners)

@@ -15,26 +15,37 @@ using Microsoft.Diagnostics.Tracing.Session;
 /// Each Method that gets Jitted from a ready-to-run assembly is interesting to look at.
 /// For a fully r2r'd assembly, there should be no such methods, so that would be a test failure.
 /// </summary>
-class ReadyToRunJittedMethods
+public class ReadyToRunJittedMethods
 {
-    private ICollection<string> _testModuleNames;
-    private ICollection<string> _testFolderNames;
+    private Dictionary<int, ProcessInfo> _pidToProcess;
+    private HashSet<string> _testModuleNames;
+    private HashSet<string> _testFolderNames;
     private List<long> _testModuleIds = new List<long>();
     private Dictionary<long, string> _testModuleIdToName = new Dictionary<long, string>();
     private Dictionary<string, HashSet<string>> _methodsJitted = new Dictionary<string, HashSet<string>>();
-    private int _pid = -1;
 
-    public ReadyToRunJittedMethods(TraceEventSession session, ICollection<string> testModuleNames, ICollection<string> testFolderNames, int pid)
+    public ReadyToRunJittedMethods(TraceEventSession session, IEnumerable<ProcessInfo> processes)
     {
-        _testModuleNames = testModuleNames;
-        _testFolderNames = testFolderNames;
-        _pid = pid;
+        _pidToProcess = new Dictionary<int, ProcessInfo>();
+        _testModuleNames = new HashSet<string>();
+        _testFolderNames = new HashSet<string>();
+
+        foreach (ProcessInfo process in processes)
+        {
+            if (process.CollectJittedMethods)
+            {
+                _testFolderNames.UnionWith(process.MonitorFolders);
+                _testModuleNames.UnionWith(process.MonitorModules);
+            }
+        }
 
         session.Source.Clr.LoaderModuleLoad += delegate (ModuleLoadUnloadTraceData data)
         {
             if (ShouldMonitorModule(data))
             {
-                Console.WriteLine($"Tracking module {data.ModuleILFileName} with Id {data.ModuleID}");
+                // The console & method logging is normally too noisy to be turned on by default but
+                // it's sometimes useful for debugging purposes.
+                // Console.WriteLine($"Tracking module {data.ModuleILFileName} with Id {data.ModuleID}");
                 _testModuleIds.Add(data.ModuleID);
                 _testModuleIdToName[data.ModuleID] = Path.GetFileNameWithoutExtension(data.ModuleILFileName);
             }
@@ -42,25 +53,35 @@ class ReadyToRunJittedMethods
 
         session.Source.Clr.MethodLoadVerbose += delegate (MethodLoadUnloadVerboseTraceData data)
         {
-            if (data.ProcessID == _pid && _testModuleIds.Contains(data.ModuleID) && data.IsJitted)
+            ProcessInfo processInfo;
+            if (data.IsJitted && _pidToProcess.TryGetValue(data.ProcessID, out processInfo) && _testModuleIds.Contains(data.ModuleID))
             {
-                Console.WriteLine($"Method loaded {GetName(data)} - {data}");
+                // Console.WriteLine($"Method loaded {GetName(data)} - {data}");
                 string methodName = GetName(data);
                 string moduleName = _testModuleIdToName[data.ModuleID];
-                HashSet<string> modulesForMethodName;
-                if (!_methodsJitted.TryGetValue(methodName, out modulesForMethodName))
+                if (processInfo.JittedMethods == null)
                 {
-                    modulesForMethodName = new HashSet<string>();
-                    _methodsJitted.Add(methodName, modulesForMethodName);
+                    processInfo.JittedMethods = new Dictionary<string, HashSet<string>>();
                 }
-                modulesForMethodName.Add(moduleName);
+                HashSet<string> modulesForMethod;
+                if (!processInfo.JittedMethods.TryGetValue(methodName, out modulesForMethod))
+                {
+                    modulesForMethod = new HashSet<string>();
+                    processInfo.JittedMethods.Add(methodName, modulesForMethod);
+                }
+                modulesForMethod.Add(moduleName);
             }
         };
     }
 
+    public void SetProcessId(ProcessInfo processInfo, int pid)
+    {
+        _pidToProcess[pid] = processInfo;
+    }
+
     private bool ShouldMonitorModule(ModuleLoadUnloadTraceData data)
     {
-        if (data.ProcessID != _pid)
+        if (!_pidToProcess.ContainsKey(data.ProcessID))
             return false;
 
         if (File.Exists(data.ModuleILPath) && _testFolderNames.Contains(Path.GetDirectoryName(data.ModuleILPath).ToAbsoluteDirectoryPath().ToLower()))
