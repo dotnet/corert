@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -136,6 +136,20 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return true;
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            var result = new DependencyList();
+
+            // When building the sealed vtable, we consult the vtable layout of these types
+            TypeDesc declType = _type.GetClosestDefType();
+            result.Add(factory.VTable(declType), "VTable of the type");
+
+            foreach (var interfaceType in declType.RuntimeInterfaces)
+                result.Add(factory.VTable(interfaceType), "VTable of the interface");
+
+            return result;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
