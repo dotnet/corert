@@ -138,7 +138,7 @@ namespace ILCompiler
         private bool IsEventSourceType(TypeDesc type)
         {
             if (_eventSourceType == null)
-                _eventSourceType = type.Context.SystemModule.GetType("System.Diagnostics.Tracing", "EventSource", false) ?? new object();
+                _eventSourceType = type.Context.SystemModule.GetType("System.Diagnostics.Tracing", "EventSource", throwIfNotFound: false) ?? new object();
 
             return Object.ReferenceEquals(type, _eventSourceType);
         }
