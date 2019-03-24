@@ -61,6 +61,56 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
+        public void AddModuleToJittedMethodsMapping(Dictionary<string, HashSet<string>> moduleToJittedMethods, CompilerIndex compilerIndex)
+        {
+            ProcessInfo executionProcess = _execution[(int)compilerIndex];
+            if (executionProcess != null)
+            {
+                foreach (KeyValuePair<string, HashSet<string>> moduleMethodKvp in executionProcess.JittedMethods)
+                {
+                    HashSet<string> jittedMethodsPerModule;
+                    if (!moduleToJittedMethods.TryGetValue(moduleMethodKvp.Key, out jittedMethodsPerModule))
+                    {
+                        jittedMethodsPerModule = new HashSet<string>();
+                        moduleToJittedMethods.Add(moduleMethodKvp.Key, jittedMethodsPerModule);
+                    }
+                    jittedMethodsPerModule.UnionWith(moduleMethodKvp.Value);
+                }
+            }
+        }
+
+        public static void WriteJitStatistics(TextWriter writer, Dictionary<string, HashSet<string>>[] perCompilerStatistics, IEnumerable<CompilerIndex> compilerIndices)
+        {
+            HashSet<string> moduleNameUnion = new HashSet<string>();
+            foreach (CompilerIndex compilerIndex in compilerIndices)
+            {
+                moduleNameUnion.UnionWith(perCompilerStatistics[(int)compilerIndex].Keys);
+                writer.Write($"{compilerIndex.ToString(),9} |");
+            }
+            writer.WriteLine(" Assembly Name");
+            writer.WriteLine(new string('-', 11 * compilerIndices.Count() + 14));
+            foreach (string moduleName in moduleNameUnion.OrderBy(modName => modName))
+            {
+                foreach (CompilerIndex compilerIndex in compilerIndices)
+                {
+                    HashSet<string> jittedMethodsPerModule;
+                    perCompilerStatistics[(int)compilerIndex].TryGetValue(moduleName, out jittedMethodsPerModule);
+                    writer.Write(string.Format("{0,9} |", jittedMethodsPerModule != null ? jittedMethodsPerModule.Count.ToString() : ""));
+                }
+                writer.Write(' ');
+                writer.WriteLine(moduleName);
+            }
+        }
+
+        public void WriteJitStatistics(Dictionary<string, HashSet<string>>[] perCompilerStatistics, IEnumerable<CompilerIndex> compilerIndices)
+        {
+            string jitStatisticsFile = Path.ChangeExtension(_mainExecutable, ".jit-statistics");
+            using (StreamWriter streamWriter = new StreamWriter(jitStatisticsFile))
+            {
+                WriteJitStatistics(streamWriter, perCompilerStatistics, compilerIndices);
+            }
+        }
+
         public IEnumerable<ProcessInfo[]> Compilations => _compilations;
 
         public ProcessInfo[] Execution => _execution;

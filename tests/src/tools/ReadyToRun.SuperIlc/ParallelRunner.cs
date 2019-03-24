@@ -154,25 +154,13 @@ public sealed class ParallelRunner
             {
                 using (StreamWriter logWriter = new StreamWriter(processInfo.LogPath, append: true))
                 {
-                    logWriter.WriteLine($"Jitted methods ({processInfo.JittedMethods.Count} total):");
-                    foreach (KeyValuePair<string, HashSet<string>> jittedMethodAndModules in processInfo.JittedMethods)
+                    logWriter.WriteLine($"Jitted methods ({processInfo.JittedMethods.Sum(moduleMethodsKvp => moduleMethodsKvp.Value.Count)} total):");
+                    foreach (KeyValuePair<string, HashSet<string>> jittedMethodsPerModule in processInfo.JittedMethods)
                     {
-                        logWriter.Write(jittedMethodAndModules.Key);
-                        logWriter.Write(": ");
-                        bool first = true;
-                        foreach (string module in jittedMethodAndModules.Value)
+                        foreach (string method in jittedMethodsPerModule.Value)
                         {
-                            if (first)
-                            {
-                                first = false;
-                            }
-                            else
-                            {
-                                logWriter.Write(", ");
-                            }
-                            logWriter.Write(module);
+                            logWriter.WriteLine(jittedMethodsPerModule.Key + " -> " + method);
                         }
-                        logWriter.WriteLine();
                     }
                 }
             }

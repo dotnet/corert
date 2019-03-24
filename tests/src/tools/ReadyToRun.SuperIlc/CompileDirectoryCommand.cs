@@ -188,6 +188,16 @@ namespace ReadyToRun.SuperIlc
                 }
 
                 ParallelRunner.Run(executionsToRun);
+
+                Dictionary<string, HashSet<string>>[] jittedMethodsPerModulePerCompiler = new Dictionary<string, HashSet<string>>[(int)CompilerIndex.Count];
+                foreach (CompilerRunner runner in runners)
+                {
+                    Dictionary<string, HashSet<string>> jittedMethodsPerModule = new Dictionary<string, HashSet<string>>();
+                    jittedMethodsPerModulePerCompiler[(int)runner.Index] = jittedMethodsPerModule;
+                    application.AddModuleToJittedMethodsMapping(jittedMethodsPerModule, runner.Index);
+                }
+
+                application.WriteJitStatistics(jittedMethodsPerModulePerCompiler, runners.Select(runner => runner.Index));
             }
 
             return success ? 0 : 1;

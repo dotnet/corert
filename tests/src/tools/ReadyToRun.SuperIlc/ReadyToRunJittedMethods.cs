@@ -72,13 +72,13 @@ public class ReadyToRunJittedMethods : IDisposable
                 {
                     processInfo.JittedMethods = new Dictionary<string, HashSet<string>>();
                 }
-                HashSet<string> modulesForMethod;
-                if (!processInfo.JittedMethods.TryGetValue(methodName, out modulesForMethod))
+                HashSet<string> methodsForModule;
+                if (!processInfo.JittedMethods.TryGetValue(moduleName, out methodsForModule))
                 {
-                    modulesForMethod = new HashSet<string>();
-                    processInfo.JittedMethods.Add(methodName, modulesForMethod);
+                    methodsForModule = new HashSet<string>();
+                    processInfo.JittedMethods.Add(moduleName, methodsForModule);
                 }
-                modulesForMethod.Add(moduleName);
+                methodsForModule.Add(methodName);
             }
         };
     }
