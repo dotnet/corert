@@ -57,6 +57,8 @@ namespace ReadyToRun.SuperIlc
             }
 
             List<CompilerRunner> runners = new List<CompilerRunner>();
+            runners.Add(new JitRunner(null, inputDirectory.ToString(), outputDirectory.ToString(), referencePaths));
+
             if (cpaotDirectory != null)
             {
                 runners.Add(new CpaotRunner(cpaotDirectory.ToString(), inputDirectory.ToString(), outputDirectory.ToString(), referencePaths));
@@ -105,7 +107,11 @@ namespace ReadyToRun.SuperIlc
             {
                 foreach (CompilerRunner runner in runners)
                 {
-                    compilationsToRun.Add(compilation[(int)runner.Index]);
+                    ProcessInfo compilationProcess = compilation[(int)runner.Index];
+                    if (compilationProcess != null)
+                    {
+                        compilationsToRun.Add(compilationProcess);
+                    }
                 }
             }
 
@@ -124,7 +130,7 @@ namespace ReadyToRun.SuperIlc
                 foreach (CompilerRunner runner in runners)
                 {
                     ProcessInfo runnerProcess = compilation[(int)runner.Index];
-                    if (!runnerProcess.Succeeded)
+                    if (runnerProcess != null && !runnerProcess.Succeeded)
                     {
                         File.Copy(runnerProcess.InputFileName, runnerProcess.OutputFileName);
                         if (file == null)
@@ -170,7 +176,7 @@ namespace ReadyToRun.SuperIlc
                 List<ProcessInfo> executionsToRun = new List<ProcessInfo>();
                 foreach (CompilerRunner runner in runners)
                 {
-                    bool compilationsSucceeded = application.Compilations.All(comp => comp[(int)runner.Index].Succeeded);
+                    bool compilationsSucceeded = application.Compilations.All(comp => comp[(int)runner.Index]?.Succeeded ?? true);
                     if (compilationsSucceeded)
                     {
                         ProcessInfo executionProcess = application.Execution[(int)runner.Index];

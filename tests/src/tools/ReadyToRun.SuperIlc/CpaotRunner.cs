@@ -16,6 +16,13 @@ class CpaotRunner : CompilerRunner
 
     public CpaotRunner(string compilerFolder, string inputFolder, string outputFolder, IReadOnlyList<string> referenceFolders) : base(compilerFolder, inputFolder, outputFolder, referenceFolders) {}
 
+    public override ProcessInfo ExecutionProcess(string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath)
+    {
+        ProcessInfo processInfo = base.ExecutionProcess(appPath, modules, folders, coreRunPath);
+        processInfo.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "1";
+        return processInfo;
+    }
+
     protected override IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName)
     {
         // The file to compile
