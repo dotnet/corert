@@ -118,6 +118,11 @@ public class ProcessRunner : IDisposable
             RedirectStandardError = true,
         };
 
+        foreach (KeyValuePair<string, string> environmentOverride in _processInfo.EnvironmentOverrides)
+        {
+            psi.EnvironmentVariables[environmentOverride.Key] = environmentOverride.Value;
+        }
+
         _process = new Process();
         _process.StartInfo = psi;
         _process.EnableRaisingEvents = true;
