@@ -49,8 +49,11 @@ namespace Internal.Runtime.Augments
 
         public abstract string GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
         public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
+
+#if PROJECTN
         public abstract int ValueTypeGetHashCodeUsingReflection(object valueType);
         public abstract bool ValueTypeEqualsUsingReflection(object left, object right);
+#endif
 
         /// <summary>
         /// Retrieves the default value for a parameter of a method.

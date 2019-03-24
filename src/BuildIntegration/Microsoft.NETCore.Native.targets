@@ -101,7 +101,8 @@ See the LICENSE file in the project root for more information.
   <ItemGroup Condition="'$(ExperimentalDynamicCodeSupport)' != 'true'">
     <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" />
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
-    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" />
+    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" Condition="$(IlcDisableReflection) != 'true'" />
+    <AutoInitializedAssemblies Include="System.Private.DisabledReflection" Condition="$(IlcDisableReflection) == 'true'" />
     <AutoInitializedAssemblies Include="System.Private.Interop" />
   </ItemGroup>
 
@@ -208,6 +209,10 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcScanReflection) == 'true'" Include="--scanreflection" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Speed'" Include="--Ot" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:EventSource" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:FrameworkStrings" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:Globalization" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />

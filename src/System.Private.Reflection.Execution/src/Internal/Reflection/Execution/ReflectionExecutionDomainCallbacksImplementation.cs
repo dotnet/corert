@@ -139,6 +139,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
+#if PROJECTN
         /// <summary>
         /// Reflection-based implementation of ValueType.GetHashCode. Matches the implementation created by the ValueTypeTransform.
         /// </summary>
@@ -216,6 +217,7 @@ namespace Internal.Reflection.Execution
 
             return true;
         }
+#endif
 
         /// <summary>
         /// Retrieves the default value for a parameter of a method.
