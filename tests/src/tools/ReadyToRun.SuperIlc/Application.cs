@@ -51,8 +51,10 @@ namespace ReadyToRun.SuperIlc
                     HashSet<string> modules = new HashSet<string>();
                     HashSet<string> folders = new HashSet<string>();
 
-                    modules.Add(_mainExecutable);
-                    modules.UnionWith(_compilationInputFiles);
+                    modules.Add(_mainExecutable.ToLower());
+                    modules.Add(runner.GetOutputFileName(_mainExecutable).ToLower());
+                    modules.UnionWith(_compilationInputFiles.Select(file => file.ToLower()));
+                    modules.UnionWith(_compilationInputFiles.Select(file => runner.GetOutputFileName(file).ToLower()));
                     folders.Add(Path.GetDirectoryName(_mainExecutable).ToLower());
                     folders.UnionWith(runner.ReferenceFolders.Select(folder => folder.ToLower()));
 
