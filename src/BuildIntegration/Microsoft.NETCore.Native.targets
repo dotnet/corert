@@ -203,16 +203,15 @@ See the LICENSE file in the project root for more information.
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(AppContextSwitchOverrides->'--appcontextswitch:%(Identity)')" />
       <IlcArg Condition="$(ServerGarbageCollection) != ''" Include="--runtimeopt:RH_UseServerGC=1" />
-      <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
+      <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true' and $(IlcDisableReflection) != 'true'" Include="--completetypemetadata" />
       <IlcArg Condition="$(IlcGenerateStackTraceData) == 'true'" Include="--stacktracedata" />
-      <IlcArg Condition="$(RootAllApplicationAssemblies) == 'true'" Include="--rootallapplicationassemblies" />
-      <IlcArg Condition="$(IlcScanReflection) == 'true'" Include="--scanreflection" />
+      <IlcArg Condition="$(RootAllApplicationAssemblies) == 'true' and $(IlcDisableReflection) != 'true'" Include="--rootallapplicationassemblies" />
+      <IlcArg Condition="$(IlcScanReflection) == 'true' and $(IlcDisableReflection) != 'true'" Include="--scanreflection" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Speed'" Include="--Ot" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:EventSource" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:FrameworkStrings" />
-      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:Globalization" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
