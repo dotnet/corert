@@ -11,6 +11,7 @@ public enum CompilerIndex
 {
     CPAOT,
     Crossgen,
+    Jit,
 
     Count
 }
@@ -39,7 +40,7 @@ public abstract class CompilerRunner
     protected abstract string CompilerFileName {get;}
     protected abstract IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName);
 
-    public ProcessInfo CompilationProcess(string assemblyFileName)
+    public virtual ProcessInfo CompilationProcess(string assemblyFileName)
     {
         CreateOutputFolder();
 
@@ -51,6 +52,7 @@ public abstract class CompilerRunner
         ProcessInfo processInfo = new ProcessInfo();
         processInfo.ProcessPath = Path.Combine(_compilerPath, CompilerFileName);
         processInfo.Arguments = $"@{responseFile}";
+        processInfo.TimeoutMilliseconds = ProcessInfo.DefaultIlcTimeout;
         processInfo.UseShellExecute = false;
         processInfo.LogPath = Path.ChangeExtension(outputFileName, ".ilc.log");
         processInfo.InputFileName = assemblyFileName;
@@ -60,12 +62,25 @@ public abstract class CompilerRunner
         return processInfo;
     }
 
-    public ProcessInfo ExecutionProcess(string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath)
+    public virtual ProcessInfo ExecutionProcess(string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath)
     {
         string exeToRun = GetOutputFileName(appPath);
         ProcessInfo processInfo = new ProcessInfo();
         processInfo.ProcessPath = coreRunPath;
         processInfo.Arguments = exeToRun;
+
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("__GCSTRESSLEVEL")))
+        {
+            processInfo.TimeoutMilliseconds = ProcessInfo.DefaultExeTimeout;
+        }
+        else
+        {
+            processInfo.TimeoutMilliseconds = ProcessInfo.DefaultExeTimeoutGCStress;
+        }
+
+        // TODO: support for tier jitting - for now we just turn it off as it may distort the JIT statistics 
+        processInfo.EnvironmentOverrides["COMPLUS_TieredCompilation"] = "0";
+
         processInfo.UseShellExecute = false;
         processInfo.LogPath = Path.ChangeExtension(exeToRun, ".exe.log");
         processInfo.ExpectedExitCode = 100;
