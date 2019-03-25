@@ -1376,6 +1376,8 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
 #endif
 }
 
+static AffinitySet g_processAffinitySet;
+
 static LARGE_INTEGER g_performanceFrequency;
 
 // Initialize the interface implementation
@@ -1386,6 +1388,11 @@ bool GCToOSInterface::Initialize()
     if (!::QueryPerformanceFrequency(&g_performanceFrequency))
     {
         return false;
+    }
+
+    for (size_t i = 0; i < g_cLogicalCpus; i++)
+    {
+        g_processAffinitySet.Add(i);
     }
 
     return true;
@@ -1411,12 +1418,13 @@ uint32_t GCToOSInterface::GetCurrentProcessId()
     return ::GetCurrentProcessId();
 }
 
-// Set ideal affinity for the current thread
+// Set ideal processor for the current thread
 // Parameters:
-//  affinity - ideal processor affinity for the thread
+//  srcProcNo - processor number the thread currently runs on
+//  dstProcNo - processor number the thread should be migrated to
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
+bool GCToOSInterface::MigrateThread(uint16_t srcProcNo, uint16_t dstProcNo)
 {
     return false;
 }
@@ -1523,7 +1531,7 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size    - size of the virtual memory range
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint32_t node)
+bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 {
     UNREFERENCED_PARAMETER(node); // TODO: Numa support
     return mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
@@ -1601,13 +1609,11 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 }
 
 // Sets the calling thread's affinity to only run on the processor specified
-// in the GCThreadAffinity structure.
 // Parameters:
-//  affinity - The requested affinity for the calling thread. At most one processor
-//             can be provided.
+//  procNo - The requested processor for the calling thread.
 // Return:
 //  true if setting the affinity was successful, false otherwise.
-bool GCToOSInterface::SetThreadAffinity(GCThreadAffinity* affinity)
+bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
     // UNIXTODO: implement this
     return false;
@@ -1625,22 +1631,12 @@ bool GCToOSInterface::BoostThreadPriority()
     return false;
 }
 
-// Get affinity mask of the current process
-// Parameters:
-//  processMask - affinity mask for the specified process
-//  systemMask  - affinity mask for the system
+// Get set of processors enabled for GC for the current process
 // Return:
-//  true if it has succeeded, false if it has failed
-// Remarks:
-//  A process affinity mask is a bit vector in which each bit represents the processors that
-//  a process is allowed to run on. A system affinity mask is a bit vector in which each bit
-//  represents the processors that are configured into a system.
-//  A process affinity mask is a subset of the system affinity mask. A process is only allowed
-//  to run on the processors configured into a system. Therefore, the process affinity mask cannot
-//  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
-bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uintptr_t* systemMask)
+//  set of enabled processors
+AffinitySet* GCToOSInterface::GetCurrentProcessAffinitySet()
 {
-    return false;
+    return &g_processAffinitySet;
 }
 
 // Get number of processors assigned to the current process
@@ -1823,23 +1819,25 @@ bool GCToOSInterface::CanEnableGCNumaAware()
     return false;
 }
 
-bool GCToOSInterface::GetNumaProcessorNode(PPROCESSOR_NUMBER proc_no, uint16_t* node_no)
+bool GCToOSInterface::GetNumaProcessorNode(uint16_t proc_no, uint16_t* node_no)
 {
+    // TODO
     UNREFERENCED_PARAMETER(proc_no);
     UNREFERENCED_PARAMETER(node_no);
     return false;
 }
 
-bool GCToOSInterface::CanEnableGCCPUGroups()
+// Get processor number and optionally its NUMA node number for the specified heap number
+// Parameters:
+//  heap_number - heap number to get the result for
+//  proc_no     - set to the selected processor number
+//  node_no     - set to the NUMA node of the selected processor or to NUMA_NODE_UNDEFINED
+// Return:
+//  true if it succeeded
+bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_no, uint16_t* node_no)
 {
+    // TODO
     return false;
-}
-
-void GCToOSInterface::GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uint16_t* group_processor_number)
-{
-    UNREFERENCED_PARAMETER(processor_number);
-    UNREFERENCED_PARAMETER(group_number);
-    UNREFERENCED_PARAMETER(group_processor_number);
 }
 
 // Initialize the critical section
