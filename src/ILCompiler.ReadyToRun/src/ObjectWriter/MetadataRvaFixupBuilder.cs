@@ -23,8 +23,8 @@ namespace ILCompiler.PEWriter
         /// is the delta between the containing PE section's start Rva in the input versus the output.
         /// </summary>
         /// <param name="peReader">Input MSIL image reader</param>
-        /// <param name="sectionRvaDelta">The difference in bytes between the metadata PE section 
-        /// (ie, ".text") start Rva in the input MSIL image versus the output image</param>
+        /// <param name="relocateRva">A delegate which can transform an RVA from the input MSIL image into an RVA
+        /// in the output ready-to-run image</param>
         public static unsafe BlobBuilder Relocate(PEReader peReader, Func<int, int> relocateRva)
         {
             BlobBuilder builder = new BlobBuilder();
