@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <cstddef>
+#include <string.h>
 
 #include "sal.h"
 #include "gcenv.structs.h"
