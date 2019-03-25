@@ -15,21 +15,38 @@ namespace ReadyToRun.SuperIlc
         public static CommandLineBuilder Build()
         {
             var parser = new CommandLineBuilder()
-                .AddCommand(CompileFolder());
-            
+                .AddCommand(CompileFolder())
+                .AddCommand(CompileSubtree());
+
             return parser;
 
             Command CompileFolder() =>
-                new Command("compile-directory", "Compile all assemblies in directory", 
-                    new Option[] 
+                new Command("compile-directory", "Compile all assemblies in directory",
+                    new Option[]
                     {
                         InputDirectory(),
                         OutputDirectory(),
                         CrossgenDirectory(),
                         CpaotDirectory(),
+                        NoJit(),
+                        NoEtw(),
                         ReferencePath()
                     },
-                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo[]>(CompileDirectoryCommand.CompileDirectory));
+                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, bool, DirectoryInfo[]>(CompileDirectoryCommand.CompileDirectory));
+
+            Command CompileSubtree() =>
+                new Command("compile-subtree", "Build each directory in a given subtree containing any managed assemblies as a separate app",
+                    new Option[]
+                    {
+                        InputDirectory(),
+                        OutputDirectory(),
+                        CrossgenDirectory(),
+                        CpaotDirectory(),
+                        NoJit(),
+                        NoEtw(),
+                        ReferencePath()
+                    },
+                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, bool, DirectoryInfo[]>(CompileSubtreeCommand.CompileSubtree));
 
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
@@ -47,6 +64,12 @@ namespace ReadyToRun.SuperIlc
 
             Option ReferencePath() =>
                 new Option(new[] {"--reference-path", "-r"}, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>(){Arity = ArgumentArity.ZeroOrMore}.ExistingOnly());
+
+            Option NoJit() =>
+                new Option(new[] { "--nojit" }, "Don't run tests in JITted mode", new Argument<bool>());
+
+            Option NoEtw() =>
+                new Option(new[] { "--noetw" }, "Don't capture jitted methods using ETW", new Argument<bool>());
         }
     }
 }

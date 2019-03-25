@@ -15,21 +15,21 @@ class JitRunner : CompilerRunner
 
     protected override string CompilerFileName => "clrjit.dll";
 
-    public JitRunner(string compilerFolder, string inputFolder, string outputFolder, IReadOnlyList<string> referenceFolders) : base(compilerFolder, inputFolder, outputFolder, referenceFolders) { }
+    public JitRunner(IEnumerable<string> referenceFolders) : base(null, referenceFolders) { }
 
     /// <summary>
     /// JIT runner has no compilation process as it doesn't transform the source IL code in any manner.
     /// </summary>
     /// <returns></returns>
-    public override ProcessInfo CompilationProcess(string assemblyFileName)
+    public override ProcessInfo CompilationProcess(string outputRoot, string assemblyFileName)
     {
-        File.Copy(assemblyFileName, GetOutputFileName(assemblyFileName));
+        File.Copy(assemblyFileName, GetOutputFileName(outputRoot, assemblyFileName), overwrite: true);
         return null;
     }
 
-    public override ProcessInfo ExecutionProcess(string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath)
+    public override ProcessInfo ExecutionProcess(string outputRoot, string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath, bool noEtw)
     {
-        ProcessInfo processInfo = base.ExecutionProcess(appPath, modules, folders, coreRunPath);
+        ProcessInfo processInfo = base.ExecutionProcess(outputRoot, appPath, modules, folders, coreRunPath, noEtw);
         processInfo.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "0";
         return processInfo;
     }

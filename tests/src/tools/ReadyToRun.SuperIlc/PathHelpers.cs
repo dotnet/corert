@@ -80,6 +80,19 @@ static class PathExtensions
         return false;
     }
 
+    public static string FindFile(this string fileName, IEnumerable<string> paths)
+    {
+        foreach (string path in paths)
+        {
+            string fileOnPath = Path.Combine(path, fileName);
+            if (File.Exists(fileOnPath))
+            {
+                return fileOnPath;
+            }
+        }
+        return null;
+    }
+
     /// <summary>
     /// Asynchronous task for subtree deletion.
     /// </summary>

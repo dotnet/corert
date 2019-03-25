@@ -18,16 +18,23 @@ namespace ReadyToRun.SuperIlc
 
         private readonly List<ProcessInfo[]> _compilations;
 
+        private string _outputFolder;
+
         private readonly ProcessInfo[] _execution;
+
+        public string MainExecutable => _mainExecutable;
 
         public Application(
             List<string> compilationInputFiles, 
             string mainExecutable, 
-            IEnumerable<CompilerRunner> compilerRunners, 
-            string coreRunPath)
+            IEnumerable<CompilerRunner> compilerRunners,
+            string outputFolder,
+            string coreRunPath,
+            bool noEtw)
         {
             _compilationInputFiles = compilationInputFiles;
             _mainExecutable = mainExecutable;
+            _outputFolder = outputFolder;
 
             _compilations = new List<ProcessInfo[]>();
 
@@ -36,7 +43,7 @@ namespace ReadyToRun.SuperIlc
                 ProcessInfo[] fileCompilations = new ProcessInfo[(int)CompilerIndex.Count];
                 foreach (CompilerRunner runner in compilerRunners)
                 {
-                    ProcessInfo compilationProcess = runner.CompilationProcess(file);
+                    ProcessInfo compilationProcess = runner.CompilationProcess(_outputFolder, file);
                     fileCompilations[(int)runner.Index] = compilationProcess;
                 }
                 _compilations.Add(fileCompilations);
@@ -48,25 +55,67 @@ namespace ReadyToRun.SuperIlc
 
                 foreach (CompilerRunner runner in compilerRunners)
                 {
-                    HashSet<string> modules = new HashSet<string>();
-                    HashSet<string> folders = new HashSet<string>();
+                    HashSet<string> modules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    HashSet<string> folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                    modules.Add(_mainExecutable.ToLower());
-                    modules.Add(runner.GetOutputFileName(_mainExecutable).ToLower());
-                    modules.UnionWith(_compilationInputFiles.Select(file => file.ToLower()));
-                    modules.UnionWith(_compilationInputFiles.Select(file => runner.GetOutputFileName(file).ToLower()));
-                    folders.Add(Path.GetDirectoryName(_mainExecutable).ToLower());
-                    folders.UnionWith(runner.ReferenceFolders.Select(folder => folder.ToLower()));
+                    modules.Add(_mainExecutable);
+                    modules.Add(runner.GetOutputFileName(_outputFolder, _mainExecutable));
+                    modules.UnionWith(_compilationInputFiles);
+                    modules.UnionWith(_compilationInputFiles.Select(file => runner.GetOutputFileName(_outputFolder, file)));
+                    folders.Add(Path.GetDirectoryName(_mainExecutable));
+                    folders.UnionWith(runner.ReferenceFolders);
 
-                    _execution[(int)runner.Index] = runner.ExecutionProcess(_mainExecutable, modules, folders, coreRunPath);
+                    _execution[(int)runner.Index] = runner.ExecutionProcess(_outputFolder, _mainExecutable, modules, folders, coreRunPath, noEtw);
                 }
             }
         }
 
+        public static Application FromDirectory(string inputDirectory, IEnumerable<CompilerRunner> compilerRunners, string outputRoot, bool noEtw, string coreRunPath)
+        {
+            List<string> compilationInputFiles = new List<string>();
+            List<string> passThroughFiles = new List<string>();
+            string mainExecutable = null;
+
+            // Copy unmanaged files (runtime, native dependencies, resources, etc)
+            foreach (string file in Directory.EnumerateFiles(inputDirectory))
+            {
+                bool isManagedAssembly = ComputeManagedAssemblies.IsManaged(file);
+                if (isManagedAssembly)
+                {
+                    compilationInputFiles.Add(file);
+                }
+                else
+                {
+                    passThroughFiles.Add(file);
+                }
+                if (Path.GetExtension(file).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    mainExecutable = file;
+                }
+            }
+
+            if (compilationInputFiles.Count == 0)
+            {
+                return null;
+            }
+
+            foreach (CompilerRunner runner in compilerRunners)
+            {
+                string runnerOutputPath = runner.GetOutputPath(outputRoot);
+                runnerOutputPath.RecreateDirectory();
+                foreach (string file in passThroughFiles)
+                {
+                    File.Copy(file, Path.Combine(runnerOutputPath, Path.GetFileName(file)));
+                }
+            }
+
+            return new Application(compilationInputFiles, mainExecutable, compilerRunners, outputRoot, coreRunPath, noEtw);
+        }
+
         public void AddModuleToJittedMethodsMapping(Dictionary<string, HashSet<string>> moduleToJittedMethods, CompilerIndex compilerIndex)
         {
-            ProcessInfo executionProcess = _execution[(int)compilerIndex];
-            if (executionProcess != null)
+            ProcessInfo executionProcess = (_execution != null ? _execution[(int)compilerIndex] : null);
+            if (executionProcess != null && executionProcess.JittedMethods != null)
             {
                 foreach (KeyValuePair<string, HashSet<string>> moduleMethodKvp in executionProcess.JittedMethods)
                 {
@@ -81,22 +130,40 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        public static void WriteJitStatistics(TextWriter writer, Dictionary<string, HashSet<string>>[] perCompilerStatistics, IEnumerable<CompilerIndex> compilerIndices)
+        public static void WriteJitStatistics(TextWriter writer, Dictionary<string, HashSet<string>>[] perCompilerStatistics, IEnumerable<CompilerRunner> compilerRunners)
         {
-            HashSet<string> moduleNameUnion = new HashSet<string>();
-            foreach (CompilerIndex compilerIndex in compilerIndices)
+            Dictionary<string, int> moduleNameUnion = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (CompilerRunner compilerRunner in compilerRunners)
             {
-                moduleNameUnion.UnionWith(perCompilerStatistics[(int)compilerIndex].Keys);
-                writer.Write($"{compilerIndex.ToString(),9} |");
+                foreach (KeyValuePair<string, HashSet<string>> kvp in perCompilerStatistics[(int)compilerRunner.Index])
+                {
+                    int methodCount;
+                    moduleNameUnion.TryGetValue(kvp.Key, out methodCount);
+                    moduleNameUnion[kvp.Key] = Math.Max(methodCount, kvp.Value.Count);
+                }
+            }
+
+            if (moduleNameUnion.Count == 0)
+            {
+                // No JIT statistics available
+                return;
+            }
+
+            writer.WriteLine();
+            writer.WriteLine("Jitted method statistics:");
+
+            foreach (CompilerRunner compilerRunner in compilerRunners)
+            {
+                writer.Write($"{compilerRunner.Index.ToString(),9} |");
             }
             writer.WriteLine(" Assembly Name");
-            writer.WriteLine(new string('-', 11 * compilerIndices.Count() + 14));
-            foreach (string moduleName in moduleNameUnion.OrderBy(modName => modName))
+            writer.WriteLine(new string('-', 11 * compilerRunners.Count() + 14));
+            foreach (string moduleName in moduleNameUnion.OrderByDescending(kvp => kvp.Value).Select(kvp => kvp.Key))
             {
-                foreach (CompilerIndex compilerIndex in compilerIndices)
+                foreach (CompilerRunner compilerRunner in compilerRunners)
                 {
                     HashSet<string> jittedMethodsPerModule;
-                    perCompilerStatistics[(int)compilerIndex].TryGetValue(moduleName, out jittedMethodsPerModule);
+                    perCompilerStatistics[(int)compilerRunner.Index].TryGetValue(moduleName, out jittedMethodsPerModule);
                     writer.Write(string.Format("{0,9} |", jittedMethodsPerModule != null ? jittedMethodsPerModule.Count.ToString() : ""));
                 }
                 writer.Write(' ');
@@ -104,12 +171,12 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        public void WriteJitStatistics(Dictionary<string, HashSet<string>>[] perCompilerStatistics, IEnumerable<CompilerIndex> compilerIndices)
+        public void WriteJitStatistics(Dictionary<string, HashSet<string>>[] perCompilerStatistics, IEnumerable<CompilerRunner> compilerRunners)
         {
             string jitStatisticsFile = Path.ChangeExtension(_mainExecutable, ".jit-statistics");
             using (StreamWriter streamWriter = new StreamWriter(jitStatisticsFile))
             {
-                WriteJitStatistics(streamWriter, perCompilerStatistics, compilerIndices);
+                WriteJitStatistics(streamWriter, perCompilerStatistics, compilerRunners);
             }
         }
 
