@@ -168,7 +168,7 @@ namespace ILCompiler
 
             if ((_removedFeature & RemovedFeature.CurlHandler) != 0)
             {
-                if (owningType.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType mdType
+                if (owningType is Internal.TypeSystem.Ecma.EcmaType mdType
                     && mdType.Module.Assembly.GetName().Name == "System.Net.Http"
                     && mdType.Name == "CurlHandler"
                     && mdType.Namespace == "System.Net.Http")
