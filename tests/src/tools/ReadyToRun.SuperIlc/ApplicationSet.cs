@@ -58,6 +58,11 @@ namespace ReadyToRun.SuperIlc
 
             foreach (Application app in _applications)
             {
+                if (app.MainExecutable == null || app.Execution == null)
+                {
+                    continue;
+                }
+
                 Dictionary<string, HashSet<string>>[] appMethodsPerModulePerCompiler = new Dictionary<string, HashSet<string>>[(int)CompilerIndex.Count];
 
                 foreach (CompilerRunner runner in _compilerRunners)
@@ -94,6 +99,8 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
+            Console.WriteLine();
+            Console.WriteLine($"Building {_applications.Count()} apps ({compilationsToRun.Count} compilations total)");
             compilationsToRun.Sort((a, b) => b.CompilationCostHeuristic.CompareTo(a.CompilationCostHeuristic));
 
             ParallelRunner.Run(compilationsToRun);
@@ -338,12 +345,15 @@ namespace ReadyToRun.SuperIlc
         {
             foreach (Application app in _applications)
             {
-                foreach (CompilerRunner runner in _compilerRunners)
+                if (app.Execution != null)
                 {
-                    ProcessInfo executionProcess = app.Execution[(int)runner.Index];
-                    if (executionProcess != null)
+                    foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        yield return executionProcess;
+                        ProcessInfo executionProcess = app.Execution[(int)runner.Index];
+                        if (executionProcess != null)
+                        {
+                            yield return executionProcess;
+                        }
                     }
                 }
             }

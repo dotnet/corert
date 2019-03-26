@@ -54,6 +54,7 @@ namespace ReadyToRun.SuperIlc
 
             List<Application> applications = new List<Application>();
             int relativePathOffset = directories[0].Length + 1;
+            int count = 0;
             foreach (string directory in directories)
             {
                 string outputDirectoryPerApp = outputDirectory.FullName;
@@ -65,6 +66,10 @@ namespace ReadyToRun.SuperIlc
                 if (application != null)
                 {
                     applications.Add(application);
+                }
+                if (++count % 100 == 0)
+                {
+                    Console.WriteLine($@"Found {applications.Count} apps in {count} folders");
                 }
             }
 

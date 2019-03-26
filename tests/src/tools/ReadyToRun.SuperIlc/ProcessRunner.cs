@@ -155,8 +155,12 @@ public class ProcessRunner : IDisposable
     {
         try
         {
-            Task.Delay(_processInfo.TimeoutMilliseconds, _cancellationTokenSource.Token).Wait();
-            StopProcessAtomic();
+            CancellationTokenSource source = _cancellationTokenSource;
+            if (source != null)
+            {
+                Task.Delay(_processInfo.TimeoutMilliseconds, source.Token).Wait();
+                StopProcessAtomic();
+            }
         }
         catch (TaskCanceledException)
         {
