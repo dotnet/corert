@@ -14,29 +14,31 @@ namespace ReadyToRun.SuperIlc
     {
         private List<string> _compilationInputFiles;
 
-        private string  _mainExecutable;
+        private List<string> _mainExecutables;
 
         private readonly List<ProcessInfo[]> _compilations;
 
         private string _outputFolder;
 
-        private readonly ProcessInfo[] _execution;
+        private readonly List<ProcessInfo[]> _executions;
 
-        public string MainExecutable => _mainExecutable;
+        public IList<string> MainExecutables => _mainExecutables;
 
         public Application(
             List<string> compilationInputFiles, 
-            string mainExecutable, 
+            List<string> mainExecutables,
             IEnumerable<CompilerRunner> compilerRunners,
             string outputFolder,
             string coreRunPath,
+            bool noExe,
             bool noEtw)
         {
             _compilationInputFiles = compilationInputFiles;
-            _mainExecutable = mainExecutable;
+            _mainExecutables = mainExecutables;
             _outputFolder = outputFolder;
 
             _compilations = new List<ProcessInfo[]>();
+            _executions = new List<ProcessInfo[]>();
 
             foreach (string file in _compilationInputFiles)
             {
@@ -49,32 +51,36 @@ namespace ReadyToRun.SuperIlc
                 _compilations.Add(fileCompilations);
             }
 
-            if (_mainExecutable != null && !string.IsNullOrEmpty(coreRunPath))
+            if (!noExe && !string.IsNullOrEmpty(coreRunPath))
             {
-                _execution = new ProcessInfo[(int)CompilerIndex.Count];
-
-                foreach (CompilerRunner runner in compilerRunners)
+                for (int exeIndex = 0; exeIndex < _mainExecutables.Count; exeIndex++)
                 {
-                    HashSet<string> modules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    HashSet<string> folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    string mainExe = _mainExecutables[exeIndex];
+                    ProcessInfo[] mainAppExecutions = new ProcessInfo[(int)CompilerIndex.Count];
+                    _executions.Add(mainAppExecutions);
+                    foreach (CompilerRunner runner in compilerRunners)
+                    {
+                        HashSet<string> modules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        HashSet<string> folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                    modules.Add(_mainExecutable);
-                    modules.Add(runner.GetOutputFileName(_outputFolder, _mainExecutable));
-                    modules.UnionWith(_compilationInputFiles);
-                    modules.UnionWith(_compilationInputFiles.Select(file => runner.GetOutputFileName(_outputFolder, file)));
-                    folders.Add(Path.GetDirectoryName(_mainExecutable));
-                    folders.UnionWith(runner.ReferenceFolders);
+                        modules.Add(mainExe);
+                        modules.Add(runner.GetOutputFileName(_outputFolder, mainExe));
+                        modules.UnionWith(_compilationInputFiles);
+                        modules.UnionWith(_compilationInputFiles.Select(file => runner.GetOutputFileName(_outputFolder, file)));
+                        folders.Add(Path.GetDirectoryName(mainExe));
+                        folders.UnionWith(runner.ReferenceFolders);
 
-                    _execution[(int)runner.Index] = runner.ExecutionProcess(_outputFolder, _mainExecutable, modules, folders, coreRunPath, noEtw);
+                        mainAppExecutions[(int)runner.Index] = runner.ExecutionProcess(_outputFolder, mainExe, modules, folders, coreRunPath, noEtw);
+                    }
                 }
             }
         }
 
-        public static Application FromDirectory(string inputDirectory, IEnumerable<CompilerRunner> compilerRunners, string outputRoot, bool noEtw, string coreRunPath)
+        public static Application FromDirectory(string inputDirectory, IEnumerable<CompilerRunner> compilerRunners, string outputRoot, bool noExe, bool noEtw, string coreRunPath)
         {
             List<string> compilationInputFiles = new List<string>();
             List<string> passThroughFiles = new List<string>();
-            string mainExecutable = null;
+            List<string> mainExecutables = new List<string>();
 
             // Copy unmanaged files (runtime, native dependencies, resources, etc)
             foreach (string file in Directory.EnumerateFiles(inputDirectory))
@@ -90,7 +96,7 @@ namespace ReadyToRun.SuperIlc
                 }
                 if (Path.GetExtension(file).Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    mainExecutable = file;
+                    mainExecutables.Add(file);
                 }
             }
 
@@ -109,12 +115,12 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            return new Application(compilationInputFiles, mainExecutable, compilerRunners, outputRoot, coreRunPath, noEtw);
+            return new Application(compilationInputFiles, mainExecutables, compilerRunners, outputRoot, coreRunPath, noExe, noEtw);
         }
 
-        public void AddModuleToJittedMethodsMapping(Dictionary<string, HashSet<string>> moduleToJittedMethods, CompilerIndex compilerIndex)
+        public void AddModuleToJittedMethodsMapping(Dictionary<string, HashSet<string>> moduleToJittedMethods, int executionIndex, CompilerIndex compilerIndex)
         {
-            ProcessInfo executionProcess = (_execution != null ? _execution[(int)compilerIndex] : null);
+            ProcessInfo executionProcess = _executions[executionIndex][(int)compilerIndex];
             if (executionProcess != null && executionProcess.JittedMethods != null)
             {
                 foreach (KeyValuePair<string, HashSet<string>> moduleMethodKvp in executionProcess.JittedMethods)
@@ -173,15 +179,18 @@ namespace ReadyToRun.SuperIlc
 
         public void WriteJitStatistics(Dictionary<string, HashSet<string>>[] perCompilerStatistics, IEnumerable<CompilerRunner> compilerRunners)
         {
-            string jitStatisticsFile = Path.ChangeExtension(_mainExecutable, ".jit-statistics");
-            using (StreamWriter streamWriter = new StreamWriter(jitStatisticsFile))
+            for (int exeIndex = 0; exeIndex < _mainExecutables.Count; exeIndex++)
             {
-                WriteJitStatistics(streamWriter, perCompilerStatistics, compilerRunners);
+                string jitStatisticsFile = Path.ChangeExtension(_mainExecutables[exeIndex], ".jit-statistics");
+                using (StreamWriter streamWriter = new StreamWriter(jitStatisticsFile))
+                {
+                    WriteJitStatistics(streamWriter, perCompilerStatistics, compilerRunners);
+                }
             }
         }
 
         public IEnumerable<ProcessInfo[]> Compilations => _compilations;
 
-        public ProcessInfo[] Execution => _execution;
+        public IEnumerable<ProcessInfo[]> Executions => _executions ?? Enumerable.Empty<ProcessInfo[]>();
     }
 }

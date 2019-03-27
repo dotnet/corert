@@ -29,10 +29,11 @@ namespace ReadyToRun.SuperIlc
                         CrossgenDirectory(),
                         CpaotDirectory(),
                         NoJit(),
+                        //NoExe(),
                         NoEtw(),
                         ReferencePath()
                     },
-                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, bool, DirectoryInfo[]>(CompileDirectoryCommand.CompileDirectory));
+                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, /*bool,*/ bool, DirectoryInfo[]>(CompileDirectoryCommand.CompileDirectory));
 
             Command CompileSubtree() =>
                 new Command("compile-subtree", "Build each directory in a given subtree containing any managed assemblies as a separate app",
@@ -43,10 +44,11 @@ namespace ReadyToRun.SuperIlc
                         CrossgenDirectory(),
                         CpaotDirectory(),
                         NoJit(),
+                        //NoExe(),
                         NoEtw(),
                         ReferencePath()
                     },
-                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, bool, DirectoryInfo[]>(CompileSubtreeCommand.CompileSubtree));
+                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, /*bool,*/ bool, DirectoryInfo[]>(CompileSubtreeCommand.CompileSubtree));
 
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
@@ -70,6 +72,9 @@ namespace ReadyToRun.SuperIlc
 
             Option NoEtw() =>
                 new Option(new[] { "--noetw" }, "Don't capture jitted methods using ETW", new Argument<bool>());
+
+            Option NoExe() =>
+                new Option(new[] { "--noexe" }, "Compilation-only mode (don't execute the built apps)", new Argument<bool>());
         }
     }
 }

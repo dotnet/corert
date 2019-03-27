@@ -18,9 +18,12 @@ namespace ReadyToRun.SuperIlc
             DirectoryInfo crossgenDirectory,
             DirectoryInfo cpaotDirectory,
             bool noJit,
+            //bool noExe,
             bool noEtw,
             DirectoryInfo[] referencePath)
         {
+            const bool noExe = false;
+
             if (inputDirectory == null)
             {
                 Console.Error.WriteLine("--input-directory is a required argument.");
@@ -44,12 +47,16 @@ namespace ReadyToRun.SuperIlc
             IEnumerable<CompilerRunner> runners = SuperIlcHelpers.CompilerRunners(
                 inputDirectory.ToString(), outputDirectory.ToString(), cpaotDirectory.ToString(), crossgenDirectory.ToString(), noJit, referencePaths);
 
-            Application application = Application.FromDirectory(inputDirectory.FullName, runners, outputDirectory.FullName, noEtw, coreRunPath);
+            PathExtensions.DeleteOutputFolders(inputDirectory.FullName, recursive: false);
+
+            Application application = Application.FromDirectory(inputDirectory.FullName, runners, outputDirectory.FullName, noExe, noEtw, coreRunPath);
             if (application == null)
             {
                 Console.Error.WriteLine($"No managed app found in {inputDirectory.FullName}");
             }
-            string applicationSetLogPath = Path.Combine(inputDirectory.ToString(), "application-set.log");
+
+            string timeStamp = DateTime.Now.ToString("MMDD-hhmm");
+            string applicationSetLogPath = Path.Combine(inputDirectory.ToString(), "directory-" + timeStamp + ".log");
 
             using (ApplicationSet applicationSet = new ApplicationSet(new Application[] { application }, runners, coreRunPath, applicationSetLogPath))
             {

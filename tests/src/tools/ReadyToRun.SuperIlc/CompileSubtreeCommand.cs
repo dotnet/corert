@@ -18,9 +18,12 @@ namespace ReadyToRun.SuperIlc
             DirectoryInfo crossgenDirectory,
             DirectoryInfo cpaotDirectory,
             bool noJit,
+            //bool noExe,
             bool noEtw,
             DirectoryInfo[] referencePath)
         {
+            const bool noExe = false;
+
             if (inputDirectory == null)
             {
                 Console.WriteLine("--input-directory is a required argument.");
@@ -44,6 +47,8 @@ namespace ReadyToRun.SuperIlc
             IEnumerable<CompilerRunner> runners = SuperIlcHelpers.CompilerRunners(
                 inputDirectory.ToString(), outputDirectory.ToString(), cpaotDirectory?.ToString(), crossgenDirectory?.ToString(), noJit, referencePaths);
 
+            PathExtensions.DeleteOutputFolders(inputDirectory.ToString(), recursive: true);
+
             string[] directories = new string[] { inputDirectory.FullName }
                 .Concat(
                     inputDirectory
@@ -62,22 +67,79 @@ namespace ReadyToRun.SuperIlc
                 {
                     outputDirectoryPerApp = Path.Combine(outputDirectoryPerApp, directory.Substring(relativePathOffset));
                 }
-                Application application = Application.FromDirectory(directory.ToString(), runners, outputDirectoryPerApp, noEtw, coreRunPath);
-                if (application != null)
+                try
                 {
-                    applications.Add(application);
+                    Application application = Application.FromDirectory(directory.ToString(), runners, outputDirectoryPerApp, noExe, noEtw, coreRunPath);
+                    if (application != null)
+                    {
+                        applications.Add(application);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine("Error scanning folder {0}: {1}", directory, ex.Message);
                 }
                 if (++count % 100 == 0)
                 {
-                    Console.WriteLine($@"Found {applications.Count} apps in {count} folders");
+                    Console.WriteLine($@"Found {applications.Count} apps in {count} / {directories.Length} folders");
                 }
             }
+            Console.WriteLine($@"Found {applications.Count} apps total in {directories.Length} folders");
 
-            string applicationSetLogPath = Path.Combine(inputDirectory.ToString(), "application-set.log");
+            string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
+            string applicationSetLogPath = Path.Combine(inputDirectory.ToString(), "subtree-" + timeStamp + ".log");
 
             using (ApplicationSet applicationSet = new ApplicationSet(applications, runners, coreRunPath, applicationSetLogPath))
             {
-                return applicationSet.Build(coreRunPath, runners, applicationSetLogPath) ? 0 : 1;
+                bool success = applicationSet.Build(coreRunPath, runners, applicationSetLogPath);
+
+                string combinedSetLogPath = Path.Combine(inputDirectory.ToString(), "combined-" + timeStamp + ".log");
+                using (StreamWriter combinedLog = new StreamWriter(combinedSetLogPath))
+                {
+                    StreamWriter[] perRunnerLog = new StreamWriter[(int)CompilerIndex.Count];
+                    foreach (CompilerRunner runner in runners)
+                    {
+                        string runnerLogPath = Path.Combine(inputDirectory.ToString(), runner.CompilerName + "-" + timeStamp + ".log");
+                        perRunnerLog[(int)runner.Index] = new StreamWriter(runnerLogPath);
+                    }
+
+                    foreach (Application app in applicationSet.Applications)
+                    {
+                        foreach (ProcessInfo[] compilation in app.Compilations)
+                        {
+                            foreach (CompilerRunner runner in runners)
+                            {
+                                ProcessInfo compilationProcess = compilation[(int)runner.Index];
+                                if (compilationProcess != null)
+                                {
+                                    string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.InputFileName}\n" + File.ReadAllText(compilationProcess.LogPath);
+                                    perRunnerLog[(int)runner.Index].Write(log);
+                                    combinedLog.Write(log);
+                                }
+                            }
+                        }
+                        foreach (ProcessInfo[] execution in app.Executions)
+                        {
+                            foreach (CompilerRunner runner in runners)
+                            {
+                                ProcessInfo executionProcess = execution[(int)runner.Index];
+                                if (executionProcess != null)
+                                {
+                                    string log = $"\nEXECUTE {runner.CompilerName}:{executionProcess.InputFileName}\n" + File.ReadAllText(executionProcess.LogPath);
+                                    perRunnerLog[(int)runner.Index].Write(log);
+                                    combinedLog.Write(log);
+                                }
+                            }
+                        }
+                    }
+
+                    foreach (CompilerRunner runner in runners)
+                    {
+                        perRunnerLog[(int)runner.Index].Dispose();
+                    }
+                }
+
+                return success ? 0 : 1;
             }
         }
     }

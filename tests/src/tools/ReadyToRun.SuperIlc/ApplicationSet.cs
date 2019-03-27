@@ -28,6 +28,8 @@ namespace ReadyToRun.SuperIlc
 
         private long _buildMilliseconds;
 
+        public IEnumerable<Application> Applications => _applications;
+
         public ApplicationSet(
             IEnumerable<Application> applications,
             IEnumerable<CompilerRunner> compilerRunners,
@@ -58,20 +60,18 @@ namespace ReadyToRun.SuperIlc
 
             foreach (Application app in _applications)
             {
-                if (app.MainExecutable == null || app.Execution == null)
+                for (int exeIndex = 0; exeIndex < app.MainExecutables.Count; exeIndex++)
                 {
-                    continue;
+                    Dictionary<string, HashSet<string>>[] appMethodsPerModulePerCompiler = new Dictionary<string, HashSet<string>>[(int)CompilerIndex.Count];
+                    foreach (CompilerRunner runner in _compilerRunners)
+                    {
+                        appMethodsPerModulePerCompiler[(int)runner.Index] = new Dictionary<string, HashSet<string>>();
+                        app.AddModuleToJittedMethodsMapping(allMethodsPerModulePerCompiler[(int)runner.Index], exeIndex, runner.Index);
+                        app.AddModuleToJittedMethodsMapping(appMethodsPerModulePerCompiler[(int)runner.Index], exeIndex, runner.Index);
+                    }
+                    app.WriteJitStatistics(appMethodsPerModulePerCompiler, _compilerRunners);
                 }
 
-                Dictionary<string, HashSet<string>>[] appMethodsPerModulePerCompiler = new Dictionary<string, HashSet<string>>[(int)CompilerIndex.Count];
-
-                foreach (CompilerRunner runner in _compilerRunners)
-                {
-                    appMethodsPerModulePerCompiler[(int)runner.Index] = new Dictionary<string, HashSet<string>>();
-                    app.AddModuleToJittedMethodsMapping(allMethodsPerModulePerCompiler[(int)runner.Index], runner.Index);
-                    app.AddModuleToJittedMethodsMapping(appMethodsPerModulePerCompiler[(int)runner.Index], runner.Index);
-                }
-                app.WriteJitStatistics(appMethodsPerModulePerCompiler, _compilerRunners);
             }
 
             Application.WriteJitStatistics(_logWriter, allMethodsPerModulePerCompiler, _compilerRunners);
@@ -99,12 +99,12 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            Console.WriteLine();
-            Console.WriteLine($"Building {_applications.Count()} apps ({compilationsToRun.Count} compilations total)");
+            _logWriter.WriteLine();
+            _logWriter.WriteLine($"Building {_applications.Count()} apps ({compilationsToRun.Count} compilations total)");
             compilationsToRun.Sort((a, b) => b.CompilationCostHeuristic.CompareTo(a.CompilationCostHeuristic));
 
-            ParallelRunner.Run(compilationsToRun);
-
+            ParallelRunner.Run(startIndex: 0, compilationsToRun, _logWriter);
+            
             bool success = true;
             List<KeyValuePair<string, string>> failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
             int successfulCompileCount = 0;
@@ -120,15 +120,22 @@ namespace ReadyToRun.SuperIlc
                         ProcessInfo runnerProcess = compilation[(int)runner.Index];
                         if (runnerProcess != null && !runnerProcess.Succeeded)
                         {
-                            File.Copy(runnerProcess.InputFileName, runnerProcess.OutputFileName);
-                            if (file == null)
+                            try
                             {
-                                file = runnerProcess.InputFileName;
-                                failedBuilders = runner.CompilerName;
+                                File.Copy(runnerProcess.InputFileName, runnerProcess.OutputFileName);
                             }
-                            else
+                            catch (Exception ex)
                             {
-                                failedBuilders += "; " + runner.CompilerName;
+                                Console.Error.WriteLine("Error copying {0} to {1}: {2}", runnerProcess.InputFileName, runnerProcess.OutputFileName, ex.Message);
+                                if (file == null)
+                                {
+                                    file = runnerProcess.InputFileName;
+                                    failedBuilders = runner.CompilerName;
+                                }
+                                else
+                                {
+                                    failedBuilders += "; " + runner.CompilerName;
+                                }
                             }
                         }
                     }
@@ -177,7 +184,7 @@ namespace ReadyToRun.SuperIlc
                 AddAppExecution(executionsToRun, app, stopwatch);
             }
 
-            ParallelRunner.Run(executionsToRun);
+            ParallelRunner.Run(startIndex: 0, executionsToRun, _logWriter);
 
             _executionMilliseconds = stopwatch.ElapsedMilliseconds;
 
@@ -205,15 +212,18 @@ namespace ReadyToRun.SuperIlc
 
         private void AddAppExecution(List<ProcessInfo> executionsToRun, Application app, Stopwatch stopwatch)
         {
-            foreach (CompilerRunner runner in _compilerRunners)
+            foreach (ProcessInfo[] execution in app.Executions)
             {
-                bool compilationsSucceeded = app.Compilations.All(comp => comp[(int)runner.Index]?.Succeeded ?? true);
-                if (compilationsSucceeded && app.Execution != null)
+                foreach (CompilerRunner runner in _compilerRunners)
                 {
-                    ProcessInfo executionProcess = app.Execution[(int)runner.Index];
+                    ProcessInfo executionProcess = execution[(int)runner.Index];
                     if (executionProcess != null)
                     {
-                        executionsToRun.Add(executionProcess);
+                        bool compilationsSucceeded = app.Compilations.All(comp => comp[(int)runner.Index]?.Succeeded ?? true);
+                        if (compilationsSucceeded)
+                        {
+                            executionsToRun.Add(executionProcess);
+                        }
                     }
                 }
             }
@@ -269,10 +279,7 @@ namespace ReadyToRun.SuperIlc
                         outcomes[(int)Outcome.ILC_FAIL, (int)runner.Index]++;
                         anyCompilationFailed = true;
                     }
-                    bool executionFailed = (!compilationFailed &&
-                        app.Execution != null &&
-                        app.Execution[(int)runner.Index] != null &&
-                        !app.Execution[(int)runner.Index].Succeeded);
+                    bool executionFailed = (!compilationFailed && !app.Executions.All(execs => execs[(int)runner.Index]?.Succeeded ?? true));
                     if (executionFailed)
                     {
                         outcomes[(int)Outcome.EXE_FAIL, (int)runner.Index]++;
@@ -345,11 +352,11 @@ namespace ReadyToRun.SuperIlc
         {
             foreach (Application app in _applications)
             {
-                if (app.Execution != null)
+                foreach (ProcessInfo[] execution in app.Executions)
                 {
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        ProcessInfo executionProcess = app.Execution[(int)runner.Index];
+                        ProcessInfo executionProcess = execution[(int)runner.Index];
                         if (executionProcess != null)
                         {
                             yield return executionProcess;

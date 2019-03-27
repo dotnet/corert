@@ -217,7 +217,6 @@ public class ProcessRunner : IDisposable
         if (!string.IsNullOrEmpty(eventArgs.Data))
         {
             _logWriter.WriteLine(eventArgs.Data);
-            Console.Out.WriteLine(_processIndex.ToString() + ": " + eventArgs.Data);
         }
     }
 
@@ -226,7 +225,6 @@ public class ProcessRunner : IDisposable
         if (!string.IsNullOrEmpty(eventArgs.Data))
         {
             _logWriter.WriteLine(eventArgs.Data);
-            Console.Error.WriteLine(_processIndex.ToString() + ": " + eventArgs.Data);
         }
     }
 
