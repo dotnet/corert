@@ -495,6 +495,8 @@ namespace ILCompiler
                     removedFeatures |= RemovedFeature.Globalization;
                 else if (feature == "Comparers")
                     removedFeatures |= RemovedFeature.Comparers;
+                else if (feature == "CurlHandler")
+                    removedFeatures |= RemovedFeature.CurlHandler;
             }
 
             ILProvider ilProvider = _isReadyToRunCodeGen ? (ILProvider)new ReadyToRunILProvider() : new CoreRTILProvider();
