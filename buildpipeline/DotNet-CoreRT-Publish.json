@@ -138,7 +138,7 @@
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "packages -> dotnet.myget.org",
