@@ -8,8 +8,23 @@ using Internal.Reflection.Augments;
 // This type is just stubbed out to be harmonious with CoreCLR
 namespace System.Runtime.Loader
 {
-    public abstract class AssemblyLoadContext
+    public class AssemblyLoadContext
     {
+        protected AssemblyLoadContext()
+        {
+        }
+
+        protected AssemblyLoadContext(bool isCollectible)
+        {
+            IsCollectible = isCollectible;
+        }
+
+        public AssemblyLoadContext(string name, bool isCollectible = false)
+        {
+            IsCollectible = isCollectible;
+            Name = name;
+        }
+
         public static Assembly[] GetLoadedAssemblies() => ReflectionAugments.ReflectionCoreCallbacks.GetLoadedAssemblies(); 
 
         // These events are never called
@@ -35,6 +50,10 @@ namespace System.Runtime.Loader
             throw new PlatformNotSupportedException();
         }
 
+        public bool IsCollectible { get; }
+
+        public string Name { get; }
+
         public void SetProfileOptimizationRoot(string directoryPath) { }
         public void StartProfileOptimization(string profile) { }
 
@@ -55,9 +74,15 @@ namespace System.Runtime.Loader
     /// </summary>
     internal sealed class DefaultAssemblyLoadContext : AssemblyLoadContext
     {
+        internal DefaultAssemblyLoadContext() : base("Default")
+        {
+        }
     }
 
     internal sealed class IndividualAssemblyLoadContext : AssemblyLoadContext
     {
+        internal IndividualAssemblyLoadContext(string name) : base(name)
+        {
+        }
     }
 }
