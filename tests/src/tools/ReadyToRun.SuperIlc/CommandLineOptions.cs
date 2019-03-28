@@ -29,11 +29,11 @@ namespace ReadyToRun.SuperIlc
                         CrossgenDirectory(),
                         CpaotDirectory(),
                         NoJit(),
-                        //NoExe(),
+                        NoExe(),
                         NoEtw(),
                         ReferencePath()
                     },
-                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, /*bool,*/ bool, DirectoryInfo[]>(CompileDirectoryCommand.CompileDirectory));
+                    handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
 
             Command CompileSubtree() =>
                 new Command("compile-subtree", "Build each directory in a given subtree containing any managed assemblies as a separate app",
@@ -44,19 +44,19 @@ namespace ReadyToRun.SuperIlc
                         CrossgenDirectory(),
                         CpaotDirectory(),
                         NoJit(),
-                        //NoExe(),
+                        NoExe(),
                         NoEtw(),
                         ReferencePath()
                     },
-                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, /*bool,*/ bool, DirectoryInfo[]>(CompileSubtreeCommand.CompileSubtree));
+                    handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
 
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
             Option InputDirectory() =>
-                new Option(new [] {"--input-directory", "-in"}, "Folder containing assemblies to optimize", new Argument<DirectoryInfo>().ExistingOnly());
+                new Option(new[] { "--input-directory", "-in" }, "Folder containing assemblies to optimize", new Argument<DirectoryInfo>().ExistingOnly());
 
             Option OutputDirectory() =>
-                new Option(new [] {"--output-directory", "-out"}, "Folder to emit compiled assemblies", new Argument<DirectoryInfo>().LegalFilePathsOnly());
+                new Option(new[] { "--output-directory", "-out" }, "Folder to emit compiled assemblies", new Argument<DirectoryInfo>().LegalFilePathsOnly());
 
             Option CrossgenDirectory() =>
                 new Option(new[] { "--crossgen-directory", "-crossgen" }, "Folder containing the Crossgen compiler", new Argument<DirectoryInfo>().ExistingOnly());
@@ -65,7 +65,7 @@ namespace ReadyToRun.SuperIlc
                 new Option(new[] { "--cpaot-directory", "-cpaot" }, "Folder containing the CPAOT compiler", new Argument<DirectoryInfo>().ExistingOnly());
 
             Option ReferencePath() =>
-                new Option(new[] {"--reference-path", "-r"}, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>(){Arity = ArgumentArity.ZeroOrMore}.ExistingOnly());
+                new Option(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly());
 
             Option NoJit() =>
                 new Option(new[] { "--nojit" }, "Don't run tests in JITted mode", new Argument<bool>());

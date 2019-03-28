@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -12,46 +13,36 @@ namespace ReadyToRun.SuperIlc
 {
     class CompileSubtreeCommand
     {
-        public static int CompileSubtree(
-            DirectoryInfo inputDirectory,
-            DirectoryInfo outputDirectory,
-            DirectoryInfo crossgenDirectory,
-            DirectoryInfo cpaotDirectory,
-            bool noJit,
-            //bool noExe,
-            bool noEtw,
-            DirectoryInfo[] referencePath)
+        public static int CompileSubtree(BuildOptions options)
         {
-            const bool noExe = false;
-
-            if (inputDirectory == null)
+            if (options.InputDirectory == null)
             {
                 Console.WriteLine("--input-directory is a required argument.");
                 return 1;
             }
 
-            if (outputDirectory == null)
+            if (options.OutputDirectory == null)
             {
-                outputDirectory = inputDirectory;
+                options.OutputDirectory = options.InputDirectory;
             }
 
-            if (outputDirectory.IsParentOf(inputDirectory))
+            if (options.OutputDirectory.IsParentOf(options.InputDirectory))
             {
                 Console.WriteLine("Error: Input and output folders must be distinct, and the output directory (which gets deleted) better not be a parent of the input directory.");
                 return 1;
             }
 
-            List<string> referencePaths = referencePath?.Select(x => x.ToString())?.ToList();
+            List<string> referencePaths = options.ReferencePath?.Select(x => x.ToString())?.ToList();
             string coreRunPath = SuperIlcHelpers.FindCoreRun(referencePaths);
 
             IEnumerable<CompilerRunner> runners = SuperIlcHelpers.CompilerRunners(
-                inputDirectory.ToString(), outputDirectory.ToString(), cpaotDirectory?.ToString(), crossgenDirectory?.ToString(), noJit, referencePaths);
+                options.InputDirectory.ToString(), options.OutputDirectory.ToString(), options.CpaotDirectory?.ToString(), options.CrossgenDirectory?.ToString(), options.NoJit, referencePaths);
 
-            PathExtensions.DeleteOutputFolders(inputDirectory.ToString(), recursive: true);
+            PathExtensions.DeleteOutputFolders(options.InputDirectory.ToString(), recursive: true);
 
-            string[] directories = new string[] { inputDirectory.FullName }
+            string[] directories = new string[] { options.InputDirectory.FullName }
                 .Concat(
-                    inputDirectory
+                    options.InputDirectory
                         .EnumerateDirectories("*", SearchOption.AllDirectories)
                         .Select(dirInfo => dirInfo.FullName)
                         .Where(path => !Path.GetExtension(path).Equals(".out", StringComparison.OrdinalIgnoreCase)))
@@ -62,14 +53,14 @@ namespace ReadyToRun.SuperIlc
             int count = 0;
             foreach (string directory in directories)
             {
-                string outputDirectoryPerApp = outputDirectory.FullName;
+                string outputDirectoryPerApp = options.OutputDirectory.FullName;
                 if (directory.Length > relativePathOffset)
                 {
                     outputDirectoryPerApp = Path.Combine(outputDirectoryPerApp, directory.Substring(relativePathOffset));
                 }
                 try
                 {
-                    Application application = Application.FromDirectory(directory.ToString(), runners, outputDirectoryPerApp, noExe, noEtw, coreRunPath);
+                    Application application = Application.FromDirectory(directory.ToString(), runners, outputDirectoryPerApp, options.NoExe, options.NoEtw, coreRunPath);
                     if (application != null)
                     {
                         applications.Add(application);
@@ -87,19 +78,19 @@ namespace ReadyToRun.SuperIlc
             Console.WriteLine($@"Found {applications.Count} apps total in {directories.Length} folders");
 
             string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
-            string applicationSetLogPath = Path.Combine(inputDirectory.ToString(), "subtree-" + timeStamp + ".log");
+            string applicationSetLogPath = Path.Combine(options.InputDirectory.ToString(), "subtree-" + timeStamp + ".log");
 
             using (ApplicationSet applicationSet = new ApplicationSet(applications, runners, coreRunPath, applicationSetLogPath))
             {
                 bool success = applicationSet.Build(coreRunPath, runners, applicationSetLogPath);
 
-                string combinedSetLogPath = Path.Combine(inputDirectory.ToString(), "combined-" + timeStamp + ".log");
+                string combinedSetLogPath = Path.Combine(options.InputDirectory.ToString(), "combined-" + timeStamp + ".log");
                 using (StreamWriter combinedLog = new StreamWriter(combinedSetLogPath))
                 {
                     StreamWriter[] perRunnerLog = new StreamWriter[(int)CompilerIndex.Count];
                     foreach (CompilerRunner runner in runners)
                     {
-                        string runnerLogPath = Path.Combine(inputDirectory.ToString(), runner.CompilerName + "-" + timeStamp + ".log");
+                        string runnerLogPath = Path.Combine(options.InputDirectory.ToString(), runner.CompilerName + "-" + timeStamp + ".log");
                         perRunnerLog[(int)runner.Index] = new StreamWriter(runnerLogPath);
                     }
 
@@ -125,7 +116,15 @@ namespace ReadyToRun.SuperIlc
                                 ProcessInfo executionProcess = execution[(int)runner.Index];
                                 if (executionProcess != null)
                                 {
-                                    string log = $"\nEXECUTE {runner.CompilerName}:{executionProcess.InputFileName}\n" + File.ReadAllText(executionProcess.LogPath);
+                                    string log = $"\nEXECUTE {runner.CompilerName}:{executionProcess.InputFileName}\n";
+                                    try
+                                    {
+                                        log += File.ReadAllText(executionProcess.LogPath);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        log += " -> " + ex.Message;
+                                    }
                                     perRunnerLog[(int)runner.Index].Write(log);
                                     combinedLog.Write(log);
                                 }

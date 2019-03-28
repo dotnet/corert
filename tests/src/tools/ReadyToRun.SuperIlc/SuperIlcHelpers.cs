@@ -1,9 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace ReadyToRun.SuperIlc
 {
+    public class BuildOptions
+    {
+        public DirectoryInfo InputDirectory { get; set; }
+        public DirectoryInfo OutputDirectory { get; set; }
+        public DirectoryInfo CrossgenDirectory { get; set; }
+        public DirectoryInfo CpaotDirectory { get; set; }
+        public bool NoJit { get; set; }
+        public bool NoExe { get; set; }
+        public bool NoEtw { get; set; }
+        public DirectoryInfo[] ReferencePath { get; set; }
+    }
+
     public static class SuperIlcHelpers
     {
         public static IEnumerable<CompilerRunner> CompilerRunners(

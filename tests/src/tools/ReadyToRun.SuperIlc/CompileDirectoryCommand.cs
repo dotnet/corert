@@ -12,51 +12,41 @@ namespace ReadyToRun.SuperIlc
 {
     class CompileDirectoryCommand
     {
-        public static int CompileDirectory(
-            DirectoryInfo inputDirectory,
-            DirectoryInfo outputDirectory,
-            DirectoryInfo crossgenDirectory,
-            DirectoryInfo cpaotDirectory,
-            bool noJit,
-            //bool noExe,
-            bool noEtw,
-            DirectoryInfo[] referencePath)
+        public static int CompileDirectory(BuildOptions options)
         {
-            const bool noExe = false;
-
-            if (inputDirectory == null)
+            if (options.InputDirectory == null)
             {
                 Console.Error.WriteLine("--input-directory is a required argument.");
                 return 1;
             }
 
-            if (outputDirectory == null)
+            if (options.OutputDirectory == null)
             {
-                outputDirectory = inputDirectory;
+                options.OutputDirectory = options.InputDirectory;
             }
 
-            if (outputDirectory.IsParentOf(inputDirectory))
+            if (options.OutputDirectory.IsParentOf(options.InputDirectory))
             {
                 Console.Error.WriteLine("Error: Input and output folders must be distinct, and the output directory (which gets deleted) better not be a parent of the input directory.");
                 return 1;
             }
 
-            List<string> referencePaths = referencePath?.Select(x => x.ToString())?.ToList();
+            List<string> referencePaths = options.ReferencePath?.Select(x => x.ToString())?.ToList();
             string coreRunPath = SuperIlcHelpers.FindCoreRun(referencePaths);
 
             IEnumerable<CompilerRunner> runners = SuperIlcHelpers.CompilerRunners(
-                inputDirectory.ToString(), outputDirectory.ToString(), cpaotDirectory.ToString(), crossgenDirectory.ToString(), noJit, referencePaths);
+                options.InputDirectory.ToString(), options.OutputDirectory.ToString(), options.CpaotDirectory.ToString(), options.CrossgenDirectory.ToString(), options.NoJit, referencePaths);
 
-            PathExtensions.DeleteOutputFolders(inputDirectory.FullName, recursive: false);
+            PathExtensions.DeleteOutputFolders(options.InputDirectory.FullName, recursive: false);
 
-            Application application = Application.FromDirectory(inputDirectory.FullName, runners, outputDirectory.FullName, noExe, noEtw, coreRunPath);
+            Application application = Application.FromDirectory(options.InputDirectory.FullName, runners, options.OutputDirectory.FullName, options.NoExe, options.NoEtw, coreRunPath);
             if (application == null)
             {
-                Console.Error.WriteLine($"No managed app found in {inputDirectory.FullName}");
+                Console.Error.WriteLine($"No managed app found in {options.InputDirectory.FullName}");
             }
 
             string timeStamp = DateTime.Now.ToString("MMDD-hhmm");
-            string applicationSetLogPath = Path.Combine(inputDirectory.ToString(), "directory-" + timeStamp + ".log");
+            string applicationSetLogPath = Path.Combine(options.InputDirectory.ToString(), "directory-" + timeStamp + ".log");
 
             using (ApplicationSet applicationSet = new ApplicationSet(new Application[] { application }, runners, coreRunPath, applicationSetLogPath))
             {
