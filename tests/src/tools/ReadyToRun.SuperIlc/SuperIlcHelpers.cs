@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace ReadyToRun.SuperIlc
@@ -14,39 +15,35 @@ namespace ReadyToRun.SuperIlc
         public bool NoJit { get; set; }
         public bool NoExe { get; set; }
         public bool NoEtw { get; set; }
+        public bool NoCleanup { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
-    }
 
-    public static class SuperIlcHelpers
-    {
-        public static IEnumerable<CompilerRunner> CompilerRunners(
-            string inputDirectory, 
-            string outputDirectory, 
-            string cpaotDirectory, 
-            string crossgenDirectory, 
-            bool noJit,
-            IEnumerable<string> referencePaths)
+        public IEnumerable<CompilerRunner> CompilerRunners()
         {
             List<CompilerRunner> runners = new List<CompilerRunner>();
+            List<string> referencePaths = ReferencePath?.Select(x => x.ToString())?.ToList();
 
-            if (cpaotDirectory != null)
+            if (CpaotDirectory != null)
             {
-                runners.Add(new CpaotRunner(cpaotDirectory, referencePaths));
+                runners.Add(new CpaotRunner(CpaotDirectory.FullName, referencePaths));
             }
 
-            if (crossgenDirectory != null)
+            if (CrossgenDirectory != null)
             {
-                runners.Add(new CrossgenRunner(crossgenDirectory, referencePaths));
+                runners.Add(new CrossgenRunner(CrossgenDirectory.FullName, referencePaths));
             }
 
-            if (!noJit)
+            if (!NoJit)
             {
                 runners.Add(new JitRunner(referencePaths));
             }
 
             return runners;
         }
+    }
 
+    public static class SuperIlcHelpers
+    {
         public static string FindCoreRun(IEnumerable<string> referencePaths)
         {
             string coreRunPath = "CoreRun.exe".FindFile(referencePaths);

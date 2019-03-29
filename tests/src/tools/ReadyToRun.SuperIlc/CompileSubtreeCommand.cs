@@ -35,10 +35,9 @@ namespace ReadyToRun.SuperIlc
             List<string> referencePaths = options.ReferencePath?.Select(x => x.ToString())?.ToList();
             string coreRunPath = SuperIlcHelpers.FindCoreRun(referencePaths);
 
-            IEnumerable<CompilerRunner> runners = SuperIlcHelpers.CompilerRunners(
-                options.InputDirectory.ToString(), options.OutputDirectory.ToString(), options.CpaotDirectory?.ToString(), options.CrossgenDirectory?.ToString(), options.NoJit, referencePaths);
+            IEnumerable<CompilerRunner> runners = options.CompilerRunners();
 
-            PathExtensions.DeleteOutputFolders(options.InputDirectory.ToString(), recursive: true);
+            PathExtensions.DeleteOutputFolders(options.OutputDirectory.ToString(), recursive: true);
 
             string[] directories = new string[] { options.InputDirectory.FullName }
                 .Concat(
@@ -78,19 +77,22 @@ namespace ReadyToRun.SuperIlc
             Console.WriteLine($@"Found {applications.Count} apps total in {directories.Length} folders");
 
             string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
-            string applicationSetLogPath = Path.Combine(options.InputDirectory.ToString(), "subtree-" + timeStamp + ".log");
+            string applicationSetLogPath = Path.Combine(options.OutputDirectory.ToString(), "subtree-" + timeStamp + ".log");
 
             using (ApplicationSet applicationSet = new ApplicationSet(applications, runners, coreRunPath, applicationSetLogPath))
             {
                 bool success = applicationSet.Build(coreRunPath, runners, applicationSetLogPath);
 
-                string combinedSetLogPath = Path.Combine(options.InputDirectory.ToString(), "combined-" + timeStamp + ".log");
+                Dictionary<string, List<ProcessInfo>> compilationFailureBuckets = new Dictionary<string, List<ProcessInfo>>();
+                Dictionary<string, List<ProcessInfo>> executionFailureBuckets = new Dictionary<string, List<ProcessInfo>>();
+
+                string combinedSetLogPath = Path.Combine(options.OutputDirectory.ToString(), "combined-" + timeStamp + ".log");
                 using (StreamWriter combinedLog = new StreamWriter(combinedSetLogPath))
                 {
                     StreamWriter[] perRunnerLog = new StreamWriter[(int)CompilerIndex.Count];
                     foreach (CompilerRunner runner in runners)
                     {
-                        string runnerLogPath = Path.Combine(options.InputDirectory.ToString(), runner.CompilerName + "-" + timeStamp + ".log");
+                        string runnerLogPath = Path.Combine(options.OutputDirectory.ToString(), runner.CompilerName + "-" + timeStamp + ".log");
                         perRunnerLog[(int)runner.Index] = new StreamWriter(runnerLogPath);
                     }
 
@@ -106,6 +108,17 @@ namespace ReadyToRun.SuperIlc
                                     string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.InputFileName}\n" + File.ReadAllText(compilationProcess.LogPath);
                                     perRunnerLog[(int)runner.Index].Write(log);
                                     combinedLog.Write(log);
+                                    if (!compilationProcess.Succeeded)
+                                    {
+                                        string bucket = AnalyzeCompilationFailure(compilationProcess);
+                                        List<ProcessInfo> processes;
+                                        if (!compilationFailureBuckets.TryGetValue(bucket, out processes))
+                                        {
+                                            processes = new List<ProcessInfo>();
+                                            compilationFailureBuckets.Add(bucket, processes);
+                                        }
+                                        processes.Add(compilationProcess);
+                                    }
                                 }
                             }
                         }
@@ -127,6 +140,18 @@ namespace ReadyToRun.SuperIlc
                                     }
                                     perRunnerLog[(int)runner.Index].Write(log);
                                     combinedLog.Write(log);
+
+                                    if (!executionProcess.Succeeded)
+                                    {
+                                        string bucket = AnalyzeExecutionFailure(executionProcess);
+                                        List<ProcessInfo> processes;
+                                        if (!executionFailureBuckets.TryGetValue(bucket, out processes))
+                                        {
+                                            processes = new List<ProcessInfo>();
+                                            executionFailureBuckets.Add(bucket, processes);
+                                        }
+                                        processes.Add(executionProcess);
+                                    }
                                 }
                             }
                         }
@@ -138,7 +163,133 @@ namespace ReadyToRun.SuperIlc
                     }
                 }
 
+                string compilationBucketsFile = Path.Combine(options.OutputDirectory.ToString(), "compilation-buckets-" + timeStamp + ".log");
+                OutputBuckets(compilationFailureBuckets, compilationBucketsFile);
+
+                string executionBucketsFile = Path.Combine(options.OutputDirectory.ToString(), "execution-buckets-" + timeStamp + ".log");
+                OutputBuckets(executionFailureBuckets, executionBucketsFile);
+
+                if (!options.NoCleanup)
+                {
+                    PathExtensions.DeleteOutputFolders(options.OutputDirectory.ToString(), recursive: true);
+                }
+
                 return success ? 0 : 1;
+            }
+        }
+
+        private static void OutputBuckets(Dictionary<string, List<ProcessInfo>> buckets, string outputFile)
+        {
+            using (StreamWriter output = new StreamWriter(outputFile))
+            {
+                output.WriteLine($@"#buckets: {buckets.Count}, #failures: {buckets.Sum(b => b.Value.Count)}");
+
+                IEnumerable<KeyValuePair<string, List<ProcessInfo>>> orderedBuckets = buckets.OrderByDescending(bucket => bucket.Value.Count);
+                foreach (KeyValuePair<string, List<ProcessInfo>> bucketKvp in orderedBuckets)
+                {
+                    bucketKvp.Value.Sort((a, b) => a.InputFileName.CompareTo(b.InputFileName));
+                    output.WriteLine($@"    [{bucketKvp.Value.Count} failures] {bucketKvp.Key}");
+                }
+
+                output.WriteLine();
+
+                output.WriteLine("Detailed bucket info:");
+
+                foreach (KeyValuePair<string, List<ProcessInfo>> bucketKvp in orderedBuckets)
+                {
+                    output.WriteLine("");
+                    output.WriteLine($@"Bucket name: {bucketKvp.Key}");
+                    output.WriteLine($@"Failing tests ({bucketKvp.Value.Count} total):");
+
+                    foreach (ProcessInfo failure in bucketKvp.Value)
+                    {
+                        output.WriteLine($@"   {failure.InputFileName}");
+                    }
+
+                    output.WriteLine();
+                    output.WriteLine($@"Detailed test failures:");
+
+                    foreach (ProcessInfo failure in bucketKvp.Value)
+                    {
+                        output.WriteLine($@"Test: {failure.InputFileName}");
+                        try
+                        {
+                            output.WriteLine(File.ReadAllText(failure.LogPath));
+                        }
+                        catch (Exception ex)
+                        {
+                            output.WriteLine($"Error reading file {failure.LogPath}: {ex.Message}");
+                        }
+                        output.WriteLine();
+                    }
+                }
+                output.WriteLine();
+            }
+        }
+
+        private static string AnalyzeCompilationFailure(ProcessInfo process)
+        {
+            try
+            {
+                string[] lines = File.ReadAllLines(process.LogPath);
+
+                for (int lineIndex = 2; lineIndex < lines.Length; lineIndex++)
+                {
+                    string line = lines[lineIndex];
+                    if (line.Length == 0 ||
+                        line.StartsWith("EXEC : warning") ||
+                        line.StartsWith("To repro,") ||
+                        line.StartsWith("Emitting R2R PE file") ||
+                        line == "Assertion Failed")
+                    {
+                        continue;
+                    }
+                    return line;
+                }
+                return string.Join("; ", lines);
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        private static string AnalyzeExecutionFailure(ProcessInfo process)
+        {
+            try
+            {
+                string[] lines = File.ReadAllLines(process.LogPath);
+
+                for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+                {
+                    string line = lines[lineIndex];
+                    if (line.StartsWith("Assert failure"))
+                    {
+                        int openParen = line.IndexOf('(');
+                        int closeParen = line.IndexOf(')', openParen + 1);
+                        if (openParen > 0 && closeParen > openParen)
+                        {
+                            line = line.Substring(0, openParen) + line.Substring(closeParen + 1);
+                        }
+                        return line;
+                    }
+                    else if (line.StartsWith("Unhandled Exception:"))
+                    {
+                        int leftBracket = line.IndexOf('[');
+                        int rightBracket = line.IndexOf(']', leftBracket + 1);
+                        if (leftBracket >= 0 && rightBracket > leftBracket)
+                        {
+                            line = line.Substring(0, leftBracket) + line.Substring(rightBracket + 1);
+                        }
+                        return line;
+                    }
+                }
+
+                return $"Exit code: {process.ExitCode} = 0x{process.ExitCode:X8}, expected {process.ExpectedExitCode}";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
             }
         }
     }

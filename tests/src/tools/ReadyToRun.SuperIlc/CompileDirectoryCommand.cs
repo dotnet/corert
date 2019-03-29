@@ -34,10 +34,9 @@ namespace ReadyToRun.SuperIlc
             List<string> referencePaths = options.ReferencePath?.Select(x => x.ToString())?.ToList();
             string coreRunPath = SuperIlcHelpers.FindCoreRun(referencePaths);
 
-            IEnumerable<CompilerRunner> runners = SuperIlcHelpers.CompilerRunners(
-                options.InputDirectory.ToString(), options.OutputDirectory.ToString(), options.CpaotDirectory.ToString(), options.CrossgenDirectory.ToString(), options.NoJit, referencePaths);
+            IEnumerable<CompilerRunner> runners = options.CompilerRunners();
 
-            PathExtensions.DeleteOutputFolders(options.InputDirectory.FullName, recursive: false);
+            PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
 
             Application application = Application.FromDirectory(options.InputDirectory.FullName, runners, options.OutputDirectory.FullName, options.NoExe, options.NoEtw, coreRunPath);
             if (application == null)
@@ -50,7 +49,14 @@ namespace ReadyToRun.SuperIlc
 
             using (ApplicationSet applicationSet = new ApplicationSet(new Application[] { application }, runners, coreRunPath, applicationSetLogPath))
             {
-                return applicationSet.Build(coreRunPath, runners, applicationSetLogPath) ? 0 : 1;
+                bool success = applicationSet.Build(coreRunPath, runners, applicationSetLogPath);
+
+                if (!options.NoCleanup)
+                {
+                    PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
+                }
+
+                return success ? 0 : 1;
             }
         }
     }    

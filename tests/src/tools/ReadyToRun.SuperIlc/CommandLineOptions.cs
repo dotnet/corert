@@ -31,6 +31,7 @@ namespace ReadyToRun.SuperIlc
                         NoJit(),
                         NoExe(),
                         NoEtw(),
+                        NoCleanup(),
                         ReferencePath()
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
@@ -46,6 +47,7 @@ namespace ReadyToRun.SuperIlc
                         NoJit(),
                         NoExe(),
                         NoEtw(),
+                        NoCleanup(),
                         ReferencePath()
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
@@ -75,6 +77,9 @@ namespace ReadyToRun.SuperIlc
 
             Option NoExe() =>
                 new Option(new[] { "--noexe" }, "Compilation-only mode (don't execute the built apps)", new Argument<bool>());
+
+            Option NoCleanup() =>
+                new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
         }
     }
 }
