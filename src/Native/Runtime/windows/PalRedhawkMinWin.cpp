@@ -1472,7 +1472,7 @@ uint32_t GCToOSInterface::GetCurrentProcessId()
 //  dstProcNo - processor number the thread should be migrated to
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::MigrateThread(uint16_t srcProcNo, uint16_t dstProcNo)
+bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t dstProcNo)
 {
     bool success = true;
 
