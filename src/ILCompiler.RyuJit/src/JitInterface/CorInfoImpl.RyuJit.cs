@@ -15,6 +15,7 @@ using ILCompiler.DependencyAnalysis;
 
 #if SUPPORT_JIT
 using MethodCodeNode = Internal.Runtime.JitSupport.JitMethodCodeNode;
+using RyuJitCompilation = ILCompiler.Compilation;
 #endif
 
 namespace Internal.JitInterface
