@@ -260,7 +260,11 @@ namespace Internal.JitInterface
                 }
             }
 
-            _methodCodeNode.SetCode(objectData);
+            _methodCodeNode.SetCode(objectData
+#if !SUPPORT_JIT && !READYTORUN
+                , isFoldable: (_compilation._compilationOptions & RyuJitCompilationOptions.MethodBodyFolding) != 0
+#endif
+                );
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
             _methodCodeNode.InitializeDebugEHClauseInfos(debugEHClauseInfos);

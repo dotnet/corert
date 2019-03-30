@@ -523,10 +523,12 @@ namespace ILCompiler.DependencyAnalysis
                 
                 _sb.Clear().Append(_nodeFactory.NameMangler.CompilationUnitPrefix).Append("_unwind").Append(i.ToStringInvariant());
 
-                ObjectNodeSection section = ObjectNodeSection.XDataSection;
-                SwitchSection(_nativeObjectWriter, section.Name);
-
                 byte[] blobSymbolName = _sb.Append(_currentNodeZeroTerminatedName).ToUtf8String().UnderlyingArray;
+
+                ObjectNodeSection section = ObjectNodeSection.XDataSection;
+                if (ShouldShareSymbol(node))
+                    section = GetSharedSection(section, _sb.ToString());
+                SwitchSection(_nativeObjectWriter, section.Name, GetCustomSectionAttributes(section), section.ComdatName);
 
                 EmitAlignment(4);
                 EmitSymbolDef(blobSymbolName);
@@ -919,6 +921,13 @@ namespace ILCompiler.DependencyAnalysis
 
         private bool ShouldShareSymbol(ObjectNode node)
         {
+            // Foldable sections are always COMDATs
+            ObjectNodeSection section = node.Section;
+            if (section == ObjectNodeSection.FoldableManagedCodeUnixContentSection ||
+                section == ObjectNodeSection.FoldableManagedCodeWindowsContentSection ||
+                section == ObjectNodeSection.FoldableReadOnlyDataSection)
+                return true;
+
             if (_nodeFactory.CompilationModuleGroup.IsSingleFileCompilation)
                 return false;
 

@@ -13,3 +13,4 @@ By default, the compiler tries to maximize compatibility with existing .NET code
 ## Options related to code generation
 * `<IlcOptimizationPreference>Speed</IlcOptimizationPreference>`: when generating optimized code, favor code execution speed.
 * `<IlcOptimizationPreference>Size</IlcOptimizationPreference>`: when generating optimized code, favor smaller code size.
+* `<IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>`: folds method bodies with identical bytes (method body deduplication). With this option, stack traces might sometimes look nonsensical (unexpected methods might show up in the stack trace because the expected method had the same bytes as the unexpected method). Note: the current implementation of deduplication doesn't attempt to make the folding unobservable to managed code: delegates pointing to two logically different methods that ended up being folded together will compare equal.

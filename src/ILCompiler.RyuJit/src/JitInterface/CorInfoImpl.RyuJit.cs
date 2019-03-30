@@ -31,7 +31,7 @@ namespace Internal.JitInterface
 
         private uint OffsetOfDelegateFirstTarget => (uint)(4 * PointerSize); // Delegate::m_functionPointer
 
-        private Compilation _compilation;
+        private RyuJitCompilation _compilation;
         private MethodCodeNode _methodCodeNode;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
@@ -40,7 +40,7 @@ namespace Internal.JitInterface
         private Dictionary<uint, string> _parameterIndexToNameMap;
         private TypeDesc[] _variableToTypeDesc;
 
-        public CorInfoImpl(Compilation compilation, JitConfigProvider jitConfig)
+        public CorInfoImpl(RyuJitCompilation compilation, JitConfigProvider jitConfig)
             : this(jitConfig)
         {
             _compilation = compilation;
