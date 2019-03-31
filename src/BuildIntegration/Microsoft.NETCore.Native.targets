@@ -213,6 +213,9 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:EventSource" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:FrameworkStrings" />
+
+      <!-- Comparers don't currently work with reflection disabled. https://github.com/dotnet/corert/pull/7208 -->
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:Comparers" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
