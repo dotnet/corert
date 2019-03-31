@@ -127,15 +127,15 @@ namespace ReadyToRun.SuperIlc
                             catch (Exception ex)
                             {
                                 Console.Error.WriteLine("Error copying {0} to {1}: {2}", runnerProcess.InputFileName, runnerProcess.OutputFileName, ex.Message);
-                                if (file == null)
-                                {
-                                    file = runnerProcess.InputFileName;
-                                    failedBuilders = runner.CompilerName;
-                                }
-                                else
-                                {
-                                    failedBuilders += "; " + runner.CompilerName;
-                                }
+                            }
+                            if (file == null)
+                            {
+                                file = runnerProcess.InputFileName;
+                                failedBuilders = runner.CompilerName;
+                            }
+                            else
+                            {
+                                failedBuilders += "; " + runner.CompilerName;
                             }
                         }
                     }
@@ -186,9 +186,65 @@ namespace ReadyToRun.SuperIlc
 
             ParallelRunner.Run(startIndex: 0, executionsToRun, _logWriter);
 
+            List<KeyValuePair<string, string>> failedExecutionsPerBuilder = new List<KeyValuePair<string, string>>();
+
+            int successfulExecuteCount = 0;
+
+            bool success = true;
+            foreach (Application app in _applications)
+            {
+                foreach (ProcessInfo[] execution in app.Executions)
+                {
+                    string file = null;
+                    string failedBuilders = null;
+                    foreach (CompilerRunner runner in _compilerRunners)
+                    {
+                        ProcessInfo runnerProcess = execution[(int)runner.Index];
+                        if (runnerProcess != null && !runnerProcess.Succeeded)
+                        {
+                            if (file == null)
+                            {
+                                file = runnerProcess.InputFileName;
+                                failedBuilders = runner.CompilerName;
+                            }
+                            else
+                            {
+                                failedBuilders += "; " + runner.CompilerName;
+                            }
+                        }
+                    }
+                    if (file != null)
+                    {
+                        failedExecutionsPerBuilder.Add(new KeyValuePair<string, string>(file, failedBuilders));
+                        success = false;
+                    }
+                    else
+                    {
+                        successfulExecuteCount++;
+                    }
+                }
+            }
+
+            _logWriter.WriteLine($"Successfully executed {successfulExecuteCount} / {successfulExecuteCount + failedExecutionsPerBuilder.Count} apps in {stopwatch.ElapsedMilliseconds} msecs.");
+
+            if (failedExecutionsPerBuilder.Count > 0)
+            {
+                int compilerRunnerCount = _compilerRunners.Count();
+                _logWriter.WriteLine($"Failed to execute {failedExecutionsPerBuilder.Count} apps:");
+                foreach (KeyValuePair<string, string> assemblyBuilders in failedExecutionsPerBuilder)
+                {
+                    string assemblySpec = assemblyBuilders.Key;
+                    if (compilerRunnerCount > 1)
+                    {
+                        assemblySpec += " (" + assemblyBuilders.Value + ")";
+                    }
+                    _logWriter.WriteLine(assemblySpec);
+                }
+            }
+
             _executionMilliseconds = stopwatch.ElapsedMilliseconds;
 
-            return executionsToRun.All(processInfo => processInfo.Succeeded);
+            return success;
         }
 
         public bool Build(string coreRunPath, IEnumerable<CompilerRunner> runners, string logPath)
@@ -269,38 +325,53 @@ namespace ReadyToRun.SuperIlc
             foreach (Application app in _applications)
             {
                 total++;
-                bool anyCompilationFailed = false;
-                bool anyExecutionFailed = false;
-                foreach (CompilerRunner runner in _compilerRunners)
+                bool[] compilationFailedPerRunner = new bool[(int)CompilerIndex.Count];
+                foreach (ProcessInfo[] compilation in app.Compilations)
                 {
-                    bool compilationFailed = app.Compilations.Any(comp => comp[(int)runner.Index] != null && !comp[(int)runner.Index].Succeeded);
-                    if (compilationFailed)
+                    bool anyCompilationFailed = false;
+                    foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        outcomes[(int)Outcome.ILC_FAIL, (int)runner.Index]++;
-                        anyCompilationFailed = true;
+                        bool compilationFailed = compilation[(int)runner.Index] != null && !compilation[(int)runner.Index].Succeeded;
+                        if (compilationFailed)
+                        {
+                            outcomes[(int)Outcome.ILC_FAIL, (int)runner.Index]++;
+                            anyCompilationFailed = true;
+                            compilationFailedPerRunner[(int)runner.Index] = true;
+                        }
                     }
-                    bool executionFailed = (!compilationFailed && !app.Executions.All(execs => execs[(int)runner.Index]?.Succeeded ?? true));
-                    if (executionFailed)
+                    if (anyCompilationFailed)
                     {
-                        outcomes[(int)Outcome.EXE_FAIL, (int)runner.Index]++;
-                        anyExecutionFailed = true;
-                    }
-                    if (!compilationFailed && !executionFailed)
-                    {
-                        outcomes[(int)Outcome.PASS, (int)runner.Index]++;
+                        outcomes[(int)Outcome.ILC_FAIL, (int)CompilerIndex.Count]++;
                     }
                 }
-                if (anyCompilationFailed)
+                foreach (ProcessInfo[] execution in app.Executions)
                 {
-                    outcomes[(int)Outcome.ILC_FAIL, (int)CompilerIndex.Count]++;
-                }
-                else if (anyExecutionFailed)
-                {
-                    outcomes[(int)Outcome.EXE_FAIL, (int)CompilerIndex.Count]++;
-                }
-                else
-                {
-                    outcomes[(int)Outcome.PASS, (int)CompilerIndex.Count]++;
+                    bool anyCompilationFailed = false;
+                    bool anyExecutionFailed = false;
+                    foreach (CompilerRunner runner in _compilerRunners)
+                    {
+                        ProcessInfo execProcess = execution[(int)runner.Index];
+                        bool compilationFailed = compilationFailedPerRunner[(int)runner.Index];
+                        anyCompilationFailed |= compilationFailed;
+                        bool executionFailed = !compilationFailed && (execProcess != null && !execProcess.Succeeded);
+                        if (executionFailed)
+                        {
+                            outcomes[(int)Outcome.EXE_FAIL, (int)runner.Index]++;
+                            anyExecutionFailed = true;
+                        }
+                        if (!compilationFailed && !executionFailed)
+                        {
+                            outcomes[(int)Outcome.PASS, (int)runner.Index]++;
+                        }
+                    }
+                    if (anyExecutionFailed)
+                    {
+                        outcomes[(int)Outcome.EXE_FAIL, (int)CompilerIndex.Count]++;
+                    }
+                    else if (!anyCompilationFailed)
+                    {
+                        outcomes[(int)Outcome.PASS, (int)CompilerIndex.Count]++;
+                    }
                 }
             }
 

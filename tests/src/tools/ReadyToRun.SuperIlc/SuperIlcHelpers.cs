@@ -18,6 +18,11 @@ namespace ReadyToRun.SuperIlc
         public bool NoCleanup { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
 
+        public IEnumerable<string> ReferencePaths()
+        {
+            return ReferencePath?.Select(x => x.ToString()) ?? Enumerable.Empty<string>();
+        }
+
         public IEnumerable<CompilerRunner> CompilerRunners()
         {
             List<CompilerRunner> runners = new List<CompilerRunner>();
