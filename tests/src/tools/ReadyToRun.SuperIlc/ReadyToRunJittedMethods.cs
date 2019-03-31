@@ -5,6 +5,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using Microsoft.Diagnostics.Tracing.Parsers;
@@ -15,8 +16,15 @@ using Microsoft.Diagnostics.Tracing.Session;
 /// Each Method that gets Jitted from a ready-to-run assembly is interesting to look at.
 /// For a fully r2r'd assembly, there should be no such methods, so that would be a test failure.
 /// </summary>
-public class ReadyToRunJittedMethods
+public class ReadyToRunJittedMethods : IDisposable
 {
+    /// <summary>
+    /// When collecting ETW traces, we need to keep all processes alive before the trace event session
+    /// is shut down and all events have been processes because otherwise the OS may recycle the PIDs
+    /// and prevent us from back-translating the events to the actual processes being executed.
+    /// </summary>
+    private List<Process> _etwProcesses;
+
     private Dictionary<int, ProcessInfo> _pidToProcess;
     private HashSet<string> _testModuleNames;
     private HashSet<string> _testFolderNames;
@@ -26,6 +34,7 @@ public class ReadyToRunJittedMethods
 
     public ReadyToRunJittedMethods(TraceEventSession session, IEnumerable<ProcessInfo> processes)
     {
+        _etwProcesses = new List<Process>();
         _pidToProcess = new Dictionary<int, ProcessInfo>();
         _testModuleNames = new HashSet<string>();
         _testFolderNames = new HashSet<string>();
@@ -63,20 +72,29 @@ public class ReadyToRunJittedMethods
                 {
                     processInfo.JittedMethods = new Dictionary<string, HashSet<string>>();
                 }
-                HashSet<string> modulesForMethod;
-                if (!processInfo.JittedMethods.TryGetValue(methodName, out modulesForMethod))
+                HashSet<string> methodsForModule;
+                if (!processInfo.JittedMethods.TryGetValue(moduleName, out methodsForModule))
                 {
-                    modulesForMethod = new HashSet<string>();
-                    processInfo.JittedMethods.Add(methodName, modulesForMethod);
+                    methodsForModule = new HashSet<string>();
+                    processInfo.JittedMethods.Add(moduleName, methodsForModule);
                 }
-                modulesForMethod.Add(moduleName);
+                methodsForModule.Add(methodName);
             }
         };
     }
 
-    public void SetProcessId(ProcessInfo processInfo, int pid)
+    public void Dispose()
     {
-        _pidToProcess[pid] = processInfo;
+        foreach (Process process in _etwProcesses)
+        {
+            process.Dispose();
+        }
+    }
+
+    public void AddProcessMapping(ProcessInfo processInfo, Process process)
+    {
+        _pidToProcess[process.Id] = processInfo;
+        _etwProcesses.Add(process);
     }
 
     private bool ShouldMonitorModule(ModuleLoadUnloadTraceData data)

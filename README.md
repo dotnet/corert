@@ -8,7 +8,11 @@ If you would like to give CoreRT a try, we publish daily snapshots of CoreRT to 
 ## Platform Support
 
 This is a work in progress. The current state of platform support:
-- Windows, MacOS and Linux x64 w/ RyuJIT codegen: Simple apps. Check our [ASP.NET Core](samples/WebApi/) and [MonoGame](samples/MonoGame/) samples.
+- Windows, MacOS and Linux x64 w/ RyuJIT codegen is able to compile many complex apps.
+   - [ASP.NET Core](samples/WebApi/) sample
+   - [MonoGame](samples/MonoGame/) sample
+   - [Avalonia](https://www.youtube.com/watch?v=iaC67CUmEXs) demo
+   - Unsupported features: [Dynamic loading](https://github.com/dotnet/corert/issues/6949) (e.g. `Assembly.LoadFile`), [dynamic code generation](https://github.com/dotnet/corert/issues/5011) (e.g. `System.Reflection.Emit`), [Windows-specific interop](https://github.com/dotnet/corert/issues/4219) (e.g. COM, WinRT)
 - Linux ARM w/ RyuJIT codegen: ElmSharp Hello Tizen application ([detailed status](https://github.com/dotnet/corert/issues/4856))
 - CppCodeGen (targets all platforms that support C++): Simple C# programs. The big missing features are [garbage collection](https://github.com/dotnet/corert/issues/2033) and [exception handling](https://github.com/dotnet/corert/issues/910).
 - WebAssembly: Early prototype that compiles and runs very trivial programs only. Many features are [not yet implemented](https://github.com/dotnet/corert/issues?q=is%3Aissue+is%3Aopen+label%3Aarch-wasm).

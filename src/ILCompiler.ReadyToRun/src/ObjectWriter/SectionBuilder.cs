@@ -976,6 +976,8 @@ namespace ILCompiler.PEWriter
                 corHeader,
                 r2rBuilder.CorHeaderFileOffset,
                 outputStream);
+
+            r2rBuilder.RelocateMetadataBlob(outputStream);
         }
     }
 }

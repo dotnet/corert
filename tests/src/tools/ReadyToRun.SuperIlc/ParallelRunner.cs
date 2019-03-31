@@ -114,52 +114,56 @@ public sealed class ParallelRunner
 
         if (collectEtwTraces)
         {
-            using (TraceEventSession traceEventSession = new TraceEventSession("ReadyToRunTestSession"))
-            {
-                traceEventSession.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
-                ReadyToRunJittedMethods jittedMethods = new ReadyToRunJittedMethods(traceEventSession, processesToRun);
-                Task.Run(() =>
-                {
-                    BuildProjects(processesToRun, jittedMethods, degreeOfParallelism);
-                    traceEventSession.Stop();
-                });
-                traceEventSession.Source.Process();
-            }
+            // In ETW collection mode, separate the processes to run into smaller batches as we need to keep
+            // the process objects alive for the entire duration of the parallel execution, otherwise PID's
+            // may get recycled by the OS and we can no longer back-translate PIDs in events to the logical
+            // process executions.
+            const int EtwCollectionBatching = 1000;
 
-            // Append jitted method info to the logs
-            foreach (ProcessInfo processInfo in processesToRun)
+            for (int startIndex = 0; startIndex < processCount; startIndex += EtwCollectionBatching)
             {
-                if (processInfo.CollectJittedMethods)
-                {
-                    using (StreamWriter logWriter = new StreamWriter(processInfo.LogPath, append: true))
-                    {
-                        logWriter.WriteLine($"Jitted methods ({processInfo.JittedMethods.Count} total):");
-                        foreach (KeyValuePair<string, HashSet<string>> jittedMethodAndModules in processInfo.JittedMethods)
-                        {
-                            logWriter.Write(jittedMethodAndModules.Key);
-                            logWriter.Write(": ");
-                            bool first = true;
-                            foreach (string module in jittedMethodAndModules.Value)
-                            {
-                                if (first)
-                                {
-                                    first = false;
-                                }
-                                else
-                                {
-                                    logWriter.Write(", ");
-                                }
-                                logWriter.Write(module);
-                            }
-                            logWriter.WriteLine();
-                        }
-                    }
-                }
+                BuildEtwProcesses(processesToRun.Skip(startIndex).Take(EtwCollectionBatching), degreeOfParallelism);
             }
         }
         else
         {
             BuildProjects(processesToRun, null, degreeOfParallelism);
+        }
+    }
+
+    private static void BuildEtwProcesses(IEnumerable<ProcessInfo> processesToRun, int degreeOfParallelism)
+    {
+        using (TraceEventSession traceEventSession = new TraceEventSession("ReadyToRunTestSession"))
+        {
+            traceEventSession.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
+            using (ReadyToRunJittedMethods jittedMethods = new ReadyToRunJittedMethods(traceEventSession, processesToRun))
+            {
+                Task.Run(() =>
+                {
+                    BuildProjects(processesToRun, jittedMethods, degreeOfParallelism);
+                    traceEventSession.Stop();
+                });
+            }
+            traceEventSession.Source.Process();
+        }
+
+        // Append jitted method info to the logs
+        foreach (ProcessInfo processInfo in processesToRun)
+        {
+            if (processInfo.CollectJittedMethods)
+            {
+                using (StreamWriter logWriter = new StreamWriter(processInfo.LogPath, append: true))
+                {
+                    logWriter.WriteLine($"Jitted methods ({processInfo.JittedMethods.Sum(moduleMethodsKvp => moduleMethodsKvp.Value.Count)} total):");
+                    foreach (KeyValuePair<string, HashSet<string>> jittedMethodsPerModule in processInfo.JittedMethods)
+                    {
+                        foreach (string method in jittedMethodsPerModule.Value)
+                        {
+                            logWriter.WriteLine(jittedMethodsPerModule.Key + " -> " + method);
+                        }
+                    }
+                }
+            }
         }
     }
 

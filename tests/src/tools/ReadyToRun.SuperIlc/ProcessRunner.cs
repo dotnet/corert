@@ -19,13 +19,24 @@ public class ProcessInfo
     /// <summary>
     /// 10 minutes should be plenty for a CPAOT / Crossgen compilation.
     /// </summary>
-    public const int DefaultTimeout = 600 * 1000;
+    public const int DefaultIlcTimeout = 600 * 1000;
+
+    /// <summary>
+    /// Test execution timeout.
+    /// </summary>
+    public const int DefaultExeTimeout = 200 * 1000;
+
+    /// <summary>
+    /// Test execution timeout under GC stress mode.
+    /// </summary>
+    public const int DefaultExeTimeoutGCStress = 2000 * 1000;
 
     public string ProcessPath;
     public string Arguments;
+    public Dictionary<string, string> EnvironmentOverrides = new Dictionary<string, string>();
     public bool UseShellExecute;
     public string LogPath;
-    public int TimeoutMilliseconds = DefaultTimeout;
+    public int TimeoutMilliseconds;
     public int ExpectedExitCode;
     public string InputFileName;
     public string OutputFileName;
@@ -107,6 +118,11 @@ public class ProcessRunner : IDisposable
             RedirectStandardError = true,
         };
 
+        foreach (KeyValuePair<string, string> environmentOverride in _processInfo.EnvironmentOverrides)
+        {
+            psi.EnvironmentVariables[environmentOverride.Key] = environmentOverride.Value;
+        }
+
         _process = new Process();
         _process.StartInfo = psi;
         _process.EnableRaisingEvents = true;
@@ -117,7 +133,7 @@ public class ProcessRunner : IDisposable
         _process.Start();
         if (_processInfo.CollectJittedMethods)
         {
-            _jittedMethods.SetProcessId(_processInfo, _process.Id);
+            _jittedMethods.AddProcessMapping(_processInfo, _process);
         }
 
         _process.OutputDataReceived += new DataReceivedEventHandler(StandardOutputEventHandler);
@@ -156,7 +172,11 @@ public class ProcessRunner : IDisposable
             _cancellationTokenSource = null;
         }
 
-        if (_process != null)
+        // In ETW collection mode, the disposal is carried out in ReadyToRunJittedMethods
+        // as we need to keep the process alive for the entire lifetime of the trace event
+        // session, otherwise PID's may get recycled and we couldn't reliably back-translate
+        // them into the logical process executions.
+        if (_process != null && !_processInfo.CollectJittedMethods)
         {
             _process.Dispose();
             _process = null;

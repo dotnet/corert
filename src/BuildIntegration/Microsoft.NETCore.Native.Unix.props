@@ -60,12 +60,16 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <ItemGroup>
+      <!-- Workaround for https://github.com/dotnet/corert/issues/7000 -->
+      <IlcArg Include="--removefeature:CurlHandler" />
+    </ItemGroup>
+
+    <ItemGroup>
       <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native$(NativeLibraryExtension)" />
       <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libSystem.Private.TypeLoader.Native$(NativeLibraryExtension)" />
       <NativeLibrary Include="$(IlcPath)/framework/System.Native$(NativeLibraryExtension)" />
       <NativeLibrary Include="$(IlcPath)/framework/System.Globalization.Native$(NativeLibraryExtension)" />
       <NativeLibrary Include="$(IlcPath)/framework/System.IO.Compression.Native$(NativeLibraryExtension)" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Net.Http.Native$(NativeLibraryExtension)" />
       <NativeLibrary Include="$(IlcPath)/framework/System.Net.Security.Native$(NativeLibraryExtension)" />
       <NativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.Apple$(NativeLibraryExtension)" Condition="'$(TargetOS)' == 'OSX'"/>
       <NativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.OpenSsl$(NativeLibraryExtension)" Condition="'$(TargetOS)' != 'OSX'"/>
@@ -86,7 +90,6 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-lstdc++" />
       <LinkerArg Include="-ldl" />
       <LinkerArg Include="-lm" />
-      <LinkerArg Include="-lcurl" />
       <LinkerArg Include="-lz" />
       <LinkerArg Include="-lgssapi_krb5" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />

@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if SUPPORT_JIT
-extern alias System_Private_CoreLib;
-using TextWriter = System_Private_CoreLib::System.IO.TextWriter;
-#endif
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -265,7 +260,11 @@ namespace Internal.JitInterface
                 }
             }
 
-            _methodCodeNode.SetCode(objectData);
+            _methodCodeNode.SetCode(objectData
+#if !SUPPORT_JIT && !READYTORUN
+                , isFoldable: (_compilation._compilationOptions & RyuJitCompilationOptions.MethodBodyFolding) != 0
+#endif
+                );
 
             _methodCodeNode.InitializeFrameInfos(_frameInfos);
             _methodCodeNode.InitializeDebugEHClauseInfos(debugEHClauseInfos);

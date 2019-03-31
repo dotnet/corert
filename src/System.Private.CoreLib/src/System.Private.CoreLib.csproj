@@ -89,6 +89,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
+    <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.ProjectN.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
@@ -346,9 +347,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetModuleFileName.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.QueryPerformance.cs">
-      <Link>Interop\Windows\Kernel32\Interop.QueryPerformance.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetCurrentThreadId.cs">
       <Link>Interop\Windows\Mincore\Interop.GetCurrentThreadId.cs</Link>

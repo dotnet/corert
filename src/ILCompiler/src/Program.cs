@@ -56,6 +56,7 @@ namespace ILCompiler
         private bool _disableReflection;
         private bool _completeTypesMetadata;
         private bool _scanReflection;
+        private bool _methodBodyFolding;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -183,6 +184,7 @@ namespace ILCompiler
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
                 syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
+                syntax.DefineOption("methodbodyfolding", ref _methodBodyFolding, "Fold identical method bodies");
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
@@ -495,6 +497,10 @@ namespace ILCompiler
                     removedFeatures |= RemovedFeature.FrameworkResources;
                 else if (feature == "Globalization")
                     removedFeatures |= RemovedFeature.Globalization;
+                else if (feature == "Comparers")
+                    removedFeatures |= RemovedFeature.Comparers;
+                else if (feature == "CurlHandler")
+                    removedFeatures |= RemovedFeature.CurlHandler;
             }
 
             ILProvider ilProvider = _isReadyToRunCodeGen ? (ILProvider)new ReadyToRunILProvider() : new CoreRTILProvider();
@@ -588,6 +594,7 @@ namespace ILCompiler
 
             builder
                 .UseBackendOptions(_codegenOptions)
+                .UseMethodBodyFolding(_methodBodyFolding)
                 .UseMetadataManager(metadataManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)

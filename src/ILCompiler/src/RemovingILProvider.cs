@@ -23,7 +23,8 @@ namespace ILCompiler
 
         public override MethodIL GetMethodIL(MethodDesc method)
         {
-            switch (GetAction(method))
+            RemoveAction action = GetAction(method);
+            switch (action)
             {
                 case RemoveAction.Nothing:
                     return _baseILProvider.GetMethodIL(method);
@@ -47,6 +48,26 @@ namespace ILCompiler
 
                 case RemoveAction.ConvertToThrow:
                     return new ILStubMethodIL(method, new byte[] { (byte)ILOpcode.ldnull, (byte)ILOpcode.throw_ }, Array.Empty<LocalVariableDefinition>(), null);
+
+                case RemoveAction.ConvertToGetKnownObjectComparer:
+                case RemoveAction.ConvertToGetKnownObjectEqualityComparer:
+                    {
+                        TypeSystemContext context = method.Context;
+                        MetadataType comparerType =
+                            action == RemoveAction.ConvertToGetKnownObjectComparer ?
+                            context.SystemModule.GetType("System.Collections.Generic", "ObjectComparer`1") :
+                            context.SystemModule.GetType("System.Collections.Generic", "ObjectEqualityComparer`1");
+
+                        MethodDesc methodDef = method.GetTypicalMethodDefinition();
+
+                        ILEmitter emitter = new ILEmitter();
+                        ILCodeStream codeStream = emitter.NewCodeStream();
+                        codeStream.Emit(ILOpcode.newobj, emitter.NewToken(comparerType.MakeInstantiatedType(context.GetSignatureVariable(0, method: false)).GetDefaultConstructor()));
+                        codeStream.Emit(ILOpcode.dup);
+                        codeStream.Emit(ILOpcode.stsfld, emitter.NewToken(methodDef.OwningType.InstantiateAsOpen().GetField("_default")));
+                        codeStream.Emit(ILOpcode.ret);
+                        return new InstantiatedMethodIL(method, emitter.Link(methodDef));
+                    }
 
                 default:
                     throw new NotImplementedException();
@@ -131,6 +152,31 @@ namespace ILCompiler
                 }
             }
 
+            if ((_removedFeature & RemovedFeature.Comparers) != 0)
+            {
+                if (owningType.GetTypeDefinition() is Internal.TypeSystem.Ecma.EcmaType mdType
+                    && mdType.Module == method.Context.SystemModule
+                    && method.Name == "Create"
+                    && mdType.Namespace == "System.Collections.Generic")
+                {
+                    if (mdType.Name == "EqualityComparer`1")
+                        return RemoveAction.ConvertToGetKnownObjectEqualityComparer;
+                    else if (mdType.Name == "Comparer`1")
+                        return RemoveAction.ConvertToGetKnownObjectComparer;
+                }
+            }
+
+            if ((_removedFeature & RemovedFeature.CurlHandler) != 0)
+            {
+                if (owningType is Internal.TypeSystem.Ecma.EcmaType mdType
+                    && mdType.Module.Assembly.GetName().Name == "System.Net.Http"
+                    && mdType.Name == "CurlHandler"
+                    && mdType.Namespace == "System.Net.Http")
+                {
+                    return RemoveAction.ConvertToThrow;
+                }
+            }
+
             return RemoveAction.Nothing;
         }
 
@@ -170,6 +216,8 @@ namespace ILCompiler
 
             ConvertToTrueStub,
             ConvertToGetResourceStringStub,
+            ConvertToGetKnownObjectComparer,
+            ConvertToGetKnownObjectEqualityComparer,
         }
     }
 
@@ -179,5 +227,7 @@ namespace ILCompiler
         Etw = 0x1,
         FrameworkResources = 0x2,
         Globalization = 0x4,
+        Comparers = 0x8,
+        CurlHandler = 0x10,
     }
 }
