@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -80,58 +81,89 @@ static class PathExtensions
         return false;
     }
 
+    public static string FindFile(this string fileName, IEnumerable<string> paths)
+    {
+        foreach (string path in paths)
+        {
+            string fileOnPath = Path.Combine(path, fileName);
+            if (File.Exists(fileOnPath))
+            {
+                return fileOnPath;
+            }
+        }
+        return null;
+    }
+
     /// <summary>
-    /// Asynchronous task for subtree deletion.
+    /// Parallel deletion of multiple disjunct subtrees.
     /// </summary>
-    /// <param name="path">Directory to delete</param>
+    /// <param name="path">List of directories to delete</param>
     /// <returns>Task returning true on success, false on failure</returns>
-    public static async Task<bool> DeleteSubtree(this string path)
+    public static bool DeleteSubtrees(this string[] paths)
+    {
+        return DeleteSubtreesAsync(paths).Result;
+    }
+
+    private static async Task<bool> DeleteSubtreesAsync(this string[] paths)
     {
         bool succeeded = true;
 
-        try
+        var tasks = new List<Task<bool>>();
+        foreach (string path in paths)
         {
-            if (!Directory.Exists(path))
+            try
             {
-                // Non-existent folders are harmless w.r.t. deletion
-                Console.WriteLine("Skipping non-existent folder: '{0}'", path);
-                return succeeded;
+                if (!Directory.Exists(path))
+                {
+                    // Non-existent folders are harmless w.r.t. deletion
+                    Console.WriteLine("Skipping non-existent folder: '{0}'", path);
+                }
+                else
+                {
+                    Console.WriteLine("Deleting '{0}'", path);
+                    tasks.Add(path.DeleteSubtree());
+                }
             }
-            Console.WriteLine("Deleting '{0}'", path);
-            var tasks = new List<Task<bool>>();
-            foreach (string subfolder in Directory.EnumerateDirectories(path))
+            catch (Exception ex)
             {
-                tasks.Add(Task<bool>.Run(() => subfolder.DeleteSubtree()));
-            }
-            string[] files = Directory.GetFiles(path);
-            foreach (string file in files)
-            {
-                tasks.Add(Task<bool>.Run(() => file.DeleteFile()));
-            }
-
-            await Task<bool>.WhenAll(tasks);
-
-            foreach (var task in tasks)
-            {
-                if (!task.Result)
-                    succeeded = false;
+                Console.Error.WriteLine("Error deleting '{0}': {1}", path, ex.Message);
+                succeeded = false;
             }
         }
-        catch (Exception ex)
+
+        await Task<bool>.WhenAll(tasks);
+
+        foreach (var task in tasks)
         {
-            Console.Error.WriteLine("Error deleting '{0}': {1}", path, ex.Message);
-            succeeded = false;
+            if (!task.Result)
+            {
+                succeeded = false;
+                break;
+            }
         }
+        return succeeded;
+    }
+
+    private static async Task<bool> DeleteSubtree(this string folder)
+    {
+        Task<bool>[] subtasks = new []
+        {
+            DeleteSubtreesAsync(Directory.GetDirectories(folder)),
+            DeleteFiles(Directory.GetFiles(folder))
+        };
+
+        await Task<bool>.WhenAll(subtasks);
+        bool succeeded = subtasks.All(subtask => subtask.Result);
 
         if (succeeded)
         {
             Stopwatch folderDeletion = new Stopwatch();
             folderDeletion.Start();
-            while (Directory.Exists(path))
+            while (Directory.Exists(folder))
             {
                 try
                 {
-                    Directory.Delete(path, recursive: false);
+                    Directory.Delete(folder, recursive: false);
                 }
                 catch (DirectoryNotFoundException)
                 {
@@ -139,17 +171,17 @@ static class PathExtensions
                 }
                 catch (Exception)
                 {
-                    Console.WriteLine("Folder deletion failure, maybe transient ({0} msecs): '{1}'", folderDeletion.ElapsedMilliseconds, path);
+                    Console.WriteLine("Folder deletion failure, maybe transient ({0} msecs): '{1}'", folderDeletion.ElapsedMilliseconds, folder);
                 }
 
-                if (!Directory.Exists(path))
+                if (!Directory.Exists(folder))
                 {
                     break;
                 }
 
                 if (folderDeletion.ElapsedMilliseconds > DeletionTimeoutMilliseconds)
                 {
-                    Console.Error.WriteLine("Timed out trying to delete directory '{0}'", path);
+                    Console.Error.WriteLine("Timed out trying to delete directory '{0}'", folder);
                     succeeded = false;
                     break;
                 }
@@ -159,6 +191,18 @@ static class PathExtensions
         }
 
         return succeeded;
+    }
+
+    private static async Task<bool> DeleteFiles(string[] files)
+    {
+        Task<bool>[] tasks = new Task<bool>[files.Length];
+        for (int i = 0; i < files.Length; i++)
+        {
+            int temp = i;
+            tasks[i] = Task<bool>.Run(() => files[temp].DeleteFile());
+        }
+        await Task<bool>.WhenAll(tasks);
+        return tasks.All(task => task.Result);
     }
 
     private static bool DeleteFile(this string file)
@@ -171,6 +215,32 @@ static class PathExtensions
         catch (Exception ex)
         {
             Console.Error.WriteLine($"{file}: {ex.Message}");
+            return false;
+        }
+    }
+
+    public static string[] LocateOutputFolders(string folder, bool recursive)
+    {
+        return Directory.GetDirectories(folder, "*.out", recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+    }
+
+    public static bool DeleteOutputFolders(string folder, bool recursive)
+    {
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        Console.WriteLine("Locating output {0} {1}", (recursive ? "subtree" : "folder"), folder);
+        string[] outputFolders = LocateOutputFolders(folder, recursive);
+        Console.WriteLine("Deleting {0} output folders", outputFolders.Length);
+
+        if (DeleteSubtrees(outputFolders))
+        {
+            Console.WriteLine("Successfully deleted {0} output folders in {1} msecs", outputFolders.Length, stopwatch.ElapsedMilliseconds);
+            return true;
+        }
+        else
+        {
+            Console.Error.WriteLine("Failed deleting {0} output folders in {1} msecs", outputFolders.Length, stopwatch.ElapsedMilliseconds);
             return false;
         }
     }

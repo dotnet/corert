@@ -30,14 +30,14 @@ public class ReadyToRunJittedMethods : IDisposable
     private HashSet<string> _testFolderNames;
     private List<long> _testModuleIds = new List<long>();
     private Dictionary<long, string> _testModuleIdToName = new Dictionary<long, string>();
-    private Dictionary<string, HashSet<string>> _methodsJitted = new Dictionary<string, HashSet<string>>();
+    private Dictionary<string, HashSet<string>> _methodsJitted = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
     public ReadyToRunJittedMethods(TraceEventSession session, IEnumerable<ProcessInfo> processes)
     {
         _etwProcesses = new List<Process>();
         _pidToProcess = new Dictionary<int, ProcessInfo>();
-        _testModuleNames = new HashSet<string>();
-        _testFolderNames = new HashSet<string>();
+        _testModuleNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        _testFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (ProcessInfo process in processes)
         {
@@ -70,7 +70,7 @@ public class ReadyToRunJittedMethods : IDisposable
                 string moduleName = _testModuleIdToName[data.ModuleID];
                 if (processInfo.JittedMethods == null)
                 {
-                    processInfo.JittedMethods = new Dictionary<string, HashSet<string>>();
+                    processInfo.JittedMethods = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
                 }
                 HashSet<string> methodsForModule;
                 if (!processInfo.JittedMethods.TryGetValue(moduleName, out methodsForModule))
@@ -102,10 +102,10 @@ public class ReadyToRunJittedMethods : IDisposable
         if (!_pidToProcess.ContainsKey(data.ProcessID))
             return false;
 
-        if (File.Exists(data.ModuleILPath) && _testFolderNames.Contains(Path.GetDirectoryName(data.ModuleILPath).ToAbsoluteDirectoryPath().ToLower()))
+        if (File.Exists(data.ModuleILPath) && _testFolderNames.Contains(Path.GetDirectoryName(data.ModuleILPath).ToAbsoluteDirectoryPath()))
             return true;
 
-        if (_testModuleNames.Contains(data.ModuleILPath.ToLower()) || _testModuleNames.Contains(data.ModuleNativePath.ToLower()))
+        if (_testModuleNames.Contains(data.ModuleILPath) || _testModuleNames.Contains(data.ModuleNativePath))
             return true;
 
         return false;

@@ -13,14 +13,7 @@ namespace ReadyToRun.SuperIlc
     {
         static async Task<int> Main(string[] args)
         {
-            var parser = CommandLineOptions.Build()
-                .UseHelp()
-                .UseParseDirective()
-                .UseSuggestDirective()
-                .UseParseErrorReporting()
-                .UseExceptionHandler()
-                .UseTypoCorrections()
-                .Build();
+            var parser = CommandLineOptions.Build().UseDefaults().Build();
 
             return await parser.InvokeAsync(args);
         }

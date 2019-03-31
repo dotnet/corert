@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 /// <summary>
 /// Compiles assemblies using the Cross-Platform AOT compiler
@@ -14,11 +15,12 @@ class CpaotRunner : CompilerRunner
 
     protected override string CompilerFileName => "ilc.exe";
 
-    public CpaotRunner(string compilerFolder, string inputFolder, string outputFolder, IReadOnlyList<string> referenceFolders) : base(compilerFolder, inputFolder, outputFolder, referenceFolders) {}
+    public CpaotRunner(string compilerFolder, IEnumerable<string> referenceFolders) 
+        : base(compilerFolder, referenceFolders) {}
 
-    public override ProcessInfo ExecutionProcess(string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath)
+    public override ProcessInfo ExecutionProcess(string outputRoot, string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath, bool noEtw)
     {
-        ProcessInfo processInfo = base.ExecutionProcess(appPath, modules, folders, coreRunPath);
+        ProcessInfo processInfo = base.ExecutionProcess(outputRoot, appPath, modules, folders, coreRunPath, noEtw);
         processInfo.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "1";
         return processInfo;
     }
@@ -40,7 +42,7 @@ class CpaotRunner : CompilerRunner
         yield return "--targetarch=x64";
         yield return "--stacktracedata";
 
-        foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(_inputPath))
+        foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(Path.GetDirectoryName(assemblyFileName)))
         {
             yield return $"-r:{reference}";
         }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 /// <summary>
@@ -16,11 +17,12 @@ class CrossgenRunner : CompilerRunner
 
     protected override string CompilerFileName => "crossgen.exe";
 
-    public CrossgenRunner(string compilerFolder, string inputFolder, string outputFolder, IReadOnlyList<string> referenceFolders) : base(compilerFolder, inputFolder, outputFolder, referenceFolders) {}
+    public CrossgenRunner(string compilerFolder, IEnumerable<string> referenceFolders) 
+        : base(compilerFolder, referenceFolders) {}
 
-    public override ProcessInfo ExecutionProcess(string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath)
+    public override ProcessInfo ExecutionProcess(string outputRoot, string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath, bool noEtw)
     {
-        ProcessInfo processInfo = base.ExecutionProcess(appPath, modules, folders, coreRunPath);
+        ProcessInfo processInfo = base.ExecutionProcess(outputRoot, appPath, modules, folders, coreRunPath, noEtw);
         processInfo.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "1";
         return processInfo;
     }
@@ -38,7 +40,7 @@ class CrossgenRunner : CompilerRunner
         yield return "/platform_assemblies_paths";
         
         StringBuilder sb = new StringBuilder();
-        sb.Append(_inputPath + (_referenceFolders.Count > 0 ? ";" : ""));
+        sb.Append(Path.GetDirectoryName(assemblyFileName) + (_referenceFolders.Any() ? ";" : ""));
         sb.AppendJoin(';', _referenceFolders);
         yield return sb.ToString();
     }
