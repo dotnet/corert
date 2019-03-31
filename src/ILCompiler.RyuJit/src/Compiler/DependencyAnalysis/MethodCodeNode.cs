@@ -20,6 +20,7 @@ namespace ILCompiler.DependencyAnalysis
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
+        private bool _isFoldable;
 
         public MethodCodeNode(MethodDesc method)
         {
@@ -28,10 +29,11 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
         }
 
-        public void SetCode(ObjectData data)
+        public void SetCode(ObjectData data, bool isFoldable)
         {
             Debug.Assert(_methodCode == null);
             _methodCode = data;
+            _isFoldable = isFoldable;
         }
 
         public MethodDesc Method =>  _method;
@@ -42,7 +44,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return _method.Context.Target.IsWindows ? ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
+                return _method.Context.Target.IsWindows ?
+                    (_isFoldable ? ObjectNodeSection.FoldableManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeWindowsContentSection) :
+                    (_isFoldable ? ObjectNodeSection.FoldableManagedCodeUnixContentSection : ObjectNodeSection.ManagedCodeUnixContentSection);
             }
         }
         

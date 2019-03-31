@@ -30,6 +30,7 @@ namespace ILCompiler
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
         protected PInvokeILEmitterConfiguration _pinvokePolicy = new DirectPInvokePolicy();
+        protected bool _methodBodyFolding;
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
@@ -102,6 +103,12 @@ namespace ILCompiler
         public CompilationBuilder UsePInvokePolicy(PInvokeILEmitterConfiguration policy)
         {
             _pinvokePolicy = policy;
+            return this;
+        }
+
+        public CompilationBuilder UseMethodBodyFolding(bool enable)
+        {
+            _methodBodyFolding = enable;
             return this;
         }
 
