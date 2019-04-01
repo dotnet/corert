@@ -32,7 +32,7 @@ namespace ReadyToRun.SuperIlc
                 return 1;
             }
 
-            List<string> referencePaths = options.ReferencePath?.Select(x => x.ToString())?.ToList();
+            IEnumerable<string> referencePaths = options.ReferencePaths();
             string coreRunPath = SuperIlcHelpers.FindCoreRun(referencePaths);
 
             IEnumerable<CompilerRunner> runners = options.CompilerRunners();

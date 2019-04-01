@@ -31,7 +31,7 @@ namespace ReadyToRun.SuperIlc
                 return 1;
             }
 
-            List<string> referencePaths = options.ReferencePath?.Select(x => x.ToString())?.ToList();
+            IEnumerable<string> referencePaths = options.ReferencePaths();
             string coreRunPath = SuperIlcHelpers.FindCoreRun(referencePaths);
 
             IEnumerable<CompilerRunner> runners = options.CompilerRunners();
@@ -44,7 +44,7 @@ namespace ReadyToRun.SuperIlc
                 Console.Error.WriteLine($"No managed app found in {options.InputDirectory.FullName}");
             }
 
-            string timeStamp = DateTime.Now.ToString("MMDD-hhmm");
+            string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
             string applicationSetLogPath = Path.Combine(options.InputDirectory.ToString(), "directory-" + timeStamp + ".log");
 
             using (ApplicationSet applicationSet = new ApplicationSet(new Application[] { application }, runners, coreRunPath, applicationSetLogPath))
