@@ -48,6 +48,9 @@ namespace Internal.Runtime.Augments
                 values[i] = rawUnboxedValue;
             }
 
+            // Need to sort the `names` and `rawValues` arrays according to the `values` array
+            ulong[] valuesCopy = (ulong[])values.Clone();
+            Array.Sort(keys: valuesCopy, items: rawValues, comparer: Comparer<ulong>.Default);
             Array.Sort(keys: values, items: names, comparer: Comparer<ulong>.Default);
 
             Names = names;
