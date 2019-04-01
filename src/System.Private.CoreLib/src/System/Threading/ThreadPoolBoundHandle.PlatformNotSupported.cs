@@ -14,6 +14,10 @@ namespace System.Threading
     {
         public SafeHandle Handle => null;
 
+        private ThreadPoolBoundHandle()
+        {
+        }
+
         public static ThreadPoolBoundHandle BindHandle(SafeHandle handle)
         {
             if (handle == null)
