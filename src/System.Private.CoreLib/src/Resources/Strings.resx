@@ -1392,6 +1392,9 @@
   <data name="NotSupported_WaitAllSTAThread" xml:space="preserve">
     <value>WaitAll for multiple handles on a STA thread is not supported.</value>
   </data>
+  <data name="NotSupported_Overlapped" xml:space="preserve">
+    <value>Overlapped I/O is not supported.</value>
+  </data>
   <data name="ObjectDisposed_Generic" xml:space="preserve">
     <value>Cannot access a disposed object.</value>
   </data>
