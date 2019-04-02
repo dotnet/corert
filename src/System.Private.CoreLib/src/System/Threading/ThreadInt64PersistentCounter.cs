@@ -49,9 +49,6 @@ namespace System.Threading
         {
             get
             {
-                // Make sure up-to-date thread-local node state is visible to this thread
-                Interlocked.MemoryBarrierProcessWide();
-
                 long count = 0;
                 try
                 {
@@ -75,6 +72,17 @@ namespace System.Threading
                     // Some allocation occurs above and it may be a bit awkward to get an OOM from this property getter
                     return count;
                 }
+            }
+        }
+
+        public long RecentCount
+        {
+            get
+            {
+                // Make sure up-to-date thread-local node state is visible to this thread
+                Interlocked.MemoryBarrierProcessWide();
+
+                return Count;
             }
         }
 

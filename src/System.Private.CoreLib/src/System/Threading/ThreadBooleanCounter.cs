@@ -36,9 +36,6 @@ namespace System.Threading
         {
             get
             {
-                // Make sure up-to-date thread-local node state is visible to this thread
-                Interlocked.MemoryBarrierProcessWide();
-
                 int count = 0;
                 try
                 {

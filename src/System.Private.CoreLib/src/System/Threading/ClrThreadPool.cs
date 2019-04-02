@@ -223,7 +223,7 @@ namespace System.Threading
         {
             _hillClimbingThreadAdjustmentLock.VerifyIsLocked();
             int currentTicks = Environment.TickCount;
-            int totalNumCompletions = (int)_completionCounter.Count;
+            int totalNumCompletions = (int)_completionCounter.RecentCount;
             int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
             ulong startTime = _currentSampleStartTime;
             ulong endTime = HighPerformanceCounter.TickCount;
