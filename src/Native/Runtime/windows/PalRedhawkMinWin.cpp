@@ -1694,11 +1694,26 @@ bool GCToOSInterface::BoostThreadPriority()
     return !!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 }
 
-// Get set of processors enabled for GC for the current process
+// Set the set of processors enabled for GC threads for the current process based on config specified affinity mask and set
+// Parameters:
+//  configAffinityMask - mask specified by the GCHeapAffinitizeMask config
+//  configAffinitySet  - affinity set specified by the GCHeapAffinitizeRanges config
 // Return:
 //  set of enabled processors
-AffinitySet* GCToOSInterface::GetCurrentProcessAffinitySet()
+const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffinityMask, const AffinitySet* configAffinitySet)
 {
+    if (configAffinityMask != 0)
+    {
+        // Update the process affinity set using the configured mask
+        for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
+        {
+            if (g_processAffinitySet.Contains(i) && ((configAffinityMask & ((uintptr_t)1 << i)) == 0))
+            {
+                g_processAffinitySet.Remove(i);
+            }
+        }
+    }
+
     return &g_processAffinitySet;
 }
 
@@ -1903,7 +1918,6 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
         {
             if (bit_number == heap_number)
             {
-                //dprintf (3, ("Using processor %d for heap %d", proc_number, heap_number));
                 *proc_no = GroupProcNo(GroupProcNo::NoGroup, proc_number).GetCombinedValue();
 
                 if (GCToOSInterface::CanEnableGCNumaAware())
