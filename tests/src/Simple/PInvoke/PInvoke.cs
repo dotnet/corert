@@ -638,6 +638,17 @@ namespace PInvokeTests
             public ExplicitStruct f2;
         }
 
+        [StructLayout(LayoutKind.Explicit)]
+        public struct BlittableStruct
+        {
+            [FieldOffset(4)]
+            public float FirstField;
+            [FieldOffset(12)]
+            public float SecondField;
+            [FieldOffset(32)]
+            public long ThirdField;
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         public struct NonBlittableStruct
         {
@@ -767,6 +778,24 @@ namespace PInvokeTests
         private static void TestMarshalStructAPIs()
         {
             Console.WriteLine("Testing Marshal APIs for structs");
+
+            BlittableStruct bs = new BlittableStruct() { FirstField = 1.0f, SecondField = 2.0f, ThirdField = 3 };
+            int bs_size = Marshal.SizeOf<BlittableStruct>(bs);
+            ThrowIfNotEquals(40, bs_size, "Marshal.SizeOf<BlittableStruct> failed");
+            IntPtr bs_memory = Marshal.AllocHGlobal(bs_size);
+            try
+            {
+                Marshal.StructureToPtr<BlittableStruct>(bs, bs_memory, false);
+                BlittableStruct bs2 = Marshal.PtrToStructure<BlittableStruct>(bs_memory);
+                ThrowIfNotEquals(true, bs2.FirstField == 1.0f && bs2.SecondField == 2.0f && bs2.ThirdField == 3 , "BlittableStruct marshalling Marshal API failed");
+
+                IntPtr offset = Marshal.OffsetOf<BlittableStruct>("SecondField");
+                ThrowIfNotEquals(new IntPtr(12), offset, "Struct marshalling OffsetOf failed.");
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(bs_memory);
+            }
 
             NonBlittableStruct ts = new NonBlittableStruct() { f1 = 100, f2 = true, f3 = false, f4 = true };
             int size = Marshal.SizeOf<NonBlittableStruct>(ts);

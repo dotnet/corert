@@ -76,14 +76,18 @@ namespace Internal.Runtime.CompilerHelpers
             if (TryGetStructData(structureTypeHandle, out externalReferences, out entryParser))
             {
                 structExists = true;
-                // skip the first 4 IntPtrs(3 stubs and size)
-                entryParser.SkipInteger();
-                entryParser.SkipInteger();
-                entryParser.SkipInteger();
-                entryParser.SkipInteger();
 
                 uint mask = entryParser.GetUnsigned();
-                uint fieldCount = mask >> 1;
+                if ((mask & 1) != 0)
+                {
+                    // skip the first 4 IntPtrs(3 stubs and size)
+                    entryParser.SkipInteger();
+                    entryParser.SkipInteger();
+                    entryParser.SkipInteger();
+                    entryParser.SkipInteger();
+                }
+
+                uint fieldCount = mask >> 2;
                 for (uint index = 0; index < fieldCount; index++)
                 {
                     string name = entryParser.GetString();
@@ -191,13 +195,18 @@ namespace Internal.Runtime.CompilerHelpers
             NativeParser entryParser;
             if (TryGetStructData(structTypeHandle, out externalReferences, out entryParser))
             {
-                marshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
-                unmarshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
-                destroyStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
-                size = (int)entryParser.GetUnsigned();
                 uint mask = entryParser.GetUnsigned();
-                hasInvalidLayout = (mask & 0x1) == 1;
-                return true;
+                if ((mask & 1) != 0)
+                {
+                    hasInvalidLayout = (mask & 0x2) != 0;
+
+                    size = (int)entryParser.GetUnsigned();
+                    marshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
+                    unmarshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
+                    destroyStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());
+
+                    return true;
+                }
             }
             return false;
         }
