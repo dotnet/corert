@@ -53,6 +53,7 @@ namespace ILCompiler
         private string _mapFileName;
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
+        private bool _disableReflection;
         private bool _completeTypesMetadata;
         private bool _scanReflection;
         private bool _methodBodyFolding;
@@ -176,6 +177,7 @@ namespace ILCompiler
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
+                syntax.DefineOption("disablereflection", ref _disableReflection, "Disable generation of reflection metadata");
                 syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
                 syntax.DefineOption("scanreflection", ref _scanReflection, "Scan IL for reflection patterns");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
@@ -524,7 +526,7 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            bool supportsReflection = !_isReadyToRunCodeGen && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = !_disableReflection && !_isReadyToRunCodeGen && _systemModuleName == DefaultSystemModule;
 
             MetadataManager metadataManager;
             if (_isReadyToRunCodeGen)
