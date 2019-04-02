@@ -105,7 +105,7 @@ namespace Internal.IL
             {
                 case "RuntimeHelpers":
                     {
-                        if ((methodName == "IsReferenceOrContainsReferences" || methodName == "IsReference")
+                        if ((methodName == "IsReferenceOrContainsReferences" || methodName == "IsReference" || methodName == "IsBitwiseEquatable")
                             && owningType.Namespace == "System.Runtime.CompilerServices")
                         {
                             TypeDesc elementType = method.Instantiation[0];
@@ -114,10 +114,20 @@ namespace Internal.IL
                             if (elementType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                                 return null;
 
-                            bool result = elementType.IsGCPointer;
-                            if (methodName == "IsReferenceOrContainsReferences")
+                            bool result = false;
+                            if (methodName == "IsBitwiseEquatable")
                             {
-                                result |= (elementType.IsDefType ? ((DefType)elementType).ContainsGCPointers : false);
+                                // Fallback to non-intrinsic implementation for valuetypes
+                                if (!elementType.IsGCPointer)
+                                    return null;
+                            }
+                            else
+                            {
+                                result = elementType.IsGCPointer;
+                                if (methodName == "IsReferenceOrContainsReferences")
+                                {
+                                    result |= (elementType.IsDefType ? ((DefType)elementType).ContainsGCPointers : false);
+                                }
                             }
 
                             return new ILStubMethodIL(method, new byte[] {

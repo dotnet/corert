@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
@@ -18,6 +19,7 @@ namespace ILCompiler
     {
         private CorInfoImpl _corInfo;
         private JitConfigProvider _jitConfigProvider;
+        internal readonly RyuJitCompilationOptions _compilationOptions;
 
         internal RyuJitCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -28,10 +30,12 @@ namespace ILCompiler
             PInvokeILEmitterConfiguration pinvokePolicy,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
-            JitConfigProvider configProvider)
+            JitConfigProvider configProvider,
+            RyuJitCompilationOptions options)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, pinvokePolicy, logger)
         {
             _jitConfigProvider = configProvider;
+            _compilationOptions = options;
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
@@ -89,5 +93,11 @@ namespace ILCompiler
                 }
             }
         }
+    }
+
+    [Flags]
+    public enum RyuJitCompilationOptions
+    {
+        MethodBodyFolding = 0x1,
     }
 }

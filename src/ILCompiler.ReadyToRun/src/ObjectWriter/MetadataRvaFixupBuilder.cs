@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -22,9 +23,9 @@ namespace ILCompiler.PEWriter
         /// is the delta between the containing PE section's start Rva in the input versus the output.
         /// </summary>
         /// <param name="peReader">Input MSIL image reader</param>
-        /// <param name="sectionRvaDelta">The difference in bytes between the metadata PE section 
-        /// (ie, ".text") start Rva in the input MSIL image versus the output image</param>
-        public static unsafe BlobBuilder Relocate(PEReader peReader, int sectionRvaDelta)
+        /// <param name="relocateRva">A delegate which can transform an RVA from the input MSIL image into an RVA
+        /// in the output ready-to-run image</param>
+        public static unsafe BlobBuilder Relocate(PEReader peReader, Func<int, int> relocateRva)
         {
             BlobBuilder builder = new BlobBuilder();
             BlobReader reader = new BlobReader(peReader.GetMetadata().Pointer, peReader.GetMetadata().Length);
@@ -36,7 +37,7 @@ namespace ILCompiler.PEWriter
 
             int methodDefTableOffset = metadataReader.GetTableMetadataOffset(TableIndex.MethodDef);
             builder.WriteBytes(reader.CurrentPointer, methodDefTableOffset);
-            RelocateTableRvas(builder, TableIndex.MethodDef, metadataReader, ref reader, sectionRvaDelta);
+            RelocateTableRvas(builder, TableIndex.MethodDef, metadataReader, ref reader, relocateRva);
 
             //
             // fieldRva table
@@ -44,7 +45,7 @@ namespace ILCompiler.PEWriter
 
             int fieldRvaTableOffset = metadataReader.GetTableMetadataOffset(TableIndex.FieldRva);
             builder.WriteBytes(reader.CurrentPointer, fieldRvaTableOffset - reader.Offset);
-            RelocateTableRvas(builder, TableIndex.FieldRva, metadataReader, ref reader, sectionRvaDelta);
+            RelocateTableRvas(builder, TableIndex.FieldRva, metadataReader, ref reader, relocateRva);
 
             // Copy the rest of the metadata blob
             builder.WriteBytes(reader.CurrentPointer, metadataReader.MetadataLength - reader.Offset);
@@ -54,7 +55,7 @@ namespace ILCompiler.PEWriter
             return builder;
         }
 
-        private unsafe static void RelocateTableRvas(BlobBuilder builder, TableIndex tableIndex, MetadataReader metadataReader, ref BlobReader reader, int sectionRvaDelta)
+        private unsafe static void RelocateTableRvas(BlobBuilder builder, TableIndex tableIndex, MetadataReader metadataReader, ref BlobReader reader, Func<int, int> relocateRva)
         {
             int tableMetadataOffset = metadataReader.GetTableMetadataOffset(tableIndex);
             int rowCount = metadataReader.GetTableRowCount(tableIndex);
@@ -76,7 +77,7 @@ namespace ILCompiler.PEWriter
                 }
                 else
                 {
-                    builder.WriteInt32(inputRva + sectionRvaDelta);
+                    builder.WriteInt32(relocateRva(inputRva));
                 }
 
                 // Skip the rest of the row

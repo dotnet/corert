@@ -38,8 +38,8 @@ See the LICENSE file in the project root for more information.
     <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
     <NativeObjectExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</NativeObjectExt>
-    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.ni.exe</NativeObjectExt>
-    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.ni.dll</NativeObjectExt>
+    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.exe</NativeObjectExt>
+    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.dll</NativeObjectExt>
 
     <LibFileExt Condition="'$(TargetOS)' == 'Windows_NT'">.lib</LibFileExt>
     <LibFileExt Condition="'$(TargetOS)' != 'Windows_NT'">.a</LibFileExt>
@@ -58,8 +58,8 @@ See the LICENSE file in the project root for more information.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'Windows_NT' and $(NativeLib) == 'Static'">.a</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'wasm'">.html</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.ni.exe</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.ni.dll</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.exe</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.dll</NativeBinaryExt>
 
     <ExportsFileExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT' and '$(NativeLib)' == 'Shared'">.def</ExportsFileExt>
     <ExportsFileExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' != 'Windows_NT' and '$(NativeLib)' == 'Shared'">.exports</ExportsFileExt>
@@ -101,7 +101,8 @@ See the LICENSE file in the project root for more information.
   <ItemGroup Condition="'$(ExperimentalDynamicCodeSupport)' != 'true'">
     <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" />
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
-    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" />
+    <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" Condition="$(IlcDisableReflection) != 'true'" />
+    <AutoInitializedAssemblies Include="System.Private.DisabledReflection" Condition="$(IlcDisableReflection) == 'true'" />
     <AutoInitializedAssemblies Include="System.Private.Interop" />
   </ItemGroup>
 
@@ -151,7 +152,7 @@ See the LICENSE file in the project root for more information.
 
   <Target Name="ComputeIlcCompileInputs" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)" BeforeTargets="Publish">
     <ItemGroup>
-      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true' and '$(BuildingReadyToRunAssembly)' != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
+      <ManagedBinary Condition="$(BuildingFrameworkLibrary) != 'true' and '$(PublishingReadyToRunImage)' != 'true'" Include="$(IntermediateOutputPath)$(TargetName)$(TargetExt)" />
       <IlcCompileInput Include="@(ManagedBinary)" />
       <!-- Skip setting framework defaults for ready-to-run since it uses standard .NETCoreApp framework assemblies -->
       <IlcReference Include="@(DefaultFrameworkAssemblies)" Condition="'$(NativeCodeGen)' != 'readytorun'" />
@@ -202,12 +203,19 @@ See the LICENSE file in the project root for more information.
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(AppContextSwitchOverrides->'--appcontextswitch:%(Identity)')" />
       <IlcArg Condition="$(ServerGarbageCollection) != ''" Include="--runtimeopt:RH_UseServerGC=1" />
-      <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true'" Include="--completetypemetadata" />
+      <IlcArg Condition="$(IlcGenerateCompleteTypeMetadata) == 'true' and $(IlcDisableReflection) != 'true'" Include="--completetypemetadata" />
       <IlcArg Condition="$(IlcGenerateStackTraceData) == 'true'" Include="--stacktracedata" />
-      <IlcArg Condition="$(RootAllApplicationAssemblies) == 'true'" Include="--rootallapplicationassemblies" />
-      <IlcArg Condition="$(IlcScanReflection) == 'true'" Include="--scanreflection" />
+      <IlcArg Condition="$(RootAllApplicationAssemblies) == 'true' and $(IlcDisableReflection) != 'true'" Include="--rootallapplicationassemblies" />
+      <IlcArg Condition="$(IlcScanReflection) == 'true' and $(IlcDisableReflection) != 'true'" Include="--scanreflection" />
+      <IlcArg Condition="$(IlcFoldIdenticalMethodBodies) == 'true'" Include="--methodbodyfolding" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Speed'" Include="--Ot" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:EventSource" />
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:FrameworkStrings" />
+
+      <!-- Comparers don't currently work with reflection disabled. https://github.com/dotnet/corert/pull/7208 -->
+      <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:Comparers" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
@@ -225,7 +233,7 @@ See the LICENSE file in the project root for more information.
       <IlcCompileInput2 Include="@(IlcCompileInput)" />
       <IlcCmd Include="@(IlcCompileInput)">
         <ResponseFileName>%(IlcCompileInput.FileName).ilc.rsp</ResponseFileName>
-        <CommandLine>%(IlcCompileInput.Identity);@(IlcCompileInput2 -> '-r:%(Identity);');-o:$(NativeIntermediateOutputPath)%(IlcCompileInput.Filename).ni%(IlcCompileInput.Extension);@(IlcArg)</CommandLine>
+        <CommandLine>%(IlcCompileInput.Identity);@(IlcCompileInput2 -> '-r:%(Identity);');-o:$(NativeIntermediateOutputPath)%(IlcCompileInput.Filename)$(IlcOutputFileExt);@(IlcArg)</CommandLine>
       </IlcCmd>
     </ItemGroup>
 

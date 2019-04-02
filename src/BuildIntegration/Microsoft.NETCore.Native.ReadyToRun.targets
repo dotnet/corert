@@ -1,0 +1,63 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <IlcCompileDependsOn Condition="'$(PublishingReadyToRunImage)' == 'true'">ComputeIlcCompileInputs;BuildOneReadyToRunAssembly;AddDependencies</IlcCompileDependsOn>
+  </PropertyGroup>
+
+  <Target Name="BuildAllReadyToRunAssemblies"
+    Inputs="@(ReadyToRunAssemblies)"
+    Outputs="@(ReadyToRunAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)%(Extension)')"
+    AfterTargets="Build">
+    <PropertyGroup>
+      <!--
+        ReadyToRunAssembliesToReference is used for the referenced assembly set instead of
+        ReadyToRunAssemblies because in partial rebuilds, ReadyToRunAssemblies only includes
+        the assemblies that need incrementally building.
+      -->
+      <ReferencedAssemblies>@(ReadyToRunAssembliesToReference)</ReferencedAssemblies>
+      <!--
+        The trailing semi-colon lets us prevent matching substring assembly names when skipping assemblies.
+        E.g., skipping System.Net.Http will not also skip System.Net
+      -->
+      <_ReadyToRunSkipAssemblies>@(ReadyToRunSkipAssembly);</_ReadyToRunSkipAssemblies>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Exclude System.Private.CoreLib until we can compile it successfully -->
+      <SkippedReadyToRunAssemblies Include="%(ReadyToRunAssemblies.Identity)" Condition="$(_ReadyToRunSkipAssemblies.Contains('%(ReadyToRunAssemblies.Filename);'))" />
+      <ReadyToRunAssemblies Remove="%(ReadyToRunAssemblies.Identity)" Condition="$(_ReadyToRunSkipAssemblies.Contains('%(ReadyToRunAssemblies.Filename);'))" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(SkippedReadyToRunAssemblies)" DestinationFiles="@(SkippedReadyToRunAssemblies->'$(NativeIntermediateOutputPath)\%(Filename)%(Extension)')" />
+
+    <ItemGroup>
+      <ProjectToBuild Include="$(MSBuildProjectFullPath)">
+        <AdditionalProperties>
+          LibraryToCompile=%(ReadyToRunAssemblies.Identity);
+          IlcOutputFileExt=%(ReadyToRunAssemblies.Extension);
+          ReferencedAssemblies=$(ReferencedAssemblies);
+          PublishingReadyToRunImage=true
+        </AdditionalProperties>
+      </ProjectToBuild>
+    </ItemGroup>
+    <MSBuild Projects="@(ProjectToBuild)" Targets="IlcCompile" BuildInParallel="true" />
+  </Target>
+
+  <Target Name="BuildOneReadyToRunAssembly">
+    <PropertyGroup>
+        <IlcGenerateMetadataLog>true</IlcGenerateMetadataLog>
+    </PropertyGroup>
+    <ItemGroup>
+        <ManagedBinary Include="$(LibraryToCompile)" />
+        <IlcCompileInput Include="@(ManagedBinary)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="AddDependencies">
+    <ItemGroup>
+      <ReadyToRunAssemblies Include="$(ReferencedAssemblies.Split(';'))" Condition="'$(ReferencedAssemblies)' != ''" />
+      <IlcArg Include="-r:%(ReadyToRunAssemblies.Identity)" Condition="'%(ReadyToRunAssemblies.Identity)' != '$(LibraryToCompile)'" />
+    </ItemGroup>
+  </Target>
+  
+</Project>

@@ -36,11 +36,13 @@ jobs:
 
     pool:
       ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
-        name: dnceng-linux-external-temp
+        name: NetCorePublic-Int-Pool
+        queue: BuildPool.Ubuntu.1604.Amd64.Open
       ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
         name: Hosted MacOS
       ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
-        name: dotnet-external-temp
+        name: NetCorePublic-Int-Pool
+        queue: BuildPool.Windows.10.Amd64.VS2017.Open
 
     workspace:
       clean: all

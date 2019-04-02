@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if SUPPORT_JIT
-extern alias System_Private_CoreLib;
-using TextWriter = System_Private_CoreLib::System.IO.TextWriter;
-#endif
-
 using System.IO;
 
 namespace ILCompiler

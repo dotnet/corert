@@ -34,10 +34,6 @@ if not exist %TestFolder%\%TestExecutable%.exe (
     exit /b 0
 )
 
-:: Workaround until we have a better reflection engine
-:: Add name of currently executing test to rd.xml
-powershell -Command "(Get-Content %TestFolder%\default.rd.xml).replace('*Application*', '%TestFileName%') | Set-Content  %TestFolder%\default.rd.xml"
-
 ::
 :: Force environment to 64-bit if we're doing an x64 test run
 ::
@@ -53,15 +49,20 @@ if errorlevel 1 (
     exit /b 1
 )
 
+set ExtraXUnitArgs=
+if "%CoreRT_SingleThreaded%"=="true" (
+    set ExtraXUnitArgs=-parallel none
+)
+
 echo Executing %TestFileName% - writing logs to %XunitLogDir%\%TestFileName%\%CoreRT_TestLogFileName%
-echo To repro directly, run call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll @"%TestFolder%\%TestFileName%.rsp" -xml %XunitLogDir%\%TestFileName%\%CoreRT_TestLogFileName% -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing
+echo To repro directly, run call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll @"%TestFolder%\%TestFileName%.rsp" -xml %XunitLogDir%\%TestFileName%\%CoreRT_TestLogFileName% -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing %ExtraXUnitArgs%
 
 if not exist "%TestFolder%\native\%TestExecutable%".exe (
     echo ERROR:Native binary not found Unable to run test.
     exit /b 1
 )
 
-call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll @"%TestFolder%\%TestFileName%.rsp" -xml %XunitLogDir%\%TestFileName%\%CoreRT_TestLogFileName% -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing
+call %TestFolder%\native\%TestExecutable% %TestFolder%\%TestFileName%.dll @"%TestFolder%\%TestFileName%.rsp" -xml %XunitLogDir%\%TestFileName%\%CoreRT_TestLogFileName% -notrait category=nonnetcoreapptests -notrait category=nonwindowstests  -notrait category=failing %ExtraXUnitArgs%
 set TestExitCode=!ERRORLEVEL!
 
 exit /b %TestExitCode%

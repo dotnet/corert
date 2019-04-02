@@ -299,6 +299,36 @@ namespace ILCompiler.DependencyAnalysis
             return result;
         }
 
+        private readonly Dictionary<FieldDesc, ISymbolNode> _fieldOffsetCache = new Dictionary<FieldDesc, ISymbolNode>();
+
+        public ISymbolNode FieldOffset(FieldDesc fieldDesc, SignatureContext signatureContext)
+        {
+            ISymbolNode result;
+            if (!_fieldOffsetCache.TryGetValue(fieldDesc, out result))
+            {
+                result = new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldOffset, fieldDesc, signatureContext));
+                _fieldOffsetCache.Add(fieldDesc, result);
+            }
+            return result;
+        }
+
+        private readonly Dictionary<TypeDesc, ISymbolNode> _fieldBaseOffsetCache = new Dictionary<TypeDesc, ISymbolNode>();
+
+        public ISymbolNode FieldBaseOffset(TypeDesc typeDesc, SignatureContext signatureContext)
+        {
+            ISymbolNode result;
+            if (!_fieldBaseOffsetCache.TryGetValue(typeDesc, out result))
+            {
+                result = new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    new TypeFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldBaseOffset, typeDesc, signatureContext));
+                _fieldBaseOffsetCache.Add(typeDesc, result);
+            }
+            return result;
+        }
+
         private readonly Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode> _helperCache = new Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode>();
 
         public ISymbolNode ExternSymbol(ILCompiler.ReadyToRunHelper helper)
@@ -338,6 +368,14 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ILCompiler.ReadyToRunHelper.ThrowDivZero:
                     r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ThrowDivZero;
+                    break;
+
+                case ILCompiler.ReadyToRunHelper.ThrowArgumentOutOfRange:
+                case ILCompiler.ReadyToRunHelper.ThrowArgument:
+                case ILCompiler.ReadyToRunHelper.ThrowPlatformNotSupported:
+                case ILCompiler.ReadyToRunHelper.ThrowNotImplemented:
+                    // TODO: what is the right thing to do here? Locating the exception objects in CoreLib would require emitting typerefs.
+                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FailFast;
                     break;
 
                 // Write barriers

@@ -2,18 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// RuntimeHelpers
-//    This class defines a set of static methods that provide support for compilers.
-//
-
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
 using System.Runtime;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Threading;
 
 using Debug = System.Diagnostics.Debug;
@@ -222,10 +216,33 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        public static bool IsReference<T>()
+        internal static bool IsReference<T>()
         {
             var pEEType = EETypePtr.EETypePtrOf<T>();
             return !pEEType.IsValueType;
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsBitwiseEquatable<T>()
+        {
+            return
+                typeof(T) == typeof(bool) ||
+                typeof(T) == typeof(byte) ||
+                typeof(T) == typeof(sbyte) ||
+#if FEATURE_UTF8STRING
+                typeof(T) == typeof(Char8) ||
+#endif
+                typeof(T) == typeof(char) ||
+                typeof(T) == typeof(short) ||
+                typeof(T) == typeof(ushort) ||
+                typeof(T) == typeof(int) ||
+                typeof(T) == typeof(uint) ||
+                typeof(T) == typeof(long) ||
+                typeof(T) == typeof(ulong) ||
+                typeof(T) == typeof(IntPtr) ||
+                typeof(T) == typeof(UIntPtr) ||
+                typeof(T) == typeof(Rune);
         }
 
         // Returns true iff the object has a component size;
@@ -235,6 +252,14 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(obj != null);
             return obj.EETypePtr.ComponentSize != 0;
+        }
+
+        public static void PrepareMethod(RuntimeMethodHandle method)
+        {
+        }
+
+        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[] instantiation)
+        {
         }
 
         public static void PrepareDelegate(Delegate d)

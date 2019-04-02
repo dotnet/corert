@@ -173,9 +173,60 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
 UIntNative UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo * pMethodInfo, REGDISPLAY * pRegisterSet)
 {
-    // @TODO: CORERT: GetConservativeUpperBoundForOutgoingArgs
-    assert(false);
-    return false;
+    // Return value
+    UIntNative upperBound;
+
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+
+    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
+    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
+    {
+        // Reverse PInvoke transition should be on the main function body only
+        assert(pNativeMethodInfo->pMainLSDA == pNativeMethodInfo->pLSDA);
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+            p += sizeof(int32_t);
+
+        GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+        INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
+        assert(slot != NO_REVERSE_PINVOKE_FRAME);
+
+        TADDR basePointer = NULL;
+        UINT32 stackBasedRegister = decoder.GetStackBaseRegister();
+        if (stackBasedRegister == NO_STACK_BASE_REGISTER)
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetSP());
+        }
+        else
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
+        }
+
+        // Reverse PInvoke case.  The embedded reverse PInvoke frame is guaranteed to reside above
+        // all outgoing arguments.
+        upperBound = (UIntNative)dac_cast<TADDR>(basePointer + slot);
+    }
+    else
+    {
+        // The passed in pRegisterSet should be left intact
+        REGDISPLAY localRegisterSet = *pRegisterSet;
+
+        bool result = VirtualUnwind(&localRegisterSet);
+        assert(result);
+
+        // All common ABIs have outgoing arguments under caller SP (minus slot reserved for return address).
+        // There are ABI-specific optimizations that could applied here, but they are not worth the complexity
+        // given that this path is used rarely.
+        upperBound = dac_cast<TADDR>(localRegisterSet.GetSP() - sizeof(TADDR));
+    }
+
+    return upperBound;
 }
 
 bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
@@ -193,7 +244,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
-        // Reverse PInvoke transition should on the main function body only
+        // Reverse PInvoke transition should be on the main function body only
         assert(pNativeMethodInfo->pMainLSDA == pNativeMethodInfo->pLSDA);
 
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)

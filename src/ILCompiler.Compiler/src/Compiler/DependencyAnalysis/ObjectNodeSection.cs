@@ -51,7 +51,9 @@ namespace ILCompiler.DependencyAnalysis
         public static readonly ObjectNodeSection TLSSection = new ObjectNodeSection("TLS", SectionType.Writeable);
         public static readonly ObjectNodeSection ManagedCodeStartSection = new ObjectNodeSection(".managedcode$A", SectionType.Executable);
         public static readonly ObjectNodeSection ManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
+        public static readonly ObjectNodeSection FoldableManagedCodeWindowsContentSection = new ObjectNodeSection(".managedcode$I", SectionType.Executable);
         public static readonly ObjectNodeSection ManagedCodeUnixContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);
+        public static readonly ObjectNodeSection FoldableManagedCodeUnixContentSection = new ObjectNodeSection("__managedcode", SectionType.Executable);
         public static readonly ObjectNodeSection ManagedCodeEndSection = new ObjectNodeSection(".managedcode$Z", SectionType.Executable);
     }
 }

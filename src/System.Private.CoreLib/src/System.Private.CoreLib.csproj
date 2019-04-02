@@ -89,6 +89,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
+    <Compile Include="Internal\Runtime\Augments\RuntimeThread.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.ProjectN.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
@@ -209,7 +210,7 @@
     <Compile Include="System\Diagnostics\Tracing\EventCounter.ProjectN.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
     <Compile Include="System\Diagnostics\Tracing\UnsafeNativeMethods.cs" />
-    <Compile Include="System\Enum.cs" />
+    <Compile Include="System\Enum.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.NonProjectN.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\GC.cs" />
@@ -256,7 +257,7 @@
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\Delegate.DefaultParameters.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
-    <Compile Include="System\Exception.cs" />
+    <Compile Include="System\Exception.CoreRT.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\EETypePtr.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
@@ -300,7 +301,7 @@
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.NonPortable.cs" />
-    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.CoreRT.cs" />
     <Compile Include="System\WeakReference.cs" />
     <Compile Include="System\WeakReferenceOfT.cs" />
   </ItemGroup>
@@ -346,9 +347,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetModuleFileName.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.QueryPerformance.cs">
-      <Link>Interop\Windows\Kernel32\Interop.QueryPerformance.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetCurrentThreadId.cs">
       <Link>Interop\Windows\Mincore\Interop.GetCurrentThreadId.cs</Link>
@@ -454,6 +452,8 @@
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="System\Threading\PreAllocatedOverlapped.PlatformNotSupported.cs" />
+    <Compile Include="System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />

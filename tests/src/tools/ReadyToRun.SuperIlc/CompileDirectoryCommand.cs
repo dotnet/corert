@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -11,121 +12,52 @@ namespace ReadyToRun.SuperIlc
 {
     class CompileDirectoryCommand
     {
-        public static int CompileDirectory(DirectoryInfo toolDirectory, DirectoryInfo inputDirectory, DirectoryInfo outputDirectory, bool crossgen, bool cpaot, DirectoryInfo[] referencePath)
+        public static int CompileDirectory(BuildOptions options)
         {
-            if (toolDirectory == null)
+            if (options.InputDirectory == null)
             {
-                Console.WriteLine("--tool-directory is a required argument.");
+                Console.Error.WriteLine("--input-directory is a required argument.");
                 return 1;
             }
 
-            if (inputDirectory == null)
+            if (options.OutputDirectory == null)
             {
-                Console.WriteLine("--input-directory is a required argument.");
+                options.OutputDirectory = options.InputDirectory;
+            }
+
+            if (options.OutputDirectory.IsParentOf(options.InputDirectory))
+            {
+                Console.Error.WriteLine("Error: Input and output folders must be distinct, and the output directory (which gets deleted) better not be a parent of the input directory.");
                 return 1;
             }
 
-            if (outputDirectory == null)
+            IEnumerable<string> referencePaths = options.ReferencePaths();
+            string coreRunPath = SuperIlcHelpers.FindCoreRun(referencePaths);
+
+            IEnumerable<CompilerRunner> runners = options.CompilerRunners();
+
+            PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
+
+            Application application = Application.FromDirectory(options.InputDirectory.FullName, runners, options.OutputDirectory.FullName, options.NoExe, options.NoEtw, coreRunPath);
+            if (application == null)
             {
-                Console.WriteLine("--output-directory is a required argument.");
-                return 1;
+                Console.Error.WriteLine($"No managed app found in {options.InputDirectory.FullName}");
             }
 
-            if (OutputPathIsParentOfInputPath(inputDirectory, outputDirectory))
-            {
-                Console.WriteLine("Error: Input and output folders must be distinct, and the output directory (which gets deleted) better not be a parent of the input directory.");
-                return 1;
-            }
+            string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
+            string applicationSetLogPath = Path.Combine(options.InputDirectory.ToString(), "directory-" + timeStamp + ".log");
 
-            CompilerRunner runner;
-            if (cpaot)
+            using (ApplicationSet applicationSet = new ApplicationSet(new Application[] { application }, runners, coreRunPath, applicationSetLogPath))
             {
-                runner = new CpaotRunner(toolDirectory.ToString(), inputDirectory.ToString(), outputDirectory.ToString(), referencePath?.Select(x => x.ToString())?.ToList());
-            }
-            else
-            {
-                runner = new CrossgenRunner(toolDirectory.ToString(), inputDirectory.ToString(), outputDirectory.ToString(), referencePath?.Select(x => x.ToString())?.ToList());
-            }
+                bool success = applicationSet.Build(coreRunPath, runners, applicationSetLogPath);
 
-            if (outputDirectory.Exists)
-            {
-                try
+                if (!options.NoCleanup)
                 {
-                    outputDirectory.Delete(recursive: true);
+                    PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
                 }
-                catch (Exception ex) when (
-                    ex is UnauthorizedAccessException
-                    || ex is DirectoryNotFoundException
-                    || ex is IOException
-                )
-                {
-                    Console.WriteLine($"Error: Could not delete output folder {outputDirectory.FullName}. {ex.Message}");
-                    return 1;
-                }
+
+                return success ? 0 : 1;
             }
-
-            outputDirectory.Create();
-
-            bool success = true;
-            List<string> failedCompilationAssemblies = new List<string>();
-            int successfulCompileCount = 0;
-
-            // Copy unmanaged files (runtime, native dependencies, resources, etc)
-            foreach (string file in Directory.EnumerateFiles(inputDirectory.FullName))
-            {
-                if (ComputeManagedAssemblies.IsManaged(file))
-                {
-                    // Compile managed code
-                    if (runner.CompileAssembly(file))
-                    {
-                        ++successfulCompileCount;
-                    }
-                    else
-                    {
-                        success = false;
-                        failedCompilationAssemblies.Add(file);
-
-                        // On compile failure, pass through the input IL assembly so the output is still usable
-                        File.Copy(file, Path.Combine(outputDirectory.FullName, Path.GetFileName(file)));
-                    }
-                }
-                else
-                {
-                    // Copy through all other files
-                    File.Copy(file, Path.Combine(outputDirectory.FullName, Path.GetFileName(file)));
-                }
-            }
-
-            Console.WriteLine($"Compiled {successfulCompileCount}/{successfulCompileCount + failedCompilationAssemblies.Count} assemblies.");
-
-            if (failedCompilationAssemblies.Count > 0)
-            {
-                Console.WriteLine($"Failed to compile {failedCompilationAssemblies.Count} assemblies:");
-                foreach (var assembly in failedCompilationAssemblies)
-                {
-                    Console.WriteLine(assembly);
-                }
-            }
-
-            return success ? 0 : 1;
-        }
-
-        static bool OutputPathIsParentOfInputPath(DirectoryInfo inputPath, DirectoryInfo outputPath)
-        {
-            if (inputPath == outputPath)
-                return true;
-
-            DirectoryInfo parentInfo = inputPath.Parent;
-            while (parentInfo != null)
-            {
-                if (parentInfo == outputPath)
-                    return true;
-
-                parentInfo = parentInfo.Parent;
-
-            }
-
-            return false;
         }
     }    
 }

@@ -407,10 +407,16 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        protected static ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
+        protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset)
+        {
+        }
+
+        protected ComputedInstanceFieldLayout ComputeAutoFieldLayout(MetadataType type, int numInstanceFields)
         {
             // For types inheriting from another type, field offsets continue on from where they left off
             LayoutInt cumulativeInstanceFieldPos = ComputeBytesUsedInParentType(type);
+
+            AlignBaseOffsetIfNecessary(type, ref cumulativeInstanceFieldPos);
 
             var layoutMetadata = type.GetClassLayout();
 

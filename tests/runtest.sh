@@ -9,6 +9,7 @@ usage()
     echo "    -corefx       : Download and run the CoreFX repo tests"
     echo "    -coreclr      : Download and run the CoreCLR repo tests"
     echo "    -multimodule  : Compile the framework as a .so and link tests against it (ryujit only)"
+    echo "    -singlethread : Run tests on a single thread (avoid parallel execution)"
     echo "    -coredumps    : [For CI use] Enables core dump generation, and analyzes and possibly stores/uploads"
     echo "                      dumps collected during test run."
     echo ""
@@ -236,6 +237,8 @@ run_corefx_tests()
     export CoreRT_TestingUtilitiesOutputDir
     export CoreRT_CliBinDir
 
+    export CoreRT_SingleThreaded
+
     if [ ! -d "${CoreRT_TestExtRepo_CoreFX}" ]; then
         mkdir -p ${CoreRT_TestExtRepo_CoreFX}
     fi
@@ -309,6 +312,7 @@ CoreRT_CrossLinkerFlags=
 CoreRT_CrossBuild=0
 CoreRT_EnableCoreDumps=0
 CoreRT_TestName=*
+CoreRT_SingleThreaded=
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -379,10 +383,12 @@ while [ "$1" != "" ]; do
             ;;
         -corefx)
             CoreRT_RunCoreFXTests=true;
-            shift
             ;;
         -multimodule)
             CoreRT_MultiFileConfiguration=MultiModule;
+            ;;
+        -singlethread)
+            CoreRT_SingleThreaded=1;
             ;;
         -coredumps)
             CoreRT_EnableCoreDumps=1

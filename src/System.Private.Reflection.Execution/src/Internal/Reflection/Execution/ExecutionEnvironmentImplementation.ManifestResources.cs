@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-extern alias System_Private_CoreLib;
-
 using System;
 using System.IO;
 using System.Reflection;
@@ -160,8 +158,8 @@ namespace Internal.Reflection.Execution
 #endif // ENABLE_WINRT
 
             String pathToRunningExe = RuntimeAugments.TryGetFullPathToMainApplication();
-            String directoryContainingRunningExe = System_Private_CoreLib::System.IO.Path.GetDirectoryName(pathToRunningExe);
-            String fullName = System_Private_CoreLib::System.IO.Path.Combine(directoryContainingRunningExe, name);
+            String directoryContainingRunningExe = Path.GetDirectoryName(pathToRunningExe);
+            String fullName = Path.Combine(directoryContainingRunningExe, name);
 
             if (RuntimeAugments.FileExists(fullName))
                 return new FileStream(fullName, FileMode.Open, FileAccess.Read, FileShare.Read);

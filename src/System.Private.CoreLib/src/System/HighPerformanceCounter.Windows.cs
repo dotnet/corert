@@ -4,14 +4,15 @@
 
 namespace System
 {
-    internal static class HighPerformanceCounter
+    internal static unsafe class HighPerformanceCounter
     {
         public static ulong TickCount
         {
             get
             {
-                Interop.Kernel32.QueryPerformanceCounter(out ulong counter);
-                return counter;
+                long counter;
+                Interop.Kernel32.QueryPerformanceCounter(&counter);
+                return (ulong)counter;
             }
         }
 
@@ -19,8 +20,9 @@ namespace System
 
         private static ulong GetFrequency()
         {
-            Interop.Kernel32.QueryPerformanceFrequency(out ulong frequency);
-            return frequency;
+            long frequency;
+            Interop.Kernel32.QueryPerformanceFrequency(&frequency);
+            return (ulong)frequency;
         }
     }
 }

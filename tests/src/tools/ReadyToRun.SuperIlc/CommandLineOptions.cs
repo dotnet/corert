@@ -15,42 +15,71 @@ namespace ReadyToRun.SuperIlc
         public static CommandLineBuilder Build()
         {
             var parser = new CommandLineBuilder()
-                .AddCommand(CompileFolder());
-            
+                .AddCommand(CompileFolder())
+                .AddCommand(CompileSubtree());
+
             return parser;
 
             Command CompileFolder() =>
-                new Command("compile-directory", "Compile all assemblies in directory", 
-                    new Option[] 
+                new Command("compile-directory", "Compile all assemblies in directory",
+                    new Option[]
                     {
-                        ToolPath(),
                         InputDirectory(),
                         OutputDirectory(),
-                        UseCrossgen(),
-                        UseCpaot(),
+                        CrossgenDirectory(),
+                        CpaotDirectory(),
+                        NoJit(),
+                        NoExe(),
+                        NoEtw(),
+                        NoCleanup(),
                         ReferencePath()
                     },
-                    handler: CommandHandler.Create<DirectoryInfo, DirectoryInfo, DirectoryInfo, bool, bool, DirectoryInfo[]>(CompileDirectoryCommand.CompileDirectory));
+                    handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
 
-            Option ToolPath() =>
-                new Option(new[] {"--tool-directory", "-t"}, "Directory containing the selected optimizing compiler", new Argument<DirectoryInfo>().ExistingOnly());
+            Command CompileSubtree() =>
+                new Command("compile-subtree", "Build each directory in a given subtree containing any managed assemblies as a separate app",
+                    new Option[]
+                    {
+                        InputDirectory(),
+                        OutputDirectory(),
+                        CrossgenDirectory(),
+                        CpaotDirectory(),
+                        NoJit(),
+                        NoExe(),
+                        NoEtw(),
+                        NoCleanup(),
+                        ReferencePath()
+                    },
+                    handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
 
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
             Option InputDirectory() =>
-                new Option(new [] {"--input-directory", "-in"}, "Folder containing assemblies to optimize", new Argument<DirectoryInfo>().ExistingOnly());
+                new Option(new[] { "--input-directory", "-in" }, "Folder containing assemblies to optimize", new Argument<DirectoryInfo>().ExistingOnly());
 
             Option OutputDirectory() =>
-                new Option(new [] {"--output-directory", "-out"}, "Folder to emit compiled assemblies", new Argument<DirectoryInfo>().LegalFilePathsOnly());
+                new Option(new[] { "--output-directory", "-out" }, "Folder to emit compiled assemblies", new Argument<DirectoryInfo>().LegalFilePathsOnly());
 
-            Option UseCrossgen() =>
-                new Option("--crossgen", "Compile with CoreCLR Crossgen", new Argument<bool>());
+            Option CrossgenDirectory() =>
+                new Option(new[] { "--crossgen-directory", "-crossgen" }, "Folder containing the Crossgen compiler", new Argument<DirectoryInfo>().ExistingOnly());
 
-            Option UseCpaot() =>
-                new Option("--cpaot", "Compile with CoreRT CPAOT", new Argument<bool>());
+            Option CpaotDirectory() =>
+                new Option(new[] { "--cpaot-directory", "-cpaot" }, "Folder containing the CPAOT compiler", new Argument<DirectoryInfo>().ExistingOnly());
 
             Option ReferencePath() =>
-                new Option(new[] {"--reference-path", "-r"}, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>(){Arity = ArgumentArity.ZeroOrMore}.ExistingOnly());
+                new Option(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly());
+
+            Option NoJit() =>
+                new Option(new[] { "--nojit" }, "Don't run tests in JITted mode", new Argument<bool>());
+
+            Option NoEtw() =>
+                new Option(new[] { "--noetw" }, "Don't capture jitted methods using ETW", new Argument<bool>());
+
+            Option NoExe() =>
+                new Option(new[] { "--noexe" }, "Compilation-only mode (don't execute the built apps)", new Argument<bool>());
+
+            Option NoCleanup() =>
+                new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
         }
     }
 }

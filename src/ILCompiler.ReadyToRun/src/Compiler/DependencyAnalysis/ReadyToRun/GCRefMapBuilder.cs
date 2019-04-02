@@ -275,8 +275,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // ReportPointersFromValueType
             if (type.IsByRefLike)
             {
-                // TODO: FindByRefPointersInByRefLikeObject
-                throw new NotImplementedException();
+                FindByRefPointerOffsetsInByRefLikeObject(type, argDest, delta, frame);
             }
 
             Debug.Assert(type is DefType);
@@ -286,6 +285,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (!field.IsStatic)
                 {
                     GcScanRoots(field.FieldType, argDest, field.Offset.AsInt, frame);
+                }
+            }
+        }
+
+        private void FindByRefPointerOffsetsInByRefLikeObject(TypeDesc type, ArgDestination argDest, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
+        {
+            if (type.IsByReferenceOfT || type.IsByRef)
+            {
+                argDest.GcMark(frame, delta, interior: true);
+                return;
+            }
+
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (!field.IsStatic && field.FieldType.IsByRefLike)
+                {
+                    Debug.Assert(field.FieldType.IsValueType);
+                    FindByRefPointerOffsetsInByRefLikeObject(field.FieldType, argDest, delta + field.Offset.AsInt, frame);
                 }
             }
         }

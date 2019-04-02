@@ -25,7 +25,8 @@ namespace Internal.Runtime.Augments
             FieldInfo[] fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
             int numValues = fields.Length;
             object[] rawValues = new object[numValues];
-            KeyValuePair<string, ulong>[] namesAndValues = new KeyValuePair<string, ulong>[numValues];
+            string[] names = new string[numValues];
+            ulong[] values = new ulong[numValues];
             for (int i = 0; i < numValues; i++)
             {
                 FieldInfo field = fields[i];
@@ -43,25 +44,32 @@ namespace Internal.Runtime.Augments
                     // the order in which the Enum apis return names and values.
                     rawUnboxedValue = (ulong)(((IConvertible)rawValue).ToInt64(null));
                 }
-                namesAndValues[i] = new KeyValuePair<string, ulong>(field.Name, rawUnboxedValue);
+                names[i] = field.Name;
+                values[i] = rawUnboxedValue;
             }
 
-            Array.Sort(keys: namesAndValues, items: rawValues, comparer: NamesAndValueComparer.Default);
-            NamesAndValues = namesAndValues;
+            // Need to sort the `names` and `rawValues` arrays according to the `values` array
+            ulong[] valuesCopy = (ulong[])values.Clone();
+            Array.Sort(keys: valuesCopy, items: rawValues, comparer: Comparer<ulong>.Default);
+            Array.Sort(keys: values, items: names, comparer: Comparer<ulong>.Default);
+
+            Names = names;
+            Values = values;
 
             // Create the unboxed version of values for the Values property to return. (We didn't do this earlier because
             // declaring "rawValues" as "Array" would prevent us from using the generic overload of Array.Sort()).
             //
             // The array element type is the underlying type, not the enum type. (The enum type could be an open generic.)
-            Values = Array.CreateInstance(UnderlyingType, numValues);
-            Array.Copy(rawValues, Values, numValues);
+            ValuesAsUnderlyingType = Array.CreateInstance(UnderlyingType, numValues);
+            Array.Copy(rawValues, ValuesAsUnderlyingType, numValues);
 
             HasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
         }
 
         internal Type UnderlyingType { get; }
-        internal Array Values { get; }
-        internal KeyValuePair<string, ulong>[] NamesAndValues { get; }
+        internal string[] Names { get; }
+        internal ulong[] Values { get; }
+        internal Array ValuesAsUnderlyingType { get; }
         internal bool HasFlagsAttribute { get; }
 
         private static RuntimeImports.RhCorElementType ComputeCorElementType(Type enumType)
@@ -107,26 +115,6 @@ namespace Internal.Runtime.Augments
                 default:
                     throw new NotSupportedException();
             }
-        }
-
-        //
-        // Sort comparer for NamesAndValues
-        //
-        private sealed class NamesAndValueComparer : IComparer<KeyValuePair<string, ulong>>
-        {
-            public int Compare(KeyValuePair<string, ulong> kv1, KeyValuePair<string, ulong> kv2)
-            {
-                ulong x = kv1.Value;
-                ulong y = kv2.Value;
-                if (x < y)
-                    return -1;
-                else if (x > y)
-                    return 1;
-                else
-                    return 0;
-            }
-
-            public static IComparer<KeyValuePair<string, ulong>> Default = new NamesAndValueComparer();
         }
     }
 }

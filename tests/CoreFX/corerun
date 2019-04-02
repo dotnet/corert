@@ -36,10 +36,6 @@ then
     exit ${__exitcode}
 fi
 
-# Workaround until we have a better reflection engine
-# Add name of currently executing test to rd.xml
-sed -i.bak  "s/\*Application\*/${TestFileName}/g" "${TestFolderName}/default.rd.xml"
-
 echo Building ${TestFileName}
 
 ${CoreRT_CliBinDir}/dotnet publish "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" /p:OSGroup=${CoreRT_BuildOS} "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} "/p:OutputPath=/${TestFolderName}/" ${TestFolderName}/Test.csproj
@@ -53,8 +49,13 @@ if [ ! -d "${LogDir}/${TestFileName}" ]; then
     mkdir -p "${LogDir}/${TestFileName}"
 fi
 
+local ExtraXUnitArgs=""
+if [[ $CoreRT_SingleThreaded == 1 ]]; then
+    ExtraXUnitArgs="-parallel none"
+fi
+
 echo Executing ${TestFileName} - writing logs to ${LogDir}/${TestFileName}/testResults.xml
-echo To repro directly, run ${TestFolderName}/native/${TestExecutable} ${TestFolderName}/${TestFileName}.dll @${TestFolderName}/${TestFileName}.rsp -xml ${LogDir}/${TestFileName}/testResults.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing
+echo To repro directly, run ${TestFolderName}/native/${TestExecutable} ${TestFolderName}/${TestFileName}.dll @${TestFolderName}/${TestFileName}.rsp -xml ${LogDir}/${TestFileName}/testResults.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing ${ExtraXUnitArgs}
 chmod +x ${TestFolderName}/native/${TestExecutable} 
 
 case "$(uname -s)" in 
@@ -72,7 +73,7 @@ case "$(uname -s)" in
     ;;
 esac
 
-${TestFolderName}/native/${TestExecutable} ${TestFolderName}/${TestFileName}.dll @${TestFolderName}/${TestFileName}.rsp -xml ${LogDir}/${TestFileName}/testResults.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing
+${TestFolderName}/native/${TestExecutable} ${TestFolderName}/${TestFileName}.dll @${TestFolderName}/${TestFileName}.rsp -xml ${LogDir}/${TestFileName}/testResults.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing ${ExtraXUnitArgs}
 export __exitcode=$?
 
 exit ${__exitcode}

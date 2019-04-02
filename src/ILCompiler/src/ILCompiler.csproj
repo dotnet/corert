@@ -43,6 +43,7 @@
     <Compile Include="..\..\Common\src\CommandLine\CommandLineHelpers.cs">
       <Link>CommandLine\CommandLineHelpers.cs</Link>
     </Compile>
+    <Compile Include="RemovingILProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ilc.runtimeconfig.json">

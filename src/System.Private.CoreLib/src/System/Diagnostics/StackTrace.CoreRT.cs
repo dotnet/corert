@@ -78,7 +78,7 @@ namespace System.Diagnostics
                     }
                     else if (outputFrameIndex > 0)
                     {
-                        _stackFrames[outputFrameIndex - 1].SetIsLastFrameFromForeignExceptionStackTrace(true);
+                        _stackFrames[outputFrameIndex - 1].SetIsLastFrameFromForeignExceptionStackTrace();
                     }
                 }
                 Debug.Assert(outputFrameIndex == outputFrameCount);

@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.CommandLine;
 using System.Runtime.InteropServices;
+
+using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -51,8 +53,10 @@ namespace ILCompiler
         private string _mapFileName;
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
+        private bool _disableReflection;
         private bool _completeTypesMetadata;
         private bool _scanReflection;
+        private bool _methodBodyFolding;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -69,6 +73,8 @@ namespace ILCompiler
         private IReadOnlyList<string> _appContextSwitches = Array.Empty<string>();
 
         private IReadOnlyList<string> _runtimeOptions = Array.Empty<string>();
+
+        private IReadOnlyList<string> _removedFeatures = Array.Empty<string>();
 
         private bool _help;
 
@@ -171,15 +177,18 @@ namespace ILCompiler
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
+                syntax.DefineOption("disablereflection", ref _disableReflection, "Disable generation of reflection metadata");
                 syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
                 syntax.DefineOption("scanreflection", ref _scanReflection, "Scan IL for reflection patterns");
                 syntax.DefineOption("scan", ref _useScanner, "Use IL scanner to generate optimized code (implied by -O)");
                 syntax.DefineOption("noscan", ref _noScanner, "Do not use IL scanner to generate optimized code");
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
                 syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
+                syntax.DefineOption("methodbodyfolding", ref _methodBodyFolding, "Fold identical method bodies");
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
+                syntax.DefineOptionList("removefeature", ref _removedFeatures, "Framework features to remove");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -479,6 +488,26 @@ namespace ILCompiler
             if (!_isCppCodegen && !_isWasmCodegen)
                 builder.UsePInvokePolicy(new ConfigurablePInvokePolicy(typeSystemContext.Target));
 
+            RemovedFeature removedFeatures = 0;
+            foreach (string feature in _removedFeatures)
+            {
+                if (feature == "EventSource")
+                    removedFeatures |= RemovedFeature.Etw;
+                else if (feature == "FrameworkStrings")
+                    removedFeatures |= RemovedFeature.FrameworkResources;
+                else if (feature == "Globalization")
+                    removedFeatures |= RemovedFeature.Globalization;
+                else if (feature == "Comparers")
+                    removedFeatures |= RemovedFeature.Comparers;
+                else if (feature == "CurlHandler")
+                    removedFeatures |= RemovedFeature.CurlHandler;
+            }
+
+            ILProvider ilProvider = _isReadyToRunCodeGen ? (ILProvider)new ReadyToRunILProvider() : new CoreRTILProvider();
+
+            if (removedFeatures != 0)
+                ilProvider = new RemovingILProvider(ilProvider, removedFeatures);
+
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 
@@ -486,7 +515,8 @@ namespace ILCompiler
                     ? (MetadataBlockingPolicy)new NoMetadataBlockingPolicy() 
                     : new BlockedInternalsBlockingPolicy(typeSystemContext);
 
-            ManifestResourceBlockingPolicy resBlockingPolicy = new NoManifestResourceBlockingPolicy();
+            ManifestResourceBlockingPolicy resBlockingPolicy = (removedFeatures & RemovedFeature.FrameworkResources) != 0 ?
+                new FrameworkStringResourceBlockingPolicy() : (ManifestResourceBlockingPolicy)new NoManifestResourceBlockingPolicy();
 
             UsageBasedMetadataGenerationOptions metadataGenerationOptions = UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
             if (_completeTypesMetadata)
@@ -496,7 +526,7 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            bool supportsReflection = !_isReadyToRunCodeGen && _systemModuleName == DefaultSystemModule;
+            bool supportsReflection = !_disableReflection && !_isReadyToRunCodeGen && _systemModuleName == DefaultSystemModule;
 
             MetadataManager metadataManager;
             if (_isReadyToRunCodeGen)
@@ -513,7 +543,7 @@ namespace ILCompiler
                     _metadataLogFileName,
                     stackTracePolicy,
                     invokeThunkGenerationPolicy,
-                    new Internal.IL.CoreRTILProvider(),
+                    ilProvider,
                     metadataGenerationOptions);
             }
             else
@@ -530,6 +560,8 @@ namespace ILCompiler
                 (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_isReadyToRunCodeGen && !_multiFile);
 
             useScanner &= !_noScanner;
+
+            builder.UseILProvider(ilProvider);
 
             ILScanResults scanResults = null;
             if (useScanner)
@@ -562,6 +594,7 @@ namespace ILCompiler
 
             builder
                 .UseBackendOptions(_codegenOptions)
+                .UseMethodBodyFolding(_methodBodyFolding)
                 .UseMetadataManager(metadataManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)

@@ -50,7 +50,7 @@ namespace System.Diagnostics
             
             if (_ipAddress == StackTraceHelper.SpecialIP.EdiSeparator)
             {
-                SetIsLastFrameFromForeignExceptionStackTrace(true);
+                _isLastFrameFromForeignExceptionStackTrace = true;
             }
             else if (_ipAddress != IntPtr.Zero)
             {
@@ -125,6 +125,14 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Set rethrow marker.
+        /// </summary>
+        internal void SetIsLastFrameFromForeignExceptionStackTrace()
+        {
+            _isLastFrameFromForeignExceptionStackTrace = true;
+        }
+
+        /// <summary>
         /// Builds a representation of the stack frame for use in the stack trace.
         /// </summary>
         internal void AppendToStackTrace(StringBuilder builder)
@@ -134,7 +142,7 @@ namespace System.Diagnostics
                 builder.Append(SR.StackTrace_AtWord);
                 builder.AppendLine(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo));
             }
-            if (GetIsLastFrameFromForeignExceptionStackTrace())
+            if (_isLastFrameFromForeignExceptionStackTrace)
             {
                 builder.AppendLine(SR.StackTrace_EndStackTraceFromPreviousThrow);
             }
