@@ -236,7 +236,7 @@ namespace ILCompiler
                         foreach (TypeDesc type in method.Instantiation)
                         {
                             AddDependenciesDueToPInvokeDelegate(ref dependencies, factory, type);
-                            AddDependenciesDueToPInvokeStruct(ref dependencies, factory, type);
+                            AddDependenciesDueToPInvokeStruct(ref dependencies, factory, type, methodName == "OffsetOf");
                         }
                     }
                 }
@@ -255,18 +255,22 @@ namespace ILCompiler
             }
         }
 
-        private void AddDependenciesDueToPInvokeStruct(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        private void AddDependenciesDueToPInvokeStruct(ref DependencyList dependencies, NodeFactory factory, TypeDesc type, bool fieldOffsetsRequired)
         {
+            dependencies.Add(factory.NecessaryTypeSymbol(type), "Struct Marshalling Stub");
+
             if (MarshalHelpers.IsStructMarshallingRequired(type))
             {
-                dependencies.Add(factory.NecessaryTypeSymbol(type), "Struct Marshalling Stub");
-
-                var stub = (StructMarshallingThunk)GetStructMarshallingManagedToNativeStub(type);
-                dependencies.Add(factory.MethodEntrypoint(stub), "Struct Marshalling stub");
+                dependencies.Add(factory.MethodEntrypoint(GetStructMarshallingManagedToNativeStub(type)), "Struct Marshalling stub");
                 dependencies.Add(factory.MethodEntrypoint(GetStructMarshallingNativeToManagedStub(type)), "Struct Marshalling stub");
                 dependencies.Add(factory.MethodEntrypoint(GetStructMarshallingCleanupStub(type)), "Struct Marshalling stub");
 
                 AddDependenciesDueToPInvokeStructDelegateField(ref dependencies, factory, type);
+            }
+
+            if (fieldOffsetsRequired)
+            {
+                _structMarshallingTypes.Add(type);
             }
         }
 
