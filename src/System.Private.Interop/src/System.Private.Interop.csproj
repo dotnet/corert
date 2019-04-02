@@ -63,6 +63,9 @@
 
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.ProjectN.cs"/>
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.CoreRT.cs"/>
+    <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Internal\Runtime\InteropConstants.cs">
+      <Link>Internal\Runtime\InteropConstants.cs</Link>
+    </Compile>
 
     <!-- TODO This should be really only needed for CoreCLR flavor of S.P.Interop. -->
     <!-- See https://github.com/dotnet/corert/pull/5404 -->

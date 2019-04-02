@@ -78,7 +78,7 @@ namespace Internal.Runtime.CompilerHelpers
                 structExists = true;
 
                 uint mask = entryParser.GetUnsigned();
-                if ((mask & 1) != 0)
+                if ((mask & InteropDataConstants.HasMarshallers) != 0)
                 {
                     // skip the first 4 IntPtrs(3 stubs and size)
                     entryParser.SkipInteger();
@@ -87,7 +87,7 @@ namespace Internal.Runtime.CompilerHelpers
                     entryParser.SkipInteger();
                 }
 
-                uint fieldCount = mask >> 2;
+                uint fieldCount = mask >> InteropDataConstants.FieldCountShift;
                 for (uint index = 0; index < fieldCount; index++)
                 {
                     string name = entryParser.GetString();
@@ -196,9 +196,9 @@ namespace Internal.Runtime.CompilerHelpers
             if (TryGetStructData(structTypeHandle, out externalReferences, out entryParser))
             {
                 uint mask = entryParser.GetUnsigned();
-                if ((mask & 1) != 0)
+                if ((mask & InteropDataConstants.HasMarshallers) != 0)
                 {
-                    hasInvalidLayout = (mask & 0x2) != 0;
+                    hasInvalidLayout = (mask & InteropDataConstants.HasInvalidLayout) != 0;
 
                     size = (int)entryParser.GetUnsigned();
                     marshalStub = externalReferences.GetIntPtrFromIndex(entryParser.GetUnsigned());

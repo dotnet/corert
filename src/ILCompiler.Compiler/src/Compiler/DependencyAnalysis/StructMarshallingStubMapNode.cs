@@ -5,6 +5,7 @@
 using System;
 
 using Internal.NativeFormat;
+using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
@@ -92,7 +93,9 @@ namespace ILCompiler.DependencyAnalysis
                     fieldOffsetData = (fieldOffsetData != null) ? writer.GetTuple(fieldOffsetData, row) : row;
                 }
 
-                uint mask = (uint)(nativeType.Fields.Length << 2) | (uint)(nativeType.HasInvalidLayout ? 2 : 0) | (uint)((marshallingData != null) ? 1 : 0);
+                uint mask = (uint)((marshallingData != null) ? InteropDataConstants.HasMarshallers : 0) |
+                            (uint)(nativeType.HasInvalidLayout ? InteropDataConstants.HasInvalidLayout : 0) |
+                            (uint)(nativeType.Fields.Length << InteropDataConstants.FieldCountShift);
 
                 Vertex data = writer.GetUnsignedConstant(mask);
                 if (marshallingData != null)
