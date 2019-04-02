@@ -75,17 +75,6 @@ namespace System.Threading
             }
         }
 
-        public long RecentCount
-        {
-            get
-            {
-                // Make sure up-to-date thread-local node state is visible to this thread
-                Interlocked.MemoryBarrierProcessWide();
-
-                return Count;
-            }
-        }
-
         private sealed class ThreadLocalNode
         {
             private uint _count;
