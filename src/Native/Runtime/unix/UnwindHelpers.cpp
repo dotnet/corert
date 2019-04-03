@@ -119,7 +119,8 @@ static int LocateSectionsCallback(struct dl_phdr_info *info, size_t size, void *
         }
     }
 
-    return 0;
+    bool found = found_obj && found_hdr;
+    return static_cast<int>(found);
 }
 #endif
 

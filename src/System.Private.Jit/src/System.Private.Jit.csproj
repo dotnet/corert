@@ -94,6 +94,7 @@
     <Compile Include="$(TypeSystemBasePath)\Interop\InteropTypes.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\InteropStateManager.cs" />
     <Compile Include="$(ILCompilerBasePath)\Logger.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\CompilationModuleGroup.cs" /> 
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
@@ -119,6 +120,7 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\ISymbolNode.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\IExportableSymbolNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\IEETypeNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />

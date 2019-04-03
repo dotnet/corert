@@ -9,19 +9,21 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class BlobNode : ObjectNode, ISymbolDefinitionNode
+    public class BlobNode : ObjectNode, IExportableSymbolNode
     {
         private Utf8String _name;
         private ObjectNodeSection _section;
         private byte[] _data;
         private int _alignment;
+        private readonly bool _isExported;
 
-        public BlobNode(Utf8String name, ObjectNodeSection section, byte[] data, int alignment)
+        public BlobNode(Utf8String name, ObjectNodeSection section, byte[] data, int alignment, bool isExported)
         {
             _name = name;
             _section = section;
             _data = data;
             _alignment = alignment;
+            _isExported = isExported;
         }
 
         public override ObjectNodeSection Section => _section;
@@ -37,6 +39,11 @@ namespace ILCompiler.DependencyAnalysis
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             return new ObjectData(_data, Array.Empty<Relocation>(), _alignment, new ISymbolDefinitionNode[] { this });
+        }
+
+        public ExportForm GetExportForm(NodeFactory factory)
+        {
+            return _isExported ? ExportForm.ByName : ExportForm.None;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

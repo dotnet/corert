@@ -95,6 +95,7 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         // the universal transition thunk as an argument to RhpCidResolve
         mov r11, r10
         lea r10, [rip + EXTERNAL_C_FUNC(RhpCidResolve)]
-        jmp EXTERNAL_C_FUNC(RhpUniversalTransition_DebugStepTailCall)
+        // trick to avoid PLT relocation at runtime which corrupts registers
+        jmp qword ptr [rip + RhpUniversalTransition_DebugStepTailCall@GOTPCREL]
 
 LEAF_END RhpInterfaceDispatchSlow, _TEXT
