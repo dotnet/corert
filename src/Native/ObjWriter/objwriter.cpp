@@ -398,12 +398,12 @@ int ObjectWriter::EmitSymbolRef(const char *SymbolName,
     IsPCRel = true;	
     // PLT is valid only for code symbols,
     // but there is shouldn't be references to global data symbols
-		Kind = MCSymbolRefExpr::VK_PLT;
+    Kind = MCSymbolRefExpr::VK_PLT;
     break;
   case RelocType::IMAGE_REL_BASED_RELPTR32:
     Size = 4;
     IsPCRel = true;
-	  Delta += 4; // size of C# (int) type is always 4 bytes
+    Delta += 4; // size of C# (int) type is always 4 bytes
     break;
   case RelocType::IMAGE_REL_BASED_THUMB_MOV32: {
     const unsigned Offset = GetDFSize();

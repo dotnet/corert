@@ -96,6 +96,6 @@ LEAF_ENTRY RhpInterfaceDispatchSlow, _TEXT
         mov r11, r10
         lea r10, [rip + EXTERNAL_C_FUNC(RhpCidResolve)]
         // trick to avoid PLT relocation at runtime which corrupts registers
-        jmp qword ptr [rip + RhpUniversalTransition_DebugStepTailCall@GOTPCREL]
+        jmp qword ptr [rip + C_FUNC(RhpUniversalTransition_DebugStepTailCall)@GOTPCREL]
 
 LEAF_END RhpInterfaceDispatchSlow, _TEXT
