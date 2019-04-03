@@ -109,8 +109,10 @@ namespace ILCompiler.CppCodeGen
         {
             foreach (var nodeAlias in _compilation.NodeFactory.NodeAliases)
             {
-                var methodNode = (CppMethodCodeNode)nodeAlias.Key;
-                _externCSignatureMap.Add(nodeAlias.Value, methodNode.Method.Signature);
+                if(nodeAlias.Key is CppMethodCodeNode methodNode)
+                {
+                    _externCSignatureMap.Add(nodeAlias.Value, methodNode.Method.Signature);
+                }
             }
         }
 
