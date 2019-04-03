@@ -711,7 +711,9 @@ if [ `uname` = "NetBSD" ]; then
 else
     NumProc=$(getconf _NPROCESSORS_ONLN)
 fi
-((maxProcesses = $NumProc * 3 / 2)) # long tests delay process creation, use a few more processors
+echo "Processor Count: $NumProc"
+((maxProcesses = $NumProc * 3 / 2 + 1)) # long tests delay process creation, use a few more processors
+echo  "Max Process Count: $maxProcesses"
 
 ((nextProcessIndex = 0))
 ((processCount = 0))
