@@ -70,7 +70,7 @@ public sealed class ParallelRunner
         public void Launch(ProcessInfo processInfo, ReadyToRunJittedMethods jittedMethods, int processIndex)
         {
             Debug.Assert(_processRunner == null);
-            _logWriter.WriteLine($"{processIndex}: launching: {processInfo.ProcessPath} {processInfo.Arguments}");
+            Console.WriteLine($"{processIndex}: launching: {processInfo.ProcessPath} {processInfo.Arguments}");
 
             _processRunner = new ProcessRunner(processInfo, processIndex, jittedMethods, _processExitEvent);
         }
@@ -160,13 +160,20 @@ public sealed class ParallelRunner
             {
                 using (StreamWriter processLogWriter = new StreamWriter(processInfo.LogPath, append: true))
                 {
-                    processLogWriter.WriteLine($"Jitted methods ({processInfo.JittedMethods.Sum(moduleMethodsKvp => moduleMethodsKvp.Value.Count)} total):");
-                    foreach (KeyValuePair<string, HashSet<string>> jittedMethodsPerModule in processInfo.JittedMethods)
+                    if (processInfo.JittedMethods != null)
                     {
-                        foreach (string method in jittedMethodsPerModule.Value)
+                        processLogWriter.WriteLine($"Jitted methods ({processInfo.JittedMethods.Sum(moduleMethodsKvp => moduleMethodsKvp.Value.Count)} total):");
+                        foreach (KeyValuePair<string, HashSet<string>> jittedMethodsPerModule in processInfo.JittedMethods)
                         {
-                            processLogWriter.WriteLine(jittedMethodsPerModule.Key + " -> " + method);
+                            foreach (string method in jittedMethodsPerModule.Value)
+                            {
+                                processLogWriter.WriteLine(jittedMethodsPerModule.Key + " -> " + method);
+                            }
                         }
+                    }
+                    else
+                    {
+                        processLogWriter.WriteLine("Jitted method info not available");
                     }
                 }
             }

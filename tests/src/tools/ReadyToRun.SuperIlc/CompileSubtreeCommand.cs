@@ -33,7 +33,6 @@ namespace ReadyToRun.SuperIlc
             }
 
             IEnumerable<string> referencePaths = options.ReferencePaths();
-            string coreRunPath = SuperIlcHelpers.FindCoreRun(referencePaths);
 
             IEnumerable<CompilerRunner> runners = options.CompilerRunners();
 
@@ -59,7 +58,7 @@ namespace ReadyToRun.SuperIlc
                 }
                 try
                 {
-                    Application application = Application.FromDirectory(directory.ToString(), runners, outputDirectoryPerApp, options.NoExe, options.NoEtw, coreRunPath);
+                    Application application = Application.FromDirectory(directory.ToString(), runners, outputDirectoryPerApp, options);
                     if (application != null)
                     {
                         applications.Add(application);
@@ -79,9 +78,9 @@ namespace ReadyToRun.SuperIlc
             string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
             string applicationSetLogPath = Path.Combine(options.OutputDirectory.ToString(), "subtree-" + timeStamp + ".log");
 
-            using (ApplicationSet applicationSet = new ApplicationSet(applications, runners, coreRunPath, applicationSetLogPath))
+            using (ApplicationSet applicationSet = new ApplicationSet(applications, runners, options, applicationSetLogPath))
             {
-                bool success = applicationSet.Build(coreRunPath, runners, applicationSetLogPath);
+                bool success = applicationSet.Build(runners, applicationSetLogPath);
 
                 Dictionary<string, List<ProcessInfo>> compilationFailureBuckets = new Dictionary<string, List<ProcessInfo>>();
                 Dictionary<string, List<ProcessInfo>> executionFailureBuckets = new Dictionary<string, List<ProcessInfo>>();

@@ -16,7 +16,7 @@ namespace ReadyToRun.SuperIlc
 
         private IEnumerable<CompilerRunner> _compilerRunners;
 
-        private string _coreRunPath;
+        private BuildOptions _options;
 
         private string _logPath;
 
@@ -33,12 +33,12 @@ namespace ReadyToRun.SuperIlc
         public ApplicationSet(
             IEnumerable<Application> applications,
             IEnumerable<CompilerRunner> compilerRunners,
-            string coreRunPath,
+            BuildOptions options,
             string logPath)
         {
             _applications = applications;
             _compilerRunners = compilerRunners;
-            _coreRunPath = coreRunPath;
+            _options = options;
             _logPath = logPath;
 
             _logWriter = new StreamWriter(_logPath);
@@ -60,7 +60,7 @@ namespace ReadyToRun.SuperIlc
 
             foreach (Application app in _applications)
             {
-                for (int exeIndex = 0; exeIndex < app.MainExecutables.Count; exeIndex++)
+                for (int exeIndex = 0; exeIndex < app.Executions.Count; exeIndex++)
                 {
                     Dictionary<string, HashSet<string>>[] appMethodsPerModulePerCompiler = new Dictionary<string, HashSet<string>>[(int)CompilerIndex.Count];
                     foreach (CompilerRunner runner in _compilerRunners)
@@ -181,7 +181,7 @@ namespace ReadyToRun.SuperIlc
 
             foreach (Application app in _applications)
             {
-                AddAppExecution(executionsToRun, app, stopwatch);
+                AddAppExecutions(executionsToRun, app, stopwatch);
             }
 
             ParallelRunner.Run(startIndex: 0, executionsToRun, _logWriter);
@@ -247,14 +247,14 @@ namespace ReadyToRun.SuperIlc
             return success;
         }
 
-        public bool Build(string coreRunPath, IEnumerable<CompilerRunner> runners, string logPath)
+        public bool Build(IEnumerable<CompilerRunner> runners, string logPath)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
             bool success = Compile();
 
-            if (coreRunPath != null)
+            if (!_options.NoExe)
             {
                 success = Execute() && success;
             }
@@ -266,7 +266,7 @@ namespace ReadyToRun.SuperIlc
             return success;
         }
 
-        private void AddAppExecution(List<ProcessInfo> executionsToRun, Application app, Stopwatch stopwatch)
+        private void AddAppExecutions(List<ProcessInfo> executionsToRun, Application app, Stopwatch stopwatch)
         {
             foreach (ProcessInfo[] execution in app.Executions)
             {

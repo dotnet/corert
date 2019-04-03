@@ -16,25 +16,25 @@ namespace ReadyToRun.SuperIlc
 
         private List<string> _mainExecutables;
 
+        private List<string> _executionScripts;
+
         private readonly List<ProcessInfo[]> _compilations;
 
         private string _outputFolder;
 
         private readonly List<ProcessInfo[]> _executions;
 
-        public IList<string> MainExecutables => _mainExecutables;
-
         public Application(
             List<string> compilationInputFiles, 
             List<string> mainExecutables,
+            List<string> executionScripts,
             IEnumerable<CompilerRunner> compilerRunners,
             string outputFolder,
-            string coreRunPath,
-            bool noExe,
-            bool noEtw)
+            BuildOptions options)
         {
             _compilationInputFiles = compilationInputFiles;
             _mainExecutables = mainExecutables;
+            _executionScripts = executionScripts;
             _outputFolder = outputFolder;
 
             _compilations = new List<ProcessInfo[]>();
@@ -51,36 +51,69 @@ namespace ReadyToRun.SuperIlc
                 _compilations.Add(fileCompilations);
             }
 
-            if (!noExe && !string.IsNullOrEmpty(coreRunPath))
+            if (!options.NoExe)
             {
-                for (int exeIndex = 0; exeIndex < _mainExecutables.Count; exeIndex++)
+                HashSet<string> scriptedExecutables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (string script in _executionScripts ?? Enumerable.Empty<string>())
                 {
-                    string mainExe = _mainExecutables[exeIndex];
-                    ProcessInfo[] mainAppExecutions = new ProcessInfo[(int)CompilerIndex.Count];
-                    _executions.Add(mainAppExecutions);
+                    ProcessInfo[] scriptExecutions = new ProcessInfo[(int)CompilerIndex.Count];
+                    _executions.Add(scriptExecutions);
+                    scriptedExecutables.Add(Path.ChangeExtension(script, ".exe"));
+
                     foreach (CompilerRunner runner in compilerRunners)
                     {
                         HashSet<string> modules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                         HashSet<string> folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                        modules.Add(mainExe);
-                        modules.Add(runner.GetOutputFileName(_outputFolder, mainExe));
+                        modules.Add(runner.GetOutputFileName(_outputFolder, script));
                         modules.UnionWith(_compilationInputFiles);
                         modules.UnionWith(_compilationInputFiles.Select(file => runner.GetOutputFileName(_outputFolder, file)));
-                        folders.Add(Path.GetDirectoryName(mainExe));
+                        folders.Add(Path.GetDirectoryName(script));
                         folders.UnionWith(runner.ReferenceFolders);
 
-                        mainAppExecutions[(int)runner.Index] = runner.ExecutionProcess(_outputFolder, mainExe, modules, folders, coreRunPath, noEtw);
+                        scriptExecutions[(int)runner.Index] = runner.ScriptExecutionProcess(_outputFolder, script, modules, folders, options.CoreRootDirectory.FullName, options.NoEtw);
+                    }
+                }
+
+                if (options.CoreRootDirectory != null)
+                {
+                    string coreRunPath = options.CoreRunPath();
+                    foreach (string mainExe in _mainExecutables ?? Enumerable.Empty<string>())
+                    {
+                        if (scriptedExecutables.Contains(mainExe))
+                        {
+                            // Skip direct exe launch assuming it was run by the corresponding cmd script
+                            continue;
+                        }
+
+                        ProcessInfo[] appExecutions = new ProcessInfo[(int)CompilerIndex.Count];
+                        _executions.Add(appExecutions);
+                        foreach (CompilerRunner runner in compilerRunners)
+                        {
+                            HashSet<string> modules = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                            HashSet<string> folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                            modules.Add(mainExe);
+                            modules.Add(runner.GetOutputFileName(_outputFolder, mainExe));
+                            modules.UnionWith(_compilationInputFiles);
+                            modules.UnionWith(_compilationInputFiles.Select(file => runner.GetOutputFileName(_outputFolder, file)));
+                            folders.Add(Path.GetDirectoryName(mainExe));
+                            folders.UnionWith(runner.ReferenceFolders);
+
+                            appExecutions[(int)runner.Index] = runner.AppExecutionProcess(_outputFolder, mainExe, modules, folders, coreRunPath, options.NoEtw);
+                        }
                     }
                 }
             }
         }
 
-        public static Application FromDirectory(string inputDirectory, IEnumerable<CompilerRunner> compilerRunners, string outputRoot, bool noExe, bool noEtw, string coreRunPath)
+        public static Application FromDirectory(string inputDirectory, IEnumerable<CompilerRunner> compilerRunners, string outputRoot, BuildOptions options)
         {
             List<string> compilationInputFiles = new List<string>();
             List<string> passThroughFiles = new List<string>();
             List<string> mainExecutables = new List<string>();
+            List<string> executionScripts = new List<string>();
 
             // Copy unmanaged files (runtime, native dependencies, resources, etc)
             foreach (string file in Directory.EnumerateFiles(inputDirectory))
@@ -94,9 +127,14 @@ namespace ReadyToRun.SuperIlc
                 {
                     passThroughFiles.Add(file);
                 }
-                if (Path.GetExtension(file).Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                string ext = Path.GetExtension(file);
+                if (ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
                     mainExecutables.Add(file);
+                }
+                else if (ext.Equals(".cmd", StringComparison.OrdinalIgnoreCase))
+                {
+                    executionScripts.Add(file);
                 }
             }
 
@@ -115,7 +153,7 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            return new Application(compilationInputFiles, mainExecutables, compilerRunners, outputRoot, coreRunPath, noExe, noEtw);
+            return new Application(compilationInputFiles, mainExecutables, executionScripts, compilerRunners, outputRoot, options);
         }
 
         public void AddModuleToJittedMethodsMapping(Dictionary<string, HashSet<string>> moduleToJittedMethods, int executionIndex, CompilerIndex compilerIndex)
@@ -189,8 +227,14 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        public IEnumerable<ProcessInfo[]> Compilations => _compilations;
+        public string OutputFolder => _outputFolder;
 
-        public IEnumerable<ProcessInfo[]> Executions => _executions ?? Enumerable.Empty<ProcessInfo[]>();
+        public IList<string> MainExecutables => _mainExecutables;
+
+        public IList<String> ExecutionScripts => _executionScripts;
+
+        public IList<ProcessInfo[]> Compilations => _compilations;
+
+        public IList<ProcessInfo[]> Executions => _executions;
     }
 }

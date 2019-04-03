@@ -49,7 +49,6 @@ public abstract class CompilerRunner
         processInfo.ProcessPath = Path.Combine(_compilerPath, CompilerFileName);
         processInfo.Arguments = $"@{responseFile}";
         processInfo.TimeoutMilliseconds = ProcessInfo.DefaultIlcTimeout;
-        processInfo.UseShellExecute = false;
         processInfo.LogPath = Path.ChangeExtension(outputFileName, ".ilc.log");
         processInfo.InputFileName = assemblyFileName;
         processInfo.OutputFileName = outputFileName;
@@ -58,13 +57,9 @@ public abstract class CompilerRunner
         return processInfo;
     }
 
-    public virtual ProcessInfo ExecutionProcess(string outputRoot, string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath, bool noEtw)
+    protected virtual ProcessInfo ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
     {
-        string exeToRun = GetOutputFileName(outputRoot, appPath);
         ProcessInfo processInfo = new ProcessInfo();
-        processInfo.ProcessPath = coreRunPath;
-        processInfo.Arguments = exeToRun;
-        processInfo.InputFileName = exeToRun;
 
         if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("__GCSTRESSLEVEL")))
         {
@@ -78,9 +73,6 @@ public abstract class CompilerRunner
         // TODO: support for tier jitting - for now we just turn it off as it may distort the JIT statistics 
         processInfo.EnvironmentOverrides["COMPLUS_TieredCompilation"] = "0";
 
-        processInfo.UseShellExecute = false;
-        processInfo.LogPath = Path.ChangeExtension(exeToRun, ".exe.log");
-        processInfo.ExpectedExitCode = 100;
         processInfo.CollectJittedMethods = !noEtw;
         if (!noEtw)
         {
@@ -88,6 +80,30 @@ public abstract class CompilerRunner
             processInfo.MonitorFolders = folders;
         }
 
+        return processInfo;
+    }
+
+    public virtual ProcessInfo ScriptExecutionProcess(string outputRoot, string scriptPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRootPath, bool noEtw)
+    {
+        string scriptToRun = GetOutputFileName(outputRoot, scriptPath);
+        ProcessInfo processInfo = ExecutionProcess(modules, folders, noEtw);
+        processInfo.ProcessPath = scriptToRun;
+        processInfo.Arguments = null;
+        processInfo.InputFileName = scriptToRun;
+        processInfo.LogPath = scriptToRun + ".log";
+        processInfo.EnvironmentOverrides["CORE_ROOT"] = coreRootPath;
+        return processInfo;
+    }
+
+    public virtual ProcessInfo AppExecutionProcess(string outputRoot, string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath, bool noEtw)
+    {
+        string exeToRun = GetOutputFileName(outputRoot, appPath);
+        ProcessInfo processInfo = ExecutionProcess(modules, folders, noEtw);
+        processInfo.ProcessPath = coreRunPath;
+        processInfo.Arguments = exeToRun;
+        processInfo.InputFileName = exeToRun;
+        processInfo.LogPath = exeToRun + ".log";
+        processInfo.ExpectedExitCode = 100;
         return processInfo;
     }
 

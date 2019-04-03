@@ -32,13 +32,12 @@ namespace ReadyToRun.SuperIlc
             }
 
             IEnumerable<string> referencePaths = options.ReferencePaths();
-            string coreRunPath = SuperIlcHelpers.FindCoreRun(referencePaths);
 
             IEnumerable<CompilerRunner> runners = options.CompilerRunners();
 
             PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
 
-            Application application = Application.FromDirectory(options.InputDirectory.FullName, runners, options.OutputDirectory.FullName, options.NoExe, options.NoEtw, coreRunPath);
+            Application application = Application.FromDirectory(options.InputDirectory.FullName, runners, options.OutputDirectory.FullName, options);
             if (application == null)
             {
                 Console.Error.WriteLine($"No managed app found in {options.InputDirectory.FullName}");
@@ -47,9 +46,9 @@ namespace ReadyToRun.SuperIlc
             string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
             string applicationSetLogPath = Path.Combine(options.InputDirectory.ToString(), "directory-" + timeStamp + ".log");
 
-            using (ApplicationSet applicationSet = new ApplicationSet(new Application[] { application }, runners, coreRunPath, applicationSetLogPath))
+            using (ApplicationSet applicationSet = new ApplicationSet(new Application[] { application }, runners, options, applicationSetLogPath))
             {
-                bool success = applicationSet.Build(coreRunPath, runners, applicationSetLogPath);
+                bool success = applicationSet.Build(runners, applicationSetLogPath);
 
                 if (!options.NoCleanup)
                 {
