@@ -859,8 +859,7 @@ namespace ILCompiler.DependencyAnalysis
                     AppendExternCPrefix(_sb);
                     name.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
-                    var isGlobal = name is IExportableSymbolNode esn && esn.GetExportForm(_nodeFactory) != ExportForm.None;
-                    EmitSymbolDef(_sb, isGlobal);
+                    EmitSymbolDef(_sb, false);
 
                     string alternateName = _nodeFactory.GetSymbolAlternateName(name);
                     if (alternateName != null)

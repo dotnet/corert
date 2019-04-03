@@ -497,7 +497,9 @@ namespace ILCompiler
 
             public void RootReadOnlyDataBlob(byte[] data, int alignment, string reason, string exportName)
             {
-                _graph.AddRoot(_factory.ReadOnlyDataBlob(exportName, data, alignment, true), reason);
+                var blob = _factory.ReadOnlyDataBlob("__readonlydata_" + exportName, data, alignment);
+                _graph.AddRoot(blob, reason);
+                _factory.NodeAliases.Add(blob, exportName);
             }
         }
 

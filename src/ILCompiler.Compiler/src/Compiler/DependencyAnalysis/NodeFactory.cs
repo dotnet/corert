@@ -227,7 +227,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
             {
-                return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment, key.IsExported);
+                return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment);
             });
 
             _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
@@ -648,9 +648,9 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;
 
-        public BlobNode ReadOnlyDataBlob(Utf8String name, byte[] blobData, int alignment, bool isExported = false)
+        public BlobNode ReadOnlyDataBlob(Utf8String name, byte[] blobData, int alignment)
         {
-            return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment, isExported));
+            return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
         }
 
         private NodeCache<TypeDesc, SealedVTableNode> _sealedVtableNodes;
@@ -1176,14 +1176,12 @@ namespace ILCompiler.DependencyAnalysis
             public readonly Utf8String Name;
             public readonly byte[] Data;
             public readonly int Alignment;
-            public readonly bool IsExported;
 
-            public ReadOnlyDataBlobKey(Utf8String name, byte[] data, int alignment, bool isExported)
+            public ReadOnlyDataBlobKey(Utf8String name, byte[] data, int alignment)
             {
                 Name = name;
                 Data = data;
                 Alignment = alignment;
-                IsExported = isExported;
             }
 
             // The assumption here is that the name of the blob is unique.
