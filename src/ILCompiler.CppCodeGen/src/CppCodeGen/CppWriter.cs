@@ -511,7 +511,7 @@ namespace ILCompiler.CppCodeGen
             }
             else
             {
-                return node.GetMangledName(factory.NameMangler);
+                return factory.GetSymbolAlternateName(node) ?? node.GetMangledName(factory.NameMangler);
             }
         }
 
