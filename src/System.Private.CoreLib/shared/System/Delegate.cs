@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -77,9 +78,9 @@ namespace System
             return source.RemoveImpl(value);
         }
 
-        public static Delegate RemoveAll(Delegate source, Delegate value)
+        public static Delegate? RemoveAll(Delegate? source, Delegate? value)
         {
-            Delegate newDelegate = null;
+            Delegate? newDelegate = null;
 
             do
             {
@@ -93,7 +94,7 @@ namespace System
 
         // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Delegate d1, Delegate d2)
+        public static bool operator ==(Delegate? d1, Delegate? d2)
         {
             // Test d2 first to allow branch elimination when inlined for null checks (== null)
             // so it can become a simple test
@@ -103,12 +104,12 @@ namespace System
                 return (d1 is null) ? true : false;
             }
 
-            return ReferenceEquals(d2, d1) || d2.Equals((object)d1);
+            return ReferenceEquals(d2, d1) ? true : d2.Equals((object?)d1);
         }
 
         // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(Delegate d1, Delegate d2)
+        public static bool operator !=(Delegate? d1, Delegate? d2)
         {
             // Test d2 first to allow branch elimination when inlined for not null checks (!= null)
             // so it can become a simple test
