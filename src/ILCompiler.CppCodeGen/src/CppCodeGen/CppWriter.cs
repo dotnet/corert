@@ -509,13 +509,9 @@ namespace ILCompiler.CppCodeGen
             {
                 return GetCppFatFunctionPointerName(f);
             }
-            else if (node is BlobNode)
-            {
-                return factory.GetSymbolAlternateName(node) ?? node.GetMangledName(factory.NameMangler);
-            }
             else
             {
-                return node.GetMangledName(factory.NameMangler);
+                return factory.GetSymbolAlternateName(node) ?? node.GetMangledName(factory.NameMangler);
             }
         }
 

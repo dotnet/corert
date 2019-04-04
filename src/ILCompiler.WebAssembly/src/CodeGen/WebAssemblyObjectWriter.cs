@@ -36,15 +36,15 @@ namespace ILCompiler.DependencyAnalysis
 
             if (symbol is ObjectNode)
             {
-                ObjectNode objNode = (ObjectNode)symbol;
                 ISymbolDefinitionNode symbolDefNode = (ISymbolDefinitionNode)symbol;
+                var symbolName = _nodeFactory.GetSymbolAlternateName(symbolDefNode) ?? symbol.GetMangledName(nameMangler);
                 if (symbolDefNode.Offset == 0)
                 {
-                    return symbol.GetMangledName(nameMangler);
+                    return symbolName;
                 }
                 else
                 {
-                    return symbol.GetMangledName(nameMangler) + "___REALBASE";
+                    return symbolName + "___REALBASE";
                 }
             }
             else if (symbol is ObjectAndOffsetSymbolNode)
