@@ -155,7 +155,7 @@
     <Compile Include="System\Reflection\AssemblyNameParser.cs" />
     <Compile Include="System\Reflection\RuntimeAssemblyName.cs" />
     <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
-    <Compile Include="System\Reflection\AssemblyName.cs" />
+    <Compile Include="System\Reflection\AssemblyName.CoreRT.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />
     <Compile Include="System\Reflection\CustomAttributeData.cs" />
     <Compile Include="System\Reflection\CustomAttributeExtensions.cs" />
