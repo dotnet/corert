@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal class WebAssemblyObjectWriter : IDisposable
     {
-        public static string GetBaseSymbolName(ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
+        private string GetBaseSymbolName(ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
         {
             if (symbol is WebAssemblyMethodCodeNode)
             {
