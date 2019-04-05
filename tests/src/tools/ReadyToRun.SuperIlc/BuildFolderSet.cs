@@ -305,7 +305,7 @@ namespace ReadyToRun.SuperIlc
         {
             PASS = 0,
             ILC_FAIL = 1,
-            WRONG_EXIT_CODE = 2,
+            EXIT_CODE = 2,
             CRASHED = 3,
             TIMED_OUT = 4,
 
@@ -360,7 +360,7 @@ namespace ReadyToRun.SuperIlc
                         {
                             Outcome outcome = (execProcess.TimedOut ? Outcome.TIMED_OUT :
                                 execProcess.ExitCode < -1000 * 1000 ? Outcome.CRASHED :
-                                Outcome.WRONG_EXIT_CODE);
+                                Outcome.EXIT_CODE);
                             outcomes[(int)outcome, (int)runner.Index]++;
                             executionFailureOutcomeMask |= 1 << (int)outcome;
                         }
