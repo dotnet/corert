@@ -343,14 +343,6 @@
       "value": "$(BuildTag)-$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "MyGetFeedUrl": {
-      "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package",
-      "allowOverride": true
-    },
-    "MyGetApiKey": {
-      "value": null,
-      "isSecret": true
-    },
     "VstsPat": {
       "value": null,
       "isSecret": true
@@ -401,7 +393,7 @@
       "value": null,
       "isSecret": true
     },
-    "MyGetFeedUrl": {
+    "AzureFeedUrl": {
       "value": "https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json",
       "allowOverride": true
     },
