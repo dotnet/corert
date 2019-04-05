@@ -1955,13 +1955,6 @@ bool GCToOSInterface::CanEnableGCNumaAware()
     return false;
 }
 
-bool GCToOSInterface::GetNumaProcessorNode(uint16_t proc_no, uint16_t* node_no)
-{
-    UNREFERENCED_PARAMETER(proc_no);
-    UNREFERENCED_PARAMETER(node_no);
-    return false;
-}
-
 // Get processor number and optionally its NUMA node number for the specified heap number
 // Parameters:
 //  heap_number - heap number to get the result for
@@ -1973,30 +1966,51 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
 {
     bool success = false;
 
-    int bit_number = 0;
-    uint8_t proc_number = 0;
-    for (uintptr_t mask = 1; mask != 0; mask <<= 1)
+    // Locate heap_number-th available processor
+    uint16_t procNumber;
+    size_t cnt = heap_number;
+    for (uint16_t i = 0; i < GCToOSInterface::GetTotalProcessorCount(); i++)
     {
-        if (g_processAffinitySet.Contains(proc_number))
+        if (g_processAffinitySet.Contains(i))
         {
-            if (bit_number == heap_number)
+            if (cnt == 0)
             {
-                *proc_no = GroupProcNo(GroupProcNo::NoGroup, proc_number).GetCombinedValue();
-
-                if (GCToOSInterface::CanEnableGCNumaAware())
-                {
-                    if (!GCToOSInterface::GetNumaProcessorNode(proc_number, node_no))
-                    {
-                        *node_no = NUMA_NODE_UNDEFINED;
-                    }
-                }
-
+                procNumber = i;
                 success = true;
                 break;
             }
-            bit_number++;
+
+            cnt--;
         }
-        proc_number++;
+    }
+
+    if (success)
+    {
+        WORD gn, gpn;
+        gn = GroupProcNo::NoGroup;
+        gpn = procNumber;
+
+        GroupProcNo groupProcNo(gn, gpn);
+        *proc_no = groupProcNo.GetCombinedValue();
+
+        if (GCToOSInterface::CanEnableGCNumaAware())
+        {
+            // Get the current processor group
+            PROCESSOR_NUMBER procNumber;
+            GetCurrentProcessorNumberEx(&procNumber);
+
+            procNumber.Number = (BYTE)gpn;
+            procNumber.Reserved = 0;
+
+            if (GetNumaProcessorNodeEx(&procNumber, node_no))
+            {
+                *node_no = NUMA_NODE_UNDEFINED;
+            }
+        }
+        else
+        {   // no numa setting, each cpu group is treated as a node
+            *node_no = groupProcNo.GetGroup();
+        }
     }
 
     return success;

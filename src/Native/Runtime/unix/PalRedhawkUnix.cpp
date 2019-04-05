@@ -1868,14 +1868,6 @@ bool GCToOSInterface::CanEnableGCNumaAware()
     return false;
 }
 
-bool GCToOSInterface::GetNumaProcessorNode(uint16_t proc_no, uint16_t* node_no)
-{
-    // TODO
-    UNREFERENCED_PARAMETER(proc_no);
-    UNREFERENCED_PARAMETER(node_no);
-    return false;
-}
-
 // Get processor number and optionally its NUMA node number for the specified heap number
 // Parameters:
 //  heap_number - heap number to get the result for
