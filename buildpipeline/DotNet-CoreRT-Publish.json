@@ -396,7 +396,15 @@
     "UseLegacyBuildScripts": {
       "value": "false",
       "allowOverride": true
-    }
+    },
+    "AzureFeedAccountKey": {
+      "value": null,
+      "isSecret": true
+    },
+    "MyGetFeedUrl": {
+      "value": "https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json",
+      "allowOverride": true
+    },
   },
   "retentionRules": [
     {
