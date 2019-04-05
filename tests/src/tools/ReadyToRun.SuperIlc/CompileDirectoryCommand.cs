@@ -37,18 +37,18 @@ namespace ReadyToRun.SuperIlc
 
             PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
 
-            Application application = Application.FromDirectory(options.InputDirectory.FullName, runners, options.OutputDirectory.FullName, options);
-            if (application == null)
+            BuildFolder folder = BuildFolder.FromDirectory(options.InputDirectory.FullName, runners, options.OutputDirectory.FullName, options);
+            if (folder == null)
             {
                 Console.Error.WriteLine($"No managed app found in {options.InputDirectory.FullName}");
             }
 
             string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
-            string applicationSetLogPath = Path.Combine(options.InputDirectory.ToString(), "directory-" + timeStamp + ".log");
+            string folderSetLogPath = Path.Combine(options.InputDirectory.ToString(), "directory-" + timeStamp + ".log");
 
-            using (ApplicationSet applicationSet = new ApplicationSet(new Application[] { application }, runners, options, applicationSetLogPath))
+            using (BuildFolderSet folderSet = new BuildFolderSet(new BuildFolder[] { folder }, runners, options, folderSetLogPath))
             {
-                bool success = applicationSet.Build(runners, applicationSetLogPath);
+                bool success = folderSet.Build(runners, folderSetLogPath);
 
                 if (!options.NoCleanup)
                 {

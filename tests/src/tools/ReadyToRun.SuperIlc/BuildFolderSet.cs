@@ -10,9 +10,9 @@ using System.Linq;
 
 namespace ReadyToRun.SuperIlc
 {
-    public class ApplicationSet : IDisposable
+    public class BuildFolderSet : IDisposable
     {
-        private IEnumerable<Application> _applications;
+        private IEnumerable<BuildFolder> _buildFolders;
 
         private IEnumerable<CompilerRunner> _compilerRunners;
 
@@ -28,15 +28,15 @@ namespace ReadyToRun.SuperIlc
 
         private long _buildMilliseconds;
 
-        public IEnumerable<Application> Applications => _applications;
+        public IEnumerable<BuildFolder> BuildFolders => _buildFolders;
 
-        public ApplicationSet(
-            IEnumerable<Application> applications,
+        public BuildFolderSet(
+            IEnumerable<BuildFolder> buildFolders,
             IEnumerable<CompilerRunner> compilerRunners,
             BuildOptions options,
             string logPath)
         {
-            _applications = applications;
+            _buildFolders = buildFolders;
             _compilerRunners = compilerRunners;
             _options = options;
             _logPath = logPath;
@@ -58,23 +58,23 @@ namespace ReadyToRun.SuperIlc
                 allMethodsPerModulePerCompiler[(int)runner.Index] = new Dictionary<string, HashSet<string>>();
             }
 
-            foreach (Application app in _applications)
+            foreach (BuildFolder folder in _buildFolders)
             {
-                for (int exeIndex = 0; exeIndex < app.Executions.Count; exeIndex++)
+                for (int exeIndex = 0; exeIndex < folder.Executions.Count; exeIndex++)
                 {
                     Dictionary<string, HashSet<string>>[] appMethodsPerModulePerCompiler = new Dictionary<string, HashSet<string>>[(int)CompilerIndex.Count];
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
                         appMethodsPerModulePerCompiler[(int)runner.Index] = new Dictionary<string, HashSet<string>>();
-                        app.AddModuleToJittedMethodsMapping(allMethodsPerModulePerCompiler[(int)runner.Index], exeIndex, runner.Index);
-                        app.AddModuleToJittedMethodsMapping(appMethodsPerModulePerCompiler[(int)runner.Index], exeIndex, runner.Index);
+                        folder.AddModuleToJittedMethodsMapping(allMethodsPerModulePerCompiler[(int)runner.Index], exeIndex, runner.Index);
+                        folder.AddModuleToJittedMethodsMapping(appMethodsPerModulePerCompiler[(int)runner.Index], exeIndex, runner.Index);
                     }
-                    app.WriteJitStatistics(appMethodsPerModulePerCompiler, _compilerRunners);
+                    folder.WriteJitStatistics(appMethodsPerModulePerCompiler, _compilerRunners);
                 }
 
             }
 
-            Application.WriteJitStatistics(_logWriter, allMethodsPerModulePerCompiler, _compilerRunners);
+            BuildFolder.WriteJitStatistics(_logWriter, allMethodsPerModulePerCompiler, _compilerRunners);
         }
 
         public bool Compile()
@@ -84,9 +84,9 @@ namespace ReadyToRun.SuperIlc
 
             List<ProcessInfo> compilationsToRun = new List<ProcessInfo>();
 
-            foreach (Application application in _applications)
+            foreach (BuildFolder folder in _buildFolders)
             {
-                foreach (ProcessInfo[] compilation in application.Compilations)
+                foreach (ProcessInfo[] compilation in folder.Compilations)
                 {
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
@@ -100,7 +100,7 @@ namespace ReadyToRun.SuperIlc
             }
 
             _logWriter.WriteLine();
-            _logWriter.WriteLine($"Building {_applications.Count()} apps ({compilationsToRun.Count} compilations total)");
+            _logWriter.WriteLine($"Building {_buildFolders.Count()} folders ({compilationsToRun.Count} compilations total)");
             compilationsToRun.Sort((a, b) => b.CompilationCostHeuristic.CompareTo(a.CompilationCostHeuristic));
 
             ParallelRunner.Run(startIndex: 0, compilationsToRun, _logWriter);
@@ -109,9 +109,9 @@ namespace ReadyToRun.SuperIlc
             List<KeyValuePair<string, string>> failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
             int successfulCompileCount = 0;
 
-            foreach (Application app in _applications)
+            foreach (BuildFolder folder in _buildFolders)
             {
-                foreach (ProcessInfo[] compilation in app.Compilations)
+                foreach (ProcessInfo[] compilation in folder.Compilations)
                 {
                     string file = null;
                     string failedBuilders = null;
@@ -179,9 +179,9 @@ namespace ReadyToRun.SuperIlc
             stopwatch.Start();
             List<ProcessInfo> executionsToRun = new List<ProcessInfo>();
 
-            foreach (Application app in _applications)
+            foreach (BuildFolder folder in _buildFolders)
             {
-                AddAppExecutions(executionsToRun, app, stopwatch);
+                AddBuildFolderExecutions(executionsToRun, folder, stopwatch);
             }
 
             ParallelRunner.Run(startIndex: 0, executionsToRun, _logWriter);
@@ -191,9 +191,9 @@ namespace ReadyToRun.SuperIlc
             int successfulExecuteCount = 0;
 
             bool success = true;
-            foreach (Application app in _applications)
+            foreach (BuildFolder folder in _buildFolders)
             {
-                foreach (ProcessInfo[] execution in app.Executions)
+                foreach (ProcessInfo[] execution in folder.Executions)
                 {
                     string file = null;
                     string failedBuilders = null;
@@ -266,16 +266,16 @@ namespace ReadyToRun.SuperIlc
             return success;
         }
 
-        private void AddAppExecutions(List<ProcessInfo> executionsToRun, Application app, Stopwatch stopwatch)
+        private void AddBuildFolderExecutions(List<ProcessInfo> executionsToRun, BuildFolder folder, Stopwatch stopwatch)
         {
-            foreach (ProcessInfo[] execution in app.Executions)
+            foreach (ProcessInfo[] execution in folder.Executions)
             {
                 foreach (CompilerRunner runner in _compilerRunners)
                 {
                     ProcessInfo executionProcess = execution[(int)runner.Index];
                     if (executionProcess != null)
                     {
-                        bool compilationsSucceeded = app.Compilations.All(comp => comp[(int)runner.Index]?.Succeeded ?? true);
+                        bool compilationsSucceeded = folder.Compilations.All(comp => comp[(int)runner.Index]?.Succeeded ?? true);
                         if (compilationsSucceeded)
                         {
                             executionsToRun.Add(executionProcess);
@@ -305,7 +305,9 @@ namespace ReadyToRun.SuperIlc
         {
             PASS = 0,
             ILC_FAIL = 1,
-            EXE_FAIL = 2,
+            WRONG_EXIT_CODE = 2,
+            CRASHED = 3,
+            TIMED_OUT = 4,
 
             Count
         }
@@ -313,7 +315,7 @@ namespace ReadyToRun.SuperIlc
         private void WriteBuildStatistics()
         {
             _logWriter.WriteLine();
-            _logWriter.WriteLine($"Total apps:       {_applications.Count()}");
+            _logWriter.WriteLine($"Total folders:    {_buildFolders.Count()}");
             _logWriter.WriteLine($"Total build time: {_buildMilliseconds} msecs");
             _logWriter.WriteLine($"Compilation time: {_compilationMilliseconds} msecs");
             _logWriter.WriteLine($"Execution time:   {_executionMilliseconds} msecs");
@@ -322,11 +324,11 @@ namespace ReadyToRun.SuperIlc
             int[,] outcomes = new int[(int)Outcome.Count, (int)CompilerIndex.Count + 1];
             int total = 0;
 
-            foreach (Application app in _applications)
+            foreach (BuildFolder folder in _buildFolders)
             {
                 total++;
                 bool[] compilationFailedPerRunner = new bool[(int)CompilerIndex.Count];
-                foreach (ProcessInfo[] compilation in app.Compilations)
+                foreach (ProcessInfo[] compilation in folder.Compilations)
                 {
                     bool anyCompilationFailed = false;
                     foreach (CompilerRunner runner in _compilerRunners)
@@ -344,10 +346,10 @@ namespace ReadyToRun.SuperIlc
                         outcomes[(int)Outcome.ILC_FAIL, (int)CompilerIndex.Count]++;
                     }
                 }
-                foreach (ProcessInfo[] execution in app.Executions)
+                foreach (ProcessInfo[] execution in folder.Executions)
                 {
                     bool anyCompilationFailed = false;
-                    bool anyExecutionFailed = false;
+                    int executionFailureOutcomeMask = 0;
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
                         ProcessInfo execProcess = execution[(int)runner.Index];
@@ -356,17 +358,26 @@ namespace ReadyToRun.SuperIlc
                         bool executionFailed = !compilationFailed && (execProcess != null && !execProcess.Succeeded);
                         if (executionFailed)
                         {
-                            outcomes[(int)Outcome.EXE_FAIL, (int)runner.Index]++;
-                            anyExecutionFailed = true;
+                            Outcome outcome = (execProcess.TimedOut ? Outcome.TIMED_OUT :
+                                execProcess.ExitCode < -1000 * 1000 ? Outcome.CRASHED :
+                                Outcome.WRONG_EXIT_CODE);
+                            outcomes[(int)outcome, (int)runner.Index]++;
+                            executionFailureOutcomeMask |= 1 << (int)outcome;
                         }
                         if (!compilationFailed && !executionFailed)
                         {
                             outcomes[(int)Outcome.PASS, (int)runner.Index]++;
                         }
                     }
-                    if (anyExecutionFailed)
+                    if (executionFailureOutcomeMask != 0)
                     {
-                        outcomes[(int)Outcome.EXE_FAIL, (int)CompilerIndex.Count]++;
+                        for (int outcomeIndex = 0; outcomeIndex < (int)Outcome.Count; outcomeIndex++)
+                        {
+                            if ((executionFailureOutcomeMask & (1 << outcomeIndex)) != 0)
+                            {
+                                outcomes[outcomeIndex, (int)CompilerIndex.Count]++;
+                            }
+                        }
                     }
                     else if (!anyCompilationFailed)
                     {
@@ -403,9 +414,9 @@ namespace ReadyToRun.SuperIlc
 
         private IEnumerable<ProcessInfo> EnumerateCompilations()
         {
-            foreach (Application app in _applications)
+            foreach (BuildFolder folder in _buildFolders)
             {
-                foreach (ProcessInfo[] compilation in app.Compilations)
+                foreach (ProcessInfo[] compilation in folder.Compilations)
                 {
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
@@ -421,9 +432,9 @@ namespace ReadyToRun.SuperIlc
 
         private IEnumerable<ProcessInfo> EnumerateExecutions()
         {
-            foreach (Application app in _applications)
+            foreach (BuildFolder folder in _buildFolders)
             {
-                foreach (ProcessInfo[] execution in app.Executions)
+                foreach (ProcessInfo[] execution in folder.Executions)
                 {
                     foreach (CompilerRunner runner in _compilerRunners)
                     {

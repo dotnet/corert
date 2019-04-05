@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace ReadyToRun.SuperIlc
 {
-    public class Application
+    public class BuildFolder
     {
         private List<string> _compilationInputFiles;
 
@@ -24,7 +24,7 @@ namespace ReadyToRun.SuperIlc
 
         private readonly List<ProcessInfo[]> _executions;
 
-        public Application(
+        public BuildFolder(
             List<string> compilationInputFiles, 
             List<string> mainExecutables,
             List<string> executionScripts,
@@ -108,7 +108,7 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        public static Application FromDirectory(string inputDirectory, IEnumerable<CompilerRunner> compilerRunners, string outputRoot, BuildOptions options)
+        public static BuildFolder FromDirectory(string inputDirectory, IEnumerable<CompilerRunner> compilerRunners, string outputRoot, BuildOptions options)
         {
             List<string> compilationInputFiles = new List<string>();
             List<string> passThroughFiles = new List<string>();
@@ -153,7 +153,7 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            return new Application(compilationInputFiles, mainExecutables, executionScripts, compilerRunners, outputRoot, options);
+            return new BuildFolder(compilationInputFiles, mainExecutables, executionScripts, compilerRunners, outputRoot, options);
         }
 
         public void AddModuleToJittedMethodsMapping(Dictionary<string, HashSet<string>> moduleToJittedMethods, int executionIndex, CompilerIndex compilerIndex)
