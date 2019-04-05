@@ -252,7 +252,7 @@ public class ProcessRunner : IDisposable
             _logWriter.WriteLine(">>>>");
             if (_processInfo.Succeeded)
             {
-                string successMessage = $"Succeeded in {_processInfo.DurationMilliseconds} msecs";
+                string successMessage = $"{_processIndex}: succeeded in {_processInfo.DurationMilliseconds} msecs";
 
                 _logWriter.WriteLine(successMessage);
                 Console.WriteLine(successMessage + $": {processSpec}");
@@ -260,7 +260,7 @@ public class ProcessRunner : IDisposable
             }
             else
             {
-                string failureMessage = $"Failed in {_processInfo.DurationMilliseconds} msecs, exit code {_processInfo.ExitCode}";
+                string failureMessage = $"{_processIndex}: failed in {_processInfo.DurationMilliseconds} msecs, exit code {_processInfo.ExitCode}";
                 if (_processInfo.ExitCode < 0)
                 {
                     failureMessage += " = 0x{_processInfo.ExitCode:X8}";
@@ -278,7 +278,7 @@ public class ProcessRunner : IDisposable
             _processInfo.TimedOut = true;
             _processInfo.Succeeded = false;
             _logWriter.WriteLine(">>>>");
-            string timeoutMessage = $"Timed out in {_processInfo.DurationMilliseconds} msecs";
+            string timeoutMessage = $"{_processIndex}: timed out in {_processInfo.DurationMilliseconds} msecs";
             _logWriter.WriteLine(timeoutMessage);
             Console.Error.WriteLine(timeoutMessage + $": {processSpec}");
         }
