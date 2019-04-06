@@ -151,8 +151,8 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "",
-        "inlineScript": "if ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishToAzureBlobFeed /p:AccountKey=$(AzureFeedAccountKey) /p:ExpectedFeedUrl=$(AzureFeedUrl) /p:PublishPattern=$env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:Configuration\\$env:AzureContainerPackageGlob",
+        "arguments": "$(AzureFeedAccountKey) $(AzureFeedUrl)",
+        "inlineScript": "param($key, $feedurl)\nif ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishToAzureBlobFeed /p:AccountKey=$key /p:ExpectedFeedUrl=$feedurl /p:PublishPattern=$env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:Configuration\\$env:AzureContainerPackageGlob",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }
@@ -171,7 +171,8 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "inlineScript": "if ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$(AzureFeedAccountKey) /p:ExpectedFeedUrl=$(AzureFeedUrl) /p:PublishPattern=$env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg",
+        "arguments": "$(AzureFeedAccountKey) $(AzureFeedUrl)",
+        "inlineScript": "param($key, $feedurl)\nif ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$key /p:ExpectedFeedUrl=$feedurl /p:PublishPattern=$env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }
