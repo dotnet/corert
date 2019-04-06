@@ -10,7 +10,7 @@
 
   <ItemGroup>
      <_PackagesToPublish Include="$(PublishPattern)" Exclude="$(SymbolsPackagesPattern)" />
-     <_SymbolsPackagesToPublish Include="$(SymbolsPackagesPattern)" Condition="'$(PublishSymbols)' == 'true'" />
+     <_SymbolsPackagesToPublish Include="$(SymbolsPackagesPattern)" />
   </ItemGroup>      
 
   <Target Name="PublishToAzureBlobFeed">
