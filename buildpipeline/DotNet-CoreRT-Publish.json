@@ -172,7 +172,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "$(AzureFeedAccountKey) $(AzureFeedUrl)",
-        "inlineScript": "param($key, $feedurl)\nif ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$key /p:ExpectedFeedUrl=$feedurl /p:PublishPattern=$env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg",
+        "inlineScript": "param($key, $feedurl)\nif ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$key /p:ExpectedFeedUrl=$feedurl /p:SymbolsPackagesPattern=$env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }
