@@ -23,7 +23,7 @@ Verify that the empty game builds and runs. You should see blue window:
 MonoGame tools require [Mono](http://www.mono-project.com/download/) on non-Windows platforms. On Windows, MonoGame tools depend on [Visual Studio 2012 Visual C++ redistributable](https://www.microsoft.com/en-us/download/details.aspx?id=30679).
 
 ## Add CoreRT to your project
-To use CoreRT with your project, you need to add a reference to the ILCompiler NuGet pacakge that contains the CoreRT ahead of time compiler and runtime.
+To use CoreRT with your project, you need to add a reference to the ILCompiler NuGet package that contains the CoreRT ahead of time compiler and runtime.
 For the compiler to work, it first needs to be added to your project.
 
 In your shell/command prompt navigate to the root directory of your project and run the command:

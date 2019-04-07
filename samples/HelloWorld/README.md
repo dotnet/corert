@@ -14,7 +14,7 @@ Open a new shell/command prompt window and run the following commands.
 This will create a simple Hello World console app in `Program.cs` and associated project files.
 
 ## Add CoreRT to your project
-To use CoreRT with your project, you need to add a reference to the ILCompiler NuGet pacakge that contains the CoreRT ahead of time compiler and runtime.
+To use CoreRT with your project, you need to add a reference to the ILCompiler NuGet package that contains the CoreRT ahead of time compiler and runtime.
 For the compiler to work, it first needs to be added to your project.
 
 In your shell/command prompt navigate to the root directory of your project and run the command:
