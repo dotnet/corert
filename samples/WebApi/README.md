@@ -12,7 +12,7 @@ Open a new shell/command prompt window and run the following commands.
 ```
 
 ## Add CoreRT to your project
-Using CoreRT to compile your application is done via the ILCompiler NuGet package, which is published to an Azure blob with the CoreRT daily builds.
+To use CoreRT with your project, you need to add a reference to the ILCompiler NuGet pacakge that contains the CoreRT ahead of time compiler and runtime.
 For the compiler to work, it first needs to be added to your project.
 
 In your shell/command prompt navigate to the root directory of your project and run the command:
