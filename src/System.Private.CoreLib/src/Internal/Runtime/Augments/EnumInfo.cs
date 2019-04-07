@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 
@@ -14,24 +13,17 @@ namespace Internal.Runtime.Augments
     [ReflectionBlocked]
     public sealed class EnumInfo
     {
-        public EnumInfo(Type enumType)
+        public EnumInfo(Type underlyingType, object[] rawValues, string[] names, bool isFlags)
         {
-            Debug.Assert(enumType != null);
-            Debug.Assert(enumType.IsRuntimeImplemented());
-            Debug.Assert(enumType.IsEnum);
+            Debug.Assert(rawValues.Length == names.Length);
 
-            UnderlyingType = ComputeUnderlyingType(enumType);
+            UnderlyingType = underlyingType;
 
-            FieldInfo[] fields = enumType.GetFields(BindingFlags.Public | BindingFlags.Static);
-            int numValues = fields.Length;
-            object[] rawValues = new object[numValues];
-            string[] names = new string[numValues];
+            int numValues = rawValues.Length;
             ulong[] values = new ulong[numValues];
             for (int i = 0; i < numValues; i++)
             {
-                FieldInfo field = fields[i];
-                object rawValue = field.GetRawConstantValue();
-                rawValues[i] = rawValue;
+                object rawValue = rawValues[i];
 
                 ulong rawUnboxedValue;
                 if (rawValue is ulong)
@@ -44,7 +36,6 @@ namespace Internal.Runtime.Augments
                     // the order in which the Enum apis return names and values.
                     rawUnboxedValue = (ulong)(((IConvertible)rawValue).ToInt64(null));
                 }
-                names[i] = field.Name;
                 values[i] = rawUnboxedValue;
             }
 
@@ -63,7 +54,7 @@ namespace Internal.Runtime.Augments
             ValuesAsUnderlyingType = Array.CreateInstance(UnderlyingType, numValues);
             Array.Copy(rawValues, ValuesAsUnderlyingType, numValues);
 
-            HasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
+            HasFlagsAttribute = isFlags;
         }
 
         internal Type UnderlyingType { get; }
@@ -71,50 +62,5 @@ namespace Internal.Runtime.Augments
         internal ulong[] Values { get; }
         internal Array ValuesAsUnderlyingType { get; }
         internal bool HasFlagsAttribute { get; }
-
-        private static RuntimeImports.RhCorElementType ComputeCorElementType(Type enumType)
-        {
-            if (enumType.ContainsGenericParameters)
-            {
-                // This is an open generic enum (typeof(Outer<>).NestedEnum). We cannot safely call EETypePtr.CorElementType for this case so fall back to Reflection.
-                FieldInfo[] candidates = enumType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-                if (candidates.Length == 0)
-                    throw RuntimeAugments.Callbacks.CreateMissingMetadataException(enumType); // Most likely cause.
-                if (candidates.Length > 1)
-                    throw new BadImageFormatException();
-                enumType = candidates[0].FieldType;
-            }
-            return enumType.TypeHandle.ToEETypePtr().CorElementType;
-        }
-
-        private static Type ComputeUnderlyingType(Type enumType)
-        {
-            RuntimeImports.RhCorElementType corElementType = ComputeCorElementType(enumType);
-            switch (corElementType)
-            {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return CommonRuntimeTypes.Boolean;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
-                    return CommonRuntimeTypes.Char;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
-                    return CommonRuntimeTypes.SByte;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
-                    return CommonRuntimeTypes.Byte;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                    return CommonRuntimeTypes.Int16;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                    return CommonRuntimeTypes.UInt16;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                    return CommonRuntimeTypes.Int32;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
-                    return CommonRuntimeTypes.UInt32;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                    return CommonRuntimeTypes.Int64;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
-                    return CommonRuntimeTypes.UInt64;
-                default:
-                    throw new NotSupportedException();
-            }
-        }
     }
 }

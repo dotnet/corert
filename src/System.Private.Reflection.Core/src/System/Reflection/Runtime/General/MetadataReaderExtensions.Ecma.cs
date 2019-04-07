@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.General
     //
     // Collect various metadata reading tasks for better chunking...
     //
-    internal static class EcmaMetadataReaderExtensions
+    public static class EcmaMetadataReaderExtensions
     {
         //
         // Used to split methods between DeclaredMethods and DeclaredConstructors.
@@ -117,6 +117,118 @@ namespace System.Reflection.Runtime.General
             }
 
             throw new BadImageFormatException();
-        }        
+        }
+
+        public static object ParseConstantValue(this ConstantHandle constantHandle, MetadataReader metadataReader)
+        {
+            if (constantHandle.IsNil)
+                throw new BadImageFormatException();
+
+            Constant constantValue = metadataReader.GetConstant(constantHandle);
+
+            if (constantValue.Value.IsNil)
+                throw new BadImageFormatException();
+
+            BlobReader reader = metadataReader.GetBlobReader(constantValue.Value);
+
+            switch (constantValue.TypeCode)
+            {
+                case ConstantTypeCode.Boolean:
+                    return reader.ReadBoolean();
+
+                case ConstantTypeCode.Char:
+                    return reader.ReadChar();
+
+                case ConstantTypeCode.SByte:
+                    return reader.ReadSByte();
+
+                case ConstantTypeCode.Int16:
+                    return reader.ReadInt16();
+
+                case ConstantTypeCode.Int32:
+                    return reader.ReadInt32();
+
+                case ConstantTypeCode.Int64:
+                    return reader.ReadInt64();
+
+                case ConstantTypeCode.Byte:
+                    return reader.ReadByte();
+
+                case ConstantTypeCode.UInt16:
+                    return reader.ReadUInt16();
+
+                case ConstantTypeCode.UInt32:
+                    return reader.ReadUInt32();
+
+                case ConstantTypeCode.UInt64:
+                    return reader.ReadUInt64();
+
+                case ConstantTypeCode.Single:
+                    return reader.ReadSingle();
+
+                case ConstantTypeCode.Double:
+                    return reader.ReadDouble();
+
+                case ConstantTypeCode.String:
+                    return reader.ReadUTF16(reader.Length);
+
+                case ConstantTypeCode.NullReference:
+                    // Partition II section 22.9:
+                    // The encoding of Type for the nullref value is ELEMENT_TYPE_CLASS with a Value of a 4-byte zero.
+                    // Unlike uses of ELEMENT_TYPE_CLASS in signatures, this one is not followed by a type token.
+                    if (reader.ReadUInt32() == 0)
+                    {
+                        return null;
+                    }
+
+                    break;
+            }
+
+            throw new BadImageFormatException();
+        }
+
+        public static bool IsCustomAttributeOfType(this CustomAttributeHandle handle, MetadataReader reader, string ns, string name)
+        {
+            CustomAttribute attribute = reader.GetCustomAttribute(handle);
+            EcmaMetadataHelpers.GetAttributeTypeDefRefOrSpecHandle(reader, attribute.Constructor, out EntityHandle typeDefOrRef);
+
+            if (typeDefOrRef.Kind == HandleKind.TypeReference)
+            {
+                TypeReference typeRef = reader.GetTypeReference((TypeReferenceHandle)typeDefOrRef);
+                HandleKind handleType = typeRef.ResolutionScope.Kind;
+
+                if (handleType == HandleKind.TypeReference || handleType == HandleKind.TypeDefinition)
+                {
+                    // Nested type
+                    return false;
+                }
+
+                return reader.StringComparer.Equals(typeRef.Name, name)
+                    && reader.StringComparer.Equals(typeRef.Namespace, name);
+            }
+            else if (typeDefOrRef.Kind == HandleKind.TypeDefinition)
+            {
+                TypeDefinition typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)typeDefOrRef);
+
+                if (EcmaMetadataHelpers.IsNested(typeDef.Attributes))
+                {
+                    // Nested type
+                    return false;
+                }
+
+                return reader.StringComparer.Equals(typeDef.Name, name)
+                    && reader.StringComparer.Equals(typeDef.Namespace, name);
+            }
+            else if (typeDefOrRef.Kind == HandleKind.TypeSpecification)
+            {
+                // Generic attribute
+                return false;
+            }
+            else
+            {
+                // unsupported metadata
+                throw new BadImageFormatException();
+            }
+        }
     }
 }

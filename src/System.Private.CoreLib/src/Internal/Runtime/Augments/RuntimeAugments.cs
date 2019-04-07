@@ -437,6 +437,38 @@ namespace Internal.Runtime.Augments
             return e.GetValue();
         }
 
+        public static Type GetEnumUnderlyingType(RuntimeTypeHandle enumTypeHandle)
+        {
+            Debug.Assert(enumTypeHandle.ToEETypePtr().IsEnum);
+
+            RuntimeImports.RhCorElementType corElementType = enumTypeHandle.ToEETypePtr().CorElementType;
+            switch (corElementType)
+            {
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                    return CommonRuntimeTypes.Boolean;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                    return CommonRuntimeTypes.Char;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                    return CommonRuntimeTypes.SByte;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                    return CommonRuntimeTypes.Byte;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                    return CommonRuntimeTypes.Int16;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                    return CommonRuntimeTypes.UInt16;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                    return CommonRuntimeTypes.Int32;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    return CommonRuntimeTypes.UInt32;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                    return CommonRuntimeTypes.Int64;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    return CommonRuntimeTypes.UInt64;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
             EETypePtr elementType = parameterTypeHandle.ToEETypePtr().ArrayElementType;

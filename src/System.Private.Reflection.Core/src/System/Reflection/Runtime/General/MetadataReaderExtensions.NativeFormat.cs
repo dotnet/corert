@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.General
     //
     // Collect various metadata reading tasks for better chunking...
     //
-    internal static class NativeFormatMetadataReaderExtensions
+    public static class NativeFormatMetadataReaderExtensions
     {
         public static bool StringOrNullEquals(this ConstantStringValueHandle handle, String valueOrNull, MetadataReader reader)
         {
@@ -138,7 +138,7 @@ namespace System.Reflection.Runtime.General
         // Return any custom modifiers modifying the passed-in type and whose required/optional bit matches the passed in boolean.
         // Because this is intended to service the GetCustomModifiers() apis, this helper will always return a freshly allocated array
         // safe for returning to api callers.
-        public static Type[] GetCustomModifiers(this Handle handle, MetadataReader reader, TypeContext typeContext, bool optional)
+        internal static Type[] GetCustomModifiers(this Handle handle, MetadataReader reader, TypeContext typeContext, bool optional)
         {
             HandleType handleType = handle.HandleType;
             Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification || handleType == HandleType.ModifiedType);

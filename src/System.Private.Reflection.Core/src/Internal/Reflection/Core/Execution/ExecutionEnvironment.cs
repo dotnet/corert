@@ -11,6 +11,7 @@ using System.Reflection.Runtime.TypeInfos;
 using Internal.Metadata.NativeFormat;
 
 using OpenMethodInvoker = System.Reflection.Runtime.MethodInfos.OpenMethodInvoker;
+using EnumInfo = Internal.Runtime.Augments.EnumInfo;
 
 namespace Internal.Reflection.Core.Execution
 {
@@ -92,6 +93,7 @@ namespace Internal.Reflection.Core.Execution
         //==============================================================================================
         public abstract bool IsCOMObject(Type type);
         public abstract FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle);
+        public abstract EnumInfo GetEnumInfo(RuntimeTypeHandle typeHandle);
 
         //==============================================================================================
         // Non-public methods

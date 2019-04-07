@@ -41,6 +41,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
     <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\DiagnosticMappingTables.Ecma.cs" />
+    <Compile Include="Internal\Reflection\Execution\EcmaFormatEnumInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
@@ -50,6 +51,7 @@
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Internal\Reflection\Execution\NativeFormatEnumInfo.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidator.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidatorSupport.cs" />
     <Compile Include="Internal\Reflection\Execution\TypeLoader\TypeCast.cs" />

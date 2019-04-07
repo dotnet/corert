@@ -60,6 +60,9 @@ namespace ILCompiler.DependencyAnalysis
             if (HasOptionalFields)
                 flags |= (short)EETypeFlags.OptionalFieldsFlag;
 
+            if (_type.IsEnum)
+                flags |= (short)EETypeBuilderHelpers.ComputeElementTypeFlags(_type);
+
             dataBuilder.EmitShort((short)_type.Instantiation.Length);
             dataBuilder.EmitShort(flags);
             dataBuilder.EmitInt(0);         // Base size is always 0

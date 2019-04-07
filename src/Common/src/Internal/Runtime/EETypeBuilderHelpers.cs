@@ -114,6 +114,15 @@ namespace Internal.Runtime
                 }
             }
 
+            flags |= ComputeElementTypeFlags(type);
+
+            return flags;
+        }
+
+        public static UInt16 ComputeElementTypeFlags(TypeDesc type)
+        {
+            UInt16 flags = 0;
+
             CorElementType corElementType = CorElementType.ELEMENT_TYPE_END;
 
             // The top 5 bits of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
