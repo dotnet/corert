@@ -190,44 +190,42 @@ namespace System.Reflection.Runtime.General
         public static bool IsCustomAttributeOfType(this CustomAttributeHandle handle, MetadataReader reader, string ns, string name)
         {
             CustomAttribute attribute = reader.GetCustomAttribute(handle);
-            EcmaMetadataHelpers.GetAttributeTypeDefRefOrSpecHandle(reader, attribute.Constructor, out EntityHandle typeDefOrRef);
+            EcmaMetadataHelpers.GetAttributeTypeDefRefOrSpecHandle(reader, attribute.Constructor, out EntityHandle typeDefOrRefOrSpec);
 
-            if (typeDefOrRef.Kind == HandleKind.TypeReference)
+            switch (typeDefOrRefOrSpec.Kind)
             {
-                TypeReference typeRef = reader.GetTypeReference((TypeReferenceHandle)typeDefOrRef);
-                HandleKind handleType = typeRef.ResolutionScope.Kind;
+                case HandleKind.TypeReference:
+                    TypeReference typeRef = reader.GetTypeReference((TypeReferenceHandle)typeDefOrRefOrSpec);
+                    HandleKind handleType = typeRef.ResolutionScope.Kind;
 
-                if (handleType == HandleKind.TypeReference || handleType == HandleKind.TypeDefinition)
-                {
-                    // Nested type
+                    if (handleType == HandleKind.TypeReference || handleType == HandleKind.TypeDefinition)
+                    {
+                        // Nested type
+                        return false;
+                    }
+
+                    return reader.StringComparer.Equals(typeRef.Name, name)
+                        && reader.StringComparer.Equals(typeRef.Namespace, name);
+
+                case HandleKind.TypeDefinition:
+                    TypeDefinition typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)typeDefOrRefOrSpec);
+
+                    if (EcmaMetadataHelpers.IsNested(typeDef.Attributes))
+                    {
+                        // Nested type
+                        return false;
+                    }
+
+                    return reader.StringComparer.Equals(typeDef.Name, name)
+                        && reader.StringComparer.Equals(typeDef.Namespace, name);
+
+                case HandleKind.TypeSpecification:
+                    // Generic attribute
                     return false;
-                }
 
-                return reader.StringComparer.Equals(typeRef.Name, name)
-                    && reader.StringComparer.Equals(typeRef.Namespace, name);
-            }
-            else if (typeDefOrRef.Kind == HandleKind.TypeDefinition)
-            {
-                TypeDefinition typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)typeDefOrRef);
-
-                if (EcmaMetadataHelpers.IsNested(typeDef.Attributes))
-                {
-                    // Nested type
-                    return false;
-                }
-
-                return reader.StringComparer.Equals(typeDef.Name, name)
-                    && reader.StringComparer.Equals(typeDef.Namespace, name);
-            }
-            else if (typeDefOrRef.Kind == HandleKind.TypeSpecification)
-            {
-                // Generic attribute
-                return false;
-            }
-            else
-            {
-                // unsupported metadata
-                throw new BadImageFormatException();
+                default:
+                    // unsupported metadata
+                    throw new BadImageFormatException();
             }
         }
     }

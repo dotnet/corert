@@ -29,7 +29,7 @@ namespace Internal.Reflection.Execution
                 FieldDefinition field = reader.GetFieldDefinition(fieldHandle);
                 if (0 != (field.Attributes & FieldAttributes.Static))
                 {
-                    if (i >= staticFieldCount|| (field.Attributes & FieldAttributes.HasDefault) != FieldAttributes.HasDefault)
+                    if (i >= staticFieldCount || (field.Attributes & FieldAttributes.HasDefault) != FieldAttributes.HasDefault)
                         throw new BadImageFormatException();
 
                     names[i] = reader.GetString(field.Name);

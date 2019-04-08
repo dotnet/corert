@@ -328,8 +328,7 @@ namespace System.Reflection.Runtime.General
 
         public static Object ParseConstantNumericValue(this Handle handle, MetadataReader reader)
         {
-            HandleType handleType = handle.HandleType;
-            switch (handleType)
+            switch (handle.HandleType)
             {
                 case HandleType.ConstantBooleanValue:
                     return handle.ToConstantBooleanValueHandle(reader).GetConstantBooleanValue(reader).Value;
