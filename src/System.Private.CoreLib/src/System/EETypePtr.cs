@@ -194,8 +194,11 @@ namespace System
                 // A: When it's nested inside a generic type.
                 if (!(IsDefType))
                     return false;
-                EETypePtr baseType = this.BaseType;
-                return baseType == EETypePtr.EETypePtrOf<Enum>();
+
+                // Generic type definitions that return true for IsPrimitive are type definitions of generic enums.
+                // Otherwise check the base type.
+                return (IsGenericTypeDefinition && IsPrimitive) ||
+                    this.BaseType == EETypePtr.EETypePtrOf<Enum>();
             }
         }
 

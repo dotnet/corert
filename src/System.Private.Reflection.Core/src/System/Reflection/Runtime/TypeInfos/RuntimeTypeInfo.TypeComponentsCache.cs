@@ -9,6 +9,8 @@ using System.Collections.Concurrent;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.BindingFlagSupport;
 
+using Internal.Reflection.Core.Execution;
+
 using Unsafe = Internal.Runtime.CompilerServices.Unsafe;
 
 using EnumInfo = Internal.Runtime.Augments.EnumInfo;
@@ -74,7 +76,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 return Unsafe.As<QueriedMemberList<M>>(result);
             }
 
-            public EnumInfo EnumInfo => _lazyEnumInfo ?? (_lazyEnumInfo = new EnumInfo(_type));
+            public EnumInfo EnumInfo => _lazyEnumInfo ?? (_lazyEnumInfo = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(_type.TypeHandle));
 
             private static object[] CreatePerNameQueryCaches(RuntimeTypeInfo type, bool ignoreCase)
             {

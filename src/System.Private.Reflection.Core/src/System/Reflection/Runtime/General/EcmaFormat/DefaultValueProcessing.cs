@@ -59,79 +59,10 @@ namespace System.Reflection.Runtime.General.EcmaFormat
 
         private static object ConstantValueAsObject(ConstantHandle constantHandle, MetadataReader metadataReader, Type declaredType, bool raw)
         {
-            object defaultValue = ConstantValueAsRawObject(constantHandle, metadataReader);
+            object defaultValue = constantHandle.ParseConstantValue(metadataReader);
             if ((!raw) && declaredType.IsEnum && defaultValue != null)
                 defaultValue = Enum.ToObject(declaredType, defaultValue);
             return defaultValue;
         }
-
-
-        private static object ConstantValueAsRawObject(ConstantHandle constantHandle, MetadataReader metadataReader)
-        {
-            if (constantHandle.IsNil)
-                throw new BadImageFormatException();
-
-            Constant constantValue = metadataReader.GetConstant(constantHandle);
-
-            if (constantValue.Value.IsNil)
-                throw new BadImageFormatException();
-
-            BlobReader reader = metadataReader.GetBlobReader(constantValue.Value);
-
-            switch (constantValue.TypeCode)
-            {
-                case ConstantTypeCode.Boolean:
-                    return reader.ReadBoolean();
-
-                case ConstantTypeCode.Char:
-                    return reader.ReadChar();
-
-                case ConstantTypeCode.SByte:
-                    return reader.ReadSByte();
-
-                case ConstantTypeCode.Int16:
-                    return reader.ReadInt16();
-
-                case ConstantTypeCode.Int32:
-                    return reader.ReadInt32();
-
-                case ConstantTypeCode.Int64:
-                    return reader.ReadInt64();
-
-                case ConstantTypeCode.Byte:
-                    return reader.ReadByte();
-
-                case ConstantTypeCode.UInt16:
-                    return reader.ReadUInt16();
-
-                case ConstantTypeCode.UInt32:
-                    return reader.ReadUInt32();
-
-                case ConstantTypeCode.UInt64:
-                    return reader.ReadUInt64();
-
-                case ConstantTypeCode.Single:
-                    return reader.ReadSingle();
-
-                case ConstantTypeCode.Double:
-                    return reader.ReadDouble();
-
-                case ConstantTypeCode.String:
-                    return reader.ReadUTF16(reader.Length);
-
-                case ConstantTypeCode.NullReference:
-                    // Partition II section 22.9:
-                    // The encoding of Type for the nullref value is ELEMENT_TYPE_CLASS with a Value of a 4-byte zero.
-                    // Unlike uses of ELEMENT_TYPE_CLASS in signatures, this one is not followed by a type token.
-                    if (reader.ReadUInt32() == 0)
-                    {
-                        return null;
-                    }
-
-                    break;
-            }
-
-            throw new BadImageFormatException();
-        } 
     }
 }
