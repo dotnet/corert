@@ -20,9 +20,9 @@ class CrossgenRunner : CompilerRunner
     public CrossgenRunner(string compilerFolder, IEnumerable<string> referenceFolders) 
         : base(compilerFolder, referenceFolders) {}
 
-    public override ProcessInfo ExecutionProcess(string outputRoot, string appPath, IEnumerable<string> modules, IEnumerable<string> folders, string coreRunPath, bool noEtw)
+    protected override ProcessInfo ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
     {
-        ProcessInfo processInfo = base.ExecutionProcess(outputRoot, appPath, modules, folders, coreRunPath, noEtw);
+        ProcessInfo processInfo = base.ExecutionProcess(modules, folders, noEtw);
         processInfo.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "1";
         return processInfo;
     }

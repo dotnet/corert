@@ -26,8 +26,9 @@ namespace ReadyToRun.SuperIlc
                     {
                         InputDirectory(),
                         OutputDirectory(),
-                        CrossgenDirectory(),
+                        CoreRootDirectory(),
                         CpaotDirectory(),
+                        UseCrossgen(),
                         NoJit(),
                         NoExe(),
                         NoEtw(),
@@ -42,8 +43,9 @@ namespace ReadyToRun.SuperIlc
                     {
                         InputDirectory(),
                         OutputDirectory(),
-                        CrossgenDirectory(),
+                        CoreRootDirectory(),
                         CpaotDirectory(),
+                        UseCrossgen(),
                         NoJit(),
                         NoExe(),
                         NoEtw(),
@@ -60,14 +62,17 @@ namespace ReadyToRun.SuperIlc
             Option OutputDirectory() =>
                 new Option(new[] { "--output-directory", "-out" }, "Folder to emit compiled assemblies", new Argument<DirectoryInfo>().LegalFilePathsOnly());
 
-            Option CrossgenDirectory() =>
-                new Option(new[] { "--crossgen-directory", "-crossgen" }, "Folder containing the Crossgen compiler", new Argument<DirectoryInfo>().ExistingOnly());
+            Option CoreRootDirectory() =>
+                new Option(new[] { "--core-root-directory", "-cr" }, "Location of the CoreCLR CORE_ROOT folder", new Argument<DirectoryInfo>().ExistingOnly());
 
             Option CpaotDirectory() =>
                 new Option(new[] { "--cpaot-directory", "-cpaot" }, "Folder containing the CPAOT compiler", new Argument<DirectoryInfo>().ExistingOnly());
 
             Option ReferencePath() =>
                 new Option(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly());
+
+            Option UseCrossgen() =>
+                new Option(new[] { "--crossgen" }, "Compile the apps using Crossgen in the CORE_ROOT folder", new Argument<bool>());
 
             Option NoJit() =>
                 new Option(new[] { "--nojit" }, "Don't run tests in JITted mode", new Argument<bool>());

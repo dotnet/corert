@@ -10,8 +10,9 @@ namespace ReadyToRun.SuperIlc
     {
         public DirectoryInfo InputDirectory { get; set; }
         public DirectoryInfo OutputDirectory { get; set; }
-        public DirectoryInfo CrossgenDirectory { get; set; }
+        public DirectoryInfo CoreRootDirectory { get; set; }
         public DirectoryInfo CpaotDirectory { get; set; }
+        public bool UseCrossgen { get; set; }
         public bool NoJit { get; set; }
         public bool NoExe { get; set; }
         public bool NoEtw { get; set; }
@@ -20,22 +21,36 @@ namespace ReadyToRun.SuperIlc
 
         public IEnumerable<string> ReferencePaths()
         {
-            return ReferencePath?.Select(x => x.ToString()) ?? Enumerable.Empty<string>();
+            if (CoreRootDirectory != null)
+            {
+                yield return CoreRootDirectory.FullName;
+            }
+            if (ReferencePath != null)
+            {
+                foreach (DirectoryInfo referencePath in ReferencePath)
+                {
+                    yield return referencePath.FullName;
+                }
+            }
         }
 
         public IEnumerable<CompilerRunner> CompilerRunners()
         {
             List<CompilerRunner> runners = new List<CompilerRunner>();
-            List<string> referencePaths = ReferencePath?.Select(x => x.ToString())?.ToList();
+            List<string> referencePaths = ReferencePaths().ToList();
 
             if (CpaotDirectory != null)
             {
                 runners.Add(new CpaotRunner(CpaotDirectory.FullName, referencePaths));
             }
 
-            if (CrossgenDirectory != null)
+            if (UseCrossgen)
             {
-                runners.Add(new CrossgenRunner(CrossgenDirectory.FullName, referencePaths));
+                if (CoreRootDirectory == null)
+                {
+                    throw new Exception("-coreroot folder not specified, cannot use Crossgen runner");
+                }
+                runners.Add(new CrossgenRunner(CoreRootDirectory.FullName, referencePaths));
             }
 
             if (!NoJit)
@@ -45,16 +60,13 @@ namespace ReadyToRun.SuperIlc
 
             return runners;
         }
-    }
 
-    public static class SuperIlcHelpers
-    {
-        public static string FindCoreRun(IEnumerable<string> referencePaths)
+        public string CoreRunPath()
         {
-            string coreRunPath = "CoreRun.exe".FindFile(referencePaths);
+            string coreRunPath = "CoreRun.exe".FindFile(ReferencePaths());
             if (coreRunPath == null)
             {
-                Console.Error.WriteLine("CoreRun.exe not found in reference folders, execution won't run");
+                Console.Error.WriteLine("CoreRun.exe not found in reference folders, explicit exe launches won't work");
             }
             return coreRunPath;
         }
