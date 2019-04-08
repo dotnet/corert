@@ -23,6 +23,11 @@ namespace System
     [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
+#if PROJECTN
+        // Required by IL2IL transforms
+        internal Delegate() { }
+#endif
+
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
         protected Delegate(object target, string method)
         {
