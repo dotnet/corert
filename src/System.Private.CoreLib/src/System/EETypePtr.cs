@@ -194,8 +194,17 @@ namespace System
                 // A: When it's nested inside a generic type.
                 if (!(IsDefType))
                     return false;
-                EETypePtr baseType = this.BaseType;
-                return baseType == EETypePtr.EETypePtrOf<Enum>();
+
+                // Generic type definitions that return true for IsPrimitive are type definitions of generic enums.
+                // Otherwise check the base type.
+                return
+                    // RHBind doesn't emit CorElementType on generic type definitions, so this only works for
+                    // open generics outside ProjectN. When we fix this, also remove the N-specific fallback for getting
+                    // the underlying type of open enums in RuntimeAugments.
+#if !PROJECTN
+                    (IsGenericTypeDefinition && IsPrimitive) ||
+#endif
+                    this.BaseType == EETypePtr.EETypePtrOf<Enum>();
             }
         }
 

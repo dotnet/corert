@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.General
     //
     // Collect various metadata reading tasks for better chunking...
     //
-    internal static class NativeFormatMetadataReaderExtensions
+    public static class NativeFormatMetadataReaderExtensions
     {
         public static bool StringOrNullEquals(this ConstantStringValueHandle handle, String valueOrNull, MetadataReader reader)
         {
@@ -138,7 +138,7 @@ namespace System.Reflection.Runtime.General
         // Return any custom modifiers modifying the passed-in type and whose required/optional bit matches the passed in boolean.
         // Because this is intended to service the GetCustomModifiers() apis, this helper will always return a freshly allocated array
         // safe for returning to api callers.
-        public static Type[] GetCustomModifiers(this Handle handle, MetadataReader reader, TypeContext typeContext, bool optional)
+        internal static Type[] GetCustomModifiers(this Handle handle, MetadataReader reader, TypeContext typeContext, bool optional)
         {
             HandleType handleType = handle.HandleType;
             Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification || handleType == HandleType.ModifiedType);
@@ -326,49 +326,60 @@ namespace System.Reflection.Runtime.General
             return value;
         }
 
+        public static Object ParseConstantNumericValue(this Handle handle, MetadataReader reader)
+        {
+            switch (handle.HandleType)
+            {
+                case HandleType.ConstantBooleanValue:
+                    return handle.ToConstantBooleanValueHandle(reader).GetConstantBooleanValue(reader).Value;
+                case HandleType.ConstantCharValue:
+                    return handle.ToConstantCharValueHandle(reader).GetConstantCharValue(reader).Value;
+                case HandleType.ConstantByteValue:
+                    return handle.ToConstantByteValueHandle(reader).GetConstantByteValue(reader).Value;
+                case HandleType.ConstantSByteValue:
+                    return handle.ToConstantSByteValueHandle(reader).GetConstantSByteValue(reader).Value;
+                case HandleType.ConstantInt16Value:
+                    return handle.ToConstantInt16ValueHandle(reader).GetConstantInt16Value(reader).Value;
+                case HandleType.ConstantUInt16Value:
+                    return handle.ToConstantUInt16ValueHandle(reader).GetConstantUInt16Value(reader).Value;
+                case HandleType.ConstantInt32Value:
+                    return handle.ToConstantInt32ValueHandle(reader).GetConstantInt32Value(reader).Value;
+                case HandleType.ConstantUInt32Value:
+                    return handle.ToConstantUInt32ValueHandle(reader).GetConstantUInt32Value(reader).Value;
+                case HandleType.ConstantInt64Value:
+                    return handle.ToConstantInt64ValueHandle(reader).GetConstantInt64Value(reader).Value;
+                case HandleType.ConstantUInt64Value:
+                    return handle.ToConstantUInt64ValueHandle(reader).GetConstantUInt64Value(reader).Value;
+                case HandleType.ConstantSingleValue:
+                    return handle.ToConstantSingleValueHandle(reader).GetConstantSingleValue(reader).Value;
+                case HandleType.ConstantDoubleValue:
+                    return handle.ToConstantDoubleValueHandle(reader).GetConstantDoubleValue(reader).Value;
+                default:
+                    throw new BadImageFormatException();
+            }
+        }
+
         public static Exception TryParseConstantValue(this Handle handle, MetadataReader reader, out Object value)
         {
             HandleType handleType = handle.HandleType;
             switch (handleType)
             {
                 case HandleType.ConstantBooleanValue:
-                    value = handle.ToConstantBooleanValueHandle(reader).GetConstantBooleanValue(reader).Value;
+                case HandleType.ConstantCharValue:
+                case HandleType.ConstantByteValue:
+                case HandleType.ConstantSByteValue:
+                case HandleType.ConstantInt16Value:
+                case HandleType.ConstantUInt16Value:
+                case HandleType.ConstantInt32Value:
+                case HandleType.ConstantUInt32Value:
+                case HandleType.ConstantInt64Value:
+                case HandleType.ConstantUInt64Value:
+                case HandleType.ConstantSingleValue:
+                case HandleType.ConstantDoubleValue:
+                    value = handle.ParseConstantNumericValue(reader);
                     return null;
                 case HandleType.ConstantStringValue:
                     value = handle.ToConstantStringValueHandle(reader).GetConstantStringValue(reader).Value;
-                    return null;
-                case HandleType.ConstantCharValue:
-                    value = handle.ToConstantCharValueHandle(reader).GetConstantCharValue(reader).Value;
-                    return null;
-                case HandleType.ConstantByteValue:
-                    value = handle.ToConstantByteValueHandle(reader).GetConstantByteValue(reader).Value;
-                    return null;
-                case HandleType.ConstantSByteValue:
-                    value = handle.ToConstantSByteValueHandle(reader).GetConstantSByteValue(reader).Value;
-                    return null;
-                case HandleType.ConstantInt16Value:
-                    value = handle.ToConstantInt16ValueHandle(reader).GetConstantInt16Value(reader).Value;
-                    return null;
-                case HandleType.ConstantUInt16Value:
-                    value = handle.ToConstantUInt16ValueHandle(reader).GetConstantUInt16Value(reader).Value;
-                    return null;
-                case HandleType.ConstantInt32Value:
-                    value = handle.ToConstantInt32ValueHandle(reader).GetConstantInt32Value(reader).Value;
-                    return null;
-                case HandleType.ConstantUInt32Value:
-                    value = handle.ToConstantUInt32ValueHandle(reader).GetConstantUInt32Value(reader).Value;
-                    return null;
-                case HandleType.ConstantInt64Value:
-                    value = handle.ToConstantInt64ValueHandle(reader).GetConstantInt64Value(reader).Value;
-                    return null;
-                case HandleType.ConstantUInt64Value:
-                    value = handle.ToConstantUInt64ValueHandle(reader).GetConstantUInt64Value(reader).Value;
-                    return null;
-                case HandleType.ConstantSingleValue:
-                    value = handle.ToConstantSingleValueHandle(reader).GetConstantSingleValue(reader).Value;
-                    return null;
-                case HandleType.ConstantDoubleValue:
-                    value = handle.ToConstantDoubleValueHandle(reader).GetConstantDoubleValue(reader).Value;
                     return null;
                 case HandleType.TypeDefinition:
                 case HandleType.TypeReference:

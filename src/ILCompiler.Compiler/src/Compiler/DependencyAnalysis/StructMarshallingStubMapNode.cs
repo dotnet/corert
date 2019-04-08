@@ -5,8 +5,10 @@
 using System;
 
 using Internal.NativeFormat;
+using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -54,40 +56,53 @@ namespace ILCompiler.DependencyAnalysis
             foreach (var structEntry in ((CompilerGeneratedInteropStubManager)factory.InteropStubManager).GetStructMarshallingTypes())
             {
                 // the order of data written is as follows:
-                //  0. managed struct type
-                //  1. struct marshalling thunk
-                //  2. struct unmarshalling thunk
-                //  3. struct cleanup thunk
-                //  4. size
-                //  5. NumFields<< 1 | HasInvalidLayout
-                //  6  for each field
-                //      a. name
-                //      b. offset
+                //  managed struct type
+                //  NumFields<< 2 | (HasInvalidLayout ? (2:0)) | (MarshallingRequired ? (1:0))
+                //  If MarshallingRequired:
+                //    size
+                //    struct marshalling thunk
+                //    struct unmarshalling thunk
+                //    struct cleanup thunk
+                //  For each field field:
+                //     name
+                //     offset
 
                 var structType = structEntry.StructType;
                 var nativeType = structEntry.NativeStructType;
-                Vertex thunks= writer.GetTuple(
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.MarshallingThunk))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.UnmarshallingThunk))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.CleanupThunk))));
 
-                uint size = (uint)nativeType.InstanceFieldSize.AsInt;
-                uint mask = (uint)(nativeType.Fields.Length << 1)  | (uint)(nativeType.HasInvalidLayout ? 1 : 0);
+                Vertex marshallingData = null;
+                if (MarshalHelpers.IsStructMarshallingRequired(structType))
+                {
+                    Vertex thunks = writer.GetTuple(
+                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.MarshallingThunk))),
+                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.UnmarshallingThunk))),
+                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.CleanupThunk))));
 
-                Vertex data = writer.GetTuple(
-                     thunks,
-                     writer.GetUnsignedConstant(size),
-                     writer.GetUnsignedConstant(mask)
-                    );
+                    uint size = (uint)nativeType.InstanceFieldSize.AsInt;
+                    marshallingData = writer.GetTuple(writer.GetUnsignedConstant(size), thunks);
+                }
 
+                Vertex fieldOffsetData = null;
                 for (int i = 0; i < nativeType.Fields.Length; i++)
                 {
-                    data = writer.GetTuple(
-                        data,
+                    var row = writer.GetTuple(
                         writer.GetStringConstant(nativeType.Fields[i].Name),
                         writer.GetUnsignedConstant((uint)nativeType.Fields[i].Offset.AsInt)
                         );
+
+                    fieldOffsetData = (fieldOffsetData != null) ? writer.GetTuple(fieldOffsetData, row) : row;
                 }
+
+                uint mask = (uint)((marshallingData != null) ? InteropDataConstants.HasMarshallers : 0) |
+                            (uint)(nativeType.HasInvalidLayout ? InteropDataConstants.HasInvalidLayout : 0) |
+                            (uint)(nativeType.Fields.Length << InteropDataConstants.FieldCountShift);
+
+                Vertex data = writer.GetUnsignedConstant(mask);
+                if (marshallingData != null)
+                    data = writer.GetTuple(data, marshallingData);
+
+                if (fieldOffsetData != null)
+                    data = writer.GetTuple(data, fieldOffsetData);
 
                 Vertex vertex = writer.GetTuple(
                     writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(structType))),

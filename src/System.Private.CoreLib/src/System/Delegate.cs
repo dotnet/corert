@@ -23,12 +23,10 @@ namespace System
     [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
-        // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
-        // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
-        internal Delegate()
-        {
-            // ! Do NOT put any code here. Delegate constructers are not guaranteed to be executed.
-        }
+#if PROJECTN
+        // Required by IL2IL transforms
+        internal Delegate() { }
+#endif
 
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
         protected Delegate(object target, string method)
@@ -402,59 +400,6 @@ namespace System
             return result;
         }
 
-        public static unsafe Delegate Combine(Delegate a, Delegate b)
-        {
-            if (a == null)
-                return b;
-            if (b == null)
-                return a;
-
-            return a.CombineImpl(b);
-        }
-
-        public static Delegate Remove(Delegate source, Delegate value)
-        {
-            if (source == null)
-                return null;
-
-            if (value == null)
-                return source;
-
-            if (!InternalEqualTypes(source, value))
-                throw new ArgumentException(SR.Arg_DlgtTypeMis);
-
-            return source.RemoveImpl(value);
-        }
-
-        public static Delegate RemoveAll(Delegate source, Delegate value)
-        {
-            Delegate newDelegate = null;
-
-            do
-            {
-                newDelegate = source;
-                source = Remove(source, value);
-            }
-            while (newDelegate != source);
-
-            return newDelegate;
-        }
-
-        // Used to support the C# compiler in implementing the "+" operator for delegates
-        public static Delegate Combine(params Delegate[] delegates)
-        {
-            if ((delegates == null) || (delegates.Length == 0))
-                return null;
-
-            Delegate d = delegates[0];
-            for (int i = 1; i < delegates.Length; i++)
-            {
-                d = Combine(d, delegates[i]);
-            }
-
-            return d;
-        }
-
         private MulticastDelegate NewMulticastDelegate(Delegate[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
         {
             // First, allocate a new multicast delegate just like this one, i.e. same type as the this object
@@ -726,14 +671,6 @@ namespace System
             return del;
         }
 
-        public MethodInfo Method
-        {
-            get
-            {
-                return GetMethodImpl();
-            }
-        }
-
         protected virtual MethodInfo GetMethodImpl()
         {
             return RuntimeAugments.Callbacks.GetDelegateMethod(this);
@@ -745,34 +682,6 @@ namespace System
             // therefore, instead of duplicating the desktop behavior where direct calls to this Equals function do not behave
             // correctly, we'll just throw here.
             throw new PlatformNotSupportedException();
-        }
-
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Delegate d1, Delegate d2)
-        {
-            // Test d2 first to allow branch elimination when inlined for null checks (== null)
-            // so it can become a simple test
-            if (d2 is null)
-            {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
-                return (d1 is null) ? true : false;
-            }
-
-            return ReferenceEquals(d2, d1) ? true : d2.Equals((object)d1);
-        }
-
-        public static bool operator !=(Delegate d1, Delegate d2)
-        {
-            // Test d2 first to allow branch elimination when inlined for not null checks (!= null)
-            // so it can become a simple test
-            if (d2 is null)
-            {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
-                return (d1 is null) ? false : true;
-            }
-
-            return ReferenceEquals(d2, d1) ? false : !d2.Equals(d1);
         }
 
         public object Target
@@ -805,32 +714,16 @@ namespace System
         }
 
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed. 
-        public static Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method) => CreateDelegate(type, firstArgument, method, throwOnBindFailure: true);
         public static Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
 
         // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
-        public static Delegate CreateDelegate(Type type, MethodInfo method) => CreateDelegate(type, method, throwOnBindFailure: true);
         public static Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, method, throwOnBindFailure);
 
         // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
-        public static Delegate CreateDelegate(Type type, object target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true);
-        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true);
         public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
 
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
-        public static Delegate CreateDelegate(Type type, Type target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true);
-        public static Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true);
         public static Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
-
-        public virtual object Clone()
-        {
-            return MemberwiseClone();
-        }
-
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException(SR.Serialization_DelegatesNotSupported);
-        }
 
         internal bool IsOpenStatic
         {

@@ -138,10 +138,10 @@
       }
     },
     {
-      "enabled": false,
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "packages -> dotnet.myget.org",
+      "displayName": "packages -> Azure blob feed",
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
@@ -151,9 +151,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(MyGetApiKey)",
-        "inlineScript": "param($ApiKey)\nif ($env:Configuration -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:Configuration\\$env:AzureContainerPackageGlob $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
-        "workingFolder": "",
+        "arguments": "$(AzureFeedAccountKey) $(AzureFeedUrl)",
+        "inlineScript": "param($key, $feedurl)\nif ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishToAzureBlobFeed /p:AccountKey=$key /p:ExpectedFeedUrl=$feedurl /p:PublishPattern=$env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:Configuration\\$env:AzureContainerPackageGlob",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }
     },
@@ -161,7 +161,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "symbol packages -> dotnet.myget.org",
+      "displayName": "symbol packages -> Azure blob feed",
       "timeoutInMinutes": 0,
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
@@ -171,9 +171,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(MyGetApiKey)",
-        "inlineScript": "param($ApiKey)\nif ($env:Configuration -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
-        "workingFolder": "",
+        "arguments": "$(AzureFeedAccountKey) $(AzureFeedUrl)",
+        "inlineScript": "param($key, $feedurl)\nif ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$key /p:ExpectedFeedUrl=$feedurl /p:SymbolsPackagesPattern=$env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }
     },
@@ -344,14 +344,6 @@
       "value": "$(BuildTag)-$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "MyGetFeedUrl": {
-      "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package",
-      "allowOverride": true
-    },
-    "MyGetApiKey": {
-      "value": null,
-      "isSecret": true
-    },
     "VstsPat": {
       "value": null,
       "isSecret": true
@@ -397,7 +389,15 @@
     "UseLegacyBuildScripts": {
       "value": "false",
       "allowOverride": true
-    }
+    },
+    "AzureFeedAccountKey": {
+      "value": null,
+      "isSecret": true
+    },
+    "AzureFeedUrl": {
+      "value": "https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json",
+      "allowOverride": true
+    },
   },
   "retentionRules": [
     {

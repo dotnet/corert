@@ -437,6 +437,55 @@ namespace Internal.Runtime.Augments
             return e.GetValue();
         }
 
+        public static Type GetEnumUnderlyingType(RuntimeTypeHandle enumTypeHandle)
+        {
+#if PROJECTN
+            // RHBind doesn't emit CorElementType on generic type definitions, so this only works for
+            // open generics outside ProjectN. When we fix this, also remove the N-specific exclusion in EETypePtr.IsEnum.
+            if (enumTypeHandle.ToEETypePtr().IsGenericTypeDefinition)
+            {
+                Type enumType = Type.GetTypeFromHandle(enumTypeHandle);
+                FieldInfo[] candidates = enumType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+                if (candidates.Length == 0)
+                    throw RuntimeAugments.Callbacks.CreateMissingMetadataException(enumType); // Most likely cause.
+
+                if (candidates.Length > 1)
+                    throw new BadImageFormatException();
+
+                return candidates[0].FieldType;
+            }
+#endif
+
+            Debug.Assert(enumTypeHandle.ToEETypePtr().IsEnum);
+
+            RuntimeImports.RhCorElementType corElementType = enumTypeHandle.ToEETypePtr().CorElementType;
+            switch (corElementType)
+            {
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                    return CommonRuntimeTypes.Boolean;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                    return CommonRuntimeTypes.Char;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                    return CommonRuntimeTypes.SByte;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                    return CommonRuntimeTypes.Byte;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                    return CommonRuntimeTypes.Int16;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                    return CommonRuntimeTypes.UInt16;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                    return CommonRuntimeTypes.Int32;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                    return CommonRuntimeTypes.UInt32;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                    return CommonRuntimeTypes.Int64;
+                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                    return CommonRuntimeTypes.UInt64;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
             EETypePtr elementType = parameterTypeHandle.ToEETypePtr().ArrayElementType;

@@ -22,6 +22,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\GCDescEncoder.cs">
       <Link>Common\GCDescEncoder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\InteropConstants.cs">
+      <Link>Common\InteropConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\ITargetBinaryWriter.cs">
       <Link>Common\ITargetBinaryWriter.cs</Link>
     </Compile>
