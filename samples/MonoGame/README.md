@@ -23,7 +23,7 @@ Verify that the empty game builds and runs. You should see blue window:
 MonoGame tools require [Mono](http://www.mono-project.com/download/) on non-Windows platforms. On Windows, MonoGame tools depend on [Visual Studio 2012 Visual C++ redistributable](https://www.microsoft.com/en-us/download/details.aspx?id=30679).
 
 ## Add CoreRT to your project
-Using CoreRT to compile your application is done via the ILCompiler NuGet package, which is [published to MyGet with the CoreRT daily builds](https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.DotNet.ILCompiler).
+To use CoreRT with your project, you need to add a reference to the ILCompiler NuGet package that contains the CoreRT ahead of time compiler and runtime.
 For the compiler to work, it first needs to be added to your project.
 
 In your shell/command prompt navigate to the root directory of your project and run the command:
@@ -35,7 +35,7 @@ In your shell/command prompt navigate to the root directory of your project and 
 This will add a nuget.config file to your application. Open the file and in the ``<packageSources> `` element under ``<clear/>`` add the following:
 
 ```xml
-<add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+<add key="dotnet-core" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
 <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
 ```
 
