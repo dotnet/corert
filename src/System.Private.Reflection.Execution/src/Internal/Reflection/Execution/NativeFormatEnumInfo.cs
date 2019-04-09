@@ -17,8 +17,17 @@ namespace Internal.Reflection.Execution
         {
             TypeDefinition typeDef = reader.GetTypeDefinition(typeDefHandle);
 
-            // Per the spec, Enums are required to have one instance field. The rest are statics.
-            int staticFieldCount = typeDef.Fields.Count - 1;
+            // Count the number of static fields. The single instance field may or may not have metadata,
+            // so using `typeDef.Fields.Count - 1` is not reliable.
+            int staticFieldCount = 0;
+            foreach (FieldHandle fieldHandle in typeDef.Fields)
+            {
+                Field field = fieldHandle.GetField(reader);
+                if (0 != (field.Flags & FieldAttributes.Static))
+                {
+                    staticFieldCount++;
+                }
+            }
 
             string[] names = new string[staticFieldCount];
             object[] values = new object[staticFieldCount];
@@ -29,9 +38,6 @@ namespace Internal.Reflection.Execution
                 Field field = fieldHandle.GetField(reader);
                 if (0 != (field.Flags & FieldAttributes.Static))
                 {
-                    if (i >= staticFieldCount)
-                        throw new BadImageFormatException();
-
                     names[i] = field.Name.GetString(reader);
                     values[i] = field.DefaultValue.ParseConstantNumericValue(reader);
                     i++;
