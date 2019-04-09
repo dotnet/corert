@@ -74,21 +74,22 @@ namespace Internal.Reflection.Execution
         {
             // Handle the weird case of an enum type nested under a generic type that makes the
             // enum itself generic
+            RuntimeTypeHandle typeDefHandle = typeHandle;
             if (RuntimeAugments.IsGenericType(typeHandle))
             {
-                typeHandle = RuntimeAugments.GetGenericDefinition(typeHandle);
+                typeDefHandle = RuntimeAugments.GetGenericDefinition(typeHandle);
             }
 
             // If the type is reflection blocked, we pretend there are no enum values defined
-            if (ReflectionExecution.ExecutionEnvironment.IsReflectionBlocked(typeHandle))
+            if (ReflectionExecution.ExecutionEnvironment.IsReflectionBlocked(typeDefHandle))
             {
                 return new EnumInfo(RuntimeAugments.GetEnumUnderlyingType(typeHandle), Array.Empty<object>(), Array.Empty<string>(), false);
             }
 
             QTypeDefinition qTypeDefinition;
-            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(typeHandle, out qTypeDefinition))
+            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(typeDefHandle, out qTypeDefinition))
             {
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(Type.GetTypeFromHandle(typeHandle));
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(Type.GetTypeFromHandle(typeDefHandle));
             }
 
             if (qTypeDefinition.IsNativeFormatMetadataBased)
