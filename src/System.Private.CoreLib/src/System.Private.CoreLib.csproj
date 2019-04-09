@@ -438,9 +438,6 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetSystemDirectory.cs">
       <Link>Interop\Windows\Mincore\Interop.GetSystemDirectory.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.QueryUnbiasedInterruptTime.cs">
-      <Link>Interop\Windows\Mincore\Interop.QueryUnbiasedInterruptTime.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
     <Compile Include="System\Threading\ThreadPool.Portable.cs" />
