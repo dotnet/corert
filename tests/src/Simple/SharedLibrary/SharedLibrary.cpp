@@ -42,25 +42,35 @@ int main(int argc, char* argv[])
     f_ReturnsPrimitiveBool returnsPrimitiveBool = (f_ReturnsPrimitiveBool)GetProcAddress(handle, "ReturnsPrimitiveBool");
     f_ReturnsPrimitiveChar returnsPrimitiveChar = (f_ReturnsPrimitiveChar)GetProcAddress(handle, "ReturnsPrimitiveChar");
     f_EnsureManagedClassLoaders ensureManagedClassLoaders = (f_EnsureManagedClassLoaders)GetProcAddress(handle, "EnsureManagedClassLoaders");
+    f_ReturnsPrimitiveInt checkSimpleGCCollect = (f_ReturnsPrimitiveInt)GetProcAddress(handle, "CheckSimpleGCCollect");
+    f_ReturnsPrimitiveInt checkSimpleExceptionHandling = (f_ReturnsPrimitiveInt)GetProcAddress(handle, "CheckSimpleExceptionHandling");
 #else
     f_ReturnsPrimitiveInt returnsPrimitiveInt = (f_ReturnsPrimitiveInt)dlsym(handle, "ReturnsPrimitiveInt");
     f_ReturnsPrimitiveBool returnsPrimitiveBool = (f_ReturnsPrimitiveBool)dlsym(handle, "ReturnsPrimitiveBool");
     f_ReturnsPrimitiveChar returnsPrimitiveChar = (f_ReturnsPrimitiveChar)dlsym(handle, "ReturnsPrimitiveChar");
     f_EnsureManagedClassLoaders ensureManagedClassLoaders = (f_EnsureManagedClassLoaders)dlsym(handle, "EnsureManagedClassLoaders");
+    f_ReturnsPrimitiveInt checkSimpleGCCollect = (f_ReturnsPrimitiveInt)dlsym(handle, "CheckSimpleGCCollect");
+    f_ReturnsPrimitiveInt checkSimpleExceptionHandling = (f_ReturnsPrimitiveInt)dlsym(handle, "CheckSimpleExceptionHandling");
 #endif
 
     if (returnsPrimitiveInt() != 10)
         return 1;
 
     if (!returnsPrimitiveBool())
-        return 1;
+        return 2;
 
     if (returnsPrimitiveChar() != 'a')
-        return 1;
+        return 3;
 
     // As long as no unmanaged exception is thrown
     // managed class loaders were initialized successfully
     ensureManagedClassLoaders();
+
+    if (checkSimpleGCCollect() != 100)
+        return 4;
+
+    if (checkSimpleExceptionHandling() != 100)
+        return 5;
 
     // CoreRT is not designed to be unloadable, so this won't actually unload the library properly. Verify that attempt
     // to unload the library does not to crash at least.
