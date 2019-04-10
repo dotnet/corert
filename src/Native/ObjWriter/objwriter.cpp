@@ -319,9 +319,14 @@ void ObjectWriter::EmitIntValue(uint64_t Value, unsigned Size) {
   Streamer->EmitIntValue(Value, Size);
 }
 
-void ObjectWriter::EmitSymbolDef(const char *SymbolName) {
+void ObjectWriter::EmitSymbolDef(const char *SymbolName, bool global) {
   MCSymbol *Sym = OutContext->getOrCreateSymbol(Twine(SymbolName));
-  Streamer->EmitSymbolAttribute(Sym, MCSA_Global);
+
+  if (global) {
+    Streamer->EmitSymbolAttribute(Sym, MCSA_Global);
+  } else {
+    Streamer->EmitSymbolAttribute(Sym, MCSA_Local);
+  }
 
   // A Thumb2 function symbol should be marked with an appropriate ELF
   // attribute to make later computation of a relocation address value correct
@@ -390,7 +395,10 @@ int ObjectWriter::EmitSymbolRef(const char *SymbolName,
     break;
   case RelocType::IMAGE_REL_BASED_REL32:
     Size = 4;
-    IsPCRel = true;
+    IsPCRel = true;	
+    // PLT is valid only for code symbols,
+    // but there is shouldn't be references to global data symbols
+    Kind = MCSymbolRefExpr::VK_PLT;
     break;
   case RelocType::IMAGE_REL_BASED_RELPTR32:
     Size = 4;

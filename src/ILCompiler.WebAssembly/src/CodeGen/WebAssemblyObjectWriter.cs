@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal class WebAssemblyObjectWriter : IDisposable
     {
-        public static string GetBaseSymbolName(ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
+        private string GetBaseSymbolName(ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
         {
             if (symbol is WebAssemblyMethodCodeNode)
             {
@@ -33,13 +33,14 @@ namespace ILCompiler.DependencyAnalysis
             if (symbol is ObjectNode)
             {
                 ISymbolDefinitionNode symbolDefNode = (ISymbolDefinitionNode)symbol;
+                var symbolName = _nodeFactory.GetSymbolAlternateName(symbolDefNode) ?? symbol.GetMangledName(nameMangler);
                 if (symbolDefNode.Offset == 0)
                 {
-                    return symbol.GetMangledName(nameMangler);
+                    return symbolName;
                 }
                 else
                 {
-                    return symbol.GetMangledName(nameMangler) + "___REALBASE";
+                    return symbolName + "___REALBASE";
                 }
             }
             else if (symbol is ObjectAndOffsetSymbolNode)

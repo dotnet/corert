@@ -23,6 +23,7 @@
       <NativeRunnerCompilerArg Include="-o $(NativeRunnerBinary)" Condition="'$(OS)' != 'Windows_NT'" />
       <NativeRunnerCompilerArg Include="/Fo$(NativeRunnerBinary)" Condition="'$(OS)' == 'Windows_NT'" />
       <NativeRunnerCompilerArg Include="/Fe$(NativeRunnerBinary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="-ldl" Condition="'$(OS)' != 'Windows_NT'" />
     </ItemGroup>
 
     <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
