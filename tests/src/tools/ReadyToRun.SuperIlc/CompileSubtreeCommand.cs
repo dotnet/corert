@@ -70,10 +70,10 @@ namespace ReadyToRun.SuperIlc
                 }
                 if (++count % 100 == 0)
                 {
-                    Console.WriteLine($@"Found {folders.Count} apps in {count} / {directories.Length} folders");
+                    Console.WriteLine($@"Found {folders.Count} folders to build ({count} / {directories.Length} folders scanned)");
                 }
             }
-            Console.WriteLine($@"Found {folders.Count} folders with managed assemblies in {directories.Length} folders");
+            Console.WriteLine($@"Found {folders.Count} folders to build ({directories.Length} folders scanned)");
 
             string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
             string folderSetLogPath = Path.Combine(options.OutputDirectory.ToString(), "subtree-" + timeStamp + ".log");

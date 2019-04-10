@@ -263,7 +263,7 @@ public class ProcessRunner : IDisposable
                 string failureMessage = $"{_processIndex}: failed in {_processInfo.DurationMilliseconds} msecs, exit code {_processInfo.ExitCode}";
                 if (_processInfo.ExitCode < 0)
                 {
-                    failureMessage += " = 0x{_processInfo.ExitCode:X8}";
+                    failureMessage += $" = 0x{_processInfo.ExitCode:X8}";
                 }
                 failureMessage += $", expected {_processInfo.ExpectedExitCode}";
                 _logWriter.WriteLine(failureMessage);

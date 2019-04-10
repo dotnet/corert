@@ -289,65 +289,86 @@ namespace ReadyToRun.SuperIlc
         {
             const int TopAppCount = 10;
 
+            IEnumerable<ProcessInfo> selection = processes.OrderByDescending(process => process.DurationMilliseconds).Take(TopAppCount);
+            int count = selection.Count();
+            if (count == 0)
+            {
+                // No entries to log
+                return;
+            }
+
             _logWriter.WriteLine();
 
-            string headerLine = $"Top {TopAppCount} top ranking {metric}";
+            string headerLine = $"{count} top ranking {metric}";
             _logWriter.WriteLine(headerLine);
             _logWriter.WriteLine(new string('-', headerLine.Length));
 
-            foreach (ProcessInfo processInfo in processes.OrderByDescending(process => process.DurationMilliseconds).Take(TopAppCount))
+            foreach (ProcessInfo processInfo in selection)
             {
                 _logWriter.WriteLine($"{processInfo.DurationMilliseconds,10} | {processInfo.InputFileName}");
             }
         }
 
-        enum Outcome
+        enum CompilationOutcome
         {
             PASS = 0,
-            ILC_FAIL = 1,
-            EXIT_CODE = 2,
-            CRASHED = 3,
-            TIMED_OUT = 4,
+            FAIL = 1,
+
+            Count
+        }
+
+        enum ExecutionOutcome
+        {
+            PASS = 0,
+            EXIT_CODE = 1,
+            CRASHED = 2,
+            TIMED_OUT = 3,
 
             Count
         }
 
         private void WriteBuildStatistics()
         {
-            _logWriter.WriteLine();
-            _logWriter.WriteLine($"Total folders:    {_buildFolders.Count()}");
-            _logWriter.WriteLine($"Total build time: {_buildMilliseconds} msecs");
-            _logWriter.WriteLine($"Compilation time: {_compilationMilliseconds} msecs");
-            _logWriter.WriteLine($"Execution time:   {_executionMilliseconds} msecs");
-
             // The Count'th element corresponds to totals over all compiler runners used in the run
-            int[,] outcomes = new int[(int)Outcome.Count, (int)CompilerIndex.Count + 1];
-            int total = 0;
+            int[,] compilationOutcomes = new int[(int)CompilationOutcome.Count, (int)CompilerIndex.Count + 1];
+            int[,] executionOutcomes = new int[(int)ExecutionOutcome.Count, (int)CompilerIndex.Count + 1];
+            int totalCompilations = 0;
+            int totalExecutions = 0;
 
             foreach (BuildFolder folder in _buildFolders)
             {
-                total++;
                 bool[] compilationFailedPerRunner = new bool[(int)CompilerIndex.Count];
                 foreach (ProcessInfo[] compilation in folder.Compilations)
                 {
+                    totalCompilations++;
                     bool anyCompilationFailed = false;
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
                         bool compilationFailed = compilation[(int)runner.Index] != null && !compilation[(int)runner.Index].Succeeded;
                         if (compilationFailed)
                         {
-                            outcomes[(int)Outcome.ILC_FAIL, (int)runner.Index]++;
+                            compilationOutcomes[(int)CompilationOutcome.FAIL, (int)runner.Index]++;
                             anyCompilationFailed = true;
                             compilationFailedPerRunner[(int)runner.Index] = true;
+                        }
+                        else
+                        {
+                            compilationOutcomes[(int)CompilationOutcome.PASS, (int)runner.Index]++;
                         }
                     }
                     if (anyCompilationFailed)
                     {
-                        outcomes[(int)Outcome.ILC_FAIL, (int)CompilerIndex.Count]++;
+                        compilationOutcomes[(int)CompilationOutcome.FAIL, (int)CompilerIndex.Count]++;
+                    }
+                    else
+                    {
+                        compilationOutcomes[(int)CompilationOutcome.PASS, (int)CompilerIndex.Count]++;
                     }
                 }
+
                 foreach (ProcessInfo[] execution in folder.Executions)
                 {
+                    totalExecutions++;
                     bool anyCompilationFailed = false;
                     int executionFailureOutcomeMask = 0;
                     foreach (CompilerRunner runner in _compilerRunners)
@@ -358,36 +379,44 @@ namespace ReadyToRun.SuperIlc
                         bool executionFailed = !compilationFailed && (execProcess != null && !execProcess.Succeeded);
                         if (executionFailed)
                         {
-                            Outcome outcome = (execProcess.TimedOut ? Outcome.TIMED_OUT :
-                                execProcess.ExitCode < -1000 * 1000 ? Outcome.CRASHED :
-                                Outcome.EXIT_CODE);
-                            outcomes[(int)outcome, (int)runner.Index]++;
+                            ExecutionOutcome outcome = (execProcess.TimedOut ? ExecutionOutcome.TIMED_OUT :
+                                execProcess.ExitCode < -1000 * 1000 ? ExecutionOutcome.CRASHED :
+                                ExecutionOutcome.EXIT_CODE);
+                            executionOutcomes[(int)outcome, (int)runner.Index]++;
                             executionFailureOutcomeMask |= 1 << (int)outcome;
                         }
                         if (!compilationFailed && !executionFailed)
                         {
-                            outcomes[(int)Outcome.PASS, (int)runner.Index]++;
+                            executionOutcomes[(int)ExecutionOutcome.PASS, (int)runner.Index]++;
                         }
                     }
                     if (executionFailureOutcomeMask != 0)
                     {
-                        for (int outcomeIndex = 0; outcomeIndex < (int)Outcome.Count; outcomeIndex++)
+                        for (int outcomeIndex = 0; outcomeIndex < (int)ExecutionOutcome.Count; outcomeIndex++)
                         {
                             if ((executionFailureOutcomeMask & (1 << outcomeIndex)) != 0)
                             {
-                                outcomes[outcomeIndex, (int)CompilerIndex.Count]++;
+                                executionOutcomes[outcomeIndex, (int)CompilerIndex.Count]++;
                             }
                         }
                     }
-                    else if (!anyCompilationFailed)
+                    else
                     {
-                        outcomes[(int)Outcome.PASS, (int)CompilerIndex.Count]++;
+                        executionOutcomes[(int)ExecutionOutcome.PASS, (int)CompilerIndex.Count]++;
                     }
                 }
             }
 
             _logWriter.WriteLine();
-            _logWriter.Write($"{total,5} TOTAL |");
+            _logWriter.WriteLine($"Total folders:    {_buildFolders.Count()}");
+            _logWriter.WriteLine($"# compilations:   {totalCompilations}");
+            _logWriter.WriteLine($"# executions:     {totalExecutions}");
+            _logWriter.WriteLine($"Total build time: {_buildMilliseconds} msecs");
+            _logWriter.WriteLine($"Compilation time: {_compilationMilliseconds} msecs");
+            _logWriter.WriteLine($"Execution time:   {_executionMilliseconds} msecs");
+
+            _logWriter.WriteLine();
+            _logWriter.Write($"{totalCompilations,7} ILC |");
             foreach (CompilerRunner runner in _compilerRunners)
             {
                 _logWriter.Write($"{runner.CompilerName,8} |");
@@ -396,14 +425,35 @@ namespace ReadyToRun.SuperIlc
             int lineSize = 10 * _compilerRunners.Count() + 13 + 8;
             string separator = new string('-', lineSize);
             _logWriter.WriteLine(separator);
-            for (int outcomeIndex = 0; outcomeIndex < (int)Outcome.Count; outcomeIndex++)
+            for (int outcomeIndex = 0; outcomeIndex < (int)CompilationOutcome.Count; outcomeIndex++)
             {
-                _logWriter.Write($"{((Outcome)outcomeIndex).ToString(),11} |");
+                _logWriter.Write($"{((CompilationOutcome)outcomeIndex).ToString(),11} |");
                 foreach (CompilerRunner runner in _compilerRunners)
                 {
-                    _logWriter.Write($"{outcomes[outcomeIndex, (int)runner.Index],8} |");
+                    _logWriter.Write($"{compilationOutcomes[outcomeIndex, (int)runner.Index],8} |");
                 }
-                _logWriter.WriteLine($"{outcomes[outcomeIndex, (int)CompilerIndex.Count],8}");
+                _logWriter.WriteLine($"{compilationOutcomes[outcomeIndex, (int)CompilerIndex.Count],8}");
+            }
+
+            if (!_options.NoExe)
+            {
+                _logWriter.WriteLine();
+                _logWriter.Write($"{totalExecutions,7} EXE |");
+                foreach (CompilerRunner runner in _compilerRunners)
+                {
+                    _logWriter.Write($"{runner.CompilerName,8} |");
+                }
+                _logWriter.WriteLine(" Overall");
+                _logWriter.WriteLine(separator);
+                for (int outcomeIndex = 0; outcomeIndex < (int)ExecutionOutcome.Count; outcomeIndex++)
+                {
+                    _logWriter.Write($"{((ExecutionOutcome)outcomeIndex).ToString(),11} |");
+                    foreach (CompilerRunner runner in _compilerRunners)
+                    {
+                        _logWriter.Write($"{executionOutcomes[outcomeIndex, (int)runner.Index],8} |");
+                    }
+                    _logWriter.WriteLine($"{executionOutcomes[outcomeIndex, (int)CompilerIndex.Count],8}");
+                }
             }
 
             WriteJittedMethodSummary();
