@@ -104,6 +104,11 @@ if %__VSToolsRoot:~-1%==\ set "__VSToolsRoot=%__VSToolsRoot:~0,-1%"
 
 set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
 
+if not exist !_msbuildexe! (
+    REM VS2019 changed the path MSBuild.exe lives under
+    set _msbuildexe="%VSINSTALLDIR%\MSBuild\Current\Bin\MSBuild.exe"
+)
+
 if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
 
 :: Set the environment for the  build- VS cmd prompt
