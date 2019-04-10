@@ -1967,7 +1967,7 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     bool success = false;
 
     // Locate heap_number-th available processor
-    uint16_t procNumber;
+    uint16_t procIndex;
     size_t cnt = heap_number;
     for (uint16_t i = 0; i < GCToOSInterface::GetTotalProcessorCount(); i++)
     {
@@ -1975,7 +1975,7 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
         {
             if (cnt == 0)
             {
-                procNumber = i;
+                procIndex = i;
                 success = true;
                 break;
             }
@@ -1988,21 +1988,21 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     {
         WORD gn, gpn;
         gn = GroupProcNo::NoGroup;
-        gpn = procNumber;
+        gpn = procIndex;
 
         GroupProcNo groupProcNo(gn, gpn);
         *proc_no = groupProcNo.GetCombinedValue();
 
         if (GCToOSInterface::CanEnableGCNumaAware())
         {
-            // Get the current processor group
             PROCESSOR_NUMBER procNumber;
+            // Get the current processor group
             GetCurrentProcessorNumberEx(&procNumber);
 
             procNumber.Number = (BYTE)gpn;
             procNumber.Reserved = 0;
 
-            if (GetNumaProcessorNodeEx(&procNumber, node_no))
+            if (!GetNumaProcessorNodeEx(&procNumber, node_no))
             {
                 *node_no = NUMA_NODE_UNDEFINED;
             }
