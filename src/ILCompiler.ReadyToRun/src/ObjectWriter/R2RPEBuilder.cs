@@ -142,14 +142,16 @@ namespace ILCompiler.PEWriter
         /// <summary>
         /// Constructor initializes the various control structures and combines the section list.
         /// </summary>
+        /// <param name="sectionBuilder">Section builder representing the R2R image composition</param>
         /// <param name="machine">Target machine architecture</param>
         /// <param name="peReader">Input MSIL PE file reader</param>
-        /// <param name="sectionNames">Custom section names to add to the output PE</param>
+        /// <param name="customSections">Names of custom sections emitted by the R2R compiler</param>
         /// <param name="sectionSerializer">Callback for emission of data for the individual sections</param>
         public R2RPEBuilder(
+            SectionBuilder sectionBuilder,
             Machine machine,
             PEReader peReader,
-            IEnumerable<SectionInfo> sectionNames = null,
+            HashSet<string> customSections,
             Func<string, SectionLocation, int, BlobBuilder> sectionSerializer = null,
             Action<PEDirectoriesBuilder> directoriesUpdater = null)
             : base(PEHeaderCopier.Copy(peReader.PEHeaders, machine), deterministicIdProvider: null)
@@ -157,83 +159,20 @@ namespace ILCompiler.PEWriter
             _peReader = peReader;
             _sectionSerializer = sectionSerializer;
             _directoriesUpdater = directoriesUpdater;
-            
-            _customSections = new HashSet<string>(sectionNames.Select((sn) => sn.SectionName));
-            
             _sectionRvaDeltas = new List<SectionRVADelta>();
-            
+
             ImmutableArray<Section>.Builder sectionListBuilder = ImmutableArray.CreateBuilder<Section>();
-
-            int textSectionIndex = -1;
-            int sdataSectionIndex = -1;
-            int rsrcSectionIndex = -1;
-            int relocSectionIndex = -1;
-            
-            for (int sectionIndex = 0; sectionIndex < peReader.PEHeaders.SectionHeaders.Length; sectionIndex++)
+            foreach (SectionInfo sectionInfo in sectionBuilder.GetSections())
             {
-                switch (peReader.PEHeaders.SectionHeaders[sectionIndex].Name)
-                {
-                    case TextSectionName:
-                        textSectionIndex = sectionIndex;
-                        break;
-
-                    case SDataSectionName:
-                        sdataSectionIndex = sectionIndex;
-                        break;
-
-                    case RsrcSectionName:
-                        rsrcSectionIndex = sectionIndex;
-                        break;
-                        
-                    case RelocSectionName:
-                        relocSectionIndex = sectionIndex;
-                        break;
-                }
+                ILCompiler.PEWriter.Section builderSection = sectionBuilder.FindSection(sectionInfo.SectionName);
+                Debug.Assert(builderSection != null);
+                sectionListBuilder.Add(new Section(builderSection.Name, builderSection.Characteristics));
             }
 
-            if (textSectionIndex >= 0 && !sectionNames.Any((sc) => sc.SectionName == TextSectionName))
-            {
-                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[textSectionIndex];
-                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
-            }
-
-            if (sectionNames != null)
-            {
-                foreach (SectionInfo sectionInfo in sectionNames)
-                {
-                    sectionListBuilder.Add(new Section(sectionInfo.SectionName, sectionInfo.Characteristics));
-                }
-            }
-
-            if (sdataSectionIndex >= 0 && !sectionNames.Any((sc) => sc.SectionName == SDataSectionName))
-            {
-                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[sdataSectionIndex];
-                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
-            }
-
-            if (rsrcSectionIndex >= 0 && !sectionNames.Any((sc) => sc.SectionName == RsrcSectionName))
-            {
-                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[rsrcSectionIndex];
-                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
-            }
-            
-            if (relocSectionIndex >= 0)
-            {
-                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[relocSectionIndex];
-                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
-            }
-            else
-            {
-                // Always inject the relocation section to the end of section list
-                sectionListBuilder.Add(new Section(RelocSectionName,
-                    SectionCharacteristics.ContainsInitializedData |
-                    SectionCharacteristics.MemRead |
-                    SectionCharacteristics.MemDiscardable));
-            }
-            
-            _sections = sectionListBuilder.ToImmutable();
+            _sections = sectionListBuilder.ToImmutableArray();
+            _customSections = customSections;
         }
-        
+
         /// <summary>
         /// Copy all directory entries and the address of entry point, relocating them along the way.
         /// </summary>

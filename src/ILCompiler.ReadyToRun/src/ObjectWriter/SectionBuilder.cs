@@ -923,24 +923,68 @@ namespace ILCompiler.PEWriter
     /// </summary>
     public static class SectionBuilderExtensions
     {
+        public static void PrepareSections(
+            this SectionBuilder builder,
+            PEReader peReader,
+            Func<string, ISymbolNode> sectionStartNodeLookup,
+            HashSet<string> customSections,
+            out int textSectionIndex,
+            out int rdataSectionIndex,
+            out int dataSectionIndex)
+        {
+            builder.SetSectionStartNodeLookup(sectionStartNodeLookup);
+
+            textSectionIndex = builder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
+            rdataSectionIndex = builder.AddSection(".rdata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
+            dataSectionIndex = builder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
+
+            foreach (SectionInfo section in builder.GetSections())
+            {
+                customSections.Add(section.SectionName);
+            }
+
+            foreach (SectionHeader sectionHeader in peReader.PEHeaders.SectionHeaders)
+            {
+                if (builder.FindSection(sectionHeader.Name) == null)
+                {
+                    builder.AddSection(sectionHeader.Name, sectionHeader.SectionCharacteristics, peReader.PEHeaders.PEHeader.SectionAlignment);
+                }
+            }
+
+            if (builder.FindSection(R2RPEBuilder.RelocSectionName) == null)
+            {
+                // Always inject the relocation section to the end of section list
+                builder.AddSection(
+                    R2RPEBuilder.RelocSectionName,
+                    SectionCharacteristics.ContainsInitializedData |
+                    SectionCharacteristics.MemRead |
+                    SectionCharacteristics.MemDiscardable,
+                    peReader.PEHeaders.PEHeader.SectionAlignment);
+            }
+        }
+
         /// <summary>
         /// Emit built sections using the R2R PE writer.
         /// </summary>
         /// <param name="builder">Section builder to emit</param>
         /// <param name="machine">Target machine architecture</param>
         /// <param name="inputReader">Input MSIL reader</param>
+        /// <param name="directoriesUpdater">Callback to patch PE directories during R2R output</param>
+        /// <param name="customSections">Sections written to by the R2R compiler</param>
         /// <param name="outputStream">Output stream for the final R2R PE file</param>
         public static void EmitR2R(
             this SectionBuilder builder,
             Machine machine,
             PEReader inputReader,
             Action<PEDirectoriesBuilder> directoriesUpdater,
+            HashSet<string> customSections,
             Stream outputStream)
         {
             R2RPEBuilder r2rBuilder = new R2RPEBuilder(
+                builder,
                 machine: machine,
                 peReader: inputReader,
-                sectionNames: builder.GetSections(),
+                customSections: customSections,
                 sectionSerializer: builder.SerializeSection,
                 directoriesUpdater: (PEDirectoriesBuilder directoriesBuilder) =>
                 {

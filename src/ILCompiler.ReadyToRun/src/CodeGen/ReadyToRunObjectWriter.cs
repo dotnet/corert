@@ -82,11 +82,15 @@ namespace ILCompiler.DependencyAnalysis
                 mapFile.WriteLine($@"R2R object emission started: {DateTime.Now}");
 
                 _sectionBuilder = new SectionBuilder();
-                _sectionBuilder.SetSectionStartNodeLookup(_nodeFactory.SectionStartNode);
 
-                _textSectionIndex = _sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
-                _rdataSectionIndex = _sectionBuilder.AddSection(".rdata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
-                _dataSectionIndex = _sectionBuilder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
+                HashSet<string> customSections = new HashSet<string>();
+                _sectionBuilder.PrepareSections(
+                    _inputPeReader,
+                    _nodeFactory.SectionStartNode,
+                    customSections,
+                    textSectionIndex: out _textSectionIndex,
+                    rdataSectionIndex: out _rdataSectionIndex,
+                    dataSectionIndex: out _dataSectionIndex);
 
                 int nodeIndex = -1;
                 foreach (var depNode in _nodes)
@@ -141,7 +145,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 using (var peStream = File.Create(_objectFilePath))
                 {
-                    _sectionBuilder.EmitR2R(targetMachine, _inputPeReader, UpdateDirectories, peStream);
+                    _sectionBuilder.EmitR2R(targetMachine, _inputPeReader, UpdateDirectories, customSections, peStream);
                 }
 
                 mapFile.WriteLine($@"R2R object emission finished: {DateTime.Now}, {stopwatch.ElapsedMilliseconds} msecs");
