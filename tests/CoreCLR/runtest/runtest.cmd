@@ -10,9 +10,11 @@ set __BuildOS=Windows_NT
 if defined VS160COMNTOOLS (
     set __VSVersion=vs2019
     set __VSProductVersion=160
+    set _msbuildexe="%VSINSTALLDIR%\MSBuild\Current\Bin\MSBuild.exe"
 ) else (
     set __VSVersion=vs2017
     set __VSProductVersion=150
+    set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
 )
 
 :: Define a prefix for most output progress messages that come from this script. That makes
@@ -101,8 +103,6 @@ if not defined VS%__VSProductVersion%COMNTOOLS goto NoVS
 
 set __VSToolsRoot=!VS%__VSProductVersion%COMNTOOLS!
 if %__VSToolsRoot:~-1%==\ set "__VSToolsRoot=%__VSToolsRoot:~0,-1%"
-
-set _msbuildexe="%VSINSTALLDIR%\MSBuild\15.0\Bin\MSBuild.exe"
 
 if not exist !_msbuildexe! (echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/corert/blob/master/Documentation/prerequisites-for-building.md for build instructions. && exit /b 1)
 
