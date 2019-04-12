@@ -148,6 +148,11 @@ namespace ILCompiler.PEWriter
         private readonly int _dataSectionIndex;
 
         /// <summary>
+        /// True after Write has been called; it's not possible to add further object data items past that point.
+        /// </summary>
+        private bool _written;
+
+        /// <summary>
         /// COR header decoded from the input MSIL file.
         /// </summary>
         public CorHeaderBuilder CorHeader => _corHeaderBuilder;
@@ -237,6 +242,11 @@ namespace ILCompiler.PEWriter
         /// <param name="mapFile">Optional map file to output the data item to</param>
         public void AddObjectData(ObjectNode.ObjectData objectData, ObjectNodeSection section, string name, TextWriter mapFile)
         {
+            if (_written)
+            {
+                throw new InternalCompilerErrorException("Inconsistent upstream behavior - AddObjectData mustn't be called after Write");
+            }
+
             int targetSectionIndex;
             switch (section.Type)
             {
@@ -292,6 +302,8 @@ namespace ILCompiler.PEWriter
                 outputStream);
 
             RelocateMetadataBlob(outputStream);
+
+            _written = true;
         }
 
         /// <summary>
