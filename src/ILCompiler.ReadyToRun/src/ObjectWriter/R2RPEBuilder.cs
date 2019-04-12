@@ -13,6 +13,9 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
+using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
+
 namespace ILCompiler.PEWriter
 {
     /// <summary>
@@ -96,15 +99,10 @@ namespace ILCompiler.PEWriter
         private ImmutableArray<Section> _sections;
 
         /// <summary>
-        /// Callback which is called to emit the data for each section.
+        /// Callback to retrieve the runtime function table which needs setting to the
+        /// ExceptionTable PE directory entry.
         /// </summary>
-        private Func<string, SectionLocation, int, BlobBuilder> _sectionSerializer;
-
-        /// <summary>
-        /// Optional callback can be used to adjust the default directory table obtained by relocating
-        /// the directory table from input MSIL PE file.
-        /// </summary>
-        private Action<PEDirectoriesBuilder> _directoriesUpdater;
+        private Func<RuntimeFunctionsTableNode> _getRuntimeFunctionsTable;
 
         /// <summary>
         /// For each copied section, we store its initial and end RVA in the source PE file
@@ -125,9 +123,34 @@ namespace ILCompiler.PEWriter
         private int _corHeaderFileOffset;
 
         /// <summary>
+        /// R2R PE section builder &amp; relocator.
+        /// </summary>
+        private readonly SectionBuilder _sectionBuilder;
+
+        /// <summary>
         /// File offset of the metadata blob in the output file.
         /// </summary>
         private int _metadataFileOffset;
+
+        /// <summary>
+        /// Zero-based index of the CPAOT-generated text section
+        /// </summary>
+        private readonly int _textSectionIndex;
+
+        /// <summary>
+        /// Zero-based index of the CPAOT-generated read-only data section
+        /// </summary>
+        private readonly int _rdataSectionIndex;
+
+        /// <summary>
+        /// Zero-based index of the CPAOT-generated read-write data section
+        /// </summary>
+        private readonly int _dataSectionIndex;
+
+        /// <summary>
+        /// True after Write has been called; it's not possible to add further object data items past that point.
+        /// </summary>
+        private bool _written;
 
         /// <summary>
         /// COR header decoded from the input MSIL file.
@@ -144,96 +167,145 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="machine">Target machine architecture</param>
         /// <param name="peReader">Input MSIL PE file reader</param>
-        /// <param name="sectionNames">Custom section names to add to the output PE</param>
-        /// <param name="sectionSerializer">Callback for emission of data for the individual sections</param>
+        /// <param name="sectionStartNodeLookup">Callback to locate section start node for a given section name</param>
+        /// <param name="getRuntimeFunctionsTable">Callback to retrieve the runtime functions table</param>
         public R2RPEBuilder(
             Machine machine,
             PEReader peReader,
-            IEnumerable<SectionInfo> sectionNames = null,
-            Func<string, SectionLocation, int, BlobBuilder> sectionSerializer = null,
-            Action<PEDirectoriesBuilder> directoriesUpdater = null)
+            Func<string, ISymbolNode> sectionStartNodeLookup,
+            Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable)
             : base(PEHeaderCopier.Copy(peReader.PEHeaders, machine), deterministicIdProvider: null)
         {
             _peReader = peReader;
-            _sectionSerializer = sectionSerializer;
-            _directoriesUpdater = directoriesUpdater;
-            
-            _customSections = new HashSet<string>(sectionNames.Select((sn) => sn.SectionName));
-            
+            _getRuntimeFunctionsTable = getRuntimeFunctionsTable;
             _sectionRvaDeltas = new List<SectionRVADelta>();
-            
-            ImmutableArray<Section>.Builder sectionListBuilder = ImmutableArray.CreateBuilder<Section>();
 
-            int textSectionIndex = -1;
-            int sdataSectionIndex = -1;
-            int rsrcSectionIndex = -1;
-            int relocSectionIndex = -1;
-            
-            for (int sectionIndex = 0; sectionIndex < peReader.PEHeaders.SectionHeaders.Length; sectionIndex++)
+            _sectionBuilder = new SectionBuilder();
+            _sectionBuilder.SetSectionStartNodeLookup(sectionStartNodeLookup);
+
+            _textSectionIndex = _sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
+            _rdataSectionIndex = _sectionBuilder.AddSection(".rdata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
+            _dataSectionIndex = _sectionBuilder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
+
+            _customSections = new HashSet<string>();
+            foreach (SectionInfo section in _sectionBuilder.GetSections())
             {
-                switch (peReader.PEHeaders.SectionHeaders[sectionIndex].Name)
+                _customSections.Add(section.SectionName);
+            }
+
+            foreach (SectionHeader sectionHeader in peReader.PEHeaders.SectionHeaders)
+            {
+                if (_sectionBuilder.FindSection(sectionHeader.Name) == null)
                 {
-                    case TextSectionName:
-                        textSectionIndex = sectionIndex;
-                        break;
-
-                    case SDataSectionName:
-                        sdataSectionIndex = sectionIndex;
-                        break;
-
-                    case RsrcSectionName:
-                        rsrcSectionIndex = sectionIndex;
-                        break;
-                        
-                    case RelocSectionName:
-                        relocSectionIndex = sectionIndex;
-                        break;
+                    _sectionBuilder.AddSection(sectionHeader.Name, sectionHeader.SectionCharacteristics, peReader.PEHeaders.PEHeader.SectionAlignment);
                 }
             }
 
-            if (textSectionIndex >= 0 && !sectionNames.Any((sc) => sc.SectionName == TextSectionName))
-            {
-                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[textSectionIndex];
-                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
-            }
-
-            if (sectionNames != null)
-            {
-                foreach (SectionInfo sectionInfo in sectionNames)
-                {
-                    sectionListBuilder.Add(new Section(sectionInfo.SectionName, sectionInfo.Characteristics));
-                }
-            }
-
-            if (sdataSectionIndex >= 0 && !sectionNames.Any((sc) => sc.SectionName == SDataSectionName))
-            {
-                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[sdataSectionIndex];
-                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
-            }
-
-            if (rsrcSectionIndex >= 0 && !sectionNames.Any((sc) => sc.SectionName == RsrcSectionName))
-            {
-                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[rsrcSectionIndex];
-                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
-            }
-            
-            if (relocSectionIndex >= 0)
-            {
-                SectionHeader sectionHeader = peReader.PEHeaders.SectionHeaders[relocSectionIndex];
-                sectionListBuilder.Add(new Section(sectionHeader.Name, sectionHeader.SectionCharacteristics));
-            }
-            else
+            if (_sectionBuilder.FindSection(R2RPEBuilder.RelocSectionName) == null)
             {
                 // Always inject the relocation section to the end of section list
-                sectionListBuilder.Add(new Section(RelocSectionName,
+                _sectionBuilder.AddSection(
+                    R2RPEBuilder.RelocSectionName,
                     SectionCharacteristics.ContainsInitializedData |
                     SectionCharacteristics.MemRead |
-                    SectionCharacteristics.MemDiscardable));
+                    SectionCharacteristics.MemDiscardable,
+                    peReader.PEHeaders.PEHeader.SectionAlignment);
             }
-            
-            _sections = sectionListBuilder.ToImmutable();
+
+            ImmutableArray<Section>.Builder sectionListBuilder = ImmutableArray.CreateBuilder<Section>();
+            foreach (SectionInfo sectionInfo in _sectionBuilder.GetSections())
+            {
+                ILCompiler.PEWriter.Section builderSection = _sectionBuilder.FindSection(sectionInfo.SectionName);
+                Debug.Assert(builderSection != null);
+                sectionListBuilder.Add(new Section(builderSection.Name, builderSection.Characteristics));
+            }
+
+            _sections = sectionListBuilder.ToImmutableArray();
         }
-        
+
+        /// <summary>
+        /// Store the symbol and length representing the R2R header table
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <param name="headerSize"></param>
+        public void SetHeaderTable(ISymbolNode symbol, int headerSize)
+        {
+            _sectionBuilder.SetReadyToRunHeaderTable(symbol, headerSize);
+        }
+
+        /// <summary>
+        /// Emit a single object data item into the output R2R PE file using the section builder.
+        /// </summary>
+        /// <param name="objectData">Object data to emit</param>
+        /// <param name="section">Target section</param>
+        /// <param name="name">Textual name of the object data for diagnostic purposese</param>
+        /// <param name="mapFile">Optional map file to output the data item to</param>
+        public void AddObjectData(ObjectNode.ObjectData objectData, ObjectNodeSection section, string name, TextWriter mapFile)
+        {
+            if (_written)
+            {
+                throw new InternalCompilerErrorException("Inconsistent upstream behavior - AddObjectData mustn't be called after Write");
+            }
+
+            int targetSectionIndex;
+            switch (section.Type)
+            {
+                case SectionType.Executable:
+                    targetSectionIndex = _textSectionIndex;
+                    break;
+
+                case SectionType.Writeable:
+                    targetSectionIndex = _dataSectionIndex;
+                    break;
+
+                case SectionType.ReadOnly:
+                    targetSectionIndex = _rdataSectionIndex;
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+
+            _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, mapFile);
+        }
+
+        /// <summary>
+        /// Emit built sections into the R2R PE file.
+        /// </summary>
+        /// <param name="outputStream">Output stream for the final R2R PE file</param>
+        public void Write(Stream outputStream)
+        {
+            BlobBuilder outputPeFile = new BlobBuilder();
+            Serialize(outputPeFile);
+
+            CorHeaderBuilder corHeader = CorHeader;
+            if (corHeader != null)
+            {
+                corHeader.Flags = (CorHeader.Flags & ~CorFlags.ILOnly) | CorFlags.ILLibrary;
+
+                corHeader.MetadataDirectory = RelocateDirectoryEntry(corHeader.MetadataDirectory);
+                corHeader.ResourcesDirectory = RelocateDirectoryEntry(corHeader.ResourcesDirectory);
+                corHeader.StrongNameSignatureDirectory = RelocateDirectoryEntry(corHeader.StrongNameSignatureDirectory);
+                corHeader.CodeManagerTableDirectory = RelocateDirectoryEntry(corHeader.CodeManagerTableDirectory);
+                corHeader.VtableFixupsDirectory = RelocateDirectoryEntry(corHeader.VtableFixupsDirectory);
+                corHeader.ExportAddressTableJumpsDirectory = RelocateDirectoryEntry(corHeader.ExportAddressTableJumpsDirectory);
+                corHeader.ManagedNativeHeaderDirectory = RelocateDirectoryEntry(corHeader.ManagedNativeHeaderDirectory);
+
+                _sectionBuilder.UpdateCorHeader(corHeader);
+            }
+
+            _sectionBuilder.RelocateOutputFile(
+                outputPeFile,
+                _peReader.PEHeaders.PEHeader.ImageBase,
+                corHeader,
+                CorHeaderFileOffset,
+                outputStream);
+
+            RelocateMetadataBlob(outputStream);
+
+            _written = true;
+        }
+
         /// <summary>
         /// Copy all directory entries and the address of entry point, relocating them along the way.
         /// </summary>
@@ -242,11 +314,13 @@ namespace ILCompiler.PEWriter
             PEDirectoriesBuilder builder = new PEDirectoriesBuilder();
             builder.CorHeaderTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.CorHeaderTableDirectory);
 
-            if (_directoriesUpdater != null)
-            {
-                _directoriesUpdater(builder);
-            }
+            _sectionBuilder.UpdateDirectories(builder);
 
+            RuntimeFunctionsTableNode runtimeFunctionsTable = _getRuntimeFunctionsTable();
+            builder.ExceptionTable = new DirectoryEntry(
+                relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
+                size: runtimeFunctionsTable.TableSize);
+    
             return builder;
         }
 
@@ -397,20 +471,17 @@ namespace ILCompiler.PEWriter
                 }
             }
 
-            if (_sectionSerializer != null)
+            BlobBuilder extraData = _sectionBuilder.SerializeSection(name, location, sectionStartRva);
+            if (extraData != null)
             {
-                BlobBuilder extraData = _sectionSerializer(name, location, sectionStartRva);
-                if (extraData != null)
+                if (sectionDataBuilder == null)
                 {
-                    if (sectionDataBuilder == null)
-                    {
-                        // See above - there's a bug due to which LinkSuffix to an empty BlobBuilder screws up the blob content.
-                        sectionDataBuilder = extraData;
-                    }
-                    else
-                    {
-                        sectionDataBuilder.LinkSuffix(extraData);
-                    }
+                    // See above - there's a bug due to which LinkSuffix to an empty BlobBuilder screws up the blob content.
+                    sectionDataBuilder = extraData;
+                }
+                else
+                {
+                    sectionDataBuilder.LinkSuffix(extraData);
                 }
             }
 
