@@ -34,7 +34,6 @@ public class ProcessInfo
     public string ProcessPath;
     public string Arguments;
     public Dictionary<string, string> EnvironmentOverrides = new Dictionary<string, string>();
-    public bool UseShellExecute;
     public string LogPath;
     public int TimeoutMilliseconds;
     public int ExpectedExitCode;
@@ -113,7 +112,7 @@ public class ProcessRunner : IDisposable
         {
             FileName = _processInfo.ProcessPath,
             Arguments = _processInfo.Arguments,
-            UseShellExecute = _processInfo.UseShellExecute,
+            UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
@@ -235,6 +234,16 @@ public class ProcessRunner : IDisposable
             return _state == StateIdle;
         }
 
+        string processSpec;
+        if (!string.IsNullOrEmpty(_processInfo.Arguments))
+        {
+            processSpec = Path.GetFileName(_processInfo.ProcessPath) + " " + _processInfo.Arguments;
+        }
+        else
+        {
+            processSpec = _processInfo.ProcessPath;
+        }
+
         if (_process.WaitForExit(0))
         {
             _process.WaitForExit();
@@ -243,26 +252,22 @@ public class ProcessRunner : IDisposable
             _logWriter.WriteLine(">>>>");
             if (_processInfo.Succeeded)
             {
-                _logWriter.WriteLine(
-                    $"Succeeded in {_processInfo.DurationMilliseconds} msecs, " +
-                    $"exit code {_processInfo.ExitCode} = 0x{_processInfo.ExitCode:X8}");
-                Console.WriteLine(
-                    $"{_processIndex}: succeeded in {_processInfo.DurationMilliseconds} msecs; " +
-                    $"exit code {_processInfo.ExitCode} = 0x{_processInfo.ExitCode:X8}: " +
-                    $"{_processInfo.ProcessPath} {_processInfo.Arguments}");
+                string successMessage = $"{_processIndex}: succeeded in {_processInfo.DurationMilliseconds} msecs";
+
+                _logWriter.WriteLine(successMessage);
+                Console.WriteLine(successMessage + $": {processSpec}");
                 _processInfo.Succeeded = true;
             }
             else
             {
-                _logWriter.WriteLine(
-                    $"Failed in {_processInfo.DurationMilliseconds} msecs, " +
-                    $"exit code {_processInfo.ExitCode} = 0x{_processInfo.ExitCode:X8}, " +
-                    $"expected {_processInfo.ExpectedExitCode} = 0x{_processInfo.ExpectedExitCode:X8}");
-                Console.Error.WriteLine(
-                    $"{_processIndex}: failed in {_processInfo.DurationMilliseconds} msecs; " +
-                    $"exit code {_processInfo.ExitCode} = 0x{_processInfo.ExitCode:X8}, " +
-                    $"expected {_processInfo.ExpectedExitCode} = 0x{_processInfo.ExpectedExitCode:X8}: " +
-                    $"{_processInfo.ProcessPath} {_processInfo.Arguments}");
+                string failureMessage = $"{_processIndex}: failed in {_processInfo.DurationMilliseconds} msecs, exit code {_processInfo.ExitCode}";
+                if (_processInfo.ExitCode < 0)
+                {
+                    failureMessage += $" = 0x{_processInfo.ExitCode:X8}";
+                }
+                failureMessage += $", expected {_processInfo.ExpectedExitCode}";
+                _logWriter.WriteLine(failureMessage);
+                Console.Error.WriteLine(failureMessage + $": {processSpec}");
             }
         }
         else
@@ -273,10 +278,9 @@ public class ProcessRunner : IDisposable
             _processInfo.TimedOut = true;
             _processInfo.Succeeded = false;
             _logWriter.WriteLine(">>>>");
-            _logWriter.WriteLine($"Timed out in {_processInfo.DurationMilliseconds} msecs");
-            Console.Error.WriteLine(
-                $"{_processIndex}: timed out in {_processInfo.DurationMilliseconds} msecs: " +
-                $"{_processInfo.ProcessPath} {_processInfo.Arguments}");
+            string timeoutMessage = $"{_processIndex}: timed out in {_processInfo.DurationMilliseconds} msecs";
+            _logWriter.WriteLine(timeoutMessage);
+            Console.Error.WriteLine(timeoutMessage + $": {processSpec}");
         }
 
         CleanupProcess();

@@ -69,7 +69,7 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT, NoHandler
 
         // rdi still contains the exception code
         // rsi contains the address of the ExInfo
-        call    C_FUNC(RhThrowHwEx)
+        call    EXTERNAL_C_FUNC(RhThrowHwEx)
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
 
@@ -150,7 +150,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
 
         // rdi still contains the exception object
         // rsi contains the address of the ExInfo
-        call    C_FUNC(RhThrowEx)
+        call    EXTERNAL_C_FUNC(RhThrowEx)
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
 
@@ -221,7 +221,7 @@ NESTED_ENTRY RhpRethrow, _TEXT, NoHandler
 
         // rdi contains the currently active ExInfo
         // rsi contains the address of the new ExInfo
-        call    C_FUNC(RhRethrow)
+        call    EXTERNAL_C_FUNC(RhRethrow)
 
         EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
 

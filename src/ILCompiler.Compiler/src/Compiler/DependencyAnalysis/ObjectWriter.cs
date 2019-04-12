@@ -180,14 +180,14 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitSymbolDef(IntPtr objWriter, byte[] symbolName);
-        public void EmitSymbolDef(byte[] symbolName)
+        private static extern void EmitSymbolDef(IntPtr objWriter, byte[] symbolName, int global);
+        public void EmitSymbolDef(byte[] symbolName, bool global = false)
         {
-            EmitSymbolDef(_nativeObjectWriter, symbolName);
+            EmitSymbolDef(_nativeObjectWriter, symbolName, global ? 1 : 0);
         }
-        public void EmitSymbolDef(Utf8StringBuilder symbolName)
+        public void EmitSymbolDef(Utf8StringBuilder symbolName, bool global = false)
         {
-            EmitSymbolDef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray);
+            EmitSymbolDef(_nativeObjectWriter, symbolName.Append('\0').UnderlyingArray, global ? 1 : 0);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -870,7 +870,7 @@ namespace ILCompiler.DependencyAnalysis
                         AppendExternCPrefix(_sb);
                         _sb.Append(alternateName);
 
-                        EmitSymbolDef(_sb);
+                        EmitSymbolDef(_sb, global: true);
                     }
                 }
             }
@@ -980,13 +980,13 @@ namespace ILCompiler.DependencyAnalysis
                                                             ObjectNodeSection.ManagedCodeStartSection :
                                                             objectWriter.GetSharedSection(ObjectNodeSection.ManagedCodeStartSection, "__managedcode_a");
                     objectWriter.SetSection(codeStartSection);
-                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_a"));
+                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_a"), global: true);
                     objectWriter.EmitIntValue(0, 1);
                     ObjectNodeSection codeEndSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
                                                             ObjectNodeSection.ManagedCodeEndSection :
                                                             objectWriter.GetSharedSection(ObjectNodeSection.ManagedCodeEndSection, "__managedcode_z");
                     objectWriter.SetSection(codeEndSection);
-                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_z"));
+                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_z"), global: true);
                     objectWriter.EmitIntValue(1, 1);
                 }
                 else

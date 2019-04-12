@@ -12,6 +12,8 @@
     <!-- Use MSFT assembly key for compatibility with uapaot targeting pack -->
     <AssemblyKey>MSFT</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
+    <!-- Disable nulability-related warnings -->
+    <NoWarn>$(NoWarn);CS8609;CS8611;CS8631;CS8632</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />

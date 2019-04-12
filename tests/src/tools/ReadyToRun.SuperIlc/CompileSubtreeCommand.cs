@@ -33,7 +33,6 @@ namespace ReadyToRun.SuperIlc
             }
 
             IEnumerable<string> referencePaths = options.ReferencePaths();
-            string coreRunPath = SuperIlcHelpers.FindCoreRun(referencePaths);
 
             IEnumerable<CompilerRunner> runners = options.CompilerRunners();
 
@@ -47,22 +46,22 @@ namespace ReadyToRun.SuperIlc
                         .Where(path => !Path.GetExtension(path).Equals(".out", StringComparison.OrdinalIgnoreCase)))
                 .ToArray();
 
-            List<Application> applications = new List<Application>();
+            List<BuildFolder> folders = new List<BuildFolder>();
             int relativePathOffset = directories[0].Length + 1;
             int count = 0;
             foreach (string directory in directories)
             {
-                string outputDirectoryPerApp = options.OutputDirectory.FullName;
+                string outputDirectoryPerFolder = options.OutputDirectory.FullName;
                 if (directory.Length > relativePathOffset)
                 {
-                    outputDirectoryPerApp = Path.Combine(outputDirectoryPerApp, directory.Substring(relativePathOffset));
+                    outputDirectoryPerFolder = Path.Combine(outputDirectoryPerFolder, directory.Substring(relativePathOffset));
                 }
                 try
                 {
-                    Application application = Application.FromDirectory(directory.ToString(), runners, outputDirectoryPerApp, options.NoExe, options.NoEtw, coreRunPath);
-                    if (application != null)
+                    BuildFolder folder = BuildFolder.FromDirectory(directory.ToString(), runners, outputDirectoryPerFolder, options);
+                    if (folder != null)
                     {
-                        applications.Add(application);
+                        folders.Add(folder);
                     }
                 }
                 catch (Exception ex)
@@ -71,17 +70,17 @@ namespace ReadyToRun.SuperIlc
                 }
                 if (++count % 100 == 0)
                 {
-                    Console.WriteLine($@"Found {applications.Count} apps in {count} / {directories.Length} folders");
+                    Console.WriteLine($@"Found {folders.Count} folders to build ({count} / {directories.Length} folders scanned)");
                 }
             }
-            Console.WriteLine($@"Found {applications.Count} apps total in {directories.Length} folders");
+            Console.WriteLine($@"Found {folders.Count} folders to build ({directories.Length} folders scanned)");
 
             string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
-            string applicationSetLogPath = Path.Combine(options.OutputDirectory.ToString(), "subtree-" + timeStamp + ".log");
+            string folderSetLogPath = Path.Combine(options.OutputDirectory.ToString(), "subtree-" + timeStamp + ".log");
 
-            using (ApplicationSet applicationSet = new ApplicationSet(applications, runners, coreRunPath, applicationSetLogPath))
+            using (BuildFolderSet folderSet = new BuildFolderSet(folders, runners, options, folderSetLogPath))
             {
-                bool success = applicationSet.Build(coreRunPath, runners, applicationSetLogPath);
+                bool success = folderSet.Build(runners, folderSetLogPath);
 
                 Dictionary<string, List<ProcessInfo>> compilationFailureBuckets = new Dictionary<string, List<ProcessInfo>>();
                 Dictionary<string, List<ProcessInfo>> executionFailureBuckets = new Dictionary<string, List<ProcessInfo>>();
@@ -96,9 +95,9 @@ namespace ReadyToRun.SuperIlc
                         perRunnerLog[(int)runner.Index] = new StreamWriter(runnerLogPath);
                     }
 
-                    foreach (Application app in applicationSet.Applications)
+                    foreach (BuildFolder folder in folderSet.BuildFolders)
                     {
-                        foreach (ProcessInfo[] compilation in app.Compilations)
+                        foreach (ProcessInfo[] compilation in folder.Compilations)
                         {
                             foreach (CompilerRunner runner in runners)
                             {
@@ -122,7 +121,7 @@ namespace ReadyToRun.SuperIlc
                                 }
                             }
                         }
-                        foreach (ProcessInfo[] execution in app.Executions)
+                        foreach (ProcessInfo[] execution in folder.Executions)
                         {
                             foreach (CompilerRunner runner in runners)
                             {
