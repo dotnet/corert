@@ -410,7 +410,7 @@
     <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\Mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
-    <Compile Include="System\HighPerformanceCounter.Windows.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
+    <Compile Include="System\HighPerformanceCounter.Windows.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Windows.cs" />
     <Compile Include="System\Threading\Thread.CoreRT.Windows.cs" />
@@ -459,7 +459,7 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
     <Compile Include="System\AppContext.Unix.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.Unix.cs" />
-    <Compile Include="System\HighPerformanceCounter.Unix.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
+    <Compile Include="System\HighPerformanceCounter.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\EventWaitHandle.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />

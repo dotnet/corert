@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime;
@@ -327,14 +327,130 @@ namespace System.Threading
         public static void Sleep(int millisecondsTimeout) => SleepInternal(VerifyTimeoutMilliseconds(millisecondsTimeout));
 
         /// <summary>
-        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. Currently, the value comes from
-        /// defaults in CoreCLR's Thread::InitializeYieldProcessorNormalized(). This value is supposed to be normalized to be
-        /// appropriate for the processor.
-        /// TODO: See issue https://github.com/dotnet/corert/issues/4430
+        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying.
         /// </summary>
-        internal static readonly int OptimalMaxSpinWaitsPerSpinIteration = 64;
+        internal static int OptimalMaxSpinWaitsPerSpinIteration
+        {
+            get
+            {
+                if (s_optimalMaxNormalizedYieldsPerSpinIteration != 0)
+                {
+                    return s_optimalMaxNormalizedYieldsPerSpinIteration;
+                }
 
-        public static void SpinWait(int iterations) => RuntimeImports.RhSpinWait(iterations);
+                return GetOptimalMaxSpinWaitsPerSpinIteration();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int GetOptimalMaxSpinWaitsPerSpinIteration()
+        {
+            InitializeYieldProcessorNormalized();
+            return Volatile.Read(ref s_optimalMaxNormalizedYieldsPerSpinIteration);
+        }
+
+        private static int s_optimalMaxNormalizedYieldsPerSpinIteration;
+        private static int s_yieldsPerNormalizedYield;
+
+        private static void YieldProcessorNormalized()
+        {
+            Debug.Assert(IsYieldProcessorNormalizedInitialized());
+            RuntimeImports.RhSpinWait(s_yieldsPerNormalizedYield);
+        }
+
+        private static bool IsYieldProcessorNormalizedInitialized()
+        {
+            return s_yieldsPerNormalizedYield != 0 && s_optimalMaxNormalizedYieldsPerSpinIteration != 0;
+        }
+
+        private static void EnsureYieldProcessorNormalizedInitialized()
+        {
+            if (!IsYieldProcessorNormalizedInitialized())
+            {
+                InitializeYieldProcessorNormalized();
+            }
+        }
+
+        private static void InitializeYieldProcessorNormalized()
+        {
+            // TODO: critical section so that it only initializes once
+
+            // Intel pre-Skylake processor: measured typically 14-17 cycles per yield
+            // Intel post-Skylake processor: measured typically 125-150 cycles per yield
+            const int DefaultYieldsPerNormalizedYield = 1; // defaults are for when no measurement is done
+            const int DefaultOptimalMaxNormalizedYieldsPerSpinIteration = 64; // tuned for pre-Skylake processors, for post-Skylake it should be 7
+            const int MeasureDurationMs = 10;
+            const int MaxYieldsPerNormalizedYield = 10; // measured typically 8-9 on pre-Skylake
+            const int MinNsPerNormalizedYield = 37; // measured typically 37-46 on post-Skylake
+            const int NsPerOptimialMaxSpinIterationDuration = 272; // approx. 900 cycles, measured 281 on pre-Skylake, 263 on post-Skylake
+            const int NsPerSecond = 1000 * 1000 * 1000;
+
+            ulong ticksPerSecond = HighPerformanceCounter.Frequency;
+            if (ticksPerSecond < 1000 / MeasureDurationMs)
+            {
+                // High precision clock not available or clock resolution is too low, resort to defaults
+                s_yieldsPerNormalizedYield = DefaultYieldsPerNormalizedYield;
+                s_optimalMaxNormalizedYieldsPerSpinIteration = DefaultOptimalMaxNormalizedYieldsPerSpinIteration;
+                return;
+            }
+
+            // Measure the nanosecond delay per yield
+            ulong measureDurationTicks = ticksPerSecond / (1000 / MeasureDurationMs);
+            uint yieldCount = 0;
+            ulong startTicks = HighPerformanceCounter.TickCount;
+            ulong elapsedTicks;
+            do
+            {
+                RuntimeImports.RhSpinWait(10);
+                yieldCount += 10;
+
+                ulong nowTicks = HighPerformanceCounter.TickCount;
+                elapsedTicks = nowTicks - startTicks;
+            } while (elapsedTicks < measureDurationTicks);
+            double nsPerYield = (double)elapsedTicks * NsPerSecond / ((double)yieldCount * ticksPerSecond);
+            if (nsPerYield < 1)
+            {
+                nsPerYield = 1;
+            }
+
+            // Calculate the number of yields required to span the duration of a normalized yield
+            int yieldsPerNormalizedYield = (int)(MinNsPerNormalizedYield / nsPerYield + 0.5);
+            if (yieldsPerNormalizedYield < 1)
+            {
+                yieldsPerNormalizedYield = 1;
+            }
+            else if (yieldsPerNormalizedYield > MaxYieldsPerNormalizedYield)
+            {
+                yieldsPerNormalizedYield = MaxYieldsPerNormalizedYield;
+            }
+
+            // Calculate the maximum number of yields that would be optimal for a late spin iteration. Typically, we would not want to
+            // spend excessive amounts of time (thousands of cycles) doing only YieldProcessor, as SwitchToThread/Sleep would do a
+            // better job of allowing other work to run.
+            int optimalMaxNormalizedYieldsPerSpinIteration =
+                (int)(NsPerOptimialMaxSpinIterationDuration / (yieldsPerNormalizedYield * nsPerYield) + 0.5);
+            if (optimalMaxNormalizedYieldsPerSpinIteration < 1)
+            {
+                optimalMaxNormalizedYieldsPerSpinIteration = 1;
+            }
+
+            s_yieldsPerNormalizedYield = yieldsPerNormalizedYield;
+            s_optimalMaxNormalizedYieldsPerSpinIteration = optimalMaxNormalizedYieldsPerSpinIteration;
+        }
+
+        public static void SpinWait(int iterations)
+        {
+            if (iterations <= 0)
+            {
+                return;
+            }
+
+            EnsureYieldProcessorNormalizedInitialized();
+            for (int i = 0; i < iterations; i++)
+            {
+                YieldProcessorNormalized();
+            }
+        }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
         public static bool Yield() => RuntimeImports.RhYield();
