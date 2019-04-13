@@ -15,7 +15,7 @@ namespace System.Threading
         // The following constants define characteristics of spinning logic in the Lock class
         private const int SpinningNotInitialized = 0;
         private const int SpinningDisabled = -1;
-        private const int MaxSpinningValue = 10000;
+        private const int MaxSpinningValue = 1500;
 
         //
         // NOTE: Lock must not have a static (class) constructor, as Lock itself is used to synchronize

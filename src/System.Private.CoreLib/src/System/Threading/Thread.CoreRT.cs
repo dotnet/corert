@@ -352,12 +352,6 @@ namespace System.Threading
         private static int s_optimalMaxNormalizedYieldsPerSpinIteration;
         private static int s_yieldsPerNormalizedYield;
 
-        private static void YieldProcessorNormalized()
-        {
-            Debug.Assert(IsYieldProcessorNormalizedInitialized());
-            RuntimeImports.RhSpinWait(s_yieldsPerNormalizedYield);
-        }
-
         private static bool IsYieldProcessorNormalizedInitialized()
         {
             return s_yieldsPerNormalizedYield != 0 && s_optimalMaxNormalizedYieldsPerSpinIteration != 0;
@@ -446,10 +440,7 @@ namespace System.Threading
             }
 
             EnsureYieldProcessorNormalizedInitialized();
-            for (int i = 0; i < iterations; i++)
-            {
-                YieldProcessorNormalized();
-            }
+            RuntimeImports.RhSpinWait(s_yieldsPerNormalizedYield * iterations);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
