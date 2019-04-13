@@ -9,6 +9,7 @@ namespace System.Reflection
     public sealed partial class AssemblyName : ICloneable, IDeserializationCallback, ISerializable
     {
         public AssemblyName(string assemblyName)
+            : this()
         {
             if (assemblyName == null)
                 throw new ArgumentNullException(nameof(assemblyName));
