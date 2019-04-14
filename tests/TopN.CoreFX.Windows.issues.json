@@ -1001,6 +1001,10 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Tests.VersionTests.Comparisons_NullArgument_ThrowsArgumentNullException",
+                    "reason":  "Version was improved to no longer throw from comparison operators"
+                },
+                {
                     "name": "System.Tests.TimeSpanTests.Total_Days_Hours_Minutes_Seconds_Milliseconds",
                     "reason": "outdated"
                 },
