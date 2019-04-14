@@ -110,6 +110,10 @@ namespace ILCompiler
                 if (type.Name == "SR")
                     return false;
 
+                // Event sources are not blocked
+                if (type.HasCustomAttribute("System.Diagnostics.Tracing", "EventSourceAttribute"))
+                    return false;
+
                 // We block everything else if the module is blocked
                 if (blockingMode == ModuleBlockingMode.FullyBlocked)
                     return true;
