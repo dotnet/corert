@@ -210,7 +210,6 @@
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
     <Compile Include="System\Diagnostics\Tracing\EventCounter.ProjectN.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <Compile Include="System\Diagnostics\Tracing\EventSource_CoreRT.cs" />
     <Compile Include="System\Enum.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.NonProjectN.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
