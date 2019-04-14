@@ -54,6 +54,13 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(factory.MethodMetadata(invokeMethod), "Delegate invoke method metadata");
             }
 
+            if (_type.IsEnum)
+            {
+                // A lot of the enum reflection actually happens on top of the respective EEType (e.g. getting the underlying type),
+                // so for enums also include their EEType.
+                dependencies.Add(factory.MaximallyConstructableType(_type), "Reflectable enum");
+            }
+
             // If the user asked for complete metadata to be generated for all types that are getting metadata, ensure that.
             if ((mdManager._generationOptions & UsageBasedMetadataGenerationOptions.CompleteTypesOnly) != 0)
             {
@@ -91,6 +98,10 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case TypeFlags.FunctionPointer:
                     throw new NotImplementedException();
+
+                case TypeFlags.SignatureMethodVariable:
+                case TypeFlags.SignatureTypeVariable:
+                    break;
 
                 default:
                     Debug.Assert(type.IsDefType);
