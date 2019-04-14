@@ -14,7 +14,7 @@ namespace System.Threading
         private const string WorkerThreadAdjustmentAdjustmentEventMessage = "AverageThroughput=%1;%nNewWorkerThreadCount=%2;%nReason=%3";
         private const string WorkerThreadAdjustmentStatsEventMessage = "Duration=%1;%nThroughput=%2;%nThreadWave=%3;%nThroughputWave=%4;%nThroughputErrorEstimate=%5;%nAverageThroughputErrorEstimate=%6;%nThroughputRatio=%7;%nConfidence=%8;%nNewControlSetting=%9;%nNewThreadWaveMagnitude=%10";
 
-        // We have these constants here because EventTask, EventOpcode, and EventKeywords are public APIs, and we don't want to expose these values to the end user to use in their events.
+        // The task definitions for the ETW manifest
         public static class Tasks
         {
             public const EventTask WorkerThreadTask = (EventTask)16;
