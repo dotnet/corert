@@ -109,8 +109,10 @@ namespace ILCompiler.CppCodeGen
         {
             foreach (var nodeAlias in _compilation.NodeFactory.NodeAliases)
             {
-                var methodNode = (CppMethodCodeNode)nodeAlias.Key;
-                _externCSignatureMap.Add(nodeAlias.Value, methodNode.Method.Signature);
+                if (nodeAlias.Key is CppMethodCodeNode methodNode)
+                {
+                    _externCSignatureMap.Add(nodeAlias.Value, methodNode.Method.Signature);
+                }
             }
         }
 
@@ -495,21 +497,21 @@ namespace ILCompiler.CppCodeGen
 
         public string GetCppSymbolNodeName(NodeFactory factory, ISymbolNode node)
         {
-            if (node is RuntimeMethodHandleNode)
+            if (node is RuntimeMethodHandleNode r)
             {
-                return GetCppRuntimeMethodHandleName(node as RuntimeMethodHandleNode);
+                return GetCppRuntimeMethodHandleName(r);
             }
-            else if (node is NativeLayoutSignatureNode)
+            else if (node is NativeLayoutSignatureNode n)
             {
-                return GetCppNativeLayoutSignatureName(factory, node as NativeLayoutSignatureNode);
+                return GetCppNativeLayoutSignatureName(factory, n);
             }
-            else if (node is FatFunctionPointerNode)
+            else if (node is FatFunctionPointerNode f)
             {
-                return GetCppFatFunctionPointerName(node as FatFunctionPointerNode);
+                return GetCppFatFunctionPointerName(f);
             }
             else
             {
-                return node.GetMangledName(factory.NameMangler);
+                return factory.GetSymbolAlternateName(node) ?? node.GetMangledName(factory.NameMangler);
             }
         }
 

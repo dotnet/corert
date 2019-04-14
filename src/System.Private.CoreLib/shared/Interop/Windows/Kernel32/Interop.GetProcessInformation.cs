@@ -9,10 +9,15 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
+        internal const int ProcessLeapSecondInfo = 8;
+
+        internal struct PROCESS_LEAP_SECOND_INFO
+        {
+            public uint Flags;
+            public uint Reserved;
+        }
+
         [DllImport(Libraries.Kernel32)]
-        internal static extern bool TzSpecificLocalTimeToSystemTime(
-                                        IntPtr lpTimeZoneInformation,
-                                        in Interop.Kernel32.SYSTEMTIME lpLocalTime,
-                                        out Interop.Kernel32.SYSTEMTIME lpUniversalTime);
+        internal static unsafe extern Interop.BOOL GetProcessInformation(IntPtr hProcess, int ProcessInformationClass, void* ProcessInformation, int ProcessInformationSize);
     }
 }

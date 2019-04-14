@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace System
 {
     public readonly partial struct DateTime
@@ -18,7 +21,7 @@ namespace System
                 Interop.Kernel32.GetCurrentProcess(),
                 Interop.Kernel32.ProcessLeapSecondInfo,
                 &info,
-                sizeof(Interop.Kernel32.PROCESS_LEAP_SECOND_INFO));
+                sizeof(Interop.Kernel32.PROCESS_LEAP_SECOND_INFO)) != Interop.BOOL.FALSE;
         }
     }
 }

@@ -115,7 +115,7 @@ LOCAL_LABEL(NewOutOfMemory):
 
         POP_COOP_PINVOKE_FRAME
 
-        jmp         C_FUNC(RhExceptionHandling_FailedAllocation)
+        jmp         EXTERNAL_C_FUNC(RhExceptionHandling_FailedAllocation)
 NESTED_END RhpNewObject, _TEXT
 
 
@@ -193,7 +193,7 @@ LOCAL_LABEL(StringSizeOverflow):
 
         // rdi holds EEType pointer already
         xor         esi, esi            // Indicate that we should throw OOM.
-        jmp         C_FUNC(RhExceptionHandling_FailedAllocation)
+        jmp         EXTERNAL_C_FUNC(RhExceptionHandling_FailedAllocation)
 
 NESTED_END RhNewString, _TEXT
 
@@ -276,7 +276,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 
         // rdi holds EEType pointer already
         mov         esi, 1              // Indicate that we should throw OverflowException
-        jmp         C_FUNC(RhExceptionHandling_FailedAllocation)
+        jmp         EXTERNAL_C_FUNC(RhExceptionHandling_FailedAllocation)
 
 NESTED_END RhpNewArray, _TEXT
 
@@ -338,7 +338,7 @@ LOCAL_LABEL(ArrayOutOfMemory):
 
         POP_COOP_PINVOKE_FRAME
 
-        jmp         C_FUNC(RhExceptionHandling_FailedAllocation)
+        jmp         EXTERNAL_C_FUNC(RhExceptionHandling_FailedAllocation)
 
 NESTED_END RhpNewArrayRare, _TEXT
 
