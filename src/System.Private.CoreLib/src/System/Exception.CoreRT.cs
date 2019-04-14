@@ -232,9 +232,8 @@ namespace System
                 if (!fatalOutOfMemory)
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
-                // CORERT-TODO: RhpEtwExceptionThrown
-                // https://github.com/dotnet/corert/issues/2457
-#if PROJECTN
+                // UNIX-TODO: RhpEtwExceptionThrown
+#if PLATFORM_WINDOWS
                 if (isFirstFrame)
                 {
                     string typeName = !fatalOutOfMemory  ? ex.GetType().ToString() : "System.OutOfMemoryException";
