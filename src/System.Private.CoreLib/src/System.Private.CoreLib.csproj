@@ -332,8 +332,8 @@
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetCurrentThreadId.cs">
-      <Link>Interop\Windows\Mincore\Interop.GetCurrentThreadId.cs</Link>
+    <Compile Include="..\shared\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs">
+      <Link>Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.SetLastError.cs">
       <Link>Interop\Windows\Mincore\Interop.SetLastError.cs</Link>
@@ -430,8 +430,6 @@
     <Compile Include="System\Threading\ClrThreadPool.WorkerThread.cs" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
-    <Compile Include="System\Threading\PreAllocatedOverlapped.PlatformNotSupported.cs" />
-    <Compile Include="System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeWaitHandle.Unix.cs" />
@@ -443,7 +441,9 @@
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
     <Compile Include="System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="System\Threading\Mutex.Unix.cs" />
+    <Compile Include="System\Threading\PreAllocatedOverlapped.PlatformNotSupported.cs" />
     <Compile Include="System\Threading\Semaphore.Unix.cs" />
+    <Compile Include="System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
     <Compile Include="System\Threading\Thread.CoreRT.Unix.cs" />
     <Compile Include="System\Threading\WaitHandle.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.HandleManager.Unix.cs" />

@@ -249,12 +249,3 @@ namespace Microsoft.Win32
         private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
     }
 }
-
-internal static partial class Interop
-{
-    internal static partial class Kernel32
-    {
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
-        public static extern int GetCurrentThreadId();
-    }
-}
