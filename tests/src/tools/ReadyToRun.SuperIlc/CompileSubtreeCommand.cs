@@ -48,7 +48,9 @@ namespace ReadyToRun.SuperIlc
 
             List<BuildFolder> folders = new List<BuildFolder>();
             int relativePathOffset = directories[0].Length + 1;
-            int count = 0;
+            int folderCount = 0;
+            int compilationCount = 0;
+            int executionCount = 0;
             foreach (string directory in directories)
             {
                 string outputDirectoryPerFolder = options.OutputDirectory.FullName;
@@ -62,18 +64,31 @@ namespace ReadyToRun.SuperIlc
                     if (folder != null)
                     {
                         folders.Add(folder);
+                        compilationCount += folder.Compilations.Count;
+                        executionCount += folder.Executions.Count;
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine("Error scanning folder {0}: {1}", directory, ex.Message);
                 }
-                if (++count % 100 == 0)
+                if (++folderCount % 100 == 0)
                 {
-                    Console.WriteLine($@"Found {folders.Count} folders to build ({count} / {directories.Length} folders scanned)");
+                    Console.Write($@"Found {folders.Count} folders to build ");
+                    Console.Write($@"({compilationCount} compilations, ");
+                    if (!options.NoExe)
+                    {
+                        Console.Write($@"{executionCount} executions, ");
+                    }
+                    Console.WriteLine($@"{folderCount} / {directories.Length} folders scanned)");
                 }
             }
-            Console.WriteLine($@"Found {folders.Count} folders to build ({directories.Length} folders scanned)");
+            Console.Write($@"Found {folders.Count} folders to build ({compilationCount} compilations, ");
+            if (!options.NoExe)
+            {
+                Console.Write($@"{executionCount} executions, ");
+            }
+            Console.WriteLine($@"{directories.Length} folders scanned)");
 
             string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
             string folderSetLogPath = Path.Combine(options.OutputDirectory.ToString(), "subtree-" + timeStamp + ".log");
@@ -235,6 +250,11 @@ namespace ReadyToRun.SuperIlc
         {
             try
             {
+                if (process.TimedOut)
+                {
+                    return "Timed out";
+                }
+
                 string[] lines = File.ReadAllLines(process.LogPath);
 
                 for (int lineIndex = 2; lineIndex < lines.Length; lineIndex++)
@@ -263,6 +283,11 @@ namespace ReadyToRun.SuperIlc
         {
             try
             {
+                if (process.TimedOut)
+                {
+                    return "Timed out";
+                }
+
                 string[] lines = File.ReadAllLines(process.LogPath);
 
                 for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)

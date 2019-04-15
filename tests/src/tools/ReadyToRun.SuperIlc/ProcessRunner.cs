@@ -17,9 +17,9 @@ using Microsoft.Diagnostics.Tracing.Session;
 public class ProcessInfo
 {
     /// <summary>
-    /// 10 minutes should be plenty for a CPAOT / Crossgen compilation.
+    /// 2 minutes should be plenty for a CPAOT / Crossgen compilation.
     /// </summary>
-    public const int DefaultIlcTimeout = 600 * 1000;
+    public const int DefaultIlcTimeout = 2 * 60 * 1000;
 
     /// <summary>
     /// Test execution timeout.
