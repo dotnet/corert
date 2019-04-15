@@ -218,6 +218,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     EmitPointerTypeSignature((PointerType)typeDesc, context);
                     return;
 
+                case TypeFlags.ByRef:
+                    EmitByRefTypeSignature((ByRefType)typeDesc, context);
+                    break;
+
                 case TypeFlags.Void:
                     EmitElementType(CorElementType.ELEMENT_TYPE_VOID);
                     return;
@@ -334,6 +338,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitTypeSignature(type.ParameterType, context);
         }
 
+        private void EmitByRefTypeSignature(ByRefType type, SignatureContext context)
+        {
+            EmitElementType(CorElementType.ELEMENT_TYPE_BYREF);
+            EmitTypeSignature(type.ParameterType, context);
+        }
+
         private void EmitSzArrayTypeSignature(ArrayType type, SignatureContext context)
         {
             Debug.Assert(type.IsSzArray);
@@ -377,7 +387,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained;
             }
 
-            if (method.HasInstantiation || method.OwningType.HasInstantiation)
+            if ((method.HasInstantiation || method.OwningType.HasInstantiation) && !method.IsGenericMethodDefinition)
             {
                 EmitMethodSpecificationSignature(method, methodToken, flags, enforceDefEncoding, context);
             }

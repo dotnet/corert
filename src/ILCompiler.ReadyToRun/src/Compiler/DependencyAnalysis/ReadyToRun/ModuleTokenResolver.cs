@@ -275,7 +275,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             public DummyTypeInfo GetTypeFromSpecification(MetadataReader reader, ModuleTokenResolver genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
             {
-                throw new NotImplementedException();
+                TypeSpecification typeSpec = reader.GetTypeSpecification(handle);
+                typeSpec.DecodeSignature(this, genericContext);
+                return DummyTypeInfo.Instance;
             }
         }
     }
