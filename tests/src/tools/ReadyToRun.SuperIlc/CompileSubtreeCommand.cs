@@ -97,6 +97,7 @@ namespace ReadyToRun.SuperIlc
 
                     foreach (BuildFolder folder in folderSet.BuildFolders)
                     {
+                        bool[] compilationErrorPerRunner = new bool[(int)CompilerIndex.Count];
                         foreach (ProcessInfo[] compilation in folder.Compilations)
                         {
                             foreach (CompilerRunner runner in runners)
@@ -117,6 +118,7 @@ namespace ReadyToRun.SuperIlc
                                             compilationFailureBuckets.Add(bucket, processes);
                                         }
                                         processes.Add(compilationProcess);
+                                        compilationErrorPerRunner[(int)runner.Index] = true;
                                     }
                                 }
                             }
@@ -125,31 +127,34 @@ namespace ReadyToRun.SuperIlc
                         {
                             foreach (CompilerRunner runner in runners)
                             {
-                                ProcessInfo executionProcess = execution[(int)runner.Index];
-                                if (executionProcess != null)
+                                if (!compilationErrorPerRunner[(int)runner.Index])
                                 {
-                                    string log = $"\nEXECUTE {runner.CompilerName}:{executionProcess.InputFileName}\n";
-                                    try
+                                    ProcessInfo executionProcess = execution[(int)runner.Index];
+                                    if (executionProcess != null)
                                     {
-                                        log += File.ReadAllText(executionProcess.LogPath);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        log += " -> " + ex.Message;
-                                    }
-                                    perRunnerLog[(int)runner.Index].Write(log);
-                                    combinedLog.Write(log);
-
-                                    if (!executionProcess.Succeeded)
-                                    {
-                                        string bucket = AnalyzeExecutionFailure(executionProcess);
-                                        List<ProcessInfo> processes;
-                                        if (!executionFailureBuckets.TryGetValue(bucket, out processes))
+                                        string log = $"\nEXECUTE {runner.CompilerName}:{executionProcess.InputFileName}\n";
+                                        try
                                         {
-                                            processes = new List<ProcessInfo>();
-                                            executionFailureBuckets.Add(bucket, processes);
+                                            log += File.ReadAllText(executionProcess.LogPath);
                                         }
-                                        processes.Add(executionProcess);
+                                        catch (Exception ex)
+                                        {
+                                            log += " -> " + ex.Message;
+                                        }
+                                        perRunnerLog[(int)runner.Index].Write(log);
+                                        combinedLog.Write(log);
+
+                                        if (!executionProcess.Succeeded)
+                                        {
+                                            string bucket = AnalyzeExecutionFailure(executionProcess);
+                                            List<ProcessInfo> processes;
+                                            if (!executionFailureBuckets.TryGetValue(bucket, out processes))
+                                            {
+                                                processes = new List<ProcessInfo>();
+                                                executionFailureBuckets.Add(bucket, processes);
+                                            }
+                                            processes.Add(executionProcess);
+                                        }
                                     }
                                 }
                             }
