@@ -36,6 +36,7 @@ internal class ReflectionTest
 #endif
 #endif
         TestILScanner.Run();
+        TestUnreferencedEnum.Run();
 
         TestAttributeInheritance.Run();
         TestStringConstructor.Run();
@@ -1095,6 +1096,33 @@ internal class ReflectionTest
 
                 mi.Invoke(null, Array.Empty<object>());
             }
+        }
+    }
+
+    class TestUnreferencedEnum
+    {
+        public enum UnreferencedEnum { One }
+
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+        [MethodImpl(MethodImplOptions.NoInlining)]
+#endif
+        public static void ReferenceEnum(UnreferencedEnum r)
+        {
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestUnreferencedEnum));
+
+            if (String.Empty.Length > 0)
+            {
+                ReferenceEnum(default);
+            }
+
+            MethodInfo mi = typeof(TestUnreferencedEnum).GetMethod(nameof(ReferenceEnum));
+            Type enumType = mi.GetParameters()[0].ParameterType;
+            if (Enum.GetUnderlyingType(enumType) != typeof(int))
+                throw new Exception();
         }
     }
 

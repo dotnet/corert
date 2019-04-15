@@ -32,12 +32,6 @@ namespace ILCompiler.DependencyAnalysis
         private readonly IEnumerable<DependencyNode> _nodes;
         private readonly PEReader _inputPeReader;
 
-        private int _textSectionIndex;
-        private int _rdataSectionIndex;
-        private int _dataSectionIndex;
-
-        private SectionBuilder _sectionBuilder;
-
 #if DEBUG
         private struct NodeInfo
         {
@@ -81,12 +75,24 @@ namespace ILCompiler.DependencyAnalysis
                 stopwatch.Start();
                 mapFile.WriteLine($@"R2R object emission started: {DateTime.Now}");
 
-                _sectionBuilder = new SectionBuilder();
-                _sectionBuilder.SetSectionStartNodeLookup(_nodeFactory.SectionStartNode);
+                Machine targetMachine;
+                switch (_nodeFactory.Target.Architecture)
+                {
+                    case Internal.TypeSystem.TargetArchitecture.X64:
+                        targetMachine = Machine.Amd64;
+                        break;
+                    case Internal.TypeSystem.TargetArchitecture.X86:
+                        targetMachine = Machine.I386;
+                        break;
+                    default:
+                        throw new NotImplementedException(_nodeFactory.Target.Architecture.ToString());
+                }
 
-                _textSectionIndex = _sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
-                _rdataSectionIndex = _sectionBuilder.AddSection(".rdata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
-                _dataSectionIndex = _sectionBuilder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
+                R2RPEBuilder r2rPeBuilder = new R2RPEBuilder(
+                    targetMachine,
+                    _inputPeReader,
+                    _nodeFactory.SectionStartNode,
+                    GetRuntimeFunctionsTable);
 
                 int nodeIndex = -1;
                 foreach (var depNode in _nodes)
@@ -121,27 +127,14 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
 
-                    EmitObjectData(nodeContents, nodeIndex, name, node.Section, mapFile);
+                    EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, mapFile);
                 }
 
-                _sectionBuilder.SetReadyToRunHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
-
-                Machine targetMachine;
-                switch (_nodeFactory.Target.Architecture)
-                {
-                    case Internal.TypeSystem.TargetArchitecture.X64:
-                        targetMachine = Machine.Amd64;
-                        break;
-                    case Internal.TypeSystem.TargetArchitecture.X86:
-                        targetMachine = Machine.I386;
-                        break;
-                    default:
-                        throw new NotImplementedException(_nodeFactory.Target.Architecture.ToString());
-                }
+                r2rPeBuilder.SetHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
 
                 using (var peStream = File.Create(_objectFilePath))
                 {
-                    _sectionBuilder.EmitR2R(targetMachine, _inputPeReader, UpdateDirectories, peStream);
+                    r2rPeBuilder.Write(peStream);
                 }
 
                 mapFile.WriteLine($@"R2R object emission finished: {DateTime.Now}, {stopwatch.ElapsedMilliseconds} msecs");
@@ -180,41 +173,19 @@ namespace ILCompiler.DependencyAnalysis
         /// This is needed for RtlLookupFunctionEntry / RtlLookupFunctionTable to work.
         /// </summary>
         /// <param name="builder">PE header directory builder can be used to override RVA's / sizes of any of the directories</param>
-        private void UpdateDirectories(PEDirectoriesBuilder builder)
-        {
-            builder.ExceptionTable = new DirectoryEntry(
-                relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(_nodeFactory.RuntimeFunctionsTable),
-                size: _nodeFactory.RuntimeFunctionsTable.TableSize);
-        }
+        private RuntimeFunctionsTableNode GetRuntimeFunctionsTable() => _nodeFactory.RuntimeFunctionsTable;
 
         /// <summary>
         /// Emit a single ObjectData into the proper section of the output R2R PE executable.
         /// </summary>
+        /// <param name="r2rPeBuilder">R2R PE builder to output object data to</param>
         /// <param name="data">ObjectData blob to emit</param>
+        /// <param name="nodeIndex">Logical index of the emitted node for diagnostic purposes</param>
         /// <param name="name">Textual representation of the ObjecData blob in the map file</param>
         /// <param name="section">Section to emit the blob into</param>
         /// <param name="mapFile">Map file output stream</param>
-        private void EmitObjectData(ObjectData data, int nodeIndex, string name, ObjectNodeSection section, TextWriter mapFile)
+        private void EmitObjectData(R2RPEBuilder r2rPeBuilder, ObjectData data, int nodeIndex, string name, ObjectNodeSection section, TextWriter mapFile)
         {
-            int targetSectionIndex;
-            switch (section.Type)
-            {
-                case SectionType.Executable:
-                    targetSectionIndex = _textSectionIndex;
-                    break;
-
-                case SectionType.Writeable:
-                    targetSectionIndex = _dataSectionIndex;
-                    break;
-
-                case SectionType.ReadOnly:
-                    targetSectionIndex = _rdataSectionIndex;
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
 #if DEBUG
             for (int symbolIndex = 0; symbolIndex < data.DefinedSymbols.Length; symbolIndex++)
             {
@@ -232,7 +203,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 #endif
 
-            _sectionBuilder.AddObjectData(data, targetSectionIndex, name, mapFile);
+            r2rPeBuilder.AddObjectData(data, section, name, mapFile);
         }
 
         public static void EmitObject(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory)

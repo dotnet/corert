@@ -10,9 +10,6 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32)]
-        internal static extern bool TzSpecificLocalTimeToSystemTime(
-                                        IntPtr lpTimeZoneInformation,
-                                        in Interop.Kernel32.SYSTEMTIME lpLocalTime,
-                                        out Interop.Kernel32.SYSTEMTIME lpUniversalTime);
+        internal static unsafe extern void GetSystemTime(Interop.Kernel32.SYSTEMTIME* lpSystemTime);
     }
 }

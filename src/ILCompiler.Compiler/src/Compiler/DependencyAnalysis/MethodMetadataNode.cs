@@ -38,6 +38,14 @@ namespace ILCompiler.DependencyAnalysis
 
             CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, ((EcmaMethod)_method));
 
+            MethodSignature sig = _method.Signature;
+            const string reason = "Method signature metadata";
+            TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, sig.ReturnType, reason);
+            foreach (TypeDesc paramType in sig)
+            {
+                TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, paramType, reason);
+            }
+
             return dependencies;
         }
         protected override string GetName(NodeFactory factory)
