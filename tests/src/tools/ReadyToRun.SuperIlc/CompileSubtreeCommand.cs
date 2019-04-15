@@ -244,6 +244,7 @@ namespace ReadyToRun.SuperIlc
                         line.StartsWith("EXEC : warning") ||
                         line.StartsWith("To repro,") ||
                         line.StartsWith("Emitting R2R PE file") ||
+                        line.StartsWith("Warning: ") ||
                         line == "Assertion Failed")
                     {
                         continue;
