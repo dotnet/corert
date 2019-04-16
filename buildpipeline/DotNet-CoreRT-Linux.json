@@ -263,7 +263,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-native.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-native.sh $(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -317,7 +317,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-managed.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-managed.sh $(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -371,7 +371,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-tests.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-tests.sh $(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -425,7 +425,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-packages.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-packages.sh $(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -692,6 +692,10 @@
     },
     "Configuration": {
       "value": "Release",
+      "allowOverride": true
+    },
+    "AdditionalBuildArgs": {
+      "value":  "",
       "allowOverride": true
     },
     "SignType": {
