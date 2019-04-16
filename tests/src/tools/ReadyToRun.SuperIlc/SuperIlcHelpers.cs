@@ -12,11 +12,12 @@ namespace ReadyToRun.SuperIlc
         public DirectoryInfo OutputDirectory { get; set; }
         public DirectoryInfo CoreRootDirectory { get; set; }
         public DirectoryInfo CpaotDirectory { get; set; }
-        public bool UseCrossgen { get; set; }
+        public bool Crossgen { get; set; }
         public bool NoJit { get; set; }
         public bool NoExe { get; set; }
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
+        public bool Sequential { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
 
         public IEnumerable<string> ReferencePaths()
@@ -44,7 +45,7 @@ namespace ReadyToRun.SuperIlc
                 runners.Add(new CpaotRunner(CpaotDirectory.FullName, referencePaths));
             }
 
-            if (UseCrossgen)
+            if (Crossgen)
             {
                 if (CoreRootDirectory == null)
                 {

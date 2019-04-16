@@ -17,9 +17,9 @@ using Microsoft.Diagnostics.Tracing.Session;
 public class ProcessInfo
 {
     /// <summary>
-    /// 10 minutes should be plenty for a CPAOT / Crossgen compilation.
+    /// 2 minutes should be plenty for a CPAOT / Crossgen compilation.
     /// </summary>
-    public const int DefaultIlcTimeout = 600 * 1000;
+    public const int DefaultIlcTimeout = 2 * 60 * 1000;
 
     /// <summary>
     /// Test execution timeout.
@@ -66,6 +66,8 @@ public class ProcessRunner : IDisposable
 
     private readonly int _processIndex;
 
+    private readonly int _processCount;
+
     private Process _process;
 
     private ReadyToRunJittedMethods _jittedMethods;
@@ -81,10 +83,11 @@ public class ProcessRunner : IDisposable
 
     private CancellationTokenSource _cancellationTokenSource;
 
-    public ProcessRunner(ProcessInfo processInfo, int processIndex, ReadyToRunJittedMethods jittedMethods, AutoResetEvent processExitEvent)
+    public ProcessRunner(ProcessInfo processInfo, int processIndex, int processCount, ReadyToRunJittedMethods jittedMethods, AutoResetEvent processExitEvent)
     {
         _processInfo = processInfo;
         _processIndex = processIndex;
+        _processCount = processCount;
         _jittedMethods = jittedMethods;
         _processExitEvent = processExitEvent;
 
@@ -227,7 +230,7 @@ public class ProcessRunner : IDisposable
         }
     }
 
-    public bool IsAvailable()
+    public bool IsAvailable(ref int progressIndex)
     {
         if (_state != StateFinishing)
         {
@@ -244,15 +247,18 @@ public class ProcessRunner : IDisposable
             processSpec = _processInfo.ProcessPath;
         }
 
+        string linePrefix = $"{_processIndex} / {_processCount} ({(++progressIndex * 100 / _processCount)}%): ";
+
         if (_process.WaitForExit(0))
         {
             _process.WaitForExit();
             _processInfo.ExitCode = _process.ExitCode;
             _processInfo.Succeeded = (_processInfo.ExitCode == _processInfo.ExpectedExitCode);
             _logWriter.WriteLine(">>>>");
+
             if (_processInfo.Succeeded)
             {
-                string successMessage = $"{_processIndex}: succeeded in {_processInfo.DurationMilliseconds} msecs";
+                string successMessage = linePrefix + $"succeeded in {_processInfo.DurationMilliseconds} msecs";
 
                 _logWriter.WriteLine(successMessage);
                 Console.WriteLine(successMessage + $": {processSpec}");
@@ -260,7 +266,7 @@ public class ProcessRunner : IDisposable
             }
             else
             {
-                string failureMessage = $"{_processIndex}: failed in {_processInfo.DurationMilliseconds} msecs, exit code {_processInfo.ExitCode}";
+                string failureMessage = linePrefix + $"failed in {_processInfo.DurationMilliseconds} msecs, exit code {_processInfo.ExitCode}";
                 if (_processInfo.ExitCode < 0)
                 {
                     failureMessage += $" = 0x{_processInfo.ExitCode:X8}";
@@ -278,7 +284,7 @@ public class ProcessRunner : IDisposable
             _processInfo.TimedOut = true;
             _processInfo.Succeeded = false;
             _logWriter.WriteLine(">>>>");
-            string timeoutMessage = $"{_processIndex}: timed out in {_processInfo.DurationMilliseconds} msecs";
+            string timeoutMessage = linePrefix + $"timed out in {_processInfo.DurationMilliseconds} msecs";
             _logWriter.WriteLine(timeoutMessage);
             Console.Error.WriteLine(timeoutMessage + $": {processSpec}");
         }

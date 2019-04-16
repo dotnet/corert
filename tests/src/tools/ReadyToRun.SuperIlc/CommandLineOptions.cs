@@ -28,11 +28,12 @@ namespace ReadyToRun.SuperIlc
                         OutputDirectory(),
                         CoreRootDirectory(),
                         CpaotDirectory(),
-                        UseCrossgen(),
+                        Crossgen(),
                         NoJit(),
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        Sequential(),
                         ReferencePath()
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
@@ -45,11 +46,12 @@ namespace ReadyToRun.SuperIlc
                         OutputDirectory(),
                         CoreRootDirectory(),
                         CpaotDirectory(),
-                        UseCrossgen(),
+                        Crossgen(),
                         NoJit(),
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        Sequential(),
                         ReferencePath()
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
@@ -71,7 +73,7 @@ namespace ReadyToRun.SuperIlc
             Option ReferencePath() =>
                 new Option(new[] { "--reference-path", "-r" }, "Folder containing assemblies to reference during compilation", new Argument<DirectoryInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly());
 
-            Option UseCrossgen() =>
+            Option Crossgen() =>
                 new Option(new[] { "--crossgen" }, "Compile the apps using Crossgen in the CORE_ROOT folder", new Argument<bool>());
 
             Option NoJit() =>
@@ -85,6 +87,9 @@ namespace ReadyToRun.SuperIlc
 
             Option NoCleanup() =>
                 new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
+
+            Option Sequential() =>
+                new Option(new[] { "--sequential" }, "Run tests sequentially", new Argument<bool>());
         }
     }
 }
