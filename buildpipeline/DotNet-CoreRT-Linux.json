@@ -742,10 +742,10 @@
       "value": "$(DockerRepository):$(DockerTag)"
     },
     "DockerRepository": {
-      "value": "microsoft/dotnet-buildtools-prereqs"
+      "value": "mcr.microsoft.com/dotnet-buildtools/prereqs"
     },
     "DockerTag": {
-      "value": "ubuntu-14.04-198573d-20170319080304"
+      "value": "centos-7-d485f41-20173404063424"
     },
     "DockerCopyDest": {
       "value": "$(Build.BinariesDirectory)/docker_$(SourceFolder)"
