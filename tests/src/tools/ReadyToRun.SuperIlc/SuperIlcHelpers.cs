@@ -17,6 +17,7 @@ namespace ReadyToRun.SuperIlc
         public bool NoExe { get; set; }
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
+        public bool Sequential { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
 
         public IEnumerable<string> ReferencePaths()

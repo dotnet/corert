@@ -103,7 +103,7 @@ namespace ReadyToRun.SuperIlc
             _logWriter.WriteLine($"Building {_buildFolders.Count()} folders ({compilationsToRun.Count} compilations total)");
             compilationsToRun.Sort((a, b) => b.CompilationCostHeuristic.CompareTo(a.CompilationCostHeuristic));
 
-            ParallelRunner.Run(startIndex: 0, compilationsToRun, _logWriter);
+            ParallelRunner.Run(compilationsToRun, _logWriter);
             
             bool success = true;
             List<KeyValuePair<string, string>> failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
@@ -184,7 +184,7 @@ namespace ReadyToRun.SuperIlc
                 AddBuildFolderExecutions(executionsToRun, folder, stopwatch);
             }
 
-            ParallelRunner.Run(startIndex: 0, executionsToRun, _logWriter);
+            ParallelRunner.Run(executionsToRun, _logWriter, degreeOfParallelism: _options.Sequential ? 1 : Environment.ProcessorCount);
 
             List<KeyValuePair<string, string>> failedExecutionsPerBuilder = new List<KeyValuePair<string, string>>();
 

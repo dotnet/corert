@@ -33,6 +33,7 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        Sequential(),
                         ReferencePath()
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
@@ -50,6 +51,7 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        Sequential(),
                         ReferencePath()
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
@@ -85,6 +87,9 @@ namespace ReadyToRun.SuperIlc
 
             Option NoCleanup() =>
                 new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
+
+            Option Sequential() =>
+                new Option(new[] { "--sequential" }, "Run tests sequentially", new Argument<bool>());
         }
     }
 }
