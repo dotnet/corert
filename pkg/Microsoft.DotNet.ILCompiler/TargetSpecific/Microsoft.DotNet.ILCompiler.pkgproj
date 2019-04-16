@@ -2,9 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <PackageTargetRuntime Condition="'$(OSGroup)' == 'Windows_NT'">win-x64</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(OSGroup)' == 'Linux'">linux-x64</PackageTargetRuntime>
-    <PackageTargetRuntime Condition="'$(OSGroup)' == 'OSX'">osx-x64</PackageTargetRuntime>
+    <PackageTargetRuntime>$(NuPkgRid)</PackageTargetRuntime>
   </PropertyGroup>
 
   <!-- This target defines files and properties that need to be included in the package regardless of platform -->
