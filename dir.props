@@ -271,9 +271,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RoslynVersion>3.0.0-beta4-final</RoslynVersion>
-    <RoslynPackageName>Microsoft.Net.Compilers</RoslynPackageName>
-    <RoslynPackageName Condition="'$(RunningOnCore)' == 'true'">Microsoft.NETCore.Compilers</RoslynPackageName>
+    <RoslynVersion>3.1.0-beta3-19213-02</RoslynVersion>
+    <RoslynPackageName>Microsoft.Net.Compilers.Toolset</RoslynPackageName>
     <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName.ToLower())/$(RoslynVersion)/</RoslynPackageDir>
     <RoslynPropsFile>$(RoslynPackageDir)build/$(RoslynPackageName).props</RoslynPropsFile>
   </PropertyGroup>
