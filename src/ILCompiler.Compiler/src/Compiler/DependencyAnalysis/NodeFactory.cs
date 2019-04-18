@@ -1063,15 +1063,6 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(DispatchMapTable, "DispatchMapTable is always generated");
             graph.AddRoot(FrozenSegmentRegion, "FrozenSegmentRegion is always generated");
             graph.AddRoot(InterfaceDispatchCellSection, "Interface dispatch cell section is always generated");
-            if (Target.IsWindows)
-            {
-                // We need 2 delimiter symbols to bound the unboxing stubs region on Windows platforms (these symbols are
-                // accessed using extern "C" variables in the bootstrapper)
-                // On non-Windows platforms, the linker emits special symbols with special names at the begining/end of a section
-                // so we do not need to emit them ourselves.
-                graph.AddRoot(new WindowsUnboxingStubsRegionNode(false), "UnboxingStubsRegion delimiter for Windows platform");
-                graph.AddRoot(new WindowsUnboxingStubsRegionNode(true), "UnboxingStubsRegion delimiter for Windows platform");
-            }
 
             ReadyToRunHeader.Add(ReadyToRunSectionType.GCStaticRegion, GCStaticsRegion, GCStaticsRegion.StartSymbol, GCStaticsRegion.EndSymbol);
             ReadyToRunHeader.Add(ReadyToRunSectionType.ThreadStaticRegion, ThreadStaticsRegion, ThreadStaticsRegion.StartSymbol, ThreadStaticsRegion.EndSymbol);

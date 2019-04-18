@@ -86,7 +86,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\$(SourceFolder)\\buildscripts\\build-native.cmd",
-        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration)",
+        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration) $(AdditionalBuildArgs)",
         "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
@@ -104,7 +104,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\$(SourceFolder)\\buildscripts\\build-managed.cmd",
-        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration)",
+        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration) $(AdditionalBuildArgs)",
         "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
@@ -122,7 +122,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\$(SourceFolder)\\buildscripts\\build-tests.cmd",
-        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration)",
+        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration) $(AdditionalBuildArgs)",
         "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
@@ -140,7 +140,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\$(SourceFolder)\\buildscripts\\build-packages.cmd",
-        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration)",
+        "arguments": "/OfficialBuildId=$(OfficialBuildId) $(Platform) $(Configuration) $(AdditionalBuildArgs)",
         "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
@@ -343,6 +343,10 @@
     }
   ],
   "variables": {
+    "AdditionalBuildArgs": {
+      "value":  "",
+      "allowOverride": true
+    },
     "BuildTag": {
       "value": "corert-alpha",
       "allowOverride": true

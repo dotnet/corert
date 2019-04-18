@@ -67,7 +67,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/buildscripts/build-native.sh",
-        "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "$(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
@@ -85,7 +85,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/buildscripts/build-managed.sh",
-        "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "$(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
@@ -103,7 +103,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/buildscripts/build-tests.sh",
-        "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "$(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)/$(SourceFolder)/buildscripts/build-packages.sh",
-        "arguments": "$(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "$(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "$(SourceFolder)",
         "failOnStandardError": "false"
       }
@@ -246,6 +246,10 @@
     },
     "Platform": {
       "value": "x64",
+      "allowOverride": true
+    },
+    "AdditionalBuildArgs": {
+      "value":  "",
       "allowOverride": true
     },
     "SignType": {

@@ -23,6 +23,9 @@
       <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=linux-x64</AdditionalProperties>
     </ProjectReference>
     <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ObjectWriter.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=linux-musl-x64</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ObjectWriter.pkgproj">
       <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=osx-x64</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>

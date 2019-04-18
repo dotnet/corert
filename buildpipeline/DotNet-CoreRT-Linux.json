@@ -263,7 +263,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-native.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-native.sh $(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -317,7 +317,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-managed.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-managed.sh $(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -371,7 +371,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-tests.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-tests.sh $(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -425,7 +425,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-packages.sh $(Platform) $(Configuration) -OfficialBuildId $(OfficialBuildId)",
+        "arguments": "run -w=\"$(GitDirectory)\" --name $(DockerContainerName) $(DockerModifiedImageName) $(GitDirectory)/buildscripts/build-packages.sh $(Platform) $(Configuration) $(AdditionalBuildArgs) -OfficialBuildId $(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -694,6 +694,10 @@
       "value": "Release",
       "allowOverride": true
     },
+    "AdditionalBuildArgs": {
+      "value":  "",
+      "allowOverride": true
+    },
     "SignType": {
       "value": "test",
       "allowOverride": true
@@ -738,10 +742,10 @@
       "value": "$(DockerRepository):$(DockerTag)"
     },
     "DockerRepository": {
-      "value": "microsoft/dotnet-buildtools-prereqs"
+      "value": "mcr.microsoft.com/dotnet-buildtools/prereqs"
     },
     "DockerTag": {
-      "value": "ubuntu-14.04-198573d-20170319080304"
+      "value": "centos-7-d485f41-20173404063424"
     },
     "DockerCopyDest": {
       "value": "$(Build.BinariesDirectory)/docker_$(SourceFolder)"
@@ -799,7 +803,7 @@
   ],
   "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
   "jobAuthorizationScope": "projectCollection",
-  "jobTimeoutInMinutes": 60,
+  "jobTimeoutInMinutes": 120,
   "repository": {
     "properties": {
       "labelSources": "0",
