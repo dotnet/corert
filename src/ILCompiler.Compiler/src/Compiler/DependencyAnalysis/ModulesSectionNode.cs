@@ -29,8 +29,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                string sectionName = _target.IsWindows ? WindowsSectionName : UnixSectionName;
-                return new ObjectNodeSection(sectionName, SectionType.ReadOnly);
+                if (_target.IsWindows)
+                    return new ObjectNodeSection(WindowsSectionName, SectionType.ReadOnly);
+                else
+                    return new ObjectNodeSection(UnixSectionName, SectionType.Writeable);
             }
         }
 
