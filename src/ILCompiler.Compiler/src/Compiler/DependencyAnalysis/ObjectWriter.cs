@@ -67,6 +67,7 @@ namespace ILCompiler.DependencyAnalysis
 
         // Nodefactory for which ObjectWriter is instantiated for.
         private NodeFactory _nodeFactory;
+        private readonly bool _isSingleFileCompilation;
 
         // Unix section containing LSDA data, like EH Info and GC Info
         public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".corert_eh_table", SectionType.ReadOnly);
@@ -861,7 +862,9 @@ namespace ILCompiler.DependencyAnalysis
                     AppendExternCPrefix(_sb);
                     name.AppendMangledName(_nodeFactory.NameMangler, _sb);
 
-                    EmitSymbolDef(_sb);
+                    // Emit all symbols as global in multifile builds so that object files can
+                    // link against each other.
+                    EmitSymbolDef(_sb, global: !_isSingleFileCompilation);
 
                     string alternateName = _nodeFactory.GetSymbolAlternateName(name);
                     if (alternateName != null)
@@ -889,6 +892,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             _nodeFactory = factory;
             _targetPlatform = _nodeFactory.Target;
+            _isSingleFileCompilation = _nodeFactory.CompilationModuleGroup.IsSingleFileCompilation;
             _userDefinedTypeDescriptor = new UserDefinedTypeDescriptor(this, factory);
         }
 
@@ -928,7 +932,7 @@ namespace ILCompiler.DependencyAnalysis
                 section == ObjectNodeSection.FoldableReadOnlyDataSection)
                 return true;
 
-            if (_nodeFactory.CompilationModuleGroup.IsSingleFileCompilation)
+            if (_isSingleFileCompilation)
                 return false;
 
             if (_targetPlatform.OperatingSystem == TargetOS.OSX)
