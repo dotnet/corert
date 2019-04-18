@@ -45,11 +45,30 @@ __declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
 //
 #pragma comment(linker, "/merge:.unbox=.text")
 
-extern "C" void __managedcode_a();
-extern "C" void __managedcode_z();
+char _bookend_a;
+char _bookend_z;
 
-extern "C" void __unbox_a();
-extern "C" void __unbox_z();
+//
+// Generate bookends for the managed code section.
+// We give them unique bodies to prevent folding.
+//
+
+#pragma code_seg(".managedcode$A")
+void* __managedcode_a() { return &_bookend_a; }
+#pragma code_seg(".managedcode$Z")
+void* __managedcode_z() { return &_bookend_z; }
+#pragma code_seg()
+
+//
+// Generate bookends for the unboxing stub section.
+// We give them unique bodies to prevent folding.
+//
+
+#pragma code_seg(".unbox$A")
+void* __unbox_a() { return &_bookend_a; }
+#pragma code_seg(".unbox$Z")
+void* __unbox_z() { return &_bookend_z; }
+#pragma code_seg()
 
 #else // _MSC_VER
 

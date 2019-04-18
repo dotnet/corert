@@ -974,20 +974,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (factory.Target.OperatingSystem == TargetOS.Windows)
                 {
                     managedCodeSection = ObjectNodeSection.ManagedCodeWindowsContentSection;
-
-                    // Emit sentinels for managed code section.
-                    ObjectNodeSection codeStartSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
-                                                            ObjectNodeSection.ManagedCodeStartSection :
-                                                            objectWriter.GetSharedSection(ObjectNodeSection.ManagedCodeStartSection, "__managedcode_a");
-                    objectWriter.SetSection(codeStartSection);
-                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_a"), global: true);
-                    objectWriter.EmitIntValue(0, 1);
-                    ObjectNodeSection codeEndSection = factory.CompilationModuleGroup.IsSingleFileCompilation ?
-                                                            ObjectNodeSection.ManagedCodeEndSection :
-                                                            objectWriter.GetSharedSection(ObjectNodeSection.ManagedCodeEndSection, "__managedcode_z");
-                    objectWriter.SetSection(codeEndSection);
-                    objectWriter.EmitSymbolDef(new Utf8StringBuilder().Append("__managedcode_z"), global: true);
-                    objectWriter.EmitIntValue(1, 1);
                 }
                 else
                 {
