@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_targetMethod.Context.Target.IsWindows)
+                if (_target.IsWindows)
                     return new ObjectNodeSection(WindowsSectionName, SectionType.ReadOnly);
                 else
                     return new ObjectNodeSection(UnixSectionName, SectionType.Writeable);
