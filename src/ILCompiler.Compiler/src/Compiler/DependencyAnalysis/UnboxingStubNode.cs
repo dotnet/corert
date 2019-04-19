@@ -77,49 +77,4 @@ namespace ILCompiler.DependencyAnalysis
             return comparer.Compare(Method, ((UnboxingStubNode)other).Method);
         }
     }
-
-    //
-    // On Windows, we need to create special start/stop sections, in order to group all the unboxing stubs and
-    // have delimiters accessible through extern "C" variables in the bootstrapper. On Linux/Apple, the linker provides 
-    // special names to the begining and end of sections already.
-    //
-    public class WindowsUnboxingStubsRegionNode : ObjectNode, ISymbolDefinitionNode
-    {
-        private readonly bool _isEndSymbol;
-
-        public override ObjectNodeSection Section => new ObjectNodeSection(".unbox$" + (_isEndSymbol? "Z" : "A"), SectionType.Executable);
-        public override bool IsShareable => true;
-        public override bool StaticDependenciesAreComputed => true;
-        public int Offset => 0;
-
-        public WindowsUnboxingStubsRegionNode(bool isEndSymbol)
-        {
-            _isEndSymbol = isEndSymbol;
-        }
-
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append("__unbox_" + (_isEndSymbol ? "z" : "a"));
-        }
-
-        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
-        {
-            Debug.Assert(factory.Target.IsWindows);
-
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
-            objData.RequireInitialAlignment(factory.Target.MinimumFunctionAlignment);
-            objData.AddSymbol(this);
-
-            return objData.ToObjectData();
-        }
-
-        public override int ClassCode => 1102274050;
-
-        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            return _isEndSymbol.CompareTo(((WindowsUnboxingStubsRegionNode)other)._isEndSymbol);
-        }
-    }
 }

@@ -191,17 +191,6 @@ namespace ILCompiler
             graph.AddRoot(ThreadStaticGCDescRegion, "Thread Statics GC Desc Region is always generated");
             graph.AddRoot(ImportAddressTablesTable, "Import address tables region");
 
-
-            if (Target.IsWindows)
-            {
-                // We need 2 delimiter symbols to bound the unboxing stubs region on Windows platforms (these symbols are
-                // accessed using extern "C" variables in the bootstrapper)
-                // On non-Windows platforms, the linker emits special symbols with special names at the begining/end of a section
-                // so we do not need to emit them ourselves.
-                graph.AddRoot(new WindowsUnboxingStubsRegionNode(false), "UnboxingStubsRegion delimiter for Windows platform");
-                graph.AddRoot(new WindowsUnboxingStubsRegionNode(true), "UnboxingStubsRegion delimiter for Windows platform");
-            }
-
             // The native part of the MRT library links against CRT which defines _tls_index and _tls_used.
             if (!buildMRT)
             {
