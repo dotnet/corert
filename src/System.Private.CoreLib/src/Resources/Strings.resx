@@ -1074,6 +1074,9 @@
   <data name="BadImageFormatException_CouldNotLoadFileOrAssembly" xml:space="preserve">
     <value>Could not load file or assembly '{0}'. An attempt was made to load a program with an incorrect format.</value>
   </data>
+  <data name="InvalidOperation_CannotRegisterSecondResolver" xml:space="preserve">
+    <value>A resolver is already set for the assembly.</value>
+  </data>
   <data name="InvalidOperation_CollectionCorrupted" xml:space="preserve">
     <value>A prior operation on this collection was interrupted by an exception. Collection's state is no longer trusted.</value>
   </data>
