@@ -14,7 +14,10 @@ internal static partial class Interop
         [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll")]
         internal static extern IntPtr GetProcAddress(IntPtr hModule, byte* lpProcName);
 
-        [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll", EntryPoint = "LoadLibraryExW", CharSet = CharSet.Unicode)]
+        [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll", CharSet = CharSet.Unicode)]
+        internal static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
+
+        [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll", EntryPoint = "LoadLibraryExW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, int dwFlags);
 
         [DllImport("api-ms-win-core-libraryloader-l1-2-0.dll")]
