@@ -116,7 +116,7 @@ namespace ILCompiler.CppCodeGen
             }
         }
 
-        private IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)
+        private IList<string> GetParameterNamesForMethod(MethodDesc method)
         {
             // TODO: The uses of this method need revision. The right way to get to this info is from
             //       a MethodIL. For declarations, we don't need names.
@@ -125,7 +125,19 @@ namespace ILCompiler.CppCodeGen
             var ecmaMethod = method as EcmaMethod;
             if (ecmaMethod != null && ecmaMethod.Module.PdbReader != null)
             {
-                return (new EcmaMethodDebugInformation(ecmaMethod)).GetParameterNames();
+                List<string> parameterNames = new List<string>(new EcmaMethodDebugInformation(ecmaMethod).GetParameterNames());
+
+                // Return the parameter names only if they match the method signature
+                if (parameterNames.Count != 0)
+                {
+                    var methodSignature = method.Signature;
+                    int argCount = methodSignature.Length;
+                    if (!methodSignature.IsStatic)
+                        argCount++;
+
+                    if (parameterNames.Count == argCount)
+                        return parameterNames;
+                }
             }
 
             return null;
@@ -188,7 +200,7 @@ namespace ILCompiler.CppCodeGen
                 signatureArgOffset++;
             }
 
-            List<string> parameterNames = null;
+            IList<string> parameterNames = null;
             if (method != null)
             {
                 if (isUnboxingStub)
@@ -196,19 +208,7 @@ namespace ILCompiler.CppCodeGen
                         (method.HasInstantiation || method.Signature.IsStatic);
                 else
                     hasHiddenParam = method.RequiresInstArg();
-                IEnumerable<string> parameters = GetParameterNamesForMethod(method);
-                if (parameters != null)
-                {
-                    parameterNames = new List<string>(parameters);
-                    if (parameterNames.Count != 0)
-                    {
-                        System.Diagnostics.Debug.Assert(parameterNames.Count == argCount);
-                    }
-                    else
-                    {
-                        parameterNames = null;
-                    }
-                }
+                parameterNames = GetParameterNamesForMethod(method);
             }
 
             if (hasHiddenParam)
@@ -294,20 +294,7 @@ namespace ILCompiler.CppCodeGen
                 thisArgIdx++;
             }
 
-            List<string> parameterNames = null;
-            IEnumerable<string> parameters = GetParameterNamesForMethod(method);
-            if (parameters != null)
-            {
-                parameterNames = new List<string>(parameters);
-                if (parameterNames.Count != 0)
-                {
-                    System.Diagnostics.Debug.Assert(parameterNames.Count == argCount);
-                }
-                else
-                {
-                    parameterNames = null;
-                }
-            }
+            IList<string> parameterNames = GetParameterNamesForMethod(method);
 
             if (hasHiddenParam)
             {
