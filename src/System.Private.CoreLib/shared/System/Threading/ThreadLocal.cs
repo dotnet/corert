@@ -454,7 +454,7 @@ namespace System.Threading
         /// <summary>Gets all of the threads' values in a list.</summary>
         private List<T>? GetValuesAsList()
         {
-            LinkedSlot linkedSlot = _linkedSlot;
+            LinkedSlot? linkedSlot = _linkedSlot;
             int id = ~_idComplement;
             if (id == -1 || linkedSlot == null)
             {
@@ -482,7 +482,7 @@ namespace System.Threading
                     throw new InvalidOperationException(SR.ThreadLocal_ValuesNotAvailable);
                 }
 
-                LinkedSlot linkedSlot = _linkedSlot;
+                LinkedSlot? linkedSlot = _linkedSlot;
                 int id = ~_idComplement;
                 if (id == -1 || linkedSlot == null)
                 {
