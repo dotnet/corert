@@ -142,6 +142,7 @@ namespace System.Threading
         }
 
         public void DisableComObjectEagerCleanup() { }
+        private static void InitializeExistingThreadPoolThread() { }
 
         public void Interrupt() => WaitSubsystem.Interrupt(this);
         internal static void UninterruptibleSleep0() => WaitSubsystem.UninterruptibleSleep0();
