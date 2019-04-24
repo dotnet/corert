@@ -5,6 +5,8 @@
     <AssemblyName>SampleMetadataAssembly</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <SkipTestRun>true</SkipTestRun>
+    <!-- Workaround for https://github.com/dotnet/roslyn/issues/35056 -->
+    <LangVersion>7.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

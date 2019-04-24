@@ -173,6 +173,7 @@ namespace System.Threading
             boundHandle.Release();
 
             Win32ThreadPoolNativeOverlapped.CompleteWithCallback(ioResult, (uint)numberOfBytesTransferred, overlapped);
+            ThreadPool.IncrementCompletedWorkItemCount();
             wrapper.Exit();
         }
 

@@ -4,6 +4,8 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -62,6 +64,7 @@ namespace System.Threading
 
             bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
             registeredWaitHandle.PerformCallback(timedOut);
+            ThreadPool.IncrementCompletedWorkItemCount();
             wrapper.Exit();
         }
 
@@ -244,8 +247,17 @@ namespace System.Threading
 
         private static IntPtr s_work;
 
+        private static readonly ThreadBooleanCounter s_threadCounter = new ThreadBooleanCounter();
+
         // The number of threads executing work items in the Dispatch method
-        private static volatile int numWorkingThreads;
+        private static readonly ThreadBooleanCounter s_workingThreadCounter = new ThreadBooleanCounter();
+
+        private static readonly ThreadInt64PersistentCounter s_completedWorkItemCounter = new ThreadInt64PersistentCounter();
+
+        internal static void InitializeForThreadPoolThread() => s_threadCounter.Set();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void IncrementCompletedWorkItemCount() => s_completedWorkItemCounter.Increment();
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
@@ -276,11 +288,27 @@ namespace System.Threading
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
         {
             // Make sure we return a non-negative value if thread pool defaults are changed
-            int availableThreads = Math.Max(MaxThreadCount - numWorkingThreads, 0);
+            int availableThreads = Math.Max(MaxThreadCount - s_workingThreadCounter.Count, 0);
 
             workerThreads = availableThreads;
             completionPortThreads = availableThreads;
         }
+
+        /// <summary>
+        /// Gets the number of thread pool threads that currently exist.
+        /// </summary>
+        /// <remarks>
+        /// For a thread pool implementation that may have different types of threads, the count includes all types.
+        /// </remarks>
+        public static int ThreadCount => s_threadCounter.Count;
+
+        /// <summary>
+        /// Gets the number of work items that have been processed so far.
+        /// </summary>
+        /// <remarks>
+        /// For a thread pool implementation that may have different types of work items, the count includes all types.
+        /// </remarks>
+        public static long CompletedWorkItemCount => s_completedWorkItemCounter.Count;
 
         internal static bool KeepDispatching(int startTickCount)
         {
@@ -290,12 +318,13 @@ namespace System.Threading
             return ((uint)(Environment.TickCount - startTickCount) < DispatchQuantum);
         }
 
-        internal static void NotifyWorkItemProgress()
-        {
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void NotifyWorkItemProgress() => IncrementCompletedWorkItemCount();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool NotifyWorkItemComplete()
         {
+            IncrementCompletedWorkItemCount();
             return true;
         }
 
@@ -304,10 +333,10 @@ namespace System.Threading
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();
             Debug.Assert(s_work == work);
-            Interlocked.Increment(ref numWorkingThreads);
+            ThreadBooleanCounter workingThreadCounter = s_workingThreadCounter;
+            workingThreadCounter.Set();
             ThreadPoolWorkQueue.Dispatch();
-            int numWorkers = Interlocked.Decrement(ref numWorkingThreads);
-            Debug.Assert(numWorkers >= 0);
+            workingThreadCounter.Clear();
             // We reset the thread after executing each callback
             wrapper.Exit(resetThread: false);
         }
