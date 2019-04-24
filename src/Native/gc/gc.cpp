@@ -9458,6 +9458,9 @@ inline void gc_heap::verify_card_bundle_bits_set(size_t first_card_word, size_t 
             dprintf (3, ("Card bundle %Ix not set", x));
         }
     }
+#else
+    UNREFERENCED_PARAMETER(first_card_word);
+    UNREFERENCED_PARAMETER(last_card_word);
 #endif
 }
 
@@ -37005,5 +37008,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->n_heaps = &gc_heap::n_heaps;
     gcDacVars->g_heaps = reinterpret_cast<dac_gc_heap***>(&gc_heap::g_heaps);
 #endif // MULTIPLE_HEAPS
+#else
+    UNREFERENCED_PARAMETER(gcDacVars);
 #endif // DACCESS_COMPILE
 }
