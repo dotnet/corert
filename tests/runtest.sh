@@ -173,21 +173,15 @@ download_and_unzip_corefx_tests_artifacts()
 restore_coreclr_tests()
 {
     CoreRT_Test_Download_Semaphore=${CoreRT_TestExtRepo}/init-tests.completed
-    CoreRT_NativeArtifact_Download_Semaphore=${CoreRT_TestExtRepo}/init-native-artifact.completed
 
-    if [ -e ${CoreRT_Test_Download_Semaphore} ] && [ -e ${CoreRT_NativeArtifact_Download_Semaphore} ]; then
+    if [ -e ${CoreRT_Test_Download_Semaphore} ]; then
         echo "Tests are already initialized."
         return 0
     fi
-    TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreCLRTestsURL.txt)
-    NATIVE_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreCLRTestsNativeArtifacts_${CoreRT_BuildOS}.txt)
-    CoreRT_NativeArtifactRepo=${CoreRT_TestExtRepo}/native
+    TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreCLRTestsURL_${CoreRT_BuildOS}.txt)
 
     echo "Restoring tests (this may take a few minutes).."
     download_and_unzip_coreclr_tests_artifacts ${TESTS_REMOTE_URL}  ${CoreRT_TestExtRepo} ${CoreRT_Test_Download_Semaphore}
-
-    echo "Restoring native test artifacts..."
-    download_and_unzip_coreclr_tests_artifacts ${NATIVE_REMOTE_URL}  ${CoreRT_NativeArtifactRepo} ${CoreRT_NativeArtifact_Download_Semaphore}
 }
 
 run_coreclr_tests()
@@ -204,16 +198,19 @@ run_coreclr_tests()
     fi
 
     XunitTestBinBase=${CoreRT_TestExtRepo}
-    pushd ${CoreRT_TestRoot}/CoreCLR/runtest
+    CLRCustomTestLauncher=${CoreRT_TestRoot}/CoreCLR/build-and-run-test.sh
+
+    pushd ${CoreRT_TestRoot}/CoreCLR
 
     export CoreRT_TestRoot
     export CoreRT_EnableCoreDumps
+    export CLRCustomTestLauncher
 
     CoreRT_TestSelectionArg=
     if [ "$SelectedTests" = "top200" ]; then
-        CoreRT_TestSelectionArg="--playlist=${CoreRT_TestRoot}/Top200.unix.txt"
+        CoreRT_TestSelectionArg="-test_filter_path ${CoreRT_TestRoot}/Top200.CoreCLR.issues.targets"
     elif [ "$SelectedTests" = "interop" ]; then
-        CoreRT_TestSelectionArg="--playlist=${CoreRT_TestRoot}/Interop.unix.txt"
+        CoreRT_TestSelectionArg="-test_filter_path ${CoreRT_TestRoot}/Interop.CoreCLR.issues.targets"
     elif [ "$SelectedTests" = "knowngood" ]; then
         # Todo: Build the list of tests that pass
         CoreRT_TestSelectionArg=
@@ -221,8 +218,8 @@ run_coreclr_tests()
         CoreRT_TestSelectionArg=
     fi
 
-    echo ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir --disableEventLogging
-    ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir --disableEventLogging
+    echo python runtest.py -test_native_bin_location ${CoreRT_TestExtRepo}/native/tests -test_location ${CoreRT_TestRoot}/CoreCLR -core_root ${CoreRT_TestExtRepo}/Tests/Core_Root -coreclr_repo_location ${CoreRT_TestRoot}/.. ${CoreRT_TestSelectionArg}    
+    python runtest.py -test_native_bin_location ${CoreRT_TestExtRepo}/native/tests -test_location ${CoreRT_TestRoot}/CoreCLR -core_root ${CoreRT_TestExtRepo}/Tests/Core_Root -coreclr_repo_location ${CoreRT_TestRoot}/.. ${CoreRT_TestSelectionArg}
 }
 
 run_corefx_tests()
