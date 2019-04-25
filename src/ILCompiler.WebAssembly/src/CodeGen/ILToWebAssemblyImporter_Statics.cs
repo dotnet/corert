@@ -117,20 +117,30 @@ namespace Internal.IL
         static LLVMValueRef DoNothingFunction = default(LLVMValueRef);
         static LLVMValueRef NullRefFunction = default(LLVMValueRef);
 
-        private static IEnumerable<string> GetParameterNamesForMethod(MethodDesc method)
+        private static IList<string> GetParameterNamesForMethod(MethodDesc method)
         {
             // TODO: The uses of this method need revision. The right way to get to this info is from
             //       a MethodIL. For declarations, we don't need names.
-
             method = method.GetTypicalMethodDefinition();
             var ecmaMethod = method as EcmaMethod;
             if (ecmaMethod != null && ecmaMethod.Module.PdbReader != null)
             {
-                return (new EcmaMethodDebugInformation(ecmaMethod)).GetParameterNames();
+                List<string> parameterNames = new List<string>(new EcmaMethodDebugInformation(ecmaMethod).GetParameterNames());
+
+                // Return the parameter names only if they match the method signature
+                if (parameterNames.Count != 0)
+                {
+                    var methodSignature = method.Signature;
+                    int argCount = methodSignature.Length;
+                    if (!methodSignature.IsStatic)
+                        argCount++;
+
+                    if (parameterNames.Count == argCount)
+                        return parameterNames;
+                }
             }
 
             return null;
         }
-
     }
 }
