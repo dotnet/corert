@@ -1224,7 +1224,8 @@ void WalkMovedReferences(uint8_t* begin, uint8_t* end,
 //
 
 #ifdef FEATURE_EVENT_TRACE
-inline BOOL ShouldTrackMovementForProfilerOrEtw()
+// Tracks all surviving objects (moved or otherwise).
+inline bool ShouldTrackSurvivorsForProfilerOrEtw()
 {
     if (ETW::GCLog::ShouldTrackMovementForEtw())
         return true;
@@ -1233,10 +1234,10 @@ inline BOOL ShouldTrackMovementForProfilerOrEtw()
 }
 #endif // FEATURE_EVENT_TRACE
 
-void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 {
 #ifdef FEATURE_EVENT_TRACE
-    if (ShouldTrackMovementForProfilerOrEtw())
+    if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
@@ -1251,7 +1252,7 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
 void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
 {
 #ifdef FEATURE_EVENT_TRACE
-    if (ShouldTrackMovementForProfilerOrEtw())
+    if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
@@ -1266,7 +1267,7 @@ void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
 void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 {
 #ifdef FEATURE_EVENT_TRACE
-    if (ShouldTrackMovementForProfilerOrEtw())
+    if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
