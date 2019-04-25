@@ -17536,7 +17536,7 @@ void gc_heap::enque_pinned_plug (uint8_t* plug,
             // risks. This happens very rarely and fixing it in the
             // way so that we can continue is a bit involved and will
             // not be done in Dev10.
-            GCToEEInterface::HandleFatalError(CORINFO_EXCEPTION_GC);
+            GCToEEInterface::HandleFatalError((unsigned int)CORINFO_EXCEPTION_GC);
         }
     }
 
