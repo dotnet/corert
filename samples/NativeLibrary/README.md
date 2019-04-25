@@ -26,7 +26,7 @@ The above command will drop a static library (Windows `.lib`, OSX/Linux `.a`) in
 > dotnet publish /p:NativeLib=Shared -r <RID> -c <Configuration>
 ```
 
-The above command will drop a shared library (Windows `.dll`, OSX `.dylib`, Linux `.so`) in `./bin/[configuration]/netstandard2.0/[RID]/publish/` folder and will have the same name as the folder in which your source file is present. Building shared libraries on Linux is currently non-functional, see [#4988](https://github.com/dotnet/corert/issues/4988).
+The above command will drop a shared library (Windows `.dll`, OSX `.dylib`, Linux `.so`) in `./bin/[configuration]/netstandard2.0/[RID]/publish/` folder and will have the same name as the folder in which your source file is present.
 
 ## Exporting methods
 

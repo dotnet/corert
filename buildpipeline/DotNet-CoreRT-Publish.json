@@ -74,7 +74,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "$(CloudDropAccountName) $(CloudDropAccessToken) $(Label)",
-        "inlineScript": "param($account, $token, $container)\nif ($env:UseLegacyBuildScripts -eq \"true\")\n{\n  .\\sync.cmd /ab /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container\n}\nelse\n{\n  .\\init-tools.cmd\n  msbuild buildscripts\\syncAzure.proj /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container /fl \"/flp:v=diag;logfile=package-download.log\"\n}",
+        "inlineScript": "param($account, $token, $container)\nif ($env:UseLegacyBuildScripts -eq \"true\")\n{\n  .\\sync.cmd /ab /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container\n}\nelse\n{\n  .\\init-tools.cmd\n  msbuild buildscripts\\syncAzure.proj /p:SkipImportRoslynProps=true /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container /fl \"/flp:v=diag;logfile=package-download.log\"\n}",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -114,7 +114,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "",
-        "inlineScript": "msbuild build.proj /t:CreateOrUpdateCurrentVersionFile /p:OfficialBuildId=$env:OfficialBuildId /p:BuildVersionFile=bin\\obj\\BuildVersion-$env:OfficialBuildId.props",
+        "inlineScript": "msbuild build.proj /t:CreateOrUpdateCurrentVersionFile /p:SkipImportRoslynProps=true /p:OfficialBuildId=$env:OfficialBuildId /p:BuildVersionFile=bin\\obj\\BuildVersion-$env:OfficialBuildId.props",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }
@@ -152,7 +152,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "$(AzureFeedAccountKey) $(AzureFeedUrl)",
-        "inlineScript": "param($key, $feedurl)\nif ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishToAzureBlobFeed /p:AccountKey=$key /p:ExpectedFeedUrl=$feedurl /p:PublishPattern=$env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:Configuration\\$env:AzureContainerPackageGlob",
+        "inlineScript": "param($key, $feedurl)\nif ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishToAzureBlobFeed /p:SkipImportRoslynProps=true /p:AccountKey=$key /p:ExpectedFeedUrl=$feedurl /p:PublishPattern=$env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:Configuration\\$env:AzureContainerPackageGlob",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }
@@ -172,7 +172,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "$(AzureFeedAccountKey) $(AzureFeedUrl)",
-        "inlineScript": "param($key, $feedurl)\nif ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishSymbolsToAzureBlobFeed /p:AccountKey=$key /p:ExpectedFeedUrl=$feedurl /p:SymbolsPackagesPattern=$env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg",
+        "inlineScript": "param($key, $feedurl)\nif ($env:Configuration -ne \"Release\") { exit }\n msbuild publish.msbuild /t:PublishSymbolsToAzureBlobFeed /p:SkipImportRoslynProps=true /p:AccountKey=$key /p:ExpectedFeedUrl=$feedurl /p:SymbolsPackagesPattern=$env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }

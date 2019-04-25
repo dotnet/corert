@@ -396,9 +396,11 @@ int ObjectWriter::EmitSymbolRef(const char *SymbolName,
   case RelocType::IMAGE_REL_BASED_REL32:
     Size = 4;
     IsPCRel = true;	
-    // PLT is valid only for code symbols,
-    // but there is shouldn't be references to global data symbols
-    Kind = MCSymbolRefExpr::VK_PLT;
+    if (ObjFileInfo->getObjectFileType() == ObjFileInfo->IsELF) {
+        // PLT is valid only for code symbols,
+        // but there shouldn't be references to global data symbols
+        Kind = MCSymbolRefExpr::VK_PLT;
+    }
     break;
   case RelocType::IMAGE_REL_BASED_RELPTR32:
     Size = 4;

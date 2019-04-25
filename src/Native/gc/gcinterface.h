@@ -77,6 +77,10 @@ struct WriteBarrierParameters
     // card table. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
     uint32_t* card_table;
 
+    // The new card bundle table location. May or may not be the same as the previous
+    // card bundle table. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
+    uint32_t* card_bundle_table;
+
     // The heap's new low boundary. May or may not be the same as the previous
     // value. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
     uint8_t* lowest_address;
@@ -97,6 +101,11 @@ struct WriteBarrierParameters
     // implementation. Used for WriteBarrierOp::SwitchToWriteWatch only.
     uint8_t* write_watch_table;
 };
+
+ /*
+  * Scanning callback.
+  */
+typedef void (CALLBACK *HANDLESCANPROC)(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2);
 
 #include "gcinterface.ee.h"
 
@@ -128,6 +137,8 @@ public:
         alloc_count = 0;
     }
 };
+
+#include "gcinterface.dac.h"
 
 // stub type to abstract a heap segment
 struct gc_heap_segment_stub;
@@ -162,8 +173,9 @@ class Object;
 class IGCHeap;
 
 // Initializes the garbage collector. Should only be called
-// once, during EE startup.
-IGCHeap* InitializeGarbageCollector(IGCToCLR* clrToGC);
+// once, during EE startup. Returns true if the initialization
+// was successful, false otherwise.
+bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap **gcHeap, GcDacVars* gcDacVars);
 
 // The runtime needs to know whether we're using workstation or server GC 
 // long before the GCHeap is created. This function sets the type of
@@ -181,8 +193,6 @@ extern uint8_t* g_shadow_lowest_address;
 
 // For low memory notification from host
 extern int32_t g_bLowMemoryFromHost;
-
-extern VOLATILE(int32_t) m_GCLock;
 
 // !!!!!!!!!!!!!!!!!!!!!!!
 // make sure you change the def in bcl\system\gc.cs 
@@ -228,6 +238,145 @@ enum end_no_gc_region_status
     end_no_gc_induced = 2,
     end_no_gc_alloc_exceeded = 3
 };
+
+typedef enum 
+{
+    /*
+     * WEAK HANDLES
+     *
+     * Weak handles are handles that track an object as long as it is alive,
+     * but do not keep the object alive if there are no strong references to it.
+     *
+     */
+
+    /*
+     * SHORT-LIVED WEAK HANDLES
+     *
+     * Short-lived weak handles are weak handles that track an object until the
+     * first time it is detected to be unreachable.  At this point, the handle is
+     * severed, even if the object will be visible from a pending finalization
+     * graph.  This further implies that short weak handles do not track
+     * across object resurrections.
+     *
+     */
+    HNDTYPE_WEAK_SHORT   = 0,
+
+    /*
+     * LONG-LIVED WEAK HANDLES
+     *
+     * Long-lived weak handles are weak handles that track an object until the
+     * object is actually reclaimed.  Unlike short weak handles, long weak handles
+     * continue to track their referents through finalization and across any
+     * resurrections that may occur.
+     *
+     */
+    HNDTYPE_WEAK_LONG    = 1,
+    HNDTYPE_WEAK_DEFAULT = 1,
+
+    /*
+     * STRONG HANDLES
+     *
+     * Strong handles are handles which function like a normal object reference.
+     * The existence of a strong handle for an object will cause the object to
+     * be promoted (remain alive) through a garbage collection cycle.
+     *
+     */
+    HNDTYPE_STRONG       = 2,
+    HNDTYPE_DEFAULT      = 2,
+
+    /*
+     * PINNED HANDLES
+     *
+     * Pinned handles are strong handles which have the added property that they
+     * prevent an object from moving during a garbage collection cycle.  This is
+     * useful when passing a pointer to object innards out of the runtime while GC
+     * may be enabled.
+     *
+     * NOTE:  PINNING AN OBJECT IS EXPENSIVE AS IT PREVENTS THE GC FROM ACHIEVING
+     *        OPTIMAL PACKING OF OBJECTS DURING EPHEMERAL COLLECTIONS.  THIS TYPE
+     *        OF HANDLE SHOULD BE USED SPARINGLY!
+     */
+    HNDTYPE_PINNED       = 3,
+
+    /*
+     * VARIABLE HANDLES
+     *
+     * Variable handles are handles whose type can be changed dynamically.  They
+     * are larger than other types of handles, and are scanned a little more often,
+     * but are useful when the handle owner needs an efficient way to change the
+     * strength of a handle on the fly.
+     * 
+     */
+    HNDTYPE_VARIABLE     = 4,
+
+    /*
+     * REFCOUNTED HANDLES
+     *
+     * Refcounted handles are handles that behave as strong handles while the
+     * refcount on them is greater than 0 and behave as weak handles otherwise.
+     *
+     * N.B. These are currently NOT general purpose.
+     *      The implementation is tied to COM Interop.
+     *
+     */
+    HNDTYPE_REFCOUNTED   = 5,
+
+    /*
+     * DEPENDENT HANDLES
+     *
+     * Dependent handles are two handles that need to have the same lifetime.  One handle refers to a secondary object 
+     * that needs to have the same lifetime as the primary object. The secondary object should not cause the primary 
+     * object to be referenced, but as long as the primary object is alive, so must be the secondary
+     *
+     * They are currently used for EnC for adding new field members to existing instantiations under EnC modes where
+     * the primary object is the original instantiation and the secondary represents the added field.
+     *
+     * They are also used to implement the ConditionalWeakTable class in mscorlib.dll. If you want to use
+     * these from managed code, they are exposed to BCL through the managed DependentHandle class.
+     *
+     *
+     */
+    HNDTYPE_DEPENDENT    = 6,
+
+    /*
+     * PINNED HANDLES for asynchronous operation
+     *
+     * Pinned handles are strong handles which have the added property that they
+     * prevent an object from moving during a garbage collection cycle.  This is
+     * useful when passing a pointer to object innards out of the runtime while GC
+     * may be enabled.
+     *
+     * NOTE:  PINNING AN OBJECT IS EXPENSIVE AS IT PREVENTS THE GC FROM ACHIEVING
+     *        OPTIMAL PACKING OF OBJECTS DURING EPHEMERAL COLLECTIONS.  THIS TYPE
+     *        OF HANDLE SHOULD BE USED SPARINGLY!
+     */
+    HNDTYPE_ASYNCPINNED  = 7,
+
+    /*
+     * SIZEDREF HANDLES
+     *
+     * SizedRef handles are strong handles. Each handle has a piece of user data associated
+     * with it that stores the size of the object this handle refers to. These handles
+     * are scanned as strong roots during each GC but only during full GCs would the size
+     * be calculated.
+     *
+     */
+    HNDTYPE_SIZEDREF     = 8,
+
+    /*
+     * WINRT WEAK HANDLES
+     *
+     * WinRT weak reference handles hold two different types of weak handles to any
+     * RCW with an underlying COM object that implements IWeakReferenceSource.  The
+     * object reference itself is a short weak handle to the RCW.  In addition an
+     * IWeakReference* to the underlying COM object is stored, allowing the handle
+     * to create a new RCW if the existing RCW is collected.  This ensures that any
+     * code holding onto a WinRT weak reference can always access an RCW to the
+     * underlying COM object as long as it has not been released by all of its strong
+     * references.
+     */
+    HNDTYPE_WEAK_WINRT   = 9
+} HandleType;
 
 typedef BOOL (* walk_fn)(Object*, void*);
 typedef void (* gen_walk_fn)(void* context, int generation, uint8_t* range_start, uint8_t* range_end, uint8_t* range_reserved);
@@ -432,6 +581,9 @@ public:
     // Sets whether or not a GC is in progress.
     virtual void SetGCInProgress(BOOL fInProgress) = 0;
 
+    // Gets whether or not the GC runtime structures are in a valid state for heap traversal.
+    virtual bool RuntimeStructuresValid() = 0;
+
     /*
     ============================================================================
     Add/RemoveMemoryPressure support routines. These are on the interface
@@ -459,21 +611,22 @@ public:
     */
 
     // Allocates an object on the given allocation context with the given size and flags.
+    // It is the responsibility of the caller to ensure that the passed-in alloc context is
+    // owned by the thread that is calling this function. If using per-thread alloc contexts,
+    // no lock is needed; callers not using per-thread alloc contexts will need to acquire
+    // a lock to ensure that the calling thread has unique ownership over this alloc context;
     virtual Object* Alloc(gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
-
-    // Allocates an object on the default allocation context with the given size and flags.
-    virtual Object* Alloc(size_t size, uint32_t flags) = 0;
 
     // Allocates an object on the large object heap with the given size and flags.
     virtual Object* AllocLHeap(size_t size, uint32_t flags) = 0;
 
-    // Allocates an object on the default allocation context, aligned to 64 bits,
-    // with the given size and flags.
-    virtual Object* AllocAlign8 (size_t size, uint32_t flags) = 0;
-
     // Allocates an object on the given allocation context, aligned to 64 bits,
     // with the given size and flags.
-    virtual Object* AllocAlign8 (gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
+    // It is the responsibility of the caller to ensure that the passed-in alloc context is
+    // owned by the thread that is calling this function. If using per-thread alloc contexts,
+    // no lock is needed; callers not using per-thread alloc contexts will need to acquire
+    // a lock to ensure that the calling thread has unique ownership over this alloc context.
+    virtual Object* AllocAlign8(gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
 
     // This is for the allocator to indicate it's done allocating a large object during a 
     // background GC as the BGC threads also need to walk LOH.
@@ -545,8 +698,9 @@ public:
     ===========================================================================
     */
 
-    // Returns TRUE if GC actually happens, otherwise FALSE
-    virtual BOOL StressHeap(gc_alloc_context* acontext = 0) = 0;
+    // Returns TRUE if GC actually happens, otherwise FALSE. The passed alloc context
+    // must not be null.
+    virtual BOOL StressHeap(gc_alloc_context* acontext) = 0;
 
     /*
     ===========================================================================
