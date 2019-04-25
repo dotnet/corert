@@ -1993,12 +1993,13 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
         GroupProcNo groupProcNo(gn, gpn);
         *proc_no = groupProcNo.GetCombinedValue();
 
+        PROCESSOR_NUMBER procNumber;
+
+        // Get the current processor group
+        GetCurrentProcessorNumberEx(&procNumber);
+
         if (GCToOSInterface::CanEnableGCNumaAware())
         {
-            PROCESSOR_NUMBER procNumber;
-            // Get the current processor group
-            GetCurrentProcessorNumberEx(&procNumber);
-
             procNumber.Number = (BYTE)gpn;
             procNumber.Reserved = 0;
 
@@ -2009,7 +2010,7 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
         }
         else
         {   // no numa setting, each cpu group is treated as a node
-            *node_no = groupProcNo.GetGroup();
+            *node_no = procNumber.Group;
         }
     }
 
