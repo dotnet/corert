@@ -58,7 +58,10 @@ namespace System.Threading
                         count = _overflowCount;
                         foreach (ThreadLocalNode node in _threadLocalNode.ValuesAsEnumerable)
                         {
-                            count += node.Count;
+                            if (node != null)
+                            {
+                                count += node.Count;
+                            }
                         }
                         return count;
                     }

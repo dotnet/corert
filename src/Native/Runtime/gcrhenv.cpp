@@ -205,6 +205,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     // Set the GC heap type.
     bool fUseServerGC = (gcType == GCType_Server);
     InitializeHeapType(fUseServerGC);
+    g_heap_type = fUseServerGC ? GC_HEAP_SVR : GC_HEAP_WKS;
 
     // Create the GC heap itself.
 #ifdef FEATURE_STANDALONE_GC
@@ -215,12 +216,15 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     IGCToCLR* gcToClr = nullptr;
 #endif // FEATURE_STANDALONE_GC
 
+    IGCHandleTable *pGcHandleTable;
+
     IGCHeap *pGCHeap;
-    if (!InitializeGarbageCollector(gcToClr, &pGCHeap, &g_gc_dac_vars))
+    if (!InitializeGarbageCollector(gcToClr, &pGCHeap, &pGcHandleTable, &g_gc_dac_vars))
         return false;
 
     assert(pGCHeap != nullptr);
     g_pGCHeap = pGCHeap;
+    g_pGCHandleTable = pGcHandleTable;
     g_gcDacGlobals = &g_gc_dac_vars;
 
     // Apparently the Windows linker removes global variables if they are never
@@ -238,7 +242,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
         return false;
 
     // Initialize HandleTable.
-    if (!Ref_Initialize())
+    if (!GCHeapUtilities::GetGCHandleTable()->Initialize())
         return false;
 
     return true;
@@ -1166,7 +1170,7 @@ void GcScanRootsForETW(promote_func* fn, int condemned, int max_gen, ScanContext
     END_FOREACH_THREAD
 }
 
-void ScanHandleForETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, BOOL isDependent)
+void ScanHandleForETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent)
 {
     ProfilingScanContext* pSC = (ProfilingScanContext*)context;
 
@@ -1195,6 +1199,7 @@ void ScanHandleForETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* 
 void GCProfileWalkHeapWorker(BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw)
 {
     ProfilingScanContext SC(FALSE);
+    unsigned max_generation = GCHeapUtilities::GetGCHeap()->GetMaxGeneration();
 
     // **** Scan roots:  Only scan roots if profiling API wants them or ETW wants them.
     if (fShouldWalkHeapRootsForEtw)
@@ -1301,9 +1306,9 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
 // don't get confused.
 void WalkMovedReferences(uint8_t* begin, uint8_t* end, 
                          ptrdiff_t reloc,
-                         size_t context, 
-                         BOOL fCompacting,
-                         BOOL fBGC)
+                         void* context, 
+                         bool fCompacting,
+                         bool fBGC)
 {
     UNREFERENCED_PARAMETER(begin);
     UNREFERENCED_PARAMETER(end);
@@ -1334,7 +1339,7 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_gc);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_gc);
         ETW::GCLog::EndMovedReferences(context);
     }
 #else
@@ -1349,7 +1354,7 @@ void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_loh);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_loh);
         ETW::GCLog::EndMovedReferences(context);
     }
 #else
@@ -1364,7 +1369,7 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_bgc);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_bgc);
         ETW::GCLog::EndMovedReferences(context);
     }
 #else
@@ -1449,6 +1454,12 @@ void GCToEEInterface::EnableFinalization(bool foundFinalizers)
 {
     if (foundFinalizers)
         RhEnableFinalization();
+}
+
+void GCToEEInterface::HandleFatalError(unsigned int exitCode)
+{
+    UNREFERENCED_PARAMETER(exitCode);
+    EEPOLICY_HANDLE_FATAL_ERROR(exitCode);
 }
 
 #endif // !DACCESS_COMPILE

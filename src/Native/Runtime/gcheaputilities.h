@@ -6,6 +6,7 @@
 #define _GCHEAPUTILITIES_H_
 
 #include "gcinterface.h"
+#include "handletable.h"
 
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
@@ -16,9 +17,12 @@ extern "C" {
 GPTR_DECL(uint8_t,g_lowest_address);
 GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);
+GVAL_DECL(GCHeapType, g_heap_type);
 #ifndef DACCESS_COMPILE
 }
 #endif // !DACCESS_COMPILE
+
+extern "C" IGCHandleTable* g_pGCHandleTable;
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 extern "C" uint32_t* g_card_bundle_table;
@@ -55,6 +59,15 @@ public:
         return g_pGCHeap;
     }
 
+    // Retrieves the GC handle table.
+    static IGCHandleTable* GetGCHandleTable() 
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        assert(g_pGCHandleTable != nullptr);
+        return g_pGCHandleTable;
+    }
+
     // Returns true if the heap has been initialized, false otherwise.
     inline static bool IsGCHeapInitialized()
     {
@@ -72,10 +85,11 @@ public:
     inline static bool IsServerHeap()
     {
         LIMITED_METHOD_CONTRACT;
+
 #ifdef FEATURE_SVR_GC
-        _ASSERTE(IGCHeap::gcHeapType != IGCHeap::GC_HEAP_INVALID);
-        return (IGCHeap::gcHeapType == IGCHeap::GC_HEAP_SVR);
-#else // FEATURE_SVR_GC
+        _ASSERTE(g_heap_type != GC_HEAP_INVALID);
+        return (g_heap_type == GC_HEAP_SVR);
+#else
         return false;
 #endif // FEATURE_SVR_GC
     }
@@ -85,5 +99,16 @@ private:
     // This class should never be instantiated.
     GCHeapUtilities() = delete;
 };
+
+// Handle-related utilities.
+
+// Given a handle, returns an OBJECTREF for the object it refers to.
+inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
+{
+    _ASSERTE(handle);
+
+    // Wrap the raw OBJECTREF and return it
+    return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
+}
 
 #endif // _GCHEAPUTILITIES_H_
