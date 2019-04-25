@@ -197,7 +197,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 
     // Set the GC heap type.
     bool fUseServerGC = (gcType == GCType_Server);
-    g_heap_type = fUseServerGC ? GC_HEAP_SVR : GC_HEAP_WKS;
+    g_heap_type = (fUseServerGC && PalGetLogicalCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
 
     HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
     if (FAILED(hr))
