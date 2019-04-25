@@ -211,10 +211,10 @@ namespace Internal.IL
                 signatureIndex++;
             }
 
-            string[] argNames = null;
+            IList<string> argNames = null;
             if (_debugInformation != null)
             {
-                argNames = _debugInformation.GetParameterNames()?.ToArray();
+                argNames = GetParameterNamesForMethod(_method);
             }
 
             for (int i = 0; i < _signature.Length; i++)
