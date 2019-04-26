@@ -12,6 +12,7 @@
 
 #include "gcenv.h"
 #include "gcheaputilities.h"
+#include "gchandletableutilities.h"
 #include "profheapwalkhelper.h"
 
 #ifdef FEATURE_STANDALONE_GC
@@ -242,7 +243,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
         return false;
 
     // Initialize HandleTable.
-    if (!GCHeapUtilities::GetGCHandleTable()->Initialize())
+    if (!GCHandleTableUtilities::GetGCHandleTable()->Initialize())
         return false;
 
     return true;
@@ -943,12 +944,12 @@ void RedhawkGCInterface::SetLastAllocEEType(EEType * pEEType)
 
 void RedhawkGCInterface::DestroyTypedHandle(void * handle)
 {
-    ::DestroyTypedHandle((OBJECTHANDLE)handle);
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfUnknownType((OBJECTHANDLE)handle);
 }
 
 void* RedhawkGCInterface::CreateTypedHandle(void* pObject, int type)
 {
-    return (void*)::CreateTypedHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], (Object*)pObject, type);
+    return (void*)GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore()->CreateHandleOfType((Object*)pObject, type);
 }
 
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
@@ -1460,6 +1461,31 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 {
     UNREFERENCED_PARAMETER(exitCode);
     EEPOLICY_HANDLE_FATAL_ERROR(exitCode);
+}
+
+bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj)
+{
+    // CoreCLR does not have appdomains, so this code path is dead. Other runtimes may
+    // choose to inspect the object being finalized here.
+    // [DESKTOP TODO] Desktop looks for "agile and finalizable" objects and may choose
+    // to move them to a new app domain instead of finalizing them here.
+    return true;
+}
+
+bool GCToEEInterface::ForceFullGCToBeBlocking()
+{
+    return false;
+}
+
+bool GCToEEInterface::EagerFinalized(Object* obj)
+{
+    return false;
+}
+
+MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
+{
+    assert(g_pFreeObjectMethodTable != nullptr);
+    return g_pFreeObjectMethodTable;
 }
 
 #endif // !DACCESS_COMPILE
