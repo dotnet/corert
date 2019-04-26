@@ -61,6 +61,7 @@ namespace Internal.Runtime
         InstanceMethodEntryPoints = 109,
         InliningInfo = 110, // Added in v2.1
         ProfileDataInfo = 111, // Added in v2.2
+        ManifestMetadata = 112, // Added in v2.3
 
         //
         // CoreRT ReadyToRun sections
