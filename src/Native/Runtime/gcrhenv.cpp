@@ -1469,6 +1469,8 @@ bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* 
     // choose to inspect the object being finalized here.
     // [DESKTOP TODO] Desktop looks for "agile and finalizable" objects and may choose
     // to move them to a new app domain instead of finalizing them here.
+    UNREFERENCED_PARAMETER(pDomain);
+    UNREFERENCED_PARAMETER(obj);
     return true;
 }
 
@@ -1479,6 +1481,7 @@ bool GCToEEInterface::ForceFullGCToBeBlocking()
 
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
+    UNREFERENCED_PARAMETER(obj);
     return false;
 }
 

@@ -79,6 +79,7 @@ IGCHandleStore* GCHandleTable::CreateHandleStore(void* context)
     return new (nothrow) GCHandleStore(newBucket);
 #else
     assert("CreateHandleStore is not implemented when FEATURE_REDHAWK is defined!");
+    UNREFERENCED_PARAMETER(context);
     return nullptr;
 #endif
 }
