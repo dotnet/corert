@@ -1,1 +1,0 @@
-https://cloudcijobs.blob.core.windows.net/corertci/CoreCLRTests/2019_03_20/Linux/tests.zip
