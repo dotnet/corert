@@ -330,6 +330,8 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
+        internal static void InitializeForThreadPoolThread() { }
+
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
             if (workerThreads < 0 || completionPortThreads < 0)
