@@ -351,11 +351,16 @@ namespace System.Threading
 
         private static void InitializeExistingThreadPoolThread()
         {
-#if ENABLE_WINRT
+#if PROJECTN
             InitializeCom();
 #else
             // Take advantage of implicit MTA initialized by the finalizer thread
-            while (!s_comInitializedOnFinalizerThread) { RuntimeImports.RhWaitForPendingFinalizers(allowReentrantWait: false); }
+            SpinWait sw = new SpinWait();
+            while (!s_comInitializedOnFinalizerThread)
+            {
+                RuntimeImports.RhInitializeFinalizerThread();
+                sw.SpinOnce(0);
+            }
 #endif
 
             // Prevent re-initialization of COM model on threadpool threads
