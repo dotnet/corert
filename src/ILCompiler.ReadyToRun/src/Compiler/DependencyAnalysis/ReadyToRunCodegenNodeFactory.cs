@@ -107,24 +107,37 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc constrainedType,
             MethodDesc originalMethod,
             ModuleToken methodToken,
+            IMethodNode parentMethod,
             bool isUnboxingStub,
             bool isInstantiatingStub,
             SignatureContext signatureContext)
         {
+            if (parentMethod != null)
+            {
+                MethodDesc typicalMethodDefinition = targetMethod.GetTypicalMethodDefinition();
+                for (IMethodNode parentChain = parentMethod; parentChain != null; parentChain = (parentChain is MethodWithGCInfo method ? method.ParentMethod : null))
+                {
+                    if (parentChain.Method.GetTypicalMethodDefinition() == typicalMethodDefinition)
+                    {
+                        throw new RequiresRuntimeJitException(typicalMethodDefinition.ToString());
+                    }
+                }
+            }
+
             if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
             {
-                return ImportedMethodNode(targetMethod, constrainedType, originalMethod, methodToken, isUnboxingStub, isInstantiatingStub, signatureContext);
+                return ImportedMethodNode(targetMethod, constrainedType, originalMethod, methodToken, parentMethod, isUnboxingStub, isInstantiatingStub, signatureContext);
             }
 
             return _methodEntrypoints.GetOrAdd(targetMethod, (m) =>
             {
-                return CreateMethodEntrypointNode(new MethodWithToken(targetMethod, methodToken), isUnboxingStub, isInstantiatingStub, signatureContext);
+                return CreateMethodEntrypointNode(new MethodWithToken(targetMethod, methodToken), parentMethod, isUnboxingStub, isInstantiatingStub, signatureContext);
             });
         }
 
         private readonly Dictionary<TypeAndMethod, MethodWithGCInfo> _localMethodCache = new Dictionary<TypeAndMethod, MethodWithGCInfo>();
 
-        private IMethodNode CreateMethodEntrypointNode(MethodWithToken targetMethod, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext signatureContext)
+        private IMethodNode CreateMethodEntrypointNode(MethodWithToken targetMethod, IMethodNode parentMethod, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext signatureContext)
         {
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
 
@@ -134,7 +147,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodWithGCInfo localMethodNode;
             if (!_localMethodCache.TryGetValue(localMethodKey, out localMethodNode))
             {
-                localMethodNode = new MethodWithGCInfo(localMethod, signatureContext);
+                localMethodNode = new MethodWithGCInfo(localMethod, parentMethod, signatureContext);
                 _localMethodCache.Add(localMethodKey, localMethodNode);
             }
 
@@ -146,6 +159,7 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc constrainedType,
             MethodDesc originalMethod,
             ModuleToken methodToken,
+            IMethodNode parentMethod,
             bool isUnboxingStub,
             bool isInstantiatingStub,
             SignatureContext signatureContext)
@@ -179,7 +193,15 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
                         new MethodWithToken(targetMethod, methodToken),
-                        (MethodWithGCInfo)MethodEntrypoint(targetMethod, constrainedType, originalMethod, methodToken, isUnboxingStub, isInstantiatingStub, signatureContext),
+                        (MethodWithGCInfo)MethodEntrypoint(
+                            targetMethod, 
+                            constrainedType, 
+                            originalMethod, 
+                            methodToken, 
+                            parentMethod,
+                            isUnboxingStub, 
+                            isInstantiatingStub, 
+                            signatureContext),
                         isUnboxingStub,
                         isInstantiatingStub,
                         signatureContext);
@@ -449,8 +471,15 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotImplementedException();
             }
 
-            return MethodEntrypoint(method, constrainedType: null, originalMethod: null,
-                methodToken: default(ModuleToken), signatureContext: InputModuleContext, isUnboxingStub: false, isInstantiatingStub: false);
+            return MethodEntrypoint(
+                method, 
+                constrainedType: null, 
+                originalMethod: null,
+                methodToken: default(ModuleToken), 
+                parentMethod: null,
+                signatureContext: InputModuleContext, 
+                isUnboxingStub: false, 
+                isInstantiatingStub: false);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)

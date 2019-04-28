@@ -73,6 +73,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     constrainedType: null,
                     originalMethod: canonMethod,
                     methodToken: _method.Token,
+                    parentMethod: this,
                     isUnboxingStub: false,
                     isInstantiatingStub: false,
                     signatureContext: _signatureContext);

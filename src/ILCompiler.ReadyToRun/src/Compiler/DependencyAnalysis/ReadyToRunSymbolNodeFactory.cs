@@ -742,7 +742,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private readonly Dictionary<TypeAndMethod, ISymbolNode> _delegateCtors = new Dictionary<TypeAndMethod, ISymbolNode>();
 
-        public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodDesc targetMethod, ModuleToken methodToken, SignatureContext signatureContext)
+        public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodDesc targetMethod, ModuleToken methodToken, IMethodNode parentMethod, SignatureContext signatureContext)
         {
             TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod, methodToken: methodToken, isUnboxingStub: false, isInstantiatingStub: false);
             if (!_delegateCtors.TryGetValue(ctorKey, out ISymbolNode ctorNode))
@@ -752,6 +752,7 @@ namespace ILCompiler.DependencyAnalysis
                     constrainedType: null, 
                     originalMethod: null,
                     methodToken: methodToken,
+                    parentMethod: parentMethod,
                     isUnboxingStub: false,
                     isInstantiatingStub: false,
                     signatureContext: signatureContext);

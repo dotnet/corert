@@ -291,7 +291,11 @@ namespace Internal.JitInterface
 
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(
-                    delegateTypeDesc, targetMethod, new ModuleToken(_tokenContext, (mdToken)pTargetMethod.token), _signatureContext));
+                    delegateTypeDesc, 
+                    targetMethod, 
+                    new ModuleToken(_tokenContext, (mdToken)pTargetMethod.token), 
+                    _methodCodeNode, 
+                    _signatureContext));
         }
 
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
@@ -1190,11 +1194,15 @@ namespace Internal.JitInterface
 
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.ImportedMethodNode(methodToCall, constrainedType, originalMethod,
-                            new ModuleToken(callerModule, pResolvedToken.token),
-                            isUnboxingStub: false,
-                            isInstantiatingStub: useInstantiatingStub,
-                            _signatureContext));
+                            _compilation.NodeFactory.ImportedMethodNode(
+                                methodToCall, 
+                                constrainedType, 
+                                originalMethod,
+                                new ModuleToken(callerModule, pResolvedToken.token),
+                                parentMethod: _methodCodeNode,
+                                isUnboxingStub: false,
+                                isInstantiatingStub: useInstantiatingStub,
+                                _signatureContext));
                     }
                     break;
 

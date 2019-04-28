@@ -21,6 +21,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly MethodDesc _method;
         public SignatureContext SignatureContext { get; }
 
+        /// <summary>
+        /// First method node the compilation of which requested this node as a dependency.
+        /// </summary>
+        public IMethodNode ParentMethod { get;  }
+
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
         private byte[] _gcInfo;
@@ -29,11 +34,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private NativeVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
 
-        public MethodWithGCInfo(MethodDesc methodDesc, SignatureContext signatureContext)
+        public MethodWithGCInfo(MethodDesc methodDesc, IMethodNode parentMethod, SignatureContext signatureContext)
         {
             GCInfoNode = new MethodGCInfoNode(this);
             _method = methodDesc;
             SignatureContext = signatureContext;
+            ParentMethod = parentMethod;
         }
 
         public void SetCode(ObjectData data)
