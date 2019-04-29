@@ -519,22 +519,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitFieldSignature(FieldDesc field, SignatureContext context)
         {
+            uint fieldSigFlags = 0;
+            TypeDesc canonOwnerType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            TypeDesc ownerType = null;
+            if (canonOwnerType.IsCanonicalSubtype(CanonicalFormKind.Specific))
+            {
+                ownerType = field.OwningType;
+                fieldSigFlags |= (uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_OwnerType;
+
+                // Convert field to canonical form as this is what the field - module token lookup stores
+                field = canonOwnerType.GetField(field.Name);
+            }
+
             ModuleToken fieldToken = context.GetModuleTokenForField(field);
             switch (fieldToken.TokenType)
             {
                 case CorTokenType.mdtMemberRef:
-                    EmitUInt((uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_MemberRefToken);
-                    EmitTokenRid(fieldToken.Token);
+                    fieldSigFlags |= (uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_MemberRefToken;
                     break;
 
                 case CorTokenType.mdtFieldDef:
-                    EmitUInt((uint)0);
-                    EmitTokenRid(fieldToken.Token);
                     break;
 
                 default:
                     throw new NotImplementedException();
             }
+
+            EmitUInt(fieldSigFlags);
+            if (ownerType != null)
+            {
+                EmitTypeSignature(ownerType, context);
+            }
+            EmitTokenRid(fieldToken.Token);
         }
     }
 

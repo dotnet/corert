@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (throwIfNotFound)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException(field.ToString());
             }
             else
             {
@@ -139,11 +139,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
-            _fieldToRefTokens[field] = token;
+            TypeDesc owningCanonType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            FieldDesc canonField = owningCanonType.GetField(field.Name);
+
+            _fieldToRefTokens[canonField] = token;
             switch (token.TokenType)
             {
                 case CorTokenType.mdtMemberRef:
-                    AddModuleTokenForFieldReference(field.OwningType, token);
+                    AddModuleTokenForFieldReference(owningCanonType, token);
                     break;
 
                 default:
