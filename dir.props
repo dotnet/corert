@@ -271,7 +271,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RoslynVersion>3.1.0-beta3-19213-02</RoslynVersion>
+    <RoslynVersion>3.2.0-beta1-19229-02</RoslynVersion>
     <RoslynPackageName>Microsoft.Net.Compilers.Toolset</RoslynPackageName>
     <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName.ToLower())/$(RoslynVersion)/</RoslynPackageDir>
     <RoslynPropsFile>$(RoslynPackageDir)build/$(RoslynPackageName).props</RoslynPropsFile>
