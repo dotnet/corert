@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices
                         flags |= dllImportSearchPathFlags;
                     }
 
-                    ret = LocalLoadLibraryHelper(currLibNameVariation, flags, ref errorTracker);
+                    ret = LoadLibraryHelper(currLibNameVariation, flags, ref errorTracker);
                     if (ret != IntPtr.Zero)
                     {
                         return ret;
@@ -95,7 +95,7 @@ namespace System.Runtime.InteropServices
                     // This only makes sense in dynamic scenarios (JIT/interpreter), so leaving this out for now.
                 }
 
-                ret = LocalLoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, ref errorTracker);
+                ret = LoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, ref errorTracker);
                 if (ret != IntPtr.Zero)
                 {
                     return ret;
@@ -108,7 +108,7 @@ namespace System.Runtime.InteropServices
         private static IntPtr LoadFromPath(string libraryName, bool throwOnError)
         {
             LoadLibErrorTracker errorTracker = default;
-            IntPtr ret = LocalLoadLibraryHelper(libraryName, 0, ref errorTracker);
+            IntPtr ret = LoadLibraryHelper(libraryName, 0, ref errorTracker);
             if (throwOnError && ret == IntPtr.Zero)
             {
                 errorTracker.Throw(libraryName);
@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices
             return ret;
         }
 
-        private static IntPtr LocalLoadLibraryHelper(string libraryName, int flags, ref LoadLibErrorTracker errorTracker)
+        private static IntPtr LoadLibraryHelper(string libraryName, int flags, ref LoadLibErrorTracker errorTracker)
         {
 #if PLATFORM_WINDOWS
             IntPtr ret = Interop.mincore.LoadLibraryEx(libraryName, IntPtr.Zero, flags);
@@ -159,6 +159,11 @@ namespace System.Runtime.InteropServices
 
         private static void FreeLib(IntPtr handle)
         {
+            // FreeLibrary doesn't throw if the input is null.
+            // This avoids further null propagation/check while freeing resources (ex: in finally blocks)
+            if (handle == IntPtr.Zero)
+                return;
+
 #if !PLATFORM_UNIX
             bool result = Interop.mincore.FreeLibrary(handle);
             if (!result)
