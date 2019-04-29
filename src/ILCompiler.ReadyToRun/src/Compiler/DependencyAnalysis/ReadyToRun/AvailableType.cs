@@ -18,13 +18,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public AvailableType(NodeFactory factory, TypeDesc type)
         {
             _type = type;
-
-            //
-            // This check encodes rules specific to CoreRT. Ie, no function pointer classes allowed.
-            // Eventually we will hit situations where this check fails when it shouldn't and we'll need to 
-            // split the logic. It's a good sanity check for the time being though.
-            //
-            EETypeNode.CheckCanGenerateEEType(factory, type);
         }
 
         public TypeDesc Type => _type;
