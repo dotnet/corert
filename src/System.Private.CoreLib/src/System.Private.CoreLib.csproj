@@ -282,6 +282,8 @@
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\Thread.CoreRT.cs" />
+    <Compile Include="System\Threading\ThreadBooleanCounter.cs" />
+    <Compile Include="System\Threading\ThreadInt64PersistentCounter.cs" />
     <Compile Include="System\Threading\ThreadPool.CoreRT.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
     <Compile Include="System\Threading\WaitHandle.CoreRT.cs" />

@@ -93,7 +93,7 @@ namespace System.Threading
 
             if (threadPoolThread)
             {
-                InitializeCom();
+                InitializeExistingThreadPoolThread();
             }
 
             return currentThread;

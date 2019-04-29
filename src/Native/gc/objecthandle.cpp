@@ -19,6 +19,8 @@
 #include "objecthandle.h"
 #include "handletablepriv.h"
 
+#include "gchandletableimpl.h"
+
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
@@ -441,13 +443,13 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     ScanContext *pSC = (ScanContext *)lp1;
 
     uint32_t rootFlags = 0;
-    BOOL isDependent = FALSE;
+    bool isDependent = false;
 
     OBJECTHANDLE handle = (OBJECTHANDLE)(pRef);
     switch (HandleFetchType(handle))
     {
     case    HNDTYPE_DEPENDENT:
-        isDependent = TRUE;
+        isDependent = true;
         break;
     case    HNDTYPE_WEAK_SHORT:
     case    HNDTYPE_WEAK_LONG:
@@ -663,6 +665,10 @@ bool Ref_Initialize()
         g_HandleTableMap.dwMaxIndex = INITIAL_HANDLE_TABLE_ARRAY_SIZE;
         g_HandleTableMap.pNext = NULL;
 
+        g_gcGlobalHandleStore = new (nothrow) GCHandleStore(g_HandleTableMap.pBuckets[0]);
+        if (g_gcGlobalHandleStore == NULL)
+            goto CleanupAndFail;
+
         // Allocate contexts used during dependent handle promotion scanning. There's one of these for every GC
         // heap since they're scanned in parallel.
         g_pDependentHandleContexts = new (nothrow) DhContext[n_slots];
@@ -671,6 +677,7 @@ bool Ref_Initialize()
 
         return true;
     }
+
 
 CleanupAndFail:
     if (pBuckets != NULL)
@@ -871,24 +878,6 @@ void Ref_EndSynchronousGC(uint32_t condemned, uint32_t maxgen)
 */    
 }
 
-
-OBJECTHANDLE CreateDependentHandle(HHANDLETABLE table, OBJECTREF primary, OBJECTREF secondary)
-{ 
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTHANDLE handle = HndCreateHandle(table, HNDTYPE_DEPENDENT, primary); 
-
-    SetDependentHandleSecondary(handle, secondary);
-
-    return handle;
-}
-
 void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF objref)
 { 
     CONTRACTL
@@ -923,30 +912,6 @@ void SetDependentHandleSecondary(OBJECTHANDLE handle, OBJECTREF objref)
 
 
 //----------------------------------------------------------------------------
-
-/*
- * CreateVariableHandle.
- *
- * Creates a variable-strength handle.
- *
- * N.B. This routine is not a macro since we do validation in RETAIL.
- * We always validate the type here because it can come from external callers.
- */
-OBJECTHANDLE CreateVariableHandle(HHANDLETABLE hTable, OBJECTREF object, uint32_t type)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // verify that we are being asked to create a valid type
-    if (!IS_VALID_VHT_VALUE(type))
-    {
-        // bogus value passed in
-        _ASSERTE(FALSE);
-        return NULL;
-    }
-
-    // create the handle
-    return HndCreateHandle(hTable, HNDTYPE_VARIABLE, object, (uintptr_t)type);
-}
 
 /*
 * GetVariableHandleType.
@@ -1897,51 +1862,6 @@ bool HandleTableBucket::Contains(OBJECTHANDLE handle)
     }
     return FALSE;
 }
-
-void DestroySizedRefHandle(OBJECTHANDLE handle)
-{ 
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HHANDLETABLE hTable = HndGetHandleTable(handle);
-    HndDestroyHandle(hTable , HNDTYPE_SIZEDREF, handle);
-    AppDomain* pDomain = SystemDomain::GetAppDomainAtIndex(HndGetHandleTableADIndex(hTable));
-    pDomain->DecNumSizedRefHandles();
-}
-
-#ifdef FEATURE_COMINTEROP
-
-void DestroyWinRTWeakHandle(OBJECTHANDLE handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    // Release the WinRT weak reference if we have one.  We're assuming that this will not reenter the
-    // runtime, since if we are pointing at a managed object, we should not be using a HNDTYPE_WEAK_WINRT
-    // but rather a HNDTYPE_WEAK_SHORT or HNDTYPE_WEAK_LONG.
-    IWeakReference* pWinRTWeakReference = reinterpret_cast<IWeakReference*>(HndGetHandleExtraInfo(handle));
-    if (pWinRTWeakReference != NULL)
-    {
-        pWinRTWeakReference->Release();
-    }
-
-    HndDestroyHandle(HndGetHandleTable(handle), HNDTYPE_WEAK_WINRT, handle);
-}
-
-#endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
 

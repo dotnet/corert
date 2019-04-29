@@ -184,7 +184,7 @@ namespace System.Threading
 
             using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorCriticalSection, millisecondsTimeout, out blockingItem))
             {
-                return lck.TryAcquire(millisecondsTimeout);
+                return lck.TryAcquire(millisecondsTimeout, trackContentions: true);
             }
         }
 
@@ -244,6 +244,20 @@ namespace System.Threading
                 t_firstBlockingItem = Unsafe.Read<DebugBlockingItem>((void*)t_firstBlockingItem)._next;
             }
         }
+
+        #endregion
+
+        #region Metrics
+
+        private static readonly ThreadInt64PersistentCounter s_lockContentionCounter = new ThreadInt64PersistentCounter();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void IncrementLockContentionCount() => s_lockContentionCounter.Increment();
+
+        /// <summary>
+        /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
+        /// </summary>
+        public static long LockContentionCount => s_lockContentionCounter.Count;
 
         #endregion
     }

@@ -12,6 +12,7 @@
 
 #include "gcenv.h"
 #include "gcheaputilities.h"
+#include "gchandletableutilities.h"
 #include "profheapwalkhelper.h"
 
 #ifdef FEATURE_STANDALONE_GC
@@ -205,6 +206,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     // Set the GC heap type.
     bool fUseServerGC = (gcType == GCType_Server);
     InitializeHeapType(fUseServerGC);
+    g_heap_type = fUseServerGC ? GC_HEAP_SVR : GC_HEAP_WKS;
 
     // Create the GC heap itself.
 #ifdef FEATURE_STANDALONE_GC
@@ -215,12 +217,23 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     IGCToCLR* gcToClr = nullptr;
 #endif // FEATURE_STANDALONE_GC
 
-    IGCHeap *pGCHeap = InitializeGarbageCollector(gcToClr);
-    if (!pGCHeap)
+    IGCHandleTable *pGcHandleTable;
+
+    IGCHeap *pGCHeap;
+    if (!InitializeGarbageCollector(gcToClr, &pGCHeap, &pGcHandleTable, &g_gc_dac_vars))
         return false;
 
+    assert(pGCHeap != nullptr);
     g_pGCHeap = pGCHeap;
+    g_pGCHandleTable = pGcHandleTable;
+    g_gcDacGlobals = &g_gc_dac_vars;
 
+    // Apparently the Windows linker removes global variables if they are never
+    // read from, which is a problem for g_gcDacGlobals since it's expected that
+    // only the DAC will read from it. This forces the linker to include
+    // g_gcDacGlobals.
+    volatile void* _dummy = g_gcDacGlobals;
+    
     // Initialize the GC subsystem.
     HRESULT hr = pGCHeap->Initialize();
     if (FAILED(hr))
@@ -230,7 +243,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
         return false;
 
     // Initialize HandleTable.
-    if (!Ref_Initialize())
+    if (!GCHandleTableUtilities::GetGCHandleTable()->Initialize())
         return false;
 
     return true;
@@ -931,12 +944,12 @@ void RedhawkGCInterface::SetLastAllocEEType(EEType * pEEType)
 
 void RedhawkGCInterface::DestroyTypedHandle(void * handle)
 {
-    ::DestroyTypedHandle((OBJECTHANDLE)handle);
+    GCHandleTableUtilities::GetGCHandleTable()->DestroyHandleOfUnknownType((OBJECTHANDLE)handle);
 }
 
 void* RedhawkGCInterface::CreateTypedHandle(void* pObject, int type)
 {
-    return (void*)::CreateTypedHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], (Object*)pObject, type);
+    return (void*)GCHandleTableUtilities::GetGCHandleTable()->GetGlobalHandleStore()->CreateHandleOfType((Object*)pObject, type);
 }
 
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
@@ -1158,7 +1171,7 @@ void GcScanRootsForETW(promote_func* fn, int condemned, int max_gen, ScanContext
     END_FOREACH_THREAD
 }
 
-void ScanHandleForETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, BOOL isDependent)
+void ScanHandleForETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent)
 {
     ProfilingScanContext* pSC = (ProfilingScanContext*)context;
 
@@ -1187,6 +1200,7 @@ void ScanHandleForETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* 
 void GCProfileWalkHeapWorker(BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw)
 {
     ProfilingScanContext SC(FALSE);
+    unsigned max_generation = GCHeapUtilities::GetGCHeap()->GetMaxGeneration();
 
     // **** Scan roots:  Only scan roots if profiling API wants them or ETW wants them.
     if (fShouldWalkHeapRootsForEtw)
@@ -1293,9 +1307,9 @@ void GCToEEInterface::DiagGCEnd(size_t index, int gen, int reason, bool fConcurr
 // don't get confused.
 void WalkMovedReferences(uint8_t* begin, uint8_t* end, 
                          ptrdiff_t reloc,
-                         size_t context, 
-                         BOOL fCompacting,
-                         BOOL fBGC)
+                         void* context, 
+                         bool fCompacting,
+                         bool fBGC)
 {
     UNREFERENCED_PARAMETER(begin);
     UNREFERENCED_PARAMETER(end);
@@ -1326,7 +1340,7 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_gc);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_gc);
         ETW::GCLog::EndMovedReferences(context);
     }
 #else
@@ -1341,7 +1355,7 @@ void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_loh);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_loh);
         ETW::GCLog::EndMovedReferences(context);
     }
 #else
@@ -1356,7 +1370,7 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_bgc);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_bgc);
         ETW::GCLog::EndMovedReferences(context);
     }
 #else
@@ -1377,7 +1391,13 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->card_table != nullptr);
         assert(args->lowest_address != nullptr);
         assert(args->highest_address != nullptr);
+
         g_card_table = args->card_table;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        assert(args->card_bundle_table != nullptr);
+        g_card_bundle_table = args->card_bundle_table;
+#endif
 
         // We need to make sure that other threads executing checked write barriers
         // will see the g_card_table update before g_lowest/highest_address updates.
@@ -1410,6 +1430,12 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
 
         g_card_table = args->card_table;
+        
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        assert(g_card_bundle_table == nullptr);
+        g_card_bundle_table = args->card_bundle_table;
+#endif
+
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
         g_ephemeral_low = args->ephemeral_low;
@@ -1429,6 +1455,40 @@ void GCToEEInterface::EnableFinalization(bool foundFinalizers)
 {
     if (foundFinalizers)
         RhEnableFinalization();
+}
+
+void GCToEEInterface::HandleFatalError(unsigned int exitCode)
+{
+    UNREFERENCED_PARAMETER(exitCode);
+    EEPOLICY_HANDLE_FATAL_ERROR(exitCode);
+}
+
+bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj)
+{
+    // CoreCLR does not have appdomains, so this code path is dead. Other runtimes may
+    // choose to inspect the object being finalized here.
+    // [DESKTOP TODO] Desktop looks for "agile and finalizable" objects and may choose
+    // to move them to a new app domain instead of finalizing them here.
+    UNREFERENCED_PARAMETER(pDomain);
+    UNREFERENCED_PARAMETER(obj);
+    return true;
+}
+
+bool GCToEEInterface::ForceFullGCToBeBlocking()
+{
+    return false;
+}
+
+bool GCToEEInterface::EagerFinalized(Object* obj)
+{
+    UNREFERENCED_PARAMETER(obj);
+    return false;
+}
+
+MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
+{
+    assert(g_pFreeObjectMethodTable != nullptr);
+    return g_pFreeObjectMethodTable;
 }
 
 #endif // !DACCESS_COMPILE

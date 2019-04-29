@@ -291,3 +291,6 @@ src/ILCompiler/reproNative/reproNativeCpp.sln
 
 # Visual Studio Code
 .vscode/
+
+#python import files
+*.pyc

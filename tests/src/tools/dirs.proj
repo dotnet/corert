@@ -3,6 +3,7 @@
 
   <ItemGroup>
     <Project Include="ReadyToRun.TestHarness/ReadyToRun.TestHarness.csproj" />
+    <Project Include="ReadyToRun.SuperIlc/ReadyToRun.SuperIlc.csproj" />
   </ItemGroup>
 
   <Import Project="..\..\..\dir.targets" />

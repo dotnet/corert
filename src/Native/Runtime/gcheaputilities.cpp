@@ -5,6 +5,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
+#include "gchandletableutilities.h"
 
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
@@ -16,5 +17,15 @@ GPTR_IMPL(IGCHeap, g_pGCHeap);
 GPTR_IMPL_INIT(uint32_t, g_card_table,      nullptr);
 GPTR_IMPL_INIT(uint8_t,  g_lowest_address,  nullptr);
 GPTR_IMPL_INIT(uint8_t,  g_highest_address, nullptr);
+GVAL_IMPL_INIT(GCHeapType, g_heap_type,     GC_HEAP_INVALID);
 uint8_t* g_ephemeral_low  = (uint8_t*)1;
 uint8_t* g_ephemeral_high = (uint8_t*)~0;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+uint32_t* g_card_bundle_table = nullptr;
+#endif
+
+IGCHandleTable* g_pGCHandleTable = nullptr;
+
+GcDacVars g_gc_dac_vars;
+GPTR_IMPL(GcDacVars, g_gcDacGlobals);

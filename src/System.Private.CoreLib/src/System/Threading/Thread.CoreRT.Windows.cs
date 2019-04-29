@@ -4,6 +4,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -20,11 +21,13 @@ namespace System.Threading
         private static ApartmentType t_apartmentType;
 
         [ThreadStatic]
-        private static bool t_comInitializedByUs;
+        private static ComState t_comState;
 
         private SafeWaitHandle _osHandle;
 
         private ApartmentState _initialApartmentState = ApartmentState.Unknown;
+
+        private volatile static bool s_comInitializedOnFinalizerThread;
 
         private void PlatformSpecificInitialize()
         {
@@ -268,13 +271,16 @@ namespace System.Threading
                 }
             }
 
-            if (state != ApartmentState.Unknown)
+            if ((t_comState & ComState.Locked) == 0)
             {
-                InitializeCom(state);
-            }
-            else
-            {
-                UninitializeCom();
+                if (state != ApartmentState.Unknown)
+                {
+                    InitializeCom(state);
+                }
+                else
+                {
+                    UninitializeCom();
+                }
             }
 
             // Clear the cache and check whether new state matches the desired state
@@ -287,9 +293,19 @@ namespace System.Threading
             InitializeCom(_initialApartmentState);
         }
 
-        internal static void InitializeCom(ApartmentState state = ApartmentState.MTA)
+        internal static void InitializeComForFinalizerThread()
         {
-            if (t_comInitializedByUs)
+            InitializeCom();
+
+            // Prevent re-initialization of COM model on finalizer thread
+            t_comState |= ComState.Locked;
+
+            s_comInitializedOnFinalizerThread = true;
+        }
+
+        private static void InitializeCom(ApartmentState state = ApartmentState.MTA)
+        {
+            if ((t_comState & ComState.InitializedByUs) != 0)
                 return;
 
 #if ENABLE_WINRT
@@ -308,7 +324,7 @@ namespace System.Threading
             if (hr < 0)
                 throw new OutOfMemoryException();
 
-            t_comInitializedByUs = true;
+            t_comState |= ComState.InitializedByUs;
 
             // If the thread has already been CoInitialized to the proper mode, then
             // we don't want to leave an outstanding CoInit so we CoUninit.
@@ -318,7 +334,7 @@ namespace System.Threading
 
         private static void UninitializeCom()
         {
-            if (!t_comInitializedByUs)
+            if ((t_comState & ComState.InitializedByUs) == 0)
                 return;
 
 #if ENABLE_WINRT
@@ -326,11 +342,33 @@ namespace System.Threading
 #else
             Interop.Ole32.CoUninitialize();
 #endif
-            t_comInitializedByUs = false;
+
+            t_comState &= ~ComState.InitializedByUs;
         }
 
         // TODO: https://github.com/dotnet/corefx/issues/20766
         public void DisableComObjectEagerCleanup() { }
+
+        private static void InitializeExistingThreadPoolThread()
+        {
+#if PROJECTN
+            InitializeCom();
+#else
+            // Take advantage of implicit MTA initialized by the finalizer thread
+            SpinWait sw = new SpinWait();
+            while (!s_comInitializedOnFinalizerThread)
+            {
+                RuntimeImports.RhInitializeFinalizerThread();
+                sw.SpinOnce(0);
+            }
+#endif
+
+            // Prevent re-initialization of COM model on threadpool threads
+            t_comState |= ComState.Locked;
+
+            ThreadPool.InitializeForThreadPoolThread();
+        }
+
         public void Interrupt() { throw new PlatformNotSupportedException(); }
 
         internal static void UninterruptibleSleep0()
@@ -424,12 +462,19 @@ namespace System.Threading
             return type;
         }
 
-        internal enum ApartmentType
+        internal enum ApartmentType : byte
         {
             Unknown = 0,
             None,
             STA,
             MTA
+        }
+
+        [Flags]
+        internal enum ComState : byte
+        {
+            InitializedByUs = 1,
+            Locked = 2,
         }
 
         private static int ComputeCurrentProcessorId() => (int)Interop.mincore.GetCurrentProcessorNumber();
