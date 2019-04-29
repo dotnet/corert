@@ -27,20 +27,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                searchAssemblyDirectory = true;
-                searchPathFlags = 0;
-
-                // TODO: make this into a reflection callback so that we can make this work when reflection
-                // is disabled.
-                foreach (CustomAttributeData cad in assembly.CustomAttributes)
-                {
-                    if (cad.AttributeType == typeof(DefaultDllImportSearchPathsAttribute))
-                    {
-                        var attributeValue = (DllImportSearchPath)cad.ConstructorArguments[0].Value;
-                        searchPathFlags = (int)(attributeValue & ~DllImportSearchPath.AssemblyDirectory);
-                        searchAssemblyDirectory = (attributeValue & DllImportSearchPath.AssemblyDirectory) != 0;
-                    }
-                }
+                GetDllImportSearchPathFlags(assembly, out searchPathFlags, out searchAssemblyDirectory);
             }
 
             LoadLibErrorTracker errorTracker = default;
@@ -51,6 +38,23 @@ namespace System.Runtime.InteropServices
             }
 
             return ret;
+        }
+
+        // TODO: make this into a reflection callback so that we can make this work when reflection is disabled.
+        private static void GetDllImportSearchPathFlags(Assembly callingAssembly, out int searchPathFlags, out bool searchAssemblyDirectory)
+        {
+            searchAssemblyDirectory = true;
+            searchPathFlags = 0;
+
+            foreach (CustomAttributeData cad in callingAssembly.CustomAttributes)
+            {
+                if (cad.AttributeType == typeof(DefaultDllImportSearchPathsAttribute))
+                {
+                    var attributeValue = (DllImportSearchPath)cad.ConstructorArguments[0].Value;
+                    searchPathFlags = (int)(attributeValue & ~DllImportSearchPath.AssemblyDirectory);
+                    searchAssemblyDirectory = (attributeValue & DllImportSearchPath.AssemblyDirectory) != 0;
+                }
+            }
         }
 
         private static IntPtr LoadLibraryModuleBySearch(Assembly callingAssembly, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)
@@ -167,13 +171,12 @@ namespace System.Runtime.InteropServices
         private static IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError)
         {
 #if !PLATFORM_UNIX
-
             IntPtr ret = Interop.mincore.GetProcAddress(handle, symbolName);
 #else
             IntPtr ret = Interop.Sys.GetProcAddress(handle, symbolName);
 #endif
             if (throwOnError && ret == IntPtr.Zero)
-                throw new EntryPointNotFoundException();
+                throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterizedNoLibrary, symbolName));
 
             return ret;
         }

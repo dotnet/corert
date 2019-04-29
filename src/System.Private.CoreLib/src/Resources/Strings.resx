@@ -222,6 +222,9 @@
   <data name="Arg_EntryPointNotFoundExceptionParameterized" xml:space="preserve">
     <value>Unable to find an entry point named '{0}' in DLL '{1}'.</value>
   </data>
+  <data name="Arg_EntryPointNotFoundExceptionParameterizedNoLibrary" xml:space="preserve">
+    <value>Unable to find an entry point named '{0}' in DLL.</value>
+  </data>
   <data name="Arg_EnumIllegalVal" xml:space="preserve">
     <value>Illegal enum value: {0}.</value>
   </data>
