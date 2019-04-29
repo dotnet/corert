@@ -113,6 +113,7 @@ extern "C" uint8_t* g_gc_lowest_address;
 extern "C" uint8_t* g_gc_highest_address;
 extern "C" GCHeapType g_gc_heap_type;
 extern "C" uint32_t g_max_generation;
+extern "C" MethodTable* g_gc_pFreeObjectMethodTable;
 
 ::IGCHandleTable*  CreateGCHandleTable();
 
@@ -255,12 +256,6 @@ void TouchPages(void * pStart, size_t cb);
 #ifdef WRITE_BARRIER_CHECK
 void updateGCShadow(Object** ptr, Object* val);
 #endif
-
-// the method table for the WeakReference class
-extern MethodTable  *pWeakReferenceMT;
-// The canonical method table for WeakReference<T>
-extern MethodTable  *pWeakReferenceOfTCanonMT;
-extern void FinalizeWeakReference(Object * obj);
 
 // The single GC heap instance, shared with the VM.
 extern IGCHeapInternal* g_theGCHeap;

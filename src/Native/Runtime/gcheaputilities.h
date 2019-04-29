@@ -22,8 +22,6 @@ GVAL_DECL(GCHeapType, g_heap_type);
 }
 #endif // !DACCESS_COMPILE
 
-extern "C" IGCHandleTable* g_pGCHandleTable;
-
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 extern "C" uint32_t* g_card_bundle_table;
 #endif // FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
@@ -59,15 +57,6 @@ public:
         return g_pGCHeap;
     }
 
-    // Retrieves the GC handle table.
-    static IGCHandleTable* GetGCHandleTable() 
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        assert(g_pGCHandleTable != nullptr);
-        return g_pGCHandleTable;
-    }
-
     // Returns true if the heap has been initialized, false otherwise.
     inline static bool IsGCHeapInitialized()
     {
@@ -99,16 +88,5 @@ private:
     // This class should never be instantiated.
     GCHeapUtilities() = delete;
 };
-
-// Handle-related utilities.
-
-// Given a handle, returns an OBJECTREF for the object it refers to.
-inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
-{
-    _ASSERTE(handle);
-
-    // Wrap the raw OBJECTREF and return it
-    return UNCHECKED_OBJECTREF_TO_OBJECTREF(*PTR_UNCHECKED_OBJECTREF(handle));
-}
 
 #endif // _GCHEAPUTILITIES_H_

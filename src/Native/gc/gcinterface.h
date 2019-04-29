@@ -390,6 +390,36 @@ typedef void (* record_surv_fn)(uint8_t* begin, uint8_t* end, ptrdiff_t reloc, v
 typedef void (* fq_walk_fn)(bool, void*);
 typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlags);
 typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent);
+
+// Opaque type for tracking object pointers
+#ifndef DACCESS_COMPILE
+struct OBJECTHANDLE__
+{
+    void* unused;
+};
+typedef struct OBJECTHANDLE__* OBJECTHANDLE;
+#else
+typedef uintptr_t OBJECTHANDLE;
+#endif
+
+class IGCHandleStore {
+public:
+
+    virtual void Uproot() = 0;
+
+    virtual bool ContainsHandle(OBJECTHANDLE handle) = 0;
+
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, int type) = 0;
+
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, int type, int heapToAffinitizeTo) = 0;
+
+    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, int type, void* pExtraInfo) = 0;
+
+    virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary) = 0;
+
+    virtual ~IGCHandleStore() {};
+};
+
 class IGCHandleTable {
 public:
 
@@ -397,9 +427,23 @@ public:
 
     virtual void Shutdown() = 0;
 
-    virtual void* GetHandleTableContext(void* handleTable) = 0;
+    virtual void* GetHandleContext(OBJECTHANDLE handle) = 0;
 
-    virtual void* GetHandleTableForHandle(OBJECTHANDLE handle) = 0;
+    virtual IGCHandleStore* GetGlobalHandleStore() = 0;
+
+    virtual IGCHandleStore* CreateHandleStore(void* context) = 0;
+
+    virtual void DestroyHandleStore(IGCHandleStore* store) = 0;
+
+    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type) = 0;
+
+    virtual OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle) = 0;
+
+    virtual void DestroyHandleOfType(OBJECTHANDLE handle, int type) = 0;
+
+    virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle) = 0;
+
+    virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle) = 0;
 };
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
