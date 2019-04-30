@@ -271,6 +271,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <!-- Also update init-tools.cmd and init-tools.sh -->
     <RoslynVersion>3.2.0-beta1-19229-02</RoslynVersion>
     <RoslynPackageName>Microsoft.Net.Compilers.Toolset</RoslynPackageName>
     <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName.ToLower())/$(RoslynVersion)/</RoslynPackageDir>
