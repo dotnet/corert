@@ -528,7 +528,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 fieldSigFlags |= (uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_OwnerType;
 
                 // Convert field to canonical form as this is what the field - module token lookup stores
-                field = canonOwnerType.GetField(field.Name);
+                field = field.Context.GetFieldForInstantiatedType(field, (InstantiatedType)canonOwnerType);
             }
 
             ModuleToken fieldToken = context.GetModuleTokenForField(field);
