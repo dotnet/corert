@@ -32,9 +32,7 @@ namespace ReadyToRun.SuperIlc
                 return 1;
             }
 
-            IEnumerable<string> referencePaths = options.ReferencePaths();
-
-            IEnumerable<CompilerRunner> runners = options.CompilerRunners();
+            IEnumerable<CompilerRunner> runners = options.CompilerRunners(isFramework: false);
 
             PathExtensions.DeleteOutputFolders(options.OutputDirectory.ToString(), recursive: true);
 
@@ -90,111 +88,16 @@ namespace ReadyToRun.SuperIlc
             }
             Console.WriteLine($@"{directories.Length} folders scanned)");
 
-            string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
-            string folderSetLogPath = Path.Combine(options.OutputDirectory.ToString(), "subtree-" + timeStamp + ".log");
+            BuildFolderSet folderSet = new BuildFolderSet(folders, runners, options);
+            bool success = folderSet.Build(runners);
+            folderSet.WriteLogs();
 
-            using (BuildFolderSet folderSet = new BuildFolderSet(folders, runners, options, folderSetLogPath))
+            if (!options.NoCleanup)
             {
-                bool success = folderSet.Build(runners, folderSetLogPath);
-
-                Dictionary<string, List<ProcessInfo>> compilationFailureBuckets = new Dictionary<string, List<ProcessInfo>>();
-                Dictionary<string, List<ProcessInfo>> executionFailureBuckets = new Dictionary<string, List<ProcessInfo>>();
-
-                string combinedSetLogPath = Path.Combine(options.OutputDirectory.ToString(), "combined-" + timeStamp + ".log");
-                using (StreamWriter combinedLog = new StreamWriter(combinedSetLogPath))
-                {
-                    StreamWriter[] perRunnerLog = new StreamWriter[(int)CompilerIndex.Count];
-                    foreach (CompilerRunner runner in runners)
-                    {
-                        string runnerLogPath = Path.Combine(options.OutputDirectory.ToString(), runner.CompilerName + "-" + timeStamp + ".log");
-                        perRunnerLog[(int)runner.Index] = new StreamWriter(runnerLogPath);
-                    }
-
-                    foreach (BuildFolder folder in folderSet.BuildFolders)
-                    {
-                        bool[] compilationErrorPerRunner = new bool[(int)CompilerIndex.Count];
-                        foreach (ProcessInfo[] compilation in folder.Compilations)
-                        {
-                            foreach (CompilerRunner runner in runners)
-                            {
-                                ProcessInfo compilationProcess = compilation[(int)runner.Index];
-                                if (compilationProcess != null)
-                                {
-                                    string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.InputFileName}\n" + File.ReadAllText(compilationProcess.LogPath);
-                                    perRunnerLog[(int)runner.Index].Write(log);
-                                    combinedLog.Write(log);
-                                    if (!compilationProcess.Succeeded)
-                                    {
-                                        string bucket = AnalyzeCompilationFailure(compilationProcess);
-                                        List<ProcessInfo> processes;
-                                        if (!compilationFailureBuckets.TryGetValue(bucket, out processes))
-                                        {
-                                            processes = new List<ProcessInfo>();
-                                            compilationFailureBuckets.Add(bucket, processes);
-                                        }
-                                        processes.Add(compilationProcess);
-                                        compilationErrorPerRunner[(int)runner.Index] = true;
-                                    }
-                                }
-                            }
-                        }
-                        foreach (ProcessInfo[] execution in folder.Executions)
-                        {
-                            foreach (CompilerRunner runner in runners)
-                            {
-                                if (!compilationErrorPerRunner[(int)runner.Index])
-                                {
-                                    ProcessInfo executionProcess = execution[(int)runner.Index];
-                                    if (executionProcess != null)
-                                    {
-                                        string log = $"\nEXECUTE {runner.CompilerName}:{executionProcess.InputFileName}\n";
-                                        try
-                                        {
-                                            log += File.ReadAllText(executionProcess.LogPath);
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            log += " -> " + ex.Message;
-                                        }
-                                        perRunnerLog[(int)runner.Index].Write(log);
-                                        combinedLog.Write(log);
-
-                                        if (!executionProcess.Succeeded)
-                                        {
-                                            string bucket = AnalyzeExecutionFailure(executionProcess);
-                                            List<ProcessInfo> processes;
-                                            if (!executionFailureBuckets.TryGetValue(bucket, out processes))
-                                            {
-                                                processes = new List<ProcessInfo>();
-                                                executionFailureBuckets.Add(bucket, processes);
-                                            }
-                                            processes.Add(executionProcess);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    foreach (CompilerRunner runner in runners)
-                    {
-                        perRunnerLog[(int)runner.Index].Dispose();
-                    }
-                }
-
-                string compilationBucketsFile = Path.Combine(options.OutputDirectory.ToString(), "compilation-buckets-" + timeStamp + ".log");
-                OutputBuckets(compilationFailureBuckets, compilationBucketsFile);
-
-                string executionBucketsFile = Path.Combine(options.OutputDirectory.ToString(), "execution-buckets-" + timeStamp + ".log");
-                OutputBuckets(executionFailureBuckets, executionBucketsFile);
-
-                if (!options.NoCleanup)
-                {
-                    PathExtensions.DeleteOutputFolders(options.OutputDirectory.ToString(), recursive: true);
-                }
-
-                return success ? 0 : 1;
+                PathExtensions.DeleteOutputFolders(options.OutputDirectory.ToString(), recursive: true);
             }
+
+            return success ? 0 : 1;
         }
 
         private static void OutputBuckets(Dictionary<string, List<ProcessInfo>> buckets, string outputFile)
@@ -265,6 +168,7 @@ namespace ReadyToRun.SuperIlc
                         line.StartsWith("To repro,") ||
                         line.StartsWith("Emitting R2R PE file") ||
                         line.StartsWith("Warning: ") ||
+                        line.StartsWith("Info: ") ||
                         line == "Assertion Failed")
                     {
                         continue;

@@ -46,20 +46,14 @@ public sealed class ParallelRunner
         private ProcessRunner _processRunner;
 
         /// <summary>
-        /// Diagnostic output log
-        /// </summary>
-        private StreamWriter _logWriter;
-
-        /// <summary>
         /// Constructor stores global slot parameters and initializes the slot state machine
         /// </summary>
         /// <param name="slotIndex">Process slot index used for diagnostic purposes</param>
         /// <param name="processExitEvent">Event used to report process exit</param>
-        public ProcessSlot(int slotIndex, AutoResetEvent processExitEvent, StreamWriter logWriter)
+        public ProcessSlot(int slotIndex, AutoResetEvent processExitEvent)
         {
             _slotIndex = slotIndex;
             _processExitEvent = processExitEvent;
-            _logWriter = logWriter;
         }
 
         /// <summary>
@@ -99,10 +93,9 @@ public sealed class ParallelRunner
     /// degree of parallelism.
     /// </summary>
     /// <param name="processesToRun">Processes to execute in parallel</param>
-    /// <param name="logWriter">Output log writer</param>
-    public static void Run(IEnumerable<ProcessInfo> processesToRun, StreamWriter logWriter)
+    public static void Run(IEnumerable<ProcessInfo> processesToRun)
     {
-        Run(processesToRun, logWriter, degreeOfParallelism: Environment.ProcessorCount);
+        Run(processesToRun, degreeOfParallelism: Environment.ProcessorCount);
     }
 
     /// <summary>
@@ -110,9 +103,8 @@ public sealed class ParallelRunner
     /// parallelism.
     /// </summary>
     /// <param name="processesToRun">Processes to execute in parallel</param>
-    /// <param name="logWriter">Diagnostic output stream</param>
     /// <param name="degreeOfParallelism">Maximum number of processes to execute in parallel</param>
-    public static void Run(IEnumerable<ProcessInfo> processesToRun, StreamWriter logWriter, int degreeOfParallelism)
+    public static void Run(IEnumerable<ProcessInfo> processesToRun, int degreeOfParallelism)
     {
         int processCount = processesToRun.Count();
         if (processCount < degreeOfParallelism)
@@ -137,17 +129,16 @@ public sealed class ParallelRunner
                     startIndex: batchStartIndex,
                     processCount: processCount,
                     processesToRun.Skip(batchStartIndex).Take(etwCollectionBatching),
-                    logWriter,
                     degreeOfParallelism);
             }
         }
         else
         {
-            BuildProjects(startIndex: 0, processCount, processesToRun, null, logWriter, degreeOfParallelism);
+            BuildProjects(startIndex: 0, processCount, processesToRun, null, degreeOfParallelism);
         }
     }
 
-    private static void BuildEtwProcesses(int startIndex, int processCount, IEnumerable<ProcessInfo> processesToRun, StreamWriter logWriter, int degreeOfParallelism)
+    private static void BuildEtwProcesses(int startIndex, int processCount, IEnumerable<ProcessInfo> processesToRun, int degreeOfParallelism)
     {
         using (TraceEventSession traceEventSession = new TraceEventSession("ReadyToRunTestSession"))
         {
@@ -156,7 +147,7 @@ public sealed class ParallelRunner
             {
                 Task.Run(() =>
                 {
-                    BuildProjects(startIndex, processCount, processesToRun, jittedMethods, logWriter, degreeOfParallelism);
+                    BuildProjects(startIndex, processCount, processesToRun, jittedMethods, degreeOfParallelism);
                     traceEventSession.Stop();
                 });
             }
@@ -190,14 +181,14 @@ public sealed class ParallelRunner
         }
     }
 
-    private static void BuildProjects(int startIndex, int processCount, IEnumerable<ProcessInfo> processesToRun, ReadyToRunJittedMethods jittedMethods, StreamWriter logWriter, int degreeOfParallelism)
+    private static void BuildProjects(int startIndex, int processCount, IEnumerable<ProcessInfo> processesToRun, ReadyToRunJittedMethods jittedMethods, int degreeOfParallelism)
     {
         using (AutoResetEvent processExitEvent = new AutoResetEvent(initialState: false))
         {
             ProcessSlot[] processSlots = new ProcessSlot[degreeOfParallelism];
             for (int index = 0; index < degreeOfParallelism; index++)
             {
-                processSlots[index] = new ProcessSlot(index, processExitEvent, logWriter);
+                processSlots[index] = new ProcessSlot(index, processExitEvent);
             }
 
             int progressIndex = startIndex;

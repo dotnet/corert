@@ -31,9 +31,7 @@ namespace ReadyToRun.SuperIlc
                 return 1;
             }
 
-            IEnumerable<string> referencePaths = options.ReferencePaths();
-
-            IEnumerable<CompilerRunner> runners = options.CompilerRunners();
+            IEnumerable<CompilerRunner> runners = options.CompilerRunners(isFramework: false);
 
             PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
 
@@ -43,20 +41,16 @@ namespace ReadyToRun.SuperIlc
                 Console.Error.WriteLine($"No managed app found in {options.InputDirectory.FullName}");
             }
 
-            string timeStamp = DateTime.Now.ToString("MMdd-hhmm");
-            string folderSetLogPath = Path.Combine(options.InputDirectory.ToString(), "directory-" + timeStamp + ".log");
+            BuildFolderSet folderSet = new BuildFolderSet(new BuildFolder[] { folder }, runners, options);
+            bool success = folderSet.Build(runners);
+            folderSet.WriteLogs();
 
-            using (BuildFolderSet folderSet = new BuildFolderSet(new BuildFolder[] { folder }, runners, options, folderSetLogPath))
+            if (!options.NoCleanup)
             {
-                bool success = folderSet.Build(runners, folderSetLogPath);
-
-                if (!options.NoCleanup)
-                {
-                    PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
-                }
-
-                return success ? 0 : 1;
+                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
             }
+
+            return success ? 0 : 1;
         }
     }    
 }

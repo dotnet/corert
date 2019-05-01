@@ -20,6 +20,8 @@ namespace ReadyToRun.SuperIlc
 
         private readonly List<ProcessInfo[]> _compilations;
 
+        private string _inputFolder;
+
         private string _outputFolder;
 
         private readonly List<ProcessInfo[]> _executions;
@@ -29,12 +31,14 @@ namespace ReadyToRun.SuperIlc
             List<string> mainExecutables,
             List<string> executionScripts,
             IEnumerable<CompilerRunner> compilerRunners,
+            string inputFolder,
             string outputFolder,
             BuildOptions options)
         {
             _compilationInputFiles = compilationInputFiles;
             _mainExecutables = mainExecutables;
             _executionScripts = executionScripts;
+            _inputFolder = inputFolder;
             _outputFolder = outputFolder;
 
             _compilations = new List<ProcessInfo[]>();
@@ -72,13 +76,12 @@ namespace ReadyToRun.SuperIlc
                         folders.Add(Path.GetDirectoryName(script));
                         folders.UnionWith(runner.ReferenceFolders);
 
-                        scriptExecutions[(int)runner.Index] = runner.ScriptExecutionProcess(_outputFolder, script, modules, folders, options.CoreRootDirectory.FullName, options.NoEtw);
+                        scriptExecutions[(int)runner.Index] = runner.ScriptExecutionProcess(_outputFolder, script, modules, folders);
                     }
                 }
 
                 if (options.CoreRootDirectory != null)
                 {
-                    string coreRunPath = options.CoreRunPath();
                     foreach (string mainExe in _mainExecutables ?? Enumerable.Empty<string>())
                     {
                         if (scriptedExecutables.Contains(mainExe))
@@ -101,7 +104,7 @@ namespace ReadyToRun.SuperIlc
                             folders.Add(Path.GetDirectoryName(mainExe));
                             folders.UnionWith(runner.ReferenceFolders);
 
-                            appExecutions[(int)runner.Index] = runner.AppExecutionProcess(_outputFolder, mainExe, modules, folders, coreRunPath, options.NoEtw);
+                            appExecutions[(int)runner.Index] = runner.AppExecutionProcess(_outputFolder, mainExe, modules, folders);
                         }
                     }
                 }
@@ -153,7 +156,7 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            return new BuildFolder(compilationInputFiles, mainExecutables, executionScripts, compilerRunners, outputRoot, options);
+            return new BuildFolder(compilationInputFiles, mainExecutables, executionScripts, compilerRunners, inputDirectory, outputRoot, options);
         }
 
         public void AddModuleToJittedMethodsMapping(Dictionary<string, HashSet<string>> moduleToJittedMethods, int executionIndex, CompilerIndex compilerIndex)
@@ -226,6 +229,8 @@ namespace ReadyToRun.SuperIlc
                 }
             }
         }
+
+        public string InputFolder => _inputFolder;
 
         public string OutputFolder => _outputFolder;
 
