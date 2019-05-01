@@ -235,12 +235,12 @@ namespace ILCompiler.DependencyAnalysis
                 return new ExternSymbolNode(name);
             });
 
-            _pInvokeModuleFixups = new NodeCache<string, PInvokeModuleFixupNode>((string name) =>
+            _pInvokeModuleFixups = new NodeCache<PInvokeModuleData, PInvokeModuleFixupNode>((PInvokeModuleData moduleData) =>
             {
-                return new PInvokeModuleFixupNode(name);
+                return new PInvokeModuleFixupNode(moduleData);
             });
 
-            _pInvokeMethodFixups = new NodeCache<Tuple<string, string, PInvokeFlags>, PInvokeMethodFixupNode>((Tuple<string, string, PInvokeFlags> key) =>
+            _pInvokeMethodFixups = new NodeCache<Tuple<PInvokeModuleData, string, PInvokeFlags>, PInvokeMethodFixupNode>((Tuple<PInvokeModuleData, string, PInvokeFlags> key) =>
             {
                 return new PInvokeMethodFixupNode(key.Item1, key.Item2, key.Item3);
             });
@@ -688,18 +688,18 @@ namespace ILCompiler.DependencyAnalysis
             return _externSymbols.GetOrAdd(name);
         }
 
-        private NodeCache<string, PInvokeModuleFixupNode> _pInvokeModuleFixups;
+        private NodeCache<PInvokeModuleData, PInvokeModuleFixupNode> _pInvokeModuleFixups;
 
-        public ISymbolNode PInvokeModuleFixup(string moduleName)
+        public ISymbolNode PInvokeModuleFixup(PInvokeModuleData moduleData)
         {
-            return _pInvokeModuleFixups.GetOrAdd(moduleName);
+            return _pInvokeModuleFixups.GetOrAdd(moduleData);
         }
 
-        private NodeCache<Tuple<string, string, PInvokeFlags>, PInvokeMethodFixupNode> _pInvokeMethodFixups;
+        private NodeCache<Tuple<PInvokeModuleData, string, PInvokeFlags>, PInvokeMethodFixupNode> _pInvokeMethodFixups;
 
-        public PInvokeMethodFixupNode PInvokeMethodFixup(string moduleName, string entryPointName, PInvokeFlags flags)
+        public PInvokeMethodFixupNode PInvokeMethodFixup(PInvokeModuleData moduleData, string entryPointName, PInvokeFlags flags)
         {
-            return _pInvokeMethodFixups.GetOrAdd(Tuple.Create(moduleName, entryPointName, flags));
+            return _pInvokeMethodFixups.GetOrAdd(Tuple.Create(moduleData, entryPointName, flags));
         }
 
         private NodeCache<TypeDesc, VTableSliceNode> _vTableNodes;

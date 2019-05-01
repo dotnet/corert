@@ -114,6 +114,11 @@ namespace Internal.Reflection.Execution
             return ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles: null);
         }
 
+        public sealed override Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle)
+        {
+            return Type.GetTypeFromHandle(typeHandle).Assembly;
+        }
+
         public sealed override IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle)
         {
             return _executionEnvironment.TryGetStaticClassConstructionContext(runtimeTypeHandle);

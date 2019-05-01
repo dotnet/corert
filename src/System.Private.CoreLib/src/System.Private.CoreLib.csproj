@@ -60,6 +60,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\InteropConstants.cs">
+      <Link>Internal\Runtime\InteropConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>ExceptionStringID.cs</Link>
     </Compile>
