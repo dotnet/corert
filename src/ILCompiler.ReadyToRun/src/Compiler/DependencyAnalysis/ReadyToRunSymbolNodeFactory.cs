@@ -207,6 +207,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode CreateMethodHandleHelper(MethodWithToken method, SignatureContext signatureContext)
         {
+            bool useInstantiatingStub = method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method.Method;
+
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.MethodSignature(
@@ -215,7 +217,7 @@ namespace ILCompiler.DependencyAnalysis
                     constrainedType: null,
                     method.Token,
                     isUnboxingStub: false,
-                    isInstantiatingStub: method.Method.HasInstantiation,
+                    isInstantiatingStub: useInstantiatingStub,
                     signatureContext));
         }
 

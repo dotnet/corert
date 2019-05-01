@@ -97,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (throwIfNotFound)
             {
-                throw new NotImplementedException();
+                throw new NotImplementedException(field.ToString());
             }
             else
             {
@@ -132,18 +132,25 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AddModuleTokenForField(FieldDesc field, ModuleToken token)
         {
-            if (_compilationModuleGroup.ContainsType(field.OwningType))
+            if (_compilationModuleGroup.ContainsType(field.OwningType) && field.OwningType is EcmaType)
             {
                 // We don't need to store handles within the current compilation group
                 // as we can read them directly from the ECMA objects.
                 return;
             }
 
-            _fieldToRefTokens[field] = token;
+            TypeDesc owningCanonType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            FieldDesc canonField = field;
+            if (owningCanonType != field.OwningType)
+            {
+                canonField = _typeSystemContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
+            }
+
+            _fieldToRefTokens[canonField] = token;
             switch (token.TokenType)
             {
                 case CorTokenType.mdtMemberRef:
-                    AddModuleTokenForFieldReference(field.OwningType, token);
+                    AddModuleTokenForFieldReference(owningCanonType, token);
                     break;
 
                 default:
