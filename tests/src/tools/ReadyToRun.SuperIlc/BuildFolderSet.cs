@@ -547,7 +547,11 @@ namespace ReadyToRun.SuperIlc
             HashSet<string> folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (BuildFolder folder in _buildFolders)
             {
-                string relativeFolder = folder.InputFolder.Substring(baseFolder.Length + 1);
+                string relativeFolder = "";
+                if (folder.InputFolder.Length > baseFolder.Length)
+                {
+                    relativeFolder = folder.InputFolder.Substring(baseFolder.Length + 1);
+                }
                 int endPos = relativeFolder.IndexOf(Path.DirectorySeparatorChar);
                 if (endPos < 0)
                 {
@@ -555,6 +559,12 @@ namespace ReadyToRun.SuperIlc
                 }
                 folders.Add(relativeFolder.Substring(0, endPos));
             }
+            if (folders.Count <= 1)
+            {
+                // Just one folder - no per folder statistics needed
+                return;
+            }
+
             List<string> folderList = new List<string>(folders);
             folderList.Sort(StringComparer.OrdinalIgnoreCase);
             logWriter.WriteLine();
