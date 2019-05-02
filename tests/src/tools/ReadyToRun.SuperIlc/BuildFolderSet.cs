@@ -738,19 +738,21 @@ namespace ReadyToRun.SuperIlc
         {
             string timestamp = DateTime.Now.ToString("MMdd-HHmm");
 
-            string buildLogPath = Path.Combine(_options.OutputDirectory.FullName, "build-" + timestamp + ".log");
+            string suffix = (_options.Release ? "ret-" : "chk-") + timestamp + ".log";
+
+            string buildLogPath = Path.Combine(_options.OutputDirectory.FullName, "build-" + suffix);
             WriteBuildLog(buildLogPath);
 
-            string combinedSetLogPath = Path.Combine(_options.OutputDirectory.FullName, "combined-" + timestamp + ".log");
+            string combinedSetLogPath = Path.Combine(_options.OutputDirectory.FullName, "combined-" + suffix);
             WriteCombinedLog(combinedSetLogPath);
 
-            string frameworkBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "framework-buckets-" + timestamp + ".log");
+            string frameworkBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "framework-buckets-" + suffix);
             FrameworkCompilationFailureBuckets.WriteToFile(frameworkBucketsFile, detailed: true);
 
-            string compilationBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "compilation-buckets-" + timestamp + ".log");
+            string compilationBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "compilation-buckets-" + suffix);
             CompilationFailureBuckets.WriteToFile(compilationBucketsFile, detailed: true);
 
-            string executionBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "execution-buckets-" + timestamp + ".log");
+            string executionBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "execution-buckets-" + suffix);
             ExecutionFailureBuckets.WriteToFile(executionBucketsFile, detailed: true);
         }
 
