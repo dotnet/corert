@@ -52,6 +52,11 @@ namespace ReadyToRun.SuperIlc
                 yield return "-O";
             }
 
+            if (_options.LargeBubble)
+            {
+                yield return "--inputbubble";
+            }
+
             foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(Path.GetDirectoryName(assemblyFileName)))
             {
                 yield return $"-r:{reference}";

@@ -39,6 +39,11 @@ namespace ReadyToRun.SuperIlc
             yield return "/out";
             yield return outputFileName;
 
+            if (_options.LargeBubble)
+            {
+                yield return "/largeversionbubble";
+            }
+
             yield return "/platform_assemblies_paths";
 
             StringBuilder sb = new StringBuilder();

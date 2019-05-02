@@ -21,6 +21,7 @@ namespace ReadyToRun.SuperIlc
         public bool Framework { get; set; }
         public bool UseFramework { get; set; }
         public bool Release { get; set; }
+        public bool LargeBubble { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
 
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");

@@ -37,7 +37,8 @@ namespace ReadyToRun.SuperIlc
                         Framework(),
                         UseFramework(),
                         Release(),
-                        ReferencePath()
+                        LargeBubble(),
+                        ReferencePath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
 
@@ -58,6 +59,7 @@ namespace ReadyToRun.SuperIlc
                         Framework(),
                         UseFramework(),
                         Release(),
+                        LargeBubble(),
                         ReferencePath()
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
@@ -105,6 +107,9 @@ namespace ReadyToRun.SuperIlc
 
             Option Release() =>
                 new Option(new[] { "--release" }, "Build the tests in release mode", new Argument<bool>());
+
+            Option LargeBubble() =>
+                new Option(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble", new Argument<bool>());
         }
     }
 }

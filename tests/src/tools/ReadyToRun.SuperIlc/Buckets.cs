@@ -46,6 +46,12 @@ namespace ReadyToRun.SuperIlc
         {
             output.WriteLine($@"#buckets: {_bucketMap.Count}, #failures: {_bucketMap.Sum(b => b.Value.Count)}");
 
+            if (_bucketMap.Count == 0)
+            {
+                // No bucketing info to display
+                return;
+            }
+
             IEnumerable<KeyValuePair<string, List<ProcessInfo>>> orderedBuckets = _bucketMap.OrderByDescending(bucket => bucket.Value.Count);
             foreach (KeyValuePair<string, List<ProcessInfo>> bucketKvp in orderedBuckets)
             {

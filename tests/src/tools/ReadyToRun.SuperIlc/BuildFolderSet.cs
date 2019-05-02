@@ -463,6 +463,7 @@ namespace ReadyToRun.SuperIlc
             logWriter.WriteLine();
             logWriter.WriteLine($"Configuration:    {(_options.Release ? "Release" : "Debug")}");
             logWriter.WriteLine($"Framework:        {(_options.Framework ? "build native" : _options.UseFramework ? "prebuilt native" : "MSIL")}");
+            logWriter.WriteLine($"Version bubble:   {(_options.LargeBubble ? "input + all reference assemblies" : "single assembly")}");
             logWriter.WriteLine($"Input folder:     {_options.InputDirectory?.FullName}");
             logWriter.WriteLine($"CORE_ROOT:        {_options.CoreRootDirectory?.FullName}");
             logWriter.WriteLine($"CPAOT:            {_options.CpaotDirectory?.FullName}");
