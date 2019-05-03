@@ -20,5 +20,10 @@ namespace Internal.Runtime
         /// Shift used to encode field count
         /// </summary>
         public const int FieldCountShift = 2;
+
+        /// <summary>
+        /// Flag set in ModuleFixupCell if DllImportSearchPath is specified for the DllImport.
+        /// </summary>
+        public const uint HasDllImportSearchPath = 0x80000000;
     }
 }

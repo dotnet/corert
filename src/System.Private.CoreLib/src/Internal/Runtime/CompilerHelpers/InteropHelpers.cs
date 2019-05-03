@@ -4,10 +4,13 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -266,14 +269,22 @@ namespace Internal.Runtime.CompilerHelpers
         {
             string moduleName = GetModuleName(pCell);
 
-            // TODO: encode DllImportSearchPath and containing assembly into ModuleFixupCell
-            // (we'll probably want to add a pointer to the `<Module>` type
-            // IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, null, false, 0);
-            IntPtr hModule = IntPtr.Zero;
+            uint dllImportSearchPath = 0;
+            bool hasDllImportSearchPath = (pCell->DllImportSearchPathAndCookie & InteropDataConstants.HasDllImportSearchPath) != 0;
+            if (hasDllImportSearchPath)
+            {
+                dllImportSearchPath = pCell->DllImportSearchPathAndCookie & ~InteropDataConstants.HasDllImportSearchPath;
+            }
+
+            Assembly callingAssembly = RuntimeAugments.Callbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
+
+            IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, callingAssembly, hasDllImportSearchPath, dllImportSearchPath);
             if (hModule == IntPtr.Zero)
             {
-                // TODO: use DllImportSearchPath from ModuleFixupCell
-                hModule = NativeLibrary.LoadLibraryByName(moduleName, null, DllImportSearchPath.LegacyBehavior, true);
+                // TODO: this should not actually throw yet: AssemblyLoadContext.ResolvingUnmanagedDll is
+                // a last chance callback we should call before giving up.
+                hModule = NativeLibrary.LoadLibraryByName(
+                    moduleName, callingAssembly, hasDllImportSearchPath ? (DllImportSearchPath?)dllImportSearchPath : null, true);
             }
 
             Debug.Assert(hModule != IntPtr.Zero);
@@ -387,6 +398,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             public IntPtr Handle;
             public IntPtr ModuleName;
+            public EETypePtr CallingAssemblyType;
+            public uint DllImportSearchPathAndCookie;
         }
 
         [StructLayout(LayoutKind.Sequential)]

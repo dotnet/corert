@@ -15,13 +15,13 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class PInvokeMethodFixupNode : ObjectNode, ISymbolDefinitionNode
     {
-        private string _moduleName;
-        private string _entryPointName;
-        private PInvokeFlags _flags;
+        private readonly PInvokeModuleData _moduleData;
+        private readonly string _entryPointName;
+        private readonly PInvokeFlags _flags;
 
-        public PInvokeMethodFixupNode(string moduleName, string entryPointName, PInvokeFlags flags)
+        public PInvokeMethodFixupNode(PInvokeModuleData moduleData, string entryPointName, PInvokeFlags flags)
         {
-            _moduleName = moduleName;
+            _moduleData = moduleData;
             _entryPointName = entryPointName;
             _flags = flags;
         }
@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__pinvoke_");
-            sb.Append(_moduleName);
+            _moduleData.AppendMangledName(nameMangler, sb);
             sb.Append("__");
             sb.Append(_entryPointName);
             if(!_flags.ExactSpelling)
@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // Module fixup cell
-            builder.EmitPointerReloc(factory.PInvokeModuleFixup(_moduleName));
+            builder.EmitPointerReloc(factory.PInvokeModuleFixup(_moduleData));
 
             builder.EmitInt(_flags.ExactSpelling ? 0 : (int)_flags.CharSet);
 
@@ -95,7 +95,7 @@ namespace ILCompiler.DependencyAnalysis
             if (flagsCompare != 0)
                 return flagsCompare;
 
-            var moduleCompare = string.Compare(_moduleName, ((PInvokeMethodFixupNode)other)._moduleName);
+            var moduleCompare = _moduleData.CompareTo(((PInvokeMethodFixupNode)other)._moduleData, comparer);
             if (moduleCompare != 0)
                 return moduleCompare;
 
