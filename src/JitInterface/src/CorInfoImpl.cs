@@ -2005,6 +2005,9 @@ namespace Internal.JitInterface
                                         (int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_INIT_ARRAY)) != 0);
 
             var field = HandleToObject(pResolvedToken.hField);
+#if READYTORUN
+            MethodDesc callerMethod = HandleToObject(callerHandle);
+#endif
 
             CORINFO_FIELD_ACCESSOR fieldAccessor;
             CORINFO_FIELD_FLAGS fieldFlags = (CORINFO_FIELD_FLAGS)0;
@@ -2140,8 +2143,11 @@ namespace Internal.JitInterface
                     }
 
 #if READYTORUN
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsType(field.OwningType))
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsType(field.OwningType) &&
+                        fieldAccessor == CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER)
                     {
+                        PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
+                        
                         // Static fields outside of the version bubble need to be accessed using the ENCODE_FIELD_ADDRESS
                         // helper in accordance with ZapInfo::getFieldInfo in CoreCLR.
                         pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(field, _signatureContext));
@@ -2181,7 +2187,7 @@ namespace Internal.JitInterface
             pResult->offset = fieldOffset;
 
 #if READYTORUN
-            EncodeFieldBaseOffset(field, pResult);
+            EncodeFieldBaseOffset(field, pResult, callerMethod);
 #endif
 
             // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
