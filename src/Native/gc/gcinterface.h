@@ -169,12 +169,12 @@ struct segment_info
 
 class Object;
 class IGCHeap;
-class IGCHandleTable;
+class IGCHandleManager;
 
 // Initializes the garbage collector. Should only be called
 // once, during EE startup. Returns true if the initialization
 // was successful, false otherwise.
-bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleTable** gcHandleTable, GcDacVars* gcDacVars);
+bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleTable, GcDacVars* gcDacVars);
 
 // The runtime needs to know whether we're using workstation or server GC 
 // long before the GCHeap is created. This function sets the type of
@@ -420,7 +420,7 @@ public:
     virtual ~IGCHandleStore() {};
 };
 
-class IGCHandleTable {
+class IGCHandleManager {
 public:
 
     virtual bool Initialize() = 0;
@@ -444,6 +444,12 @@ public:
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle) = 0;
 
     virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle) = 0;
+
+    virtual void StoreObjectInHandle(OBJECTHANDLE handle, Object* object) = 0;
+
+    virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object) = 0;
+
+    virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject) = 0;
 };
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
@@ -693,9 +699,11 @@ public:
     // background GC as the BGC threads also need to walk LOH.
     virtual void PublishObject(uint8_t* obj) = 0;
 
-    // Gets the event that suspended threads will use to wait for the
-    // end of a GC.
-    virtual CLREventStatic* GetWaitForGCEvent() = 0;
+    // Signals the WaitForGCEvent event, indicating that a GC has completed.
+    virtual void SetWaitForGCEvent() = 0;
+
+    // Resets the state of the WaitForGCEvent back to an unsignalled state.
+    virtual void ResetWaitForGCEvent() = 0;
 
     /*
     ===========================================================================

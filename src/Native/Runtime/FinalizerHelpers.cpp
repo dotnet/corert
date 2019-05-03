@@ -130,6 +130,17 @@ void RhEnableFinalization()
     g_FinalizerEvent.Set();
 }
 
+EXTERN_C REDHAWK_API void __cdecl RhInitializeFinalizerThread()
+{
+#ifdef APP_LOCAL_RUNTIME
+    // We may have failed to create the finalizer thread at startup.
+    // Try again now.
+    RhStartFinalizerThread();
+#endif
+
+    g_FinalizerEvent.Set();
+}
+
 EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
 {
     // This must be called via p/invoke rather than RuntimeImport since it blocks and could starve the GC if
@@ -145,7 +156,7 @@ EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowRe
         g_FinalizerEvent.Set();
 
 #ifdef APP_LOCAL_RUNTIME
-        // We may have failed to create the finalizer thread at startup.  
+        // We may have failed to create the finalizer thread at startup.
         // Try again now.
         RhStartFinalizerThread();
 #endif

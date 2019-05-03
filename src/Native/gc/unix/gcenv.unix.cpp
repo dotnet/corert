@@ -36,13 +36,13 @@ static_assert(sizeof(uint64_t) == 8, "unsigned long isn't 8 bytes");
  #error "A GC-private implementation of GCToOSInterface should only be used with FEATURE_STANDALONE_GC"
 #endif // FEATURE_STANDALONE_GC
 
-#ifdef HAVE_SYS_TIME_H
+#if HAVE_SYS_TIME_H
  #include <sys/time.h>
 #else
  #error "sys/time.h required by GC PAL for the time being"
 #endif // HAVE_SYS_TIME_
 
-#ifdef HAVE_SYS_MMAN_H
+#if HAVE_SYS_MMAN_H
  #include <sys/mman.h>
 #else
  #error "sys/mman.h required by GC PAL"
@@ -56,24 +56,13 @@ static_assert(sizeof(uint64_t) == 8, "unsigned long isn't 8 bytes");
 #include <sched.h> // sched_yield
 #include <errno.h>
 #include <unistd.h> // sysconf
+#include "globals.h"
 
 #if defined(_ARM_) || defined(_ARM64_)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
 #else
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
 #endif
-
-// The number of milliseconds in a second.
-static const int tccSecondsToMilliSeconds = 1000;
-
-// The number of microseconds in a second.
-static const int tccSecondsToMicroSeconds = 1000000;
-
-// The number of microseconds in a millisecond.
-static const int tccMilliSecondsToMicroSeconds = 1000;
-
-// The number of nanoseconds in a millisecond.
-static const int tccMilliSecondsToNanoSeconds = 1000000;
 
 // The cached number of logical CPUs observed.
 static uint32_t g_logicalCpuCount = 0;
@@ -117,6 +106,14 @@ bool GCToOSInterface::Initialize()
         munlock(g_helperPage, OS_PAGE_SIZE);
         return false;
     }
+
+#if HAVE_MACH_ABSOLUTE_TIME
+    kern_return_t machRet;
+    if ((machRet = mach_timebase_info(&g_TimebaseInfo)) != KERN_SUCCESS)
+    {
+        return false;
+    }
+#endif // HAVE_MACH_ABSOLUTE_TIME
 
     return true;
 }
@@ -354,8 +351,20 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
 {
-    // TODO(CoreCLR#1259) pipe to madvise?
-    return false;
+    int st;
+#if HAVE_MADV_FREE
+    // Try to use MADV_FREE if supported. It tells the kernel that the application doesn't
+    // need the pages in the range. Freeing the pages can be delayed until a memory pressure
+    // occurs.
+    st = madvise(address, size, MADV_FREE);
+    if (st != 0)
+#endif    
+    {
+        // In case the MADV_FREE is not supported, use MADV_DONTNEED
+        st = madvise(address, size, MADV_DONTNEED);
+    }
+
+    return (st == 0);
 }
 
 // Check if the OS supports write watching
@@ -401,6 +410,18 @@ size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
     return 0;
 }
 
+/*++
+Function:
+  GetFullAffinityMask
+
+Get affinity mask for the specified number of processors with all
+the processors enabled.
+--*/
+static uintptr_t GetFullAffinityMask(int cpuCount)
+{
+    return ((uintptr_t)1 << (cpuCount)) - 1;
+}
+
 // Get affinity mask of the current process
 // Parameters:
 //  processMask - affinity mask for the specified process
@@ -414,10 +435,62 @@ size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
 //  A process affinity mask is a subset of the system affinity mask. A process is only allowed
 //  to run on the processors configured into a system. Therefore, the process affinity mask cannot
 //  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
-bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uintptr_t* systemMask)
+bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processAffinityMask, uintptr_t* systemAffinityMask)
 {
-    // TODO(segilles) processor detection
-    return false;
+    if (g_logicalCpuCount > 64)
+    {
+        *processAffinityMask = 0;
+        *systemAffinityMask = 0;
+        return true;
+    }
+
+    uintptr_t systemMask = GetFullAffinityMask(g_logicalCpuCount);
+
+#if HAVE_SCHED_GETAFFINITY
+
+    int pid = getpid();
+    cpu_set_t cpuSet;
+    int st = sched_getaffinity(pid, sizeof(cpu_set_t), &cpuSet);
+    if (st == 0)
+    {
+        uintptr_t processMask = 0;
+
+        for (int i = 0; i < g_logicalCpuCount; i++)
+        {
+            if (CPU_ISSET(i, &cpuSet))
+            {
+                processMask |= ((uintptr_t)1) << i;
+            }
+        }
+
+        *processAffinityMask = processMask;
+        *systemAffinityMask = systemMask;
+        return true;
+    }
+    else if (errno == EINVAL)
+    {
+        // There are more processors than can fit in a cpu_set_t
+        // return zero in both masks.
+        *processAffinityMask = 0;
+        *systemAffinityMask = 0;
+        return true;
+    }
+    else
+    {
+        // We should not get any of the errors that the sched_getaffinity can return since none
+        // of them applies for the current thread, so this is an unexpected kind of failure.
+        return false;
+    }
+
+#else // HAVE_SCHED_GETAFFINITY
+
+    // There is no API to manage thread affinity, so let's return both affinity masks
+    // with all the CPUs on the system set.
+    *systemAffinityMask = systemMask;
+    *processAffinityMask = systemMask;
+    return true;
+
+#endif // HAVE_SCHED_GETAFFINITY
 }
 
 // Get number of processors assigned to the current process
@@ -425,7 +498,31 @@ bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uint
 //  The number of processors
 uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 {
-    return g_logicalCpuCount;
+    uintptr_t pmask, smask;
+
+    if (!GetCurrentProcessAffinityMask(&pmask, &smask))
+        return 1;
+
+    pmask &= smask;
+
+    int count = 0;
+    while (pmask)
+    {
+        pmask &= (pmask - 1);
+        count++;
+    }
+
+    // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
+    // than 64 processors, which would leave us with a count of 0.  Since the GC
+    // expects there to be at least one processor to run on (and thus at least one
+    // heap), we'll return 64 here if count is 0, since there are likely a ton of
+    // processors available in that case.  The GC also cannot (currently) handle
+    // the case where there are more than 64 processors, so we will return a
+    // maximum of 64 here.
+    if (count == 0 || count > 64)
+        count = 64;
+
+    return count;
 }
 
 // Return the size of the user-mode portion of the virtual address space of this process.
