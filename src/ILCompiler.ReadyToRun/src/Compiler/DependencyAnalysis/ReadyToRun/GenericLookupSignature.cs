@@ -8,12 +8,13 @@ using System.Diagnostics;
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class GenericLookupSignature : Signature
     {
-        private CORINFO_RUNTIME_LOOKUP_KIND _runtimeLookupKind;
+        private readonly CORINFO_RUNTIME_LOOKUP_KIND _runtimeLookupKind;
 
         private readonly ReadyToRunFixupKind _fixupKind;
 
@@ -28,9 +29,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly SignatureContext _signatureContext;
 
         public GenericLookupSignature(
-            CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, 
-            ReadyToRunFixupKind fixupKind, 
-            TypeDesc typeArgument, 
+            CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
+            ReadyToRunFixupKind fixupKind,
+            TypeDesc typeArgument,
             MethodWithToken methodArgument,
             FieldDesc fieldArgument,
             GenericContext methodContext,
@@ -50,56 +51,86 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
-
-            if (!relocsOnly)
+            if (relocsOnly)
             {
-                dataBuilder.AddSymbol(this);
+                return new ObjectData(Array.Empty<byte>(), null, 1, null);
+            }
 
-                switch (_runtimeLookupKind)
-                {
-                    case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM:
-                        dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionaryLookup);
-                        break;
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
 
-                    case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM:
-                        dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionaryLookup);
-                        break;
+            // Determine the need for module override
+            EcmaModule targetModule;
+            if (_methodArgument != null)
+            {
+                targetModule = _methodArgument.Token.Module;
+            }
+            else if (_typeArgument != null)
+            {
+                targetModule = _signatureContext.GetTargetModule(_typeArgument);
+            }
+            else if (_fieldArgument != null)
+            {
+                targetModule = _signatureContext.GetTargetModule(_fieldArgument);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
 
-                    case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
-                        dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup);
-                        dataBuilder.EmitTypeSignature(_methodContext.ContextType, _signatureContext);
-                        break;
+            ReadyToRunFixupKind fixupToEmit;
+            TypeDesc contextTypeToEmit = null;
 
-                    default:
-                        throw new NotImplementedException();
-                }
+            switch (_runtimeLookupKind)
+            {
+                case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM:
+                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionaryLookup;
+                    break;
 
-                dataBuilder.EmitByte((byte)_fixupKind);
-                if (_methodArgument != null)
-                {
-                    dataBuilder.EmitMethodSignature(
-                        method: _methodArgument.Method,
-                        constrainedType: _typeArgument,
-                        methodToken: _methodArgument.Token,
-                        enforceDefEncoding: false,
-                        context: _signatureContext,
-                        isUnboxingStub: false,
-                        isInstantiatingStub: true);
-                }
-                else if (_typeArgument != null)
-                {
-                    dataBuilder.EmitTypeSignature(_typeArgument, _signatureContext);
-                }
-                else if (_fieldArgument != null)
-                {
-                    dataBuilder.EmitFieldSignature(_fieldArgument, _signatureContext);
-                }
-                else
-                {
+                case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM:
+                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionaryLookup;
+                    break;
+
+                case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
+                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup;
+                    contextTypeToEmit = _methodContext.ContextType;
+                    break;
+
+                default:
                     throw new NotImplementedException();
-                }
+            }
+
+            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
+            dataBuilder.AddSymbol(this);
+
+            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, fixupToEmit, targetModule, _signatureContext);
+            if (contextTypeToEmit != null)
+            {
+                dataBuilder.EmitTypeSignature(contextTypeToEmit, innerContext);
+            }
+
+            dataBuilder.EmitByte((byte)_fixupKind);
+            if (_methodArgument != null)
+            {
+                dataBuilder.EmitMethodSignature(
+                    method: _methodArgument.Method,
+                    constrainedType: _typeArgument,
+                    methodToken: _methodArgument.Token,
+                    enforceDefEncoding: false,
+                    context: innerContext,
+                    isUnboxingStub: false,
+                    isInstantiatingStub: true);
+            }
+            else if (_typeArgument != null)
+            {
+                dataBuilder.EmitTypeSignature(_typeArgument, innerContext);
+            }
+            else if (_fieldArgument != null)
+            {
+                dataBuilder.EmitFieldSignature(_fieldArgument, innerContext);
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
 
             return dataBuilder.ToObjectData();
@@ -115,7 +146,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(": ");
             if (_methodArgument != null)
             {
-                RuntimeDeterminedTypeHelper.WriteTo(_methodArgument.Method, sb);
+                sb.Append(nameMangler.GetMangledMethodName(_methodArgument.Method));
                 if (!_methodArgument.Token.IsNull)
                 {
                     sb.Append(" [");
@@ -127,11 +158,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             if (_typeArgument != null)
             {
-                RuntimeDeterminedTypeHelper.WriteTo(_typeArgument, sb);
+                sb.Append(nameMangler.GetMangledTypeName(_typeArgument));
             }
             if (_fieldArgument != null)
             {
-                RuntimeDeterminedTypeHelper.WriteTo(_fieldArgument, sb);
+                sb.Append(nameMangler.GetMangledFieldName(_fieldArgument));
             }
             sb.Append(" (");
             _methodContext.AppendMangledName(nameMangler, sb);

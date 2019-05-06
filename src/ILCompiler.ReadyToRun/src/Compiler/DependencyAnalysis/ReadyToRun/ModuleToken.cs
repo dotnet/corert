@@ -78,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public SignatureContext SignatureContext(ModuleTokenResolver resolver)
         {
-            return new SignatureContext(resolver);
+            return new SignatureContext(Module, resolver);
         }
 
         public MetadataReader MetadataReader => Module.PEReader.GetMetadataReader();

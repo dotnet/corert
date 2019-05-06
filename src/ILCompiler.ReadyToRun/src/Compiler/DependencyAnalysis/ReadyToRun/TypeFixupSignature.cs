@@ -4,9 +4,9 @@
 
 using System;
 
-using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -36,8 +36,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                dataBuilder.EmitByte((byte)_fixupKind);
-                dataBuilder.EmitTypeSignature(_typeDesc, _signatureContext);
+                EcmaModule targetModule = _signatureContext.GetTargetModule(_typeDesc);
+                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, targetModule, _signatureContext);
+                dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
             }
 
             return dataBuilder.ToObjectData();
@@ -46,7 +47,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): {_typeDesc.ToString()}");
+            sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): ");
+            sb.Append(nameMangler.GetMangledTypeName(_typeDesc));
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

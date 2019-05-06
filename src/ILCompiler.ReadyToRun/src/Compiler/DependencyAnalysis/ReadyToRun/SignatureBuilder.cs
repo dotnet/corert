@@ -298,20 +298,36 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     else
                     {
+                        ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
+                        EmitModuleOverride(token.Module, context);
                         EmitElementType(CorElementType.ELEMENT_TYPE_CLASS);
-                        EmitTypeToken((EcmaType)typeDesc, context);
+                        EmitToken(token.Token);
                     }
                     return;
 
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                 case TypeFlags.Enum:
-                    EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
-                    EmitTypeToken((EcmaType)typeDesc, context);
-                    return;
+                    {
+                        ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
+                        EmitModuleOverride(token.Module, context);
+                        EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
+                        EmitToken(token.Token);
+                        return;
+                    }
 
                 default:
                     throw new NotImplementedException();
+            }
+        }
+
+        private void EmitModuleOverride(EcmaModule module, SignatureContext context)
+        {
+            if (module != context.LocalContext)
+            {
+                EmitElementType(CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG);
+                uint moduleIndex = (uint)context.Resolver.GetModuleIndex(module);
+                EmitUInt(moduleIndex);
             }
         }
 
@@ -395,7 +411,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 if (methodToken.IsNull)
                 {
-                    methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
+                    methodToken = context.GetModuleTokenForMethod(method);
                 }
                 switch (methodToken.TokenType)
                 {
@@ -462,21 +478,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         MethodSpecification methodSpecification = methodToken.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)methodToken.Handle);
                         methodToken = new ModuleToken(methodToken.Module, methodSpecification.Method);
                     }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
                 }
             }
 
             if (methodToken.IsNull && !enforceDefEncoding)
             {
-                methodToken = context.GetModuleTokenForMethod(method.GetMethodDefinition(), throwIfNotFound: false);
+                methodToken = context.GetModuleTokenForMethod(method, throwIfNotFound: false);
             }
             if (methodToken.IsNull)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
-                methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
+                methodToken = context.GetModuleTokenForMethod(method);
             }
 
             if (method.OwningType.HasInstantiation)
@@ -581,6 +593,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public ObjectNode.ObjectData ToObjectData()
         {
             return _builder.ToObjectData();
+        }
+
+        public SignatureContext EmitFixup(ReadyToRunCodegenNodeFactory factory, ReadyToRunFixupKind fixupKind, EcmaModule targetModule, SignatureContext outerContext)
+        {
+            if (targetModule == outerContext.LocalContext)
+            {
+                EmitByte((byte)fixupKind);
+                return outerContext;
+            }
+            else
+            {
+                EmitByte((byte)(fixupKind | ReadyToRunFixupKind.READYTORUN_FIXUP_ModuleOverride));
+                EmitUInt((uint)factory.ManifestMetadataTable.ModuleToIndex(targetModule));
+                return outerContext.InnerContext(targetModule);
+            }
         }
     }
 

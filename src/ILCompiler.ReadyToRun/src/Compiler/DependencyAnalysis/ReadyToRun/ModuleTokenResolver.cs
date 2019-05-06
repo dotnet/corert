@@ -33,10 +33,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly CompilerTypeSystemContext _typeSystemContext;
 
+        private Func<EcmaModule, int> _moduleIndexLookup;
+
         public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
         {
             _compilationModuleGroup = compilationModuleGroup;
             _typeSystemContext = typeSystemContext;
+        }
+
+        public void SetModuleIndexLookup(Func<EcmaModule, int> moduleIndexLookup)
+        {
+            _moduleIndexLookup = moduleIndexLookup;
         }
 
         public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
@@ -65,6 +72,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool throwIfNotFound = true)
         {
+            method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
             if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) &&
                 method is EcmaMethod ecmaMethod)
             {
@@ -89,8 +98,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ModuleToken(ecmaField.Module, ecmaField.Handle);
             }
 
+            TypeDesc owningCanonType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            FieldDesc canonField = field;
+            if (owningCanonType != field.OwningType)
+            {
+                canonField = _typeSystemContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
+            }
+
             ModuleToken token;
-            if (_fieldToRefTokens.TryGetValue(field, out token))
+            if (_fieldToRefTokens.TryGetValue(canonField, out token))
             {
                 return token;
             }
@@ -188,6 +204,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 throw new NotImplementedException(type.ToString());
             }
+        }
+
+        public int GetModuleIndex(EcmaModule module)
+        {
+            return _moduleIndexLookup(module);
         }
 
         /// <summary>
