@@ -4,15 +4,18 @@
 
 using System;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.TypeSystem
 {
     public sealed partial class FieldForInstantiatedType : FieldDesc
     {
-        private FieldDesc _fieldDef;
-        private InstantiatedType _instantiatedType;
+        private readonly FieldDesc _fieldDef;
+        private readonly InstantiatedType _instantiatedType;
 
         internal FieldForInstantiatedType(FieldDesc fieldDef, InstantiatedType instantiatedType)
         {
+            Debug.Assert(fieldDef.GetTypicalFieldDefinition() == fieldDef);
             _fieldDef = fieldDef;
             _instantiatedType = instantiatedType;
         }

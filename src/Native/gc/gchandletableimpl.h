@@ -11,10 +11,6 @@
 class GCHandleStore : public IGCHandleStore
 {
 public:
-    GCHandleStore(HandleTableBucket *bucket) 
-        : _underlyingBucket(bucket)
-        { }
-
     virtual void Uproot();
 
     virtual bool ContainsHandle(OBJECTHANDLE handle);
@@ -29,13 +25,12 @@ public:
 
     virtual ~GCHandleStore();
 
-private:
-    HandleTableBucket* _underlyingBucket;
+    HandleTableBucket _underlyingBucket;
 };
 
 extern GCHandleStore* g_gcGlobalHandleStore;
 
-class GCHandleTable : public IGCHandleTable
+class GCHandleManager : public IGCHandleManager
 {
 public:
     virtual bool Initialize();
@@ -59,6 +54,12 @@ public:
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle);
 
     virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle);
+
+    virtual void StoreObjectInHandle(OBJECTHANDLE handle, Object* object);
+
+    virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object);
+
+    virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject);
 };
 
 #endif  // GCHANDLETABLE_H_

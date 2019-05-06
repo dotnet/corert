@@ -295,6 +295,28 @@ namespace ILCompiler.DependencyAnalysis
             return signature;
         }
 
+        private readonly Dictionary<ReadyToRunFixupKind, Dictionary<TypeDesc, TypeFixupSignature>> _typeSignatures =
+            new Dictionary<ReadyToRunFixupKind, Dictionary<TypeDesc, TypeFixupSignature>>();
+
+        public TypeFixupSignature TypeSignature(ReadyToRunFixupKind fixupKind, TypeDesc typeDesc, SignatureContext signatureContext)
+        {
+            Dictionary<TypeDesc, TypeFixupSignature> perFixupKindMap;
+            if (!_typeSignatures.TryGetValue(fixupKind, out perFixupKindMap))
+            {
+                perFixupKindMap = new Dictionary<TypeDesc, TypeFixupSignature>();
+                _typeSignatures.Add(fixupKind, perFixupKindMap);
+            }
+
+            TypeFixupSignature signature;
+            if (!perFixupKindMap.TryGetValue(typeDesc, out signature))
+            {
+                EETypeNode.CheckCanGenerateEEType(this, typeDesc);
+                signature = new TypeFixupSignature(fixupKind, typeDesc, signatureContext);
+                perFixupKindMap.Add(typeDesc, signature);
+            }
+            return signature;
+        }
+
         public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             Header = new HeaderNode(Target);
@@ -493,7 +515,7 @@ namespace ILCompiler.DependencyAnalysis
                 this,
                 HelperImports,
                 GetGenericStaticHelper(helperKey.HelperId),
-                new TypeFixupSignature(
+                TypeSignature(
                     ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
                     (TypeDesc)helperKey.Target,
                     InputModuleContext));
@@ -505,7 +527,7 @@ namespace ILCompiler.DependencyAnalysis
                 this,
                 HelperImports,
                 GetGenericStaticHelper(helperKey.HelperId),
-                new TypeFixupSignature(
+                TypeSignature(
                     ReadyToRunFixupKind.READYTORUN_FIXUP_Invalid,
                     (TypeDesc)helperKey.Target,
                     InputModuleContext));

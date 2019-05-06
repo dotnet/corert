@@ -5,7 +5,7 @@
 #include "common.h"
 #include "gcenv.h"
 #include "gcheaputilities.h"
-#include "gchandletableutilities.h"
+#include "gchandleutilities.h"
 
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
@@ -25,7 +25,7 @@ uint8_t* g_ephemeral_high = (uint8_t*)~0;
 uint32_t* g_card_bundle_table = nullptr;
 #endif
 
-IGCHandleTable* g_pGCHandleTable = nullptr;
+IGCHandleManager* g_pGCHandleManager = nullptr;
 
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);

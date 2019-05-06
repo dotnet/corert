@@ -247,50 +247,6 @@ namespace Internal.Runtime.CompilerHelpers
             return pCell->Target;
         }
 
-        internal static unsafe IntPtr TryResolveModule(string moduleName)
-        {
-            IntPtr hModule = IntPtr.Zero;
-
-            // Try original name first
-            hModule = LoadLibrary(moduleName);
-            if (hModule != IntPtr.Zero) return hModule;
-
-#if PLATFORM_UNIX
-            const string PAL_SHLIB_PREFIX = "lib";
-#if PLATFORM_OSX
-            const string PAL_SHLIB_SUFFIX = ".dylib";
-#else
-            const string PAL_SHLIB_SUFFIX = ".so";
-#endif
-
-             // Try prefix+name+suffix
-            hModule = LoadLibrary(PAL_SHLIB_PREFIX + moduleName + PAL_SHLIB_SUFFIX);
-            if (hModule != IntPtr.Zero) return hModule;
-
-            // Try name+suffix
-            hModule = LoadLibrary(moduleName + PAL_SHLIB_SUFFIX);
-            if (hModule != IntPtr.Zero) return hModule;
-
-            // Try prefix+name
-            hModule = LoadLibrary(PAL_SHLIB_PREFIX + moduleName);
-            if (hModule != IntPtr.Zero) return hModule;
-#endif
-            return IntPtr.Zero;
-        }
-
-        internal static unsafe IntPtr LoadLibrary(string moduleName)
-        {
-            IntPtr hModule;
-
-#if !PLATFORM_UNIX
-            hModule = Interop.mincore.LoadLibraryEx(moduleName, IntPtr.Zero, 0);
-#else
-            hModule = Interop.Sys.LoadLibrary(moduleName);
-#endif
-
-            return hModule;
-        }
-
         internal static unsafe void FreeLibrary(IntPtr hModule)
         {
 #if !PLATFORM_UNIX
@@ -309,19 +265,23 @@ namespace Internal.Runtime.CompilerHelpers
         internal static unsafe void FixupModuleCell(ModuleFixupCell* pCell)
         {
             string moduleName = GetModuleName(pCell);
-            IntPtr hModule = TryResolveModule(moduleName);
-            if (hModule != IntPtr.Zero)
+
+            // TODO: encode DllImportSearchPath and containing assembly into ModuleFixupCell
+            // (we'll probably want to add a pointer to the `<Module>` type
+            // IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, null, false, 0);
+            IntPtr hModule = IntPtr.Zero;
+            if (hModule == IntPtr.Zero)
             {
-                var oldValue = Interlocked.CompareExchange(ref pCell->Handle, hModule, IntPtr.Zero);
-                if (oldValue != IntPtr.Zero)
-                {
-                    // Some other thread won the race to fix it up.
-                    FreeLibrary(hModule);
-                }
+                // TODO: use DllImportSearchPath from ModuleFixupCell
+                hModule = NativeLibrary.LoadLibraryByName(moduleName, null, DllImportSearchPath.LegacyBehavior, true);
             }
-            else
+
+            Debug.Assert(hModule != IntPtr.Zero);
+            var oldValue = Interlocked.CompareExchange(ref pCell->Handle, hModule, IntPtr.Zero);
+            if (oldValue != IntPtr.Zero)
             {
-                throw new DllNotFoundException(SR.Format(SR.Arg_DllNotFoundExceptionParameterized, moduleName));
+                // Some other thread won the race to fix it up.
+                FreeLibrary(hModule);
             }
         }
 

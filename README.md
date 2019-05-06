@@ -46,4 +46,4 @@ This project has adopted the code of conduct defined by the [Contributor Covenan
 ## Related Projects
 There are many .NET related projects on GitHub.
 - The [.NET home repo](https://github.com/Microsoft/dotnet) links to 100s of .NET projects, from Microsoft and the community.
-- The [ASP.NET home repo](https://github.com/aspnet/home) is the best place to start learning about [ASP.NET Core](http://www.asp.net).
+- The [ASP.NET Core repo](https://github.com/aspnet/AspNetCore) is the best place to start learning about [ASP.NET Core](http://www.asp.net).

@@ -15,6 +15,9 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetProcAddress")]
         internal static extern IntPtr GetProcAddress(IntPtr handle, byte* symbol);
 
+        [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetProcAddress")]
+        internal static extern IntPtr GetProcAddress(IntPtr handle, string symbol);
+
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_FreeLibrary")]
         internal static extern void FreeLibrary(IntPtr handle);
     }
