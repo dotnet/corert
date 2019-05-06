@@ -5,8 +5,6 @@ This repo contains the .NET Core runtime optimized for ahead of time compilation
 
 If you would like to give CoreRT a try, we publish daily snapshots of CoreRT to a NuGet feed. Using CoreRT is as simple as adding a new package reference to your .NET Core project and publishing it. Check out one of our samples: a "[Hello World](samples/HelloWorld)" console app, a simple [ASP.NET Core](samples/WebApi/) app, a [MonoGame](samples/MonoGame/) game or a [native library](samples/NativeLibrary). The `README.md` file in each sample's directory will guide you through the process step by step.
 
-If you want to see CoreRT working with database, can see from other such as ADO.NET [ifew/corert-db](https://github.com/ifew/corert-db), EntityFrameworkCore.Sqlite [rubin55/dot-hello](https://github.com/rubin55/dot-hello)
-
 ## Platform Support
 
 This is a work in progress. The current state of platform support:
