@@ -23,7 +23,6 @@ namespace System.Collections.Generic
 #if PROJECTN
             // The compiler will overwrite the Create method with optimized
             // instantiation-specific implementation.
-            _default = null;
             throw new NotSupportedException();
 #else
             // The compiler will overwrite the Create method with optimized
