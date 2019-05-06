@@ -2,8 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Runtime.InteropServices;
+
 using Internal.Text;
 using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
+using InteropDataConstants = Internal.Runtime.InteropDataConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -12,17 +18,17 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class PInvokeModuleFixupNode : ObjectNode, ISymbolDefinitionNode
     {
-        public string _moduleName;
+        public readonly PInvokeModuleData _pInvokeModuleData;
 
-        public PInvokeModuleFixupNode(string moduleName)
+        public PInvokeModuleFixupNode(PInvokeModuleData pInvokeModuleData)
         {
-            _moduleName = moduleName;
+            _pInvokeModuleData = pInvokeModuleData;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__nativemodule_");
-            sb.Append(_moduleName);
+            _pInvokeModuleData.AppendMangledName(nameMangler, sb);
         }
         public int Offset => 0;
         public override bool IsShareable => true;
@@ -38,7 +44,8 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
 
-            ISymbolNode nameSymbol = factory.ConstantUtf8String(_moduleName);
+            ISymbolNode nameSymbol = factory.ConstantUtf8String(_pInvokeModuleData.ModuleName);
+            ISymbolNode moduleTypeSymbol = factory.NecessaryTypeSymbol(_pInvokeModuleData.DeclaringModule.GetGlobalModuleType());
 
             //
             // Emit a ModuleFixupCell struct
@@ -46,6 +53,16 @@ namespace ILCompiler.DependencyAnalysis
 
             builder.EmitZeroPointer();
             builder.EmitPointerReloc(nameSymbol);
+            builder.EmitPointerReloc(moduleTypeSymbol);
+
+            uint dllImportSearchPath = 0;
+            if (_pInvokeModuleData.DllImportSearchPath.HasValue)
+            {
+                dllImportSearchPath = (uint)_pInvokeModuleData.DllImportSearchPath.Value;
+                Debug.Assert((dllImportSearchPath & InteropDataConstants.HasDllImportSearchPath) == 0);
+                dllImportSearchPath |= InteropDataConstants.HasDllImportSearchPath;
+            }
+            builder.EmitInt((int)dllImportSearchPath);
 
             return builder.ToObjectData();
         }
@@ -54,7 +71,64 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return string.Compare(_moduleName, ((PInvokeModuleFixupNode)other)._moduleName);
+            return _pInvokeModuleData.CompareTo(((PInvokeModuleFixupNode)other)._pInvokeModuleData, comparer);
+        }
+    }
+
+    public struct PInvokeModuleData : IEquatable<PInvokeModuleData>
+    {
+        public readonly string ModuleName;
+        public readonly DllImportSearchPath? DllImportSearchPath;
+        public readonly ModuleDesc DeclaringModule;
+
+        public PInvokeModuleData(string moduleName, DllImportSearchPath? dllImportSearchPath, ModuleDesc declaringModule)
+        {
+            ModuleName = moduleName;
+            DllImportSearchPath = dllImportSearchPath;
+            DeclaringModule = declaringModule;
+        }
+
+        public bool Equals(PInvokeModuleData other)
+        {
+            return DeclaringModule == other.DeclaringModule &&
+                DllImportSearchPath == other.DllImportSearchPath &&
+                ModuleName == other.ModuleName;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is PInvokeModuleData other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return ModuleName.GetHashCode() ^ DeclaringModule.GetHashCode();
+        }
+
+        public int CompareTo(PInvokeModuleData other, CompilerComparer comparer)
+        {
+            int result = StringComparer.Ordinal.Compare(ModuleName, other.ModuleName);
+            if (result != 0)
+                return result;
+
+            result = comparer.Compare(DeclaringModule.GetGlobalModuleType(),
+                other.DeclaringModule.GetGlobalModuleType());
+            if (result != 0)
+                return result;
+
+            return Nullable.Compare(DllImportSearchPath, other.DllImportSearchPath);
+        }
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.GetMangledTypeName(DeclaringModule.GetGlobalModuleType()));
+            sb.Append('_');
+            sb.Append(nameMangler.SanitizeName(ModuleName));
+            if (DllImportSearchPath.HasValue)
+            {
+                sb.Append('_');
+                sb.Append(((int)DllImportSearchPath.Value).ToString());
+            }
         }
     }
 }

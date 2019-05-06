@@ -1629,6 +1629,7 @@ ProfilingScanContext::ProfilingScanContext(BOOL fProfilerPinnedParam)
 }
 #endif // defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
 
+#if !defined(DACCESS_COMPILE)
 // An implementatino of GCEvent that delegates to
 // a CLREvent, which in turn delegates to the PAL. This event
 // is also host-aware.
@@ -1832,3 +1833,4 @@ bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
     m_impl = event.Extract();
     return IsValid();
 }
+#endif // !defined(DACCESS_COMPILE)

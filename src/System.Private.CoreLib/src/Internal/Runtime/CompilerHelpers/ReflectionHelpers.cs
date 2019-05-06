@@ -32,7 +32,7 @@ namespace Internal.Runtime.CompilerHelpers
         [System.Runtime.CompilerServices.DependencyReductionRoot]
         public static Assembly GetExecutingAssembly(RuntimeTypeHandle typeHandle)
         {
-            return Type.GetTypeFromHandle(typeHandle).Assembly;
+            return RuntimeAugments.Callbacks.GetAssemblyForHandle(typeHandle);
         }
 
         // This supports MethodBase.GetCurrentMethod() intrinsic expansion in the compiler

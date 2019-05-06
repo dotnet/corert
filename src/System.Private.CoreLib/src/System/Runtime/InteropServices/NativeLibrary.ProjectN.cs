@@ -14,24 +14,24 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException();
         }
 
-        internal static extern IntPtr LoadFromPath(string libraryName, bool throwOnError)
+        internal static IntPtr LoadFromPath(string libraryName, bool throwOnError)
         {
             throw new PlatformNotSupportedException();
         }
 
-        internal static extern IntPtr LoadByName(string libraryName, RuntimeAssembly callingAssembly,
-                                                 bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag, 
-                                                 bool throwOnError)
+        internal static IntPtr LoadByName(string libraryName, Assembly callingAssembly,
+                                          bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag, 
+                                          bool throwOnError)
         {
             throw new PlatformNotSupportedException();
         }
 
-        internal static extern void FreeLib(IntPtr handle)
+        internal static void FreeLib(IntPtr handle)
         {
             throw new PlatformNotSupportedException();
         }
 
-        internal static extern IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError)
+        internal static IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError)
         {
             throw new PlatformNotSupportedException();
         }
