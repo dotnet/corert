@@ -52,6 +52,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(method);
 
+                    ModuleToken moduleToken = method.SignatureContext.GetModuleTokenForMethod(method.Method.GetTypicalMethodDefinition());
+                    if (moduleToken.Module != r2rFactory.InputModuleContext.GlobalContext)
+                    {
+                        // TODO: encoding of instance methods relative to other modules within the version bubble
+                        continue;
+                    }
+
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                     signatureBuilder.EmitMethodSignature(
                         method.Method, 

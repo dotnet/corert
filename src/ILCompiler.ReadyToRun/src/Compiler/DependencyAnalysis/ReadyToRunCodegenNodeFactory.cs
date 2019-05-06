@@ -61,6 +61,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public InstanceEntryPointTableNode InstanceEntryPointTable;
 
+        public ManifestMetadataTableNode ManifestMetadataTable;
+
         public TypesTableNode TypesTable;
 
         public ImportSectionsTableNode ImportSectionsTable;
@@ -337,13 +339,18 @@ namespace ILCompiler.DependencyAnalysis
             MethodEntryPointTable = new MethodEntryPointTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, MethodEntryPointTable, MethodEntryPointTable);
 
+            ManifestMetadataTable = new ManifestMetadataTableNode(this, InputModuleContext.GlobalContext);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable, ManifestMetadataTable);
+
+            Resolver.SetModuleIndexLookup(ManifestMetadataTable.ModuleToIndex);
+
             InstanceEntryPointTable = new InstanceEntryPointTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
 
             TypesTable = new TypesTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, TypesTable, TypesTable);
 
-            ImportSectionsTable = new ImportSectionsTableNode(Target);
+            ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable.StartSymbol);
 
             DebugInfoTable = new DebugInfoTableNode(Target);

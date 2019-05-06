@@ -4,9 +4,9 @@
 
 using System;
 
-using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -36,8 +36,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                dataBuilder.EmitByte((byte)_fixupKind);
-                dataBuilder.EmitTypeSignature(_typeDesc, _signatureContext);
+                EcmaModule targetModule = _signatureContext.LocalContext;
+                if (_typeDesc.GetTypeDefinition() is EcmaType ecmaType)
+                {
+                    targetModule = _signatureContext.GetModuleTokenForType(ecmaType).Module;
+                }
+
+                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, targetModule, _signatureContext);
+                dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
             }
 
             return dataBuilder.ToObjectData();

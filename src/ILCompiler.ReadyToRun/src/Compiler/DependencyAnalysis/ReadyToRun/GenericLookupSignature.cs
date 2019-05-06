@@ -8,12 +8,13 @@ using System.Diagnostics;
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class GenericLookupSignature : Signature
     {
-        private CORINFO_RUNTIME_LOOKUP_KIND _runtimeLookupKind;
+        private readonly CORINFO_RUNTIME_LOOKUP_KIND _runtimeLookupKind;
 
         private readonly ReadyToRunFixupKind _fixupKind;
 
@@ -28,9 +29,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly SignatureContext _signatureContext;
 
         public GenericLookupSignature(
-            CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind, 
-            ReadyToRunFixupKind fixupKind, 
-            TypeDesc typeArgument, 
+            CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
+            ReadyToRunFixupKind fixupKind,
+            TypeDesc typeArgument,
             MethodWithToken methodArgument,
             FieldDesc fieldArgument,
             GenericContext methodContext,
@@ -50,56 +51,100 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
-
-            if (!relocsOnly)
+            if (relocsOnly)
             {
-                dataBuilder.AddSymbol(this);
+                return new ObjectData(Array.Empty<byte>(), null, 1, null);
+            }
 
-                switch (_runtimeLookupKind)
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
+
+            // Determine the need for module override
+            EcmaModule targetModule;
+            if (_methodArgument != null)
+            {
+                if (_methodArgument.Method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
-                    case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM:
-                        dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionaryLookup);
-                        break;
-
-                    case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM:
-                        dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionaryLookup);
-                        break;
-
-                    case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
-                        dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup);
-                        dataBuilder.EmitTypeSignature(_methodContext.ContextType, _signatureContext);
-                        break;
-
-                    default:
-                        throw new NotImplementedException();
-                }
-
-                dataBuilder.EmitByte((byte)_fixupKind);
-                if (_methodArgument != null)
-                {
-                    dataBuilder.EmitMethodSignature(
-                        method: _methodArgument.Method,
-                        constrainedType: _typeArgument,
-                        methodToken: _methodArgument.Token,
-                        enforceDefEncoding: false,
-                        context: _signatureContext,
-                        isUnboxingStub: false,
-                        isInstantiatingStub: true);
-                }
-                else if (_typeArgument != null)
-                {
-                    dataBuilder.EmitTypeSignature(_typeArgument, _signatureContext);
-                }
-                else if (_fieldArgument != null)
-                {
-                    dataBuilder.EmitFieldSignature(_fieldArgument, _signatureContext);
+                    targetModule = _signatureContext.GetModuleTokenForMethod(ecmaMethod).Module;
                 }
                 else
                 {
-                    throw new NotImplementedException();
+                    targetModule = _signatureContext.LocalContext;
                 }
+            }
+            else if (_typeArgument != null)
+            {
+                if (_typeArgument.GetTypeDefinition() is EcmaType ecmaType)
+                {
+                    targetModule = _signatureContext.GetModuleTokenForType(ecmaType).Module;
+                }
+                else
+                {
+                    targetModule = _signatureContext.LocalContext;
+                }
+            }
+            else if (_fieldArgument != null)
+            {
+                targetModule = _signatureContext.GetModuleTokenForField(_fieldArgument.GetTypicalFieldDefinition()).Module;
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            ReadyToRunFixupKind fixupToEmit;
+            TypeDesc contextTypeToEmit = null;
+
+            switch (_runtimeLookupKind)
+            {
+                case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM:
+                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionaryLookup;
+                    break;
+
+                case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM:
+                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionaryLookup;
+                    break;
+
+                case CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ:
+                    fixupToEmit = ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup;
+                    contextTypeToEmit = _methodContext.ContextType;
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+
+            ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
+            dataBuilder.AddSymbol(this);
+
+            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, fixupToEmit, targetModule, _signatureContext);
+            if (contextTypeToEmit != null)
+            {
+                dataBuilder.EmitTypeSignature(contextTypeToEmit, innerContext);
+            }
+
+            dataBuilder.EmitByte((byte)_fixupKind);
+            if (_methodArgument != null)
+            {
+                dataBuilder.EmitMethodSignature(
+                    method: _methodArgument.Method,
+                    constrainedType: _typeArgument,
+                    methodToken: _methodArgument.Token,
+                    enforceDefEncoding: false,
+                    context: innerContext,
+                    isUnboxingStub: false,
+                    isInstantiatingStub: true);
+            }
+            else if (_typeArgument != null)
+            {
+                dataBuilder.EmitTypeSignature(_typeArgument, innerContext);
+            }
+            else if (_fieldArgument != null)
+            {
+                dataBuilder.EmitFieldSignature(_fieldArgument, innerContext);
+            }
+            else
+            {
+                throw new NotImplementedException();
             }
 
             return dataBuilder.ToObjectData();

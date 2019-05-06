@@ -402,12 +402,22 @@ namespace ILCompiler
                     foreach (var inputFile in typeSystemContext.InputFilePaths)
                     {
                         EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-
                         compilationRoots.Add(new ReadyToRunRootProvider(module));
                         inputModules.Add(module);
+
                         if (!_isInputVersionBubble)
                         {
                             break;
+                        }
+                    }
+
+                    if (_isInputVersionBubble)
+                    {
+                        // In large version bubble mode add reference paths to the compilation group
+                        foreach (KeyValuePair<string, string> referenceFile in _referenceFilePaths)
+                        {
+                            EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile.Value);
+                            inputModules.Add(module);
                         }
                     }
 

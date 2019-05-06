@@ -6,13 +6,31 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class ImportSectionsTableNode : ArrayOfEmbeddedDataNode<ImportSectionNode>
-    {   
-        public ImportSectionsTableNode(TargetDetails target)
+    public class ImportSectionsTableNode : ArrayOfEmbeddedDataNode<ImportSectionNode>, ISignatureEmitter
+    {
+        private readonly ReadyToRunCodegenNodeFactory _r2rFactory;
+
+        private bool _materializedSignature;
+
+        public ImportSectionsTableNode(ReadyToRunCodegenNodeFactory r2rFactory)
             : base("ImportSectionsTableStart", "ImportSectionsTableEnd", null)
         {
+            _r2rFactory = r2rFactory;
+            _r2rFactory.ManifestMetadataTable.RegisterEmitter(this);
         }
-        
+
+        public void MaterializeSignature()
+        {
+            if (!_materializedSignature)
+            {
+                foreach (ImportSectionNode importSection in NodesList)
+                {
+                    importSection.MaterializeSignature(_r2rFactory);
+                }
+                _materializedSignature = true;
+            }
+        }
+
         protected override void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
             builder.RequireInitialPointerAlignment();
