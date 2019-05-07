@@ -1310,6 +1310,8 @@ BOOL  Ref_HandleAsyncPinHandles(async_pin_enum_fn asyncPinCallback, void* contex
 
     return result;
 #else
+    UNREFERENCED_PARAMETER(asyncPinCallback);
+    UNREFERENCED_PARAMETER(context);
     return true;
 #endif // !FEATURE_REDHAWK
 }
@@ -1329,6 +1331,9 @@ void  Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource, HandleTableBucket 
     {
         TableRelocateAsyncPinHandles(Table(pSource->pTable[n]), Table(pTarget->pTable[n]));
     }
+#else
+    UNREFERENCED_PARAMETER(pSource);
+    UNREFERENCED_PARAMETER(pTarget);
 #endif // !FEATURE_REDHAWK
 }
 

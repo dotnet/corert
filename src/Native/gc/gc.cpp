@@ -15242,20 +15242,20 @@ void fire_overflow_event (uint8_t* overflow_min,
 
 void gc_heap::concurrent_print_time_delta (const char* msg)
 {
+    UNREFERENCED_PARAMETER(msg);
 #ifdef TRACE_GC
     size_t current_time = GetHighPrecisionTimeStamp();
     size_t elapsed_time = current_time - time_bgc_last;
     time_bgc_last = current_time;
 
     dprintf (2, ("h%d: %s T %Id ms", heap_number, msg, elapsed_time));
-#else
-    UNREFERENCED_PARAMETER(msg);
 #endif //TRACE_GC
 }
 
 void gc_heap::free_list_info (int gen_num, const char* msg)
 {
     UNREFERENCED_PARAMETER(gen_num);
+    UNREFERENCED_PARAMETER(msg);
 #if defined (BACKGROUND_GC) && defined (TRACE_GC)
     dprintf (3, ("h%d: %s", heap_number, msg));
     for (int i = 0; i <= (max_generation + 1); i++)
@@ -15276,8 +15276,6 @@ void gc_heap::free_list_info (int gen_num, const char* msg)
                 generation_free_obj_space (gen)));
         }
     }
-#else
-    UNREFERENCED_PARAMETER(msg);
 #endif // BACKGROUND_GC && TRACE_GC
 }
 
@@ -23737,6 +23735,7 @@ void gc_heap::relocate_survivor_helper (uint8_t* plug, uint8_t* plug_end)
 // if we expanded, right now we are not handling it as We are not saving the new reloc info.
 void gc_heap::verify_pins_with_post_plug_info (const char* msg)
 {
+    UNREFERENCED_PARAMETER(msg);
 #if defined  (_DEBUG) && defined (VERIFY_HEAP)
     if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
     {
@@ -23789,8 +23788,6 @@ void gc_heap::verify_pins_with_post_plug_info (const char* msg)
 
         dprintf (3, ("%s verified", msg));
     }
-#else // _DEBUG && VERIFY_HEAP
-    UNREFERENCED_PARAMETER(msg);
 #endif // _DEBUG && VERIFY_HEAP
 }
 
