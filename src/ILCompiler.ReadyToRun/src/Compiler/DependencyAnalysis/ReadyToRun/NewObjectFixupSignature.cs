@@ -48,7 +48,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"NewObjectSignature: {_typeDesc.ToString()}");
+            sb.Append($@"NewObjectSignature: ");
+            sb.Append(nameMangler.GetMangledTypeName(_typeDesc));
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

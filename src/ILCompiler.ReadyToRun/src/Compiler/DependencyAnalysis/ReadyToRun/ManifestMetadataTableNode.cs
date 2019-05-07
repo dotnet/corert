@@ -17,7 +17,7 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     /// <summary>
-    /// Signature emitters need to register themselves  with the manifest metadata table;
+    /// Signature emitters need to register themselves with the manifest metadata table;
     /// this is needed so that the manifest metadata can force all signatures to materialize,
     /// and, in doing so, all extra reference modules to be emitted to the manifest metadata.
     /// </summary>
@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private int _nextModuleId;
 
         /// <summary>
-        /// Set to true after GetData has been called. After that, GetOrAdd may be called no more.
+        /// Set to true after GetData has been called. After that, ModuleToIndex may be called no more.
         /// </summary>
         private bool _emissionCompleted;
 
@@ -60,8 +60,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// </summary>
         private string _inputModuleName;
 
-        public ManifestMetadataTableNode(ReadyToRunCodegenNodeFactory nodeFactory, EcmaModule inputModule)
-            : base(nodeFactory.Target)
+        public ManifestMetadataTableNode(EcmaModule inputModule)
+            : base(inputModule.Context.Target)
         {
             _assemblyRefToModuleIdMap = new Dictionary<string, int>();
             _manifestAssemblies = new List<AssemblyName>();

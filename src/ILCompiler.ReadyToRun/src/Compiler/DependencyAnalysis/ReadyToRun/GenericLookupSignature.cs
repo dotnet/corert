@@ -160,7 +160,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(": ");
             if (_methodArgument != null)
             {
-                RuntimeDeterminedTypeHelper.WriteTo(_methodArgument.Method, sb);
+                sb.Append(nameMangler.GetMangledMethodName(_methodArgument.Method));
                 if (!_methodArgument.Token.IsNull)
                 {
                     sb.Append(" [");
@@ -172,11 +172,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             if (_typeArgument != null)
             {
-                RuntimeDeterminedTypeHelper.WriteTo(_typeArgument, sb);
+                sb.Append(nameMangler.GetMangledTypeName(_typeArgument));
             }
             if (_fieldArgument != null)
             {
-                RuntimeDeterminedTypeHelper.WriteTo(_fieldArgument, sb);
+                sb.Append(nameMangler.GetMangledFieldName(_fieldArgument));
             }
             sb.Append(" (");
             _methodContext.AppendMangledName(nameMangler, sb);

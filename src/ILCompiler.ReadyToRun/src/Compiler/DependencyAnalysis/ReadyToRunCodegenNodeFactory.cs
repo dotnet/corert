@@ -339,7 +339,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodEntryPointTable = new MethodEntryPointTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, MethodEntryPointTable, MethodEntryPointTable);
 
-            ManifestMetadataTable = new ManifestMetadataTableNode(this, InputModuleContext.GlobalContext);
+            ManifestMetadataTable = new ManifestMetadataTableNode(InputModuleContext.GlobalContext);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable, ManifestMetadataTable);
 
             Resolver.SetModuleIndexLookup(ManifestMetadataTable.ModuleToIndex);

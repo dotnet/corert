@@ -74,7 +74,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"DelegateCtor({_delegateType} -> {_targetMethod.Method})");
+            sb.Append($@"DelegateCtor(");
+            sb.Append(nameMangler.GetMangledTypeName(_delegateType));
+            sb.Append(" -> ");
+            sb.Append(nameMangler.GetMangledMethodName(_targetMethod.Method));
+            sb.Append(")");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
