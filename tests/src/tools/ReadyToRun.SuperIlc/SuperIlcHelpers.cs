@@ -18,14 +18,16 @@ namespace ReadyToRun.SuperIlc
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
         public bool Sequential { get; set; }
+        public bool Framework { get; set; }
+        public bool UseFramework { get; set; }
+        public bool Release { get; set; }
+        public bool LargeBubble { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
+
+        public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
 
         public IEnumerable<string> ReferencePaths()
         {
-            if (CoreRootDirectory != null)
-            {
-                yield return CoreRootDirectory.FullName;
-            }
             if (ReferencePath != null)
             {
                 foreach (DirectoryInfo referencePath in ReferencePath)
@@ -35,14 +37,36 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        public IEnumerable<CompilerRunner> CompilerRunners()
+        /// <summary>
+        /// Construct CoreRoot native path for a given compiler runner.
+        /// </summary>
+        /// <param name="index">Compiler runner index</param>
+        /// <returns></returns>
+        public string CoreRootOutputPath(CompilerIndex index, bool isFramework)
+        {
+            if (CoreRootDirectory == null)
+            {
+                return null;
+            }
+
+            string outputPath = CoreRootDirectory.FullName;
+            if (!isFramework && (Framework || UseFramework))
+            {
+                outputPath = Path.Combine(outputPath, index.ToString() + ConfigurationSuffix);
+            }
+            return outputPath;
+        }
+
+        public IEnumerable<CompilerRunner> CompilerRunners(bool isFramework)
         {
             List<CompilerRunner> runners = new List<CompilerRunner>();
-            List<string> referencePaths = ReferencePaths().ToList();
 
             if (CpaotDirectory != null)
             {
-                runners.Add(new CpaotRunner(CpaotDirectory.FullName, referencePaths));
+                List<string> referencePaths = new List<string>();
+                referencePaths.Add(CoreRootOutputPath(CompilerIndex.CPAOT, isFramework));
+                referencePaths.AddRange(ReferencePaths());
+                runners.Add(new CpaotRunner(this, referencePaths));
             }
 
             if (Crossgen)
@@ -51,23 +75,26 @@ namespace ReadyToRun.SuperIlc
                 {
                     throw new Exception("-coreroot folder not specified, cannot use Crossgen runner");
                 }
-                runners.Add(new CrossgenRunner(CoreRootDirectory.FullName, referencePaths));
+                List<string> referencePaths = new List<string>();
+                referencePaths.Add(CoreRootOutputPath(CompilerIndex.Crossgen, isFramework));
+                referencePaths.AddRange(ReferencePaths());
+                runners.Add(new CrossgenRunner(this, referencePaths));
             }
 
             if (!NoJit)
             {
-                runners.Add(new JitRunner(referencePaths));
+                runners.Add(new JitRunner(this));
             }
 
             return runners;
         }
 
-        public string CoreRunPath()
+        public string CoreRunPath(CompilerIndex index, bool isFramework)
         {
-            string coreRunPath = "CoreRun.exe".FindFile(ReferencePaths());
-            if (coreRunPath == null)
+            string coreRunPath = Path.Combine(CoreRootOutputPath(index, isFramework), "CoreRun.exe");
+            if (!File.Exists(coreRunPath))
             {
-                Console.Error.WriteLine("CoreRun.exe not found in reference folders, explicit exe launches won't work");
+                Console.Error.WriteLine("CoreRun.exe not found in CORE_ROOT, explicit exe launches won't work");
             }
             return coreRunPath;
         }

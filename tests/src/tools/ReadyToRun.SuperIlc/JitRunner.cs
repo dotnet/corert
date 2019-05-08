@@ -5,39 +5,43 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
-/// <summary>
-/// No-op runner keeping the original IL assemblies to be directly run with full jitting.
-/// </summary>
-class JitRunner : CompilerRunner
+namespace ReadyToRun.SuperIlc
 {
-    public override CompilerIndex Index => CompilerIndex.Jit;
-
-    protected override string CompilerFileName => "clrjit.dll";
-
-    public JitRunner(IEnumerable<string> referenceFolders) : base(null, referenceFolders) { }
-
     /// <summary>
-    /// JIT runner has no compilation process as it doesn't transform the source IL code in any manner.
+    /// No-op runner keeping the original IL assemblies to be directly run with full jitting.
     /// </summary>
-    /// <returns></returns>
-    public override ProcessInfo CompilationProcess(string outputRoot, string assemblyFileName)
+    class JitRunner : CompilerRunner
     {
-        File.Copy(assemblyFileName, GetOutputFileName(outputRoot, assemblyFileName), overwrite: true);
-        return null;
-    }
+        public override CompilerIndex Index => CompilerIndex.Jit;
 
-    protected override ProcessInfo ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
-    {
-        ProcessInfo processInfo = base.ExecutionProcess(modules, folders, noEtw);
-        processInfo.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "0";
-        return processInfo;
-    }
+        protected override string CompilerFileName => "clrjit.dll";
 
-    protected override IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName)
-    {
-        // This should never get called as the overridden CompilationProcess returns null
-        throw new NotImplementedException();
-    }
+        public JitRunner(BuildOptions options) 
+            : base(options, null, new string[] { options.CoreRootDirectory.FullName }.Concat(options.ReferencePaths())) { }
 
+        /// <summary>
+        /// JIT runner has no compilation process as it doesn't transform the source IL code in any manner.
+        /// </summary>
+        /// <returns></returns>
+        public override ProcessInfo CompilationProcess(string outputRoot, string assemblyFileName)
+        {
+            File.Copy(assemblyFileName, GetOutputFileName(outputRoot, assemblyFileName), overwrite: true);
+            return null;
+        }
+
+        protected override ProcessInfo ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
+        {
+            ProcessInfo processInfo = base.ExecutionProcess(modules, folders, noEtw);
+            processInfo.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "0";
+            return processInfo;
+        }
+
+        protected override IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName)
+        {
+            // This should never get called as the overridden CompilationProcess returns null
+            throw new NotImplementedException();
+        }
+    }
 }

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -216,17 +215,19 @@ public class ProcessRunner : IDisposable
 
     private void StandardOutputEventHandler(object sender, DataReceivedEventArgs eventArgs)
     {
-        if (!string.IsNullOrEmpty(eventArgs.Data))
+        string data = eventArgs?.Data;
+        if (!string.IsNullOrEmpty(data))
         {
-            _logWriter.WriteLine(eventArgs.Data);
+            _logWriter.WriteLine(data);
         }
     }
 
     private void StandardErrorEventHandler(object sender, DataReceivedEventArgs eventArgs)
     {
-        if (!string.IsNullOrEmpty(eventArgs.Data))
+        string data = eventArgs?.Data;
+        if (!string.IsNullOrEmpty(data))
         {
-            _logWriter.WriteLine(eventArgs.Data);
+            _logWriter.WriteLine(data);
         }
     }
 
@@ -249,44 +250,42 @@ public class ProcessRunner : IDisposable
 
         string linePrefix = $"{_processIndex} / {_processCount} ({(++progressIndex * 100 / _processCount)}%): ";
 
-        if (_process.WaitForExit(0))
+        _processInfo.TimedOut = !_process.WaitForExit(0);
+        if (_processInfo.TimedOut)
         {
-            _process.WaitForExit();
-            _processInfo.ExitCode = _process.ExitCode;
-            _processInfo.Succeeded = (_processInfo.ExitCode == _processInfo.ExpectedExitCode);
-            _logWriter.WriteLine(">>>>");
+            KillProcess();
+        }
+        _process.WaitForExit();
+        _processInfo.ExitCode = (_processInfo.TimedOut ? TimeoutExitCode : _process.ExitCode);
+        _processInfo.Succeeded = (!_processInfo.TimedOut && _processInfo.ExitCode == _processInfo.ExpectedExitCode);
+        _logWriter.WriteLine(">>>>");
 
-            if (_processInfo.Succeeded)
+        if (_processInfo.Succeeded)
+        {
+            string successMessage = linePrefix + $"succeeded in {_processInfo.DurationMilliseconds} msecs";
+
+            _logWriter.WriteLine(successMessage);
+            Console.WriteLine(successMessage + $": {processSpec}");
+            _processInfo.Succeeded = true;
+        }
+        else
+        {
+            string failureMessage;
+            if (_processInfo.TimedOut)
             {
-                string successMessage = linePrefix + $"succeeded in {_processInfo.DurationMilliseconds} msecs";
-
-                _logWriter.WriteLine(successMessage);
-                Console.WriteLine(successMessage + $": {processSpec}");
-                _processInfo.Succeeded = true;
+                failureMessage = linePrefix + $"timed out in {_processInfo.DurationMilliseconds} msecs";
             }
             else
             {
-                string failureMessage = linePrefix + $"failed in {_processInfo.DurationMilliseconds} msecs, exit code {_processInfo.ExitCode}";
+                failureMessage = linePrefix + $"failed in {_processInfo.DurationMilliseconds} msecs, exit code {_processInfo.ExitCode}";
                 if (_processInfo.ExitCode < 0)
                 {
                     failureMessage += $" = 0x{_processInfo.ExitCode:X8}";
                 }
                 failureMessage += $", expected {_processInfo.ExpectedExitCode}";
-                _logWriter.WriteLine(failureMessage);
-                Console.Error.WriteLine(failureMessage + $": {processSpec}");
             }
-        }
-        else
-        {
-            _process.Kill();
-            _process.WaitForExit();
-            _processInfo.ExitCode = TimeoutExitCode;
-            _processInfo.TimedOut = true;
-            _processInfo.Succeeded = false;
-            _logWriter.WriteLine(">>>>");
-            string timeoutMessage = linePrefix + $"timed out in {_processInfo.DurationMilliseconds} msecs";
-            _logWriter.WriteLine(timeoutMessage);
-            Console.Error.WriteLine(timeoutMessage + $": {processSpec}");
+            _logWriter.WriteLine(failureMessage);
+            Console.Error.WriteLine(failureMessage + $": {processSpec}");
         }
 
         CleanupProcess();
@@ -300,5 +299,21 @@ public class ProcessRunner : IDisposable
 
         _state = StateIdle;
         return true;
+    }
+
+    /// <summary>
+    /// Kills process execution. This may be called from a different thread.
+    /// </summary>
+    private void KillProcess()
+    {
+        try
+        {
+            _process?.Kill();
+        }
+        catch (Exception)
+        {
+            // Silently ignore exceptions during this call to Kill as
+            // the process may have exited in the meantime.
+        }
     }
 }

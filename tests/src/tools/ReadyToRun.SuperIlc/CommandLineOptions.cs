@@ -34,7 +34,11 @@ namespace ReadyToRun.SuperIlc
                         NoEtw(),
                         NoCleanup(),
                         Sequential(),
-                        ReferencePath()
+                        Framework(),
+                        UseFramework(),
+                        Release(),
+                        LargeBubble(),
+                        ReferencePath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
 
@@ -52,6 +56,10 @@ namespace ReadyToRun.SuperIlc
                         NoEtw(),
                         NoCleanup(),
                         Sequential(),
+                        Framework(),
+                        UseFramework(),
+                        Release(),
+                        LargeBubble(),
                         ReferencePath()
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
@@ -90,6 +98,18 @@ namespace ReadyToRun.SuperIlc
 
             Option Sequential() =>
                 new Option(new[] { "--sequential" }, "Run tests sequentially", new Argument<bool>());
+
+            Option Framework() =>
+                new Option(new[] { "--framework" }, "Precompile and use native framework", new Argument<bool>());
+
+            Option UseFramework() =>
+                new Option(new[] { "--use-framework" }, "Use native framework (don't precompile, assume previously compiled)", new Argument<bool>());
+
+            Option Release() =>
+                new Option(new[] { "--release" }, "Build the tests in release mode", new Argument<bool>());
+
+            Option LargeBubble() =>
+                new Option(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble", new Argument<bool>());
         }
     }
 }
