@@ -1573,7 +1573,21 @@ namespace Internal.JitInterface
             }
         }
 
-        private void EncodeFieldBaseOffset(FieldDesc field, CORINFO_FIELD_INFO* pResult)
+        /// <summary>
+        /// Throws if the JIT inlines a method outside the current version bubble and that inlinee accesses
+        /// fields also outside the version bubble. ReadyToRun currently cannot encode such references.
+        /// </summary>
+        private void PreventRecursiveFieldInlinesOutsideVersionBubble(FieldDesc field, MethodDesc callerMethod)
+        {
+            if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(callerMethod, unboxingStub: false))
+            {
+                // Prevent recursive inline attempts where an inlined method outside of the version bubble is
+                // referencing fields outside the version bubble.
+                throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + field.ToString());
+            }
+        }
+
+        private void EncodeFieldBaseOffset(FieldDesc field, CORINFO_FIELD_INFO* pResult, MethodDesc callerMethod)
         {
             TypeDesc pMT = field.OwningType;
 
@@ -1590,6 +1604,8 @@ namespace Internal.JitInterface
                 }
                 else
                 {
+                    PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
+
                     // ENCODE_FIELD_OFFSET
                     pResult->offset = 0;
                     pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
@@ -1606,6 +1622,8 @@ namespace Internal.JitInterface
             }
             else if (HasLayoutMetadata(pMT))
             {
+                PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
+
                 // We won't try to be smart for classes with layout.
                 // They are complex to get right, and very rare anyway.
                 // ENCODE_FIELD_OFFSET
@@ -1615,6 +1633,8 @@ namespace Internal.JitInterface
             }
             else
             {
+                PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
+
                 // ENCODE_FIELD_BASE_OFFSET
                 pResult->offset -= (uint)pMT.BaseType.InstanceByteCount.AsInt;
                 pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;

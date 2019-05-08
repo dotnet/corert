@@ -321,12 +321,19 @@ namespace System.Threading
                 (state == ApartmentState.STA) ? Interop.Ole32.COINIT_APARTMENTTHREADED
                     : Interop.Ole32.COINIT_MULTITHREADED);
 #endif
-            // RPC_E_CHANGED_MODE indicates this thread has been already initialized with a different
-            // concurrency model. We stay away and let whoever else initialized the COM to be in control.
-            if (hr == HResults.RPC_E_CHANGED_MODE)
-                return;
             if (hr < 0)
+            {
+                // RPC_E_CHANGED_MODE indicates this thread has been already initialized with a different
+                // concurrency model. We stay away and let whoever else initialized the COM to be in control.
+                if (hr == HResults.RPC_E_CHANGED_MODE)
+                    return;
+
+                // CoInitializeEx returns E_NOTIMPL on Windows Nano Server for STA
+                if (hr == HResults.E_NOTIMPL)
+                    throw new PlatformNotSupportedException();
+
                 throw new OutOfMemoryException();
+            }
 
             t_comState |= ComState.InitializedByUs;
 
