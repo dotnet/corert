@@ -1073,7 +1073,11 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
 
 Thread* GCToEEInterface::GetThread()
 {
+#ifndef DACCESS_COMPILE
     return ::GetThread();
+#else
+    return NULL;
+#endif
 }
 
 bool GCToEEInterface::TrapReturningThreads()
@@ -1593,6 +1597,8 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
 
 bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
 {
+    UNREFERENCED_PARAMETER(key);
+    UNREFERENCED_PARAMETER(value);
     return false;
 }
 
