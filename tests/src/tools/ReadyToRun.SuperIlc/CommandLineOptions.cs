@@ -40,6 +40,7 @@ namespace ReadyToRun.SuperIlc
                         Release(),
                         LargeBubble(),
                         ReferencePath(),
+                        IssuesPath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
 
@@ -61,7 +62,8 @@ namespace ReadyToRun.SuperIlc
                         UseFramework(),
                         Release(),
                         LargeBubble(),
-                        ReferencePath()
+                        ReferencePath(),
+                        IssuesPath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
 
@@ -124,6 +126,9 @@ namespace ReadyToRun.SuperIlc
 
             Option LargeBubble() =>
                 new Option(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble", new Argument<bool>());
+
+            Option IssuesPath() =>
+                new Option(new[] { "--issues-path", "-ip" }, "Path to issues.targets", new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore });
 
             //
             // compile-nuget specific options
