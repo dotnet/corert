@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,6 +21,7 @@ namespace ReadyToRun.SuperIlc
         public bool NoExe { get; set; }
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
+        public FileInfo PackageList { get; set; }
         public bool Sequential { get; set; }
         public bool Framework { get; set; }
         public bool UseFramework { get; set; }
