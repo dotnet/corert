@@ -74,7 +74,17 @@ namespace ReadyToRun.SuperIlc
             }
             else
             {
-                throw new ApplicationException($"Timeout running {processPath} {arguments}");
+                try
+                {
+                    p.Kill();
+                }
+                catch (Exception)
+                {
+                    // Silently ignore exceptions during this call to Kill as
+                    // the process may have exited in the meantime.
+                }
+                logWriter.WriteLine($"{processPath} {arguments} timed out after {timeout}ms.");
+                return 1;
             }
         }
     }
