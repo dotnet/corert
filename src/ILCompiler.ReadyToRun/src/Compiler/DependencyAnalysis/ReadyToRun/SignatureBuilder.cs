@@ -298,20 +298,36 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     else
                     {
+                        ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
+                        EmitModuleOverride(token.Module, context);
                         EmitElementType(CorElementType.ELEMENT_TYPE_CLASS);
-                        EmitTypeToken((EcmaType)typeDesc, context);
+                        EmitToken(token.Token);
                     }
                     return;
 
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                 case TypeFlags.Enum:
-                    EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
-                    EmitTypeToken((EcmaType)typeDesc, context);
-                    return;
+                    {
+                        ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
+                        EmitModuleOverride(token.Module, context);
+                        EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
+                        EmitToken(token.Token);
+                        return;
+                    }
 
                 default:
                     throw new NotImplementedException();
+            }
+        }
+
+        private void EmitModuleOverride(EcmaModule module, SignatureContext context)
+        {
+            if (module != context.LocalContext)
+            {
+                EmitElementType(CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG);
+                uint moduleIndex = (uint)context.Resolver.GetModuleIndex(module);
+                EmitUInt(moduleIndex);
             }
         }
 
@@ -581,6 +597,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public ObjectNode.ObjectData ToObjectData()
         {
             return _builder.ToObjectData();
+        }
+
+        public SignatureContext EmitFixup(ReadyToRunCodegenNodeFactory factory, ReadyToRunFixupKind fixupKind, EcmaModule targetModule, SignatureContext outerContext)
+        {
+            if (targetModule == outerContext.LocalContext)
+            {
+                EmitByte((byte)fixupKind);
+                return outerContext;
+            }
+            else
+            {
+                EmitByte((byte)(fixupKind | ReadyToRunFixupKind.READYTORUN_FIXUP_ModuleOverride));
+                EmitUInt((uint)factory.ManifestMetadataTable.ModuleToIndex(targetModule));
+                return outerContext.InnerContext(targetModule);
+            }
         }
     }
 

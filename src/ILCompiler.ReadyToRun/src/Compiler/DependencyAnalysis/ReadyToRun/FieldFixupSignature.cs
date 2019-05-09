@@ -7,6 +7,7 @@ using System;
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -36,8 +37,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                dataBuilder.EmitByte((byte)_fixupKind);
-                dataBuilder.EmitFieldSignature(_fieldDesc, _signatureContext);
+                EcmaModule targetModule = _signatureContext.GetModuleTokenForField(_fieldDesc.GetTypicalFieldDefinition()).Module;
+                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, targetModule, _signatureContext);
+
+                dataBuilder.EmitFieldSignature(_fieldDesc, innerContext);
             }
 
             return dataBuilder.ToObjectData();

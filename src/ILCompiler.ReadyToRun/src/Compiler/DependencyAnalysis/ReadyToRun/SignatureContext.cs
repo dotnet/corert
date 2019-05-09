@@ -15,26 +15,55 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class SignatureContext
     {
-        private readonly ModuleTokenResolver _resolver;
+        /// <summary>
+        /// Context module used for the signature. Whenever a part of the signature
+        /// needs to encode an entity external to the context module, it muse use
+        /// an ELEMENT_TYPE_MODULE_ZAPSIG module override.
+        /// </summary>
+        public readonly EcmaModule GlobalContext;
 
-        public SignatureContext(ModuleTokenResolver resolver)
+        /// <summary>
+        /// Local context changes during recursive descent while encoding the signature.
+        /// </summary>
+        public readonly EcmaModule LocalContext;
+
+        /// <summary>
+        /// Resolver used to back-translate types and fields to tokens.
+        /// </summary>
+        public readonly ModuleTokenResolver Resolver;
+
+        public SignatureContext(EcmaModule context, ModuleTokenResolver resolver)
         {
-            _resolver = resolver;
+            GlobalContext = context;
+            LocalContext = context;
+            Resolver = resolver;
+        }
+
+        private SignatureContext(EcmaModule globalContext, EcmaModule localContext, ModuleTokenResolver resolver)
+        {
+            GlobalContext = globalContext;
+            LocalContext = localContext;
+            Resolver = resolver;
+        }
+
+        public SignatureContext InnerContext(EcmaModule innerContext)
+        {
+            return new SignatureContext(GlobalContext, innerContext, Resolver);
         }
 
         public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
         {
-            return _resolver.GetModuleTokenForType(type, throwIfNotFound);
+            return Resolver.GetModuleTokenForType(type, throwIfNotFound);
         }
 
         public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool throwIfNotFound = true)
         {
-            return _resolver.GetModuleTokenForMethod(method, throwIfNotFound);
+            return Resolver.GetModuleTokenForMethod(method, throwIfNotFound);
         }
 
         public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
         {
-            return _resolver.GetModuleTokenForField(field, throwIfNotFound);
+            return Resolver.GetModuleTokenForField(field, throwIfNotFound);
         }
     }
 }

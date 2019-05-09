@@ -27,11 +27,11 @@ namespace ILCompiler.DependencyAnalysis
 
         private readonly Dictionary<ModuleToken, ISymbolNode> _importStrings = new Dictionary<ModuleToken, ISymbolNode>();
 
-        public ISymbolNode StringLiteral(ModuleToken token)
+        public ISymbolNode StringLiteral(ModuleToken token, SignatureContext signatureContext)
         {
             if (!_importStrings.TryGetValue(token, out ISymbolNode stringNode))
             {
-                stringNode = new StringImport(_codegenNodeFactory.StringImports, token);
+                stringNode = new StringImport(_codegenNodeFactory.StringImports, token, signatureContext);
                 _importStrings.Add(token, stringNode);
             }
             return stringNode;
