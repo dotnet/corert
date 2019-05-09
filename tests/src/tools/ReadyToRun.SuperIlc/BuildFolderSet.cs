@@ -321,7 +321,7 @@ namespace ReadyToRun.SuperIlc
 
         private void ResolveTestExclusions()
         {
-            TestExclusionMap exclusions = new TestExclusionMap(_options.EnumerateTestExclusions());
+            TestExclusionMap exclusions = TestExclusionMap.Create(_options);
             foreach (BuildFolder folder in _buildFolders)
             {
                 if (exclusions.TryGetIssue(folder.InputFolder, out string issueID))
