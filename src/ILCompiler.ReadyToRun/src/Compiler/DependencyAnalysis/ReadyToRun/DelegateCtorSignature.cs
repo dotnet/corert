@@ -38,24 +38,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();
             builder.AddSymbol(this);
 
             if (!relocsOnly)
             {
-                SignatureContext innerContext = builder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor, _methodToken.Module, _signatureContext);
-
+                builder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor);
                 builder.EmitMethodSignature(
                     _targetMethod.Method, 
                     constrainedType: null,
                     methodToken: _methodToken,
                     enforceDefEncoding: false,
-                    innerContext,
+                    _signatureContext,
                     isUnboxingStub: false,
                     isInstantiatingStub: false);
-
-                builder.EmitTypeSignature(_delegateType, innerContext);
+                builder.EmitTypeSignature(_delegateType, _signatureContext);
             }
 
             return builder.ToObjectData();
@@ -74,11 +71,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"DelegateCtor(");
-            sb.Append(nameMangler.GetMangledTypeName(_delegateType));
-            sb.Append(" -> ");
-            sb.Append(nameMangler.GetMangledMethodName(_targetMethod.Method));
-            sb.Append(")");
+            sb.Append($@"DelegateCtor({_delegateType} -> {_targetMethod.Method})");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

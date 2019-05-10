@@ -58,9 +58,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, _methodToken.Module, _signatureContext);
+
+            dataBuilder.EmitByte((byte)_fixupKind);
             dataBuilder.EmitMethodSignature(_methodDesc, _constrainedType, _methodToken, enforceDefEncoding: false,
-                innerContext, _isUnboxingStub, _isInstantiatingStub);
+                _signatureContext, _isUnboxingStub, _isInstantiatingStub);
 
             return dataBuilder.ToObjectData();
         }

@@ -11,12 +11,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly ModuleToken _token;
 
-        private readonly SignatureContext _signatureContext;
-
-        public StringImportSignature(ModuleToken token, SignatureContext signatureContext)
+        public StringImportSignature(ModuleToken token)
         {
             _token = token;
-            _signatureContext = signatureContext;
         }
 
         public override int ClassCode => 324832559;
@@ -27,7 +24,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
-            dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_StringHandle, _token.Module, _signatureContext);
+            // TODO: module override for external module strings
+            dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_StringHandle);
             dataBuilder.EmitUInt(_token.TokenRid);
 
             return dataBuilder.ToObjectData();
