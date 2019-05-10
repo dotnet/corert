@@ -422,6 +422,9 @@ goto :eof
     set __SourceFolder=%~1
     set __SourceFileName=%2
 
+    if exist "!__SourceFolder!\bin" rmdir /s /q !__SourceFolder!\bin
+    if exist "!__SourceFolder!\obj" rmdir /s /q !__SourceFolder!\obj
+
     :: Compute publish RID
     if /i "%CoreRT_BuildArch%" == "x86" (
         set Publish_Rid=win-x86
