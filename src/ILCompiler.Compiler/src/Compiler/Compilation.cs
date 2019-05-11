@@ -90,12 +90,6 @@ namespace ILCompiler
 
         protected abstract void CompileInternal(string outputFile, ObjectDumper dumper);
 
-        public virtual bool CanInline(MethodDesc caller, MethodDesc callee)
-        {
-            // No restrictions on inlining by default
-            return true;
-        }
-
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
         {
             // If we're creating a delegate to a virtual method that cannot be overriden, devirtualize.

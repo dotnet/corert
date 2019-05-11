@@ -697,7 +697,7 @@ namespace Internal.JitInterface
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);
-            if (_compilation.CanInline(callerMethod, calleeMethod))
+            if (_compilation.NodeFactory.CompilationModuleGroup.CanInline(callerMethod, calleeMethod))
             {
                 // No restrictions on inlining
                 return CorInfoInline.INLINE_PASS;

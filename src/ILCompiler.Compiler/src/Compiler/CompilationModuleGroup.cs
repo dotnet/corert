@@ -92,5 +92,13 @@ namespace ILCompiler
         /// If true, the type is fully contained in the current compilation group.
         /// </summary>
         public virtual bool ContainsTypeLayout(TypeDesc type) => ContainsType(type);
+
+        /// <summary>
+        /// Decide whether a given call may get inlined by JIT.
+        /// </summary>
+        /// <param name="callerMethod">Calling method the assembly code of is about to receive the callee code</param>
+        /// <param name="calleeMethod">The called method to be inlined into the caller</param>
+        /// <returns></returns>
+        public virtual bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod) => true;
     }
 }

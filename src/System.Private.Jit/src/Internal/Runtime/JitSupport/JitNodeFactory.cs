@@ -13,6 +13,11 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    public class CompilationModuleGroup
+    {
+        public bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod) => true;
+    }
+
     /// <summary>
     /// Separate copy of NodeFactory from compiler implementation. This should be refactored to use
     /// NodeFactory as a base type, but time constraints currently prevent resourcing for that
@@ -66,11 +71,13 @@ namespace ILCompiler.DependencyAnalysis
 
         TargetDetails _targetDetails;
         TypeSystemContext _typeSystemContext;
+        CompilationModuleGroup _compilationGroup;
 
         public NodeFactory(TypeSystemContext typeSystemContext)
         {
             _targetDetails = typeSystemContext.Target;
             _typeSystemContext = typeSystemContext;
+            _compilationGroup = new CompilationModuleGroup();
             CreateNodeCaches();
         }
 
@@ -118,6 +125,14 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode RuntimeFieldHandle(FieldDesc field) { throw new NotImplementedException(); }
         public IMethodNode FatFunctionPointer(MethodDesc method, bool isUnboxingStub = false) { return MethodEntrypoint(method); }
         public ISymbolNode TypeThreadStaticIndex(MetadataType type) { throw new NotImplementedException(); }
+
+        public CompilationModuleGroup CompilationModuleGroup
+        {
+            get
+            {
+                return _compilationGroup;
+            }
+        }
 
         public TargetDetails Target
         {
