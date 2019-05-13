@@ -16,7 +16,8 @@ namespace ReadyToRun.SuperIlc
         {
             var parser = new CommandLineBuilder()
                 .AddCommand(CompileFolder())
-                .AddCommand(CompileSubtree());
+                .AddCommand(CompileSubtree())
+                .AddCommand(CompileNugetPackages());
 
             return parser;
 
@@ -64,6 +65,19 @@ namespace ReadyToRun.SuperIlc
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
 
+            Command CompileNugetPackages() =>
+                new Command("compile-nuget", "Restore a list of Nuget packages into an empty console app, publish, and optimize with Crossgen / CPAOT",
+                    new Option[]
+                    {
+                        OutputDirectory(),
+                        PackageList(),
+                        CoreRootDirectory(),
+                        Crossgen(),
+                        CpaotDirectory(),
+                        NoCleanup()
+                    },
+                    handler: CommandHandler.Create<BuildOptions>(CompileNugetCommand.CompileNuget));
+
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
             Option InputDirectory() =>
@@ -110,6 +124,12 @@ namespace ReadyToRun.SuperIlc
 
             Option LargeBubble() =>
                 new Option(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble", new Argument<bool>());
+
+            //
+            // compile-nuget specific options
+            //
+            Option PackageList() =>
+                new Option(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line", new Argument<FileInfo>().ExistingOnly());
         }
     }
 }
