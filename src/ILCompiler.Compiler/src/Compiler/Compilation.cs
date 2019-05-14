@@ -90,10 +90,9 @@ namespace ILCompiler
 
         protected abstract void CompileInternal(string outputFile, ObjectDumper dumper);
 
-        public virtual bool CanInline(MethodDesc caller, MethodDesc callee)
+        public bool CanInline(MethodDesc caller, MethodDesc callee)
         {
-            // No restrictions on inlining by default
-            return true;
+            return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
         }
 
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)

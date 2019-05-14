@@ -205,5 +205,12 @@ namespace ILCompiler
 
             return true;
         }
+
+        public override bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod)
+        {
+            // Allow inlining if the target method is within the same version bubble
+            return ContainsMethodBody(calleeMethod, unboxingStub: false) ||
+                calleeMethod.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
+        }
     }
 }
