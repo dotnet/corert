@@ -26,6 +26,8 @@ namespace ReadyToRun.SuperIlc
 
         private readonly List<ProcessInfo[]> _executions;
 
+        public string IssueID;
+
         public BuildFolder(
             List<string> compilationInputFiles, 
             List<string> mainExecutables,
@@ -229,6 +231,8 @@ namespace ReadyToRun.SuperIlc
                 }
             }
         }
+
+        public bool IsBlockedWithIssue => IssueID != null;
 
         public string InputFolder => _inputFolder;
 
