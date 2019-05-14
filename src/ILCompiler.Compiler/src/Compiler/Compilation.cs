@@ -90,6 +90,11 @@ namespace ILCompiler
 
         protected abstract void CompileInternal(string outputFile, ObjectDumper dumper);
 
+        public bool CanInline(MethodDesc caller, MethodDesc callee)
+        {
+            return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
+        }
+
         public DelegateCreationInfo GetDelegateCtor(TypeDesc delegateType, MethodDesc target, bool followVirtualDispatch)
         {
             // If we're creating a delegate to a virtual method that cannot be overriden, devirtualize.
