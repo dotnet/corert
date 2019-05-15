@@ -984,7 +984,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
             EcmaModule tokenContextToRecord = null;
-            if (_compilation.NodeFactory.CompilationModuleGroup.ContainsType(owningType) &&
+            if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(owningType) &&
                 owningType is EcmaType owningEcmaType)
             {
                 tokenContextToRecord = owningEcmaType.EcmaModule;

@@ -411,17 +411,28 @@ namespace ILCompiler
                         }
                     }
 
+
+                    List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>();
                     if (_isInputVersionBubble)
                     {
                         // In large version bubble mode add reference paths to the compilation group
-                        foreach (KeyValuePair<string, string> referenceFile in _referenceFilePaths)
+                        foreach (string referenceFile in _referenceFilePaths.Values)
                         {
-                            EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile.Value);
-                            inputModules.Add(module);
+                            try
+                            {
+                                EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
+                                versionBubbleModules.Add(module);
+
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("Warning: cannot open reference assembly '{0}': {1}", referenceFile, ex.Message);
+                            }
                         }
                     }
 
-                    compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(typeSystemContext, inputModules);
+                    compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
+                        typeSystemContext, inputModules, versionBubbleModules);
                 }
                 else if (_multiFile)
                 {

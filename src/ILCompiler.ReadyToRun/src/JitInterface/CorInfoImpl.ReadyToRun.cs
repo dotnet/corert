@@ -812,7 +812,7 @@ namespace Internal.JitInterface
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
 
             callerMethod = HandleToObject(callerHandle);
-            if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(callerMethod, unboxingStub: false))
+            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod))
             {
                 // We must abort inline attempts calling from outside of the version bubble being compiled
                 // because we have no way to remap the token relative to the external module to the current version bubble.
@@ -964,8 +964,8 @@ namespace Internal.JitInterface
                 // we have to apply more restrictive rules
                 // These rules are related to the "inlining rules" as far as the
                 // boundaries of a version bubble are concerned.
-                if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(callerMethod, unboxingStub: false) ||
-                    !_compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(targetMethod, unboxingStub: false))
+                if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
+                    !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod))
                 {
                     // For version resiliency we won't de-virtualize all final/sealed method calls.  Because during a 
                     // servicing event it is legal to unseal a method or type.
@@ -1120,7 +1120,7 @@ namespace Internal.JitInterface
 
         private bool MethodInSystemVersionBubble(MethodDesc method)
         {
-            return _compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) &&
+            return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method) &&
                 method.OwningType.GetTypeDefinition().GetClosestDefType() is MetadataType metadataType &&
                 metadataType.Module == _compilation.TypeSystemContext.SystemModule;
         }
@@ -1517,7 +1517,7 @@ namespace Internal.JitInterface
                 return true;
             }
 
-            if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsType(type))
+            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
             {
                 if (!type.IsValueType)
                 {
@@ -1582,7 +1582,7 @@ namespace Internal.JitInterface
         /// </summary>
         private void PreventRecursiveFieldInlinesOutsideVersionBubble(FieldDesc field, MethodDesc callerMethod)
         {
-            if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsMethodBody(callerMethod, unboxingStub: false))
+            if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod))
             {
                 // Prevent recursive inline attempts where an inlined method outside of the version bubble is
                 // referencing fields outside the version bubble.

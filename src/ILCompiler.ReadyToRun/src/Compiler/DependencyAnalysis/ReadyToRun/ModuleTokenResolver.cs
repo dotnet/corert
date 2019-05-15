@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.ContainsType(type))
+            if (_compilationModuleGroup.VersionsWithType(type))
             {
                 return new ModuleToken(type.EcmaModule, (mdToken)MetadataTokens.GetToken(type.Handle));
             }
@@ -74,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) &&
+            if (_compilationModuleGroup.VersionsWithMethodBody(method) &&
                 method is EcmaMethod ecmaMethod)
             {
                 return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
@@ -93,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.ContainsType(field.OwningType) && field is EcmaField ecmaField)
+            if (_compilationModuleGroup.VersionsWithType(field.OwningType) && field is EcmaField ecmaField)
             {
                 return new ModuleToken(ecmaField.Module, ecmaField.Handle);
             }
@@ -148,7 +148,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AddModuleTokenForField(FieldDesc field, ModuleToken token)
         {
-            if (_compilationModuleGroup.ContainsType(field.OwningType) && field.OwningType is EcmaType)
+            if (_compilationModuleGroup.VersionsWithType(field.OwningType) && field.OwningType is EcmaType)
             {
                 // We don't need to store handles within the current compilation group
                 // as we can read them directly from the ECMA objects.
@@ -185,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 specialTypeFound = true;
             }
 
-            if (_compilationModuleGroup.ContainsType(type))
+            if (_compilationModuleGroup.VersionsWithType(type))
             {
                 // We don't need to store handles within the current compilation group
                 // as we can read them directly from the ECMA objects.
