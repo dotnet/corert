@@ -20,6 +20,7 @@ See the LICENSE file in the project root for more information.
     <NativeIntermediateOutputPath Condition="'$(NativeIntermediateOutputPath)' == ''">$(IntermediateOutputPath)native\</NativeIntermediateOutputPath>
     <NativeOutputPath Condition="'$(NativeOutputPath)' == ''">$(OutputPath)native\</NativeOutputPath>
     <NativeCompilationDuringPublish Condition="'$(NativeCompilationDuringPublish)' == ''">true</NativeCompilationDuringPublish>
+    <IlcBuildTasksPath Condition="'$(IlcBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\tools\netstandard\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <TargetOS Condition="'$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</TargetOS>
     <TargetOS Condition="'$(TargetOS)' == ''">$(OS)</TargetOS>
   </PropertyGroup>
