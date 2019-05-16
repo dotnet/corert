@@ -1364,17 +1364,6 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
     EEPOLICY_HANDLE_FATAL_ERROR(exitCode);
 }
 
-bool GCToEEInterface::ShouldFinalizeObjectForUnload(void* pDomain, Object* obj)
-{
-    // CoreCLR does not have appdomains, so this code path is dead. Other runtimes may
-    // choose to inspect the object being finalized here.
-    // [DESKTOP TODO] Desktop looks for "agile and finalizable" objects and may choose
-    // to move them to a new app domain instead of finalizing them here.
-    UNREFERENCED_PARAMETER(pDomain);
-    UNREFERENCED_PARAMETER(obj);
-    return true;
-}
-
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
     UNREFERENCED_PARAMETER(obj);
@@ -1478,37 +1467,9 @@ IGCToCLREventSink* GCToEEInterface::EventSink()
     return &g_gcToClrEventSink;
 }
 
-uint32_t GCToEEInterface::GetDefaultDomainIndex()
-{
-    return -1;
-}
-
-void* GCToEEInterface::GetAppDomainAtIndex(uint32_t appDomainIndex)
-{
-    UNREFERENCED_PARAMETER(appDomainIndex);
-    return nullptr;
-}
-
-bool GCToEEInterface::AppDomainCanAccessHandleTable(uint32_t appDomainID)
-{
-    UNREFERENCED_PARAMETER(appDomainID);
-    return true;
-}
-
-uint32_t GCToEEInterface::GetIndexOfAppDomainBeingUnloaded()
-{
-    return -1;
-}
-
 uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
 {
     return -1;
-}
-
-bool GCToEEInterface::AppDomainIsRudeUnload(void* appDomain)
-{
-    UNREFERENCED_PARAMETER(appDomain);
-    return false;
 }
 
 bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
