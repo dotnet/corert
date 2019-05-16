@@ -285,14 +285,22 @@ void GCToCLREventSink::FireGCFullNotify_V1(uint32_t genNumber, uint32_t isAlloc)
     FireEtwGCFullNotify_V1(genNumber, isAlloc, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation, uint64_t appDomainID)
+void GCToCLREventSink::FireSetGCHandle(void* handleID, void* objectID, uint32_t kind, uint32_t generation)
 {
-    FireEtwSetGCHandle(handleID, objectID, kind, generation, appDomainID, GetClrInstanceId());
+#ifdef _WIN32
+    FireEtwSetGCHandle(handleID, objectID, kind, generation, -1, GetClrInstanceId());
+#else // _WIN32
+    FireEtwSetGCHandle(handleID, objectID, kind, generation, GetClrInstanceId());
+#endif // _WIN32
 }
 
-void GCToCLREventSink::FirePrvSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation, uint64_t appDomainID)
+void GCToCLREventSink::FirePrvSetGCHandle(void* handleID, void* objectID, uint32_t kind, uint32_t generation)
 {
-    FireEtwPrvSetGCHandle(handleID, objectID, kind, generation, appDomainID, GetClrInstanceId());
+#ifdef _WIN32
+    FireEtwPrvSetGCHandle(handleID, objectID, kind, generation, -1, GetClrInstanceId());
+#else // _WIN32
+    FireEtwPrvSetGCHandle(handleID, objectID, kind, generation, GetClrInstanceId());
+#endif // _WIN32
 }
 
 void GCToCLREventSink::FireDestroyGCHandle(void *handleID)
