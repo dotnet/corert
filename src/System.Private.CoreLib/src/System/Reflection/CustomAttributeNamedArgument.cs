@@ -3,11 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Threading;
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    public struct CustomAttributeNamedArgument
+    public readonly struct CustomAttributeNamedArgument
     {
         // This constructor is the one used by .Net Native as the current metadata format only contains the name and the "isField" value,
         // not the actual member. To keep .Net Native running as before, we'll use the name and isField as the principal data and 
@@ -74,7 +76,9 @@ namespace System.Reflection
 
                     if (memberInfo == null)
                         throw RuntimeAugments.Callbacks.CreateMissingMetadataException(_attributeType);
-                    _lazyMemberInfo = memberInfo;
+
+                    // Cast-away readonly to initialize lazy-initalized field
+                    Volatile.Write(ref Unsafe.AsRef(_lazyMemberInfo), memberInfo);
                 }
                 return memberInfo;
             }
@@ -113,6 +117,6 @@ namespace System.Reflection
         }
 
         private readonly Type _attributeType;
-        private volatile MemberInfo _lazyMemberInfo;
+        private readonly MemberInfo _lazyMemberInfo;
     }
 }
