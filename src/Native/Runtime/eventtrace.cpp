@@ -22,6 +22,7 @@
 #include "thread.h"
 #include "rwlock.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 //#include "PalRedhawk.h"
 
 #define Win32EventWrite PalEventWrite

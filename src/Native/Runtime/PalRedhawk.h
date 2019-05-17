@@ -44,11 +44,11 @@ typedef void *              HINSTANCE;
 typedef void *              LPSECURITY_ATTRIBUTES;
 typedef void *              LPOVERLAPPED;
 
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 #define CALLBACK            __stdcall
 #define WINAPI              __stdcall
 #define WINBASEAPI          __declspec(dllimport)
-#endif //!GCENV_INCLUDED
+#endif //!__GCENV_BASE_INCLUDED__
 
 #ifdef PLATFORM_UNIX
 #define DIRECTORY_SEPARATOR_CHAR '/'
@@ -521,10 +521,10 @@ typedef enum _EXCEPTION_DISPOSITION {
 typedef UInt32 (WINAPI *PTHREAD_START_ROUTINE)(_In_opt_ void* lpThreadParameter);
 typedef IntNative (WINAPI *FARPROC)();
 
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 #define TRUE                    1
 #define FALSE                   0
-#endif // !GCENV_INCLUDED
+#endif // !__GCENV_BASE_INCLUDED__
 
 #define INVALID_HANDLE_VALUE    ((HANDLE)(IntNative)-1)
 
@@ -661,12 +661,12 @@ EventDataDescCreate(_Out_ EVENT_DATA_DESCRIPTOR * EventDataDescriptor, _In_opt_ 
 }
 #endif // _EVNTPROV_H_
 
-#ifndef GCENV_INCLUDED
 extern GCSystemInfo g_SystemInfo;
 
+#ifndef __GCENV_BASE_INCLUDED__
 #define REDHAWK_PALIMPORT EXTERN_C
 #define REDHAWK_PALAPI __stdcall
-#endif // GCENV_INCLUDED
+#endif // __GCENV_BASE_INCLUDED__
 
 bool InitializeSystemInfo();
 

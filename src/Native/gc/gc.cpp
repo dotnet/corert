@@ -14539,9 +14539,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             }
         }
         // for traditional GC stress
-        else
-#endif // !FEATURE_REDHAWK
-        if (*blocking_collection_p)
+        else if (*blocking_collection_p)
         {
             // We call StressHeap() a lot for Concurrent GC Stress. However,
             // if we can not do a concurrent collection, no need to stress anymore.
@@ -14549,6 +14547,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
             GCStressPolicy::GlobalDisable();
         }
         else
+#endif // !FEATURE_REDHAWK
         {
             n = max_generation;
         }
@@ -30287,7 +30286,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
 
     dprintf (GTC_LOG, ("fragmentation: %Id (%d%%)", fragmentation, (int)(fragmentation_burden * 100.0)));
 
-#ifdef STRESS_HEAP
+#if defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
     // for pure GC stress runs we need compaction, for GC stress "mix"
     // we need to ensure a better mix of compacting and sweeping collections
     if (GCStress<cfg_any>::IsEnabled() && !settings.concurrent
@@ -30308,7 +30307,7 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
         }
     }
 #endif // GC_STATS
-#endif //STRESS_HEAP
+#endif //defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
 
     if (GCConfig::GetForceCompact())
         should_compact = TRUE;

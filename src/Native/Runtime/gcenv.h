@@ -34,6 +34,7 @@
 #include "module.h"
 #include "RuntimeInstance.h"
 #include "eetype.inl"
+#include "Volatile.h"
 
 #ifdef PLATFORM_UNIX
 #include "gcenv.unix.inl"
