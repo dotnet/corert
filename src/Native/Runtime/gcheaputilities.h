@@ -6,6 +6,7 @@
 #define _GCHEAPUTILITIES_H_
 
 #include "gcinterface.h"
+#include "daccess.h"
 
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);

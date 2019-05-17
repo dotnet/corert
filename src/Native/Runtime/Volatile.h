@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma once
+
 //
 // Provides the Volatile<T> class as a replacement for the C++ volatile keyword where it's important that
 // acquire/release semantics are always observed.

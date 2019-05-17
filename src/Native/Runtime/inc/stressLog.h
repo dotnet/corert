@@ -808,7 +808,7 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
 
 #endif // STRESS_LOG
 
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 #if !defined(STRESS_LOG) || defined(DACCESS_COMPILE)
 #define STRESS_LOG_VA(msg)                                              do { } WHILE_0
 #define STRESS_LOG0(facility, level, msg)                               do { } WHILE_0
@@ -828,6 +828,6 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
 #define STRESS_LOG_GC_STACK                 do { } WHILE_0
 #define STRESS_LOG_RESERVE_MEM(numChunks)   do { } WHILE_0
 #endif // !STRESS_LOG || DACCESS_COMPILE
-#endif // !GCENV_INCLUDED
+#endif // !__GCENV_BASE_INCLUDED__
 
 #endif // StressLog_h 

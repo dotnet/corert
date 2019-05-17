@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+#ifndef __RHASSERT_H__
+#define __RHASSERT_H__
+
 #ifdef _MSC_VER
 #define ASSUME(expr) __assume(expr)
 #else  // _MSC_VER
@@ -38,6 +41,10 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 
 #endif
 
+#ifndef _ASSERTE
+#define _ASSERTE(_expr) ASSERT(_expr)
+#endif
+
 #if defined(_DEBUG)
 
 void NYI_ASSERT();
@@ -59,3 +66,5 @@ void NYI_ASSERT();
 #define FAIL_FAST_GENERATE_EXCEPTION_ADDRESS 0x1
 
 #define RhFailFast() PalRaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)
+
+#endif // __RHASSERT_H__

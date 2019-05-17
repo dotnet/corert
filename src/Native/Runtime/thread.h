@@ -271,10 +271,10 @@ public:
 #endif // PROJECTN
 };
 
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 typedef DPTR(Object) PTR_Object;
 typedef DPTR(PTR_Object) PTR_PTR_Object;
-#endif // !GCENV_INCLUDED
+#endif // !__GCENV_BASE_INCLUDED__
 #ifdef DACCESS_COMPILE
 
 // The DAC uses DebuggerEnumGcRefContext in place of a GCCONTEXT when doing reference
@@ -300,10 +300,10 @@ typedef DacScanCallbackData EnumGcRefScanContext;
 typedef void EnumGcRefCallbackFunc(PTR_PTR_Object, EnumGcRefScanContext* callbackData, UInt32 flags);
 
 #else // DACCESS_COMPILE
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 struct ScanContext;
 typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
-#endif // !GCENV_INCLUDED
+#endif // !__GCENV_BASE_INCLUDED__
 typedef promote_func EnumGcRefCallbackFunc;
 typedef ScanContext  EnumGcRefScanContext;
 

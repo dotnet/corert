@@ -52,6 +52,7 @@
 #include "GCMemoryHelpers.h"
 
 #include "holder.h"
+#include "Volatile.h"
 
 #ifdef FEATURE_ETW
     #ifndef _INC_WINDOWS
@@ -169,6 +170,9 @@ CrstStatic g_SuspendEELock;
 #pragma warning(disable:4815) // zero-sized array in stack object will have no elements
 #endif // _MSC_VER
 EEType g_FreeObjectEEType;
+
+MethodTable* g_pFreeObjectMethodTable;
+int32_t g_TrapReturningThreads;
 
 extern "C" bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars);
 
@@ -1616,14 +1620,6 @@ gc_alloc_context * Thread::GetAllocContext()
     return dac_cast<DPTR(gc_alloc_context)>(dac_cast<TADDR>(this) + offsetof(Thread, m_rgbAllocContextBuffer));
 }
 
-#ifndef DACCESS_COMPILE
-bool IsGCSpecialThread()
-{
-    // TODO: Implement for background GC
-    return ThreadStore::GetCurrentThread()->IsGCSpecial();
-}
-#endif // DACCESS_COMPILE
-
 GPTR_IMPL(Thread, g_pFinalizerThread);
 GPTR_IMPL(Thread, g_pGcThread);
 
@@ -1647,54 +1643,8 @@ void SetGCSpecialThread(ThreadType threadType)
 
 #endif // DACCESS_COMPILE
 
-MethodTable * g_pFreeObjectMethodTable;
-int32_t g_TrapReturningThreads;
-
-#ifndef DACCESS_COMPILE
-bool IsGCThread()
-{
-    return IsGCSpecialThread() || ThreadStore::GetSuspendingThread() == ThreadStore::GetCurrentThread();
-}
-#endif // DACCESS_COMPILE
-
 void LogSpewAlways(const char * /*fmt*/, ...)
 {
-}
-
-bool NumaNodeInfo::CanEnableGCNumaAware() 
-{ 
-    // @TODO: enable NUMA node support
-    return false; 
-}
-
-void NumaNodeInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t * /*group_number*/, uint16_t * /*group_processor_number*/)
-{
-    ASSERT_UNCONDITIONALLY("NYI: NumaNodeInfo::GetGroupForProcessor");
-}
-
-bool NumaNodeInfo::GetNumaProcessorNodeEx(PPROCESSOR_NUMBER /*proc_no*/, uint16_t * /*node_no*/)
-{
-    ASSERT_UNCONDITIONALLY("NYI: NumaNodeInfo::GetNumaProcessorNodeEx");
-    return false;
-}
-
-bool CPUGroupInfo::CanEnableGCCPUGroups()
-{
-    // @TODO: enable CPU group support
-    return false;
-}
-
-uint32_t CPUGroupInfo::GetNumActiveProcessors() 
-{ 
-    // @TODO: enable CPU group support
-    // NOTE: this API shouldn't be called unless CanEnableGCCPUGroups() returns true
-    ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetNumActiveProcessors");
-    return 0;
-}
-
-void CPUGroupInfo::GetGroupForProcessor(uint16_t /*processor_number*/, uint16_t * /*group_number*/, uint16_t * /*group_processor_number*/)
-{
-    ASSERT_UNCONDITIONALLY("NYI: CPUGroupInfo::GetGroupForProcessor");
 }
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
