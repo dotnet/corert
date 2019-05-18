@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -219,18 +220,40 @@ static class PathExtensions
         }
     }
 
-    public static string[] LocateOutputFolders(string folder, bool recursive)
+    public static string[] LocateOutputFolders(string folder, string coreRootFolder, bool recursive)
     {
-        return Directory.GetDirectories(folder, "*.out", recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+        ConcurrentBag<string> directories = new ConcurrentBag<string>();
+        LocateOutputFoldersAsync(folder, coreRootFolder, recursive, directories).Wait();
+        return directories.ToArray();
     }
 
-    public static bool DeleteOutputFolders(string folder, bool recursive)
+    private static async Task LocateOutputFoldersAsync(string folder, string coreRootFolder, bool recursive, ConcurrentBag<string> directories)
+    {
+        if (coreRootFolder == null || !StringComparer.OrdinalIgnoreCase.Equals(folder, coreRootFolder))
+        {
+            List<Task> subfolderTasks = new List<Task>();
+            foreach (string dir in Directory.EnumerateDirectories(folder))
+            {
+                if (Path.GetExtension(dir).Equals(".out", StringComparison.OrdinalIgnoreCase))
+                {
+                    directories.Add(dir);
+                }
+                else if (recursive)
+                {
+                    subfolderTasks.Add(Task.Run(() => LocateOutputFoldersAsync(dir, coreRootFolder, recursive, directories)));
+                }
+            }
+            await Task.WhenAll(subfolderTasks);
+        }
+    }
+
+    public static bool DeleteOutputFolders(string folder, string coreRootFolder, bool recursive)
     {
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
 
         Console.WriteLine("Locating output {0} {1}", (recursive ? "subtree" : "folder"), folder);
-        string[] outputFolders = LocateOutputFolders(folder, recursive);
+        string[] outputFolders = LocateOutputFolders(folder, coreRootFolder, recursive);
         Console.WriteLine("Deleting {0} output folders", outputFolders.Length);
 
         if (DeleteSubtrees(outputFolders))

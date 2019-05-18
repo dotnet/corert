@@ -51,7 +51,7 @@ namespace ReadyToRun.SuperIlc
                 ProcessInfo[] fileCompilations = new ProcessInfo[(int)CompilerIndex.Count];
                 foreach (CompilerRunner runner in compilerRunners)
                 {
-                    ProcessInfo compilationProcess = runner.CompilationProcess(_outputFolder, file);
+                    ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _outputFolder, file));
                     fileCompilations[(int)runner.Index] = compilationProcess;
                 }
                 _compilations.Add(fileCompilations);
@@ -78,7 +78,7 @@ namespace ReadyToRun.SuperIlc
                         folders.Add(Path.GetDirectoryName(script));
                         folders.UnionWith(runner.ReferenceFolders);
 
-                        scriptExecutions[(int)runner.Index] = runner.ScriptExecutionProcess(_outputFolder, script, modules, folders);
+                        scriptExecutions[(int)runner.Index] = new ProcessInfo(new ScriptExecutionProcessConstructor(runner, _outputFolder, script, modules, folders));
                     }
                 }
 
@@ -106,7 +106,7 @@ namespace ReadyToRun.SuperIlc
                             folders.Add(Path.GetDirectoryName(mainExe));
                             folders.UnionWith(runner.ReferenceFolders);
 
-                            appExecutions[(int)runner.Index] = runner.AppExecutionProcess(_outputFolder, mainExe, modules, folders);
+                            appExecutions[(int)runner.Index] = new ProcessInfo(new AppExecutionProcessConstructor(runner, _outputFolder, mainExe, modules, folders));
                         }
                     }
                 }

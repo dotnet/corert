@@ -32,6 +32,8 @@ namespace ReadyToRun.SuperIlc
         public bool UseFramework { get; set; }
         public bool Release { get; set; }
         public bool LargeBubble { get; set; }
+        public int CompilationTimeoutMinutes { get; set; }
+        public int ExecutionTimeoutMinutes { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
         public FileInfo[] IssuesPath { get; set; }
 

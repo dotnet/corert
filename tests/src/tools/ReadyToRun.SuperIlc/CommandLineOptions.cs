@@ -41,6 +41,8 @@ namespace ReadyToRun.SuperIlc
                         LargeBubble(),
                         ReferencePath(),
                         IssuesPath(),
+                        CompilationTimeoutMinutes(),
+                        ExecutionTimeoutMinutes(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
 
@@ -64,6 +66,8 @@ namespace ReadyToRun.SuperIlc
                         LargeBubble(),
                         ReferencePath(),
                         IssuesPath(),
+                        CompilationTimeoutMinutes(),
+                        ExecutionTimeoutMinutes(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
 
@@ -76,7 +80,9 @@ namespace ReadyToRun.SuperIlc
                         CoreRootDirectory(),
                         Crossgen(),
                         CpaotDirectory(),
-                        NoCleanup()
+                        NoCleanup(),
+                        CompilationTimeoutMinutes(),
+                        ExecutionTimeoutMinutes(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileNugetCommand.CompileNuget));
 
@@ -129,6 +135,12 @@ namespace ReadyToRun.SuperIlc
 
             Option IssuesPath() =>
                 new Option(new[] { "--issues-path", "-ip" }, "Path to issues.targets", new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore });
+
+            Option CompilationTimeoutMinutes() =>
+                new Option(new[] { "--compilation-timeout-minutes", "-ct" }, "Compilation timeout (minutes)", new Argument<int>());
+
+            Option ExecutionTimeoutMinutes() =>
+                new Option(new[] { "--execution-timeout-minutes", "-et" }, "Execution timeout (minutes)", new Argument<int>());
 
             //
             // compile-nuget specific options

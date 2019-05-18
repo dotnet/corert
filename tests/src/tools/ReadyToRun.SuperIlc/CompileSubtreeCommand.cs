@@ -3,11 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.CommandLine;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ReadyToRun.SuperIlc
 {
@@ -34,22 +36,19 @@ namespace ReadyToRun.SuperIlc
 
             IEnumerable<CompilerRunner> runners = options.CompilerRunners(isFramework: false);
 
-            PathExtensions.DeleteOutputFolders(options.OutputDirectory.ToString(), recursive: true);
+            PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: true);
 
-            string[] directories = new string[] { options.InputDirectory.FullName }
-                .Concat(
-                    options.InputDirectory
-                        .EnumerateDirectories("*", SearchOption.AllDirectories)
-                        .Select(dirInfo => dirInfo.FullName)
-                        .Where(path => !Path.GetExtension(path).Equals(".out", StringComparison.OrdinalIgnoreCase)))
+            string[] directories = LocateSubtree(
+                options.InputDirectory.FullName,
+                (options.Framework || options.UseFramework) ? options.CoreRootDirectory.FullName : null)
                 .ToArray();
 
-            List<BuildFolder> folders = new List<BuildFolder>();
-            int relativePathOffset = directories[0].Length + 1;
+            ConcurrentBag<BuildFolder> folders = new ConcurrentBag<BuildFolder>();
+            int relativePathOffset = options.InputDirectory.FullName.Length + 1;
             int folderCount = 0;
             int compilationCount = 0;
             int executionCount = 0;
-            foreach (string directory in directories)
+            Parallel.ForEach(directories, (string directory) =>
             {
                 string outputDirectoryPerFolder = options.OutputDirectory.FullName;
                 if (directory.Length > relativePathOffset)
@@ -62,25 +61,28 @@ namespace ReadyToRun.SuperIlc
                     if (folder != null)
                     {
                         folders.Add(folder);
-                        compilationCount += folder.Compilations.Count;
-                        executionCount += folder.Executions.Count;
+                        Interlocked.Add(ref compilationCount, folder.Compilations.Count);
+                        Interlocked.Add(ref executionCount, folder.Executions.Count);
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine("Error scanning folder {0}: {1}", directory, ex.Message);
                 }
-                if (++folderCount % 100 == 0)
+                int currentCount = Interlocked.Increment(ref folderCount);
+                if (currentCount % 100 == 0)
                 {
-                    Console.Write($@"Found {folders.Count} folders to build ");
-                    Console.Write($@"({compilationCount} compilations, ");
+                    StringBuilder lineReport = new StringBuilder();
+                    lineReport.Append($@"Found {folders.Count} folders to build ");
+                    lineReport.Append($@"({compilationCount} compilations, ");
                     if (!options.NoExe)
                     {
-                        Console.Write($@"{executionCount} executions, ");
+                        lineReport.Append($@"{executionCount} executions, ");
                     }
-                    Console.WriteLine($@"{folderCount} / {directories.Length} folders scanned)");
+                    lineReport.Append($@"{currentCount} / {directories.Length} folders scanned)");
+                    Console.WriteLine(lineReport.ToString());
                 }
-            }
+            });
             Console.Write($@"Found {folders.Count} folders to build ({compilationCount} compilations, ");
             if (!options.NoExe)
             {
@@ -94,10 +96,34 @@ namespace ReadyToRun.SuperIlc
 
             if (!options.NoCleanup)
             {
-                PathExtensions.DeleteOutputFolders(options.OutputDirectory.ToString(), recursive: true);
+                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: true);
             }
 
             return success ? 0 : 1;
+        }
+
+        private static string[] LocateSubtree(string folder, string coreRootFolder)
+        {
+            ConcurrentBag<string> directories = new ConcurrentBag<string>();
+            LocateSubtreeAsync(folder, coreRootFolder, directories).Wait();
+            return directories.ToArray();
+        }
+
+        private static async Task LocateSubtreeAsync(string folder, string coreRootFolder, ConcurrentBag<string> directories)
+        {
+            if (!Path.GetExtension(folder).Equals(".out", StringComparison.OrdinalIgnoreCase))
+            {
+                if (coreRootFolder == null || !folder.Equals(coreRootFolder, StringComparison.OrdinalIgnoreCase))
+                {
+                    directories.Add(folder);
+                }
+                List<Task> subfolderTasks = new List<Task>();
+                foreach (string subdir in Directory.EnumerateDirectories(folder))
+                {
+                    subfolderTasks.Add(Task.Run(() => LocateSubtreeAsync(subdir, coreRootFolder, directories)));
+                }
+                await Task.WhenAll(subfolderTasks);
+            }
         }
     }
 }

@@ -40,7 +40,7 @@ namespace ReadyToRun.SuperIlc
         protected abstract string CompilerFileName { get; }
         protected abstract IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName);
 
-        public virtual ProcessInfo CompilationProcess(string outputRoot, string assemblyFileName)
+        public virtual ProcessParameters CompilationProcess(string outputRoot, string assemblyFileName)
         {
             CreateOutputFolder(outputRoot);
 
@@ -49,66 +49,77 @@ namespace ReadyToRun.SuperIlc
             var commandLineArgs = BuildCommandLineArguments(assemblyFileName, outputFileName);
             CreateResponseFile(responseFile, commandLineArgs);
 
-            ProcessInfo processInfo = new ProcessInfo();
-            processInfo.ProcessPath = Path.Combine(_compilerPath, CompilerFileName);
-            processInfo.Arguments = $"@{responseFile}";
-            processInfo.TimeoutMilliseconds = ProcessInfo.DefaultIlcTimeout;
-            processInfo.LogPath = Path.ChangeExtension(outputFileName, ".ilc.log");
-            processInfo.InputFileName = assemblyFileName;
-            processInfo.OutputFileName = outputFileName;
-            processInfo.CompilationCostHeuristic = new FileInfo(assemblyFileName).Length;
-
-            return processInfo;
-        }
-
-        protected virtual ProcessInfo ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
-        {
-            ProcessInfo processInfo = new ProcessInfo();
-
-            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("__GCSTRESSLEVEL")))
+            ProcessParameters processParameters = new ProcessParameters();
+            processParameters.ProcessPath = Path.Combine(_compilerPath, CompilerFileName);
+            processParameters.Arguments = $"@{responseFile}";
+            if (_options.CompilationTimeoutMinutes != 0)
             {
-                processInfo.TimeoutMilliseconds = ProcessInfo.DefaultExeTimeout;
+                processParameters.TimeoutMilliseconds = _options.CompilationTimeoutMinutes * 60 * 1000;
             }
             else
             {
-                processInfo.TimeoutMilliseconds = ProcessInfo.DefaultExeTimeoutGCStress;
+                processParameters.TimeoutMilliseconds = ProcessParameters.DefaultIlcTimeout;
+            }
+            processParameters.LogPath = Path.ChangeExtension(outputFileName, ".ilc.log");
+            processParameters.InputFileName = assemblyFileName;
+            processParameters.OutputFileName = outputFileName;
+            processParameters.CompilationCostHeuristic = new FileInfo(assemblyFileName).Length;
+
+            return processParameters;
+        }
+
+        protected virtual ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
+        {
+            ProcessParameters processParameters = new ProcessParameters();
+
+            if (_options.ExecutionTimeoutMinutes != 0)
+            {
+                processParameters.TimeoutMilliseconds = _options.ExecutionTimeoutMinutes * 60 * 1000;
+            }
+            else if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("__GCSTRESSLEVEL")))
+            {
+                processParameters.TimeoutMilliseconds = ProcessParameters.DefaultExeTimeout;
+            }
+            else
+            {
+                processParameters.TimeoutMilliseconds = ProcessParameters.DefaultExeTimeoutGCStress;
             }
 
             // TODO: support for tier jitting - for now we just turn it off as it may distort the JIT statistics 
-            processInfo.EnvironmentOverrides["COMPLUS_TieredCompilation"] = "0";
+            processParameters.EnvironmentOverrides["COMPLUS_TieredCompilation"] = "0";
 
-            processInfo.CollectJittedMethods = !noEtw;
+            processParameters.CollectJittedMethods = !noEtw;
             if (!noEtw)
             {
-                processInfo.MonitorModules = modules;
-                processInfo.MonitorFolders = folders;
+                processParameters.MonitorModules = modules;
+                processParameters.MonitorFolders = folders;
             }
 
-            return processInfo;
+            return processParameters;
         }
 
-        public virtual ProcessInfo ScriptExecutionProcess(string outputRoot, string scriptPath, IEnumerable<string> modules, IEnumerable<string> folders)
+        public virtual ProcessParameters ScriptExecutionProcess(string outputRoot, string scriptPath, IEnumerable<string> modules, IEnumerable<string> folders)
         {
             string scriptToRun = GetOutputFileName(outputRoot, scriptPath);
-            ProcessInfo processInfo = ExecutionProcess(modules, folders, _options.NoEtw);
-            processInfo.ProcessPath = scriptToRun;
-            processInfo.Arguments = null;
-            processInfo.InputFileName = scriptToRun;
-            processInfo.LogPath = scriptToRun + ".log";
-            processInfo.EnvironmentOverrides["CORE_ROOT"] = _options.CoreRootOutputPath(Index, isFramework: false);
-            return processInfo;
+            ProcessParameters processParameters = ExecutionProcess(modules, folders, _options.NoEtw);
+            processParameters.ProcessPath = scriptToRun;
+            processParameters.Arguments = null;
+            processParameters.InputFileName = scriptToRun;
+            processParameters.LogPath = scriptToRun + ".log";
+            processParameters.EnvironmentOverrides["CORE_ROOT"] = _options.CoreRootOutputPath(Index, isFramework: false);
+            return processParameters;
         }
 
-        public virtual ProcessInfo AppExecutionProcess(string outputRoot, string appPath, IEnumerable<string> modules, IEnumerable<string> folders)
+        public virtual ProcessParameters AppExecutionProcess(string outputRoot, string appPath, IEnumerable<string> modules, IEnumerable<string> folders)
         {
             string exeToRun = GetOutputFileName(outputRoot, appPath);
-            ProcessInfo processInfo = ExecutionProcess(modules, folders, _options.NoEtw);
-            processInfo.ProcessPath = _options.CoreRunPath(Index, isFramework: false);
-            processInfo.Arguments = exeToRun;
-            processInfo.InputFileName = exeToRun;
-            processInfo.LogPath = exeToRun + ".log";
-            processInfo.ExpectedExitCode = 100;
-            return processInfo;
+            ProcessParameters processParameters = ExecutionProcess(modules, folders, _options.NoEtw);
+            processParameters.ProcessPath = _options.CoreRunPath(Index, isFramework: false);
+            processParameters.Arguments = exeToRun;
+            processParameters.InputFileName = exeToRun;
+            processParameters.LogPath = exeToRun + ".log";
+            processParameters.ExpectedExitCode = 100;
+            return processParameters;
         }
 
         public void CreateOutputFolder(string outputRoot)
@@ -139,5 +150,77 @@ namespace ReadyToRun.SuperIlc
 
         public string GetResponseFileName(string outputRoot, string assemblyFileName) =>
             Path.Combine(GetOutputPath(outputRoot), Path.GetFileNameWithoutExtension(assemblyFileName) + ".rsp");
+    }
+
+    public abstract class CompilerRunnerProcessConstructor : ProcessConstructor
+    {
+        protected readonly CompilerRunner _runner;
+
+        public CompilerRunnerProcessConstructor(CompilerRunner runner)
+        {
+            _runner = runner;
+        }
+    }
+
+    public class CompilationProcessConstructor : CompilerRunnerProcessConstructor
+    {
+        private readonly string _outputRoot;
+        private readonly string _assemblyFileName;
+
+        public CompilationProcessConstructor(CompilerRunner runner, string outputRoot, string assemblyFileName)
+            : base(runner)
+        {
+            _outputRoot = outputRoot;
+            _assemblyFileName = assemblyFileName;
+        }
+
+        public override ProcessParameters Construct()
+        {
+            return _runner.CompilationProcess(_outputRoot, _assemblyFileName);
+        }
+    }
+
+    public sealed class ScriptExecutionProcessConstructor : CompilerRunnerProcessConstructor
+    {
+        private readonly string _outputRoot;
+        private readonly string _scriptPath;
+        private readonly IEnumerable<string> _modules;
+        private readonly IEnumerable<string> _folders;
+
+        public ScriptExecutionProcessConstructor(CompilerRunner runner, string outputRoot, string scriptPath, IEnumerable<string> modules, IEnumerable<string> folders)
+            : base(runner)
+        {
+            _outputRoot = outputRoot;
+            _scriptPath = scriptPath;
+            _modules = modules;
+            _folders = folders;
+        }
+
+        public override ProcessParameters Construct()
+        {
+            return _runner.ScriptExecutionProcess(_outputRoot, _scriptPath, _modules, _folders);
+        }
+    }
+
+    public sealed class AppExecutionProcessConstructor : CompilerRunnerProcessConstructor
+    {
+        private readonly string _outputRoot;
+        private readonly string _appPath;
+        private readonly IEnumerable<string> _modules;
+        private readonly IEnumerable<string> _folders;
+
+        public AppExecutionProcessConstructor(CompilerRunner runner, string outputRoot, string appPath, IEnumerable<string> modules, IEnumerable<string> folders)
+            : base(runner)
+        {
+            _outputRoot = outputRoot;
+            _appPath = appPath;
+            _modules = modules;
+            _folders = folders;
+        }
+
+        public override ProcessParameters Construct()
+        {
+            return _runner.AppExecutionProcess(_outputRoot, _appPath, _modules, _folders);
+        }
     }
 }

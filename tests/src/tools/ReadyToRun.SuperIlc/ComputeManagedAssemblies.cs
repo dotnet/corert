@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.Metadata;
@@ -21,11 +22,22 @@ class ComputeManagedAssemblies
         }
     }
 
+    static ConcurrentDictionary<string, bool> _isManagedCache = new ConcurrentDictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
     public static bool IsManaged(string file)
     {
         // Only files named *.dll and *.exe are considered as possible assemblies
         if (!Path.HasExtension(file) || (Path.GetExtension(file) != ".dll" && Path.GetExtension(file) != ".exe"))
             return false;
+
+        bool isManaged;
+        lock (_isManagedCache)
+        {
+            if (_isManagedCache.TryGetValue(file, out isManaged))
+            {
+                return isManaged;
+            }
+        }
 
         try
         {
@@ -41,7 +53,7 @@ class ComputeManagedAssemblies
 
                         if (culture == "" || culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
                         {
-                            return true;
+                            isManaged = true;
                         }
                     }
                 }
@@ -49,8 +61,14 @@ class ComputeManagedAssemblies
         }
         catch (BadImageFormatException)
         {
+            isManaged = false;
         }
 
-        return false;
+        lock (_isManagedCache)
+        {
+            _isManagedCache[file] = isManaged;
+        }
+
+        return isManaged;
     }
 }

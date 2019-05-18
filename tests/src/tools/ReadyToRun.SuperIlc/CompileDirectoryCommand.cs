@@ -33,7 +33,7 @@ namespace ReadyToRun.SuperIlc
 
             IEnumerable<CompilerRunner> runners = options.CompilerRunners(isFramework: false);
 
-            PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
+            PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
 
             BuildFolder folder = BuildFolder.FromDirectory(options.InputDirectory.FullName, runners, options.OutputDirectory.FullName, options);
             if (folder == null)
@@ -47,7 +47,7 @@ namespace ReadyToRun.SuperIlc
 
             if (!options.NoCleanup)
             {
-                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
+                PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
             }
 
             return success ? 0 : 1;

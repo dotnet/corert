@@ -55,7 +55,7 @@ namespace ReadyToRun.SuperIlc
             IEnumerable<KeyValuePair<string, List<ProcessInfo>>> orderedBuckets = _bucketMap.OrderByDescending(bucket => bucket.Value.Count);
             foreach (KeyValuePair<string, List<ProcessInfo>> bucketKvp in orderedBuckets)
             {
-                bucketKvp.Value.Sort((a, b) => a.InputFileName.CompareTo(b.InputFileName));
+                bucketKvp.Value.Sort((a, b) => a.Parameters.InputFileName.CompareTo(b.Parameters.InputFileName));
                 output.WriteLine($@"    [{bucketKvp.Value.Count} failures] {bucketKvp.Key}");
             }
 
@@ -70,7 +70,7 @@ namespace ReadyToRun.SuperIlc
 
                 foreach (ProcessInfo failure in bucketKvp.Value)
                 {
-                    output.WriteLine($@"   {failure.InputFileName}");
+                    output.WriteLine($@"   {failure.Parameters.InputFileName}");
                 }
 
                 if (detailed)
@@ -80,14 +80,14 @@ namespace ReadyToRun.SuperIlc
 
                     foreach (ProcessInfo failure in bucketKvp.Value)
                     {
-                        output.WriteLine($@"Test: {failure.InputFileName}");
+                        output.WriteLine($@"Test: {failure.Parameters.InputFileName}");
                         try
                         {
-                            output.WriteLine(File.ReadAllText(failure.LogPath));
+                            output.WriteLine(File.ReadAllText(failure.Parameters.LogPath));
                         }
                         catch (Exception ex)
                         {
-                            output.WriteLine($"Error reading file {failure.LogPath}: {ex.Message}");
+                            output.WriteLine($"Error reading file {failure.Parameters.LogPath}: {ex.Message}");
                         }
                         output.WriteLine();
                     }
@@ -104,7 +104,7 @@ namespace ReadyToRun.SuperIlc
                     return "Timed out";
                 }
 
-                string[] lines = File.ReadAllLines(process.LogPath);
+                string[] lines = File.ReadAllLines(process.Parameters.LogPath);
 
                 for (int lineIndex = 2; lineIndex < lines.Length; lineIndex++)
                 {
@@ -138,7 +138,7 @@ namespace ReadyToRun.SuperIlc
                     return "Timed out";
                 }
 
-                string[] lines = File.ReadAllLines(process.LogPath);
+                string[] lines = File.ReadAllLines(process.Parameters.LogPath);
 
                 for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
                 {
@@ -165,7 +165,7 @@ namespace ReadyToRun.SuperIlc
                     }
                 }
 
-                return $"Exit code: {process.ExitCode} = 0x{process.ExitCode:X8}, expected {process.ExpectedExitCode}";
+                return $"Exit code: {process.ExitCode} = 0x{process.ExitCode:X8}, expected {process.Parameters.ExpectedExitCode}";
             }
             catch (Exception ex)
             {
