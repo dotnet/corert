@@ -53,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public EcmaModule GetTargetModule(TypeDesc type)
         {
-            if (type.IsPrimitive)
+            if (type.IsPrimitive || type.IsString || type.IsObject)
             {
                 return LocalContext;
             }

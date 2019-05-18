@@ -420,9 +420,10 @@ namespace ILCompiler
                         {
                             try
                             {
+                                // Currently SimpleTest.targets has no easy way to filter out non-managed assemblies
+                                // from the reference list.
                                 EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
                                 versionBubbleModules.Add(module);
-
                             }
                             catch (Exception ex)
                             {
