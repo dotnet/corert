@@ -984,7 +984,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
             EcmaModule tokenContextToRecord = null;
-            if (_compilation.NodeFactory.CompilationModuleGroup.ContainsType(owningType) &&
+            if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(owningType) &&
                 owningType is EcmaType owningEcmaType)
             {
                 tokenContextToRecord = owningEcmaType.EcmaModule;
@@ -2150,7 +2150,7 @@ namespace Internal.JitInterface
                         
                         // Static fields outside of the version bubble need to be accessed using the ENCODE_FIELD_ADDRESS
                         // helper in accordance with ZapInfo::getFieldInfo in CoreCLR.
-                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(field, _signatureContext));
+                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(field, GetSignatureContext()));
 
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
@@ -2164,7 +2164,7 @@ namespace Internal.JitInterface
                     {
                         pResult->fieldLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.SymbolNodeFactory.ReadyToRunHelper(helperId, field.OwningType, _signatureContext)
+                            _compilation.SymbolNodeFactory.ReadyToRunHelper(helperId, field.OwningType, GetSignatureContext())
 #else
                             _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType)
 #endif

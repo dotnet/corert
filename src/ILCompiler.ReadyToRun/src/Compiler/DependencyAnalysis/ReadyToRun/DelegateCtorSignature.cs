@@ -38,21 +38,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
+            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();
             builder.AddSymbol(this);
 
             if (!relocsOnly)
             {
-                builder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor);
+                SignatureContext innerContext = builder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor, _methodToken.Module, _signatureContext);
+
                 builder.EmitMethodSignature(
                     _targetMethod.Method, 
                     constrainedType: null,
                     methodToken: _methodToken,
                     enforceDefEncoding: false,
-                    _signatureContext,
+                    innerContext,
                     isUnboxingStub: false,
                     isInstantiatingStub: false);
-                builder.EmitTypeSignature(_delegateType, _signatureContext);
+
+                builder.EmitTypeSignature(_delegateType, innerContext);
             }
 
             return builder.ToObjectData();
@@ -71,7 +74,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"DelegateCtor({_delegateType} -> {_targetMethod.Method})");
+            sb.Append($@"DelegateCtor(");
+            sb.Append(nameMangler.GetMangledTypeName(_delegateType));
+            sb.Append(" -> ");
+            sb.Append(nameMangler.GetMangledMethodName(_targetMethod.Method));
+            sb.Append("; ");
+            sb.Append(_methodToken.ToString());
+            sb.Append(")");
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

@@ -33,15 +33,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly CompilerTypeSystemContext _typeSystemContext;
 
+        private Func<EcmaModule, int> _moduleIndexLookup;
+
         public ModuleTokenResolver(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext)
         {
             _compilationModuleGroup = compilationModuleGroup;
             _typeSystemContext = typeSystemContext;
         }
 
+        public void SetModuleIndexLookup(Func<EcmaModule, int> moduleIndexLookup)
+        {
+            _moduleIndexLookup = moduleIndexLookup;
+        }
+
         public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.ContainsType(type))
+            if (_compilationModuleGroup.VersionsWithType(type))
             {
                 return new ModuleToken(type.EcmaModule, (mdToken)MetadataTokens.GetToken(type.Handle));
             }
@@ -65,7 +72,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForMethod(MethodDesc method, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) &&
+            method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            if (_compilationModuleGroup.VersionsWithMethodBody(method) &&
                 method is EcmaMethod ecmaMethod)
             {
                 return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
@@ -84,13 +93,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ModuleToken GetModuleTokenForField(FieldDesc field, bool throwIfNotFound = true)
         {
-            if (_compilationModuleGroup.ContainsType(field.OwningType) && field is EcmaField ecmaField)
+            if (_compilationModuleGroup.VersionsWithType(field.OwningType) && field is EcmaField ecmaField)
             {
                 return new ModuleToken(ecmaField.Module, ecmaField.Handle);
             }
 
+            TypeDesc owningCanonType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            FieldDesc canonField = field;
+            if (owningCanonType != field.OwningType)
+            {
+                canonField = _typeSystemContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningCanonType);
+            }
+
             ModuleToken token;
-            if (_fieldToRefTokens.TryGetValue(field, out token))
+            if (_fieldToRefTokens.TryGetValue(canonField, out token))
             {
                 return token;
             }
@@ -132,7 +148,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AddModuleTokenForField(FieldDesc field, ModuleToken token)
         {
-            if (_compilationModuleGroup.ContainsType(field.OwningType) && field.OwningType is EcmaType)
+            if (_compilationModuleGroup.VersionsWithType(field.OwningType) && field.OwningType is EcmaType)
             {
                 // We don't need to store handles within the current compilation group
                 // as we can read them directly from the ECMA objects.
@@ -169,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 specialTypeFound = true;
             }
 
-            if (_compilationModuleGroup.ContainsType(type))
+            if (_compilationModuleGroup.VersionsWithType(type))
             {
                 // We don't need to store handles within the current compilation group
                 // as we can read them directly from the ECMA objects.
@@ -188,6 +204,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 throw new NotImplementedException(type.ToString());
             }
+        }
+
+        public int GetModuleIndex(EcmaModule module)
+        {
+            return _moduleIndexLookup(module);
         }
 
         /// <summary>

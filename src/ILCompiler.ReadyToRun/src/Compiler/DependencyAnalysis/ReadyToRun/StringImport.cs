@@ -14,8 +14,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private int _definitionOffset;
 
-        public StringImport(ImportSectionNode table, ModuleToken token)
-            : base(table, new StringImportSignature(token))
+        public StringImport(ImportSectionNode table, ModuleToken token, SignatureContext signatureContext)
+            : base(table, new StringImportSignature(token, signatureContext))
         {
             _token = token;
         }
