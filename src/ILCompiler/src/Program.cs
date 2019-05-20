@@ -425,7 +425,7 @@ namespace ILCompiler
                                 EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
                                 versionBubbleModules.Add(module);
                             }
-                            catch (Exception ex)
+                            catch (BadImageFormatException ex)
                             {
                                 Console.WriteLine("Warning: cannot open reference assembly '{0}': {1}", referenceFile, ex.Message);
                             }
