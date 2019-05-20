@@ -39,7 +39,8 @@ See the LICENSE file in the project root for more information.
     <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
     <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
     <NativeObjectExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</NativeObjectExt>
-    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.exe</NativeObjectExt>
+    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe' and '$(TargetOS)' == 'Windows_NT'">.exe</NativeObjectExt>
+    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe' and '$(TargetOS)' != 'Windows_NT'"></NativeObjectExt>
     <NativeObjectExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.dll</NativeObjectExt>
 
     <LibFileExt Condition="'$(TargetOS)' == 'Windows_NT'">.lib</LibFileExt>
@@ -59,7 +60,9 @@ See the LICENSE file in the project root for more information.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' == 'Windows_NT' and $(NativeLib) == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(TargetOS)' != 'Windows_NT' and $(NativeLib) == 'Static'">.a</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'wasm'">.html</NativeBinaryExt>
-    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe'">.exe</NativeBinaryExt>
+
+    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe' and '$(TargetOS)' == 'Windows_NT'">.exe</NativeBinaryExt>
+    <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' == 'Exe' and '$(TargetOS)' != 'Windows_NT'"></NativeBinaryExt>
     <NativeBinaryExt Condition="'$(NativeCodeGen)' == 'readytorun' and '$(OutputType)' != 'Exe'">.dll</NativeBinaryExt>
 
     <ExportsFileExt Condition="'$(OutputType)' !=  'Exe' and '$(TargetOS)' == 'Windows_NT' and '$(NativeLib)' == 'Shared'">.def</ExportsFileExt>
