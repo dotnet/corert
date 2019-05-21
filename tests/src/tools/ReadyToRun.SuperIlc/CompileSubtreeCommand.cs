@@ -44,7 +44,12 @@ namespace ReadyToRun.SuperIlc
                 .ToArray();
 
             ConcurrentBag<BuildFolder> folders = new ConcurrentBag<BuildFolder>();
-            int relativePathOffset = options.InputDirectory.FullName.Length + 1;
+            int relativePathOffset = options.InputDirectory.FullName.Length;
+            if (relativePathOffset > 0 && options.InputDirectory.FullName[relativePathOffset - 1] != Path.DirectorySeparatorChar)
+            {
+                relativePathOffset++;
+            }
+
             int folderCount = 0;
             int compilationCount = 0;
             int executionCount = 0;
