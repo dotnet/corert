@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,6 +28,8 @@ static class PathExtensions
     /// when the directory is opened in the file explorer, the propagation typically takes 2 seconds.
     /// </summary>
     const int DirectoryDeletionBackoffMilliseconds = 500;
+
+    internal static string OSExeSuffix(this string path) => (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? path + ".exe" : path);
 
     internal static string ToAbsolutePath(this string argValue) => Path.GetFullPath(argValue);
 

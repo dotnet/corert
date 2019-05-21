@@ -17,7 +17,7 @@ namespace ReadyToRun.SuperIlc
     {
         public override CompilerIndex Index => CompilerIndex.CPAOT;
 
-        protected override string CompilerFileName => "ilc.exe";
+        protected override string CompilerFileName => "ilc".OSExeSuffix();
 
         private List<string> _resolvedReferences;
 

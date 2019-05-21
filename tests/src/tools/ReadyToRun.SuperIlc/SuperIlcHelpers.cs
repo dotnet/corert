@@ -104,10 +104,12 @@ namespace ReadyToRun.SuperIlc
 
         public string CoreRunPath(CompilerIndex index, bool isFramework)
         {
-            string coreRunPath = Path.Combine(CoreRootOutputPath(index, isFramework), "CoreRun.exe");
+            string coreRunDir = CoreRootOutputPath(index, isFramework);
+            string coreRunExe = "corerun".OSExeSuffix();
+            string coreRunPath = Path.Combine(coreRunDir, coreRunExe);
             if (!File.Exists(coreRunPath))
             {
-                Console.Error.WriteLine("CoreRun.exe not found in CORE_ROOT, explicit exe launches won't work");
+                Console.Error.WriteLine($@"{coreRunExe} not found in {coreRunDir}, explicit exe launches won't work");
             }
             return coreRunPath;
         }

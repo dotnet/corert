@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ReadyToRun.SuperIlc
 {
@@ -120,6 +120,8 @@ namespace ReadyToRun.SuperIlc
             List<string> mainExecutables = new List<string>();
             List<string> executionScripts = new List<string>();
 
+            string scriptExtension = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".cmd" : ".sh");
+
             // Copy unmanaged files (runtime, native dependencies, resources, etc)
             foreach (string file in Directory.EnumerateFiles(inputDirectory))
             {
@@ -137,7 +139,7 @@ namespace ReadyToRun.SuperIlc
                 {
                     mainExecutables.Add(file);
                 }
-                else if (ext.Equals(".cmd", StringComparison.OrdinalIgnoreCase))
+                else if (ext.Equals(scriptExtension, StringComparison.OrdinalIgnoreCase))
                 {
                     executionScripts.Add(file);
                 }

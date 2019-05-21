@@ -17,7 +17,7 @@ namespace ReadyToRun.SuperIlc
     {
         public override CompilerIndex Index => CompilerIndex.Crossgen;
 
-        protected override string CompilerFileName => "crossgen.exe";
+        protected override string CompilerFileName => "crossgen".OSExeSuffix();
 
         public CrossgenRunner(BuildOptions options, IEnumerable<string> referencePaths)
             : base(options, options.CoreRootDirectory.FullName, referencePaths) { }
