@@ -34,6 +34,7 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
                         UseFramework(),
@@ -59,6 +60,7 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        DegreeOfParallelism(),
                         Sequential(),
                         Framework(),
                         UseFramework(),
@@ -81,6 +83,7 @@ namespace ReadyToRun.SuperIlc
                         Crossgen(),
                         CpaotDirectory(),
                         NoCleanup(),
+                        DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
                     },
@@ -117,6 +120,9 @@ namespace ReadyToRun.SuperIlc
 
             Option NoCleanup() =>
                 new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
+
+            Option DegreeOfParallelism() =>
+                new Option(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)", new Argument<int>());
 
             Option Sequential() =>
                 new Option(new[] { "--sequential" }, "Run tests sequentially", new Argument<bool>());

@@ -27,6 +27,7 @@ namespace ReadyToRun.SuperIlc
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
         public FileInfo PackageList { get; set; }
+        public int DegreeOfParallelism { get; set; }
         public bool Sequential { get; set; }
         public bool Framework { get; set; }
         public bool UseFramework { get; set; }

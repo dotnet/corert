@@ -99,7 +99,7 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            ParallelRunner.Run(compilationsToRun);
+            ParallelRunner.Run(compilationsToRun, _options.DegreeOfParallelism);
             
             bool success = true;
             List<KeyValuePair<string, string>> failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
@@ -190,7 +190,7 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            ParallelRunner.Run(compilationsToRun);
+            ParallelRunner.Run(compilationsToRun, _options.DegreeOfParallelism);
 
             HashSet<string> skipCopying = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             int[] failedCompilationsPerBuilder = new int[(int)CompilerIndex.Count];
@@ -252,7 +252,7 @@ namespace ReadyToRun.SuperIlc
                 AddBuildFolderExecutions(executionsToRun, folder, stopwatch);
             }
 
-            ParallelRunner.Run(executionsToRun, degreeOfParallelism: _options.Sequential ? 1 : Environment.ProcessorCount);
+            ParallelRunner.Run(executionsToRun, degreeOfParallelism: _options.Sequential ? 1 : 0);
 
             List<KeyValuePair<string, string>> failedExecutionsPerBuilder = new List<KeyValuePair<string, string>>();
 

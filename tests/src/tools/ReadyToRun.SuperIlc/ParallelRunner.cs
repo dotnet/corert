@@ -89,23 +89,18 @@ public sealed class ParallelRunner
     }
 
     /// <summary>
-    /// Execute a given set of mutually independent build commands with the default
-    /// degree of parallelism.
-    /// </summary>
-    /// <param name="processesToRun">Processes to execute in parallel</param>
-    public static void Run(IEnumerable<ProcessInfo> processesToRun)
-    {
-        Run(processesToRun, degreeOfParallelism: Environment.ProcessorCount);
-    }
-
-    /// <summary>
     /// Execute a given set of mutually independent build commands with given degree of
     /// parallelism.
     /// </summary>
     /// <param name="processesToRun">Processes to execute in parallel</param>
-    /// <param name="degreeOfParallelism">Maximum number of processes to execute in parallel</param>
-    public static void Run(IEnumerable<ProcessInfo> processesToRun, int degreeOfParallelism)
+    /// <param name="degreeOfParallelism">Maximum number of processes to execute in parallel, 0 = logical processor count</param>
+    public static void Run(IEnumerable<ProcessInfo> processesToRun, int degreeOfParallelism = 0)
     {
+        if (degreeOfParallelism == 0)
+        {
+            degreeOfParallelism = Environment.ProcessorCount;
+        }
+
         List<ProcessInfo> processList = new List<ProcessInfo>();
         bool collectEtwTraces = false;
         foreach (ProcessInfo process in processesToRun)
