@@ -6,19 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
 
-using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.PEWriter;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
-using Internal.Metadata.NativeFormat;
-using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -73,25 +68,30 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         /// <summary>
-        /// Determine OS override for the active hosting OS.
-        /// TODO: This will need changing once we enable cross-OS build
-        /// (logically this represents the target OS, not the host OS).
+        /// Determine OS machine override for the target operating system.
         /// </summary>
-        private static MachineOSOverride GetMachineOSOverride()
+        private MachineOSOverride GetMachineOSOverride()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            switch (_nodeFactory.Target.OperatingSystem)
             {
-                return MachineOSOverride.Windows;
+                case TargetOS.Windows:
+                    return MachineOSOverride.Windows;
+
+                case TargetOS.Linux:
+                    return MachineOSOverride.Linux;
+
+                case TargetOS.OSX:
+                    return MachineOSOverride.Apple;
+
+                case TargetOS.FreeBSD:
+                    return MachineOSOverride.FreeBSD;
+
+                case TargetOS.NetBSD:
+                    return MachineOSOverride.NetBSD;
+
+                default:
+                    throw new NotImplementedException(_nodeFactory.Target.OperatingSystem.ToString());
             }
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                return MachineOSOverride.Linux;
-            }
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                return MachineOSOverride.Apple;
-            }
-            throw new NotImplementedException();
         }
 
         public void EmitPortableExecutable()
