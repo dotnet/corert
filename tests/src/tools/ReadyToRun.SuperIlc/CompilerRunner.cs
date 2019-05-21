@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace ReadyToRun.SuperIlc
 {
@@ -16,6 +17,44 @@ namespace ReadyToRun.SuperIlc
         Jit,
 
         Count
+    }
+
+    internal static class Linux
+    {
+        [Flags]
+        private enum Permissions : byte
+        {
+            Read = 1,
+            Write = 2,
+            Execute = 4,
+
+            ReadExecute = Read | Execute,
+
+            ReadWriteExecute = Read | Write | Execute,
+        }
+
+        private enum PermissionGroupShift : int
+        {
+            Owner = 6,
+            Group = 3,
+            Other = 0,
+        }
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int chmod(string path, int flags);
+
+        public static void MakeExecutable(string path)
+        {
+            int errno = chmod(path,
+                ((byte)Permissions.ReadWriteExecute << (int)PermissionGroupShift.Owner) |
+                ((byte)Permissions.ReadExecute << (int)PermissionGroupShift.Owner) |
+                ((byte)Permissions.ReadExecute << (int)PermissionGroupShift.Owner));
+
+            if (errno != 0)
+            {
+                throw new Exception($@"Failed to set permissions on {path}: error code {errno}");
+            }
+        }
     }
 
     public abstract class CompilerRunner
@@ -102,8 +141,19 @@ namespace ReadyToRun.SuperIlc
         {
             string scriptToRun = GetOutputFileName(outputRoot, scriptPath);
             ProcessParameters processParameters = ExecutionProcess(modules, folders, _options.NoEtw);
-            processParameters.ProcessPath = scriptToRun;
-            processParameters.Arguments = null;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                processParameters.ProcessPath = scriptToRun;
+                processParameters.Arguments = null;
+            }
+            else
+            {
+                Linux.MakeExecutable(scriptToRun);
+                processParameters.ProcessPath = "bash";
+                processParameters.Arguments = "-c " + scriptToRun;
+            }
+
             processParameters.InputFileName = scriptToRun;
             processParameters.LogPath = scriptToRun + ".log";
             processParameters.EnvironmentOverrides["CORE_ROOT"] = _options.CoreRootOutputPath(Index, isFramework: false);
