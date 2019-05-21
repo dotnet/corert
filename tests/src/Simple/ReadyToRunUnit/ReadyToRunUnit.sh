@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-${CoreRT_CoreCLRRuntimeDir}/corerun $1/$2
+${CoreRT_CoreCLRRuntimeDir}/corerun $1/$2.exe
 if [ $? == 100 ]; then
     echo pass
     exit 0

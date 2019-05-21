@@ -23,7 +23,7 @@ internal class Program
     const int LineCountInitialValue = 0x12345678;
 
     [ThreadStatic]
-    private static string TextFileName = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\clientexclusionlist.xml";
+    private static string TextFileName = @"samplefile.txt";
 
     [ThreadStatic]
     private static int LineCount = LineCountInitialValue;
@@ -251,6 +251,25 @@ internal class Program
         {
             return p2;
         }
+    }
+
+    private static bool WriteTextFile()
+    {
+        Console.WriteLine($@"Writing file: {TextFileName}");
+        const int CharCountToWrite = 1000;
+        using (StreamWriter writer = new StreamWriter(TextFileName))
+        {
+            for (int i = 0; i < CharCountToWrite; i++)
+            {
+                writer.Write(i % 10);
+                if ((i + 1) % 80 == 0)
+                {
+                    writer.WriteLine();
+                }
+            }
+        }
+        return File.Exists(TextFileName) &&
+            new FileInfo(TextFileName).Length >= CharCountToWrite;
     }
 
     private static bool ReadAllText()
@@ -1061,6 +1080,7 @@ internal class Program
         RunTest("BoxUnbox", BoxUnbox());
         RunTest("TypeHandle", TypeHandle());
         RunTest("RuntimeTypeHandle", RuntimeTypeHandle());
+        RunTest("WriteTextFile", WriteTextFile());
         RunTest("ReadAllText", ReadAllText());
         RunTest("StreamReaderReadLine", StreamReaderReadLine());
         RunTest("SimpleDelegateTest", SimpleDelegateTest());
