@@ -47,8 +47,8 @@ namespace ReadyToRun.SuperIlc
         {
             int errno = chmod(path,
                 ((byte)Permissions.ReadWriteExecute << (int)PermissionGroupShift.Owner) |
-                ((byte)Permissions.ReadExecute << (int)PermissionGroupShift.Owner) |
-                ((byte)Permissions.ReadExecute << (int)PermissionGroupShift.Owner));
+                ((byte)Permissions.ReadExecute << (int)PermissionGroupShift.Group) |
+                ((byte)Permissions.ReadExecute << (int)PermissionGroupShift.Other));
 
             if (errno != 0)
             {
