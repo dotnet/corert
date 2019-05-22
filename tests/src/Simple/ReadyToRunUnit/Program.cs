@@ -23,7 +23,7 @@ internal class Program
     const int LineCountInitialValue = 0x12345678;
 
     [ThreadStatic]
-    private static string TextFileName = @"samplefile.txt";
+    private static string TextFileName;
 
     [ThreadStatic]
     private static int LineCount = LineCountInitialValue;
@@ -251,25 +251,6 @@ internal class Program
         {
             return p2;
         }
-    }
-
-    private static bool WriteTextFile()
-    {
-        Console.WriteLine($@"Writing file: {TextFileName}");
-        const int CharCountToWrite = 1000;
-        using (StreamWriter writer = new StreamWriter(TextFileName))
-        {
-            for (int i = 0; i < CharCountToWrite; i++)
-            {
-                writer.Write(i % 10);
-                if ((i + 1) % 80 == 0)
-                {
-                    writer.WriteLine();
-                }
-            }
-        }
-        return File.Exists(TextFileName) &&
-            new FileInfo(TextFileName).Length >= CharCountToWrite;
     }
 
     private static bool ReadAllText()
@@ -1060,15 +1041,19 @@ internal class Program
         return success;
     }
 
+    private static string EmitTextFileForTesting()
+    {
+        string file = Path.GetTempFileName();
+        File.WriteAllText(file, "Input for a test\nA small cog in the machine\nTurning endlessly\n");
+        return file;
+    }
+
     public static int Main(string[] args)
     {
-        if (args.Length > 0)
-        {
-            TextFileName = args[0];
-        }
-
         _passedTests = new List<string>();
         _failedTests = new List<string>();
+
+        TextFileName = EmitTextFileForTesting();
 
         RunTest("NewString", NewString());
         RunTest("WriteLine", WriteLine());
@@ -1080,7 +1065,6 @@ internal class Program
         RunTest("BoxUnbox", BoxUnbox());
         RunTest("TypeHandle", TypeHandle());
         RunTest("RuntimeTypeHandle", RuntimeTypeHandle());
-        RunTest("WriteTextFile", WriteTextFile());
         RunTest("ReadAllText", ReadAllText());
         RunTest("StreamReaderReadLine", StreamReaderReadLine());
         RunTest("SimpleDelegateTest", SimpleDelegateTest());
@@ -1117,12 +1101,14 @@ internal class Program
         RunTest("GVMTest", GVMTest());
         RunTest("RuntimeMethodHandle", RuntimeMethodHandle());
 
+        File.Delete(TextFileName);
+
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)
         {
             Console.WriteLine($@"    {testName}");
         }
-
+        
         if (_failedTests.Count == 0)
         {
             Console.WriteLine($@"All {_passedTests.Count} tests pass!");
