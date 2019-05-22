@@ -1001,6 +1001,10 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Text.Tests.StringBuilderTests.AppendFormat",
+                    "reason": "Outdated"
+                },
+                {
                     "name": "System.Tests.TimeSpanTests.FromMilliseconds",
                     "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
                 },
