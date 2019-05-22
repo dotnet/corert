@@ -1426,7 +1426,8 @@ uint32_t GCToOSInterface::GetCurrentProcessId()
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t dstProcNo)
 {
-    return false;
+    // There is no way to set a thread ideal processor on Unix, so do nothing.
+    return true;
 }
 
 // Get the number of the current processor
