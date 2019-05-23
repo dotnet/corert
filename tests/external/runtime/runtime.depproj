@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.App">
-      <Version>3.0.0-preview4-27428-13</Version>
+      <Version>3.0.0-preview5-27626-15</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.TestHost">
       <Version>2.0.8</Version>
