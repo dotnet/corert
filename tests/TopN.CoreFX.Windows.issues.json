@@ -990,6 +990,22 @@
                 {
                     "name": "System.Tests.AppDomainTests.ApplyPolicy",
                     "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.AppDomainTests.MonitoringSurvivedProcessMemorySize",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.AppDomainTests.MonitoringTotalProcessorTime",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.AppDomainTests.MonitoringTotalAllocatedMemorySize",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.AppDomainTests.MonitoringSurvivedMemorySize",
+                    "reason": "outdated"
                 }
             ]
         }
