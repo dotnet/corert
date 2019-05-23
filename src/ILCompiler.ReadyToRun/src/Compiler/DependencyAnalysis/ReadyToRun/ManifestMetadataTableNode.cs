@@ -156,9 +156,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             foreach (AssemblyName assemblyName in _manifestAssemblies)
             {
                 AssemblyFlags assemblyFlags = 0;
+                byte[] publicKeyOrToken;
                 if ((assemblyName.Flags & AssemblyNameFlags.PublicKey) != 0)
                 {
                     assemblyFlags |= AssemblyFlags.PublicKey;
+                    publicKeyOrToken = assemblyName.GetPublicKey();
+                }
+                else
+                {
+                    publicKeyOrToken = assemblyName.GetPublicKeyToken();
                 }
                 if ((assemblyName.Flags & AssemblyNameFlags.Retargetable) != 0)
                 {
@@ -169,7 +175,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     name: metadataBuilder.GetOrAddString(assemblyName.Name),
                     version: assemblyName.Version,
                     culture: metadataBuilder.GetOrAddString(assemblyName.CultureName),
-                    publicKeyOrToken: metadataBuilder.GetOrAddBlob(assemblyName.GetPublicKeyToken()),
+                    publicKeyOrToken: metadataBuilder.GetOrAddBlob(publicKeyOrToken),
                     flags: assemblyFlags,
                     hashValue: default(BlobHandle) /* TODO */);
             }

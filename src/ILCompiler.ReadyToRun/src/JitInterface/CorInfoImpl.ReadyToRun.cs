@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -630,9 +631,17 @@ namespace Internal.JitInterface
             return false;
         }
 
+        private EcmaModule HandleToModule(CORINFO_MODULE_STRUCT_* module)
+        {
+            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            EcmaMethod method = (EcmaMethod)methodIL.OwningMethod.GetTypicalMethodDefinition();
+            return method.Module;
+        }
+
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
-            ISymbolNode stringObject = _compilation.SymbolNodeFactory.StringLiteral(new ModuleToken(_tokenContext, metaTok), GetSignatureContext());
+            ISymbolNode stringObject = _compilation.SymbolNodeFactory.StringLiteral(
+                new ModuleToken(HandleToModule(module), metaTok), GetSignatureContext());
             ppValue = (void*)ObjectToHandle(stringObject);
             return InfoAccessType.IAT_PPVALUE;
         }
