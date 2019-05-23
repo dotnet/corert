@@ -511,7 +511,7 @@ do
         fi
     fi
     if [ "${CoreRT_TestCompileMode}" = "readytorun" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
-        if [ -e `dirname ${csproj}`/readytorun ]; then
+        if [ -e `dirname ${csproj}`/readytorun_ ]; then
             run_test_dir ${csproj} "ReadyToRun"
         fi
     fi
