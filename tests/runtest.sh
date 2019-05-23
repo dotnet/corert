@@ -47,6 +47,9 @@ run_test_dir()
     if [ "${__mode}" = "Wasm" ]; then
         __extra_args="${__extra_args} /p:NativeCodeGen=wasm"
     fi
+    if [ "${__mode}" = "ReadyToRun" ]; then
+        __extra_args="${__extra_args} /p:NativeCodeGen=readytorun"
+    fi
     if [ -n "${__extra_cxxflags}" ]; then
         __extra_cxxflags="/p:AdditionalCppCompilerFlags=\"${__extra_cxxflags}\""
         __extra_flags+=("${__extra_cxxflags}")
@@ -310,6 +313,9 @@ CoreRT_CrossBuild=0
 CoreRT_EnableCoreDumps=0
 CoreRT_TestName=*
 CoreRT_SingleThreaded=
+CoreRT_CoreCLRRuntimeDir=${CoreRT_TestRoot}/../bin/obj/Linux.${CoreRT_BuildArch}.${CoreRT_BuildType}/CoreClrRuntime
+
+export CoreRT_CoreCLRRuntimeDir
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -502,6 +508,11 @@ do
     if [ "${CoreRT_TestCompileMode}" = "cpp" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
         if [ ! -e `dirname ${csproj}`/no_cpp ]; then
             run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
+        fi
+    fi
+    if [ "${CoreRT_TestCompileMode}" = "readytorun" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
+        if [ -e `dirname ${csproj}`/readytorun_ ]; then
+            run_test_dir ${csproj} "ReadyToRun"
         fi
     fi
     if [ "${CoreRT_TestCompileMode}" = "wasm" ]; then

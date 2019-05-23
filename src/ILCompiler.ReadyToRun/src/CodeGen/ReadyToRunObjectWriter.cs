@@ -6,21 +6,30 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
-using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.PEWriter;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
-using Internal.Metadata.NativeFormat;
-using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    /// <summary>
+    /// Per-OS machine overrides. Corresponds to CoreCLR constants
+    /// IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE.
+    /// </summary>
+    public enum MachineOSOverride : ushort
+    {
+        Windows = 0,
+        Linux = 0x7B79,
+        Apple = 0x4644,
+        FreeBSD = 0xADC4,
+        NetBSD = 0x1993,        
+    }
+
     /// <summary>
     /// Object writer using R2RPEReader to directly emit Windows Portable Executable binaries
     /// </summary>
@@ -56,6 +65,33 @@ namespace ILCompiler.DependencyAnalysis
             _nodes = nodes;
             _nodeFactory = factory;
             _inputPeReader = inputPeReader;
+        }
+
+        /// <summary>
+        /// Determine OS machine override for the target operating system.
+        /// </summary>
+        private MachineOSOverride GetMachineOSOverride()
+        {
+            switch (_nodeFactory.Target.OperatingSystem)
+            {
+                case TargetOS.Windows:
+                    return MachineOSOverride.Windows;
+
+                case TargetOS.Linux:
+                    return MachineOSOverride.Linux;
+
+                case TargetOS.OSX:
+                    return MachineOSOverride.Apple;
+
+                case TargetOS.FreeBSD:
+                    return MachineOSOverride.FreeBSD;
+
+                case TargetOS.NetBSD:
+                    return MachineOSOverride.NetBSD;
+
+                default:
+                    throw new NotImplementedException(_nodeFactory.Target.OperatingSystem.ToString());
+            }
         }
 
         public void EmitPortableExecutable()
@@ -135,6 +171,20 @@ namespace ILCompiler.DependencyAnalysis
                 using (var peStream = File.Create(_objectFilePath))
                 {
                     r2rPeBuilder.Write(peStream);
+
+                    // TODO: System.Reflection.Metadata doesn't currently support
+                    // OS machine overrides. We cannot directly pass the xor-ed
+                    // target machine to PEHeaderBuilder because it may incorrectly
+                    // detect 32-bitness and emit wrong OptionalHeader.Magic.
+                    const int DosHeaderSize = 0x80;
+                    const int PESignatureSize = sizeof(uint);
+
+                    byte[] patchedTargetMachine = BitConverter.GetBytes(
+                        (ushort)unchecked((ushort)targetMachine ^ (ushort)GetMachineOSOverride()));
+                    Debug.Assert(patchedTargetMachine.Length == sizeof(ushort));
+
+                    peStream.Seek(DosHeaderSize + PESignatureSize, SeekOrigin.Begin);
+                    peStream.Write(patchedTargetMachine, 0, patchedTargetMachine.Length);
                 }
 
                 mapFile.WriteLine($@"R2R object emission finished: {DateTime.Now}, {stopwatch.ElapsedMilliseconds} msecs");
