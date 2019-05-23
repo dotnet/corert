@@ -632,6 +632,12 @@ namespace System
             return RuntimeImports.RhGetAllocatedBytesForCurrentThread();
         }
 
+        public static long GetTotalAllocatedBytes(bool precise = false)
+        {
+            // TODO: https://github.com/dotnet/corert/issues/5680
+            return default;
+        }
+
         public static GCMemoryInfo GetGCMemoryInfo()
         {
             // TODO: https://github.com/dotnet/corert/issues/5680
