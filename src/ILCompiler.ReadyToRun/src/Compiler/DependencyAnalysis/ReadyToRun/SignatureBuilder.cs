@@ -339,6 +339,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private void EmitInstantiatedTypeSignature(InstantiatedType type, SignatureContext context)
         {
+            EcmaModule targetModule = context.GetTargetModule(type);
+            EmitModuleOverride(targetModule, context);
+            context = context.InnerContext(targetModule);
             EmitElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
             EmitTypeSignature(type.GetTypeDefinition(), context);
             EmitUInt((uint)type.Instantiation.Length);
@@ -534,13 +537,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             uint fieldSigFlags = 0;
             TypeDesc canonOwnerType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
             TypeDesc ownerType = null;
-            if (canonOwnerType.IsCanonicalSubtype(CanonicalFormKind.Specific))
+            if (canonOwnerType != field.OwningType)
+            {
+                // Convert field to canonical form as this is what the field - module token lookup stores
+                field = field.Context.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)canonOwnerType);
+            }
+            if (canonOwnerType.HasInstantiation)
             {
                 ownerType = field.OwningType;
                 fieldSigFlags |= (uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_OwnerType;
-
-                // Convert field to canonical form as this is what the field - module token lookup stores
-                field = field.Context.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)canonOwnerType);
             }
 
             ModuleToken fieldToken = context.GetModuleTokenForField(field);

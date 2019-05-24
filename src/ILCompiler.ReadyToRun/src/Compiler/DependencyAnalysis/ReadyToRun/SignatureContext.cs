@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public EcmaModule GetTargetModule(FieldDesc field)
         {
-            return GetTargetModule(field.OwningType);
+            return GetModuleTokenForField(field).Module;
         }
 
         public ModuleToken GetModuleTokenForType(EcmaType type, bool throwIfNotFound = true)
