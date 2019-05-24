@@ -313,9 +313,6 @@ CoreRT_CrossBuild=0
 CoreRT_EnableCoreDumps=0
 CoreRT_TestName=*
 CoreRT_SingleThreaded=
-CoreRT_CoreCLRRuntimeDir=${CoreRT_TestRoot}/../bin/obj/Linux.${CoreRT_BuildArch}.${CoreRT_BuildType}/CoreClrRuntime
-
-export CoreRT_CoreCLRRuntimeDir
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -444,6 +441,21 @@ if [ ${CoreRT_CrossBuild} != 0 ]; then
     esac
     CoreRT_ExtraCXXFlags="$CoreRT_ExtraCXXFlags $CoreRT_CrossCXXFlags"
     CoreRT_ExtraLinkFlags="$CoreRT_ExtraLinkFlags $CoreRT_CrossLinkerFlags"
+fi
+
+CoreRT_CoreCLRRuntimeDir=${CoreRT_TestRoot}/../bin/obj/Linux.${CoreRT_BuildArch}.${CoreRT_BuildType}/CoreClrRuntime
+
+export CoreRT_CoreCLRRuntimeDir
+
+if [ ! -d ${CoreRT_CoreCLRRuntimeDir} ]; then
+    # The test build handles restoring external dependencies such as CoreCLR runtime and its test host
+    # Trigger the test build so it will build but not run tests before we run them here
+    ${CoreRT_TestRoot}/../buildscripts/build-tests.sh buildtests
+    RestoreExitCode=$?
+    if [ ${RestoreExitCode} != 0 ]; then
+        echo Test build failed with code ${RestoreExitCode}
+        exit ${RestoreExitCode}
+    fi
 fi
 
 source "$CoreRT_TestRoot/testenv.sh"
