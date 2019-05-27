@@ -50,18 +50,18 @@ namespace System.Threading
             /// - <see cref="WaitableObject"/>s that are waited upon by the thread. This array is also used for temporarily
             ///   storing <see cref="WaitableObject"/>s corresponding to <see cref="WaitHandle"/>s when the thread is not
             ///   waiting.
-            /// - The count of this array is a power of 2, the filled count is <see cref="_waitedCount"/>
+            /// - The filled count is <see cref="_waitedCount"/>
             /// - Indexes in all arrays that use <see cref="_waitedCount"/> correspond
             /// </summary>
-            private WaitHandleArray<WaitableObject> _waitedObjects;
+            private WaitableObject[] _waitedObjects;
 
             /// <summary>
             /// - Nodes used for registering a thread's wait on each <see cref="WaitableObject"/>, in the
             ///   <see cref="WaitableObject.WaitersHead"/> linked list
-            /// - The count of this array is a power of 2, the filled count is <see cref="_waitedCount"/>
+            /// - The filled count is <see cref="_waitedCount"/>
             /// - Indexes in all arrays that use <see cref="_waitedCount"/> correspond
             /// </summary>
-            private WaitHandleArray<WaitedListNode> _waitedListNodes;
+            private WaitedListNode[] _waitedListNodes;
 
             /// <summary>
             /// Indicates whether the next wait should be interrupted.
@@ -94,8 +94,8 @@ namespace System.Threading
                 _waitMonitor = new LowLevelMonitor();
                 _waitSignalState = WaitSignalState.NotWaiting;
                 _waitedObjectIndexThatSatisfiedWait = -1;
-                _waitedObjects = new WaitHandleArray<WaitableObject>(elementInitializer: null);
-                _waitedListNodes = new WaitHandleArray<WaitedListNode>(i => new WaitedListNode(this, i));
+                _waitedObjects = Array.Empty<WaitableObject>();
+                _waitedListNodes = Array.Empty<WaitedListNode>();
             }
 
             public Thread Thread => _thread;
@@ -118,9 +118,19 @@ namespace System.Threading
                 Debug.Assert(_thread == Thread.CurrentThread);
                 Debug.Assert(_waitedCount == 0);
 
-                _waitedObjects.VerifyElementsAreDefault();
-                _waitedObjects.EnsureCapacity(requiredCapacity);
-                return _waitedObjects.Items;
+#if DEBUG
+                for (int i = 0; i < _waitedObjects.Length; ++i)
+                {
+                    Debug.Assert(_waitedObjects[i] == null);
+                }
+#endif
+
+                int currentLength = _waitedObjects.Length;
+                if (currentLength < requiredCapacity)
+                    _waitedObjects = new WaitableObject[Math.Max(requiredCapacity,
+                        Math.Min(WaitHandle.MaxWaitHandles, 4 + 2 * currentLength))];
+
+                return _waitedObjects;
             }
 
             private WaitedListNode[] GetWaitedListNodeArray(int requiredCapacity)
@@ -128,8 +138,20 @@ namespace System.Threading
                 Debug.Assert(_thread == Thread.CurrentThread);
                 Debug.Assert(_waitedCount == 0);
 
-                _waitedListNodes.EnsureCapacity(requiredCapacity, i => new WaitedListNode(this, i));
-                return _waitedListNodes.Items;
+                int currentLength = _waitedListNodes.Length;
+                if (currentLength < requiredCapacity)
+                {
+                    WaitedListNode[] newItems = new WaitedListNode[Math.Max(requiredCapacity,
+                        Math.Min(WaitHandle.MaxWaitHandles, 4 + 2 * currentLength))];
+
+                    Array.Copy(_waitedListNodes, 0, newItems, 0, currentLength);
+                    for (int i = currentLength; i < newItems.Length; i++)
+                        newItems[i] = new WaitedListNode(this, i);
+
+                    _waitedListNodes = newItems;
+                }
+
+                return _waitedListNodes;
             }
 
             /// <summary>
@@ -141,11 +163,11 @@ namespace System.Threading
                 Debug.Assert(_thread == Thread.CurrentThread);
 
                 Debug.Assert(waitedCount > (isWaitForAll ? 1 : 0));
-                Debug.Assert(waitedCount <= _waitedObjects.Items.Length);
+                Debug.Assert(waitedCount <= _waitedObjects.Length);
 
                 Debug.Assert(_waitedCount == 0);
 
-                WaitableObject[] waitedObjects = _waitedObjects.Items;
+                WaitableObject[] waitedObjects = _waitedObjects;
 #if DEBUG
                 for (int i = 0; i < waitedCount; ++i)
                 {
@@ -202,8 +224,8 @@ namespace System.Threading
 
                 for (int i = 0; i < _waitedCount; ++i)
                 {
-                    _waitedListNodes.Items[i].UnregisterWait(_waitedObjects.Items[i]);
-                    _waitedObjects.Items[i] = null;
+                    _waitedListNodes[i].UnregisterWait(_waitedObjects[i]);
+                    _waitedObjects[i] = null;
                 }
                 _waitedCount = 0;
             }
@@ -397,18 +419,14 @@ namespace System.Threading
 
                 int signaledWaitedObjectIndex = registeredListNode.WaitedObjectIndex;
                 bool isWaitForAll = _isWaitForAll;
-                int waitedCount = 0;
-                WaitableObject[] waitedObjects = null;
                 bool wouldAnyMutexReacquireCountOverflow = false;
                 if (isWaitForAll)
                 {
                     // Determine if all waits would be satisfied
-                    waitedCount = _waitedCount;
-                    waitedObjects = _waitedObjects.Items;
                     if (!WaitableObject.WouldWaitForAllBeSatisfiedOrAborted(
                             _thread,
-                            waitedObjects,
-                            waitedCount,
+                            _waitedObjects,
+                            _waitedCount,
                             signaledWaitedObjectIndex,
                             ref wouldAnyMutexReacquireCountOverflow,
                             ref isAbandonedMutex))
@@ -430,7 +448,7 @@ namespace System.Threading
                 if (isWaitForAll && !wouldAnyMutexReacquireCountOverflow)
                 {
                     // All waits would be satisfied, accept the signals
-                    WaitableObject.SatisfyWaitForAll(this, waitedObjects, waitedCount, signaledWaitedObjectIndex);
+                    WaitableObject.SatisfyWaitForAll(this, _waitedObjects, _waitedCount, signaledWaitedObjectIndex);
                 }
 
                 UnregisterWait();
