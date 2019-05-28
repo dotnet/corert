@@ -94,8 +94,10 @@ namespace System.Threading
                 _waitMonitor = new LowLevelMonitor();
                 _waitSignalState = WaitSignalState.NotWaiting;
                 _waitedObjectIndexThatSatisfiedWait = -1;
-                _waitedObjects = Array.Empty<WaitableObject>();
-                _waitedListNodes = Array.Empty<WaitedListNode>();
+
+                // Preallocate to make waiting for single handle fault-free
+                _waitedObjects = new WaitableObject[1];
+                _waitedListNodes = new WaitedListNode[1] { new WaitedListNode(this, 0) };
             }
 
             public Thread Thread => _thread;
@@ -128,7 +130,7 @@ namespace System.Threading
                 int currentLength = _waitedObjects.Length;
                 if (currentLength < requiredCapacity)
                     _waitedObjects = new WaitableObject[Math.Max(requiredCapacity,
-                        Math.Min(WaitHandle.MaxWaitHandles, 4 + 2 * currentLength))];
+                        Math.Min(WaitHandle.MaxWaitHandles, 2 * currentLength))];
 
                 return _waitedObjects;
             }
@@ -142,7 +144,7 @@ namespace System.Threading
                 if (currentLength < requiredCapacity)
                 {
                     WaitedListNode[] newItems = new WaitedListNode[Math.Max(requiredCapacity,
-                        Math.Min(WaitHandle.MaxWaitHandles, 4 + 2 * currentLength))];
+                        Math.Min(WaitHandle.MaxWaitHandles, 2 * currentLength))];
 
                     Array.Copy(_waitedListNodes, 0, newItems, 0, currentLength);
                     for (int i = currentLength; i < newItems.Length; i++)

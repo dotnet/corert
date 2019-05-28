@@ -347,37 +347,6 @@ namespace System.Threading
                     prioritize: false);
         }
 
-        public static int Wait(
-            Thread currentThread,
-            WaitableObject waitableObject0,
-            WaitableObject waitableObject1,
-            bool waitForAll,
-            int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
-        {
-            Debug.Assert(currentThread == Thread.CurrentThread);
-            Debug.Assert(waitableObject0 != null);
-            Debug.Assert(waitableObject1 != null);
-            Debug.Assert(waitableObject1 != waitableObject0);
-            Debug.Assert(timeoutMilliseconds >= -1);
-
-            ThreadWaitInfo waitInfo = currentThread.WaitInfo;
-            int count = 2;
-            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(count);
-            waitableObjects[0] = waitableObject0;
-            waitableObjects[1] = waitableObject1;
-            return
-                WaitableObject.Wait(
-                    waitableObjects,
-                    count,
-                    waitForAll,
-                    waitInfo,
-                    timeoutMilliseconds,
-                    interruptible,
-                    prioritize);
-        }
-
         public static int SignalAndWait(
             IntPtr handleToSignal,
             IntPtr handleToWaitOn,

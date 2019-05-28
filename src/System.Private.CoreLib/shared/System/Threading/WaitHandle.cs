@@ -185,7 +185,7 @@ namespace System.Threading
             if (currentLength < capacity)
             {
                 safeWaitHandles = new SafeWaitHandle[Math.Max(capacity,
-                    Math.Min(MaxWaitHandles, 4 + 2 * currentLength))];
+                    Math.Min(MaxWaitHandles, 2 * currentLength))];
             }
 
             return safeWaitHandles;
