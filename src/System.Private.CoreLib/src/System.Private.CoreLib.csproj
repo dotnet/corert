@@ -13,7 +13,7 @@
     <AssemblyKey>MSFT</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
     <!-- Disable nullability-related warnings -->
-    <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8606;CS8608;CS8609;CS8610;CS8611;CS8612;CS8614;CS8615;CS8617;CS8618;CS8620;CS8622;CS8625;CS8631;CS8632;CS8634;CS8653</NoWarn>
+    <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8606;CS8608;CS8609;CS8610;CS8611;CS8612;CS8614;CS8615;CS8617;CS8618;CS8620;CS8622;CS8625;CS8626;CS8631;CS8632;CS8634;CS8653</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />
@@ -307,8 +307,8 @@
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.NonPortable.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.CoreRT.cs" />
-    <Compile Include="System\WeakReference.cs" />
-    <Compile Include="System\WeakReferenceOfT.cs" />
+    <Compile Include="System\WeakReference.CoreRT.cs" />
+    <Compile Include="System\WeakReference.T.CoreRT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ExitProcess.cs">

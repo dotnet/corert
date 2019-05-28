@@ -105,8 +105,6 @@ namespace System
 
         private IDictionary CreateDataContainer() => new ListDictionaryInternal();
 
-        private string GetStackTrace(bool needFileInfo) => StackTrace;
-
         private string SerializationStackTraceString => StackTrace;
         private string SerializationRemoteStackTraceString => null;
         private string SerializationWatsonBuckets => null;
