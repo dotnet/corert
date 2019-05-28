@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-** Purpose: A wrapper for establishing a WeakReference to an Object.
-**
-===========================================================*/
-
-using System;
 using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -20,9 +12,7 @@ using Internal.Runtime.Augments;
 
 namespace System
 {
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class WeakReference : ISerializable
+    public partial class WeakReference
     {
         // If you fix bugs here, please fix them in WeakReference<T> at the same time.
 
@@ -32,40 +22,16 @@ namespace System
         internal volatile IntPtr m_handle;
         internal bool m_IsLongReference;
 
-        // Creates a new WeakReference that keeps track of target.
-        // Assumes a Short Weak Reference (ie TrackResurrection is false.)
-        //
-        public WeakReference(object target)
-            : this(target, false)
-        {
-        }
-
-        //Creates a new WeakReference that keeps track of target.
-        //
-        public WeakReference(object target, bool trackResurrection)
+        private void Create(object target, bool trackResurrection)
         {
             m_IsLongReference = trackResurrection;
             m_handle = GCHandle.ToIntPtr(GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak));
 
-            // Set the conditional weak table if the target is a __ComObject.
-            TrySetComTarget(target);
-        }
-
-        protected WeakReference(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
+            if (target != null)
             {
-                throw new ArgumentNullException(nameof(info));
+                // Set the conditional weak table if the target is a __ComObject.
+                TrySetComTarget(target);
             }
-
-            object target = info.GetValue("TrackedObject", typeof(object)); // Do not rename (binary serialization)
-            bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
-
-            m_IsLongReference = trackResurrection;
-            m_handle = GCHandle.ToIntPtr(GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak));
-
-            // Set the conditional weak table if the target is a __ComObject.
-            TrySetComTarget(target);
         }
 
         //Determines whether or not this instance of WeakReference still refers to an object
@@ -224,17 +190,6 @@ namespace System
 #endif // ENABLE_WINRT
         }
 
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            info.AddValue("TrackedObject", Target, typeof(object)); // Do not rename (binary serialization)
-            info.AddValue("TrackResurrection", m_IsLongReference); // Do not rename (binary serialization)
-        }
-
         // Free all system resources associated with this reference.
         ~WeakReference()
         {
@@ -244,5 +199,7 @@ namespace System
             if (handle != default(IntPtr))
                 ((GCHandle)handle).Free();
         }
+
+        private bool IsTrackResurrection() => m_IsLongReference;
     }
 }

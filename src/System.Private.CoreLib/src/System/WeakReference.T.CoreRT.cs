@@ -2,47 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-** Purpose: A wrapper for establishing a WeakReference to a generic type.
-**
-===========================================================*/
-
-using System;
 using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Threading;
-using System.Diagnostics;
 
-using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    // This class is sealed to mitigate security issues caused by Object::MemberwiseClone.
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class WeakReference<T> : ISerializable where T : class
+    public sealed partial class WeakReference<T>
+        where T : class?
     {
         // If you fix bugs here, please fix them in WeakReference at the same time.
 
         internal volatile IntPtr m_handle;
         private bool m_trackResurrection;
 
-        // Creates a new WeakReference that keeps track of target.
-        // Assumes a Short Weak Reference (ie TrackResurrection is false.)
-        //
-        public WeakReference(T target)
-            : this(target, false)
-        {
-        }
 
         //Creates a new WeakReference that keeps track of target.
         //
-        public WeakReference(T target, bool trackResurrection)
+        private void Create(T target, bool trackResurrection)
         {
             m_handle = (IntPtr)GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
             m_trackResurrection = trackResurrection;
@@ -52,41 +31,6 @@ namespace System
                 // Set the conditional weak table if the target is a __ComObject.
                 TrySetComTarget(target);
             }
-        }
-
-        internal WeakReference(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            T target = (T)info.GetValue("TrackedObject", typeof(T)); // Do not rename (binary serialization)
-            bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
-
-            m_handle = (IntPtr)GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
-
-            if (target != null)
-            {
-                // Set the conditional weak table if the target is a __ComObject.
-                TrySetComTarget(target);
-            }
-        }
-
-        //
-        // We are exposing TryGetTarget instead of a simple getter to avoid a common problem where people write incorrect code like:
-        //
-        //      WeakReference ref = ...;
-        //      if (ref.Target != null)
-        //          DoSomething(ref.Target)
-        //
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetTarget(out T target)
-        {
-            // Call the worker method that has more performant but less user friendly signature.
-            T o = GetTarget();
-            target = o;
-            return o != null;
         }
 
         public void SetTarget(T target)
@@ -101,31 +45,33 @@ namespace System
             GC.KeepAlive(this);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private T GetTarget()
+        private T Target
         {
-            IntPtr h = m_handle;
-
-            // Should only happen for corner cases, like using a
-            // WeakReference from a finalizer.
-            if (default(IntPtr) == h)
-                return null;
-
-            T target = Unsafe.As<T>(RuntimeImports.RhHandleGet(h));
-
-            if (target == null)
+            get
             {
-                target = TryGetComTarget() as T;
+                IntPtr h = m_handle;
+
+                // Should only happen for corner cases, like using a
+                // WeakReference from a finalizer.
+                if (default(IntPtr) == h)
+                    return default;
+
+                T target = Unsafe.As<T>(RuntimeImports.RhHandleGet(h));
+
+                if (target == null)
+                {
+                    target = TryGetComTarget() as T;
+                }
+
+                // We want to ensure that the handle was still alive when we fetched the target,
+                // so we double check m_handle here. Note that the reading of the handle
+                // value has to be volatile for this to work, but reading of m_handle does not.
+
+                if (default(IntPtr) == m_handle)
+                    return default;
+
+                return target;
             }
-
-            // We want to ensure that the handle was still alive when we fetched the target,
-            // so we double check m_handle here. Note that the reading of the handle
-            // value has to be volatile for this to work, but reading of m_handle does not.
-
-            if (default(IntPtr) == m_handle)
-                return null;
-
-            return target;
         }
 
         /// <summary>
@@ -134,7 +80,7 @@ namespace System
         /// and gets\create a new RCW in case it is alive.
         /// </summary>
         /// <returns></returns>
-        private object TryGetComTarget()
+        private object? TryGetComTarget()
         {
 #if ENABLE_WINRT
             WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
@@ -184,16 +130,6 @@ namespace System
             }
         }
 
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            info.AddValue("TrackedObject", this.GetTarget(), typeof(T)); // Do not rename (binary serialization)
-            info.AddValue("TrackResurrection", m_trackResurrection); // Do not rename (binary serialization)
-        }
+        private bool IsTrackResurrection() => m_trackResurrection;
     }
 }
