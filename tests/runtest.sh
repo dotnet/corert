@@ -499,6 +499,8 @@ __JitTotalTests=0
 __JitPassedTests=0
 __WasmTotalTests=0
 __WasmPassedTests=0
+__ReadyToRunTotalTests=0
+__ReadyToRunPassedTests=0
 
 if [ ! -d ${__CoreRTTestBinDir} ]; then
     mkdir -p ${__CoreRTTestBinDir}
@@ -523,7 +525,7 @@ do
         fi
     fi
     if [ "${CoreRT_TestCompileMode}" = "readytorun" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
-        if [ -e `dirname ${csproj}`/readytorun_ ]; then
+        if [ -e `dirname ${csproj}`/readytorun ]; then
             run_test_dir ${csproj} "ReadyToRun"
         fi
     fi
@@ -534,8 +536,8 @@ do
     fi
 done
 
-__TotalTests=$((${__JitTotalTests} + ${__CppTotalTests} + ${__WasmTotalTests}))
-__PassedTests=$((${__JitPassedTests} + ${__CppPassedTests} + ${__WasmPassedTests}))
+__TotalTests=$((${__JitTotalTests} + ${__CppTotalTests} + ${__WasmTotalTests} + ${__ReadyToRunTotalTests}))
+__PassedTests=$((${__JitPassedTests} + ${__CppPassedTests} + ${__WasmPassedTests} + ${__ReadyToRunPassedTests}))
 __FailedTests=$((${__TotalTests} - ${__PassedTests}))
 
 if [ "$CoreRT_MultiFileConfiguration" = "MultiModule" ]; then
@@ -559,6 +561,7 @@ echo "</assemblies>"  >> ${__TestResultsLog}
 echo "JIT - TOTAL: ${__JitTotalTests} PASSED: ${__JitPassedTests}"
 echo "CPP - TOTAL: ${__CppTotalTests} PASSED: ${__CppPassedTests}"
 echo "WASM - TOTAL: ${__WasmTotalTests} PASSED: ${__WasmPassedTests}"
+echo "R2R - TOTAL: ${__ReadyToRunTotalTests} PASSED: ${__ReadyToRunPassedTests}"
 
 if [ ${__JitTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" != "wasm" ]; then
     exit 1
@@ -566,18 +569,13 @@ fi
 if [ ${__CppTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" != "wasm" ]; then
     exit 1
 fi
-if [ ${__WasmTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" = "wasm" ]; then
+if [ ${__WasmTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" == "wasm" ]; then
     exit 1
 fi 
-
-if [ ${__JitTotalTests} -gt ${__JitPassedTests} ]; then
+if [ $(__ReadyToRunTotalTests) == 0 ] && [ "${CoreRT_TestCompileMode}" == "readytorun" ]; then
     exit 1
 fi
-if [ ${__CppTotalTests} -gt ${__CppPassedTests} ]; then
+if [ ${__FailedTests} -gt 0 ]; then
     exit 1
 fi
-if [ ${__WasmTotalTests} -gt ${__WasmPassedTests} ]; then
-    exit 1
-fi
-
 exit 0

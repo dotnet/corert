@@ -17,6 +17,7 @@ using System.Runtime.CompilerServices;
 using ILCompiler.DependencyAnalysis;
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.PEWriter
 {
@@ -201,6 +202,11 @@ namespace ILCompiler.PEWriter
     public class SectionBuilder
     {
         /// <summary>
+        /// Target OS / architecture.
+        /// </summary>
+        TargetDetails _target;
+
+        /// <summary>
         /// Map from symbols to their target sections and offsets.
         /// </summary>
         Dictionary<ISymbolNode, SymbolTarget> _symbolMap;
@@ -246,6 +252,12 @@ namespace ILCompiler.PEWriter
         int _readyToRunHeaderSize;
 
         /// <summary>
+        /// Padding 4-byte sequence to use in code section. Typically corresponds
+        /// to some interrupt to be thrown at "invalid" IP addresses.
+        /// </summary>
+        uint _codePadding;
+
+        /// <summary>
         /// For PE files with exports, this is the "DLL name" string to store in the export directory table.
         /// </summary>
         string _dllNameForExportDirectoryTable;
@@ -253,8 +265,9 @@ namespace ILCompiler.PEWriter
         /// <summary>
         /// Construct an empty section builder without any sections or blocks.
         /// </summary>
-        public SectionBuilder()
+        public SectionBuilder(TargetDetails target)
         {
+            _target = target;
             _symbolMap = new Dictionary<ISymbolNode, SymbolTarget>();
             _sections = new List<Section>();
             _exportSymbols = new List<ExportSymbol>();
@@ -262,6 +275,27 @@ namespace ILCompiler.PEWriter
             _exportDirectoryEntry = default(DirectoryEntry);
             _relocationDirectoryEntry = default(DirectoryEntry);
             _sectionStartNodeLookup = null;
+
+            switch (_target.Architecture)
+            {
+                case TargetArchitecture.X86:
+                case TargetArchitecture.X64:
+                    // 4 times INT 3 (or debugger break)
+                    _codePadding = 0xCCCCCCCCu;
+                    break;
+
+                case TargetArchitecture.ARM:
+                    // 2 times undefined instruction used as debugger break
+                    _codePadding = (_target.IsWindows ? 0xDEFEDEFEu : 0xDE01DE01u);
+                    break;
+
+                case TargetArchitecture.ARM64:
+                    _codePadding = 0xD43E0000u;
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         /// <summary>
@@ -384,14 +418,28 @@ namespace ILCompiler.PEWriter
                 int padding = alignedOffset - section.Content.Count;
                 if (padding > 0)
                 {
-                    byte paddingByte = 0;
                     if ((section.Characteristics & SectionCharacteristics.ContainsCode) != 0)
                     {
-                        // TODO: only use INT3 on x86 & amd64
-                        paddingByte = 0xCC;
+                        uint cp = _codePadding;
+                        while (padding >= sizeof(uint))
+                        {
+                            section.Content.WriteUInt32(cp);
+                            padding -= sizeof(uint);
+                        }
+                        if (padding >= 2)
+                        {
+                            section.Content.WriteUInt16(unchecked((ushort)cp));
+                            cp >>= 16;
+                        }
+                        if ((padding & 1) != 0)
+                        {
+                            section.Content.WriteByte(unchecked((byte)cp));
+                        }
                     }
-
-                    section.Content.WriteBytes(paddingByte, padding);
+                    else
+                    {
+                        section.Content.WriteBytes(0, padding);
+                    }
                 }
             }
 

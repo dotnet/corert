@@ -67,33 +67,6 @@ namespace ILCompiler.DependencyAnalysis
             _inputPeReader = inputPeReader;
         }
 
-        /// <summary>
-        /// Determine OS machine override for the target operating system.
-        /// </summary>
-        private MachineOSOverride GetMachineOSOverride()
-        {
-            switch (_nodeFactory.Target.OperatingSystem)
-            {
-                case TargetOS.Windows:
-                    return MachineOSOverride.Windows;
-
-                case TargetOS.Linux:
-                    return MachineOSOverride.Linux;
-
-                case TargetOS.OSX:
-                    return MachineOSOverride.Apple;
-
-                case TargetOS.FreeBSD:
-                    return MachineOSOverride.FreeBSD;
-
-                case TargetOS.NetBSD:
-                    return MachineOSOverride.NetBSD;
-
-                default:
-                    throw new NotImplementedException(_nodeFactory.Target.OperatingSystem.ToString());
-            }
-        }
-
         public void EmitPortableExecutable()
         {
             bool succeeded = false;
@@ -111,21 +84,8 @@ namespace ILCompiler.DependencyAnalysis
                 stopwatch.Start();
                 mapFile.WriteLine($@"R2R object emission started: {DateTime.Now}");
 
-                Machine targetMachine;
-                switch (_nodeFactory.Target.Architecture)
-                {
-                    case Internal.TypeSystem.TargetArchitecture.X64:
-                        targetMachine = Machine.Amd64;
-                        break;
-                    case Internal.TypeSystem.TargetArchitecture.X86:
-                        targetMachine = Machine.I386;
-                        break;
-                    default:
-                        throw new NotImplementedException(_nodeFactory.Target.Architecture.ToString());
-                }
-
                 R2RPEBuilder r2rPeBuilder = new R2RPEBuilder(
-                    targetMachine,
+                    _nodeFactory.Target,
                     _inputPeReader,
                     _nodeFactory.SectionStartNode,
                     GetRuntimeFunctionsTable);
@@ -171,20 +131,6 @@ namespace ILCompiler.DependencyAnalysis
                 using (var peStream = File.Create(_objectFilePath))
                 {
                     r2rPeBuilder.Write(peStream);
-
-                    // TODO: System.Reflection.Metadata doesn't currently support
-                    // OS machine overrides. We cannot directly pass the xor-ed
-                    // target machine to PEHeaderBuilder because it may incorrectly
-                    // detect 32-bitness and emit wrong OptionalHeader.Magic.
-                    const int DosHeaderSize = 0x80;
-                    const int PESignatureSize = sizeof(uint);
-
-                    byte[] patchedTargetMachine = BitConverter.GetBytes(
-                        (ushort)unchecked((ushort)targetMachine ^ (ushort)GetMachineOSOverride()));
-                    Debug.Assert(patchedTargetMachine.Length == sizeof(ushort));
-
-                    peStream.Seek(DosHeaderSize + PESignatureSize, SeekOrigin.Begin);
-                    peStream.Write(patchedTargetMachine, 0, patchedTargetMachine.Length);
                 }
 
                 mapFile.WriteLine($@"R2R object emission finished: {DateTime.Now}, {stopwatch.ElapsedMilliseconds} msecs");
