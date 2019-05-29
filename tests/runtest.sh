@@ -572,7 +572,7 @@ fi
 if [ ${__WasmTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" == "wasm" ]; then
     exit 1
 fi 
-if [ $(__ReadyToRunTotalTests) == 0 ] && [ "${CoreRT_TestCompileMode}" == "readytorun" ]; then
+if [ ${__ReadyToRunTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" == "readytorun" ]; then
     exit 1
 fi
 if [ ${__FailedTests} -gt 0 ]; then
