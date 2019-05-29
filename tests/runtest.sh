@@ -450,7 +450,7 @@ export CoreRT_CoreCLRRuntimeDir
 if [ ! -d ${CoreRT_CoreCLRRuntimeDir} ]; then
     # The test build handles restoring external dependencies such as CoreCLR runtime and its test host
     # Trigger the test build so it will build but not run tests before we run them here
-    ${CoreRT_TestRoot}/../buildscripts/build-tests.sh buildtests
+    ${CoreRT_TestRoot}/../buildscripts/build-tests.sh ${CoreRT_BuildArch} ${CoreRT_BuildType} buildtests
     RestoreExitCode=$?
     if [ ${RestoreExitCode} != 0 ]; then
         echo Test build failed with code ${RestoreExitCode}
@@ -525,7 +525,7 @@ do
         fi
     fi
     if [ "${CoreRT_TestCompileMode}" = "readytorun" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
-        if [ -e `dirname ${csproj}`/readytorun_ ]; then
+        if [ -e `dirname ${csproj}`/readytorun ]; then
             run_test_dir ${csproj} "ReadyToRun"
         fi
     fi
