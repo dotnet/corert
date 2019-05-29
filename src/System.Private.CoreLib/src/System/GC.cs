@@ -648,5 +648,10 @@ namespace System
         {
             return RuntimeImports.RhGetGCSegmentSize();
         }
+
+        internal static T[] AllocateUninitializedArray<T>(int length)
+        {
+            return new T[length];
+        }
     }
 }
