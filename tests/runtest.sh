@@ -443,7 +443,9 @@ if [ ${CoreRT_CrossBuild} != 0 ]; then
     CoreRT_ExtraLinkFlags="$CoreRT_ExtraLinkFlags $CoreRT_CrossLinkerFlags"
 fi
 
-CoreRT_CoreCLRRuntimeDir=${CoreRT_TestRoot}/../bin/obj/Linux.${CoreRT_BuildArch}.${CoreRT_BuildType}/CoreClrRuntime
+source "$CoreRT_TestRoot/testenv.sh"
+
+CoreRT_CoreCLRRuntimeDir=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/CoreClrRuntime
 
 export CoreRT_CoreCLRRuntimeDir
 
@@ -457,8 +459,6 @@ if [ ! -d ${CoreRT_CoreCLRRuntimeDir} ]; then
         exit ${RestoreExitCode}
     fi
 fi
-
-source "$CoreRT_TestRoot/testenv.sh"
 
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
 __CoreRTTestBinDir=${CoreRT_TestRoot}/../bin/tests
