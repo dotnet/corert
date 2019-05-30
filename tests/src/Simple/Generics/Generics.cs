@@ -31,6 +31,7 @@ class Program
         TestClassVTableTracking.Run();
         TestReflectionInvoke.Run();
         TestFieldAccess.Run();
+        TestDevirtualization.Run();
 #if !CODEGEN_CPP
         TestNullableCasting.Run();
         TestMDArrayAddressMethod.Run();
@@ -2209,6 +2210,161 @@ class Program
             RefStruct<string> r = default;
             if (r.ToString() != "System.String")
                 throw new Exception();
+        }
+    }
+
+    class TestDevirtualization
+    {
+        interface IDevirt
+        {
+            int GetAndSet(int x);
+        }
+
+        struct Devirt : IDevirt
+        {
+            public int X;
+
+            public int GetAndSet(int x)
+            {
+                int result = X;
+                X = x;
+                return result;
+            }
+        }
+
+        interface IGenericDevirt
+        {
+            int GetAndSet(int x);
+            Type GetTheType();
+        }
+
+        struct GenericDevirt<T> : IGenericDevirt
+        {
+            public int X;
+
+            public int GetAndSet(int x)
+            {
+                int result = X;
+                X = x;
+                return result;
+            }
+
+            public Type GetTheType()
+            {
+                return typeof(T);
+            }
+        }
+
+        static void DoSimpleDevirt()
+        {
+            // This will potentially transform to a direct call
+            int result = ((IDevirt)new Devirt { X = 123 }).GetAndSet(456);
+            if (result != 123)
+                throw new Exception();
+        }
+
+        static void DoSimpleDevirtBoxed()
+        {
+            object o = new Devirt { X = 123 };
+
+            // Force o to be boxed no matter what
+            o.ToString();
+
+            // This will potentially transform to a direct call
+            int result = ((IDevirt)o).GetAndSet(456);
+            if (result != 123)
+                throw new Exception();
+
+            if (((Devirt)o).X != 456)
+                throw new Exception();
+        }
+
+        static void DoGenericDevirt()
+        {
+            // This will potentially transform to a direct call
+            int result1 = ((IGenericDevirt)new GenericDevirt<string> { X = 123 }).GetAndSet(456);
+            if (result1 != 123)
+                throw new Exception();
+
+            // This will potentially transform to a direct call
+            Type result2 = ((IGenericDevirt)new GenericDevirt<string>()).GetTheType();
+            if (result2 != typeof(string))
+                throw new Exception();
+        }
+
+        static void DoGenericDevirtBoxed()
+        {
+            object o1 = new GenericDevirt<string> { X = 123 };
+
+            // Force o1 to be boxed no matter what
+            o1.ToString();
+
+            // This will potentially transform to a direct call
+            int result1 = ((IGenericDevirt)o1).GetAndSet(456);
+            if (result1 != 123)
+                throw new Exception();
+
+            if (((GenericDevirt<string>)o1).X != 456)
+                throw new Exception();
+
+            object o2 = new GenericDevirt<string> { X = 123 };
+
+            // Force o2 to be boxed no matter what
+            o2.ToString();
+
+            // This will potentially transform to a direct call
+            Type result2 = ((IGenericDevirt)o2).GetTheType();
+            if (result2 != typeof(string))
+                throw new Exception();
+        }
+
+        static void DoGenericDevirtShared<T>()
+        {
+            // This will potentially transform to a direct call
+            int result1 = ((IGenericDevirt)new GenericDevirt<T[]> { X = 123 }).GetAndSet(456);
+            if (result1 != 123)
+                throw new Exception();
+
+            // This will potentially transform to a direct call
+            Type result2 = ((IGenericDevirt)new GenericDevirt<T[]>()).GetTheType();
+            if (result2 != typeof(T[]))
+                throw new Exception();
+        }
+
+        static void DoGenericDevirtBoxedShared<T>()
+        {
+            object o1 = new GenericDevirt<T[]> { X = 123 };
+
+            // Force o1 to be boxed no matter what
+            o1.ToString();
+
+            // This will potentially transform to a direct call
+            int result1 = ((IGenericDevirt)o1).GetAndSet(456);
+            if (result1 != 123)
+                throw new Exception();
+
+            if (((GenericDevirt<T[]>)o1).X != 456)
+                throw new Exception();
+
+            object o2 = new GenericDevirt<T[]> { X = 123 };
+
+            // Force o2 to be boxed no matter what
+            o2.ToString();
+
+            // This will potentially transform to a direct call
+            Type result2 = ((IGenericDevirt)o2).GetTheType();
+            if (result2 != typeof(T[]))
+                throw new Exception();
+        }
+
+        public static void Run()
+        {
+            DoSimpleDevirt();
+            DoSimpleDevirtBoxed();
+            DoGenericDevirt();
+            DoGenericDevirtBoxed();
+            DoGenericDevirtShared<string>();
+            DoGenericDevirtBoxedShared<string>();
         }
     }
 }

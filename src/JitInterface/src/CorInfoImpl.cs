@@ -106,6 +106,8 @@ namespace Internal.JitInterface
 
         private JitConfigProvider _jitConfig;
 
+        private readonly UnboxingMethodDescFactory _unboxingThunkFactory;
+
         public CorInfoImpl(JitConfigProvider jitConfig)
         {
             //
@@ -122,6 +124,8 @@ namespace Internal.JitInterface
             }
 
             _unmanagedCallbacks = GetUnmanagedCallbacks(out _keepAlive);
+
+            _unboxingThunkFactory = new UnboxingMethodDescFactory();
         }
 
         public TextWriter Log
@@ -767,14 +771,6 @@ namespace Internal.JitInterface
                 return null;
             }
 
-            if (implType.IsValueType)
-            {
-                // TODO: If we resolve to a method on a valuetype, we should return a MethodDesc for the unboxing stub
-                // so that RyuJIT won't try to inline it. We don't have MethodDescs for unboxing stubs in the
-                // type system though.
-                return null;
-            }
-
             MethodDesc decl = HandleToObject(baseMethod);
             Debug.Assert(!decl.HasInstantiation);
 
@@ -790,11 +786,38 @@ namespace Internal.JitInterface
 
             MethodDesc impl = _compilation.ResolveVirtualMethod(decl, implType);
 
-            return impl != null ? ObjectToHandle(impl) : null;
+            if (impl != null)
+            {
+                if (impl.OwningType.IsValueType)
+                {
+                    impl = _unboxingThunkFactory.GetUnboxingMethod(impl);
+                }
+
+                return ObjectToHandle(impl);
+            }
+
+            return null;
         }
 
         private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, byte* requiresInstMethodTableArg)
-        { throw new NotImplementedException(); }
+        {
+            MethodDesc result = null;
+            bool requiresInstMTArg = false;
+
+            MethodDesc method = HandleToObject(ftn);
+            if (method.IsUnboxingThunk())
+            {
+                result = method.GetUnboxedMethod();
+                requiresInstMTArg = method.RequiresInstMethodTableArg();
+            }
+
+            if (requiresInstMethodTableArg != null)
+            {
+                *requiresInstMethodTableArg = requiresInstMTArg ? (byte)1 : (byte)0;
+            }
+
+            return result != null ? ObjectToHandle(result) : null;
+        }
 
         private CORINFO_CLASS_STRUCT_* getDefaultEqualityComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {

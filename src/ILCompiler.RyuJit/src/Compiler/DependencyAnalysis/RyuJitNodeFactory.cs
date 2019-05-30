@@ -36,6 +36,10 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            // MethodDesc that represents an unboxing thunk is a thing that is internal to the JitInterface.
+            // It should not leak out of JitInterface.
+            Debug.Assert(!Internal.JitInterface.UnboxingMethodDescExtensions.IsUnboxingThunk(method));
+
             if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
                 return new MethodCodeNode(method);

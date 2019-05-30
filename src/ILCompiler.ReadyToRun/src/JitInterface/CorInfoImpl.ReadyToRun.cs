@@ -1200,11 +1200,18 @@ namespace Internal.JitInterface
                         if (pResult->thisTransform != CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM)
                             pConstrainedResolvedToken = null;
 
+                        MethodDesc nonUnboxingMethod = methodToCall;
+                        bool isUnboxingStub = methodToCall.IsUnboxingThunk();
+                        if (isUnboxingStub)
+                        {
+                            nonUnboxingMethod = methodToCall.GetUnboxedMethod();
+                        }
+
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.ImportedMethodNode(methodToCall, constrainedType, originalMethod,
+                            _compilation.NodeFactory.ImportedMethodNode(nonUnboxingMethod, constrainedType, originalMethod,
                             new ModuleToken(callerModule, pResolvedToken.token),
-                            isUnboxingStub: false,
+                            isUnboxingStub,
                             isInstantiatingStub: useInstantiatingStub,
                             GetSignatureContext()));
                     }
