@@ -103,6 +103,7 @@
     <Compile Include="ObjectWriter\SectionBuilder.cs" />
     <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
     <Compile Include="ObjectWriter\RelocationHelper.cs" />
+    <Compile Include="ObjectWriter\TargetExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

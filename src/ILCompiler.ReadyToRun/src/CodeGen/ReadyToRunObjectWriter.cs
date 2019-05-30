@@ -18,19 +18,6 @@ using Internal.TypeSystem;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Per-OS machine overrides. Corresponds to CoreCLR constants
-    /// IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE.
-    /// </summary>
-    public enum MachineOSOverride : ushort
-    {
-        Windows = 0,
-        Linux = 0x7B79,
-        Apple = 0x4644,
-        FreeBSD = 0xADC4,
-        NetBSD = 0x1993,        
-    }
-
-    /// <summary>
     /// Object writer using R2RPEReader to directly emit Windows Portable Executable binaries
     /// </summary>
     internal class ReadyToRunObjectWriter

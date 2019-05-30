@@ -20,56 +20,6 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.PEWriter
 {
-    public static class TargetExtensions
-    {
-        /// <summary>
-        /// Calculate machine ID based on compilation target architecture.
-        /// </summary>
-        /// <param name="target">Compilation target environment specification</param>
-        /// <returns></returns>
-        public static Machine MachineFromTarget(this TargetDetails target)
-        {
-            switch (target.Architecture)
-            {
-                case Internal.TypeSystem.TargetArchitecture.X64:
-                    return Machine.Amd64;
-
-                case Internal.TypeSystem.TargetArchitecture.X86:
-                    return Machine.I386;
-
-                default:
-                    throw new NotImplementedException(target.Architecture.ToString());
-            }
-        }
-
-        /// <summary>
-        /// Determine OS machine override for the target operating system.
-        /// </summary>
-        public static MachineOSOverride MachineOSOverrideFromTarget(this TargetDetails target)
-        {
-            switch (target.OperatingSystem)
-            {
-                case TargetOS.Windows:
-                    return MachineOSOverride.Windows;
-
-                case TargetOS.Linux:
-                    return MachineOSOverride.Linux;
-
-                case TargetOS.OSX:
-                    return MachineOSOverride.Apple;
-
-                case TargetOS.FreeBSD:
-                    return MachineOSOverride.FreeBSD;
-
-                case TargetOS.NetBSD:
-                    return MachineOSOverride.NetBSD;
-
-                default:
-                    throw new NotImplementedException(target.OperatingSystem.ToString());
-            }
-        }
-    }
-
     /// <summary>
     /// Ready-to-run PE builder combines copying the input MSIL PE executable with managed
     /// metadata and IL and adding new code and data representing the R2R JITted code and
@@ -381,78 +331,91 @@ namespace ILCompiler.PEWriter
                 CorHeaderFileOffset,
                 outputStream);
 
-            // On Linux, we must patch the section headers. This is
-            // because the CoreCLR runtime on Linux requires the 12-16 low-order
-            // bits of section RVAs (the number of bits corresponds to the page
-            // size) to be identical to the file offset, otherwise memory mapping
-            // of the file fails. Sadly PEBuilder in System.Reflection.Metadata
-            // doesn't support this so we must post-process the EXE by patching
-            // section headers with the correct RVA's. To reduce code variations
-            // we're performing the same transformation on Windows where it is a no-op.
-            const int DosHeaderSize = 0x80;
-            const int PESignatureSize = sizeof(uint);
+            UpdateSectionRVAs(outputStream);
 
-            // Copied from CoffHeader.cs in CoreFX where it's sadly internal
-            const int COFFHeaderSize =
-                sizeof(short) + // Machine
-                sizeof(short) + // NumberOfSections
-                sizeof(int) +   // TimeDateStamp:
-                sizeof(int) +   // PointerToSymbolTable
-                sizeof(int) +   // NumberOfSymbols
-                sizeof(short) + // SizeOfOptionalHeader:
-                sizeof(ushort); // Characteristics
+            RelocateMetadataBlob(outputStream);
 
-            // Copied from PEHeader.cs in CoreFX where it's sadly internal
-            const int OffsetOfChecksum =
-                sizeof(short) +                              // Magic
-                sizeof(byte) +                               // MajorLinkerVersion
-                sizeof(byte) +                               // MinorLinkerVersion
-                sizeof(int) +                                // SizeOfCode
-                sizeof(int) +                                // SizeOfInitializedData
-                sizeof(int) +                                // SizeOfUninitializedData
-                sizeof(int) +                                // AddressOfEntryPoint
-                sizeof(int) +                                // BaseOfCode
-                sizeof(long) +                               // PE32:  BaseOfData (int), ImageBase (int) 
-                                                             // PE32+: ImageBase (long)
-                sizeof(int) +                                // SectionAlignment
-                sizeof(int) +                                // FileAlignment
-                sizeof(short) +                              // MajorOperatingSystemVersion
-                sizeof(short) +                              // MinorOperatingSystemVersion
-                sizeof(short) +                              // MajorImageVersion
-                sizeof(short) +                              // MinorImageVersion
-                sizeof(short) +                              // MajorSubsystemVersion
-                sizeof(short) +                              // MinorSubsystemVersion
-                sizeof(int) +                                // Win32VersionValue
-                sizeof(int) +                                // SizeOfImage
-                sizeof(int);                                 // SizeOfHeaders
+            ApplyMachineOSOverride(outputStream);
 
-            const int OffsetOfSizeOfImage = OffsetOfChecksum - 2 * sizeof(int); // SizeOfHeaders, SizeOfImage
+            _written = true;
+        }
 
+        /// <summary>
+        /// PE header constants copied from System.Reflection.Metadata where they are
+        /// sadly mostly internal or private.
+        /// </summary>
+        const int DosHeaderSize = 0x80;
+        const int PESignatureSize = sizeof(uint);
+
+        const int COFFHeaderSize =
+            sizeof(short) + // Machine
+            sizeof(short) + // NumberOfSections
+            sizeof(int) +   // TimeDateStamp:
+            sizeof(int) +   // PointerToSymbolTable
+            sizeof(int) +   // NumberOfSymbols
+            sizeof(short) + // SizeOfOptionalHeader:
+            sizeof(ushort); // Characteristics
+
+        const int OffsetOfChecksum =
+            sizeof(short) + // Magic
+            sizeof(byte) +  // MajorLinkerVersion
+            sizeof(byte) +  // MinorLinkerVersion
+            sizeof(int) +   // SizeOfCode
+            sizeof(int) +   // SizeOfInitializedData
+            sizeof(int) +   // SizeOfUninitializedData
+            sizeof(int) +   // AddressOfEntryPoint
+            sizeof(int) +   // BaseOfCode
+            sizeof(long) +  // PE32:  BaseOfData (int), ImageBase (int) 
+                            // PE32+: ImageBase (long)
+            sizeof(int) +   // SectionAlignment
+            sizeof(int) +   // FileAlignment
+            sizeof(short) + // MajorOperatingSystemVersion
+            sizeof(short) + // MinorOperatingSystemVersion
+            sizeof(short) + // MajorImageVersion
+            sizeof(short) + // MinorImageVersion
+            sizeof(short) + // MajorSubsystemVersion
+            sizeof(short) + // MinorSubsystemVersion
+            sizeof(int) +   // Win32VersionValue
+            sizeof(int) +   // SizeOfImage
+            sizeof(int);    // SizeOfHeaders
+
+        const int OffsetOfSizeOfImage = OffsetOfChecksum - 2 * sizeof(int); // SizeOfHeaders, SizeOfImage
+
+        const int SectionHeaderNameSize = 8;
+        const int SectionHeaderRVAOffset = SectionHeaderNameSize + sizeof(int); // skip 8 bytes Name + 4 bytes VirtualSize
+
+        const int SectionHeaderSize =
+            SectionHeaderNameSize +
+            sizeof(int) +   // VirtualSize
+            sizeof(int) +   // VirtualAddress
+            sizeof(int) +   // SizeOfRawData
+            sizeof(int) +   // PointerToRawData
+            sizeof(int) +   // PointerToRelocations
+            sizeof(int) +   // PointerToLineNumbers
+            sizeof(short) + // NumberOfRelocations
+            sizeof(short) + // NumberOfLineNumbers 
+            sizeof(int);    // SectionCharacteristics
+
+        /// <summary>
+        /// On Linux, we must patch the section headers. This is because the CoreCLR runtime on Linux
+        /// requires the 12-16 low-order bits of section RVAs (the number of bits corresponds to the page
+        /// size) to be identical to the file offset, otherwise memory mapping of the file fails.
+        /// Sadly PEBuilder in System.Reflection.Metadata doesn't support this so we must post-process
+        /// the EXE by patching section headers with the correct RVA's. To reduce code variations
+        /// we're performing the same transformation on Windows where it is a no-op.
+        /// </summary>
+        /// <param name="outputStream"></param>
+        private void UpdateSectionRVAs(Stream outputStream)
+        {
             int peHeaderSize =
                 OffsetOfChecksum +
-                sizeof(int) +                                // Checksum
-                sizeof(short) +                              // Subsystem
-                sizeof(short) +                              // DllCharacteristics
-                4 * _target.PointerSize +                    // SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve, SizeOfHeapCommit
-                sizeof(int) +                                // LoaderFlags
-                sizeof(int) +                                // NumberOfRvaAndSizes
-                16 * sizeof(long);                           // directory entries
-
-            const int SectionHeaderNameSize = 8;
-
-            const int SectionHeaderSize =
-                SectionHeaderNameSize +
-                sizeof(int) +   // VirtualSize
-                sizeof(int) +   // VirtualAddress
-                sizeof(int) +   // SizeOfRawData
-                sizeof(int) +   // PointerToRawData
-                sizeof(int) +   // PointerToRelocations
-                sizeof(int) +   // PointerToLineNumbers
-                sizeof(short) + // NumberOfRelocations
-                sizeof(short) + // NumberOfLineNumbers 
-                sizeof(int);    // SectionCharacteristics
-
-            const int SectionHeaderRVAOffset = SectionHeaderNameSize + sizeof(int); // skip 8 bytes Name + 4 bytes VirtualSize
+                sizeof(int) +             // Checksum
+                sizeof(short) +           // Subsystem
+                sizeof(short) +           // DllCharacteristics
+                4 * _target.PointerSize + // SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve, SizeOfHeapCommit
+                sizeof(int) +             // LoaderFlags
+                sizeof(int) +             // NumberOfRvaAndSizes
+                16 * sizeof(long);        // directory entries
 
             int sectionHeaderOffset = DosHeaderSize + PESignatureSize + COFFHeaderSize + peHeaderSize;
             int sectionCount = _sectionRVAs.Length;
@@ -470,21 +433,24 @@ namespace ILCompiler.PEWriter
             byte[] sizeOfImageBytes = BitConverter.GetBytes(sizeOfImage);
             Debug.Assert(sizeOfImageBytes.Length == sizeof(int));
             outputStream.Write(sizeOfImageBytes, 0, sizeOfImageBytes.Length);
+        }
 
-            RelocateMetadataBlob(outputStream);
-
-            // TODO: System.Reflection.Metadata doesn't currently support
-            // OS machine overrides. We cannot directly pass the xor-ed
-            // target machine to PEHeaderBuilder because it may incorrectly
-            // detect 32-bitness and emit wrong OptionalHeader.Magic.
+        /// <summary>
+        /// TODO: System.Reflection.Metadata doesn't currently support OS machine overrides.
+        /// We cannot directly pass the xor-ed target machine to PEHeaderBuilder because it
+        /// may incorrectly detect 32-bitness and emit wrong OptionalHeader.Magic. Therefore
+        /// we create the executable using the raw Machine ID and apply the override as the
+        /// last operation before closing the file.
+        /// </summary>
+        /// <param name="outputStream">Output stream representing the R2R PE executable</param>
+        private void ApplyMachineOSOverride(Stream outputStream)
+        {
             byte[] patchedTargetMachine = BitConverter.GetBytes(
                 (ushort)unchecked((ushort)Header.Machine ^ (ushort)_target.MachineOSOverrideFromTarget()));
             Debug.Assert(patchedTargetMachine.Length == sizeof(ushort));
 
             outputStream.Seek(DosHeaderSize + PESignatureSize, SeekOrigin.Begin);
             outputStream.Write(patchedTargetMachine, 0, patchedTargetMachine.Length);
-
-            _written = true;
         }
 
         /// <summary>
