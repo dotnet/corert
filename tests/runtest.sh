@@ -443,22 +443,22 @@ if [ ${CoreRT_CrossBuild} != 0 ]; then
     CoreRT_ExtraLinkFlags="$CoreRT_ExtraLinkFlags $CoreRT_CrossLinkerFlags"
 fi
 
-CoreRT_CoreCLRRuntimeDir=${CoreRT_TestRoot}/../bin/obj/Linux.${CoreRT_BuildArch}.${CoreRT_BuildType}/CoreClrRuntime
+source "$CoreRT_TestRoot/testenv.sh"
+
+CoreRT_CoreCLRRuntimeDir=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/CoreClrRuntime
 
 export CoreRT_CoreCLRRuntimeDir
 
 if [ ! -d ${CoreRT_CoreCLRRuntimeDir} ]; then
     # The test build handles restoring external dependencies such as CoreCLR runtime and its test host
     # Trigger the test build so it will build but not run tests before we run them here
-    ${CoreRT_TestRoot}/../buildscripts/build-tests.sh buildtests
+    ${CoreRT_TestRoot}/../buildscripts/build-tests.sh ${CoreRT_BuildArch} ${CoreRT_BuildType} buildtests
     RestoreExitCode=$?
     if [ ${RestoreExitCode} != 0 ]; then
         echo Test build failed with code ${RestoreExitCode}
         exit ${RestoreExitCode}
     fi
 fi
-
-source "$CoreRT_TestRoot/testenv.sh"
 
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
 __CoreRTTestBinDir=${CoreRT_TestRoot}/../bin/tests
@@ -499,6 +499,8 @@ __JitTotalTests=0
 __JitPassedTests=0
 __WasmTotalTests=0
 __WasmPassedTests=0
+__ReadyToRunTotalTests=0
+__ReadyToRunPassedTests=0
 
 if [ ! -d ${__CoreRTTestBinDir} ]; then
     mkdir -p ${__CoreRTTestBinDir}
@@ -523,7 +525,7 @@ do
         fi
     fi
     if [ "${CoreRT_TestCompileMode}" = "readytorun" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
-        if [ -e `dirname ${csproj}`/readytorun_ ]; then
+        if [ -e `dirname ${csproj}`/readytorun ]; then
             run_test_dir ${csproj} "ReadyToRun"
         fi
     fi
@@ -534,8 +536,8 @@ do
     fi
 done
 
-__TotalTests=$((${__JitTotalTests} + ${__CppTotalTests} + ${__WasmTotalTests}))
-__PassedTests=$((${__JitPassedTests} + ${__CppPassedTests} + ${__WasmPassedTests}))
+__TotalTests=$((${__JitTotalTests} + ${__CppTotalTests} + ${__WasmTotalTests} + ${__ReadyToRunTotalTests}))
+__PassedTests=$((${__JitPassedTests} + ${__CppPassedTests} + ${__WasmPassedTests} + ${__ReadyToRunPassedTests}))
 __FailedTests=$((${__TotalTests} - ${__PassedTests}))
 
 if [ "$CoreRT_MultiFileConfiguration" = "MultiModule" ]; then
@@ -559,6 +561,7 @@ echo "</assemblies>"  >> ${__TestResultsLog}
 echo "JIT - TOTAL: ${__JitTotalTests} PASSED: ${__JitPassedTests}"
 echo "CPP - TOTAL: ${__CppTotalTests} PASSED: ${__CppPassedTests}"
 echo "WASM - TOTAL: ${__WasmTotalTests} PASSED: ${__WasmPassedTests}"
+echo "R2R - TOTAL: ${__ReadyToRunTotalTests} PASSED: ${__ReadyToRunPassedTests}"
 
 if [ ${__JitTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" != "wasm" ]; then
     exit 1
@@ -566,18 +569,13 @@ fi
 if [ ${__CppTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" != "wasm" ]; then
     exit 1
 fi
-if [ ${__WasmTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" = "wasm" ]; then
+if [ ${__WasmTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" == "wasm" ]; then
     exit 1
 fi 
-
-if [ ${__JitTotalTests} -gt ${__JitPassedTests} ]; then
+if [ ${__ReadyToRunTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" == "readytorun" ]; then
     exit 1
 fi
-if [ ${__CppTotalTests} -gt ${__CppPassedTests} ]; then
+if [ ${__FailedTests} -gt 0 ]; then
     exit 1
 fi
-if [ ${__WasmTotalTests} -gt ${__WasmPassedTests} ]; then
-    exit 1
-fi
-
 exit 0
