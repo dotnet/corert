@@ -55,6 +55,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Canon\MetadataType.Canon.cs">
       <Link>TypeSystem\Canon\MetadataType.Canon.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\MethodDelegator.Canon.cs">
+      <Link>TypeSystem\Canon\MethodDelegator.Canon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Canon\MethodDesc.Canon.cs">
       <Link>TypeSystem\Canon\MethodDesc.Canon.cs</Link>
     </Compile>
@@ -78,6 +81,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\FieldDesc.CodeGen.cs">
       <Link>TypeSystem\CodeGen\FieldDesc.CodeGen.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDelegator.CodeGen.cs">
+      <Link>TypeSystem\CodeGen\MethodDelegator.CodeGen.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDesc.CodeGen.cs">
       <Link>TypeSystem\CodeGen\MethodDesc.CodeGen.cs</Link>
@@ -261,6 +267,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\VirtualMethodAlgorithm.cs">
       <Link>TypeSystem\Common\VirtualMethodAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDelegator.cs">
+      <Link>TypeSystem\Common\MethodDelegator.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.cs">
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
@@ -582,6 +591,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MetadataType.Interop.cs">
       <Link>TypeSystem\Interop\MetadataType.Interop.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDelegator.Interop.cs">
+      <Link>TypeSystem\Interop\MethodDelegator.Interop.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDesc.Interop.cs">
       <Link>TypeSystem\Interop\MethodDesc.Interop.cs</Link>

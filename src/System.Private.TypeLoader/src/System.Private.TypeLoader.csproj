@@ -56,9 +56,14 @@
     <NativeFormatCommonPath>..\..\Common\src\Internal\NativeFormat</NativeFormatCommonPath>
   </PropertyGroup>
   <ItemGroup Condition="'$(DynamicCodeSupport)' == 'true'">
+    <Compile Include="Internal\TypeSystem\MethodDelegator.Runtime.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDelegator.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Canon\MethodDelegator.Canon.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\TypeDesc.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\FieldDesc.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDelegator.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDelegator.Interop.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\NativeFormatField.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\RuntimeDetermined\ByRefType.RuntimeDetermined.cs" />
