@@ -30,12 +30,8 @@ IGCHandleManager* g_pGCHandleManager = nullptr;
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 
-// The version of the GC that we have loaded.
-VersionInfo g_gc_version_info;
-
 // GC entrypoints for the the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
-extern "C" void GC_VersionInfo(/* Out */ VersionInfo* info);
 extern "C" HRESULT GC_Initialize(
     /* In  */ IGCToCLR* clrToGC,
     /* Out */ IGCHeap** gcHeap,
@@ -57,14 +53,6 @@ HRESULT GCHeapUtilities::InitializeDefaultGC()
     // we should only call this once on startup. Attempting to load a GC
     // twice is an error.
     assert(g_pGCHeap == nullptr);
-
-    VersionInfo info;
-    GC_VersionInfo(&g_gc_version_info);
-
-    // the default GC builds with the rest of the EE. By definition, it must have been
-    // built with the same interface version.
-    assert(g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION);
-    assert(g_gc_version_info.MinorVersion == GC_INTERFACE_MINOR_VERSION);
 
     IGCHeap* heap;
     IGCHandleManager* manager;
