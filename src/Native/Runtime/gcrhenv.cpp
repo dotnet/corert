@@ -1018,7 +1018,7 @@ void GCToEEInterface::SyncBlockCachePromotionsGranted(int /*max_gen*/)
 
 uint32_t GCToEEInterface::GetActiveSyncBlockCount()
 {
-    return SyncBlockCache::GetSyncBlockCache()->GetActiveCount();
+    return 0;
 }
 
 gc_alloc_context * GCToEEInterface::GetAllocContext()
@@ -1498,12 +1498,19 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     return true;
 }
 
+// CoreRT does not use async pinned handles
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
 {
+    UNREFERENCED_PARAMETER(object);
+    UNREFERENCED_PARAMETER(sc);
+    UNREFERENCED_PARAMETER(callback);
 }
 
 void GCToEEInterface::WalkAsyncPinned(Object* object, void* context, void (*callback)(Object*, Object*, void*))
 {
+    UNREFERENCED_PARAMETER(object);
+    UNREFERENCED_PARAMETER(context);
+    UNREFERENCED_PARAMETER(callback);
 }
 
 IGCToCLREventSink* GCToEEInterface::EventSink()
@@ -1640,12 +1647,6 @@ bool __SwitchToThread(uint32_t dwSleepMSec, uint32_t /*dwSwitchCount*/)
         return true;
     }
     return !!PalSwitchToThread();
-}
-
-void SetGCSpecialThread(ThreadType threadType)
-{
-    Thread *pThread = ThreadStore::RawGetCurrentThread();
-    pThread->SetGCSpecial(threadType == ThreadType_GC);
 }
 
 #endif // DACCESS_COMPILE

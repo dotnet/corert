@@ -225,23 +225,7 @@ class SyncBlockCache
 {
 public:
     static SyncBlockCache *GetSyncBlockCache() { return &g_sSyncBlockCache; }
-    void GCWeakPtrScan(void *pCallback, uintptr_t pCtx, int dummy)
-    {
-        UNREFERENCED_PARAMETER(pCallback);
-        UNREFERENCED_PARAMETER(pCtx);
-        UNREFERENCED_PARAMETER(dummy);
-    }
-    void GCDone(uint32_t demoting, int max_gen)
-    {
-        UNREFERENCED_PARAMETER(demoting);
-        UNREFERENCED_PARAMETER(max_gen);
-    }
     void VerifySyncTableEntry() {}
-
-    DWORD GetActiveCount()
-    {
-        return 0;
-    }
 };
 
 #endif // VERIFY_HEAP
@@ -257,15 +241,6 @@ typedef DPTR(IGCHeap) PTR_IGCHeap;
 typedef DPTR(uint32_t) PTR_uint32_t;
 
 enum CLRDataEnumMemoryFlags : int;
-
-enum ThreadType
-{
-    ThreadType_GC = 137,
-};
-
-#undef ClrFlsSetThreadType
-#define ClrFlsSetThreadType(threadType) SetGCSpecialThread(threadType)
-void SetGCSpecialThread(ThreadType threadType);
 
 /* _TRUNCATE */
 #if !defined (_TRUNCATE)
