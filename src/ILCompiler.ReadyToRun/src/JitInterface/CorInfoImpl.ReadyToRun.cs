@@ -100,18 +100,10 @@ namespace Internal.JitInterface
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
 
-        /// <summary>
-        /// Input ECMA module. In multi-file compilation, multiple CorInfoImpl objects are created
-        /// for the individual modules to propagate module information through JIT back to managed
-        /// code to provide base module for reference token resolution.
-        /// </summary>
-        private readonly EcmaModule _tokenContext;
-
-        public CorInfoImpl(ReadyToRunCodegenCompilation compilation, EcmaModule tokenContext, JitConfigProvider jitConfig)
+        public CorInfoImpl(ReadyToRunCodegenCompilation compilation, JitConfigProvider jitConfig)
             : this(jitConfig)
         {
             _compilation = compilation;
-            _tokenContext = tokenContext;
         }
 
         public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
@@ -175,7 +167,7 @@ namespace Internal.JitInterface
                 object targetEntity = entity;
                 if (entity is MethodDesc methodDesc)
                 {
-                    targetEntity = new MethodWithToken(methodDesc, new ModuleToken(_tokenContext, pResolvedToken.token));
+                    targetEntity = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken));
                 }
                 lookup.lookupKind.needsRuntimeLookup = false;
                 ISymbolNode constLookup = _compilation.SymbolNodeFactory.ComputeConstantLookup(helperId, targetEntity, GetSignatureContext());
@@ -256,7 +248,7 @@ namespace Internal.JitInterface
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
-                            helperArg = new MethodWithToken(methodDesc, new ModuleToken(_tokenContext, pResolvedToken.token));
+                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken));
                         }
                         TypeDesc constrainedType = null;
                         if (helperId == ReadyToRunHelperId.MethodEntry && pGenericLookupKind.runtimeLookupArgs != null)
@@ -295,7 +287,7 @@ namespace Internal.JitInterface
 
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(
-                    delegateTypeDesc, targetMethod, new ModuleToken(_tokenContext, (mdToken)pTargetMethod.token), GetSignatureContext()));
+                    delegateTypeDesc, targetMethod, HandleToModuleToken(ref pTargetMethod), GetSignatureContext()));
         }
 
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
@@ -636,6 +628,11 @@ namespace Internal.JitInterface
             MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
             EcmaMethod method = (EcmaMethod)methodIL.OwningMethod.GetTypicalMethodDefinition();
             return method.Module;
+        }
+
+        private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
+        {
+            return new ModuleToken(HandleToModule(pResolvedToken.tokenScope), pResolvedToken.token);
         }
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
@@ -1499,7 +1496,7 @@ namespace Internal.JitInterface
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD:
                         symbolNode = _compilation.SymbolNodeFactory.ReadyToRunHelper(
                             ReadyToRunHelperId.MethodHandle,
-                            new MethodWithToken(HandleToObject(pResolvedToken.hMethod), new ModuleToken(_tokenContext, pResolvedToken.token)),
+                            new MethodWithToken(HandleToObject(pResolvedToken.hMethod), HandleToModuleToken(ref pResolvedToken)),
                             GetSignatureContext());
                         break;
 
