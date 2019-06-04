@@ -284,7 +284,10 @@ namespace Internal.Runtime.CompilerHelpers
                 // TODO: this should not actually throw yet: AssemblyLoadContext.ResolvingUnmanagedDll is
                 // a last chance callback we should call before giving up.
                 hModule = NativeLibrary.LoadLibraryByName(
-                    moduleName, callingAssembly, hasDllImportSearchPath ? (DllImportSearchPath?)dllImportSearchPath : null, true);
+                    moduleName,
+                    callingAssembly,
+                    hasDllImportSearchPath ? (DllImportSearchPath?)dllImportSearchPath : NativeLibrary.DefaultDllImportSearchPath,
+                    throwOnError: true);
             }
 
             Debug.Assert(hModule != IntPtr.Zero);
