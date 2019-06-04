@@ -40,21 +40,23 @@ namespace System.Runtime.InteropServices
             return ret;
         }
 
+        internal const DllImportSearchPath DefaultDllImportSearchPath = DllImportSearchPath.AssemblyDirectory;
+
         // TODO: make this into a reflection callback so that we can make this work when reflection is disabled.
         private static void GetDllImportSearchPathFlags(Assembly callingAssembly, out int searchPathFlags, out bool searchAssemblyDirectory)
         {
-            searchAssemblyDirectory = true;
-            searchPathFlags = 0;
+            DllImportSearchPath searchPath = DefaultDllImportSearchPath;
 
             foreach (CustomAttributeData cad in callingAssembly.CustomAttributes)
             {
                 if (cad.AttributeType == typeof(DefaultDllImportSearchPathsAttribute))
                 {
-                    var attributeValue = (DllImportSearchPath)cad.ConstructorArguments[0].Value;
-                    searchPathFlags = (int)(attributeValue & ~DllImportSearchPath.AssemblyDirectory);
-                    searchAssemblyDirectory = (attributeValue & DllImportSearchPath.AssemblyDirectory) != 0;
+                    searchPath = (DllImportSearchPath)cad.ConstructorArguments[0].Value;
                 }
             }
+
+            searchPathFlags = (int)(searchPath & ~DllImportSearchPath.AssemblyDirectory);
+            searchAssemblyDirectory = (searchPath & DllImportSearchPath.AssemblyDirectory) != 0;
         }
 
         private static IntPtr LoadLibraryModuleBySearch(Assembly callingAssembly, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)
