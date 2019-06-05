@@ -53,7 +53,7 @@ namespace ILCompiler.PEWriter
     /// After placing an ObjectData within a section, we use this helper structure to record
     /// its relocation information for the final relocation pass.
     /// </summary>
-    public struct ObjectDataRelocations
+    public struct RelocatableBlock
     {
         /// <summary>
         /// Offset of the ObjectData block within the section
@@ -61,19 +61,24 @@ namespace ILCompiler.PEWriter
         public readonly int Offset;
 
         /// <summary>
-        /// List of relocations for the data block
+        /// Object data representing an array of relocations to fix up.
         /// </summary>
-        public readonly Relocation[] Relocs;
-        
+        public readonly ObjectNode.ObjectData Block;
+
         /// <summary>
-        /// Initialize the list of relocations for a given location within the section.
+        /// Array of relocations that need fixing up within the block.
+        /// </summary>
+        public Relocation[] Relocs => Block.Relocs;
+
+        /// <summary>
+        /// Initialize the list of relocations for a given object data item within the section.
         /// </summary>
         /// <param name="offset">Offset within the section</param>
-        /// <param name="relocs">List of relocations to apply at the offset</param>
-        public ObjectDataRelocations(int offset, Relocation[] relocs)
+        /// <param name="block">List of relocations to apply at the offset</param>
+        public RelocatableBlock(int offset, ObjectNode.ObjectData block)
         {
             Offset = offset;
-            Relocs = relocs;
+            Block = block;
         }
     }
 
@@ -122,9 +127,9 @@ namespace ILCompiler.PEWriter
         public readonly BlobBuilder Content;
 
         /// <summary>
-        /// Relocations to apply to the section
+        /// All blocks requiring relocation resolution within the section
         /// </summary>
-        public readonly List<ObjectDataRelocations> Relocations;
+        public readonly List<RelocatableBlock> RelocatableBlocks;
 
         /// <summary>
         /// RVA gets filled in during section serialization.
@@ -150,7 +155,7 @@ namespace ILCompiler.PEWriter
             Characteristics = characteristics;
             Alignment = alignment;
             Content = new BlobBuilder();
-            Relocations = new List<ObjectDataRelocations>();
+            RelocatableBlocks = new List<RelocatableBlock>();
             RVAWhenPlaced = 0;
             FilePosWhenPlaced = 0;
         }
@@ -469,7 +474,7 @@ namespace ILCompiler.PEWriter
 
             if (objectData.Relocs != null && objectData.Relocs.Length != 0)
             {
-                section.Relocations.Add(new ObjectDataRelocations(alignedOffset, objectData.Relocs));
+                section.RelocatableBlocks.Add(new RelocatableBlock(alignedOffset, objectData));
             }
         }
 
@@ -597,15 +602,15 @@ namespace ILCompiler.PEWriter
             // By now, all "normal" sections with relocations should already have been laid out
             foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
             {
-                foreach (ObjectDataRelocations objectDataRelocs in section.Relocations)
+                foreach (RelocatableBlock relocatableBlock in section.RelocatableBlocks)
                 {
-                    for (int relocIndex = 0; relocIndex < objectDataRelocs.Relocs.Length; relocIndex++)
+                    for (int relocIndex = 0; relocIndex < relocatableBlock.Relocs.Length; relocIndex++)
                     {
-                        RelocType relocType = objectDataRelocs.Relocs[relocIndex].RelocType;
+                        RelocType relocType = relocatableBlock.Relocs[relocIndex].RelocType;
                         RelocType fileRelocType = GetFileRelocationType(relocType);
                         if (fileRelocType != RelocType.IMAGE_REL_BASED_ABSOLUTE)
                         {
-                            int relocationRVA = section.RVAWhenPlaced + objectDataRelocs.Offset + objectDataRelocs.Relocs[relocIndex].Offset;
+                            int relocationRVA = section.RVAWhenPlaced + relocatableBlock.Offset + relocatableBlock.Relocs[relocIndex].Offset;
                             if (offsetsAndTypes != null && relocationRVA - baseRVA > MaxRelativeOffsetInBlock)
                             {
                                 // Need to flush relocation block as the current RVA is too far from base RVA
@@ -833,12 +838,12 @@ namespace ILCompiler.PEWriter
             foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
             {
                 int rvaToFilePosDelta = section.FilePosWhenPlaced - section.RVAWhenPlaced;
-                foreach (ObjectDataRelocations objectDataRelocs in section.Relocations)
+                foreach (RelocatableBlock relocatableBlock in section.RelocatableBlocks)
                 {
-                    foreach (Relocation relocation in objectDataRelocs.Relocs)
+                    foreach (Relocation relocation in relocatableBlock.Relocs)
                     {
                         // Process a single relocation
-                        int relocationRVA = section.RVAWhenPlaced + objectDataRelocs.Offset + relocation.Offset;
+                        int relocationRVA = section.RVAWhenPlaced + relocatableBlock.Offset + relocation.Offset;
                         int relocationFilePos = relocationRVA + rvaToFilePosDelta;
 
                         // Flush parts of PE file before the relocation to the output stream
