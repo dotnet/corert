@@ -602,15 +602,15 @@ namespace ILCompiler.PEWriter
             // By now, all "normal" sections with relocations should already have been laid out
             foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
             {
-                foreach (PlacedObjectData relocatableBlock in section.PlacedObjectDataToRelocate)
+                foreach (PlacedObjectData placedObjectData in section.PlacedObjectDataToRelocate)
                 {
-                    for (int relocIndex = 0; relocIndex < relocatableBlock.Relocs.Length; relocIndex++)
+                    for (int relocIndex = 0; relocIndex < placedObjectData.Relocs.Length; relocIndex++)
                     {
-                        RelocType relocType = relocatableBlock.Relocs[relocIndex].RelocType;
+                        RelocType relocType = placedObjectData.Relocs[relocIndex].RelocType;
                         RelocType fileRelocType = GetFileRelocationType(relocType);
                         if (fileRelocType != RelocType.IMAGE_REL_BASED_ABSOLUTE)
                         {
-                            int relocationRVA = section.RVAWhenPlaced + relocatableBlock.Offset + relocatableBlock.Relocs[relocIndex].Offset;
+                            int relocationRVA = section.RVAWhenPlaced + placedObjectData.Offset + placedObjectData.Relocs[relocIndex].Offset;
                             if (offsetsAndTypes != null && relocationRVA - baseRVA > MaxRelativeOffsetInBlock)
                             {
                                 // Need to flush relocation block as the current RVA is too far from base RVA
@@ -838,12 +838,12 @@ namespace ILCompiler.PEWriter
             foreach (Section section in _sections.OrderBy((sec) => sec.RVAWhenPlaced))
             {
                 int rvaToFilePosDelta = section.FilePosWhenPlaced - section.RVAWhenPlaced;
-                foreach (PlacedObjectData relocatableBlock in section.PlacedObjectDataToRelocate)
+                foreach (PlacedObjectData placedObjectData in section.PlacedObjectDataToRelocate)
                 {
-                    foreach (Relocation relocation in relocatableBlock.Relocs)
+                    foreach (Relocation relocation in placedObjectData.Relocs)
                     {
                         // Process a single relocation
-                        int relocationRVA = section.RVAWhenPlaced + relocatableBlock.Offset + relocation.Offset;
+                        int relocationRVA = section.RVAWhenPlaced + placedObjectData.Offset + relocation.Offset;
                         int relocationFilePos = relocationRVA + rvaToFilePosDelta;
 
                         // Flush parts of PE file before the relocation to the output stream
