@@ -2231,6 +2231,22 @@
                 {
                     "name": "System.IO.Tests.DirectoryNotFoundExceptionInteropTests.From_HR",
                     "reason": "Xunit.Sdk.IsAssignableFromException"
+                },
+                {
+                    "name": "System.Tests.StringTests.CasingNegativeTest",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.StringTests.CompareNegativeTest",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.StringTests.ToLowerNullCulture",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.StringTests.ToUpperNullCulture",
+                    "reason": "outdated"
                 }
             ]
         }
