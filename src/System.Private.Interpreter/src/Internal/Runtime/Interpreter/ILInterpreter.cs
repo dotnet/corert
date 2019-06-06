@@ -2454,8 +2454,8 @@ again:
             public IntPtr UnboxingStubAddress;
             public CallConverter.CallingConvention CallingConvention;
             public TypeLoaderEnvironment.MethodAddressType MethodAddressType;
+            public MethodSignature Signature;
             public LocalVariableType[] LocalVariableTypes;
-            public TypeDesc ReturnType;
             public StackItem ReturnValue;
         }
 
@@ -2464,32 +2464,60 @@ again:
             for (int i = callInfo.ArgCount; i > 0; i--)
             {
                 StackItem stackItem = PopWithValidation();
-                switch (stackItem.Kind)
+                TypeDesc argumentType = callInfo.Signature[i - 1];
+
+setvar:
+                switch (argumentType.Category)
                 {
-                    case StackValueKind.Int32:
+                    case TypeFlags.Boolean:
+                        localVariableSet.SetVar<bool>(i, stackItem.AsInt32() > 0);
+                        break;
+                    case TypeFlags.Char:
+                        localVariableSet.SetVar<char>(i, (char)stackItem.AsInt32());
+                        break;
+                    case TypeFlags.SByte:
+                    case TypeFlags.Byte:
+                        localVariableSet.SetVar<sbyte>(i, (sbyte)stackItem.AsInt32());
+                        break;
+                    case TypeFlags.Int16:
+                    case TypeFlags.UInt16:
+                        localVariableSet.SetVar<short>(i, (short)stackItem.AsInt32());
+                        break;
+                    case TypeFlags.Int32:
+                    case TypeFlags.UInt32:
                         localVariableSet.SetVar<int>(i, stackItem.AsInt32());
                         break;
-                    case StackValueKind.Int64:
+                    case TypeFlags.Int64:
+                    case TypeFlags.UInt64:
                         localVariableSet.SetVar<long>(i, stackItem.AsInt64());
                         break;
-                    case StackValueKind.NativeInt:
+                    case TypeFlags.IntPtr:
+                    case TypeFlags.UIntPtr:
                         localVariableSet.SetVar<IntPtr>(i, stackItem.AsNativeInt());
                         break;
-                    case StackValueKind.Float:
+                    case TypeFlags.Single:
+                        localVariableSet.SetVar<float>(i, (float)stackItem.AsDouble());
+                        break;
+                    case TypeFlags.Double:
                         localVariableSet.SetVar<double>(i, stackItem.AsDouble());
                         break;
-                    case StackValueKind.ByRef:
-                        // TODO: Add support for ByRef to StackItem
-                        throw new NotImplementedException();
-                    case StackValueKind.ObjRef:
-                        localVariableSet.SetVar<object>(i, stackItem.AsObjectRef());
-                        break;
-                    case StackValueKind.ValueType:
+                    case TypeFlags.ValueType:
+                    case TypeFlags.Nullable:
                         localVariableSet.SetVar<ValueType>(i, stackItem.AsValueType());
                         break;
-                    default:
-                        ThrowHelper.ThrowInvalidProgramException();
+                    case TypeFlags.Enum:
+                        argumentType = argumentType.UnderlyingType;
+                        goto setvar;
+                    case TypeFlags.Class:
+                    case TypeFlags.Interface:
+                    case TypeFlags.Array:
+                    case TypeFlags.SzArray:
+                        callInfo.ReturnValue = StackItem.FromObjectRef(localVariableSet.GetVar<object>(0));
+                        localVariableSet.SetVar<object>(i, stackItem.AsObjectRef());
                         break;
+                    default:
+                        // TODO: Support more complex return types
+                        throw new NotImplementedException();
                 }
             }
 
@@ -2503,9 +2531,9 @@ again:
                 throw new NotImplementedException();
             }
 
-            TypeDesc returnType = callInfo.ReturnType;
+            TypeDesc returnType = callInfo.Signature.ReturnType;
 
-again:
+getvar:
             switch (returnType.Category)
             {
                 case TypeFlags.Void:
@@ -2549,7 +2577,7 @@ again:
                     break;
                 case TypeFlags.Enum:
                     returnType = returnType.UnderlyingType;
-                    goto again;
+                    goto getvar;
                 case TypeFlags.Class:
                 case TypeFlags.Interface:
                 case TypeFlags.Array:
@@ -2595,8 +2623,8 @@ again:
             callInfo.MethodAddressType = foundAddressType;
             callInfo.UnboxingStubAddress = unboxingStubAddress;
             callInfo.CallingConvention = signature.IsStatic ? CallConverter.CallingConvention.ManagedStatic : CallConverter.CallingConvention.ManagedInstance;
+            callInfo.Signature = signature;
             callInfo.LocalVariableTypes = localVariableTypes;
-            callInfo.ReturnType = signature.ReturnType;
 
             LocalVariableSet.SetupArbitraryLocalVariableSet(InterpretCallDelegate, ref callInfo, localVariableTypes);
 
