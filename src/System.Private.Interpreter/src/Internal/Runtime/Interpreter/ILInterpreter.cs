@@ -2503,8 +2503,7 @@ setvar:
                         break;
                     case TypeFlags.ValueType:
                     case TypeFlags.Nullable:
-                        localVariableSet.SetVar<ValueType>(i, stackItem.AsValueType());
-                        break;
+                        throw new NotImplementedException();
                     case TypeFlags.Enum:
                         argumentType = argumentType.UnderlyingType;
                         goto setvar;
@@ -2512,7 +2511,6 @@ setvar:
                     case TypeFlags.Interface:
                     case TypeFlags.Array:
                     case TypeFlags.SzArray:
-                        callInfo.ReturnValue = StackItem.FromObjectRef(localVariableSet.GetVar<object>(0));
                         localVariableSet.SetVar<object>(i, stackItem.AsObjectRef());
                         break;
                     default:
