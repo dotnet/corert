@@ -11,6 +11,11 @@
 #pragma warning( disable: 4127 )  // conditional expression is constant -- common in GC
 #endif
 
+#include <stdlib.h>
+#include <stdint.h>
+#include <assert.h>
+#include <cstddef>
+
 #include "sal.h"
 #include "gcenv.structs.h"
 #include "gcenv.interlocked.h"
@@ -39,11 +44,7 @@
 #include "eetype.inl"
 #include "Volatile.h"
 
-#ifdef PLATFORM_UNIX
-#include "gcenv.unix.inl"
-#else
-#include "gcenv.windows.inl"
-#endif
+#include "gcenv.inl"
 
 #include "stressLog.h"
 #ifdef FEATURE_ETW

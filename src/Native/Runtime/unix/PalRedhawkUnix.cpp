@@ -9,15 +9,11 @@
 #include <stdio.h>
 #include <errno.h>
 #include <cwchar>
-#include "CommonTypes.h"
-#include "PalRedhawkCommon.h"
-#include "CommonMacros.h"
 #include <sal.h>
 #include "config.h"
 #include "UnixHandle.h"
 #include <pthread.h>
-#include "gcenv.structs.h"
-#include "gcenv.os.h"
+#include "gcenv.h"
 #include "holder.h"
 #include "HardwareExceptions.h"
 
@@ -79,11 +75,6 @@ static mach_timebase_info_data_t s_TimebaseInfo;
 
 using std::nullptr_t;
 
-#include "gcenv.structs.h"
-
-#define REDHAWK_PALEXPORT extern "C"
-#define REDHAWK_PALAPI
-
 #ifndef __APPLE__
 #if HAVE_SYSCONF && HAVE__SC_AVPHYS_PAGES
 #define SYSCONF_PAGES _SC_AVPHYS_PAGES
@@ -115,29 +106,6 @@ using std::nullptr_t;
     } \
     while(0)
 
-typedef union _LARGE_INTEGER {
-    struct {
-#if BIGENDIAN
-        int32_t HighPart;
-        uint32_t LowPart;
-#else
-        uint32_t LowPart;
-        int32_t HighPart;
-#endif
-    } u;
-    int64_t QuadPart;
-} LARGE_INTEGER, *PLARGE_INTEGER;
-
-struct FILETIME
-{
-    uint32_t dwLowDateTime;
-    uint32_t dwHighDateTime;
-};
-
-typedef void * LPSECURITY_ATTRIBUTES;
-typedef void* PCONTEXT;
-typedef void* PEXCEPTION_RECORD;
-
 #define INVALID_HANDLE_VALUE    ((HANDLE)(IntNative)-1)
 
 #define PAGE_NOACCESS           0x01
@@ -160,12 +128,14 @@ static const int tccMilliSecondsToMicroSeconds = 1000;
 static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
 
-static const uint32_t INFINITE = 0xFFFFFFFF;
-
 static uint32_t g_dwPALCapabilities;
 static UInt32 g_cLogicalCpus = 0;
 static size_t g_cbLargestOnDieCache = 0;
 static size_t g_cbLargestOnDieCacheAdjusted = 0;
+
+// HACK: the gcenv.h declares OS_PAGE_SIZE as a call instead of a constant, but we need a constant
+#undef OS_PAGE_SIZE
+#define OS_PAGE_SIZE 0x1000
 
 // Helper memory page used by the FlushProcessWriteBuffers
 static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)));
