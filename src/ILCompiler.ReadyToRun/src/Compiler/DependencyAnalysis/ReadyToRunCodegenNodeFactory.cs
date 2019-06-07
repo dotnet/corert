@@ -113,45 +113,6 @@ namespace ILCompiler.DependencyAnalysis
             bool isInstantiatingStub,
             SignatureContext signatureContext)
         {
-            if (!CompilationModuleGroup.ContainsMethodBody(targetMethod, false))
-            {
-                return ImportedMethodNode(targetMethod, constrainedType, originalMethod, methodToken, isUnboxingStub, isInstantiatingStub, signatureContext);
-            }
-
-            return _methodEntrypoints.GetOrAdd(targetMethod, (m) =>
-            {
-                return CreateMethodEntrypointNode(new MethodWithToken(targetMethod, methodToken), isUnboxingStub, isInstantiatingStub, signatureContext);
-            });
-        }
-
-        private readonly Dictionary<TypeAndMethod, MethodWithGCInfo> _localMethodCache = new Dictionary<TypeAndMethod, MethodWithGCInfo>();
-
-        private IMethodNode CreateMethodEntrypointNode(MethodWithToken targetMethod, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext signatureContext)
-        {
-            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
-
-            MethodDesc localMethod = targetMethod.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-
-            TypeAndMethod localMethodKey = new TypeAndMethod(localMethod.OwningType, localMethod, default(ModuleToken), isUnboxingStub: false, isInstantiatingStub: false);
-            MethodWithGCInfo localMethodNode;
-            if (!_localMethodCache.TryGetValue(localMethodKey, out localMethodNode))
-            {
-                localMethodNode = new MethodWithGCInfo(localMethod, signatureContext);
-                _localMethodCache.Add(localMethodKey, localMethodNode);
-            }
-
-            return localMethodNode;
-        }
-
-        public IMethodNode ImportedMethodNode(
-            MethodDesc targetMethod,
-            TypeDesc constrainedType,
-            MethodDesc originalMethod,
-            ModuleToken methodToken,
-            bool isUnboxingStub,
-            bool isInstantiatingStub,
-            SignatureContext signatureContext)
-        {
             bool isLocalMethod = CompilationModuleGroup.ContainsMethodBody(targetMethod, false);
             if (targetMethod == originalMethod || isLocalMethod)
             {
@@ -177,11 +138,13 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
+                    MethodWithToken methodWithToken = new MethodWithToken(targetMethod, methodToken);
+
                     methodImport = new LocalMethodImport(
                         this,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                        new MethodWithToken(targetMethod, methodToken),
-                        (MethodWithGCInfo)MethodEntrypoint(targetMethod, constrainedType, originalMethod, methodToken, isUnboxingStub, isInstantiatingStub, signatureContext),
+                        methodWithToken,
+                        CreateMethodEntrypointNode(methodWithToken, isUnboxingStub, isInstantiatingStub, signatureContext),
                         isUnboxingStub,
                         isInstantiatingStub,
                         signatureContext);
@@ -190,6 +153,25 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return methodImport;
+        }
+
+        private readonly Dictionary<TypeAndMethod, MethodWithGCInfo> _localMethodCache = new Dictionary<TypeAndMethod, MethodWithGCInfo>();
+
+        private MethodWithGCInfo CreateMethodEntrypointNode(MethodWithToken targetMethod, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext signatureContext)
+        {
+            Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
+
+            MethodDesc localMethod = targetMethod.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            TypeAndMethod localMethodKey = new TypeAndMethod(localMethod.OwningType, localMethod, default(ModuleToken), isUnboxingStub: false, isInstantiatingStub: false);
+            MethodWithGCInfo localMethodNode;
+            if (!_localMethodCache.TryGetValue(localMethodKey, out localMethodNode))
+            {
+                localMethodNode = new MethodWithGCInfo(localMethod, signatureContext);
+                _localMethodCache.Add(localMethodKey, localMethodNode);
+            }
+
+            return localMethodNode;
         }
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
@@ -472,14 +454,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
-            if (!CompilationModuleGroup.ContainsMethodBody(method, unboxingStub: false))
-            {
-                // Cannot encode external methods without tokens
-                throw new NotImplementedException();
-            }
-
+            ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
             return MethodEntrypoint(method, constrainedType: null, originalMethod: null,
-                methodToken: default(ModuleToken), signatureContext: InputModuleContext, isUnboxingStub: false, isInstantiatingStub: false);
+                methodToken: moduleToken, signatureContext: InputModuleContext, isUnboxingStub: false, isInstantiatingStub: false);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)

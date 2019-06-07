@@ -96,6 +96,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 skipFirstArg,
                 extraObjectFirstArg);
 
+            if (argit.HasIndeterminateSize())
+            {
+                // Flush an empty GC ref map block so that the list of methods remains in sync with the list of GC ref map records
+                Flush();
+                return;
+            }
+
             int nStackBytes = argit.SizeOfFrameArgumentArray();
 
             // Allocate a fake stack

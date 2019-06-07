@@ -1206,7 +1206,7 @@ namespace Internal.JitInterface
 
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.ImportedMethodNode(nonUnboxingMethod, constrainedType, originalMethod,
+                            _compilation.NodeFactory.MethodEntrypoint(nonUnboxingMethod, constrainedType, originalMethod,
                             new ModuleToken(callerModule, pResolvedToken.token),
                             isUnboxingStub,
                             isInstantiatingStub: useInstantiatingStub,

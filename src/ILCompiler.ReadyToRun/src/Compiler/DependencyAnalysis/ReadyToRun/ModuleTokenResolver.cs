@@ -75,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             method = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             if (_compilationModuleGroup.VersionsWithMethodBody(method) &&
-                method is EcmaMethod ecmaMethod)
+                method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
                 return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             }
