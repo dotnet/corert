@@ -96,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public bool IsValueType() { if (_isByRef) return false; return _type.IsValueType; }
         public bool IsPointerType() { if (_isByRef) return false; return _type.IsPointer; }
 
-        public bool HasIndeterminateSize() { return IsValueType() && _type.GetElementSize().IsIndeterminate; }
+        public bool HasIndeterminateSize() { return IsValueType() && ((DefType)_type).InstanceFieldSize.IsIndeterminate; }
 
         public int PointerSize => _type.Context.Target.PointerSize;
 
