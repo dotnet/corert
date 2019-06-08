@@ -187,22 +187,7 @@ namespace System.Runtime.InteropServices
 
         private static int SizeOfHelper(Type t)
         {
-            RuntimeTypeHandle typeHandle = t.TypeHandle;
-
-            if (RuntimeInteropData.Instance.TryGetStructUnsafeStructSize(typeHandle, out int size))
-            {
-                return size;
-            }
-
-            // IsBlittable() checks whether the type contains GC references. It is approximate check with false positives.
-            // This fallback path will return incorrect answer for types that do not contain GC references, but that are 
-            // not actually blittable; e.g. for types with bool fields.
-            if (typeHandle.IsBlittable() && typeHandle.IsValueType())
-            {
-                return typeHandle.GetValueTypeSize();
-            }
-
-            throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, t);
+            return RuntimeInteropData.Instance.GetStructUnsafeStructSize(t.TypeHandle)
         }
 
         //====================================================================
@@ -219,18 +204,7 @@ namespace System.Runtime.InteropServices
             if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
-            if (RuntimeInteropData.Instance.TryGetStructFieldOffset(t.TypeHandle, fieldName, out bool structExists, out uint offset))
-            {
-                return new IntPtr(offset);
-            }
-
-            // if we can find the struct but couldn't find its field, throw Argument Exception
-            if (structExists)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.TypeHandle.GetDisplayName()), nameof(fieldName));
-            }
-
-            throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, t);
+            return new IntPtr(RuntimeInteropData.Instance.GetStructFieldOffset(t.TypeHandle, fieldName));
         }
 
         public static IntPtr OffsetOf<T>(String fieldName)

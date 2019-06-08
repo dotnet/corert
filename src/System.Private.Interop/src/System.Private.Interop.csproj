@@ -24,7 +24,7 @@
     <ProjectReference Condition="'$(DynamicCodeSupport)' == 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
   </ItemGroup>
 
-  <Import Project="System.Private.Interop.Shared.projitems" />
+  <Import Project="System.Private.Interop.Shared.projitems" Condition="'$(IsProjectNLibrary)' == 'true'" />
   
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="System\Reflection\DispatchProxy.cs" />
@@ -33,7 +33,7 @@
     <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
   </ItemGroup>
  
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="TypeForwarders.cs" />
     <!-- TODO  We should not include anything from CompilerServices directly -->
     <Compile Include="System\Runtime\CompilerServices\FunctionPointerHelpers.cs" />
@@ -44,7 +44,6 @@
     <Compile Condition="'$(EnableWinRT)'=='true'" Include="Shared\WindowsRuntimeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
-    <Compile Include="System\Runtime\InteropServices\MissingInteropDataException.cs" />
     <Compile Include="System\Runtime\InteropServices\Variant.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfo.cs" />
@@ -59,6 +58,26 @@
     <Compile Include="System\Runtime\InteropServices\ComTypes\stgmedium.cs" />
     <Compile Include="System\Runtime\InteropServices\ComTypes\tymed.cs" />
 
+    <!-- TODO This should be really only needed for CoreCLR flavor of S.P.Interop. -->
+    <!-- See https://github.com/dotnet/corert/pull/5404 -->
+    <Compile Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
+      <Link>Internal\NativeFormat\NativeFormatReader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
+      <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.String.cs">
+      <Link>Internal\NativeFormat\NativeFormatReader.String.cs</Link>
+    </Compile>
+
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs"/>
+
+    <Compile Include="System\Runtime\InteropServices\MissingInteropDataException.cs" />
+
     <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.cs"/>
 
     <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.ProjectN.cs"/>
@@ -66,10 +85,6 @@
     <Compile Condition="'$(IsProjectNLibrary)' != 'true'" Include="..\..\Common\src\Internal\Runtime\InteropConstants.cs">
       <Link>Internal\Runtime\InteropConstants.cs</Link>
     </Compile>
-
-    <!-- TODO This should be really only needed for CoreCLR flavor of S.P.Interop. -->
-    <!-- See https://github.com/dotnet/corert/pull/5404 -->
-    <Compile Condition="'$(IsProjectNLibrary)' == 'true'" Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
   </ItemGroup>
  
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
@@ -117,7 +132,7 @@
     <Compile Include="Interop\Interop.WinRT.cs" />
   </ItemGroup>
   
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="Interop\Interop.Sync.Windows.cs" />
     <Compile Include="Interop\Interop.WinRT.Basic.cs" />
 
@@ -129,20 +144,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.MemAllocWithZeroInitializeNoThrow.cs">
       <Link>Interop\Windows\Mincore\Interop.MemAllocWithZeroInitializeNoThrow.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
-      <Link>Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocFree.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemReAlloc.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemReAlloc.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocWithZeroInitializeNoThrow.cs">
-      <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.MemAllocWithZeroInitializeNoThrow.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

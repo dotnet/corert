@@ -250,7 +250,9 @@
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.CoreRT.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.ProjectN.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal.CoreRT.cs"  Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal.ProjectN.cs"  Condition="'$(IsProjectNLibrary)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(IsProjectNLibrary)' != 'true' and '$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />

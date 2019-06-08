@@ -49,18 +49,7 @@
     <Compile Include="Shared\StringPool.cs" />
     <Compile Include="Shared\__ComObject.cs" />
 
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.cs">
-      <Link>Internal\NativeFormat\NativeFormatReader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
-      <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.String.cs">
-      <Link>Internal\NativeFormat\NativeFormatReader.String.cs</Link>
-    </Compile>
     <Compile Include="Interop\Interop.Memory.cs" />
-
-    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs"/>
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
