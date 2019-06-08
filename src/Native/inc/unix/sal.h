@@ -2861,7 +2861,9 @@ of each annotation, see the advanced annotations section.
 #define __success(expr)                      _Success_(expr)
 #define __nullterminated                     _Null_terminated_
 #define __nullnullterminated
+#if !defined(_ARM64_)
 #define __reserved                           _SAL1_Source_(__reserved, (), _Reserved_)
+#endif
 #define __checkReturn                        _SAL1_Source_(__checkReturn, (), _Check_return_)
 #define __typefix(ctype)                     _SAL1_Source_(__typefix, (ctype), __inner_typefix(ctype))
 #define __override                           __inner_override

@@ -12,7 +12,7 @@
 // this semantic and additional memory barriers are required.
 //
 
-#if defined(_ARM_) && _ISO_VOLATILE
+#if (defined(_ARM_) || defined(_ARM64_)) && _ISO_VOLATILE
 // ARM has a very weak memory model and very few tools to control that model. We're forced to perform a full
 // memory barrier to preserve the volatile semantics. Technically this is only necessary on MP systems but we
 // currently don't have a cheap way to determine the number of CPUs from this header file. Revisit this if it
@@ -39,22 +39,8 @@ inline
 T VolatileLoad(T const * pt)
 {
 #ifndef DACCESS_COMPILE
-#if defined(_ARM64_) && defined(__GNUC__)
-    T val;
-    static const unsigned lockFreeAtomicSizeMask = (1 << 1) | (1 << 2) | (1 << 4) | (1 << 8);
-    if ((1 << sizeof(T)) & lockFreeAtomicSizeMask)
-    {
-        __atomic_load((T volatile const*)pt, &val, __ATOMIC_ACQUIRE);
-    }
-    else
-    {
-        val = *(T volatile const*)pt;
-        asm volatile ("dmb ishld" : : : "memory");
-    }
-#else
     T val = *(T volatile const *)pt;
     VOLATILE_MEMORY_BARRIER();
-#endif
 #else
     T val = *pt;
 #endif

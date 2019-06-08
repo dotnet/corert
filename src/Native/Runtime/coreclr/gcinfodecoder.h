@@ -49,6 +49,9 @@ typedef ArrayDPTR(const uint8_t) PTR_CBYTE;
 #define SSIZE_T IntNative
 #define LPVOID void*
 
+typedef uint64_t DWORD64;
+typedef uint64_t ULONGLONG;
+
 typedef void * OBJECTREF;
 
 #define GET_CALLER_SP(pREGDISPLAY) ((TADDR)0)

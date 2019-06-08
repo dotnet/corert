@@ -1597,19 +1597,19 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
 
     if(regNum <= 17)
     {
-        ppReg = &pRD->volatileCurrContextPointers.X0;
+        ppReg = &pRD->pX0;
         return (OBJECTREF*)*(ppReg + regNum);
     }
     else if(regNum == 29)
     {
-        return (OBJECTREF*) pRD->pCurrentContextPointers->Fp;
+        return (OBJECTREF*) pRD->pFP;
     }
     else if(regNum == 30)
     {
-        return (OBJECTREF*) pRD->pCurrentContextPointers->Lr;
+        return (OBJECTREF*) pRD->pLR;
     }
 
-    ppReg = &pRD->pCurrentContextPointers->X19;
+    ppReg = &pRD->pX19;
 	
     return (OBJECTREF*)*(ppReg + regNum-19);
 }
