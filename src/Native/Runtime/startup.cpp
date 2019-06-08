@@ -49,6 +49,10 @@ EXTERN_C bool g_fHasFastFxsave = false;
 CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
+#if _X86_ || _AMD64_
+EXTERN_C int g_cpuFeatures;
+#endif
+
 static bool InitDLL(HANDLE hPalInstance)
 {
     CheckForPalFallback();
@@ -147,12 +151,13 @@ static void CheckForPalFallback()
 
 void DetectCPUFeatures()
 {
-#ifdef PROJECTN // @TODO: CORERT: DetectCPUFeatures
+#if _X86_ || _AMD64_
+
+    CPU_INFO cpuInfo;
 
 #ifdef _X86_
     // We depend on fxsave / fxrstor.  These were added to Pentium II and later, so they're pretty well guaranteed to be
     // available, but we double-check anyway and fail fast if they are not supported.
-    CPU_INFO cpuInfo;
     PalCpuIdEx(1, 0, &cpuInfo);
     if (!(cpuInfo.Edx & X86_FXSR))  
         RhFailFast();
@@ -161,13 +166,73 @@ void DetectCPUFeatures()
 #ifdef _AMD64_
     // AMD has a "fast" mode for fxsave/fxrstor, which omits the saving of xmm registers.  The OS will enable this mode
     // if it is supported.  So if we continue to use fxsave/fxrstor, we must manually save/restore the xmm registers.
-    CPU_INFO cpuInfo;
     PalCpuIdEx(0x80000001, 0, &cpuInfo);
     if (cpuInfo.Edx & AMD_FFXSR)
         g_fHasFastFxsave = true;
 #endif
 
-#endif // PROJECTN
+    PalCpuId(0, &cpuInfo);
+    uint32_t maxCpuId = cpuInfo.Eax;
+
+    if (maxCpuId >= 1)
+    {
+        PalCpuId(1, &cpuInfo);
+
+        // If SSE/SSE2 is not enabled, there is no point in checking the rest.
+        //   SSE  is bit 25 of EDX
+        //   SSE2 is bit 26 of EDX
+        if (cpuInfo.Edx & ((1 << 25) | (1 << 26)) == ((1 << 25) | (1 << 26)))
+        {
+            if (cpuInfo.Ecx & (1 << 25))                                   // AESNI
+            {
+            }
+
+            if (cpuInfo.Ecx & (1 << 1))                                    // PCLMULQDQ 
+            {
+            }
+
+            if (cpuInfo.Ecx & (1 << 0))                                    // SSE3
+            {
+                if (cpuInfo.Ecx & (1 << 9))                                // SSSE3
+                {
+                    if (cpuInfo.Ecx & (1 << 19))                           // SSE4.1
+                    {
+                        if (cpuInfo.Ecx & (1 << 20))                       // SSSE4.2
+                        {
+                            if (cpuInfo.Ecx & (1 << 23))                   // POPCNT
+                            {
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (maxCpuId >= 0x07)
+        {
+            PalCpuIdEx(0x07, 0, &cpuInfo);
+
+            if (cpuInfo.Ebx & (1 << 3))            // BMI1
+            {
+            }
+
+            if (cpuInfo.Ebx & (1 << 8))            // BMI2
+            {
+            }
+        }
+    }
+
+    PalCpuId(0x80000000, &cpuInfo);
+    if (cpuInfo.Eax >= 0x80000001)
+    {
+        PalCpuId(0x80000001, &cpuInfo);
+        if (cpuInfo.Ecx & (1 << 5))                // LZCNT
+        {
+        }
+    }
+
+#endif // _X86_ || _AMD64_
 }
 
 #ifdef PROFILE_STARTUP

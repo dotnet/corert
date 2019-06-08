@@ -122,6 +122,13 @@ inline void PalCpuIdEx(uint32_t Function, uint32_t SubLeaf, CPU_INFO* pCPUInfo)
 {
     __cpuidex((int*)pCPUInfo, (int)Function, (int)SubLeaf);
 }
+
+EXTERN_C void __cpuid(int CPUInfo[4], int Function);
+#pragma intrinsic(__cpuid)
+inline void PalCpuId(uint32_t Function, CPU_INFO* pCPUInfo)
+{
+    __cpuid((int*)pCPUInfo, (int)Function);
+}
 #endif 
 
 #if defined(_X86_)
