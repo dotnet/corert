@@ -17,7 +17,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-using Internal.NativeFormat;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices

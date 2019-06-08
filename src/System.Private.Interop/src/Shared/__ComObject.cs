@@ -24,8 +24,6 @@ using System.Threading;
 using System.Text;
 using System.Runtime;
 
-using Internal.NativeFormat;
-
 #if !RHTESTCL && PROJECTN && ENABLE_WINRT
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;

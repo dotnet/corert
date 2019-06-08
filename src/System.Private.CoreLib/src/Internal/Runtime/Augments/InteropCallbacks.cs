@@ -18,12 +18,22 @@ namespace Internal.Runtime.Augments
 
         public abstract bool TryGetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr unmarshalStub);
 
+        public abstract IntPtr GetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle);
+
         public abstract bool TryGetStructMarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr marshalStub);
+
+        public abstract IntPtr GetStructMarshalStub(RuntimeTypeHandle structureTypeHandle);
 
         public abstract bool TryGetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle, out IntPtr destroyStructureStub, out bool hasInvalidLayout);
 
+        public abstract IntPtr GetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle, out bool hasInvalidLayout);
+
         public abstract bool TryGetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName, out bool structExists, out uint offset);
 
+        public abstract uint GetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName);
+
         public abstract bool TryGetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle, out int size);
+
+        public abstract int GetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle);
     }
 }
