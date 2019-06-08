@@ -25,11 +25,13 @@ namespace Internal.JitInterface
     {
         public readonly MethodDesc Method;
         public readonly ModuleToken Token;
+        public readonly TypeDesc ConstrainedType;
 
-        public MethodWithToken(MethodDesc method, ModuleToken token)
+        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType)
         {
             Method = method;
             Token = token;
+            ConstrainedType = constrainedType;
         }
 
         public override bool Equals(object obj)
@@ -40,12 +42,24 @@ namespace Internal.JitInterface
 
         public override int GetHashCode()
         {
-            return Method.GetHashCode() ^ unchecked(17 * Token.GetHashCode());
+            return Method.GetHashCode() ^ unchecked(17 * Token.GetHashCode()) ^ unchecked (39 * (ConstrainedType?.GetHashCode() ?? 0));
         }
 
         public bool Equals(MethodWithToken methodWithToken)
         {
-            return Method == methodWithToken.Method && Token.Equals(methodWithToken.Token);
+            return Method == methodWithToken.Method && Token.Equals(methodWithToken.Token) && ConstrainedType == methodWithToken.ConstrainedType;
+        }
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.GetMangledMethodName(Method));
+            if (ConstrainedType != null)
+            {
+                sb.Append(" @ ");
+                sb.Append(nameMangler.GetMangledTypeName(ConstrainedType));
+            }
+            sb.Append("; ");
+            sb.Append(Token.ToString());
         }
     }
 
@@ -167,7 +181,7 @@ namespace Internal.JitInterface
                 object targetEntity = entity;
                 if (entity is MethodDesc methodDesc)
                 {
-                    targetEntity = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken));
+                    targetEntity = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType: null);
                 }
                 lookup.lookupKind.needsRuntimeLookup = false;
                 ISymbolNode constLookup = _compilation.SymbolNodeFactory.ComputeConstantLookup(helperId, targetEntity, GetSignatureContext());
@@ -245,15 +259,15 @@ namespace Internal.JitInterface
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                        if (helperArg is MethodDesc methodDesc)
-                        {
-                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken));
-                        }
                         TypeDesc constrainedType = null;
                         if (helperId == ReadyToRunHelperId.MethodEntry && pGenericLookupKind.runtimeLookupArgs != null)
                         {
                             constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
+                        }
+                        object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                        if (helperArg is MethodDesc methodDesc)
+                        {
+                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType);
                         }
 
                         GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
@@ -261,7 +275,6 @@ namespace Internal.JitInterface
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
                             helperArg,
-                            constrainedType,
                             methodContext,
                             GetSignatureContext());
                         pLookup = CreateConstLookupToSymbol(helper);
@@ -1174,12 +1187,12 @@ namespace Internal.JitInterface
                         }
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.SymbolNodeFactory.InterfaceDispatchCell(targetMethod,
-                            new ModuleToken(callerModule, (mdToken)pResolvedToken.token),
-                            GetSignatureContext(),
-                            isUnboxingStub: false,
-                            _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()));
-                    }
+                            _compilation.SymbolNodeFactory.InterfaceDispatchCell(
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
+                                GetSignatureContext(),
+                                isUnboxingStub: false,
+                                _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()));
+                        }
                     break;
 
 
@@ -1206,8 +1219,8 @@ namespace Internal.JitInterface
 
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.MethodEntrypoint(nonUnboxingMethod, constrainedType, originalMethod,
-                            new ModuleToken(callerModule, pResolvedToken.token),
+                            _compilation.NodeFactory.MethodEntrypoint(nonUnboxingMethod, constrainedType,
+                            HandleToModuleToken(ref pResolvedToken),
                             isUnboxingStub,
                             isInstantiatingStub: useInstantiatingStub,
                             GetSignatureContext()));
@@ -1225,7 +1238,7 @@ namespace Internal.JitInterface
                         bool atypicalCallsite = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ATYPICAL_CALLSITE) != 0;
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
-                                new MethodWithToken(targetMethod, new ModuleToken(callerModule, pResolvedToken.token)),
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
                                 GetSignatureContext()));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
@@ -1253,7 +1266,7 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.ReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            new MethodWithToken(targetMethod, new ModuleToken(callerModule, pResolvedToken.token)),
+                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType),
                             signatureContext: GetSignatureContext()));
                     }
                     else
@@ -1496,7 +1509,7 @@ namespace Internal.JitInterface
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD:
                         symbolNode = _compilation.SymbolNodeFactory.ReadyToRunHelper(
                             ReadyToRunHelperId.MethodHandle,
-                            new MethodWithToken(HandleToObject(pResolvedToken.hMethod), HandleToModuleToken(ref pResolvedToken)),
+                            new MethodWithToken(HandleToObject(pResolvedToken.hMethod), HandleToModuleToken(ref pResolvedToken), constrainedType: null),
                             GetSignatureContext());
                         break;
 

@@ -107,20 +107,15 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode MethodEntrypoint(
             MethodDesc targetMethod,
             TypeDesc constrainedType,
-            MethodDesc originalMethod,
             ModuleToken methodToken,
             bool isUnboxingStub,
             bool isInstantiatingStub,
             SignatureContext signatureContext)
         {
             bool isLocalMethod = CompilationModuleGroup.ContainsMethodBody(targetMethod, false);
-            if (targetMethod == originalMethod || isLocalMethod)
-            {
-                constrainedType = null;
-            }
 
             IMethodNode methodImport;
-            TypeAndMethod key = new TypeAndMethod(constrainedType, targetMethod, methodToken, isUnboxingStub, isInstantiatingStub);
+            TypeAndMethod key = new TypeAndMethod(constrainedType, new MethodWithToken(targetMethod, methodToken, constrainedType: constrainedType), isUnboxingStub, isInstantiatingStub);
             if (!_importMethods.TryGetValue(key, out methodImport))
             {
                 if (!isLocalMethod)
@@ -129,16 +124,14 @@ namespace ILCompiler.DependencyAnalysis
                     methodImport = new ExternalMethodImport(
                         this,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                        targetMethod,
-                        constrainedType,
-                        methodToken,
+                        new MethodWithToken(targetMethod, methodToken, constrainedType),
                         isUnboxingStub,
                         isInstantiatingStub,
                         signatureContext);
                 }
                 else
                 {
-                    MethodWithToken methodWithToken = new MethodWithToken(targetMethod, methodToken);
+                    MethodWithToken methodWithToken = new MethodWithToken(targetMethod, methodToken, constrainedType);
 
                     methodImport = new LocalMethodImport(
                         this,
@@ -163,7 +156,9 @@ namespace ILCompiler.DependencyAnalysis
 
             MethodDesc localMethod = targetMethod.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            TypeAndMethod localMethodKey = new TypeAndMethod(localMethod.OwningType, localMethod, default(ModuleToken), isUnboxingStub: false, isInstantiatingStub: false);
+            TypeAndMethod localMethodKey = new TypeAndMethod(localMethod.OwningType,
+                new MethodWithToken(localMethod, default(ModuleToken), constrainedType: null),
+                isUnboxingStub: false, isInstantiatingStub: false);
             MethodWithGCInfo localMethodNode;
             if (!_localMethodCache.TryGetValue(localMethodKey, out localMethodNode))
             {
@@ -254,9 +249,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodFixupSignature MethodSignature(
             ReadyToRunFixupKind fixupKind,
-            MethodDesc methodDesc,
-            TypeDesc constrainedType,
-            ModuleToken methodToken,
+            MethodWithToken method,
             bool isUnboxingStub,
             bool isInstantiatingStub,
             SignatureContext signatureContext)
@@ -268,12 +261,11 @@ namespace ILCompiler.DependencyAnalysis
                 _methodSignatures.Add(fixupKind, perFixupKindMap);
             }
 
-            TypeAndMethod key = new TypeAndMethod(constrainedType, methodDesc, methodToken, isUnboxingStub, isInstantiatingStub);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub);
             MethodFixupSignature signature;
             if (!perFixupKindMap.TryGetValue(key, out signature))
             {
-                signature = new MethodFixupSignature(fixupKind, methodDesc, constrainedType,
-                    methodToken, signatureContext, isUnboxingStub, isInstantiatingStub);
+                signature = new MethodFixupSignature(fixupKind, method, signatureContext, isUnboxingStub, isInstantiatingStub);
                 perFixupKindMap.Add(key, signature);
             }
             return signature;
@@ -455,7 +447,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
             ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
-            return MethodEntrypoint(method, constrainedType: null, originalMethod: null,
+            return MethodEntrypoint(method, constrainedType: null,
                 methodToken: moduleToken, signatureContext: InputModuleContext, isUnboxingStub: false, isInstantiatingStub: false);
         }
 
@@ -545,9 +537,7 @@ namespace ILCompiler.DependencyAnalysis
                     useInstantiatingStub: true,
                     MethodSignature(
                         ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
-                        methodWithToken.Method,
-                        constrainedType: null,
-                        methodWithToken.Token,
+                        methodWithToken,
                         signatureContext: signatureContext,
                         isUnboxingStub: false,
                         isInstantiatingStub: true),

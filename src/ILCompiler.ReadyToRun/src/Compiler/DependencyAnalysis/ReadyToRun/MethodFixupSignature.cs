@@ -4,6 +4,7 @@
 
 using System;
 
+using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -13,11 +14,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly ReadyToRunFixupKind _fixupKind;
 
-        private readonly MethodDesc _methodDesc;
-
-        private readonly TypeDesc _constrainedType;
-
-        private readonly ModuleToken _methodToken;
+        private readonly MethodWithToken _method;
 
         private readonly SignatureContext _signatureContext;
 
@@ -27,23 +24,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public MethodFixupSignature(
             ReadyToRunFixupKind fixupKind, 
-            MethodDesc methodDesc, 
-            TypeDesc constrainedType,
-            ModuleToken methodToken,
+            MethodWithToken method, 
             SignatureContext signatureContext,
             bool isUnboxingStub,
             bool isInstantiatingStub)
         {
             _fixupKind = fixupKind;
-            _methodDesc = methodDesc;
-            _methodToken = methodToken;
-            _constrainedType = constrainedType;
+            _method = method;
             _signatureContext = signatureContext;
             _isUnboxingStub = isUnboxingStub;
             _isInstantiatingStub = isInstantiatingStub;
         }
 
-        public MethodDesc Method => _methodDesc;
+        public MethodDesc Method => _method.Method;
 
         public override int ClassCode => 150063499;
 
@@ -58,9 +51,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, _methodToken.Module, _signatureContext);
-            dataBuilder.EmitMethodSignature(_methodDesc, _constrainedType, _methodToken, enforceDefEncoding: false,
-                innerContext, _isUnboxingStub, _isInstantiatingStub);
+            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, _method.Token.Module, _signatureContext);
+            dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
 
             return dataBuilder.ToObjectData();
         }
@@ -79,20 +71,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 sb.Append(" [INST]");
             }
             sb.Append(": ");
-            sb.Append(nameMangler.GetMangledMethodName(_methodDesc));
-            if (_constrainedType != null)
-            {
-                sb.Append(" @ ");
-                sb.Append(nameMangler.GetMangledTypeName(_constrainedType));
-            }
-            if (!_methodToken.IsNull)
-            {
-                sb.Append(" [");
-                sb.Append(_methodToken.MetadataReader.GetString(_methodToken.MetadataReader.GetAssemblyDefinition().Name));
-                sb.Append(":");
-                sb.Append(((uint)_methodToken.Token).ToString("X8"));
-                sb.Append("]");
-            }
+            _method.AppendMangledName(nameMangler, sb);
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

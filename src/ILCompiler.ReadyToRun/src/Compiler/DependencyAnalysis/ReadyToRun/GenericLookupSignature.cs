@@ -112,9 +112,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (_methodArgument != null)
             {
                 dataBuilder.EmitMethodSignature(
-                    method: _methodArgument.Method,
-                    constrainedType: _typeArgument,
-                    methodToken: _methodArgument.Token,
+                    _methodArgument,
                     enforceDefEncoding: false,
                     context: innerContext,
                     isUnboxingStub: false,

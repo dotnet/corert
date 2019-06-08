@@ -71,7 +71,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 ISymbolNode canonMethodNode = r2rFactory.MethodEntrypoint(
                     canonMethod,
                     constrainedType: null,
-                    originalMethod: canonMethod,
                     methodToken: _method.Token,
                     isUnboxingStub: false,
                     isInstantiatingStub: false,

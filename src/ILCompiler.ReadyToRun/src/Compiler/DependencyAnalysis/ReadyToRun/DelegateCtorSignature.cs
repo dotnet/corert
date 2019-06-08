@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
+using Internal.JitInterface;
 using Internal.Text;
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -47,9 +48,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 SignatureContext innerContext = builder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_DelegateCtor, _methodToken.Module, _signatureContext);
 
                 builder.EmitMethodSignature(
-                    _targetMethod.Method, 
-                    constrainedType: null,
-                    methodToken: _methodToken,
+                    new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null),
                     enforceDefEncoding: false,
                     innerContext,
                     isUnboxingStub: false,
