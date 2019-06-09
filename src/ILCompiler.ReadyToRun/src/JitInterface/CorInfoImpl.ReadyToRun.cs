@@ -295,12 +295,12 @@ namespace Internal.JitInterface
                 MemoryHelper.FillMemory((byte*)tmp, 0xcc, sizeof(CORINFO_LOOKUP));
 #endif
 
-            MethodDesc targetMethod = HandleToObject(pTargetMethod.hMethod);
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
+            MethodWithToken targetMethod = new MethodWithToken(HandleToObject(pTargetMethod.hMethod), HandleToModuleToken(ref pTargetMethod), constrainedType: null);
 
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(
-                    delegateTypeDesc, targetMethod, HandleToModuleToken(ref pTargetMethod), GetSignatureContext()));
+                    delegateTypeDesc, targetMethod, GetSignatureContext()));
         }
 
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
@@ -1219,11 +1219,11 @@ namespace Internal.JitInterface
 
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                            _compilation.NodeFactory.MethodEntrypoint(nonUnboxingMethod, constrainedType,
-                            HandleToModuleToken(ref pResolvedToken),
-                            isUnboxingStub,
-                            isInstantiatingStub: useInstantiatingStub,
-                            GetSignatureContext()));
+                            _compilation.NodeFactory.MethodEntrypoint(
+                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken), constrainedType),
+                                isUnboxingStub,
+                                isInstantiatingStub: useInstantiatingStub,
+                                GetSignatureContext()));
                     }
                     break;
 

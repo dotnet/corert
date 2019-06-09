@@ -69,9 +69,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 MethodDesc canonMethod = _method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
                 ISymbolNode canonMethodNode = r2rFactory.MethodEntrypoint(
-                    canonMethod,
-                    constrainedType: null,
-                    methodToken: _method.Token,
+                    new MethodWithToken(canonMethod, _method.Token, constrainedType: null),
                     isUnboxingStub: false,
                     isInstantiatingStub: false,
                     signatureContext: _signatureContext);

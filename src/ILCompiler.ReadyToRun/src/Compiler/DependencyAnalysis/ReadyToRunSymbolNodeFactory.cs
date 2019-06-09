@@ -702,26 +702,6 @@ namespace ILCompiler.DependencyAnalysis
             return ReadyToRunHelper(helperId, entity, signatureContext);
         }
 
-        private readonly Dictionary<MethodDesc, ISortableSymbolNode> _genericDictionaryCache = new Dictionary<MethodDesc, ISortableSymbolNode>();
-
-        public ISortableSymbolNode MethodGenericDictionary(MethodDesc method, ModuleToken methodToken, SignatureContext signatureContext)
-        {
-            if (!_genericDictionaryCache.TryGetValue(method, out ISortableSymbolNode genericDictionary))
-            {
-                genericDictionary = new PrecodeHelperMethodImport(
-                    _codegenNodeFactory,
-                    method,
-                    _codegenNodeFactory.MethodSignature(
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
-                        new MethodWithToken(method, methodToken, constrainedType: null),
-                        signatureContext: signatureContext,
-                        isUnboxingStub: false,
-                        isInstantiatingStub: true));
-                _genericDictionaryCache.Add(method, genericDictionary);
-            }
-            return genericDictionary;
-        }
-
         private readonly Dictionary<TypeDesc, ISymbolNode> _constructedTypeSymbols = new Dictionary<TypeDesc, ISymbolNode>();
 
         public ISymbolNode ConstructedTypeSymbol(TypeDesc type, SignatureContext signatureContext)
@@ -738,15 +718,13 @@ namespace ILCompiler.DependencyAnalysis
 
         private readonly Dictionary<TypeAndMethod, ISymbolNode> _delegateCtors = new Dictionary<TypeAndMethod, ISymbolNode>();
 
-        public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodDesc targetMethod, ModuleToken methodToken, SignatureContext signatureContext)
+        public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodWithToken method, SignatureContext signatureContext)
         {
-            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, new MethodWithToken(targetMethod, methodToken, constrainedType: null), isUnboxingStub: false, isInstantiatingStub: false);
+            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, method, isUnboxingStub: false, isInstantiatingStub: false);
             if (!_delegateCtors.TryGetValue(ctorKey, out ISymbolNode ctorNode))
             {
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
-                    targetMethod,
-                    constrainedType: null, 
-                    methodToken: methodToken,
+                    method,
                     isUnboxingStub: false,
                     isInstantiatingStub: false,
                     signatureContext: signatureContext);
@@ -755,7 +733,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                    new DelegateCtorSignature(delegateType, targetMethodNode, methodToken, signatureContext));
+                    new DelegateCtorSignature(delegateType, targetMethodNode, method.Token, signatureContext));
                 _delegateCtors.Add(ctorKey, ctorNode);
             }
             return ctorNode;

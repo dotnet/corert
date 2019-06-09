@@ -105,17 +105,15 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public IMethodNode MethodEntrypoint(
-            MethodDesc targetMethod,
-            TypeDesc constrainedType,
-            ModuleToken methodToken,
+            MethodWithToken method,
             bool isUnboxingStub,
             bool isInstantiatingStub,
             SignatureContext signatureContext)
         {
-            bool isLocalMethod = CompilationModuleGroup.ContainsMethodBody(targetMethod, false);
+            bool isLocalMethod = CompilationModuleGroup.ContainsMethodBody(method.Method, false);
 
             IMethodNode methodImport;
-            TypeAndMethod key = new TypeAndMethod(constrainedType, new MethodWithToken(targetMethod, methodToken, constrainedType: constrainedType), isUnboxingStub, isInstantiatingStub);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub);
             if (!_importMethods.TryGetValue(key, out methodImport))
             {
                 if (!isLocalMethod)
@@ -124,20 +122,18 @@ namespace ILCompiler.DependencyAnalysis
                     methodImport = new ExternalMethodImport(
                         this,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                        new MethodWithToken(targetMethod, methodToken, constrainedType),
+                        method,
                         isUnboxingStub,
                         isInstantiatingStub,
                         signatureContext);
                 }
                 else
                 {
-                    MethodWithToken methodWithToken = new MethodWithToken(targetMethod, methodToken, constrainedType);
-
                     methodImport = new LocalMethodImport(
                         this,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                        methodWithToken,
-                        CreateMethodEntrypointNode(methodWithToken, isUnboxingStub, isInstantiatingStub, signatureContext),
+                        method,
+                        CreateMethodEntrypointNode(method, isUnboxingStub, isInstantiatingStub, signatureContext),
                         isUnboxingStub,
                         isInstantiatingStub,
                         signatureContext);
@@ -447,8 +443,11 @@ namespace ILCompiler.DependencyAnalysis
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
             ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
-            return MethodEntrypoint(method, constrainedType: null,
-                methodToken: moduleToken, signatureContext: InputModuleContext, isUnboxingStub: false, isInstantiatingStub: false);
+            return MethodEntrypoint(
+                new MethodWithToken(method, moduleToken, constrainedType: null),
+                signatureContext: InputModuleContext,
+                isUnboxingStub: false,
+                isInstantiatingStub: false);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
