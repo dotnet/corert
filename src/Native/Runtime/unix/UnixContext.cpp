@@ -259,7 +259,7 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
     ASSIGN_REG_PTR(UNW_ARM_R14, LR)
 #elif _ARM64_
     ASSIGN_REG(UNW_ARM64_SP, SP)
-    ASSIGN_REG(UNW_ARM64_PC, IP)
+    ASSIGN_REG_PTR(UNW_ARM64_FP, FP)
     ASSIGN_REG_PTR(UNW_ARM64_X19, X19)
     ASSIGN_REG_PTR(UNW_ARM64_X20, X20)
     ASSIGN_REG_PTR(UNW_ARM64_X21, X21)
@@ -392,7 +392,6 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
     GET_CONTEXT_POINTER(UNW_ARM_R11, R11)
 #elif defined(_ARM64_)
 #define GET_CONTEXT_POINTERS                    \
-    GET_CONTEXT_POINTER(UNW_ARM64_PC, IP)	\
     GET_CONTEXT_POINTER(UNW_ARM64_X19, X19)	\
     GET_CONTEXT_POINTER(UNW_ARM64_X20, X20)	\
     GET_CONTEXT_POINTER(UNW_ARM64_X21, X21)	\
@@ -402,7 +401,8 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
     GET_CONTEXT_POINTER(UNW_ARM64_X25, X25)	\
     GET_CONTEXT_POINTER(UNW_ARM64_X26, X26)	\
     GET_CONTEXT_POINTER(UNW_ARM64_X27, X27)	\
-    GET_CONTEXT_POINTER(UNW_ARM64_X28, X28)
+    GET_CONTEXT_POINTER(UNW_ARM64_X28, X28)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_FP, FP)
 #elif defined(_X86_)
 #define GET_CONTEXT_POINTERS                    \
     GET_CONTEXT_POINTER(UNW_X86_EBP, Rbp)       \
