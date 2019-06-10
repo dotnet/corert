@@ -259,6 +259,7 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
     ASSIGN_REG_PTR(UNW_ARM_R14, LR)
 #elif _ARM64_
     ASSIGN_REG(UNW_ARM64_SP, SP)
+    ASSIGN_REG(UNW_ARM64_PC, IP)
     ASSIGN_REG_PTR(UNW_ARM64_X19, X19)
     ASSIGN_REG_PTR(UNW_ARM64_X20, X20)
     ASSIGN_REG_PTR(UNW_ARM64_X21, X21)
@@ -391,6 +392,7 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
     GET_CONTEXT_POINTER(UNW_ARM_R11, R11)
 #elif defined(_ARM64_)
 #define GET_CONTEXT_POINTERS                    \
+    GET_CONTEXT_POINTER(UNW_ARM64_PC, IP)	\
     GET_CONTEXT_POINTER(UNW_ARM64_X19, X19)	\
     GET_CONTEXT_POINTER(UNW_ARM64_X20, X20)	\
     GET_CONTEXT_POINTER(UNW_ARM64_X21, X21)	\
@@ -485,26 +487,26 @@ void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, R
 #elif defined(_ARM64_)
 
 #define ASSIGN_CONTROL_REGS  \
-    ASSIGN_REG(Pc, IP)
-//    ASSIGN_REG(Sp, SP)    \
-//    ASSIGN_REG(Fp, FP)    \
-//    ASSIGN_REG(Lr, LR)
+    ASSIGN_REG(Pc, IP)    \
+    ASSIGN_REG(Sp, SP)    \
+    ASSIGN_REG(Fp, FP)    \
+    ASSIGN_REG(Lr, LR)
 
-#define ASSIGN_INTEGER_REGS
-//    ASSIGN_REG(X19, X19)   \
-//    ASSIGN_REG(X20, X20)   \
-//    ASSIGN_REG(X21, X21)   \
-//    ASSIGN_REG(X22, X22)   \
-//    ASSIGN_REG(X23, X23)   \
-//    ASSIGN_REG(X24, X24)   \
-//    ASSIGN_REG(X25, X25)   \
-//    ASSIGN_REG(X26, X26)   \
-//    ASSIGN_REG(X27, X27)   \
-//    ASSIGN_REG(X28, X28)
+#define ASSIGN_INTEGER_REGS  \
+    ASSIGN_REG(X19, X19)   \
+    ASSIGN_REG(X20, X20)   \
+    ASSIGN_REG(X21, X21)   \
+    ASSIGN_REG(X22, X22)   \
+    ASSIGN_REG(X23, X23)   \
+    ASSIGN_REG(X24, X24)   \
+    ASSIGN_REG(X25, X25)   \
+    ASSIGN_REG(X26, X26)   \
+    ASSIGN_REG(X27, X27)   \
+    ASSIGN_REG(X28, X28)
 
 #define ASSIGN_TWO_ARGUMENT_REGS \
-//    MCREG_X0(nativeContext->uc_mcontext) = arg0Reg;       \
-//    MCREG_X1(nativeContext->uc_mcontext) = arg1Reg;
+    MCREG_X0(nativeContext->uc_mcontext) = arg0Reg;       \
+    MCREG_X1(nativeContext->uc_mcontext) = arg1Reg;
 
 #elif defined(_WASM_)
     // TODO: determine how unwinding will work on WebAssembly

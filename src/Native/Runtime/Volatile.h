@@ -12,7 +12,7 @@
 // this semantic and additional memory barriers are required.
 //
 
-#if (defined(_ARM_) || defined(_ARM64_)) && _ISO_VOLATILE
+#if defined(_ARM_) && _ISO_VOLATILE
 // ARM has a very weak memory model and very few tools to control that model. We're forced to perform a full
 // memory barrier to preserve the volatile semantics. Technically this is only necessary on MP systems but we
 // currently don't have a cheap way to determine the number of CPUs from this header file. Revisit this if it
@@ -27,6 +27,19 @@
 #define VOLATILE_MEMORY_BARRIER()
 #endif
 
+template<typename T>
+struct RemoveVolatile
+{
+    typedef T type;
+};
+
+template<typename T>
+struct RemoveVolatile<volatile T>
+{
+    typedef T type;
+};
+
+
 //
 // VolatileLoad loads a T from a pointer to T.  It is guaranteed that this load will not be optimized
 // away by the compiler, and that any operation that occurs after this load, in program order, will
@@ -39,8 +52,22 @@ inline
 T VolatileLoad(T const * pt)
 {
 #ifndef DACCESS_COMPILE
+#if defined(_ARM64_) && defined(__GNUC__)
+    T val;
+    static const unsigned lockFreeAtomicSizeMask = (1 << 1) | (1 << 2) | (1 << 4) | (1 << 8);
+    if ((1 << sizeof(T)) & lockFreeAtomicSizeMask)
+    {
+        __atomic_load((T const *)pt, const_cast<typename RemoveVolatile<T>::type *>(&val), __ATOMIC_ACQUIRE);
+    }
+    else
+    {
+        val = *(T volatile const*)pt;
+        asm volatile ("dmb ishld" : : : "memory");
+    }
+#else
     T val = *(T volatile const *)pt;
     VOLATILE_MEMORY_BARRIER();
+#endif
 #else
     T val = *pt;
 #endif
