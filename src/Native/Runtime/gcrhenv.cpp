@@ -1550,39 +1550,9 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
         return true;
     }
 
-    if (strcmp(key, "GCRetainVM") == 0)
-    {
-        *value = false;
-        return true;
-    }
-
     if (strcmp(key, "gcConservative") == 0)
     {
         *value = g_pConfig->GetGCConservative();
-        return true;
-    }
-
-    if (strcmp(key, "gcForceCompact") == 0)
-    {
-        *value = false;
-        return true;
-    }
-
-    if (strcmp(key, "GCStressMix") == 0)
-    {
-        *value = false;
-        return true;
-    }
-
-    if (strcmp(key, "GCBreakOnOOM") == 0)
-    {
-        *value = false;
-        return true;
-    }
-
-    if (strcmp(key, "GCNoAffinitize") == 0)
-    {
-        *value = false;
         return true;
     }
 
@@ -1597,18 +1567,6 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
         return true;
     }
 
-    if (strcmp(key, "GCLOHCompact") == 0)
-    {
-        *value = 0;
-        return true;
-    }
-
-    if (strcmp(key, "GCHeapCount") == 0)
-    {
-        *value = 0;
-        return true;
-    }
-
     if (strcmp(key, "GCgen0size") == 0)
     {
 #ifdef USE_PORTABLE_HELPERS
@@ -1618,12 +1576,6 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
 #else
         *value = 0;
 #endif
-        return true;
-    }
-
-    if (strcmp(key, "GCLatencyMode") == 0)
-    {
-        *value = 1;
         return true;
     }
 
