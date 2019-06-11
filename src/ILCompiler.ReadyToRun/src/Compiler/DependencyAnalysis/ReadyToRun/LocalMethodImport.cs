@@ -31,9 +31,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                   ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall,
                   factory.MethodSignature(
                       fixupKind,
-                      method.Method,
-                      constrainedType: null,
-                      methodToken: method.Token,
+                      method,
                       isUnboxingStub,
                       isInstantiatingStub,
                       signatureContext))
