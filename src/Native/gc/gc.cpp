@@ -3096,15 +3096,15 @@ void gc_heap::fire_pevents()
     settings.record (&gc_data_global);
     gc_data_global.print();
 
-    FIRE_EVENT(GCGlobalHeapHistory_V2,
-        gc_data_global.final_youngest_desired,
-        gc_data_global.num_heaps,
-        gc_data_global.condemned_generation,
-        gc_data_global.gen0_reduction_count,
-        gc_data_global.reason,
-        gc_data_global.global_mechanisms_p,
-        gc_data_global.pause_mode,
-        gc_data_global.mem_pressure);
+    FIRE_EVENT(GCGlobalHeapHistory_V2, 
+               gc_data_global.final_youngest_desired, 
+               gc_data_global.num_heaps, 
+               gc_data_global.condemned_generation, 
+               gc_data_global.gen0_reduction_count, 
+               gc_data_global.reason, 
+               gc_data_global.global_mechanisms_p, 
+               gc_data_global.pause_mode, 
+               gc_data_global.mem_pressure);
 
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
@@ -5039,32 +5039,14 @@ extern "C" uint64_t __rdtsc();
 #else // _MSC_VER
     extern "C" ptrdiff_t get_cycle_count(void);
 #endif // _MSC_VER
-#elif defined(_TARGET_ARM_)
+#else
     static ptrdiff_t get_cycle_count()
     {
-        // @ARMTODO: cycle counter is not exposed to user mode by CoreARM. For now (until we can show this
-        // makes a difference on the ARM configurations on which we'll run) just return 0. This will result in
-        // all buffer access times being reported as equal in access_time().
-        return 0;
-    }
-#elif defined(_TARGET_ARM64_)
-    static ptrdiff_t get_cycle_count()
-    {
-        // @ARM64TODO: cycle counter is not exposed to user mode by CoreARM. For now (until we can show this
-        // makes a difference on the ARM configurations on which we'll run) just return 0. This will result in
-        // all buffer access times being reported as equal in access_time().
-        return 0;
-    }
-#elif defined(_TARGET_WASM_)
-    static ptrdiff_t get_cycle_count()
-    {
-        // @WASMTODO: cycle counter is not exposed to user mode by WebAssembly. For now (until we can show this
+        // @ARMTODO, @ARM64TODO, @WASMTODO: cycle counter is not exposed to user mode. For now (until we can show this
         // makes a difference on the configurations on which we'll run) just return 0. This will result in
         // all buffer access times being reported as equal in access_time().
         return 0;
     }
-#else
-#error NYI platform: get_cycle_count
 #endif //_TARGET_X86_
 
 class heap_select
@@ -16279,7 +16261,7 @@ start_no_gc_region_status gc_heap::prepare_for_no_gc_region (uint64_t total_size
     }
 
     int soh_align_const = get_alignment_constant (TRUE);
-    size_t max_soh_allocated = (soh_segment_size - segment_info_size - eph_gen_starts_size);
+    size_t max_soh_allocated = soh_segment_size - segment_info_size - eph_gen_starts_size;
     size_t size_per_heap = 0;
     const double scale_factor = 1.05;
 
@@ -35224,11 +35206,11 @@ GCHeap::GetContainingObject (void *pInteriorPtr, bool fCollectedGenOnly)
     gc_heap* hp = gc_heap::heap_of (o);
 
     uint8_t* lowest = (fCollectedGenOnly ? hp->gc_low : hp->lowest_address);
-    uint8_t * highest = (fCollectedGenOnly ? hp->gc_high : hp->highest_address);
+    uint8_t* highest = (fCollectedGenOnly ? hp->gc_high : hp->highest_address);
 
     if (o >= lowest && o < highest)
     {
-        o = hp->find_object(o, lowest);
+        o = hp->find_object (o, lowest);
     }
     else
     {
