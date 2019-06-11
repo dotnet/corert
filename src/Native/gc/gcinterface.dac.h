@@ -11,7 +11,6 @@
 //      GC-internal type's fields, while still maintaining the same layout.
 // This interface is strictly versioned, see gcinterface.dacvars.def for more information.
 
-#define HEAP_SEGMENT_FLAGS_READONLY     1
 #define NUM_GC_DATA_POINTS              9
 #define MAX_COMPACT_REASONS_COUNT       11
 #define MAX_EXPAND_MECHANISMS_COUNT     6
