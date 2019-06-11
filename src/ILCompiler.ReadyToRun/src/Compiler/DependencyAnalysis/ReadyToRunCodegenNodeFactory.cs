@@ -110,30 +110,28 @@ namespace ILCompiler.DependencyAnalysis
             bool isInstantiatingStub,
             SignatureContext signatureContext)
         {
-            bool isLocalMethod = CompilationModuleGroup.ContainsMethodBody(method.Method, false);
-
             IMethodNode methodImport;
             TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub);
             if (!_importMethods.TryGetValue(key, out methodImport))
             {
-                if (!isLocalMethod)
-                {
-                    // First time we see a given external method - emit indirection cell and the import entry
-                    methodImport = new ExternalMethodImport(
-                        this,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                        method,
-                        isUnboxingStub,
-                        isInstantiatingStub,
-                        signatureContext);
-                }
-                else
+                if (CompilationModuleGroup.ContainsMethodBody(method.Method, false))
                 {
                     methodImport = new LocalMethodImport(
                         this,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
                         method,
                         CreateMethodEntrypointNode(method, isUnboxingStub, isInstantiatingStub, signatureContext),
+                        isUnboxingStub,
+                        isInstantiatingStub,
+                        signatureContext);
+                }
+                else
+                {
+                    // First time we see a given external method - emit indirection cell and the import entry
+                    methodImport = new ExternalMethodImport(
+                        this,
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                        method,
                         isUnboxingStub,
                         isInstantiatingStub,
                         signatureContext);
