@@ -640,8 +640,17 @@ namespace System
 
         public static GCMemoryInfo GetGCMemoryInfo()
         {
-            // TODO: https://github.com/dotnet/corert/issues/5680
-            return default;
+            RuntimeImports.RhGetMemoryInfo(out uint highMemLoadThreshold,
+                                           out ulong totalPhysicalMem,
+                                           out uint lastRecordedMemLoad,
+                                           out UIntPtr lastRecordedHeapSize,
+                                           out UIntPtr lastRecordedFragmentation);
+
+            return new GCMemoryInfo((long)((double)highMemLoadThreshold / 100 * totalPhysicalMem),
+                                    (long)((double)lastRecordedMemLoad / 100 * totalPhysicalMem),
+                                    (long)totalPhysicalMem,
+                                    (long)(ulong)lastRecordedHeapSize,
+                                    (long)(ulong)lastRecordedFragmentation);
         }
 
         internal static ulong GetSegmentSize()
