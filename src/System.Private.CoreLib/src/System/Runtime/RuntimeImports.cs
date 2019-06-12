@@ -197,6 +197,15 @@ namespace System.Runtime
         internal static extern long RhGetAllocatedBytesForCurrentThread();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetMemoryInfo")]
+        internal static extern void RhGetMemoryInfo(out uint highMemLoadThreshold,
+                                                    out ulong totalPhysicalMem,
+                                                    out uint lastRecordedMemLoad,
+                                                    // The next two are size_t
+                                                    out UIntPtr lastRecordedHeapSize,
+                                                    out UIntPtr lastRecordedFragmentation);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]
         internal extern static bool RhCompareObjectContentsAndPadding(object obj1, object obj2);
 
