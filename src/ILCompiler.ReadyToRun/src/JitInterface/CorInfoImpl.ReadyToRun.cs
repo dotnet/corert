@@ -908,11 +908,6 @@ namespace Internal.JitInterface
                     // OR 3. we have have resolved to an instantiating stub
 
                     methodAfterConstraintResolution = directMethod;
-                    if (methodAfterConstraintResolution.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
-                    {
-                        useInstantiatingStub = true;
-                    }
-
                     Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
                     resolvedConstraint = true;
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
@@ -1012,8 +1007,13 @@ namespace Internal.JitInterface
                 }
             }
 
+            if (constrainedType != null)
+            {
+                targetMethod = originalMethod;
+            }
             methodToCall = targetMethod;
             MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodDesc methodToDescribe = methodToCall;
 
             if (directCall)
             {
@@ -1057,7 +1057,7 @@ namespace Internal.JitInterface
                 {
                     if (allowInstParam)
                     {
-                        methodToCall = canonMethod;
+                        methodToDescribe = canonMethod;
                     }
 
                     pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL;
@@ -1124,17 +1124,17 @@ namespace Internal.JitInterface
                 }
             }
 
-            pResult->hMethod = ObjectToHandle(methodToCall);
+            pResult->hMethod = ObjectToHandle(methodToDescribe);
 
             // TODO: access checks
             pResult->accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
 
             // We're pretty much done at this point.  Let's grab the rest of the information that the jit is going to
             // need.
-            pResult->classFlags = getClassAttribsInternal(methodToCall.OwningType);
+            pResult->classFlags = getClassAttribsInternal(methodToDescribe.OwningType);
 
-            pResult->methodFlags = getMethodAttribsInternal(methodToCall);
-            Get_CORINFO_SIG_INFO(methodToCall, &pResult->sig, useInstantiatingStub);
+            pResult->methodFlags = getMethodAttribsInternal(methodToDescribe);
+            Get_CORINFO_SIG_INFO(methodToDescribe, &pResult->sig, useInstantiatingStub);
         }
 
         private bool MethodInSystemVersionBubble(MethodDesc method)
