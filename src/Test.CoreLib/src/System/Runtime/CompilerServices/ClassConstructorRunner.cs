@@ -11,13 +11,13 @@ namespace System.Runtime.CompilerServices
     [McgIntrinsics]
     internal static class ClassConstructorRunner
     {
-        private unsafe static object CheckStaticClassConstructionReturnGCStaticBase(ref StaticClassConstructionContext context, object gcStaticBase)
+        private static unsafe object CheckStaticClassConstructionReturnGCStaticBase(ref StaticClassConstructionContext context, object gcStaticBase)
         {
             CheckStaticClassConstruction(ref context);
             return gcStaticBase;
         }
 
-        private unsafe static IntPtr CheckStaticClassConstructionReturnNonGCStaticBase(ref StaticClassConstructionContext context, IntPtr nonGcStaticBase)
+        private static unsafe IntPtr CheckStaticClassConstructionReturnNonGCStaticBase(ref StaticClassConstructionContext context, IntPtr nonGcStaticBase)
         {
             CheckStaticClassConstruction(ref context);
             return nonGcStaticBase;

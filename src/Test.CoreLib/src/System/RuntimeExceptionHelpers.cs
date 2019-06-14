@@ -107,5 +107,18 @@ namespace System
         {
             RuntimeImports.RhpFallbackFailFast();
         }
+
+        [RuntimeExport("AppendExceptionStackFrame")]
+        private static void AppendExceptionStackFrame(object exceptionObj, IntPtr IP, int flags)
+        {
+            Exception ex = exceptionObj as Exception;
+            if (ex == null)
+                FailFast("Exceptions must derive from the System.Exception class");
+        }
+
+        [RuntimeExport("OnFirstChanceException")]
+        internal static void OnFirstChanceException(object e)
+        {
+        }
     }
 }

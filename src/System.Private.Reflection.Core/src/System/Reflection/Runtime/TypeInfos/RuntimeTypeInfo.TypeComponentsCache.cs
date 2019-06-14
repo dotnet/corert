@@ -6,9 +6,14 @@ using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.BindingFlagSupport;
 
-using Unsafe = System.Runtime.CompilerServices.Unsafe;
+using Internal.Reflection.Core.Execution;
+
+using Unsafe = Internal.Runtime.CompilerServices.Unsafe;
+
+using EnumInfo = Internal.Runtime.Augments.EnumInfo;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -71,6 +76,8 @@ namespace System.Reflection.Runtime.TypeInfos
                 return Unsafe.As<QueriedMemberList<M>>(result);
             }
 
+            public EnumInfo EnumInfo => _lazyEnumInfo ?? (_lazyEnumInfo = ReflectionCoreExecution.ExecutionDomain.ExecutionEnvironment.GetEnumInfo(_type.TypeHandle));
+
             private static object[] CreatePerNameQueryCaches(RuntimeTypeInfo type, bool ignoreCase)
             {
                 object[] perNameCaches = new object[MemberTypeIndex.Count];
@@ -96,6 +103,8 @@ namespace System.Reflection.Runtime.TypeInfos
             private readonly object[] _nameAgnosticQueryCaches;
 
             private readonly RuntimeTypeInfo _type;
+
+            private volatile EnumInfo _lazyEnumInfo;
 
             //
             // Each PerName cache persists the results of a Type.Get(name, bindingFlags) for a particular MemberInfoType "M".

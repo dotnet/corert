@@ -84,7 +84,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                             return true;
                         if (typeFilterKnownToBeSealed)
                             return false;
-                        return actualType.IsSubclassOf(optionalAttributeTypeFilter);
+                        return optionalAttributeTypeFilter.IsAssignableFrom(actualType);
                     };
             }
 

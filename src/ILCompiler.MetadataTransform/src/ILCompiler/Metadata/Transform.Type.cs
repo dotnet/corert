@@ -32,8 +32,6 @@ namespace ILCompiler.Metadata
 
         public override MetadataRecord HandleType(Cts.TypeDesc type)
         {
-            Debug.Assert(!IsBlocked(type));
-
             MetadataRecord rec;
             if (_types.TryGet(type, out rec))
             {
@@ -78,6 +76,7 @@ namespace ILCompiler.Metadata
                             var metadataType = (Cts.MetadataType)type;
                             if (_policy.GeneratesMetadata(metadataType))
                             {
+                                Debug.Assert(!_policy.IsBlocked(metadataType));
                                 rec = _types.Create(metadataType, _initTypeDef ?? (_initTypeDef = InitializeTypeDef));
                             }
                             else
@@ -322,7 +321,13 @@ namespace ILCompiler.Metadata
                     Ecma.MethodImplementation miDef = reader.GetMethodImplementation(miHandle);
 
                     Cts.MethodDesc methodBody = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodBody);
+                    if (_policy.IsBlocked(methodBody))
+                        continue;
+
                     Cts.MethodDesc methodDecl = (Cts.MethodDesc)ecmaEntity.EcmaModule.GetObject(miDef.MethodDeclaration);
+                    if (_policy.IsBlocked(methodDecl.GetTypicalMethodDefinition()))
+                        continue;
+
                     MethodImpl methodImplRecord = new MethodImpl
                     {
                         MethodBody = HandleQualifiedMethod(methodBody),

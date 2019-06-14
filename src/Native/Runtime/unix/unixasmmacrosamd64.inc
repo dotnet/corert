@@ -194,6 +194,8 @@ C_FUNC(\Name):
 
 .endm
 
+#define SIZEOF_FP_REGS 0x80
+
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS ofs
 
         save_xmm128_postrsp xmm0, \ofs
@@ -217,6 +219,21 @@ C_FUNC(\Name):
         restore_xmm128  xmm5, \ofs + 0x50
         restore_xmm128  xmm6, \ofs + 0x60
         restore_xmm128  xmm7, \ofs + 0x70
+
+.endm
+
+.macro EXPORT_POINTER_TO_ADDRESS Name
+
+// NOTE: The label is intentionally left as 2 - otherwise on OSX 0b or 1b will be incorrectly interpreted as binary integers
+
+2:
+
+        .data
+        .align      8
+C_FUNC(\Name):
+        .quad       2b
+        .global     C_FUNC(\Name)
+        .text
 
 .endm
 
@@ -248,19 +265,30 @@ C_FUNC(\Name):
 #define PTFF_SAVE_ALL_SCRATCH    00007F00h
 #define PTFF_RAX_IS_GCREF        00010000h   // iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
 #define PTFF_RAX_IS_BYREF        00020000h   // iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
+#define PTFF_THREAD_ABORT        00040000h   // indicates that ThreadAbortException should be thrown when returning from the transition
+
+// These must match the TrapThreadsFlags enum
+#define TrapThreadsFlags_None            0
+#define TrapThreadsFlags_AbortInProgress 1
+#define TrapThreadsFlags_TrapThreads     2
+
+.macro INLINE_GET_TLS_VAR Var
+       .att_syntax
+#if defined(__APPLE__)
+        movq    _\Var@TLVP(%rip), %rdi
+        callq   *(%rdi)
+#else
+        leaq    \Var@TLSLD(%rip), %rdi
+        callq   __tls_get_addr@PLT
+        addq    $\Var@DTPOFF, %rax
+#endif 
+       .intel_syntax noprefix
+.endm
+
 
 .macro INLINE_GETTHREAD
         // Inlined version of call C_FUNC(RhpGetThread)
-       .att_syntax
-#if defined(__APPLE__)
-        movq    _tls_CurrentThread@TLVP(%rip), %rdi
-        callq   *(%rdi)
-#else
-        leaq    tls_CurrentThread@TLSLD(%rip), %rdi
-        callq   __tls_get_addr@PLT
-        addq    $tls_CurrentThread@DTPOFF, %rax
-#endif
-        .intel_syntax noprefix
+        INLINE_GET_TLS_VAR tls_CurrentThread
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
@@ -282,9 +310,9 @@ C_FUNC(\Name):
 DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
-    push_nonvol_reg rbp
+    push_nonvol_reg rbp                         // push RBP frame
     mov             rbp, rsp
-    lea             \trashReg, [rsp +  10h]
+    lea             \trashReg, [rsp + 10h]
     push_register   \trashReg                   // save caller's RSP
     push_nonvol_reg r15                         // save preserved registers
     push_nonvol_reg r14                         //   ..
@@ -293,15 +321,16 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
     push_nonvol_reg rbx                         //   ..
     push_imm        DEFAULT_FRAME_SAVE_FLAGS    // save the register bitmask
     push_register   \trashReg                   // Thread * (unused by stackwalker)
-    push_register   rbp                         // save caller's RBP
-    mov             \trashReg, [rsp + 10*8]     // Find the return address
-    push_register   \trashReg                   // save m_RIP
+    mov             \trashReg, [rsp + 8*8]      // Find and save the callers RBP
+    push_register   \trashReg
+    mov             \trashReg, [rsp + 10*8]     // Find and save the return address
+    push_register   \trashReg
     lea             \trashReg, [rsp]            // trashReg == address of frame
 .endm
 
 .macro POP_COOP_PINVOKE_FRAME
     pop_register r10    // discard RIP
-    pop_register r10    // discarp RBP
+    pop_nonvol_reg rbp  // restore RBP
     pop_register r10    // discard thread
     pop_register r10    // discard bitmask
     pop_nonvol_reg rbx
@@ -310,5 +339,5 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
     pop_nonvol_reg r14
     pop_nonvol_reg r15
     pop_register r10    // discard caller RSP
-    pop_nonvol_reg rbp
+    pop_register r10    // discard RBP frame
 .endm

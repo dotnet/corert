@@ -5,13 +5,15 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System
 {
     // CONTRACT with Runtime
     // The Array type is one of the primitives understood by the compilers and runtime
     // Data Contract: Single field of type int
 
-    public class Array
+    public partial class Array
     {
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 649
@@ -42,7 +44,7 @@ namespace System
         }
     }
 
-    // To accomodate class libraries that wish to implement generic interfaces on arrays, all class libraries
+    // To accommodate class libraries that wish to implement generic interfaces on arrays, all class libraries
     // are now required to provide an Array<T> class that derives from Array.
     internal class Array<T> : Array
     {

@@ -2,19 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class TypeManagerIndirectionNode : ObjectNode, ISymbolNode
+    public class TypeManagerIndirectionNode : ObjectNode, ISymbolDefinitionNode
     {
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__typemanager_indirection");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__typemanager_indirection");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
 
@@ -22,11 +26,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            objData.DefinedSymbols.Add(this);
-            objData.RequirePointerAlignment();
+            ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
+            objData.AddSymbol(this);
+            objData.RequireInitialPointerAlignment();
+            objData.EmitZeroPointer();
             objData.EmitZeroPointer();
             return objData.ToObjectData();
         }
+
+        public override int ClassCode => -2028598574;
     }
 }

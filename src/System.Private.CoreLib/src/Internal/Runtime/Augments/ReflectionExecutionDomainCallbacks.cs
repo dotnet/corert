@@ -23,10 +23,11 @@ using System.Reflection;
 namespace Internal.Runtime.Augments
 {
     [CLSCompliant(false)]
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionExecutionDomainCallbacks
     {
         // Api's that are exposed in System.Runtime but are really reflection apis.
-        public abstract Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase);
+        public abstract Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, string defaultAssembly);
 
         public abstract IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle);
 
@@ -46,11 +47,14 @@ namespace Internal.Runtime.Augments
         // Flotsam and jetsam.
         public abstract Exception CreateMissingMetadataException(Type typeWithMissingMetadata);
 
-        public abstract EnumInfo GetEnumInfoIfAvailable(Type enumType);
-        public abstract String GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
-        public abstract String GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress);
+        public abstract string GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
+        public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
+        public abstract Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle);
+
+#if PROJECTN
         public abstract int ValueTypeGetHashCodeUsingReflection(object valueType);
         public abstract bool ValueTypeEqualsUsingReflection(object left, object right);
+#endif
 
         /// <summary>
         /// Retrieves the default value for a parameter of a method.
@@ -67,5 +71,7 @@ namespace Internal.Runtime.Augments
         public abstract bool SupportsReflection(Type type);
 
         public abstract MethodInfo GetDelegateMethod(Delegate del);
+
+        public abstract Exception GetExceptionForHR(int hr);
     }
 }

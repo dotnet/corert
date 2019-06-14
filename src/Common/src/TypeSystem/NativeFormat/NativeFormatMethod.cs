@@ -7,6 +7,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Reflection;
+using System.Runtime;
 using System.Threading;
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.CompilerServices;
@@ -28,6 +29,7 @@ namespace Internal.TypeSystem.NativeFormat
             public const int AggressiveInlining = 0x0040;
             public const int RuntimeImplemented = 0x0080;
             public const int InternalCall = 0x0100;
+            public const int Synchronized = 0x0200;
 
             public const int AttributeMetadataCache = 0x1000;
             public const int Intrinsic = 0x2000;
@@ -51,7 +53,7 @@ namespace Internal.TypeSystem.NativeFormat
 
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
-            this.ToString();
+            InitializeName();
 #endif
         }
 
@@ -171,6 +173,9 @@ namespace Internal.TypeSystem.NativeFormat
 
                 if ((methodImplAttributes & MethodImplAttributes.InternalCall) != 0)
                     flags |= MethodFlags.InternalCall;
+
+                if ((methodImplAttributes & MethodImplAttributes.Synchronized) != 0)
+                    flags |= MethodFlags.Synchronized;
 
                 flags |= MethodFlags.BasicMetadataCache;
             }
@@ -305,6 +310,14 @@ namespace Internal.TypeSystem.NativeFormat
             }
         }
 
+        public override bool IsSynchronized
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Synchronized) & MethodFlags.Synchronized) != 0;
+            }
+        }
+
         public override bool IsNativeCallable
         {
             get
@@ -318,6 +331,19 @@ namespace Internal.TypeSystem.NativeFormat
             get
             {
                 return (GetMethodFlags(MethodFlags.AttributeMetadataCache | MethodFlags.RuntimeExport) & MethodFlags.RuntimeExport) != 0;
+            }
+        }
+
+        public override bool IsDefaultConstructor
+        {
+            get
+            {
+                MethodAttributes attributes = Attributes;
+                return attributes.IsRuntimeSpecialName() 
+                    && attributes.IsPublic()
+                    && Signature.Length == 0
+                    && Name == ".ctor"
+                    && !_type.IsAbstract;
             }
         }
 
@@ -390,19 +416,14 @@ namespace Internal.TypeSystem.NativeFormat
                 attributeNamespace, attributeName);
         }
 
-        public override string ToString()
-        {
-            return _type.ToString() + "." + Name;
-        }
-
         public override MethodNameAndSignature NameAndSignature
         {
             get
             {
                 int handleAsToken = _handle.ToInt();
 
-                IntPtr moduleHandle = Internal.Runtime.TypeLoader.ModuleList.Instance.GetModuleForMetadataReader(MetadataReader);
-                return new MethodNameAndSignature(Name, RuntimeMethodSignature.CreateFromMethodHandle(moduleHandle, handleAsToken));
+                TypeManagerHandle moduleHandle = Internal.Runtime.TypeLoader.ModuleList.Instance.GetModuleForMetadataReader(MetadataReader);
+                return new MethodNameAndSignature(Name, RuntimeSignature.CreateFromMethodHandle(moduleHandle, handleAsToken));
             }
         }
     }

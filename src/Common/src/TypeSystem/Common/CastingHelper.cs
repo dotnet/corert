@@ -78,6 +78,14 @@ namespace Internal.TypeSystem
             // Casting array to something else (between SzArray and Array, for example)?
             if (thisType.Category != otherType.Category)
             {
+                // An SzArray is castable to MdArray rank 1. We follow the same casting rules as SzArray to SzArray.
+                if (thisType.Category == TypeFlags.SzArray
+                    && otherType.Category == TypeFlags.Array
+                    && ((ArrayType)otherType).Rank == 1)
+                {
+                    return thisType.CanCastParamTo(((ArrayType)otherType).ParameterType, protect);
+                }
+
                 return false;
             }
 
@@ -141,7 +149,7 @@ namespace Internal.TypeSystem
         }
 
         // Returns true of the two types are equivalent primitive types. Used by array casts.
-        static private bool ArePrimitveTypesEquivalentSize(TypeDesc type1, TypeDesc type2)
+        private static bool ArePrimitveTypesEquivalentSize(TypeDesc type1, TypeDesc type2)
         {
             Debug.Assert(type1.IsPrimitive && type2.IsPrimitive);
 
@@ -187,6 +195,12 @@ namespace Internal.TypeSystem
                 default:
                     return 0;
             }
+        }
+
+        public static bool IsArrayElementTypeCastableBySize(TypeDesc elementType)
+        {
+            TypeDesc underlyingType = elementType.UnderlyingType;
+            return underlyingType.IsPrimitive && GetIntegralTypeMatchSize(underlyingType) != 0;
         }
 
         private static bool CanCastToClassOrInterface(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
@@ -302,6 +316,11 @@ namespace Internal.TypeSystem
         private static bool CanCastToClass(this TypeDesc thisType, TypeDesc otherType, StackOverflowProtect protect)
         {
             TypeDesc curType = thisType;
+
+            if (curType.IsInterface && otherType.IsObject)
+            {
+                return true;
+            }
 
             // If the target type has variant type parameters, we take a slower path
             if (curType.HasVariance)

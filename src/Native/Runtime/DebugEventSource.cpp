@@ -43,6 +43,16 @@ void DebugEventSource::SendModuleLoadEvent(Module* pModule)
     SendRawEvent(&payload);
 }
 
+void DebugEventSource::SendModuleLoadEvent(void* pAddressInModule)
+{
+    if(!EventEnabled(DEBUG_EVENT_TYPE_LOAD_MODULE))
+        return;
+    DebugEventPayload payload;
+    payload.type = DEBUG_EVENT_TYPE_LOAD_MODULE;
+    payload.ModuleLoadUnload.pModuleHeader = (CORDB_ADDRESS)pAddressInModule;
+    SendRawEvent(&payload);
+}
+
 void DebugEventSource::SendModuleUnloadEvent(Module* pModule)
 {
     if(!EventEnabled(DEBUG_EVENT_TYPE_UNLOAD_MODULE))
@@ -95,6 +105,17 @@ void DebugEventSource::SendExceptionFirstPassFrameEnteredEvent(CORDB_ADDRESS ipI
     payload.Exception.ip = ipInFrame;
     payload.Exception.sp = frameSP;
     SendRawEvent(&payload);
+}
+
+void DebugEventSource::SendCustomEvent(void* payload, int length)
+{
+    if (!EventEnabled(DEBUG_EVENT_TYPE_CUSTOM))
+        return;
+    DebugEventPayload rawPayload;
+    rawPayload.type = DEBUG_EVENT_TYPE_CUSTOM;
+    rawPayload.Custom.payload = (CORDB_ADDRESS)payload;
+    rawPayload.Custom.length = length;
+    SendRawEvent(&rawPayload);
 }
 
 //---------------------------------------------------------------------------------------
@@ -199,6 +220,12 @@ COOP_PINVOKE_HELPER(ExceptionEventKind, RhpGetRequestedExceptionEvents, ())
     if(EventEnabled(DEBUG_EVENT_TYPE_EXCEPTION_FIRST_PASS_FRAME_ENTER))
         mask |= EEK_FirstPassFrameEntered;
     return (ExceptionEventKind)mask;
+}
+
+//Called by the C# func eval code to hand shake with the debugger
+COOP_PINVOKE_HELPER(void, RhpSendCustomEventToDebugger, (void* payload, int length))
+{
+    DebugEventSource::SendCustomEvent(payload, length);
 }
 
 #endif //!DACCESS_COMPILE

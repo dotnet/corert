@@ -5,10 +5,15 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
-using global::Internal.Metadata.NativeFormat;
-using global::Internal.NativeFormat;
-using global::Internal.Runtime.TypeLoader;
+using System.Runtime;
+
+using Internal.Runtime.CompilerServices;
+using Internal.Metadata.NativeFormat;
+using Internal.NativeFormat;
+using Internal.Runtime.TypeLoader;
 using Internal.Runtime.Augments;
+
+using System.Reflection.Runtime.General;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -16,16 +21,12 @@ namespace Internal.Runtime.TypeLoader
 {
     internal static class SigParsing
     {
-        public static RuntimeTypeHandle GetTypeFromNativeLayoutSignature(ref NativeParser parser, uint offset)
+        public static RuntimeTypeHandle GetTypeFromNativeLayoutSignature(ref NativeParser parser, TypeManagerHandle moduleHandle, uint offset)
         {
-            IntPtr remainingSignature;
             RuntimeTypeHandle typeHandle;
 
-            IntPtr signatureAddress = parser.Reader.OffsetToAddress(offset);
-            bool success = TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(signatureAddress, null, null, out typeHandle, out remainingSignature);
-
-            // Reset the parser to after the type
-            parser = new NativeParser(parser.Reader, parser.Reader.AddressToOffset(remainingSignature));
+            parser.Offset = offset;
+            TypeLoaderEnvironment.Instance.GetTypeFromSignatureAndContext(ref parser, moduleHandle, null, null, out typeHandle);
 
             return typeHandle;
         }
@@ -63,6 +64,33 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         private readonly bool _isGeneric;
 
+        public MethodSignatureComparer(
+            QMethodDefinition methodHandle)
+        {
+            if (methodHandle.IsNativeFormatMetadataBased)
+            {
+                _metadataReader = methodHandle.NativeFormatReader;
+                _methodHandle = methodHandle.NativeFormatHandle;
+
+                _method = _methodHandle.GetMethod(_metadataReader);
+
+                _methodSignature = _method.Signature.GetMethodSignature(_metadataReader);
+                _isGeneric = (_methodSignature.GenericParameterCount != 0);
+
+                // Precalculate initial method attributes used in signature queries
+                _isStatic = (_method.Flags & MethodAttributes.Static) != 0;
+            }
+            else
+            {
+                _metadataReader = null;
+                _methodHandle = default(MethodHandle);
+                _method = default(Method);
+                _methodSignature = default(MethodSignature);
+                _isGeneric = false;
+                _isStatic = false;
+            }
+        }
+
         /// <summary>
         /// Construct a comparer between NativeFormat metadata methods and native layouts
         /// </summary>
@@ -84,13 +112,13 @@ namespace Internal.Runtime.TypeLoader
             _isStatic = (_method.Flags & MethodAttributes.Static) != 0;
         }
 
-        public bool IsMatchingNativeLayoutMethodNameAndSignature(string name, IntPtr signature)
+        public bool IsMatchingNativeLayoutMethodNameAndSignature(string name, RuntimeSignature signature)
         {
             return _method.Name.StringEquals(name, _metadataReader) &&
                 IsMatchingNativeLayoutMethodSignature(signature);
         }
 
-        public bool IsMatchingNativeLayoutMethodSignature(IntPtr signature)
+        public bool IsMatchingNativeLayoutMethodSignature(RuntimeSignature signature)
         {
             NativeParser parser = GetNativeParserForSignature(signature);
 
@@ -108,7 +136,7 @@ namespace Internal.Runtime.TypeLoader
 
             uint parameterCount = parser.GetUnsigned();
 
-            if (!CompareTypeSigWithType(ref parser, _methodSignature.ReturnType))
+            if (!CompareTypeSigWithType(ref parser, new TypeManagerHandle(signature.ModuleHandle), _methodSignature.ReturnType))
             {
                 return false;
             }
@@ -121,7 +149,7 @@ namespace Internal.Runtime.TypeLoader
                     // The metadata-defined _method has more parameters than the native layout
                     return false;
                 }
-                if (!CompareTypeSigWithType(ref parser, parameterSignature))
+                if (!CompareTypeSigWithType(ref parser, new TypeManagerHandle(signature.ModuleHandle), parameterSignature))
                     return false;
                 parameterIndexToMatch++;
             }
@@ -135,14 +163,16 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="signature">Signature to look up</param>
         /// <returns>Native parser for the signature</param>
-        internal static NativeParser GetNativeParserForSignature(IntPtr signature)
+        internal static NativeParser GetNativeParserForSignature(RuntimeSignature signature)
         {
-            IntPtr moduleHandle = RuntimeAugments.GetModuleFromPointer(signature);
-            NativeReader reader = TypeLoaderEnvironment.GetNativeReaderForBlob(moduleHandle, ReflectionMapBlob.NativeLayoutInfo);
-            return new NativeParser(reader, reader.AddressToOffset(signature));
+            Debug.Assert(signature.IsNativeLayoutSignature);
+            NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(new TypeManagerHandle(signature.ModuleHandle));
+
+            NativeReader reader = TypeLoaderEnvironment.GetNativeReaderForBlob(module, ReflectionMapBlob.NativeLayoutInfo);
+            return new NativeParser(reader, signature.NativeLayoutOffset);
         }
 
-        private bool CompareTypeSigWithType(ref NativeParser parser, Handle typeHandle)
+        private bool CompareTypeSigWithType(ref NativeParser parser, TypeManagerHandle moduleHandle, Handle typeHandle)
         {
             while (typeHandle.HandleType == HandleType.TypeSpecification)
             {
@@ -164,7 +194,7 @@ namespace Internal.Runtime.TypeLoader
                 case TypeSignatureKind.Lookback:
                     {
                         NativeParser lookbackParser = parser.GetLookbackParser(data);
-                        return CompareTypeSigWithType(ref lookbackParser, typeHandle);
+                        return CompareTypeSigWithType(ref lookbackParser, moduleHandle, typeHandle);
                     }
 
                 case TypeSignatureKind.Modifier:
@@ -176,7 +206,7 @@ namespace Internal.Runtime.TypeLoader
                             case TypeModifierKind.Array:
                                 if (typeHandle.HandleType == HandleType.SZArraySignature)
                                 {
-                                    return CompareTypeSigWithType(ref parser, typeHandle
+                                    return CompareTypeSigWithType(ref parser, moduleHandle, typeHandle
                                         .ToSZArraySignatureHandle(_metadataReader)
                                         .GetSZArraySignature(_metadataReader)
                                         .ElementType);
@@ -186,7 +216,7 @@ namespace Internal.Runtime.TypeLoader
                             case TypeModifierKind.ByRef:
                                 if (typeHandle.HandleType == HandleType.ByReferenceSignature)
                                 {
-                                    return CompareTypeSigWithType(ref parser, typeHandle
+                                    return CompareTypeSigWithType(ref parser, moduleHandle, typeHandle
                                         .ToByReferenceSignatureHandle(_metadataReader)
                                         .GetByReferenceSignature(_metadataReader)
                                         .Type);
@@ -196,7 +226,7 @@ namespace Internal.Runtime.TypeLoader
                             case TypeModifierKind.Pointer:
                                 if (typeHandle.HandleType == HandleType.PointerSignature)
                                 {
-                                    return CompareTypeSigWithType(ref parser, typeHandle
+                                    return CompareTypeSigWithType(ref parser, moduleHandle, typeHandle
                                         .ToPointerSignatureHandle(_metadataReader)
                                         .GetPointerSignature(_metadataReader)
                                         .Type);
@@ -252,7 +282,7 @@ namespace Internal.Runtime.TypeLoader
                         if (data != sig.Rank)
                             return false;
 
-                        if (!CompareTypeSigWithType(ref parser, sig.ElementType))
+                        if (!CompareTypeSigWithType(ref parser, moduleHandle, sig.ElementType))
                             return false;
 
                         uint boundCount1 = parser.GetUnsigned();
@@ -277,7 +307,7 @@ namespace Internal.Runtime.TypeLoader
 
                         for (uint i = 0; i < argCount1; i++)
                         {
-                            if (!CompareTypeSigWithType(ref parser, typeHandle))
+                            if (!CompareTypeSigWithType(ref parser, moduleHandle, typeHandle))
                                 return false;
                         }
                         return false;
@@ -294,7 +324,7 @@ namespace Internal.Runtime.TypeLoader
                             .ToTypeInstantiationSignatureHandle(_metadataReader)
                             .GetTypeInstantiationSignature(_metadataReader);
 
-                        if (!CompareTypeSigWithType(ref parser, sig.GenericType))
+                        if (!CompareTypeSigWithType(ref parser, moduleHandle, sig.GenericType))
                         {
                             return false;
                         }
@@ -307,7 +337,7 @@ namespace Internal.Runtime.TypeLoader
                                 // The metadata generic has more parameters than the native layour
                                 return false;
                             }
-                            if (!CompareTypeSigWithType(ref parser, genericArgumentTypeHandle))
+                            if (!CompareTypeSigWithType(ref parser, moduleHandle, genericArgumentTypeHandle))
                             {
                                 return false;
                             }
@@ -317,6 +347,7 @@ namespace Internal.Runtime.TypeLoader
                         return genericArgIndex == data;
                     }
 
+                case TypeSignatureKind.BuiltIn:
                 case TypeSignatureKind.External:
                     {
                         RuntimeTypeHandle type2;
@@ -324,7 +355,7 @@ namespace Internal.Runtime.TypeLoader
                         {
                             case HandleType.TypeDefinition:
                                 if (!TypeLoaderEnvironment.Instance.TryGetNamedTypeForMetadata(
-                                    _metadataReader, typeHandle.ToTypeDefinitionHandle(_metadataReader), out type2))
+                                    new QTypeDefinition(_metadataReader, typeHandle.ToTypeDefinitionHandle(_metadataReader)), out type2))
                                 {
                                     return false;
                                 }
@@ -342,7 +373,16 @@ namespace Internal.Runtime.TypeLoader
                                 return false;
                         }
 
-                        RuntimeTypeHandle type1 = SigParsing.GetTypeFromNativeLayoutSignature(ref parser, startOffset);
+                        RuntimeTypeHandle type1 = default(RuntimeTypeHandle);
+                        if (typeSignatureKind == TypeSignatureKind.External)
+                        {
+                            type1 = SigParsing.GetTypeFromNativeLayoutSignature(ref parser, moduleHandle, startOffset);
+                        }
+                        else
+                        {
+                            type1 = ((Internal.TypeSystem.WellKnownType)data).GetRuntimeTypeHandle();
+                        }
+
                         return type1.Equals(type2);
                     }
 

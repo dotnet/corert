@@ -76,12 +76,6 @@ class MdBinaryReaderGen : CsWriter
 
     private void EmitReadPrimitiveCollection(string typeName)
     {
-        if (typeName == "String")
-        {
-            EmitReadCollection(typeName);
-            return;
-        }
-
         string collectionTypeName = $"{typeName}Collection";
 
         OpenScope($"public static unsafe uint Read(this NativeReader reader, uint offset, out {collectionTypeName} values)");

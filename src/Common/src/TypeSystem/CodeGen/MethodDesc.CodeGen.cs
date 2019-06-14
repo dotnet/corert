@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.CompilerServices;
-
 namespace Internal.TypeSystem
 {
     // Additional members of MethodDesc related to code generation.
@@ -49,6 +46,29 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value specifying whether this method contains hot code and should
+        /// be aggressively optimized if possible.
+        /// </summary>
+        public virtual bool IsAggressiveOptimization
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether this method should not be optimized.
+        /// </summary>
+        public virtual bool IsNoOptimization
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Gets a value specifying whether the implementation of this method
         /// is provided by the runtime (i.e., through generated IL).
         /// </summary>
@@ -65,6 +85,18 @@ namespace Internal.TypeSystem
         /// provided externally by calling out into the runtime.
         /// </summary>
         public virtual bool IsInternalCall
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether the implementation of this method is
+        /// implicitly synchronized
+        /// </summary>
+        public virtual bool IsSynchronized
         {
             get
             {
@@ -95,6 +127,18 @@ namespace Internal.TypeSystem
                 return false;
             }
         }
+
+        /// <summary>
+        /// Gets a value specifying whether this method has special semantics.
+        /// The name indicates the semantics.
+        /// </summary>
+        public virtual bool IsSpecialName
+        {
+            get
+            {
+                return false;
+            }
+        }
     }
 
     // Additional members of InstantiatedMethod related to code generation.
@@ -113,6 +157,22 @@ namespace Internal.TypeSystem
             get
             {
                 return _methodDef.IsNoInlining;
+            }
+        }
+
+        public override bool IsAggressiveOptimization
+        {
+            get
+            {
+                return _methodDef.IsAggressiveOptimization;
+            }
+        }
+
+        public override bool IsNoOptimization
+        {
+            get
+            {
+                return _methodDef.IsNoOptimization;
             }
         }
 
@@ -140,11 +200,27 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsSynchronized
+        {
+            get
+            {
+                return _methodDef.IsSynchronized;
+            }
+        }
+
         public override bool IsNativeCallable
         {
             get
             {
                 return _methodDef.IsNativeCallable;
+            }
+        }
+
+        public override bool IsSpecialName
+        {
+            get
+            {
+                return _methodDef.IsSpecialName;
             }
         }
     }
@@ -165,6 +241,22 @@ namespace Internal.TypeSystem
             get
             {
                 return _typicalMethodDef.IsNoInlining;
+            }
+        }
+
+        public override bool IsAggressiveOptimization
+        {
+            get
+            {
+                return _typicalMethodDef.IsAggressiveOptimization;
+            }
+        }
+
+        public override bool IsNoOptimization
+        {
+            get
+            {
+                return _typicalMethodDef.IsNoOptimization;
             }
         }
 
@@ -192,11 +284,27 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsSynchronized
+        {
+            get
+            {
+                return _typicalMethodDef.IsSynchronized;
+            }
+        }
+
         public override bool IsNativeCallable
         {
             get
             {
                 return _typicalMethodDef.IsNativeCallable;
+            }
+        }
+
+        public override bool IsSpecialName
+        {
+            get
+            {
+                return _typicalMethodDef.IsSpecialName;
             }
         }
     }
@@ -209,6 +317,26 @@ namespace Internal.TypeSystem
             get
             {
                 return true;
+            }
+        }
+
+        public override bool IsNoInlining
+        {
+            get
+            {
+                // Do not allow inlining the Address method. The method that actually gets called is
+                // the one that has a hidden argument with the expected array type.
+                return Kind == ArrayMethodKind.Address;
+            }
+        }
+
+        public override bool IsInternalCall
+        {
+            get
+            {
+                // We consider Address method an internal call since this will end up calling a different
+                // method at runtime.
+                return Kind == ArrayMethodKind.Address;
             }
         }
     }

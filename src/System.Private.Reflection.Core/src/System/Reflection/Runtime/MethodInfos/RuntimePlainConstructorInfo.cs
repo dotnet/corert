@@ -71,7 +71,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_CustomAttributes(this);
 #endif
 
-                return _common.CustomAttributes;
+                return _common.TrueCustomAttributes;
             }
         }
 
@@ -88,14 +88,13 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        [DebuggerGuidedStepThrough]
         public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.ConstructorInfo_Invoke(this, parameters);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (parameters == null)
                 parameters = Array.Empty<Object>();
 
@@ -104,8 +103,17 @@ namespace System.Reflection.Runtime.MethodInfos
             // Reflection.Core does not hardcode these special cases. It's up to the ExecutionEnvironment to steer 
             // us the right way by coordinating the implementation of NewObject and MethodInvoker.
             Object newObject = ReflectionCoreExecution.ExecutionEnvironment.NewObject(this.DeclaringType.TypeHandle);
-            Object ctorAllocatedObject = this.MethodInvoker.Invoke(newObject, parameters);
+            Object ctorAllocatedObject = this.MethodInvoker.Invoke(newObject, parameters, binder, invokeAttr, culture);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return newObject != null ? newObject : ctorAllocatedObject;
+        }
+
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                return RuntimePlainConstructorInfo<TRuntimeMethodCommon>.GetRuntimePlainConstructorInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod);
+            }
         }
 
         public sealed override MethodImplAttributes MethodImplementationFlags
@@ -129,10 +137,28 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return _common.MetadataToken;
+            }
+        }
+
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            if (!(other is RuntimePlainConstructorInfo<TRuntimeMethodCommon> otherConstructor))
+                return false;
+
+            return _common.HasSameMetadataDefinitionAs(otherConstructor._common);
+        }
+
         public sealed override bool Equals(Object obj)
         {
-            RuntimePlainConstructorInfo<TRuntimeMethodCommon> other = obj as RuntimePlainConstructorInfo<TRuntimeMethodCommon>;
-            if (other == null)
+            if (!(obj is RuntimePlainConstructorInfo<TRuntimeMethodCommon> other))
                 return false;
             return _common.Equals(other._common);
         }
@@ -146,6 +172,8 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             return RuntimeMethodHelpers.ComputeToString(ref _common, this, Array.Empty<RuntimeTypeInfo>());
         }
+
+        public sealed override RuntimeMethodHandle MethodHandle => _common.GetRuntimeMethodHandle(null);
 
         protected sealed override RuntimeParameterInfo[] RuntimeParameters
         {
@@ -165,6 +193,10 @@ namespace System.Reflection.Runtime.MethodInfos
 
                 if (this.IsStatic)
                     throw new MemberAccessException(SR.Acc_NotClassInit);
+
+                MethodInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
+                if (invoker != null)
+                    return invoker;
 
                 return _common.GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }

@@ -5,6 +5,7 @@
 using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 public class BringUpTest
 {
@@ -23,6 +24,12 @@ public class BringUpTest
             return Fail;
 
         if (TestVariantInterfaces() == Fail)
+            return Fail;
+
+        if (TestSpecialArrayInterfaces() == Fail)
+            return Fail;
+
+        if (TestIterfaceCallOptimization() == Fail)
             return Fail;
 
         return Pass;
@@ -335,6 +342,54 @@ public class BringUpTest
             return Fail;
 
         return Pass;
+    }
+
+    class SpecialArrayBase { }
+    class SpecialArrayDerived : SpecialArrayBase { }
+
+    // NOTE: ICollection is not a variant interface, but arrays can cast with it as if it was
+    static ICollection<SpecialArrayBase> s_specialDerived = new SpecialArrayDerived[42];
+    static ICollection<uint> s_specialInt = (ICollection<uint>)(object)new int[85];
+
+    private static int TestSpecialArrayInterfaces()
+    {
+        if (s_specialDerived.Count != 42)
+            return Fail;
+
+        if (s_specialInt.Count != 85)
+            return Fail;
+
+        return Pass;
+    }
+
+    #endregion
+
+    #region Interface call optimization tests
+
+    public interface ISomeInterface
+    {
+        int SomeValue { get; }
+    }
+
+    public abstract class SomeAbstractBaseClass : ISomeInterface
+    {
+        public abstract int SomeValue { get; }
+    }
+
+    public class SomeClass : SomeAbstractBaseClass
+    {
+        public override int SomeValue
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            get { return 14; }
+        }
+    }
+
+    private static int TestIterfaceCallOptimization()
+    {
+        ISomeInterface test = new SomeClass();
+        int v = test.SomeValue;
+        return (v == 14) ? Pass : Fail;
     }
 
     #endregion

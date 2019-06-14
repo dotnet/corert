@@ -3,24 +3,24 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 
 using Internal.NativeFormat;
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a map between EETypes and metadata records within the <see cref="MetadataNode"/>.
     /// </summary>
-    internal sealed class TypeMetadataMapNode : ObjectNode, ISymbolNode
+    public sealed class TypeMetadataMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
 
         public TypeMetadataMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__type_to_metadata_map_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -28,21 +28,22 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__type_to_metadata_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__type_to_metadata_map");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section => _externalReferences.Section;
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             var writer = new NativeWriter();
             var typeMapHashTable = new VertexHashtable();
@@ -50,14 +51,11 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping())
+            foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping(factory))
             {
-                if (!factory.CompilationModuleGroup.ContainsType(mappingEntry.Entity))
-                    continue;
-
                 // Types that don't have EETypes don't need mapping table entries because there's no risk of them
                 // not unifying to the same System.Type at runtime.
-                if (!factory.MetadataManager.TypeGeneratesEEType(mappingEntry.Entity))
+                if (!factory.MetadataManager.TypeGeneratesEEType(mappingEntry.Entity) && !factory.CompilationModuleGroup.ShouldReferenceThroughImportTable(mappingEntry.Entity))
                     continue;
                 
                 // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
@@ -72,13 +70,15 @@ namespace ILCompiler.DependencyAnalysis
                 typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
             }
 
-            MemoryStream ms = new MemoryStream();
-            writer.Save(ms);
-            byte[] hashTableBytes = ms.ToArray();
+            byte[] hashTableBytes = writer.Save();
 
             _endSymbol.SetSymbolOffset(hashTableBytes.Length);
 
-            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.TypeMetadataMapNode;
     }
 }

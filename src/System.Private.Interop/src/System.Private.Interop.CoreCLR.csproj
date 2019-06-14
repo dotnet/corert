@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Private.Interop</AssemblyName>
+    <TargetName>$(AssemblyName)</TargetName>
+    <OutputType>Library</OutputType>
+    <ProjectGuid>{A85709C9-22D5-4704-8B7A-73751BB4386A}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>TARGET_CORE_API_SET;CORECLR</DefineConstants>
+    <!-- Disable warning about CLSCompliant attributes on members not being needed. -->
+    <NoWarn>$(NoWarn);3021</NoWarn>
+    <!-- Use MSFT assembly key for compatibility with uapaot targeting pack -->
+    <AssemblyKey>MSFT</AssemblyKey>
+    <OnlyBuildProjectNLibraries>false</OnlyBuildProjectNLibraries>    
+    <TargetsWindows Condition="$(TargetsWindows) ==''">true</TargetsWindows>
+    <TargetNetCoreForCoreCLRFramework>true</TargetNetCoreForCoreCLRFramework>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)\interop\coreclr</OutputPath>
+    <TargetFramework>netstandard1.3</TargetFramework>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
+  </PropertyGroup> 
+
+  <ItemGroup>
+    <PackageReference Include="System.Diagnostics.Contracts">
+      <Version>4.3.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.TypeExtensions">
+      <Version>4.3.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Private.CompilerServices.ICastable">
+      <Version>1.0.0</Version>
+    </PackageReference>
+  </ItemGroup>
+ 
+  <ItemGroup>
+    <Compile Include="InteropExtensions\DependencyReductionConditionallyDependentAttribute.cs" />
+    <Compile Include="InteropExtensions\DependencyReductionRootAttribute.cs" />
+    <Compile Include="InteropExtensions\DependencyReductionTypeRemoved.cs" />
+    <Compile Include="InteropExtensions\EagerStaticClassConstructionAttribute.cs" />
+    <Compile Include="InteropExtensions\ExplicitScopeAttribute.cs" />
+    <Compile Include="InteropExtensions\FixupRuntimeTypeHandle.cs" />
+    <Compile Include="InteropExtensions\IActivationFactory.cs" />
+    <Compile Include="InteropExtensions\InternalExtensions.cs" />
+    <Compile Include="InteropExtensions\InteropExtensions.cs" />
+    <Compile Include="InteropExtensions\Lock.cs" />
+    <Compile Include="InteropExtensions\MetadataTransformedAttribute.cs" />
+    <Compile Include="InteropExtensions\MissingInteropDataException.cs" />
+    <Compile Include="InteropExtensions\MissingMetadataException.cs" />
+    <Compile Include="InteropExtensions\NativeCallableAttribute.cs" />
+    <Compile Include="InteropExtensions\PreInitializedAttribute.cs" />
+    <Compile Include="InteropExtensions\PInvokeMarshal.cs" />
+    <Compile Include="Interop\Interop.PlatformNotSupported.cs" />            
+    <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs">
+      <Link>System\Runtime\InteropServices\McgGeneratedNativeCallCodeAttribute.cs</Link>
+    </Compile>
+    <Compile Include="System\Runtime\InteropServices\MarshalAdapter.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'"> 
+    <Compile Include="Interop\Interop.WinRT.cs" />	
+    <Compile Include="Interop\Interop.WinRT.Basic.cs" />
+    <Compile Include="System\Runtime\InteropServices\Variant.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="InteropExtensions\PInvokeMarshal.Windows.cs" />
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.SetLastError.cs">
+      <Link>Interop\Windows\Mincore\Interop.SetLastError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
+      <Link>Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
+    <Compile Include="InteropExtensions\PInvokeMarshal.Unix.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Reflection\DispatchProxy.cs" />
+    <Compile Include="System\Reflection\DispatchProxyEntry.cs" />
+    <Compile Include="System\Reflection\DispatchProxyHelpers.cs" />
+    <Compile Include="System\Reflection\DispatchProxyInstanceNotFoundException.cs" />
+  </ItemGroup>
+  
+  <Import Project="System.Private.Interop.Shared.projitems" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

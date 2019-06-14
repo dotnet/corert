@@ -1,0 +1,16 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <RyuJITVersion>3.0.0-preview6-27710-71</RyuJITVersion>
+    <ObjectWriterVersion>1.0.0-alpha-27619-05</ObjectWriterVersion>
+    <CoreFxVersion>4.6.0-preview6.19263.9</CoreFxVersion>
+    <CoreFxUapVersion>4.7.0-preview6.19263.9</CoreFxUapVersion>
+    <MicrosoftNETCoreNativeVersion>3.0.0-preview6-27710-71</MicrosoftNETCoreNativeVersion>
+    <MicrosoftNETCoreAppPackageVersion>2.1.8</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftDotNetTestSdkVersion>15.8.0</MicrosoftDotNetTestSdkVersion>
+    <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18420.4</MicrosoftDotNetXUnitExtensionsVersion>
+    <SystemReflectionMetadataVersion>1.4.3</SystemReflectionMetadataVersion>
+    <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
+    <FeedTasksPackageVersion>2.1.0-rc1-03905-01</FeedTasksPackageVersion>
+  </PropertyGroup>
+</Project>

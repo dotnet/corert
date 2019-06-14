@@ -39,6 +39,11 @@ namespace System.Reflection.Runtime.General
                 return global::Internal.Metadata.NativeFormat.Handle.FromIntToken(typeDefOrRefOrSpec.Handle).TryResolve((global::Internal.Metadata.NativeFormat.MetadataReader)typeDefOrRefOrSpec.Reader, typeContext, ref exception);
             }
 
+#if ECMA_METADATA_SUPPORT
+            if (typeDefOrRefOrSpec.Reader is global::System.Reflection.Metadata.MetadataReader ecmaReader)
+                return global::System.Reflection.Metadata.Ecma335.MetadataTokens.Handle(typeDefOrRefOrSpec.Handle).TryResolve(ecmaReader, typeContext, ref exception);
+#endif
+
             throw new BadImageFormatException();  // Expected TypeRef, Def or Spec with MetadataReader
         }
     }

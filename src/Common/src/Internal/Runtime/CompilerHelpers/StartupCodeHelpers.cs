@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
@@ -12,26 +11,48 @@ using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 namespace Internal.Runtime.CompilerHelpers
 {
     [McgIntrinsics]
-    internal static partial class StartupCodeHelpers
+    public static partial class StartupCodeHelpers
     {
-        public static IntPtr[] Modules
-        {
-            get; private set;
-        }
+        /// <summary>
+        /// Initial module array allocation used when adding modules dynamically.
+        /// </summary>
+        private const int InitialModuleCount = 8;
+
+        /// <summary>
+        /// Table of logical modules. Only the first s_moduleCount elements of the array are in use.
+        /// </summary>
+        private static TypeManagerHandle[] s_modules;
+
+        /// <summary>
+        /// Number of valid elements in the logical module table.
+        /// </summary>
+        private static int s_moduleCount;
 
         [NativeCallable(EntryPoint = "InitializeModules", CallingConvention = CallingConvention.Cdecl)]
-        internal static void InitializeModules(IntPtr moduleHeaders, int count)
+        internal static unsafe void InitializeModules(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
-            IntPtr[] modules = CreateTypeManagers(moduleHeaders, count);
+            RuntimeImports.RhpRegisterOsModule(osModule);
+            TypeManagerHandle[] modules = CreateTypeManagers(osModule, pModuleHeaders, count, pClasslibFunctions, nClasslibFunctions);
 
             for (int i = 0; i < modules.Length; i++)
             {
-                InitializeGlobalTablesForModule(modules[i]);
+                InitializeGlobalTablesForModule(modules[i], i);
             }
 
             // We are now at a stage where we can use GC statics - publish the list of modules
             // so that the eager constructors can access it.
-            Modules = modules;
+            if (s_modules != null)
+            {
+                for (int i = 0; i < modules.Length; i++)
+                {
+                    AddModule(modules[i]);
+                }
+            }
+            else
+            {
+                s_modules = modules;
+                s_moduleCount = modules.Length;
+            }
 
             // These two loops look funny but it's important to initialize the global tables before running
             // the first class constructor to prevent them calling into another uninitialized module
@@ -41,7 +62,47 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        private static unsafe IntPtr[] CreateTypeManagers(IntPtr moduleHeaders, int count)
+        /// <summary>
+        /// Return the number of registered logical modules; optionally copy them into an array.
+        /// </summary>
+        /// <param name="outputModules">Array to copy logical modules to, null = only return logical module count</param>
+        internal static int GetLoadedModules(TypeManagerHandle[] outputModules)
+        {
+            if (outputModules != null)
+            {
+                int copyLimit = (s_moduleCount < outputModules.Length ? s_moduleCount : outputModules.Length);
+                for (int copyIndex = 0; copyIndex < copyLimit; copyIndex++)
+                {
+                    outputModules[copyIndex] = s_modules[copyIndex];
+                }
+            }
+            return s_moduleCount;
+        }
+
+        private static void AddModule(TypeManagerHandle newModuleHandle)
+        {
+            if (s_modules == null || s_moduleCount >= s_modules.Length)
+            {
+                // Reallocate logical module array
+                int newModuleLength = 2 * s_moduleCount;
+                if (newModuleLength < InitialModuleCount)
+                {
+                    newModuleLength = InitialModuleCount;
+                }
+
+                TypeManagerHandle[] newModules = new TypeManagerHandle[newModuleLength];
+                for (int copyIndex = 0; copyIndex < s_moduleCount; copyIndex++)
+                {
+                    newModules[copyIndex] = s_modules[copyIndex];
+                }
+                s_modules = newModules;
+            }
+            
+            s_modules[s_moduleCount] = newModuleHandle;
+            s_moduleCount++;
+        }
+
+        private static unsafe TypeManagerHandle[] CreateTypeManagers(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             // Count the number of modules so we can allocate an array to hold the TypeManager objects.
             // At this stage of startup, complex collection classes will not work.
@@ -51,16 +112,19 @@ namespace Internal.Runtime.CompilerHelpers
                 // The null pointers are sentinel values and padding inserted as side-effect of
                 // the section merging. (The global static constructors section used by C++ has 
                 // them too.)
-                if (((IntPtr *)moduleHeaders)[i] != IntPtr.Zero)
+                if (pModuleHeaders[i] != IntPtr.Zero)
                     moduleCount++;
             }
 
-            IntPtr[] modules = new IntPtr[moduleCount];
+            TypeManagerHandle[] modules = new TypeManagerHandle[moduleCount];
             int moduleIndex = 0;
             for (int i = 0; i < count; i++)
             {
-                if (((IntPtr *)moduleHeaders)[i] != IntPtr.Zero)
-                    modules[moduleIndex++] = CreateTypeManager(((IntPtr *)moduleHeaders)[i]);
+                if (pModuleHeaders[i] != IntPtr.Zero)
+                {
+                    modules[moduleIndex] = RuntimeImports.RhpCreateTypeManager(osModule, pModuleHeaders[i], pClasslibFunctions, nClasslibFunctions);
+                    moduleIndex++;
+                }
             }
 
             return modules;
@@ -71,24 +135,35 @@ namespace Internal.Runtime.CompilerHelpers
         /// statics, etc that need initializing. InitializeGlobalTables walks through the modules
         /// and offers each a chance to initialize its global tables.
         /// </summary>
-        private static unsafe void InitializeGlobalTablesForModule(IntPtr typeManager)
+        private static unsafe void InitializeGlobalTablesForModule(TypeManagerHandle typeManager, int moduleIndex)
         {
             // Configure the module indirection cell with the newly created TypeManager. This allows EETypes to find
             // their interface dispatch map tables.
             int length;
-            IntPtr* section = (IntPtr*)GetModuleSection(typeManager, ReadyToRunSectionType.TypeManagerIndirection, out length);
-            *section = typeManager;
+            TypeManagerSlot* section = (TypeManagerSlot*)RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.TypeManagerIndirection, out length);
+            section->TypeManager = typeManager;
+            section->ModuleIndex = moduleIndex;
 
+            // Initialize Mrt import address tables
+            IntPtr mrtImportSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.ImportAddressTables, out length);
+            if (mrtImportSection != IntPtr.Zero)
+            {
+                Debug.Assert(length % IntPtr.Size == 0);
+                InitializeImports(mrtImportSection, length);
+            }
+
+#if !PROJECTN
             // Initialize statics if any are present
-            IntPtr staticsSection = GetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
+            IntPtr staticsSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.GCStaticRegion, out length);
             if (staticsSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);
                 InitializeStatics(staticsSection, length);
             }
+#endif
 
             // Initialize frozen object segment with GC present
-            IntPtr frozenObjectSection = GetModuleSection(typeManager, ReadyToRunSectionType.FrozenObjectRegion, out length);
+            IntPtr frozenObjectSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.FrozenObjectRegion, out length);
             if (frozenObjectSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);
@@ -105,19 +180,19 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-        private static unsafe void InitializeEagerClassConstructorsForModule(IntPtr typeManager)
+        private static unsafe void InitializeEagerClassConstructorsForModule(TypeManagerHandle typeManager)
         {
             int length;
 
             // Run eager class constructors if any are present
-            IntPtr eagerClassConstructorSection = GetModuleSection(typeManager, ReadyToRunSectionType.EagerCctor, out length);
+            IntPtr eagerClassConstructorSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.EagerCctor, out length);
             if (eagerClassConstructorSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);
                 RunEagerClassConstructors(eagerClassConstructorSection, length);
             }
         }
-        
+
         private static void Call(System.IntPtr pfn)
         {
         }
@@ -132,9 +207,70 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        unsafe struct MrtExportsV1
+        {
+            public int ExportsVersion; // Currently only version 1 is supported
+            public int SymbolsCount;
+            public int FirstDataItemAsRelativePointer; // Index 1
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        unsafe struct MrtImportsV1
+        {
+            public int ImportVersion; // Currently only version 1 is supported
+            public int ImportCount; // Count of imports
+            public MrtExportsV1** ExportTable; // Pointer to pointer to Export table
+            public IntPtr FirstImportEntry;
+        }
+
+        private static unsafe void InitializeImports(IntPtr importsRegionStart, int length)
+        {
+            IntPtr importsRegionEnd = (IntPtr)((byte*)importsRegionStart + length);
+
+            for (MrtImportsV1** importTablePtr = (MrtImportsV1**)importsRegionStart; importTablePtr < (MrtImportsV1**)importsRegionEnd; importTablePtr++)
+            {
+                MrtImportsV1* importTable = *importTablePtr;
+                if (importTable->ImportVersion != 1)
+                    RuntimeExceptionHelpers.FailFast("Mrt Import table version");
+
+                MrtExportsV1* exportTable = *importTable->ExportTable;
+                if (exportTable->ExportsVersion != 1)
+                    RuntimeExceptionHelpers.FailFast("Mrt Export table version");
+
+                if (importTable->ImportCount < 0)
+                {
+                    RuntimeExceptionHelpers.FailFast("Mrt Import Count");
+                }
+
+                int* firstExport = &exportTable->FirstDataItemAsRelativePointer;
+                IntPtr* firstImport = &importTable->FirstImportEntry;
+                for (int import = 0; import < importTable->ImportCount; import++)
+                {
+                    // Get 1 based ordinal from import table
+                    int importOrdinal = (int)firstImport[import];
+
+                    if ((importOrdinal < 1) || (importOrdinal > exportTable->SymbolsCount))
+                        RuntimeExceptionHelpers.FailFast("Mrt import ordinal");
+
+                    // Get entry in export table
+                    int* exportTableEntry = &firstExport[importOrdinal - 1];
+
+                    // Get pointer from export table
+                    int relativeOffsetFromExportTableEntry = *exportTableEntry;
+                    byte* actualPointer = ((byte*)exportTableEntry) + relativeOffsetFromExportTableEntry + sizeof(int);
+
+                    // Update import table with imported value
+                    firstImport[import] = new IntPtr(actualPointer);
+                }
+            }
+        }
+
+#if !PROJECTN
         private static unsafe void InitializeStatics(IntPtr gcStaticRegionStart, int length)
         {
             IntPtr gcStaticRegionEnd = (IntPtr)((byte*)gcStaticRegionStart + length);
+
             for (IntPtr* block = (IntPtr*)gcStaticRegionStart; block < (IntPtr*)gcStaticRegionEnd; block++)
             {
                 // Gc Static regions can be shared by modules linked together during compilation. To ensure each
@@ -142,28 +278,32 @@ namespace Internal.Runtime.CompilerHelpers
                 // The first time we initialize the static region its pointer is replaced with an object reference
                 // whose lowest bit is no longer set.
                 IntPtr* pBlock = (IntPtr*)*block;
-                if (((*pBlock).ToInt64() & 0x1L) == 1)
+                long blockAddr = (*pBlock).ToInt64();
+                if ((blockAddr & GCStaticRegionConstants.Uninitialized) == GCStaticRegionConstants.Uninitialized)
                 {
-                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr((*pBlock).ToInt64() & ~0x1L)));
+                    object obj = RuntimeImports.RhNewObject(new EETypePtr(new IntPtr(blockAddr & ~GCStaticRegionConstants.Mask)));
+
+                    if ((blockAddr & GCStaticRegionConstants.HasPreInitializedData) == GCStaticRegionConstants.HasPreInitializedData)
+                    {
+                        // The next pointer is preinitialized data blob that contains preinitialized static GC fields,
+                        // which are pointer relocs to GC objects in frozen segment. 
+                        // It actually has all GC fields including non-preinitialized fields and we simply copy over the
+                        // entire blob to this object, overwriting everything. 
+                        IntPtr pPreInitDataAddr = *(pBlock + 1);
+                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawDataSize());
+                    }
+
                     *pBlock = RuntimeImports.RhHandleAlloc(obj, GCHandleType.Normal);
                 }
             }
         }
+#endif // !PROJECTN
+    }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe int CStrLen(byte* str)
-        {
-            int len = 0;
-            for (; str[len] != 0; len++) { }
-            return len;
-        }
-
-        [RuntimeImport(".", "RhpGetModuleSection")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern IntPtr GetModuleSection(IntPtr module, ReadyToRunSectionType section, out int length);
-
-        [RuntimeImport(".", "RhpCreateTypeManager")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static unsafe extern IntPtr CreateTypeManager(IntPtr moduleHeader);
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct TypeManagerSlot
+    {
+        public TypeManagerHandle TypeManager;
+        public int ModuleIndex;
     }
 }

@@ -1,30 +1,18 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'"/>
   <PropertyGroup>
-    <ProjectGuid>{A965EA82-219D-48F7-AD51-BC030C16CC6F}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>ILCompiler.MetadataTransform</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <ExcludeResourcesImport>true</ExcludeResourcesImport>
-    <CLSCompliant>false</CLSCompliant>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <TargetFramework>netstandard1.3</TargetFramework>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-  </PropertyGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+  </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
-      <Project>{D66338D4-F9E4-4051-B302-232C6BFB6EF6}</Project>
-      <Name>ILCompiler.MetadataWriter</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj">
-      <Project>{1a9df196-43a9-44bb-b2c6-d62aa56b0e49}</Project>
-      <Name>ILCompiler.TypeSystem</Name>
-    </ProjectReference>
+    <PackageReference Include="System.Reflection.Metadata">
+      <Version>$(SystemReflectionMetadataVersion)</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ILCompiler\Metadata\EntityMap.cs" />
@@ -44,9 +32,7 @@
     <Compile Include="ILCompiler\Metadata\Transform.Scope.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.String.cs" />
     <Compile Include="ILCompiler\Metadata\Transform.Type.cs" />
+    <Compile Include="ILCompiler\Metadata\Transform.TypeForwarders.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
-  </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'"/>
 </Project>

@@ -125,7 +125,7 @@ namespace System.Collections.Concurrent
                     // Since this DEBUG code is holding a strong reference to "value", state of a key must never go from found to not found, 
                     // and only one value may exist per key.
                     Debug.Assert(checkedFound);
-                    Debug.Assert(Object.ReferenceEquals(checkedValue, value));
+                    Debug.Assert(object.ReferenceEquals(checkedValue, value));
                     GC.KeepAlive(value);
                 }
             }
@@ -362,7 +362,7 @@ namespace System.Collections.Concurrent
                         if (walk2 != -1)
                             walk2 = _entries[walk2]._next;
                         if (walk1 == walk2 && walk2 != -1)
-                            Debug.Assert(false, "Bucket " + bucket + " has a cycle in its linked list.");
+                            Debug.Fail("Bucket " + bucket + " has a cycle in its linked list.");
                     }
                 }
                 // The assertion is "<=" rather than "==" because we allow an entry to "leak" until the next resize if 

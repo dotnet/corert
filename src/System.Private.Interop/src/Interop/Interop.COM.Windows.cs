@@ -15,7 +15,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace System.Runtime.InteropServices
 {
@@ -27,73 +29,19 @@ namespace System.Runtime.InteropServices
         {
 #if TARGET_CORE_API_SET
             internal const string CORE_COM = "api-ms-win-core-com-l1-1-0.dll";
+            internal const string WIN_OLE32 = "api-ms-win-ole32-ie-l1-1-0.dll";
 #else
             internal const string CORE_COM = "ole32.dll";
+            internal const string WIN_OLE32 = "ole32.dll";
 #endif
             // @TODO: What is the matching dll in CoreSys?
             // @TODO: Replace the below by the correspondent api-ms-win-core-...-0.dll
             internal const string CORE_COM_AUT = "OleAut32.dll";
         }
 
-#if CORECLR
-
-        public static unsafe void* CoTaskMemAlloc(IntPtr size)
-        {
-            return Marshal.AllocHGlobal(size).ToPointer();
-        }
-
-        public static unsafe void CoTaskMemFree(void* pv)
-        {
-            Marshal.FreeHGlobal(new IntPtr(pv));
-        }
-       
-        public static unsafe void SafeCoTaskMemFree(void* pv)
-        {
-            // Even though CoTaskMemFree is a no-op for NULLs, skipping the interop call entirely is faster
-            if (pv != null)
-                CoTaskMemFree(pv);
-        }
-
-        public static unsafe IntPtr SysAllocStringLen(char* pStrIn, UInt32 dwSize)
-        {
-            string srcString = new string(pStrIn, 0, checked((int)dwSize));
-            return Marshal.StringToBSTR(srcString);
-        }
-        
-        public static unsafe void SysFreeString(void* pBSTR)
-        {
-          SysFreeString(new IntPtr(pBSTR));
-        }
-
-        public static unsafe void SysFreeString(IntPtr pBSTR)
-        {
-            Marshal.FreeBSTR(pBSTR);
-        }
-
-        static internal void VariantClear(IntPtr pObject)
-        {
-            //Nop
-        }     
-
-#else
         [DllImport(Libraries.CORE_COM)]
         [McgGeneratedNativeCallCodeAttribute]
-        public static extern unsafe void* CoTaskMemAlloc(IntPtr size);
-
-        [DllImport(Libraries.CORE_COM)]
-        [McgGeneratedNativeCallCodeAttribute]
-        public extern static unsafe void CoTaskMemFree(void* pv);
-               
-
-        [DllImport(Libraries.CORE_COM)]
-        [McgGeneratedNativeCallCodeAttribute]
-        static internal extern IntPtr CoTaskMemRealloc(IntPtr pv, IntPtr size);
-
-
-
-        [DllImport(Libraries.CORE_COM)]
-        [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern int CoCreateInstanceFromApp(
+        internal static extern unsafe int CoCreateInstanceFromApp(
             Guid* clsid,
             IntPtr pUnkOuter,
             int context,
@@ -101,49 +49,28 @@ namespace System.Runtime.InteropServices
             int count,
             IntPtr results
         );
+
+        [DllImport(Libraries.WIN_OLE32, PreserveSig = false)]
+        internal static extern void CreateBindCtx(UInt32 reserved, out IBindCtx ppbc);
+
+#if !TARGET_CORE_API_SET // MkParseDisplayName and BindMoniker are not available in core API set
+        [DllImport(Libraries.WIN_OLE32, PreserveSig = false)]
+        internal static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] String szUserName, out UInt32 pchEaten, out IMoniker ppmk);
+
+        [DllImport(Libraries.WIN_OLE32, PreserveSig = false)]
+        internal static extern void BindMoniker(IMoniker pmk, UInt32 grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out Object ppvResult);
+#endif
+
+        [DllImport(Libraries.CORE_COM_AUT)]
+        [McgGeneratedNativeCallCodeAttribute]
+        internal static extern void VariantClear(IntPtr pObject);
         
-
-        [DllImport(Libraries.CORE_COM_AUT)]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static extern unsafe void SysFreeString(void* pBSTR);
-
-        public static unsafe void SysFreeString(IntPtr pBstr)
-        {
-            SysFreeString((void*)pBstr);
-        }
-
-        [DllImport(Libraries.CORE_COM_AUT)]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static extern unsafe uint SysStringLen(void* pBSTR);
-        public static unsafe uint SysStringLen(IntPtr pBSTR)
-        {
-            return SysStringLen((void*)pBSTR);
-        }
-
-        [DllImport(Libraries.CORE_COM_AUT)]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static extern unsafe IntPtr SysAllocString(IntPtr pStrIn);
-
-        [DllImport(Libraries.CORE_COM_AUT)]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static extern unsafe char* SysAllocStringLen(char* pStrIn, uint len);
-
-        [DllImport(Libraries.CORE_COM_AUT)]
-        [McgGeneratedNativeCallCodeAttribute]
-        static internal extern void VariantClear(IntPtr pObject);
-        
-
 
         public static unsafe void SafeCoTaskMemFree(void* pv)
         {
             // Even though CoTaskMemFree is a no-op for NULLs, skipping the interop call entirely is faster
             if (pv != null)
-                CoTaskMemFree(pv);
+                PInvokeMarshal.CoTaskMemFree(new IntPtr(pv));
         }
-#endif //CORECLR
     }
 }

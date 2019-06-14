@@ -6,9 +6,11 @@ using System;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Core.Execution;
 
@@ -18,8 +20,9 @@ namespace System.Reflection.Runtime.MethodInfos
 {
     internal abstract class RuntimeNamedMethodInfo : RuntimeMethodInfo
     {
-        internal protected abstract String ComputeToString(RuntimeMethodInfo contextMethod);
+        protected internal abstract String ComputeToString(RuntimeMethodInfo contextMethod);
         internal abstract MethodInvoker GetUncachedMethodInvoker(RuntimeTypeInfo[] methodArguments, MemberInfo exceptionPertainant);
+        internal abstract RuntimeMethodHandle GetRuntimeMethodHandle(Type[] methodArguments);
     }
 
     //
@@ -79,7 +82,14 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_CustomAttributes(this);
 #endif
 
-                return _common.CustomAttributes;
+                foreach (CustomAttributeData cad in _common.TrueCustomAttributes)
+                {
+                    yield return cad;
+                }
+
+                MethodImplAttributes implAttributes = _common.MethodImplementationFlags;
+                if (0 != (implAttributes & MethodImplAttributes.PreserveSig))
+                    yield return new RuntimePseudoCustomAttributeData(typeof(PreserveSigAttribute), null, null);
             }
         }
 
@@ -88,6 +98,14 @@ namespace System.Reflection.Runtime.MethodInfos
             if (IsGenericMethodDefinition)
                 return this;
             throw new InvalidOperationException();
+        }
+
+        public sealed override bool IsConstructedGenericMethod
+        {
+            get
+            {
+                return false;
+            }
         }
 
         public sealed override bool IsGenericMethod
@@ -106,6 +124,8 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int GenericParameterCount => _common.GenericParameterCount;
+
         public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
 #if ENABLE_REFLECTION_TRACE
@@ -120,19 +140,31 @@ namespace System.Reflection.Runtime.MethodInfos
             RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[typeArguments.Length];
             for (int i = 0; i < typeArguments.Length; i++)
             {
-                if (typeArguments[i] == null)
+                Type typeArgument = typeArguments[i];
+                if (typeArgument == null)
                     throw new ArgumentNullException();
 
-                if (!typeArguments[i].IsRuntimeImplemented())
+                if (!typeArgument.IsRuntimeImplemented())
                     throw new ArgumentException(SR.Format(SR.Reflection_CustomReflectionObjectsNotSupported, typeArguments[i]), "typeArguments[" + i + "]"); // Not a runtime type.
 
-                genericTypeArguments[i] = typeArguments[i].CastToRuntimeTypeInfo();
+                if (typeArgument.IsByRefLike)
+                    throw new BadImageFormatException(SR.CannotUseByRefLikeTypeInInstantiation);
+
+                genericTypeArguments[i] = typeArgument.CastToRuntimeTypeInfo();
             }
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
             RuntimeMethodInfo methodInfo = (RuntimeMethodInfo)RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(this, genericTypeArguments);
             MethodInvoker methodInvoker = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any MissingMetadataExceptions now rather than later.
             return methodInfo;
+        }
+
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod, _common.DefiningTypeInfo);
+            }
         }
 
         public sealed override MethodImplAttributes MethodImplementationFlags
@@ -159,15 +191,37 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return _common.MetadataToken;
+            }
+        }
+
         public sealed override String ToString()
         {
             return ComputeToString(this);
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            // Do not rewrite as a call to IsConstructedGenericMethod - we haven't yet established that "other" is a runtime-implemented member yet!
+            if (other is RuntimeConstructedGenericMethodInfo otherConstructedGenericMethod)
+                other = otherConstructedGenericMethod.GetGenericMethodDefinition();
+
+            if (!(other is RuntimeNamedMethodInfo<TRuntimeMethodCommon> otherMethod))
+                return false;
+
+            return _common.HasSameMetadataDefinitionAs(otherMethod._common);
+        }
+
         public sealed override bool Equals(Object obj)
         {
-            RuntimeNamedMethodInfo<TRuntimeMethodCommon> other = obj as RuntimeNamedMethodInfo<TRuntimeMethodCommon>;
-            if (other == null)
+            if (!(obj is RuntimeNamedMethodInfo<TRuntimeMethodCommon> other))
                 return false;
             if (!_common.Equals(other._common))
                 return false;
@@ -181,7 +235,9 @@ namespace System.Reflection.Runtime.MethodInfos
             return _common.GetHashCode();
         }
 
-        internal protected sealed override String ComputeToString(RuntimeMethodInfo contextMethod)
+        public sealed override RuntimeMethodHandle MethodHandle => GetRuntimeMethodHandle(null);
+
+        protected internal sealed override String ComputeToString(RuntimeMethodInfo contextMethod)
         {
             return RuntimeMethodHelpers.ComputeToString(ref _common, contextMethod, contextMethod.RuntimeGenericArgumentsOrParameters);
         }
@@ -212,6 +268,17 @@ namespace System.Reflection.Runtime.MethodInfos
             get
             {
                 return _common.Name;
+            }
+        }
+
+        internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType
+        {
+            get
+            {
+                if (_reflectedType.Equals(_common.DefiningTypeInfo))
+                    return this;
+
+                return RuntimeNamedMethodInfo<TRuntimeMethodCommon>.GetRuntimeNamedMethodInfo(_common, _common.ContextTypeInfo);
             }
         }
 
@@ -246,8 +313,17 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
+                MethodInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
+                if (invoker != null)
+                    return invoker;
+
                 return GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
+        }
+
+        internal sealed override RuntimeMethodHandle GetRuntimeMethodHandle(Type[] genericArgs)
+        {
+            return _common.GetRuntimeMethodHandle(genericArgs);
         }
 
         private TRuntimeMethodCommon _common;

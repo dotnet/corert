@@ -1,0 +1,16 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <IlcMultiModule>true</IlcMultiModule>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Include="MultiModule.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Library.csproj" />
+  </ItemGroup>
+  
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
+</Project>

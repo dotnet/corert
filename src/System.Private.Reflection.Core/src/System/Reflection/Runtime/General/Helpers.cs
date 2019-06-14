@@ -2,22 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
-using DefaultBinder = System.Reflection.Runtime.BindingFlagSupport.DefaultBinder;
+using System.Reflection.Runtime.MethodInfos;
 
-using IRuntimeImplementedType = Internal.Reflection.Core.NonPortable.IRuntimeImplementedType;
 using Internal.LowLevelLinq;
 using Internal.Runtime.Augments;
+using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Extensions.NonPortable;
 
 namespace System.Reflection.Runtime.General
 {
@@ -42,11 +42,6 @@ namespace System.Reflection.Runtime.General
                 clonedTypes[i] = types[i];
             }
             return clonedTypes;
-        }
-
-        public static bool IsRuntimeImplemented(this Type type)
-        {
-            return type is IRuntimeImplementedType;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -100,18 +95,9 @@ namespace System.Reflection.Runtime.General
             return null;
         }
 
-        public static object ToRawValue(this object defaultValueOrLiteral)
-        {
-            Enum e = defaultValueOrLiteral as Enum;
-            if (e != null)
-                return RuntimeAugments.GetEnumValue(e);
-            return defaultValueOrLiteral;
-        }
-
         public static Type GetTypeCore(this Assembly assembly, string name, bool ignoreCase)
         {
-            RuntimeAssembly runtimeAssembly = assembly as RuntimeAssembly;
-            if (runtimeAssembly != null)
+            if (assembly is RuntimeAssembly runtimeAssembly)
             {
                 // Not a recursion - this one goes to the actual instance method on RuntimeAssembly.
                 return runtimeAssembly.GetTypeCore(name, ignoreCase: ignoreCase);
@@ -137,7 +123,7 @@ namespace System.Reflection.Runtime.General
         public static TypeLoadException CreateTypeLoadException(string typeName, string assemblyName)
         {
             string message = SR.Format(SR.TypeLoad_TypeNotFoundInAssembly, typeName, assemblyName);
-            return ReflectionCoreNonPortable.CreateTypeLoadException(message, typeName);
+            return ReflectionAugments.CreateTypeLoadException(message, typeName);
         }
 
         // Escape identifiers as described in "Specifying Fully Qualified Type Names" on msdn.
@@ -167,11 +153,94 @@ namespace System.Reflection.Runtime.General
 
         private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void EnsureNotCustomBinder(this Binder binder)
+        public static RuntimeMethodInfo GetInvokeMethod(this RuntimeTypeInfo delegateType)
         {
-            if (!(binder == null || binder is DefaultBinder))
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CustomBinder);
+            Debug.Assert(delegateType.IsDelegate);
+
+            MethodInfo invokeMethod = delegateType.GetMethod("Invoke", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            if (invokeMethod == null)
+            {
+                // No Invoke method found. Since delegate types are compiler constructed, the most likely cause is missing metadata rather than
+                // a missing Invoke method. 
+
+                // We're deliberating calling FullName rather than ToString() because if it's the type that's missing metadata, 
+                // the FullName property constructs a more informative MissingMetadataException than we can. 
+                string fullName = delegateType.FullName;
+                throw new MissingMetadataException(SR.Format(SR.Arg_InvokeMethodMissingMetadata, fullName)); // No invoke method found.
+            }
+            return (RuntimeMethodInfo)invokeMethod;
+        }
+
+        public static BinderBundle ToBinderBundle(this Binder binder, BindingFlags invokeAttr, CultureInfo cultureInfo)
+        {
+            if (binder == null || binder is DefaultBinder || ((invokeAttr & BindingFlags.ExactBinding) != 0))
+                return null;
+            return new BinderBundle(binder, cultureInfo);
+        }
+
+        // Helper for ICustomAttributeProvider.GetCustomAttributes(). The result of this helper is returned directly to apps
+        // so it must always return a newly allocated array. Unlike most of the newer custom attribute apis, the attribute type
+        // need not derive from System.Attribute. (In particular, it can be an interface or System.Object.)
+        public static object[] InstantiateAsArray(this IEnumerable<CustomAttributeData> cads, Type actualElementType)
+        {
+            LowLevelList<object> attributes = new LowLevelList<object>();
+            foreach (CustomAttributeData cad in cads)
+            {
+                object instantiatedAttribute = cad.Instantiate();
+                attributes.Add(instantiatedAttribute);
+            }
+
+            // This is here for desktop compatibility. ICustomAttribute.GetCustomAttributes() normally returns an array of the 
+            // exact attribute type requested except in two cases: when the passed in type is an open type and when 
+            // it is a value type. In these two cases, it returns an array of type Object[].
+            bool useObjectArray = actualElementType.ContainsGenericParameters || actualElementType.IsValueType;
+            int count = attributes.Count;
+            object[] result = useObjectArray ? new object[count] : (object[])Array.CreateInstance(actualElementType, count);
+
+            attributes.CopyTo(result, 0);
+            return result;
+        }
+
+        public static bool GetCustomAttributeDefaultValueIfAny(IEnumerable<CustomAttributeData> customAttributes, bool raw, out object defaultValue)
+        {
+            // Legacy: If there are multiple default value attribute, the desktop picks one at random (and so do we...)
+            foreach (CustomAttributeData cad in customAttributes)
+            {
+                Type attributeType = cad.AttributeType;
+                if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
+                {
+                    if (raw)
+                    {
+                        foreach (CustomAttributeNamedArgument namedArgument in cad.NamedArguments)
+                        {
+                            if (namedArgument.MemberName.Equals("Value"))
+                            {
+                                defaultValue = namedArgument.TypedValue.Value;
+                                return true;
+                            }
+                        }
+                        defaultValue = null;
+                        return false;
+                    }
+                    else
+                    {
+                        CustomConstantAttribute customConstantAttribute = (CustomConstantAttribute)(cad.Instantiate());
+                        defaultValue = customConstantAttribute.Value;
+                        return true;
+                    }
+                }
+                if (attributeType.Equals(typeof(DecimalConstantAttribute)))
+                {
+                    // We should really do a non-instanting check if "raw == false" but given that we don't support
+                    // reflection-only loads, there isn't an observable difference.
+                    DecimalConstantAttribute decimalConstantAttribute = (DecimalConstantAttribute)(cad.Instantiate());
+                    defaultValue = decimalConstantAttribute.Value;
+                    return true;
+                }
+            }
+
+            defaultValue = null;
+            return false;
         }
     }
 }

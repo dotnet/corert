@@ -52,7 +52,7 @@ namespace Internal.Runtime
                     break;
             }
 
-            Debug.Assert(false, "Primitive type value expected.");
+            Debug.Fail("Primitive type value expected.");
             return 0;
         }
 
@@ -88,16 +88,19 @@ namespace Internal.Runtime
                 flags |= (UInt16)EETypeFlags.HasFinalizerFlag;
             }
 
-            if (type.IsDefType && ((DefType)type).ContainsGCPointers)
+            if (!type.IsCanonicalSubtype(CanonicalFormKind.Universal))
             {
-                flags |= (UInt16)EETypeFlags.HasPointersFlag;
-            }
-            else if (type.IsArray)
-            {
-                var elementType = ((ArrayType)type).ElementType;
-                if ((elementType.IsValueType && ((DefType)elementType).ContainsGCPointers) || elementType.IsGCPointer)
+                if (type.IsDefType && ((DefType)type).ContainsGCPointers)
                 {
                     flags |= (UInt16)EETypeFlags.HasPointersFlag;
+                }
+                else if (type.IsArray)
+                {
+                    var elementType = ((ArrayType)type).ElementType;
+                    if ((elementType.IsValueType && ((DefType)elementType).ContainsGCPointers) || elementType.IsGCPointer)
+                    {
+                        flags |= (UInt16)EETypeFlags.HasPointersFlag;
+                    }
                 }
             }
 
@@ -110,6 +113,15 @@ namespace Internal.Runtime
                     flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
                 }
             }
+
+            flags |= ComputeElementTypeFlags(type);
+
+            return flags;
+        }
+
+        public static UInt16 ComputeElementTypeFlags(TypeDesc type)
+        {
+            UInt16 flags = 0;
 
             CorElementType corElementType = CorElementType.ELEMENT_TYPE_END;
 
@@ -138,29 +150,6 @@ namespace Internal.Runtime
             return flags;
         }
 
-        public static bool ComputeRequiresAlign8(TypeDesc type)
-        {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
-            {
-                return false;
-            }
-
-            if (type.IsArray)
-            {
-                var elementType = ((ArrayType)type).ElementType;
-                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment > 4)
-                {
-                    return true;
-                }
-            }
-            else if (type.IsDefType && ((DefType)type).InstanceByteAlignment > 4)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data
         // if the alignment is 8 bytes or less. If the alignment is higher then there may be a need for more bits to hold
         // the rest of the padding data.
@@ -178,10 +167,10 @@ namespace Internal.Runtime
         /// of objects on the GCHeap. The amount of padding is recorded to allow unboxing to locals /
         /// arrays of value types which don't need it.
         /// </summary>
-        internal static UInt32 ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment)
+        internal static UInt32 ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment, int targetPointerSize)
         {
             // For the default case, return 0
-            if ((padding == 0) && (alignment == IntPtr.Size))
+            if ((padding == 0) && (alignment == targetPointerSize))
                 return 0;
 
             UInt32 alignmentLog2 = 0;

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 
 using Internal.NativeFormat;
 
@@ -34,7 +35,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Base class for specialized and universal canon types
     /// </summary>
-    public abstract partial class CanonBaseType : DefType
+    public abstract partial class CanonBaseType : MetadataType
     {
         private TypeSystemContext _context;
 
@@ -49,6 +50,54 @@ namespace Internal.TypeSystem
             {
                 return _context;
             }
+        }
+
+        protected override MethodImplRecord[] ComputeVirtualMethodImplsForType()
+        {
+            return Array.Empty<MethodImplRecord>();
+        }
+
+        public override MetadataType MetadataBaseType => (MetadataType)BaseType;
+
+        public override DefType ContainingType => null;
+
+        public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
+
+        public override bool IsAbstract => false;
+
+        public override bool IsBeforeFieldInit => false;
+
+        public override bool IsSequentialLayout => false;
+
+        public override bool IsExplicitLayout => false;
+
+        public override ModuleDesc Module => _context.CanonTypesModule;
+
+        public override bool IsModuleType => false;
+
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
+        {
+            return null;
+        }
+
+        public override ClassLayoutMetadata GetClassLayout()
+        {
+            return default(ClassLayoutMetadata);
+        }
+
+        public override MetadataType GetNestedType(string name)
+        {
+            return null;
+        }
+
+        public override IEnumerable<MetadataType> GetNestedTypes()
+        {
+            return Array.Empty<MetadataType>();
+        }
+
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+        {
+            return false;
         }
     }
 
@@ -78,6 +127,8 @@ namespace Internal.TypeSystem
                 return _Name;
             }
         }
+
+        public override bool IsSealed => false;
 
         public CanonType(TypeSystemContext context)
             : base(context)
@@ -123,6 +174,9 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.HasGenericVarianceComputed;
             }
 
+            flags |= TypeFlags.HasFinalizerComputed;
+            flags |= TypeFlags.AttributeCacheComputed;
+
             return flags;
         }
 
@@ -134,11 +188,6 @@ namespace Internal.TypeSystem
             }
 
             return _hashcode;
-        }
-
-        public override string ToString()
-        {
-            return FullName;
         }
     }
 
@@ -169,6 +218,8 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsSealed => true;
+
         public UniversalCanonType(TypeSystemContext context)
             : base(context)
         {
@@ -183,9 +234,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                // The implementation below is correct (UniversalCanon is "a struct of indeterminate size and GC layout"),
-                // but we should probably still audit this if the assert is hit...
-                Debug.Assert(false);
+                // UniversalCanon is "a struct of indeterminate size and GC layout"
                 return Context.GetWellKnownType(WellKnownType.ValueType);
             }
         }
@@ -198,7 +247,6 @@ namespace Internal.TypeSystem
 
         protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {
-            Debug.Assert(kind == CanonicalFormKind.Universal);
             return this;
         }
 
@@ -213,6 +261,9 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.ValueType;
             }
 
+            flags |= TypeFlags.HasFinalizerComputed;
+            flags |= TypeFlags.AttributeCacheComputed;
+
             return flags;
         }
 
@@ -224,11 +275,6 @@ namespace Internal.TypeSystem
             }
 
             return _hashcode;
-        }
-
-        public override string ToString()
-        {
-            return FullName;
         }
     }
 }

@@ -18,12 +18,11 @@
 
 #define BITS_PER_SIZE_T ((int)sizeof(size_t)*8)
 
-
 //--------------------------------------------------------------------------------
-// It turns out, that ((size_t)x) << y == x, when y is not a literal 
+// It turns out, that ((size_t)x) << y == x, when y is not a literal
 //      and its value is BITS_PER_SIZE_T
 // I guess the processor only shifts of the right operand modulo BITS_PER_SIZE_T
-// In many cases, we want the above operation to yield 0, 
+// In many cases, we want the above operation to yield 0,
 //      hence the following macros
 //--------------------------------------------------------------------------------
 __forceinline size_t SAFE_SHIFT_LEFT(size_t x, size_t count)
@@ -346,7 +345,7 @@ enum infoHdrAdjustConstants {
     SET_RET_KIND_MAX = 4,   // 2 bits for ReturnKind
     ADJ_ENCODING_MAX = 0x7f, // Maximum valid encoding in a byte
                              // Also used to mask off next bit from each encoding byte.
-    MORE_BYTES_TO_FOLLOW = 0x80 // If the High-bit of a header or adjustment byte 
+    MORE_BYTES_TO_FOLLOW = 0x80 // If the High-bit of a header or adjustment byte
                                // is set, then there are more adjustments to follow.
 };
 
@@ -416,7 +415,7 @@ enum infoHdrAdjust2 {
 
 #define INVALID_ARGTAB_OFFSET       0
 
-#include <pshpack1.h>
+#include "pshpack1.h"
 
 // Working set optimization: saving 12 * 128 = 1536 bytes in infoHdrShortcut
 struct InfoHdr;
@@ -524,7 +523,7 @@ union CallPattern {
     unsigned     val;
 };
 
-#include <poppack.h>
+#include "poppack.h"
 
 #define IH_MAX_PROLOG_SIZE (51)
 
@@ -543,8 +542,8 @@ inline void GetInfoHdr(int index, InfoHdr * header)
 
 PTR_CBYTE FASTCALL decodeHeader(PTR_CBYTE table, UINT32 version, InfoHdr* header);
 
-BYTE FASTCALL encodeHeaderFirst(const InfoHdr& header, InfoHdr* state, int* more, int *pCached);
-BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE &codeSet);
+uint8_t FASTCALL encodeHeaderFirst(const InfoHdr& header, InfoHdr* state, int* more, int *pCached);
+uint8_t FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, uint8_t &codeSet);
 
 size_t FASTCALL decodeUnsigned(PTR_CBYTE src, unsigned* value);
 size_t FASTCALL decodeUDelta(PTR_CBYTE src, unsigned* value, unsigned lastValue);
@@ -569,7 +568,7 @@ void FASTCALL decodeCallPattern(int         pattern,
     unsigned *  argMask,
     unsigned *  codeDelta);
 
-#endif // _TARGET_86_ 
+#endif // _TARGET_86_
 
 // Stack offsets must be 8-byte aligned, so we use this unaligned
 //  offset to represent that the method doesn't have a security object

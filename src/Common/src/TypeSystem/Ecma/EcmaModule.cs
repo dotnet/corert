@@ -9,8 +9,6 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
-using Internal.TypeSystem;
-
 namespace Internal.TypeSystem.Ecma
 {
     public partial class EcmaModule : ModuleDesc
@@ -147,6 +145,10 @@ namespace Internal.TypeSystem.Ecma
                         item = _module;
                         break;
 
+                    case HandleKind.ModuleReference:
+                        item = _module.ResolveModuleReference((ModuleReferenceHandle)handle);
+                        break;
+
                     default:
                         throw new BadImageFormatException("Unknown metadata token type: " + handle.Kind);
                 }
@@ -165,28 +167,40 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        private object ResolveModuleReference(ModuleReferenceHandle handle)
+        {
+            ModuleReference moduleReference = _metadataReader.GetModuleReference(handle);
+            string fileName = _metadataReader.GetString(moduleReference.Name);
+            return Context.ResolveModule(this.Assembly, fileName);
+        }
+
         private LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
 
-        internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader)
-            : base(context)
+        internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, IAssemblyDesc containingAssembly)
+            : base(context, containingAssembly)
         {
             _peReader = peReader;
             _metadataReader = metadataReader;
             _resolvedTokens = new EcmaObjectLookupHashtable(this);
         }
 
-        public static EcmaModule Create(TypeSystemContext context, PEReader peReader)
+        public static EcmaModule Create(TypeSystemContext context, PEReader peReader, IAssemblyDesc containingAssembly)
         {
             MetadataReader metadataReader = CreateMetadataReader(context, peReader);
 
-            if (metadataReader.IsAssembly)
+            if (containingAssembly == null)
                 return new EcmaAssembly(context, peReader, metadataReader);
             else
-                return new EcmaModule(context, peReader, metadataReader);
+                return new EcmaModule(context, peReader, metadataReader, containingAssembly);
         }
 
         private static MetadataReader CreateMetadataReader(TypeSystemContext context, PEReader peReader)
         {
+            if (!peReader.HasMetadata)
+            {
+                ThrowHelper.ThrowBadImageFormatException();
+            }
+
             var stringDecoderProvider = context as IMetadataStringDecoderProvider;
 
             MetadataReader metadataReader = peReader.GetMetadataReader(MetadataReaderOptions.None /* MetadataReaderOptions.ApplyWindowsRuntimeProjections */,
@@ -288,7 +302,7 @@ namespace Internal.TypeSystem.Ecma
             }
 
             if (throwIfNotFound)
-                throw new TypeSystemException.TypeLoadException(nameSpace, name, this);
+                ThrowHelper.ThrowTypeLoadException(nameSpace, name, this);
 
             return null;
         }
@@ -384,7 +398,7 @@ namespace Internal.TypeSystem.Ecma
                     if (field != null)
                         return field;
 
-                    throw new TypeSystemException.MissingFieldException(parentTypeDesc, name);
+                    ThrowHelper.ThrowMissingFieldException(parentTypeDesc, name);
                 }
                 else
                 {
@@ -408,12 +422,12 @@ namespace Internal.TypeSystem.Ecma
                         typeDescToInspect = typeDescToInspect.BaseType;
                     } while (typeDescToInspect != null);
 
-                    throw new TypeSystemException.MissingMethodException(parentTypeDesc, name, sig);
+                    ThrowHelper.ThrowMissingMethodException(parentTypeDesc, name, sig);
                 }
             }
             else if (parent is MethodDesc)
             {
-                throw new TypeSystemException.InvalidProgramException(ExceptionStringID.InvalidProgramVararg, (MethodDesc)parent);
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramVararg, (MethodDesc)parent);
             }
             else if (parent is ModuleDesc)
             {
@@ -437,11 +451,13 @@ namespace Internal.TypeSystem.Ecma
             if (resolutionScope is MetadataType)
             {
                 string typeName = _metadataReader.GetString(typeReference.Name);
+                if (!typeReference.Namespace.IsNil)
+                    typeName = _metadataReader.GetString(typeReference.Namespace) + "." + typeName;
                 MetadataType result = ((MetadataType)(resolutionScope)).GetNestedType(typeName);
                 if (result != null)
                     return result;
 
-                throw new TypeSystemException.TypeLoadException(typeName, ((MetadataType)resolutionScope).Module);
+                ThrowHelper.ThrowTypeLoadException(typeName, ((MetadataType)resolutionScope).Module);
             }
 
             // TODO
@@ -491,7 +507,7 @@ namespace Internal.TypeSystem.Ecma
                 string name = _metadataReader.GetString(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
                 if (nestedType == null)
-                    throw new TypeSystemException.TypeLoadException(name, this);
+                    ThrowHelper.ThrowTypeLoadException(name, this);
                 return nestedType;
             }
             else

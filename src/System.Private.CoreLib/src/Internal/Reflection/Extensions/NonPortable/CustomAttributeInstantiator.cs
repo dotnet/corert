@@ -38,7 +38,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             ConstructorInfo matchingCtor = null;
             ParameterInfo[] matchingParameters = null;
             IList<CustomAttributeTypedArgument> constructorArguments = cad.ConstructorArguments;
-            foreach (ConstructorInfo ctor in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            foreach (ConstructorInfo ctor in attributeType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
             {
                 ParameterInfo[] parameters = ctor.GetParametersNoCopy();
                 if (parameters.Length != constructorArguments.Count)
@@ -48,7 +48,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 {
                     Type parameterType = parameters[i].ParameterType;
                     if (!(parameterType.Equals(constructorArguments[i].ArgumentType) ||
-                          parameterType.Equals(typeof(Object))))
+                          parameterType.Equals(typeof(object))))
                         break;
                 }
                 if (i == parameters.Length)
@@ -59,13 +59,13 @@ namespace Internal.Reflection.Extensions.NonPortable
                 }
             }
             if (matchingCtor == null)
-                throw RuntimeAugments.Callbacks.CreateMissingMetadataException(attributeType); // No matching ctor.
+                throw new MissingMethodException(attributeType.FullName, ConstructorInfo.ConstructorName);
 
             //
             // Found the right constructor. Instantiate the Attribute.
             //
             int arity = matchingParameters.Length;
-            Object[] invokeArguments = new Object[arity];
+            object[] invokeArguments = new object[arity];
             for (int i = 0; i < arity; i++)
             {
                 invokeArguments[i] = constructorArguments[i].Convert();
@@ -77,15 +77,15 @@ namespace Internal.Reflection.Extensions.NonPortable
             //
             foreach (CustomAttributeNamedArgument namedArgument in cad.NamedArguments)
             {
-                Object argumentValue = namedArgument.TypedValue.Convert();
+                object argumentValue = namedArgument.TypedValue.Convert();
                 Type walk = attributeType;
-                String name = namedArgument.MemberName;
+                string name = namedArgument.MemberName;
                 if (namedArgument.IsField)
                 {
                     // Field
                     for (;;)
                     {
-                        FieldInfo fieldInfo = walk.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                        FieldInfo fieldInfo = walk.GetField(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (fieldInfo != null)
                         {
                             fieldInfo.SetValue(newAttribute, argumentValue);
@@ -93,7 +93,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         }
                         Type baseType = walk.BaseType;
                         if (baseType == null)
-                            throw RuntimeAugments.Callbacks.CreateMissingMetadataException(attributeType); // No field matches named argument.
+                            throw new CustomAttributeFormatException(SR.Format(SR.CustomAttributeFormat_InvalidFieldFail, name));
                         walk = baseType;
                     }
                 }
@@ -102,7 +102,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                     // Property
                     for (;;)
                     {
-                        PropertyInfo propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
+                        PropertyInfo propertyInfo = walk.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly);
                         if (propertyInfo != null)
                         {
                             propertyInfo.SetValue(newAttribute, argumentValue);
@@ -110,7 +110,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                         }
                         Type baseType = walk.BaseType;
                         if (baseType == null)
-                            throw RuntimeAugments.Callbacks.CreateMissingMetadataException(attributeType); // No field matches named argument.
+                            throw new CustomAttributeFormatException(SR.Format(SR.CustomAttributeFormat_InvalidPropertyFail, name));
                         walk = baseType;
                     }
                 }
@@ -122,13 +122,13 @@ namespace Internal.Reflection.Extensions.NonPortable
         //
         // Convert the argument value reported by Reflection into an actual object.
         //
-        private static Object Convert(this CustomAttributeTypedArgument typedArgument)
+        private static object Convert(this CustomAttributeTypedArgument typedArgument)
         {
             Type argumentType = typedArgument.ArgumentType;
             if (!argumentType.IsArray)
             {
                 bool isEnum = argumentType.IsEnum;
-                Object argumentValue = typedArgument.Value;
+                object argumentValue = typedArgument.Value;
                 if (isEnum)
                     argumentValue = Enum.ToObject(argumentType, argumentValue);
                 return argumentValue;
@@ -142,7 +142,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 Array array = Array.CreateInstance(elementType, typedElements.Count);
                 for (int i = 0; i < typedElements.Count; i++)
                 {
-                    Object elementValue = typedElements[i].Convert();
+                    object elementValue = typedElements[i].Convert();
                     array.SetValue(elementValue, i);
                 }
                 return array;

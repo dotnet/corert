@@ -37,8 +37,11 @@ typedef enum
     DEBUG_EVENT_TYPE_EXCEPTION_FIRST_PASS_FRAME_ENTER = 4,
     DEBUG_EVENT_TYPE_EXCEPTION_CATCH_HANDLER_FOUND = 5,
     DEBUG_EVENT_TYPE_EXCEPTION_UNHANDLED = 6,
-    DEBUG_EVENT_TYPE_MAX = 7
+    DEBUG_EVENT_TYPE_CUSTOM = 7,
+    DEBUG_EVENT_TYPE_MAX = 8
 } DebugEventType;
+
+typedef unsigned int ULONG32;
 
 struct DebugEventPayload
 {
@@ -54,6 +57,11 @@ struct DebugEventPayload
             CORDB_ADDRESS ip;
             CORDB_ADDRESS sp;
         } Exception;
+        struct
+        {
+            CORDB_ADDRESS payload;
+            ULONG32 length;
+        } Custom;
     };
 };
 

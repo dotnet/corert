@@ -40,14 +40,6 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT
         ; Tell the unwinder that the frame is there now
         .pushframe
 
-        add     rdx, 1  ;; 'faulting IP' += 1, we do this because everywhere else we treat the faulting IP as
-                        ;; a return-address and optionally subtract one when doing EH-related things (but not
-                        ;; subtracting 1 when doing GC-related things).  The fault IP here will be the start
-                        ;; of the faulting instruction, so +1 will point to either the next instruction or the
-                        ;; middle of this instruction.  Either way, when the dispatch / stackwalk code deals
-                        ;; with this address it'll apply a -1 for EH range checks and the GC-related operations
-                        ;; don't need to be precise here because the fault location isn't a GC safe point 
-
         alloc_stack     SIZEOF_XmmSaves + 8h    ;; reserve stack for the xmm saves (+8h to realign stack)
         push_vol_reg    r8                      ;; padding
         push_nonvol_reg r15
@@ -100,13 +92,13 @@ NESTED_ENTRY RhpThrowHwEx, _TEXT
         ;; rcx still contains the exception code
         ;; rdx contains the address of the ExInfo
         call    RhThrowHwEx
-ALTERNATE_ENTRY RhpThrowHwEx2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowHwEx2
 
         ;; no return
         int 3
 
 NESTED_END RhpThrowHwEx, _TEXT
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -192,7 +184,8 @@ NESTED_ENTRY RhpThrowEx, _TEXT
         ;; rcx still contains the exception object
         ;; rdx contains the address of the ExInfo
         call    RhThrowEx
-ALTERNATE_ENTRY RhpThrowEx2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpThrowEx2
 
         ;; no return
         int 3
@@ -261,6 +254,7 @@ NESTED_ENTRY RhpRethrow, _TEXT
         mov     [rdx + OFFSETOF__ExInfo__m_exception], r8           ;; init the exception object to null
         mov     byte ptr [rdx + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass 
         mov     dword ptr [rdx + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
+        mov     byte ptr [rdx + OFFSETOF__ExInfo__m_kind], 0        ;; init to a deterministic value (ExKind.None)
 
 
         ;; link the ExInfo into the thread's ExInfo chain
@@ -275,7 +269,8 @@ NESTED_ENTRY RhpRethrow, _TEXT
         ;; rcx contains the currently active ExInfo
         ;; rdx contains the address of the new ExInfo
         call    RhRethrow
-ALTERNATE_ENTRY RhpRethrow2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpRethrow2
 
         ;; no return
         int 3
@@ -359,11 +354,12 @@ endm
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 NESTED_ENTRY RhpCallCatchFunclet, _TEXT
 
-        FUNCLET_CALL_PROLOGUE 2, 1
+        FUNCLET_CALL_PROLOGUE 3, 0
 
         ;; locals
         rsp_offsetof_thread = rsp_offsetof_locals
         rsp_offsetof_resume_ip = rsp_offsetof_locals + 8;
+        rsp_offsetof_is_handling_thread_abort = rsp_offsetof_locals + 16;
       
         mov     [rsp + rsp_offsetof_arguments + 0h], rcx            ;; save arguments for later
         mov     [rsp + rsp_offsetof_arguments + 8h], rdx
@@ -372,6 +368,9 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT
 
         INLINE_GETTHREAD    rax, rbx                                ;; rax <- Thread*, rbx is trashed
         mov     [rsp + rsp_offsetof_thread], rax                    ;; save Thread* for later
+
+        cmp     rcx, [rax + OFFSETOF__Thread__m_threadAbortException]
+        setz    byte ptr [rsp + rsp_offsetof_is_handling_thread_abort]
 
         ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
         lock and            dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
@@ -426,21 +425,21 @@ endif
         movdqa  xmm14,[r8 + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
         movdqa  xmm15,[r8 + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
 
-ifdef CORERT ;; @TODO Reconcile
+ifdef PROJECTN ;; @TODO Reconcile
+        mov     rcx, [rsp + rsp_offsetof_arguments + 0h]            ;; rcx <- exception object
+else
         mov     rcx, [r8 + OFFSETOF__REGDISPLAY__SP]                ;; rcx <- establisher frame
         mov     rdx, [rsp + rsp_offsetof_arguments + 0h]            ;; rdx <- exception object
-else
-        mov     rcx, [rsp + rsp_offsetof_arguments + 0h]            ;; rcx <- exception object
 endif
         call    qword ptr [rsp + rsp_offsetof_arguments + 8h]       ;; call handler funclet
-ALTERNATE_ENTRY RhpCallCatchFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallCatchFunclet2
 
         mov     r8, [rsp + rsp_offsetof_arguments + 10h]            ;; r8 <- dispatch context
 
 ifdef _DEBUG
         ;; Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we 
         ;; have to spill all the preserved registers and then refill them after the call.
-
         mov     [rsp + rsp_offsetof_resume_ip], rax                                    ;; save resume IP for later
 
         mov     rcx, [r8 + OFFSETOF__REGDISPLAY__pRbx]
@@ -503,9 +502,23 @@ endif
 
    @@:  mov     [rdx + OFFSETOF__Thread__m_pExInfoStackHead], rcx   ;; store the new head on the Thread
 
+        test    [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
+        jz      @f
+        
+        ;; test if the exception handled by the catch was the ThreadAbortException
+        cmp     byte ptr [rsp + rsp_offsetof_is_handling_thread_abort], 0
+        je      @f
+
+        ;; It was the ThreadAbortException, so rethrow it
+        mov     rcx, STATUS_REDHAWK_THREAD_ABORT
+        mov     rdx, rax                                            ;; rdx <- continuation address as exception RIP
+        mov     rsp, r8                                             ;; reset the SP to resume SP value
+        jmp     RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
+
         ;; reset RSP and jump to the continuation address
-        mov     rsp, r8                                             ;; reset the SP
+   @@:  mov     rsp, r8                                             ;; reset the SP to resume SP value
         jmp     rax
+
 
 NESTED_END RhpCallCatchFunclet, _TEXT
 
@@ -592,7 +605,8 @@ endif
 
         mov     rcx, [rdx + OFFSETOF__REGDISPLAY__SP]               ;; rcx <- establisher frame
         call    qword ptr [rsp + rsp_offsetof_arguments + 0h]       ;; handler funclet address
-ALTERNATE_ENTRY RhpCallFinallyFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFinallyFunclet2
 
         mov     rdx, [rsp + rsp_offsetof_arguments + 8h]            ;; rdx <- regdisplay
 
@@ -634,7 +648,6 @@ ALTERNATE_ENTRY RhpCallFinallyFunclet2
 
 NESTED_END RhpCallFinallyFunclet, _TEXT
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; void* FASTCALL RhpCallFilterFunclet(RtuObjectRef exceptionObj, void* pFilterIP, REGDISPLAY* pRegDisplay)
@@ -654,14 +667,15 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT
         mov     rbp, [rax]
 
         mov     rax, rdx                                            ;; rax <- handler funclet address
-ifdef CORERT ;; @TODO Reconcile
+ifdef PROJECTN ;; @TODO Reconcile
+        ;; RCX still contains the exception object
+else
         mov     rdx, rcx                                            ;; rdx <- exception object
         mov     rcx, [r8 + OFFSETOF__REGDISPLAY__SP]                ;; rcx <- establisher frame
-else
-        ;; RCX still contains the exception object
 endif
         call    rax
-ALTERNATE_ENTRY RhpCallFilterFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS PointerToRhpCallFilterFunclet2
 
         ;; RAX contains the result of the filter execution
 

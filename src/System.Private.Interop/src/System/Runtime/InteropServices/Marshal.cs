@@ -2,33 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-// This file provides an implementation of the pieces of the Marshal class which are required by the Interop
-// API contract but are not provided by the version of Marshal which is part of the Redhawk test library.
-// This partial class is combined with the version from the Redhawk test library, in order to provide the
-// Marshal implementation for System.Private.CoreLib.
-//
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Security;
 using System.Text;
 using System.Threading;
-
-#if ENABLE_WINRT
 using System.Runtime.InteropServices.ComTypes;
-#endif //ENABLE_WINRT
+using Internal.Runtime.CompilerHelpers;
 
 namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
-
-
+#if PLATFORM_WINDOWS
         private const long HIWORDMASK = unchecked((long)0xffffffffffff0000L);
 
         // Win32 has the concept of Atoms, where a pointer can either be a pointer
@@ -48,6 +38,10 @@ namespace System.Runtime.InteropServices
             long lPtr = (long)ptr;
             return 0 != (lPtr & HIWORDMASK);
         }
+#else // PLATFORM_WINDOWS
+        private static bool IsWin32Atom(IntPtr ptr) => false;
+        private static bool IsNotWin32Atom(IntPtr ptr) => true;
+#endif // PLATFORM_WINDOWS
 
         //====================================================================
         // The default character size for the system. This is always 2 because
@@ -58,25 +52,9 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // The max DBCS character size for the system.
         //====================================================================
-        public static readonly int SystemMaxDBCSCharSize = GetSystemMaxDBCSCharSize();
+        public static readonly int SystemMaxDBCSCharSize = PInvokeMarshal.GetSystemMaxDBCSCharSize();
 
-        //====================================================================
-        // Helper method to retrieve the system's maximum DBCS character size.
-        //====================================================================
-        private static unsafe int GetSystemMaxDBCSCharSize()
-        {
-            ExternalInterop.CPINFO cpInfo;
-            if (ExternalInterop.GetCPInfo(ExternalInterop.Constants.CP_ACP, &cpInfo) != 0)
-            {
-                return cpInfo.MaxCharSize;
-            }
-            else
-            {
-                return 2;
-            }
-        }
-
-        public unsafe static String PtrToStringAnsi(IntPtr ptr)
+        public static unsafe String PtrToStringAnsi(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
             {
@@ -96,12 +74,12 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    return ConvertToUnicode(ptr, nb);
+                    return new string((sbyte*)ptr);
                 }
             }
         }
 
-        public unsafe static String PtrToStringAnsi(IntPtr ptr, int len)
+        public static unsafe String PtrToStringAnsi(IntPtr ptr, int len)
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
@@ -111,19 +89,48 @@ namespace System.Runtime.InteropServices
             return ConvertToUnicode(ptr, len);
         }
 
-        public unsafe static String PtrToStringUni(IntPtr ptr, int len)
+        public static unsafe String PtrToStringUni(IntPtr ptr, int len)
         {
-            if (ptr == IntPtr.Zero)
-                throw new ArgumentNullException(nameof(ptr));
-            if (len < 0)
-                throw new ArgumentException(nameof(len));
-
-            return new String((char*)ptr, 0, len);
+            return PInvokeMarshal.PtrToStringUni(ptr, len);
         }
 
-        public unsafe static String PtrToStringUni(IntPtr ptr)
+        public static unsafe String PtrToStringUni(IntPtr ptr)
+        {
+            return PInvokeMarshal.PtrToStringUni(ptr);
+        }
+
+        public static String PtrToStringAuto(IntPtr ptr, int len)
+        {
+            // Ansi platforms are no longer supported
+            return PtrToStringUni(ptr, len);
+        }
+
+        public static String PtrToStringAuto(IntPtr ptr)
+        {
+            // Ansi platforms are no longer supported
+            return PtrToStringUni(ptr);
+        }
+
+        public static unsafe String PtrToStringUTF8(IntPtr ptr)
         {
             if (IntPtr.Zero == ptr)
+            {
+                return null;
+            }
+            else
+            {
+                int nbBytes = lstrlenA(ptr);
+                return PtrToStringUTF8(ptr, nbBytes);
+            }
+        }
+
+        public static unsafe String PtrToStringUTF8(IntPtr ptr, int byteLen)
+        {
+            if (byteLen < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(byteLen), SR.ArgumentOutOfRange_NeedNonNegNum);
+            }
+            else if (IntPtr.Zero == ptr)
             {
                 return null;
             }
@@ -131,9 +138,14 @@ namespace System.Runtime.InteropServices
             {
                 return null;
             }
+            else if (byteLen == 0)
+            {
+                return string.Empty;
+            }
             else
             {
-                return new String((char*)ptr);
+                byte* pByte = (byte*)ptr.ToPointer();
+                return Encoding.UTF8.GetString(pByte, byteLen);
             }
         }
 
@@ -151,49 +163,31 @@ namespace System.Runtime.InteropServices
 
         public static int SizeOf<T>(T structure)
         {
-            return SizeOf<T>();
+            return SizeOf((object)structure);
         }
 
-        public static int SizeOf(Object structure)
+        public static int SizeOf(object structure)
         {
             if (structure == null)
                 throw new ArgumentNullException(nameof(structure));
             // we never had a check for generics here
-            Contract.EndContractBlock();
 
-            return SizeOfHelper(structure.GetType(), true);
+            return SizeOfHelper(structure.GetType());
         }
 
-        [Pure]
         public static int SizeOf(Type t)
         {
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
-            if (t.TypeHandle.IsGenericType())
+            if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
-            Contract.EndContractBlock();
 
-            return SizeOfHelper(t, true);
+            return SizeOfHelper(t);
         }
 
-        private static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
+        private static int SizeOfHelper(Type t)
         {
-            RuntimeTypeHandle typeHandle = t.TypeHandle;
-
-            RuntimeTypeHandle unsafeStructType;
-            if (McgModuleManager.TryGetStructUnsafeStructType(typeHandle, out unsafeStructType))
-            {
-                return unsafeStructType.GetValueTypeSize();
-            }
-
-            if (!typeHandle.IsBlittable() && !typeHandle.IsValueType())
-            {
-                throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, t);
-            }
-            else
-            {
-                return typeHandle.GetValueTypeSize();
-            }
+            return RuntimeInteropData.Instance.GetStructUnsafeStructSize(t.TypeHandle)
         }
 
         //====================================================================
@@ -207,32 +201,10 @@ namespace System.Runtime.InteropServices
             if (String.IsNullOrEmpty(fieldName))
                 throw new ArgumentNullException(nameof(fieldName));
 
-            if (t.TypeHandle.IsGenericType())
+            if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
-            Contract.EndContractBlock();
-
-            return OffsetOfHelper(t, fieldName);
-        }
-
-        private static IntPtr OffsetOfHelper(Type t, String fieldName)
-        {
-            bool structExists;
-            uint offset;
-            if (McgModuleManager.TryGetStructFieldOffset(t.TypeHandle, fieldName, out structExists, out offset))
-            {
-                return new IntPtr(offset);
-            }
-
-            // if we can find the struct but couldn't find its field, throw Argument Exception
-            if (structExists)
-            {
-                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.TypeHandle.GetDisplayName()), nameof(fieldName));
-            }
-            else
-            {
-                throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, t);
-            }
+            return new IntPtr(RuntimeInteropData.Instance.GetStructFieldOffset(t.TypeHandle, fieldName));
         }
 
         public static IntPtr OffsetOf<T>(String fieldName)
@@ -245,47 +217,42 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static void Copy(int[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(char[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(short[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(long[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(float[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(double[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(byte[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         public static void Copy(IntPtr[] source, int startIndex, IntPtr destination, int length)
         {
-            CopyToNative(source, startIndex, destination, length);
-        }
-
-        private static void CopyToNative(Array source, int startIndex, IntPtr destination, int length)
-        {
-            InteropExtensions.CopyToNative(source, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(source, startIndex, destination, length);
         }
 
         //====================================================================
@@ -293,49 +260,43 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static void Copy(IntPtr source, int[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, char[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, short[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, long[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, float[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, double[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, byte[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(IntPtr source, IntPtr[] destination, int startIndex, int length)
         {
-            CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
-
-        private static void CopyToManaged(IntPtr source, Array destination, int startIndex, int length)
-        {
-            InteropExtensions.CopyToManaged(source, destination, startIndex, length);
-        }
-
 
         //====================================================================
         // Read from memory
@@ -405,29 +366,23 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ReadIntPtr([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
-#if WIN32
-            return (IntPtr)ReadInt32(ptr, ofs);
-#else
-            return (IntPtr)ReadInt64(ptr, ofs);
-#endif
+            if (IntPtr.Size == 4)
+                return (IntPtr)ReadInt32(ptr, ofs);
+            else
+                return (IntPtr)ReadInt64(ptr, ofs);
         }
 
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
-#if WIN32
-            return (IntPtr)ReadInt32(ptr, ofs);
-#else
-            return (IntPtr)ReadInt64(ptr, ofs);
-#endif
+            if (IntPtr.Size == 4)
+                return (IntPtr)ReadInt32(ptr, ofs);
+            else
+                return (IntPtr)ReadInt64(ptr, ofs);
         }
 
         public static IntPtr ReadIntPtr(IntPtr ptr)
         {
-#if WIN32
-            return (IntPtr)ReadInt32(ptr, 0);
-#else
-            return (IntPtr)ReadInt64(ptr, 0);
-#endif
+            return ReadIntPtr(ptr, 0);
         }
 
         public static unsafe long ReadInt64(IntPtr ptr, int ofs)
@@ -537,29 +492,24 @@ namespace System.Runtime.InteropServices
 
         public static void WriteIntPtr(IntPtr ptr, int ofs, IntPtr val)
         {
-#if WIN32
-            WriteInt32(ptr, ofs, (int)val);
-#else
-            WriteInt64(ptr, ofs, (long)val);
-#endif
+            if (IntPtr.Size == 4)
+                WriteInt32(ptr, ofs, (int)val);
+            else
+                WriteInt64(ptr, ofs, (long)val);
         }
 
         public static void WriteIntPtr([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, IntPtr val)
         {
-#if WIN32
-            WriteInt32(ptr, ofs, (int)val);
-#else
-            WriteInt64(ptr, ofs, (long)val);
-#endif
+            if (IntPtr.Size == 4)
+                WriteInt32(ptr, ofs, (int)val);
+            else
+                WriteInt64(ptr, ofs, (long)val);
+
         }
 
         public static void WriteIntPtr(IntPtr ptr, IntPtr val)
         {
-#if WIN32
-            WriteInt32(ptr, 0, (int)val);
-#else
-            WriteInt64(ptr, 0, (long)val);
-#endif
+            WriteIntPtr(ptr, 0, val);
         }
 
         public static unsafe void WriteInt64(IntPtr ptr, int ofs, long val)
@@ -620,7 +570,9 @@ namespace System.Runtime.InteropServices
                 createCOMException: false,
                 hasErrorInfo: false);
 #else
-            throw new PlatformNotSupportedException("GetExceptionForHR");
+            return new COMException() {
+                HResult = errorCode
+            };
 #endif // ENABLE_WINRT
         }
 
@@ -643,35 +595,17 @@ namespace System.Runtime.InteropServices
             {
                 throw GetExceptionForHR(errorCode, errorInfo);
             }
-        }  
+        }
 
         //====================================================================
         // Memory allocation and deallocation.
         //====================================================================
-        public static IntPtr AllocHGlobal(IntPtr cb)
+        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
-            return ExternalInterop.MemAlloc(cb);
+            return PInvokeMarshal.MemReAlloc(pv, cb);
         }
 
-        public static IntPtr AllocHGlobal(int cb)
-        {
-            return AllocHGlobal((IntPtr)cb);
-        }
-
-        public static void FreeHGlobal(IntPtr hglobal)
-        {
-            if (IsNotWin32Atom(hglobal))
-            {
-                ExternalInterop.MemFree(hglobal);
-            }
-        }
-
-        public unsafe static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
-        {
-            return ExternalInterop.MemReAlloc(pv, cb);
-        }
-
-        private unsafe static void ConvertToAnsi(string source, IntPtr pbNativeBuffer, int cbNativeBuffer)
+        private static unsafe void ConvertToAnsi(string source, IntPtr pbNativeBuffer, int cbNativeBuffer)
         {
             Debug.Assert(source != null);
             Debug.Assert(pbNativeBuffer != IntPtr.Zero);
@@ -680,12 +614,12 @@ namespace System.Runtime.InteropServices
             fixed (char* pch = source)
             {
                 int convertedBytes =
-                    ExternalInterop.ConvertWideCharToMultiByte(pch, source.Length, pbNativeBuffer, cbNativeBuffer);
+                    PInvokeMarshal.ConvertWideCharToMultiByte(pch, source.Length, (byte*)pbNativeBuffer, cbNativeBuffer, false, false);
                 ((byte*)pbNativeBuffer)[convertedBytes] = 0;
             }
         }
 
-        private unsafe static string ConvertToUnicode(IntPtr sourceBuffer, int cbSourceBuffer)
+        private static unsafe string ConvertToUnicode(IntPtr sourceBuffer, int cbSourceBuffer)
         {
             if (IsWin32Atom(sourceBuffer))
             {
@@ -697,7 +631,7 @@ namespace System.Runtime.InteropServices
                 return String.Empty;
             }
             // MB_PRECOMPOSED is the default.
-            int charsRequired = ExternalInterop.GetCharCount(sourceBuffer, cbSourceBuffer);
+            int charsRequired = PInvokeMarshal.GetCharCount((byte*)sourceBuffer, cbSourceBuffer);
 
             if (charsRequired == 0)
             {
@@ -705,11 +639,11 @@ namespace System.Runtime.InteropServices
             }
 
             char[] wideChars = new char[charsRequired + 1];
-            fixed (char* pWideChars = wideChars)
+            fixed (char* pWideChars = &wideChars[0])
             {
-                int converted = ExternalInterop.ConvertMultiByteToWideChar(sourceBuffer,
+                int converted = PInvokeMarshal.ConvertMultiByteToWideChar((byte*)sourceBuffer,
                                                                     cbSourceBuffer,
-                                                                    new IntPtr(pWideChars),
+                                                                    pWideChars,
                                                                     wideChars.Length);
                 if (converted == 0)
                 {
@@ -766,7 +700,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         // String convertions.
         //====================================================================
-        public unsafe static IntPtr StringToHGlobalAnsi(String s)
+        public static unsafe IntPtr StringToHGlobalAnsi(String s)
         {
             if (s == null)
             {
@@ -780,13 +714,13 @@ namespace System.Runtime.InteropServices
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
 
-                IntPtr hglobal = ExternalInterop.MemAlloc(new IntPtr(nb));
+                IntPtr hglobal = PInvokeMarshal.MemAlloc(new IntPtr(nb));
                 ConvertToAnsi(s, hglobal, nb);
                 return hglobal;
             }
         }
 
-        public unsafe static IntPtr StringToHGlobalUni(String s)
+        public static unsafe IntPtr StringToHGlobalUni(String s)
         {
             if (s == null)
             {
@@ -800,13 +734,19 @@ namespace System.Runtime.InteropServices
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
 
-                IntPtr hglobal = ExternalInterop.MemAlloc(new UIntPtr((uint)nb));
+                IntPtr hglobal = PInvokeMarshal.MemAlloc(new IntPtr(nb));
                 fixed (char* firstChar = s)
                 {
                     InteropExtensions.Memcpy(hglobal, new IntPtr(firstChar), nb);
                 }
                 return hglobal;
             }
+        }
+
+        public static IntPtr StringToHGlobalAuto(String s)
+        {
+            // Ansi platforms are no longer supported
+            return StringToHGlobalUni(s);
         }
 
         //====================================================================
@@ -820,7 +760,7 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(o));
             }
-            return MarshalAdapter.GetIUnknownForObject(o);
+            return McgMarshal.ObjectToComInterface(o, InternalTypes.IUnknown);
         }
 
         //====================================================================
@@ -832,7 +772,7 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(pUnk));
             }
-            return MarshalAdapter.GetObjectForIUnknown(pUnk);
+            return McgMarshal.ComInterfaceToObject(pUnk, InternalTypes.IUnknown);
         }
 
         //====================================================================
@@ -843,20 +783,10 @@ namespace System.Runtime.InteropServices
             if (o == null)
                 throw new ArgumentNullException(nameof(o), SR.Arg_InvalidHandle);
 
-            return McgComHelpers.IsComObject(o);
+            return McgMarshal.IsComObject(o);
         }
 
-        public static unsafe IntPtr AllocCoTaskMem(int cb)
-        {
-            IntPtr pNewMem = new IntPtr(ExternalInterop.CoTaskMemAlloc(new IntPtr(cb)));
-            if (pNewMem == IntPtr.Zero)
-            {
-                throw new OutOfMemoryException();
-            }
-            return pNewMem;
-        }
-
-        public unsafe static IntPtr StringToCoTaskMemUni(String s)
+        public static unsafe IntPtr StringToCoTaskMemUni(String s)
         {
             if (s == null)
             {
@@ -870,7 +800,7 @@ namespace System.Runtime.InteropServices
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
 
-                IntPtr hglobal = new IntPtr( ExternalInterop.CoTaskMemAlloc(new IntPtr(nb)));
+                IntPtr hglobal = PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)nb));
 
                 if (hglobal == IntPtr.Zero)
                 {
@@ -887,7 +817,36 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public unsafe static IntPtr StringToCoTaskMemAnsi(String s)
+        public static unsafe IntPtr StringToCoTaskMemUTF8(String s)
+        {
+            if (s == null)
+            {
+                return IntPtr.Zero;
+            }
+            else
+            {
+                int nb = Encoding.UTF8.GetMaxByteCount(s.Length);
+
+                IntPtr pMem = PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)nb + 1));
+
+                if (pMem == IntPtr.Zero)
+                {
+                    throw new OutOfMemoryException();
+                }
+                else
+                {
+                    fixed (char* firstChar = s)
+                    {
+                        byte* pbMem = (byte*)pMem;
+                        int nbWritten = Encoding.UTF8.GetBytes(firstChar, s.Length, pbMem, nb);
+                        pbMem[nbWritten] = 0;
+                    }
+                    return pMem;
+                }
+            }
+        }
+
+        public static unsafe IntPtr StringToCoTaskMemAnsi(String s)
         {
             if (s == null)
             {
@@ -901,7 +860,7 @@ namespace System.Runtime.InteropServices
                 if (nb < s.Length)
                     throw new ArgumentOutOfRangeException(nameof(s));
 
-                IntPtr hglobal = new IntPtr(ExternalInterop.CoTaskMemAlloc(new IntPtr(nb)));
+                IntPtr hglobal = PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)nb));
 
                 if (hglobal == IntPtr.Zero)
                 {
@@ -915,12 +874,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static unsafe void FreeCoTaskMem(IntPtr ptr)
+        public static IntPtr StringToCoTaskMemAuto(String s)
         {
-            if (IsNotWin32Atom(ptr))
-            {
-                ExternalInterop.CoTaskMemFree((void*)ptr);
-            }
+            // Ansi platforms are no longer supported
+            return StringToCoTaskMemUni(s);
         }
 
         //====================================================================
@@ -955,7 +912,6 @@ namespace System.Runtime.InteropServices
         {
             if (o == null)
                 throw new ArgumentNullException(nameof(o));
-            Contract.EndContractBlock();
 
             __ComObject co = null;
 
@@ -1006,7 +962,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
         {
-            IntPtr pNewMem = ExternalInterop.CoTaskMemRealloc(pv, new IntPtr(cb));
+            IntPtr pNewMem = PInvokeMarshal.CoTaskMemReAlloc(pv, new IntPtr(cb));
             if (pNewMem == IntPtr.Zero && cb != 0)
             {
                 throw new OutOfMemoryException();
@@ -1022,7 +978,7 @@ namespace System.Runtime.InteropServices
         {
             if (IsNotWin32Atom(ptr))
             {
-                ExternalInterop.SysFreeString(ptr);
+                McgMarshal.SysFreeString(ptr);
             }
         }
 
@@ -1037,7 +993,7 @@ namespace System.Runtime.InteropServices
 
             fixed (char* pch = s)
             {
-                IntPtr bstr = new IntPtr( ExternalInterop.SysAllocStringLen(pch, (uint)s.Length));
+                IntPtr bstr = new IntPtr(ExternalInterop.SysAllocStringLen(pch, (uint)s.Length));
                 if (bstr == IntPtr.Zero)
                     throw new OutOfMemoryException();
 
@@ -1068,6 +1024,12 @@ namespace System.Runtime.InteropServices
             FreeCoTaskMem(s);
         }
 
+        public static unsafe void ZeroFreeCoTaskMemUTF8(IntPtr s)
+        {
+            SecureZeroMemory(s, lstrlenA(s));
+            FreeCoTaskMem(s);
+        }
+
         public static void ZeroFreeGlobalAllocAnsi(IntPtr s)
         {
             SecureZeroMemory(s, lstrlenA(s));
@@ -1088,7 +1050,7 @@ namespace System.Runtime.InteropServices
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
 
-            return McgMarshal.GetStubForPInvokeDelegate(d);
+            return PInvokeMarshal.GetFunctionPointerForDelegate(d);
         }
 
         public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d)
@@ -1106,8 +1068,27 @@ namespace System.Runtime.InteropServices
 
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
             int offset = structureTypeHandle.IsValueType() ? 1 : 0;
+            bool useMemCpy = false;
 
-            if (structureTypeHandle.IsBlittable() && structureTypeHandle.IsValueType())
+            if (RuntimeInteropData.Instance.TryGetStructUnmarshalStub(structureTypeHandle, out IntPtr unmarshalStub))
+            {
+                if (unmarshalStub != IntPtr.Zero)
+                {
+                    InteropExtensions.PinObjectAndCall(structure,
+                        unboxedStructPtr =>
+                        {
+                            CalliIntrinsics.Call<int>(
+                                unmarshalStub,
+                                (void*)ptr,                                     // unsafe (no need to adjust as it is always struct)
+                                ((void*)((IntPtr*)unboxedStructPtr + offset))   // safe (need to adjust offset as it could be class)
+                            );
+                        });
+                    return;
+                }
+                useMemCpy = true;
+            }
+
+            if (useMemCpy || structureTypeHandle.IsBlittable())
             {
                 int structSize = Marshal.SizeOf(structure);
                 InteropExtensions.PinObjectAndCall(structure,
@@ -1122,21 +1103,6 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            IntPtr unmarshalStub;
-            if (McgModuleManager.TryGetStructUnmarshalStub(structureTypeHandle, out unmarshalStub))
-            {
-                InteropExtensions.PinObjectAndCall(structure,
-                    unboxedStructPtr =>
-                    {
-                        CalliIntrinsics.Call<int>(
-                            unmarshalStub,
-                            (void*)ptr,                                     // unsafe (no need to adjust as it is always struct)
-                            ((void*)((IntPtr*)unboxedStructPtr + offset))   // safe (need to adjust offset as it could be class)
-                        );
-                    });
-                return;
-            }
-
             throw new MissingInteropDataException(SR.StructMarshalling_MissingInteropData, structure.GetType());
         }
 
@@ -1144,12 +1110,8 @@ namespace System.Runtime.InteropServices
         // Creates a new instance of "structuretype" and marshals data from a
         // native memory block to it.
         //====================================================================
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // Methods containing StackCrawlMark local var has to be marked non-inlineable
         public static Object PtrToStructure(IntPtr ptr, Type structureType)
         {
-            // Boxing the struct here is important to ensure that the original copy is written to,
-            // not the autoboxed copy
-
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
 
@@ -1208,17 +1170,16 @@ namespace System.Runtime.InteropServices
 
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
 
-            if (structureTypeHandle.IsGenericType())
+            if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
             {
                 throw new ArgumentException(nameof(structure), SR.Argument_NeedNonGenericObject);
             }
 
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
             int offset = structureTypeHandle.IsValueType() ? 1 : 0;
+            bool useMemCpy = false;
 
-            bool isBlittable = false; // whether Mcg treat this struct as blittable struct
-            IntPtr marshalStub;
-            if (McgModuleManager.TryGetStructMarshalStub(structureTypeHandle, out marshalStub))
+            if (RuntimeInteropData.Instance.TryGetStructMarshalStub(structureTypeHandle, out IntPtr marshalStub))
             {
                 if (marshalStub != IntPtr.Zero)
                 {
@@ -1233,13 +1194,10 @@ namespace System.Runtime.InteropServices
                         });
                     return;
                 }
-                else
-                {
-                    isBlittable = true;
-                }
+                useMemCpy = true;
             }
 
-            if (isBlittable || structureTypeHandle.IsBlittable()) // blittable
+            if (useMemCpy || structureTypeHandle.IsBlittable())
             {
                 int structSize = Marshal.SizeOf(structure);
                 InteropExtensions.PinObjectAndCall(structure,
@@ -1266,7 +1224,7 @@ namespace System.Runtime.InteropServices
         // DestroyStructure()
         //
         //====================================================================
-        public static void DestroyStructure(IntPtr ptr, Type structuretype)
+        public static unsafe void DestroyStructure(IntPtr ptr, Type structuretype)
         {
             if (ptr == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(ptr));
@@ -1276,7 +1234,7 @@ namespace System.Runtime.InteropServices
 
             RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
-            if (structureTypeHandle.IsGenericType())
+            if (structureTypeHandle.IsGenericType() || structureTypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, "t");
 
             if (structureTypeHandle.IsEnum() ||
@@ -1285,15 +1243,6 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.GetDisplayName());
             }
-
-            Contract.EndContractBlock();
-
-            DestroyStructureHelper(ptr, structuretype);
-        }
-
-        private static unsafe void DestroyStructureHelper(IntPtr ptr, Type structuretype)
-        {
-            RuntimeTypeHandle structureTypeHandle = structuretype.TypeHandle;
 
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
             int offset = structureTypeHandle.IsValueType() ? 1 : 0;
@@ -1304,9 +1253,7 @@ namespace System.Runtime.InteropServices
                 return;
             }
 
-            IntPtr destroyStructureStub;
-            bool hasInvalidLayout;
-            if (McgModuleManager.TryGetDestroyStructureStub(structureTypeHandle, out destroyStructureStub, out hasInvalidLayout))
+            if (RuntimeInteropData.Instance.TryGetDestroyStructureStub(structureTypeHandle, out IntPtr destroyStructureStub, out bool hasInvalidLayout))
             {
                 if (hasInvalidLayout)
                     throw new ArgumentException(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.GetDisplayName());
@@ -1339,7 +1286,13 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(Object o, Type T)
         {
-            return MarshalAdapter.GetComInterfaceForObject(o, T);
+            if (o == null)
+                throw new ArgumentNullException(nameof(o));
+
+            if (T == null)
+                throw new ArgumentNullException(nameof(T));
+
+            return McgMarshal.ObjectToComInterface(o, T.TypeHandle);
         }
 
         public static TDelegate GetDelegateForFunctionPointer<TDelegate>(IntPtr ptr)
@@ -1355,18 +1308,16 @@ namespace System.Runtime.InteropServices
 
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
-            Contract.EndContractBlock();
 
-            if (t.TypeHandle.IsGenericType())
+            if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
-            bool isDelegateType = InteropExtensions.AreTypesAssignable(t.TypeHandle, typeof(MulticastDelegate).TypeHandle) ||
-                                  InteropExtensions.AreTypesAssignable(t.TypeHandle, typeof(Delegate).TypeHandle);
+            bool isDelegateType = InteropExtensions.AreTypesAssignable(t.TypeHandle, typeof(Delegate).TypeHandle);
 
             if (!isDelegateType)
                 throw new ArgumentException(SR.Arg_MustBeDelegateType, nameof(t));
 
-            return MarshalAdapter.GetDelegateForFunctionPointer(ptr, t);
+            return McgMarshal.GetPInvokeDelegateForStub(ptr, t.TypeHandle);
         }
 
         //====================================================================
@@ -1382,12 +1333,11 @@ namespace System.Runtime.InteropServices
         {
             // Obsolete
             if (pDstNativeVariant == IntPtr.Zero)
-                throw new ArgumentNullException("pSrcNativeVariant");
+                throw new ArgumentNullException(nameof(pDstNativeVariant));
 
-            if (obj != null && obj.GetType().TypeHandle.IsGenericType())
+            if (obj != null && (obj.GetType().TypeHandle.IsGenericType() || obj.GetType().TypeHandle.IsGenericTypeDefinition()))
                 throw new ArgumentException(SR.Argument_NeedNonGenericObject, nameof(obj));
 
-            Contract.EndContractBlock();
 
             Variant* pVariant = (Variant*)pDstNativeVariant;
             *pVariant = new Variant(obj);
@@ -1407,7 +1357,6 @@ namespace System.Runtime.InteropServices
             // Obsolete
             if (pSrcNativeVariant == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(pSrcNativeVariant));
-            Contract.EndContractBlock();
 
             Variant* pNativeVar = (Variant*)pSrcNativeVariant;
             return pNativeVar->ToObject();
@@ -1425,7 +1374,6 @@ namespace System.Runtime.InteropServices
 
             if (cVars < 0)
                 throw new ArgumentOutOfRangeException(nameof(cVars), SR.ArgumentOutOfRange_NeedNonNegNum);
-            Contract.EndContractBlock();
 
             Object[] obj = new Object[cVars];
             IntPtr aNativeVar = aSrcNativeVariant;
@@ -1462,29 +1410,39 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
         {
-            if (arr == null)
-                throw new ArgumentNullException(nameof(arr));
-
-            if (index < 0 || index >= arr.Length)
-                throw new ArgumentOutOfRangeException(nameof(index));
-            Contract.EndContractBlock();
-
-            int offset = checked(index * arr.GetElementSize());
-
-            return arr.GetAddrOfPinnedArrayFromEETypeField() + offset;
+            return PInvokeMarshal.UnsafeAddrOfPinnedArrayElement(arr, index);
         }
 
         public static IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
         {
-            return UnsafeAddrOfPinnedArrayElement((Array)arr, index);
+            return PInvokeMarshal.UnsafeAddrOfPinnedArrayElement(arr, index);
+        }
+
+        //====================================================================
+        // This method binds to the specified moniker.
+        //====================================================================
+        public static Object BindToMoniker(String monikerName)
+        {
+#if TARGET_CORE_API_SET // BindMoniker not available in core API set
+            throw new PlatformNotSupportedException();
+#else
+            Object obj = null;
+            IBindCtx bindctx = null;
+            ExternalInterop.CreateBindCtx(0, out bindctx);
+
+            UInt32 cbEaten;
+            IMoniker pmoniker = null;
+            ExternalInterop.MkParseDisplayName(bindctx, monikerName, out cbEaten, out pmoniker);
+
+            ExternalInterop.BindMoniker(pmoniker, 0, ref Interop.COM.IID_IUnknown, out obj);
+            return obj;
+#endif
         }
 
 #if ENABLE_WINRT
         public static Type GetTypeFromCLSID(Guid clsid)
         {
-            // @TODO - if this is something we recognize, create a strongly-typed RCW
-            // Otherwise, create a weakly typed RCW
-            throw new PlatformNotSupportedException();
+            return Type.GetTypeFromCLSID(clsid);
         }
 
         //====================================================================
@@ -1600,6 +1558,46 @@ namespace System.Runtime.InteropServices
         {
             // Obsolete
             throw new PlatformNotSupportedException("WriteInt64");
+        }
+
+        public static void ChangeWrapperHandleStrength(Object otp, bool fIsWeak)
+        {
+            throw new PlatformNotSupportedException("ChangeWrapperHandleStrength");
+        }
+
+        public static void CleanupUnusedObjectsInCurrentContext()
+        {
+            // RCW cleanup implemented in native code in CoreCLR, and uses a global list to indicate which objects need to be collected. In
+            // CoreRT, RCWs are implemented in managed code and their cleanup is normally accomplished using finalizers. Implementing
+            // this method in a more complicated way (without calling WaitForPendingFinalizers) is non-trivial because it possible for timing
+            // problems to occur when competing with finalizers.
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        public static void Prelink(MethodInfo m)
+        {
+            if (m == null)
+                throw new ArgumentNullException(nameof(m));
+
+            // Note: This method is effectively a no-op in ahead-of-time compilation scenarios. In CoreCLR and Desktop, this will pre-generate
+            // the P/Invoke, but everything is pre-generated in CoreRT.
+        }
+
+        public static void PrelinkAll(Type c)
+        {
+            if (c == null)
+                throw new ArgumentNullException(nameof(c));
+
+            MethodInfo[] mi = c.GetMethods();
+            if (mi != null)
+            {
+                for (int i = 0; i < mi.Length; i++)
+                {
+                    Prelink(mi[i]);
+                }
+            }
         }
     }
 }

@@ -141,41 +141,14 @@
   <data name="InvalidOperation_NoValue" xml:space="preserve">
     <value>Nullable object must have a value.</value>
   </data>
-  <data name="PlatformNotSupported_CantInvokeIntrinsic" xml:space="preserve">
-    <value>Late-bound invocation is not supported for compiler-intrinsic methods.</value>
-  </data>
-  <data name="PlatformNotSupported_VarArgs" xml:space="preserve">
-    <value>Methods using the vararg calling convention are not supported on this platform.</value>
-  </data>
-  <data name="PlatformNotSupported_PointerArguments" xml:space="preserve">
-    <value>Passing or returning pointers through Invoke is not supported on this platform.</value>
-  </data>
-  <data name="RFLCT_Targ_ITargMismatch" xml:space="preserve">
-    <value>Object does not match target type.</value>
-  </data>
-  <data name="RFLCT_Targ_StatMethReqTarg" xml:space="preserve">
-    <value>Non-static method requires a target.</value>
-  </data>
   <data name="RFLCT_Targ_StatFldReqTarg" xml:space="preserve">
     <value>Non-static field requires a target.</value>
-  </data>
-  <data name="LdToken_NoMetadata_1" xml:space="preserve">
-    <value>Prerelease Restriction: The following type member cannot be referenced from inside a Linq Expression:\n\n  </value>
-  </data>
-  <data name="LdToken_NoMetadata_2" xml:space="preserve">
-    <value>\n\nThe following may be used as a workaround:\n\n</value>
-  </data>
-  <data name="LdToken_NoMetadata_3" xml:space="preserve">
-    <value>  1. Make the member public or mark the member with the System.Reflection.Metadata.Controls.ReflectionInfo attribute specifying the argument ReflectionInfoOption.Include\n</value>
-  </data>
-  <data name="LdToken_NoMetadata_4" xml:space="preserve">
-    <value>  2. Enable Reflection for its declaring type with the System.Reflection.Consumption.EnableDynamicProgramming attribute.\n\n\n</value>
   </data>
   <data name="MissingConstructor_Name" xml:space="preserve">
     <value>Constructor on type '{0}' not found.</value>
   </data>
-  <data name="PlatformNotSupported_NoMultiDims" xml:space="preserve">
-    <value>Multidimensional arrays of rank {0} are not supported on this runtime.</value>
+  <data name="MultiDim_Of_This_Rank_Not_Supported" xml:space="preserve">
+    <value>Multidimensional arrays of rank {0} are not supported.</value>
   </data>
   <data name="Object_NotInvokable" xml:space="preserve">
     <value>This object cannot be invoked because it was metadata-enabled for browsing only: '{0}' For more information, please visit  http://go.microsoft.com/fwlink/?LinkID=616867</value>
@@ -197,15 +170,6 @@
   </data>
   <data name="Argument_ConstraintFailed" xml:space="preserve">
     <value>'{0}', on '{1}' violates the constraint of type '{2}'.</value>
-  </data>
-  <data name="NotSupported_OpenType" xml:space="preserve">
-    <value>Cannot create arrays of open type. </value>
-  </data>
-  <data name="PlatformNotSupported_PointerArray" xml:space="preserve">
-    <value>Arrays of pointer types are not supported on this platform.</value>
-  </data>
-  <data name="PlatformNotSupported_GetMethodInfoForStubDelegate" xml:space="preserve">
-    <value>Obtaining a MethodInfo of a reflection-constructed delegate to a virtual method is not supported on this platform.</value>
   </data>
   <data name="Argument_ImplementIComparable" xml:space="preserve">
     <value>At least one object must implement IComparable.</value>
@@ -230,5 +194,20 @@
   </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Acc_ReadOnly" xml:space="preserve">
+    <value>Cannot set a constant field.</value>
+  </data>
+  <data name="DelegateGetMethodInfo_NoDynamic" xml:space="preserve">
+    <value>Cannot retrieve a MethodInfo for this delegate because the method it targeted was not enabled for metadata using the Dynamic attribute. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616868</value>
+  </data>
+  <data name="DelegateGetMethodInfo_NoDynamic_WithDisplayString" xml:space="preserve">
+    <value>Cannot retrieve a MethodInfo for this delegate because the method it targeted ({0}) was not enabled for metadata using the Dynamic attribute. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616868</value>
+  </data>
+  <data name="DelegateGetMethodInfo_NoInstantiation" xml:space="preserve">
+    <value>Cannot retrieve a MethodInfo for this delegate because the necessary generic instantiation was not metadata-enabled. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616868</value>
+  </data>
+  <data name="DelegateGetMethodInfo_ObjectArrayDelegate" xml:space="preserve">
+    <value>Cannot retrieve a MethodInfo for this delegate because the delegate target is an interpreted LINQ expression.</value>
   </data>
 </root>

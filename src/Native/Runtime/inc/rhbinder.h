@@ -62,7 +62,8 @@ struct ModuleHeader
                                                     // breaking changes
         DELTA_SHORTCUT_TABLE_SIZE   = 16,
         MAX_REGIONS                 = 8,            // Max number of regions described by the Regions array
-        MAX_WELL_KNOWN_METHODS      = 8,            // Max number of methods described by the WellKnownMethods array
+        MAX_WELL_KNOWN_METHODS      = 8,            // Max number of methods described by the WellKnownMethods array 
+        MAX_EXTRA_WELL_KNOWN_METHODS= 8,            // Max number of methods described by the ExtraWellKnownMethods array 
         NULL_RRA                    = 0xffffffff,   // NULL value for region relative addresses (0 is often a
                                                     // legal RRA)
     };
@@ -139,6 +140,11 @@ struct ModuleHeader
     UInt32          RraGenericUnificationIndirCells;
     UInt32          CountOfGenericUnificationIndirCells;
 
+    UInt32          RraColdToHotMappingInfo;
+
+    UInt32  ExtraWellKnownMethods[MAX_EXTRA_WELL_KNOWN_METHODS];   // Array of methods with well known semantics defined
+                                                                   // in this module
+
     // Macro to generate an inline accessor for RRA-based fields.
 #ifdef RHDUMP
 #define DEFINE_GET_ACCESSOR(_field, _region)\
@@ -195,13 +201,24 @@ struct ModuleHeader
     DEFINE_GET_ACCESSOR(GenericUnificationDescs,    RDATA_REGION);
     DEFINE_GET_ACCESSOR(GenericUnificationIndirCells,DATA_REGION);
 
+    DEFINE_GET_ACCESSOR(ColdToHotMappingInfo,       RDATA_REGION);
+
 #ifndef RHDUMP
     // Macro to generate an inline accessor for well known methods (these are all TEXT-based RRAs since they
     // point to code).
-#define DEFINE_WELL_KNOWN_METHOD(_name)                                 \
-    inline PTR_VOID Get_##_name()                                       \
-    {                                                                   \
-        return WellKnownMethods[WKM_##_name] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + WellKnownMethods[WKM_##_name]; \
+#define DEFINE_WELL_KNOWN_METHOD(_name)                                                                                     \
+    inline PTR_VOID Get_##_name()                                                                                           \
+    {                                                                                                                       \
+        unsigned int index = (unsigned int)WKM_##_name;                                                                     \
+        if (index >= MAX_WELL_KNOWN_METHODS)                                                                                \
+        {                                                                                                                   \
+            index = index - MAX_WELL_KNOWN_METHODS;                                                                         \
+            return ExtraWellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + ExtraWellKnownMethods[index]; \
+        }                                                                                                                   \
+        else                                                                                                                \
+        {                                                                                                                   \
+            return WellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + WellKnownMethods[index];           \
+        }                                                                                                                   \
     }
 #include "WellKnownMethodList.h"
 #undef DEFINE_WELL_KNOWN_METHOD
@@ -432,11 +449,14 @@ struct InterfaceDispatchCell
                                     // m_pCache field, and in the second lowest 16 bits, a Flags field. For the interface
                                     // case Flags shall be 0, and for the metadata token case, Flags shall be 1.
 
+    //
+    // Keep these in sync with the managed copy in src\Common\src\Internal\Runtime\InterfaceCachePointerType.cs
+    //
     enum Flags
     {
         // The low 2 bits of the m_pCache pointer are treated specially so that we can avoid the need for 
         // extra fields on this type.
-        // OR if the m_pCache value is less than 4096 then this it is a vtable offset and should be used as such
+        // OR if the m_pCache value is less than 0x1000 then this it is a vtable offset and should be used as such
         IDC_CachePointerIsInterfaceRelativePointer = 0x3,
         IDC_CachePointerIsIndirectedInterfaceRelativePointer = 0x2,
         IDC_CachePointerIsInterfacePointerOrMetadataToken = 0x1, // Metadata token is a 30 bit number in this case. 
@@ -446,7 +466,7 @@ struct InterfaceDispatchCell
         IDC_CachePointerPointsAtCache = 0x0,
         IDC_CachePointerMask = 0x3,
         IDC_CachePointerMaskShift = 0x2,
-        IDC_MaxVTableOffsetPlusOne = 4096,
+        IDC_MaxVTableOffsetPlusOne = 0x1000,
     };
 
 #if !defined(RHDUMP) && !defined(BINDER)
@@ -498,7 +518,7 @@ struct InterfaceDispatchCell
             case IDC_CachePointerIsInterfaceRelativePointer:
             case IDC_CachePointerIsIndirectedInterfaceRelativePointer:
                 {
-                    UIntTarget interfacePointerValue = (UIntTarget)&m_pCache + cachePointerValue;
+                    UIntTarget interfacePointerValue = (UIntTarget)&m_pCache + (Int32)cachePointerValue;
                     interfacePointerValue &= ~IDC_CachePointerMask;
                     if ((cachePointerValue & IDC_CachePointerMask) == IDC_CachePointerIsInterfaceRelativePointer)
                     {
@@ -556,6 +576,11 @@ struct InterfaceDispatchCell
 // a single instruction within our stubs.
 enum PInvokeTransitionFrameFlags
 {
+    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\arm\AsmMacros.h
+
+    // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has 
+    //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
+
     // standard preserved registers
     PTFF_SAVE_R4        = 0x00000001,
     PTFF_SAVE_R5        = 0x00000002,
@@ -581,10 +606,102 @@ enum PInvokeTransitionFrameFlags
 
     PTFF_R0_IS_GCREF    = 0x00004000,   // used by hijack handler to report return value of hijacked method
     PTFF_R0_IS_BYREF    = 0x00008000,   // used by hijack handler to report return value of hijacked method
+
+    PTFF_THREAD_ABORT   = 0x00010000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
+#elif defined(_TARGET_ARM64_)
+enum PInvokeTransitionFrameFlags : UInt64
+{
+    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\arm64\AsmMacros.h
+
+    // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has 
+    //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
+
+    // standard preserved registers
+    PTFF_SAVE_X19       = 0x0000000000000001,
+    PTFF_SAVE_X20       = 0x0000000000000002,
+    PTFF_SAVE_X21       = 0x0000000000000004,
+    PTFF_SAVE_X22       = 0x0000000000000008,
+    PTFF_SAVE_X23       = 0x0000000000000010,
+    PTFF_SAVE_X24       = 0x0000000000000020,
+    PTFF_SAVE_X25       = 0x0000000000000040,
+    PTFF_SAVE_X26       = 0x0000000000000080,
+    PTFF_SAVE_X27       = 0x0000000000000100,
+    PTFF_SAVE_X28       = 0x0000000000000200,
+
+    PTFF_SAVE_SP        = 0x0000000000000400,   // Used for 'coop pinvokes' in runtime helper routines.  Methods with
+                                                // PInvokes are required to have a frame pointers, but methods which
+                                                // call runtime helpers are not.  Therefore, methods that call runtime
+                                                // helpers may need SP to seed the stackwalk.
+
+    // Scratch registers
+    PTFF_SAVE_X0        = 0x0000000000000800,
+    PTFF_SAVE_X1        = 0x0000000000001000,
+    PTFF_SAVE_X2        = 0x0000000000002000,
+    PTFF_SAVE_X3        = 0x0000000000004000,
+    PTFF_SAVE_X4        = 0x0000000000008000,
+    PTFF_SAVE_X5        = 0x0000000000010000,
+    PTFF_SAVE_X6        = 0x0000000000020000,
+    PTFF_SAVE_X7        = 0x0000000000040000,
+    PTFF_SAVE_X8        = 0x0000000000080000,
+    PTFF_SAVE_X9        = 0x0000000000100000,
+    PTFF_SAVE_X10       = 0x0000000000200000,
+    PTFF_SAVE_X11       = 0x0000000000400000,
+    PTFF_SAVE_X12       = 0x0000000000800000,
+    PTFF_SAVE_X13       = 0x0000000001000000,
+    PTFF_SAVE_X14       = 0x0000000002000000,
+    PTFF_SAVE_X15       = 0x0000000004000000,
+    PTFF_SAVE_X16       = 0x0000000008000000,
+    PTFF_SAVE_X17       = 0x0000000010000000,
+    PTFF_SAVE_X18       = 0x0000000020000000,
+
+    PTFF_SAVE_FP        = 0x0000000040000000,   // should never be used, we require FP frames for methods with 
+                                                // pinvoke and it is saved into the frame pointer field instead
+
+    PTFF_SAVE_LR        = 0x0000000080000000,   // this is useful for the case of loop hijacking where we need both
+                                                // a return address pointing into the hijacked method and that method's
+                                                // lr register, which may hold a gc pointer
+
+    // used by hijack handler to report return value of hijacked method
+    PTFF_X0_IS_GCREF    = 0x0000000100000000,
+    PTFF_X0_IS_BYREF    = 0x0000000200000000,
+    PTFF_X1_IS_GCREF    = 0x0000000400000000,
+    PTFF_X1_IS_BYREF    = 0x0000000800000000,
+
+    PTFF_THREAD_ABORT   = 0x0000001000000000,   // indicates that ThreadAbortException should be thrown when returning from the transition
+};
+
+// TODO: Consider moving the PInvokeTransitionFrameFlags definition to a separate file to simplify header dependencies
+#ifdef ICODEMANAGER_INCLUDED
+// Verify that we can use bitwise shifts to convert from GCRefKind to PInvokeTransitionFrameFlags and back
+C_ASSERT(PTFF_X0_IS_GCREF == ((UInt64)GCRK_Object << 32));
+C_ASSERT(PTFF_X0_IS_BYREF == ((UInt64)GCRK_Byref << 32));
+C_ASSERT(PTFF_X1_IS_GCREF == ((UInt64)GCRK_Scalar_Obj << 32));
+C_ASSERT(PTFF_X1_IS_BYREF == ((UInt64)GCRK_Scalar_Byref << 32));
+
+inline UInt64 ReturnKindToTransitionFrameFlags(GCRefKind returnKind)
+{
+    if (returnKind == GCRK_Scalar)
+        return 0;
+
+    return PTFF_SAVE_X0 | PTFF_SAVE_X1 | ((UInt64)returnKind << 32);
+}
+
+inline GCRefKind TransitionFrameFlagsToReturnKind(UInt64 transFrameFlags)
+{
+    GCRefKind returnKind = (GCRefKind)((transFrameFlags & (PTFF_X0_IS_GCREF | PTFF_X0_IS_BYREF | PTFF_X1_IS_GCREF | PTFF_X1_IS_BYREF)) >> 32);
+    ASSERT((returnKind == GCRK_Scalar) || ((transFrameFlags & PTFF_SAVE_X0) && (transFrameFlags & PTFF_SAVE_X1)));
+    return returnKind;
+}
+#endif // ICODEMANAGER_INCLUDED
 #else // _TARGET_ARM_
 enum PInvokeTransitionFrameFlags
 {
+    // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\[amd64|i386]\AsmMacros.inc
+
+    // NOTE: The order in which registers get pushed in the PInvokeTransitionFrame's m_PreservedRegs list has 
+    //       to match the order of these flags (that's also the order in which they are read in StackFrameIterator.cpp
+
     // standard preserved registers
     PTFF_SAVE_RBX       = 0x00000001,
     PTFF_SAVE_RSI       = 0x00000002,
@@ -614,27 +731,49 @@ enum PInvokeTransitionFrameFlags
 
     PTFF_RAX_IS_GCREF   = 0x00010000,   // used by hijack handler to report return value of hijacked method
     PTFF_RAX_IS_BYREF   = 0x00020000,   // used by hijack handler to report return value of hijacked method
+
+    PTFF_THREAD_ABORT   = 0x00040000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
 #endif // _TARGET_ARM_
 
 #pragma warning(push)
 #pragma warning(disable:4200) // nonstandard extension used: zero-sized array in struct/union
 class Thread;
+#if defined(USE_PORTABLE_HELPERS)
+//the members of this structure are currently unused except m_pThread and exist only to allow compilation
+//of StackFrameIterator their values are not currently being filled in and will require significant rework
+//in order to satisfy the runtime requirements of StackFrameIterator
+struct PInvokeTransitionFrame
+{
+    void*       m_RIP;
+    Thread*     m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
+                            // can be an invalid pointer in universal transition cases (which never need to call GetThread)
+    uint32_t    m_Flags;    // PInvokeTransitionFrameFlags
+};
+#else // USE_PORTABLE_HELPERS
 struct PInvokeTransitionFrame
 {
 #ifdef _TARGET_ARM_
     TgtPTR_Void     m_ChainPointer; // R11, used by OS to walk stack quickly
 #endif
+#ifdef _TARGET_ARM64_
+    // On arm64, the FP and LR registers are pushed in that order when setting up frames
+    TgtPTR_Void     m_FramePointer;
+    TgtPTR_Void     m_RIP;
+#else
     TgtPTR_Void     m_RIP;
     TgtPTR_Void     m_FramePointer;
+#endif
     TgtPTR_Thread   m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
                                 // can be an invalid pointer in universal transition cases (which never need to call GetThread)
-    UInt32          m_dwFlags;  // PInvokeTransitionFrameFlags
-#ifdef _TARGET_AMD64_
-    UInt32          m_dwAlignPad2;
-#endif
+#ifdef _TARGET_ARM64_
+    UInt64          m_Flags;  // PInvokeTransitionFrameFlags
+#else   
+    UInt32          m_Flags;  // PInvokeTransitionFrameFlags
+#endif       
     UIntTarget      m_PreservedRegs[];
 };
+#endif // USE_PORTABLE_HELPERS
 #pragma warning(pop)
 
 #ifdef _TARGET_AMD64_
@@ -644,8 +783,13 @@ struct PInvokeTransitionFrame
 // RBX, RSI, RDI, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 5
 #elif defined(_TARGET_ARM_)
+#ifdef PROJECTN
 // R4-R6,R8-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 8
+#else // PROJECTN
+// R4-R10, R0, SP
+#define PInvokeTransitionFrame_SaveRegs_count 9
+#endif // PROJECTN
 #endif
 #define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
@@ -746,14 +890,7 @@ enum RhEHClauseKind
     RH_EH_CLAUSE_UNUSED             = 3
 };
 
-// Structure used to store offsets information of thread static fields, and mainly used
-// by Reflection to get the address of that field in the TLS block
-struct ThreadStaticFieldOffsets
-{
-    UInt32 StartingOffsetInTlsBlock;    // Offset in the TLS block containing the thread static fields of a given type
-    UInt32 FieldOffset;                 // Offset of a thread static field from the start of its containing type's TLS fields block
-                                        // (in other words, the address of a field is 'TLS block + StartingOffsetInTlsBlock + FieldOffset')
-};
+#define RH_EH_CLAUSE_TYPED_INDIRECT RH_EH_CLAUSE_UNUSED 
 
 #ifndef RHDUMP
 // as System::__Canon is not exported by the SharedLibrary.dll, it is represented by a special "pointer" for generic unification
@@ -884,5 +1021,37 @@ struct GenericUnificationDesc
     }
 
     bool Equals(GenericUnificationDesc *that);
+};
+
+
+// mapping of cold code blocks to the corresponding hot entry point RVA
+// format is a as follows:
+// -------------------
+// | subSectionCount |     # of subsections, where each subsection has a run of hot bodies
+// -------------------     followed by a run of cold bodies
+// | hotMethodCount  |     # of hot bodies in subsection
+// | coldMethodCount |     # of cold bodies in subsection
+// -------------------
+// ... possibly repeated on ARM
+// -------------------
+// | hotRVA #1       |     RVA of the hot entry point corresponding to the 1st cold body
+// | hotRVA #2       |     RVA of the hot entry point corresponding to the 2nd cold body
+// ... one entry for each cold body containing the corresponding hot entry point
+
+// number of hot and cold bodies in a subsection of code
+// in x86 and x64 there's only one subsection, on ARM there may be several
+// for large modules with > 16 MB of code
+struct SubSectionDesc
+{
+    UInt32          hotMethodCount;
+    UInt32          coldMethodCount;
+};
+
+// this is the structure describing the cold to hot mapping info
+struct ColdToHotMapping
+{
+    UInt32          subSectionCount;
+    SubSectionDesc  subSection[/*subSectionCount*/1];
+    //  UINT32   hotRVAofColdMethod[/*coldMethodCount*/];
 };
 #endif

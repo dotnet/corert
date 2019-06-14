@@ -37,37 +37,31 @@ namespace System.Reflection.Runtime.General
 {
     internal static partial class TypeUnifier
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetArrayType(this RuntimeTypeInfo elementType)
         {
-            return elementType.GetArrayType(default(RuntimeTypeHandle));
+            return RuntimeArrayTypeInfo.GetArrayTypeInfo(elementType, multiDim: false, rank: 1);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetMultiDimArrayType(this RuntimeTypeInfo elementType, int rank)
         {
-            return elementType.GetMultiDimArrayType(rank, default(RuntimeTypeHandle));
+            return RuntimeArrayTypeInfo.GetArrayTypeInfo(elementType, multiDim: true, rank: rank);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetByRefType(this RuntimeTypeInfo targetType)
         {
-            return targetType.GetByRefType(default(RuntimeTypeHandle));
+            return RuntimeByRefTypeInfo.GetByRefTypeInfo(targetType);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetPointerType(this RuntimeTypeInfo targetType)
         {
-            return targetType.GetPointerType(default(RuntimeTypeHandle));
+            return RuntimePointerTypeInfo.GetPointerTypeInfo(targetType);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetConstructedGenericType(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
         {
-            return genericTypeDefinition.GetConstructedGenericType(genericTypeArguments, default(RuntimeTypeHandle));
+            return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetTypeForRuntimeTypeHandle(this RuntimeTypeHandle typeHandle)
         {
             Type type = Type.GetTypeFromHandle(typeHandle);
@@ -80,31 +74,26 @@ namespace System.Reflection.Runtime.General
         // waste cycles looking up the handle again from the mapping tables.)
         //======================================================================================================
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetArrayType(this RuntimeTypeInfo elementType, RuntimeTypeHandle precomputedTypeHandle)
         {
             return RuntimeArrayTypeInfo.GetArrayTypeInfo(elementType, multiDim: false, rank: 1, precomputedTypeHandle: precomputedTypeHandle);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetMultiDimArrayType(this RuntimeTypeInfo elementType, int rank, RuntimeTypeHandle precomputedTypeHandle)
         {
             return RuntimeArrayTypeInfo.GetArrayTypeInfo(elementType, multiDim: true, rank: rank, precomputedTypeHandle: precomputedTypeHandle);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetPointerType(this RuntimeTypeInfo targetType, RuntimeTypeHandle precomputedTypeHandle)
         {
             return RuntimePointerTypeInfo.GetPointerTypeInfo(targetType, precomputedTypeHandle);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetByRefType(this RuntimeTypeInfo targetType, RuntimeTypeHandle precomputedTypeHandle)
         {
             return RuntimeByRefTypeInfo.GetByRefTypeInfo(targetType, precomputedTypeHandle);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeTypeInfo GetConstructedGenericType(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments, RuntimeTypeHandle precomputedTypeHandle)
         {
             return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle);
@@ -117,7 +106,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //-----------------------------------------------------------------------------------------------------------
     // TypeInfos for type definitions (i.e. "Foo" and "Foo<>" but not "Foo<int>") that aren't opted into metadata.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeNoMetadataNamedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeNoMetadataNamedTypeInfo
     {
         internal static RuntimeNoMetadataNamedTypeInfo GetRuntimeNoMetadataNamedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
@@ -155,7 +144,7 @@ namespace System.Reflection.Runtime.TypeInfos
     // TypeInfos that represent type definitions (i.e. Foo or Foo<>) or constructed generic types (Foo<int>)
     // that can never be reflection-enabled due to the framework Reflection block.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeBlockedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeBlockedTypeInfo
     {
         internal static RuntimeBlockedTypeInfo GetRuntimeBlockedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
@@ -194,12 +183,16 @@ namespace System.Reflection.Runtime.TypeInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeArrayTypeInfo : RuntimeHasElementTypeInfo
     {
+        internal static RuntimeArrayTypeInfo GetArrayTypeInfo(RuntimeTypeInfo elementType, bool multiDim, int rank)
+        {
+            return GetArrayTypeInfo(elementType, multiDim, rank, GetRuntimeTypeHandleIfAny(elementType, multiDim, rank));
+        }
+
         internal static RuntimeArrayTypeInfo GetArrayTypeInfo(RuntimeTypeInfo elementType, bool multiDim, int rank, RuntimeTypeHandle precomputedTypeHandle)
         {
             Debug.Assert(multiDim || rank == 1);
 
-            RuntimeTypeHandle typeHandle = precomputedTypeHandle.IsNull() ? GetRuntimeTypeHandleIfAny(elementType, multiDim, rank) : precomputedTypeHandle;
-            UnificationKey key = new UnificationKey(elementType, typeHandle);
+            UnificationKey key = new UnificationKey(elementType, precomputedTypeHandle);
             RuntimeArrayTypeInfo type;
             if (!multiDim)
                 type = ArrayTypeTable.Table.GetOrAdd(key);
@@ -216,6 +209,14 @@ namespace System.Reflection.Runtime.TypeInfos
             RuntimeTypeHandle elementTypeHandle = elementType.InternalTypeHandleIfAvailable;
             if (elementTypeHandle.IsNull())
                 return default(RuntimeTypeHandle);
+
+            // The check is here on purpose - one of the implementations of IsByRefLike contains a custom attribute
+            // search and those are very expensive from size on disk footprint perspective. We purposefully
+            // place this call in a path that won't be part of the executable image unless more advanced reflection services
+            // are also needed ("pay for play"). We really don't want a typeof() to push the app into requiring the full reflection
+            // stack to be compiled into the final executable.
+            if (elementType.IsByRefLike)
+                throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
 
             RuntimeTypeHandle typeHandle;
             if (!multiDim)
@@ -281,12 +282,10 @@ namespace System.Reflection.Runtime.TypeInfos
 
             if (elementType.IsByRef)
                 throw new TypeLoadException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
-            if (elementType.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Format(SR.ArgumentException_InvalidArrayElementType, elementType));
 
             // We only permit creating parameterized types if the pay-for-play policy specifically allows them *or* if the result
             // type would be an open type.
-            if (typeHandle.IsNull() && !elementType.ContainsGenericParameters)
+            if (typeHandle.IsNull() && !elementType.ContainsGenericParameters && !(elementType is RuntimeCLSIDTypeInfo))
                 throw ReflectionCoreExecution.ExecutionDomain.CreateMissingArrayTypeException(elementType, multiDim, rank);
         }
     }
@@ -296,10 +295,14 @@ namespace System.Reflection.Runtime.TypeInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeByRefTypeInfo : RuntimeHasElementTypeInfo
     {
+        internal static RuntimeByRefTypeInfo GetByRefTypeInfo(RuntimeTypeInfo elementType)
+        {
+            return GetByRefTypeInfo(elementType, GetRuntimeTypeHandleIfAny(elementType));
+        }
+
         internal static RuntimeByRefTypeInfo GetByRefTypeInfo(RuntimeTypeInfo elementType, RuntimeTypeHandle precomputedTypeHandle)
         {
-            RuntimeTypeHandle typeHandle = precomputedTypeHandle.IsNull() ? GetRuntimeTypeHandleIfAny(elementType) : precomputedTypeHandle;
-            RuntimeByRefTypeInfo type = ByRefTypeTable.Table.GetOrAdd(new UnificationKey(elementType, typeHandle));
+            RuntimeByRefTypeInfo type = ByRefTypeTable.Table.GetOrAdd(new UnificationKey(elementType, precomputedTypeHandle));
             type.EstablishDebugName();
             return type;
         }
@@ -321,6 +324,9 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             protected sealed override RuntimeByRefTypeInfo Factory(UnificationKey key)
             {
+                if (key.ElementType.IsByRef)
+                    throw new TypeLoadException(SR.Format(SR.CannotCreateByRefOfByRef, key.ElementType));
+
                 return new RuntimeByRefTypeInfo(key);
             }
 
@@ -333,10 +339,14 @@ namespace System.Reflection.Runtime.TypeInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimePointerTypeInfo : RuntimeHasElementTypeInfo
     {
+        internal static RuntimePointerTypeInfo GetPointerTypeInfo(RuntimeTypeInfo elementType)
+        {
+            return GetPointerTypeInfo(elementType, precomputedTypeHandle: GetRuntimeTypeHandleIfAny(elementType));
+        }
+
         internal static RuntimePointerTypeInfo GetPointerTypeInfo(RuntimeTypeInfo elementType, RuntimeTypeHandle precomputedTypeHandle)
         {
-            RuntimeTypeHandle typeHandle = precomputedTypeHandle.IsNull() ? GetRuntimeTypeHandleIfAny(elementType) : precomputedTypeHandle;
-            RuntimePointerTypeInfo type = PointerTypeTable.Table.GetOrAdd(new UnificationKey(elementType, typeHandle));
+            RuntimePointerTypeInfo type = PointerTypeTable.Table.GetOrAdd(new UnificationKey(elementType, precomputedTypeHandle));
             type.EstablishDebugName();
             return type;
         }
@@ -358,6 +368,9 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             protected sealed override RuntimePointerTypeInfo Factory(UnificationKey key)
             {
+                if (key.ElementType.IsByRef)
+                    throw new TypeLoadException(SR.Format(SR.CannotCreatePointerOfByRef, key.ElementType));
+
                 return new RuntimePointerTypeInfo(key);
             }
 
@@ -370,10 +383,14 @@ namespace System.Reflection.Runtime.TypeInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeConstructedGenericTypeInfo : RuntimeTypeInfo, IKeyedItem<RuntimeConstructedGenericTypeInfo.UnificationKey>
     {
+        internal static RuntimeConstructedGenericTypeInfo GetRuntimeConstructedGenericTypeInfo(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
+        {
+            return GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle: GetRuntimeTypeHandleIfAny(genericTypeDefinition, genericTypeArguments));
+        }
+
         internal static RuntimeConstructedGenericTypeInfo GetRuntimeConstructedGenericTypeInfo(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments, RuntimeTypeHandle precomputedTypeHandle)
         {
-            RuntimeTypeHandle typeHandle = precomputedTypeHandle.IsNull() ? GetRuntimeTypeHandleIfAny(genericTypeDefinition, genericTypeArguments) : precomputedTypeHandle;
-            UnificationKey key = new UnificationKey(genericTypeDefinition, genericTypeArguments, typeHandle);
+            UnificationKey key = new UnificationKey(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle);
             RuntimeConstructedGenericTypeInfo typeInfo = ConstructedGenericTypeTable.Table.GetOrAdd(key);
             typeInfo.EstablishDebugName();
             return typeInfo;
@@ -427,6 +444,25 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             public static readonly ConstructedGenericTypeTable Table = new ConstructedGenericTypeTable();
+        }
+    }
+
+    internal sealed partial class RuntimeCLSIDTypeInfo
+    {
+        public static RuntimeCLSIDTypeInfo GetRuntimeCLSIDTypeInfo(Guid clsid, string server)
+        {
+            UnificationKey key = new UnificationKey(clsid, server);
+            return ClsIdTypeTable.Table.GetOrAdd(key);
+        }
+
+        private sealed class ClsIdTypeTable : ConcurrentUnifierWKeyed<UnificationKey, RuntimeCLSIDTypeInfo>
+        {
+            protected sealed override RuntimeCLSIDTypeInfo Factory(UnificationKey key)
+            {
+                return new RuntimeCLSIDTypeInfo(key.ClsId, key.Server);
+            }
+
+            public static readonly ClsIdTypeTable Table = new ClsIdTypeTable();
         }
     }
 }

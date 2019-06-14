@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+#ifndef __RHASSERT_H__
+#define __RHASSERT_H__
+
 #ifdef _MSC_VER
 #define ASSUME(expr) __assume(expr)
 #else  // _MSC_VER
@@ -36,7 +39,17 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 
 #define ASSERT_UNCONDITIONALLY(message)
 
-#endif 
+#endif
+
+#ifndef _ASSERTE
+#define _ASSERTE(_expr) ASSERT(_expr)
+#endif
+
+#if defined(_DEBUG)
+
+void NYI_ASSERT();
+
+#endif
 
 #define PORTABILITY_ASSERT(message) \
     ASSERT_UNCONDITIONALLY(message); \
@@ -52,10 +65,6 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
 
 #define FAIL_FAST_GENERATE_EXCEPTION_ADDRESS 0x1
 
-#define RhFailFast()  RhFailFast2(NULL, NULL)
+#define RhFailFast() PalRaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)
 
-#define RhFailFast2(pExRec, pExCtx) \
-{ \
-    ASSERT_UNCONDITIONALLY("FailFast"); \
-    PalRaiseFailFastException((pExRec), (pExCtx), (pExRec)==NULL ? FAIL_FAST_GENERATE_EXCEPTION_ADDRESS : 0); \
-}
+#endif // __RHASSERT_H__

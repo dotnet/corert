@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);WINDOWS;LINUX</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\Accelerometer.cs">
+      <Link>Game\Accelerometer.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\Animation.cs">
+      <Link>Game\Animation.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\AnimationPlayer.cs">
+      <Link>Game\AnimationPlayer.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\Circle.cs">
+      <Link>Game\Circle.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\Enemy.cs">
+      <Link>Game\Enemy.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\Gem.cs">
+      <Link>Game\Gem.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\Level.cs">
+      <Link>Game\Level.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\Player.cs">
+      <Link>Game\Player.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\RectangleExtensions.cs">
+      <Link>Game\RectangleExtensions.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\Tile.cs">
+      <Link>Game\Tile.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\TouchCollectionExtensions.cs">
+      <Link>Game\TouchCollectionExtensions.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game.cs">
+      <Link>Game.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Game\VirtualGamePad.cs">
+      <Link>Game\VirtualGamePad.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\Platformer2D\Program.cs">
+      <Link>Program.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <MonoGameContentReference Include="MonoGame.Samples\Platformer2D\Content\Platformer2D.mgcb">
+      <Link>Content\Platformer2D.mgcb</Link>
+    </MonoGameContentReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-*" />
+    <PackageReference Include="MonoGame.Content.Builder" Version="3.7.0.9" />
+    <PackageReference Include="MonoGame.Framework.DesktopGL.Core" Version="3.7.0.7" />
+  </ItemGroup>
+
+</Project>

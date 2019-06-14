@@ -167,21 +167,79 @@ ICodeManager * RuntimeInstance::FindCodeManagerByAddress(PTR_VOID pvAddress)
             return pModule;
     }
 
-    // TODO: JIT support in DAC
+    // TODO: ICodeManager support in DAC
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_DYNAMIC_CODE
     for (CodeManagerEntry * pEntry = m_CodeManagerList.GetHead(); pEntry != NULL; pEntry = pEntry->m_pNext)
     {
         if (dac_cast<TADDR>(pvAddress) - dac_cast<TADDR>(pEntry->m_pvStartRange) < pEntry->m_cbRange)
             return pEntry->m_pCodeManager;
     }
 #endif
-#endif
 
     return NULL;
 }
 
-GPTR_DECL(RuntimeInstance, g_pTheRuntimeInstance);
+#ifndef DACCESS_COMPILE
+
+// Find the code manager containing the given address, which might be a return address from a managed function. The
+// address may be to another managed function, or it may be to an unmanaged function. The address may also refer to 
+// an EEType.
+ICodeManager * RuntimeInstance::FindCodeManagerForClasslibFunction(PTR_VOID address)
+{
+    // Try looking up the code manager assuming the address is for code first. This is expected to be most common.
+    ICodeManager * pCodeManager = FindCodeManagerByAddress(address);
+    if (pCodeManager != NULL)
+        return pCodeManager;
+
+    // Less common, we will look for the address in any of the sections of the module.  This is slower, but is 
+    // necessary for EEType pointers and jump stubs.
+    Module * pModule = FindModuleByAddress(address);
+    if (pModule != NULL)
+        return pModule;
+
+    ASSERT_MSG(!Thread::IsHijackTarget(address), "not expected to be called with hijacked return address");
+
+    return NULL;
+}
+
+void * RuntimeInstance::GetClasslibFunctionFromCodeAddress(PTR_VOID address, ClasslibFunctionId functionId)
+{
+    // Find the code manager for the given address, which is an address into some managed module. It could
+    // be code, or it could be an EEType. No matter what, it's an address into a managed module in some non-Rtm
+    // type system.
+    ICodeManager * pCodeManager = FindCodeManagerForClasslibFunction(address);
+
+    // If the address isn't in a managed module then we have no classlib function.
+    if (pCodeManager == NULL)
+    {
+        return NULL;
+    }
+
+    return pCodeManager->GetClasslibFunction(functionId);
+}
+
+#endif // DACCESS_COMPILE
+
+PTR_UInt8 RuntimeInstance::GetTargetOfUnboxingAndInstantiatingStub(PTR_VOID ControlPC)
+{
+    ICodeManager * pCodeManager = FindCodeManagerByAddress(ControlPC);
+    if (pCodeManager != NULL)
+    {
+        PTR_UInt8 pData = (PTR_UInt8)pCodeManager->GetAssociatedData(ControlPC);
+        if (pData != NULL)
+        {
+            UInt8 flags = *pData++;
+
+            if ((flags & (UInt8)AssociatedDataFlags::HasUnboxingStubTarget) != 0)
+                return pData + *dac_cast<PTR_Int32>(pData);
+        }
+    }
+
+    return NULL;
+}
+
+GPTR_IMPL_INIT(RuntimeInstance, g_pTheRuntimeInstance, NULL);
+
 PTR_RuntimeInstance GetRuntimeInstance()
 {
     return g_pTheRuntimeInstance;
@@ -248,8 +306,31 @@ void RuntimeInstance::EnumAllStaticGCRefs(void * pfnCallback, void * pvCallbackD
     }
     END_FOREACH_MODULE
 
+    for (TypeManagerList::Iterator iter = m_TypeManagerList.Begin(); iter != m_TypeManagerList.End(); iter++)
+    {
+        iter->m_pTypeManager->EnumStaticGCRefs(pfnCallback, pvCallbackData);
+    }
+
     EnumStaticGCRefDescs(pfnCallback, pvCallbackData);
     EnumThreadStaticGCRefDescs(pfnCallback, pvCallbackData);
+}
+
+void RuntimeInstance::SetLoopHijackFlags(UInt32 flag)
+{
+    for (TypeManagerList::Iterator iter = m_TypeManagerList.Begin(); iter != m_TypeManagerList.End(); iter++)
+    {
+        iter->m_pTypeManager->SetLoopHijackFlag(flag);
+    }
+}
+
+RuntimeInstance::OsModuleList* RuntimeInstance::GetOsModuleList()
+{
+    return dac_cast<DPTR(OsModuleList)>(dac_cast<TADDR>(this) + offsetof(RuntimeInstance, m_OsModuleList));
+}
+
+ReaderWriterLock& RuntimeInstance::GetTypeManagerLock()
+{
+    return m_ModuleListLock;
 }
 
 #ifndef DACCESS_COMPILE
@@ -268,12 +349,11 @@ Module * RuntimeInstance::FindModuleByOsHandle(HANDLE hOsHandle)
 
 RuntimeInstance::RuntimeInstance() : 
     m_pThreadStore(NULL),
-    m_fStandaloneExeMode(false),
-    m_pStandaloneExeModule(NULL),
     m_pStaticGCRefsDescChunkList(NULL),
     m_pThreadStaticGCRefsDescChunkList(NULL),
     m_pGenericUnificationHashtable(NULL),
-    m_conservativeStackReportingEnabled(false)
+    m_conservativeStackReportingEnabled(false),
+    m_pUnboxingStubsRegion(NULL)
 {
 }
 
@@ -291,23 +371,15 @@ HANDLE  RuntimeInstance::GetPalInstance()
     return m_hPalInstance;
 }
 
-bool RuntimeInstance::EnableConservativeStackReporting()
+void RuntimeInstance::EnableConservativeStackReporting()
 {
     m_conservativeStackReportingEnabled = true;
-    return true;
 }
 
 EXTERN_C void REDHAWK_CALLCONV RhpSetHaveNewClasslibs();
 
 bool RuntimeInstance::RegisterModule(ModuleHeader *pModuleHeader)
 {
-    // Determine whether we're in standalone exe mode. If we are we'll see the runtime module load followed by
-    // exactly one additional module (the exe itself). The exe module will have a standalone flag set in its
-    // header.
-    ASSERT(m_fStandaloneExeMode == false);
-    if (pModuleHeader->Flags & ModuleHeader::StandaloneExe)
-        m_fStandaloneExeMode = true;
-
     CreateHolder<Module> pModule = Module::Create(pModuleHeader);
 
     if (NULL == pModule)
@@ -319,9 +391,6 @@ bool RuntimeInstance::RegisterModule(ModuleHeader *pModuleHeader)
         ReaderWriterLock::WriteHolder write(&m_ModuleListLock);
         m_ModuleList.PushHead(pModule);
     }
-
-    if (m_fStandaloneExeMode)
-        m_pStandaloneExeModule = pModule;
 
     if (pModule->IsClasslibModule())
         RhpSetHaveNewClasslibs();
@@ -353,7 +422,6 @@ void RuntimeInstance::UnregisterModule(Module *pModule)
     pModule->Destroy();
 }
 
-#ifdef FEATURE_DYNAMIC_CODE
 bool RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange)
 {
     CodeManagerEntry * pEntry = new (nothrow) CodeManagerEntry();
@@ -405,20 +473,118 @@ extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager)
 {
     return GetRuntimeInstance()->UnregisterCodeManager(pCodeManager);
 }
-#endif
+
+bool RuntimeInstance::RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange)
+{
+    ASSERT(pvStartRange != NULL && cbRange > 0);
+
+    UnboxingStubsRegion * pEntry = new (nothrow) UnboxingStubsRegion();
+    if (NULL == pEntry)
+        return false;
+
+    pEntry->m_pRegionStart = pvStartRange;
+    pEntry->m_cbRegion = cbRange;
+
+    do
+    {
+        pEntry->m_pNextRegion = m_pUnboxingStubsRegion;
+    } 
+    while (PalInterlockedCompareExchangePointer((void *volatile *)&m_pUnboxingStubsRegion, pEntry, pEntry->m_pNextRegion) != pEntry->m_pNextRegion);
+
+    return true;
+}
+
+bool RuntimeInstance::IsUnboxingStub(UInt8* pCode)
+{
+    UnboxingStubsRegion * pCurrent = m_pUnboxingStubsRegion;
+    while (pCurrent != NULL)
+    {
+        UInt8* pUnboxingStubsRegion = dac_cast<UInt8*>(pCurrent->m_pRegionStart);
+        if (pCode >= pUnboxingStubsRegion && pCode < (pUnboxingStubsRegion + pCurrent->m_cbRegion))
+            return true;
+
+        pCurrent = pCurrent->m_pNextRegion;
+    }
+
+    return false;
+}
+
+extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange)
+{
+    return GetRuntimeInstance()->RegisterUnboxingStubs(pvStartRange, cbRange);
+}
+
+bool RuntimeInstance::RegisterTypeManager(TypeManager * pTypeManager)
+{
+    TypeManagerEntry * pEntry = new (nothrow) TypeManagerEntry();
+    if (NULL == pEntry)
+        return false;
+
+    pEntry->m_pTypeManager = pTypeManager;
+
+    {
+        ReaderWriterLock::WriteHolder write(&m_ModuleListLock);
+
+        m_TypeManagerList.PushHead(pEntry);
+    }
+
+    return true;
+}
+
+COOP_PINVOKE_HELPER(TypeManagerHandle, RhpCreateTypeManager, (HANDLE osModule, void* pModuleHeader, PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions))
+{
+    TypeManager * typeManager = TypeManager::Create(osModule, pModuleHeader, pClasslibFunctions, nClasslibFunctions);
+    GetRuntimeInstance()->RegisterTypeManager(typeManager);
+
+    // This event must occur after the module is added to the enumeration
+    if (osModule != nullptr)
+        DebugEventSource::SendModuleLoadEvent(osModule);
+
+    return TypeManagerHandle::Create(typeManager);
+}
+
+COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleForMrt, ())
+{
+    return GetRuntimeInstance()->GetPalInstance();
+}
+
+COOP_PINVOKE_HELPER(void*, RhpRegisterOsModule, (HANDLE hOsModule))
+{
+    RuntimeInstance::OsModuleEntry * pEntry = new (nothrow) RuntimeInstance::OsModuleEntry();
+    if (NULL == pEntry)
+        return nullptr; // Return null on failure.
+
+    pEntry->m_osModule = hOsModule;
+
+    {
+        RuntimeInstance *pRuntimeInstance = GetRuntimeInstance();
+        ReaderWriterLock::WriteHolder write(&pRuntimeInstance->GetTypeManagerLock());
+
+        pRuntimeInstance->GetOsModuleList()->PushHead(pEntry);
+    }
+
+    return hOsModule; // Return non-null on success
+}
+
+RuntimeInstance::TypeManagerList& RuntimeInstance::GetTypeManagerList() 
+{
+    return m_TypeManagerList;
+}
 
 // static 
-RuntimeInstance * RuntimeInstance::Create(HANDLE hPalInstance)
+bool RuntimeInstance::Initialize(HANDLE hPalInstance)
 {
     NewHolder<RuntimeInstance> pRuntimeInstance = new (nothrow) RuntimeInstance();
     if (NULL == pRuntimeInstance)
-        return NULL;
+        return false;
 
     CreateHolder<ThreadStore>  pThreadStore = ThreadStore::Create(pRuntimeInstance);
     if (NULL == pThreadStore)
-        return NULL;
+        return false;
 
     pThreadStore.SuppressRelease();
+    pRuntimeInstance.SuppressRelease();
+
     pRuntimeInstance->m_pThreadStore = pThreadStore;
     pRuntimeInstance->m_hPalInstance = hPalInstance;
 
@@ -426,11 +592,11 @@ RuntimeInstance * RuntimeInstance::Create(HANDLE hPalInstance)
     pRuntimeInstance->m_fProfileThreadCreated = false;
 #endif
 
-    pRuntimeInstance.SuppressRelease();
+    ASSERT_MSG(g_pTheRuntimeInstance == NULL, "multi-instances are not supported");
+    g_pTheRuntimeInstance = pRuntimeInstance;
 
-    return pRuntimeInstance;
+    return true;
 }
-
 
 void RuntimeInstance::Destroy()
 {
@@ -439,22 +605,22 @@ void RuntimeInstance::Destroy()
 
 bool RuntimeInstance::ShouldHijackLoopForGcStress(UIntNative CallsiteIP)
 {
-#if defined(FEATURE_GC_STRESS) & !defined(DACCESS_COMPILE)
+#ifdef FEATURE_GC_STRESS
     return ShouldHijackForGcStress(CallsiteIP, htLoop);
-#else // FEATURE_GC_STRESS & !DACCESS_COMPILE
+#else // FEATURE_GC_STRESS
     UNREFERENCED_PARAMETER(CallsiteIP);
     return false;
-#endif // FEATURE_GC_STRESS & !DACCESS_COMPILE
+#endif // FEATURE_GC_STRESS
 }
 
 bool RuntimeInstance::ShouldHijackCallsiteForGcStress(UIntNative CallsiteIP)
 {
-#if defined(FEATURE_GC_STRESS) & !defined(DACCESS_COMPILE)
+#ifdef FEATURE_GC_STRESS
     return ShouldHijackForGcStress(CallsiteIP, htCallsite);
-#else // FEATURE_GC_STRESS & !DACCESS_COMPILE
+#else // FEATURE_GC_STRESS
     UNREFERENCED_PARAMETER(CallsiteIP);
     return false;
-#endif // FEATURE_GC_STRESS & !DACCESS_COMPILE
+#endif // FEATURE_GC_STRESS
 }
 
 // This method should only be called during DllMain for modules with GcStress enabled.  The locking done by 
@@ -574,6 +740,7 @@ bool RuntimeInstance::CreateGenericAndStaticInfo(EEType *             pEEType,
     }
 
     NewArrayHolder<UInt8> pGcStaticData;
+#ifdef PROJECTN
     if (gcStaticDataSize > 0)
     {
         // The value of gcStaticDataSize is read from native layout info in the managed layer, where
@@ -586,6 +753,7 @@ bool RuntimeInstance::CreateGenericAndStaticInfo(EEType *             pEEType,
         if (!AddDynamicGcStatics(pGcStaticData, pGcStaticsDesc))
             return false;
     }
+#endif
 
     if (threadStaticOffset != 0)
     {
@@ -750,7 +918,7 @@ COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (EEType * pInterface, In
         return NULL;
 
     // Due to the synchronization mechanism used to update this indirection cell we must ensure the cell's alignment is twice that of a pointer.
-    // Fortunately, Windows heap guarantees this aligment.
+    // Fortunately, Windows heap guarantees this alignment.
     ASSERT(IS_ALIGNED(pCell, 2 * POINTER_SIZE));
     ASSERT(IS_ALIGNED(pInterface, (InterfaceDispatchCell::IDC_CachePointerMask + 1)));
 
@@ -775,68 +943,4 @@ COOP_PINVOKE_HELPER(PTR_UInt8, RhGetThreadLocalStorageForDynamicType, (UInt32 uO
     return pCurrentThread->AllocateThreadLocalStorageForDynamicType(uOffset, tlsStorageSize, numTlsCells);
 }
 
-COOP_PINVOKE_HELPER(void *, RhGetNonGcStaticFieldData, (EEType * pEEType))
-{
-    // We shouldn't be attempting to get the gc/non-gc statics data for non-dynamic types...
-    // For non-dynamic types, that info should have been hashed in a table and stored in its corresponding blob in the image.
-    ASSERT(pEEType->IsDynamicType());
-
-    if (pEEType->HasDynamicNonGcStatics())
-    {
-        return pEEType->get_DynamicNonGcStaticsPointer();
-    }
-
-    return NULL;
-}
-
-COOP_PINVOKE_HELPER(void *, RhGetGcStaticFieldData, (EEType * pEEType))
-{
-    // We shouldn't be attempting to get the gc/non-gc statics data for non-dynamic types...
-    // For non-dynamic types, that info should have been hashed in a table and stored in its corresponding blob in the image.
-    // The reason we don't want to do the lookup for non-dynamic types is that LookupGenericInstance will do the lookup in 
-    // a hashtable that *only* has the GIDs with variance. If we were to store all GIDs in that hashtable, we'd be violating
-    // pay-for-play principles
-    ASSERT(pEEType->IsDynamicType());
-
-    if (pEEType->HasDynamicGcStatics())
-    {
-        return pEEType->get_DynamicGcStaticsPointer();
-    }
-
-    return NULL;
-}
-
-#ifndef FEATURE_RX_THUNKS
-
-COOP_PINVOKE_HELPER(void*, RhpGetThunksBase, ());
-COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
-{
-    static void* pThunksTemplateAddress = NULL;
-
-    if (pThunksTemplateAddress == NULL)
-    {
-        // First, we use the thunks directly from the thunks template sections in the module until all
-        // thunks in that template are used up.
-        pThunksTemplateAddress = RhpGetThunksBase();
-        return pThunksTemplateAddress;
-    }
-
-    // We've already used the thunks template in the module for some previous thunks, and we 
-    // cannot reuse it here. Now we need to create a new mapping of the thunks section in order to have 
-    // more thunks
-
-    UInt8* pModuleBase = (UInt8*)PalGetModuleHandleFromPointer(pThunksTemplateAddress);
-    int templateRva = (int)((UInt8*)RhpGetThunksBase() - pModuleBase);
-    int templateSize = RhpGetNumThunkBlocksPerMapping() * OS_PAGE_SIZE * 2;
-
-    void* pThunkMap = NULL;
-    if (PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap) == FALSE)
-        return NULL;
-
-    return pThunkMap;
-}
-
-#endif      // FEATURE_RX_THUNKS
-
-#endif
+#endif // DACCESS_COMPILE

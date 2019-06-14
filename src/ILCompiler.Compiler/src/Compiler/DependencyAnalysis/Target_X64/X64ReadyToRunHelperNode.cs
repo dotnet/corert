@@ -19,66 +19,28 @@ namespace ILCompiler.DependencyAnalysis
         {
             switch (Id)
             {
-                case ReadyToRunHelperId.NewHelper:
-                    {
-                        TypeDesc target = (TypeDesc)Target;
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.ConstructedTypeSymbol(target));
-                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetNewObjectHelperForType(target)));
-                    }
-                    break;
-
                 case ReadyToRunHelperId.VirtualCall:
                     {
                         MethodDesc targetMethod = (MethodDesc)Target;
 
-                        if (targetMethod.OwningType.IsInterface)
+                        Debug.Assert(!targetMethod.OwningType.IsInterface);
+                        Debug.Assert(!targetMethod.CanMethodBeInSealedVTable());
+
+                        AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
+
+                        int pointerSize = factory.Target.PointerSize;
+
+                        int slot = 0;
+                        if (!relocsOnly)
                         {
-                            encoder.EmitLEAQ(Register.R10, factory.InterfaceDispatchCell((MethodDesc)Target));
-                            AddrMode jmpAddrMode = new AddrMode(Register.R10, null, 0, 0, AddrModeSize.Int64);
-                            encoder.EmitJmpToAddrMode(ref jmpAddrMode);
-                        }
-                        else
-                        {
-                            if (relocsOnly)
-                                break;
-
-                            AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
-                            encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
-
-                            int pointerSize = factory.Target.PointerSize;
-
-                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod);
+                            slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
                             Debug.Assert(slot != -1);
-                            AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int64);
-                            encoder.EmitJmpToAddrMode(ref jmpAddrMode);
                         }
-                    }
-                    break;
+                        Debug.Assert(((INodeWithDebugInfo)this).DebugLocInfos[1].NativeOffset == encoder.Builder.CountBytes);
 
-                case ReadyToRunHelperId.IsInstanceOf:
-                    {
-                        TypeDesc target = (TypeDesc)Target;
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol(target));
-                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(target, false)));
-                    }
-                    break;
-
-                case ReadyToRunHelperId.CastClass:
-                    {
-                        TypeDesc target = (TypeDesc)Target;
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg1, factory.NecessaryTypeSymbol(target));
-                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetCastingHelperNameForType(target, true)));
-                    }
-                    break;
-
-                case ReadyToRunHelperId.NewArr1:
-                    {
-                        TypeDesc target = (TypeDesc)Target;
-
-                        // TODO: Swap argument order instead
-                        encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg0);
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.ConstructedTypeSymbol(target));
-                        encoder.EmitJMP(factory.ExternSymbol(JitHelper.GetNewArrayHelperForType(target)));
+                        AddrMode jmpAddrMode = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(pointerSize) + (slot * pointerSize), 0, AddrModeSize.Int64);
+                        encoder.EmitJmpToAddrMode(ref jmpAddrMode);
                     }
                     break;
 
@@ -86,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         MetadataType target = (MetadataType)Target;
                         bool hasLazyStaticConstructor = factory.TypeSystemContext.HasLazyStaticConstructor(target);
-                        encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target), hasLazyStaticConstructor ? NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target) : 0);
+                        encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target));
 
                         if (!hasLazyStaticConstructor)
                         {
@@ -95,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
                         else
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
-                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target));
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
 
                             AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
                             encoder.EmitCMP(ref initialized, 1);
@@ -108,7 +70,36 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
-                    encoder.EmitINT3();
+                    {
+                        MetadataType target = (MetadataType)Target;
+
+                        encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
+
+                        // First arg: address of the TypeManager slot that provides the helper with
+                        // information about module index and the type manager instance (which is used
+                        // for initialization on first access).
+                        AddrMode loadFromArg2 = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg0, ref loadFromArg2);
+
+                        // Second arg: index of the type in the ThreadStatic section of the modules
+                        AddrMode loadFromArg2AndDelta = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int64);
+                        encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2AndDelta);
+
+                        if (!factory.TypeSystemContext.HasLazyStaticConstructor(target))
+                        {
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                        }
+                        else
+                        {
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target), - NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
+
+                            AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
+                            encoder.EmitCMP(ref initialized, 1);
+                            encoder.EmitJE(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                        }
+                    }
                     break;
 
                 case ReadyToRunHelperId.GetGCStaticBase:
@@ -127,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis
                         else
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
-                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target));
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target), -NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
 
                             AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg0, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
                             encoder.EmitCMP(ref initialized, 1);
@@ -144,7 +135,26 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         DelegateCreationInfo target = (DelegateCreationInfo)Target;
 
-                        encoder.EmitLEAQ(encoder.TargetRegister.Arg2, target.Target);
+                        if (target.TargetNeedsVTableLookup)
+                        {
+                            Debug.Assert(!target.TargetMethod.CanMethodBeInSealedVTable());
+
+                            AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg1, null, 0, 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg2, ref loadFromThisPtr);
+
+                            int slot = 0;
+                            if (!relocsOnly)
+                                slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, target.TargetMethod, target.TargetMethod.OwningType);
+
+                            Debug.Assert(slot != -1);
+                            AddrMode loadFromSlot = new AddrMode(encoder.TargetRegister.Arg2, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg2, ref loadFromSlot);
+                        }
+                        else
+                        {
+                            ISymbolNode targetMethodNode = target.GetTargetNode(factory);
+                            encoder.EmitLEAQ(encoder.TargetRegister.Arg2, target.GetTargetNode(factory));
+                        }
 
                         if (target.Thunk != null)
                         {
@@ -176,17 +186,15 @@ namespace ILCompiler.DependencyAnalysis
                             AddrMode loadFromThisPtr = new AddrMode(encoder.TargetRegister.Arg0, null, 0, 0, AddrModeSize.Int64);
                             encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromThisPtr);
 
-                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod);
+                            Debug.Assert(!targetMethod.CanMethodBeInSealedVTable());
+
+                            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, targetMethod, targetMethod.OwningType);
                             Debug.Assert(slot != -1);
                             AddrMode loadFromSlot = new AddrMode(encoder.TargetRegister.Result, null, EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize), 0, AddrModeSize.Int64);
                             encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromSlot);
                             encoder.EmitRET();
                         }
                     }
-                    break;
-
-                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
-                    encoder.EmitINT3();
                     break;
 
                 default:

@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.General
     internal static partial class TypeResolver
     {
         //
-        // Main routine to resolve a typeDef/Ref/Spec.
+        // Main routine to resolve a typeDef/Ref/Spec. Also accepts ModifiedTypes (will unwrap and ignore the custom modifiers.)
         //
         internal static RuntimeTypeInfo Resolve(this Handle typeDefRefOrSpec, MetadataReader reader, TypeContext typeContext)
         {
@@ -43,6 +43,11 @@ namespace System.Reflection.Runtime.General
                 return typeDefRefOrSpec.ToTypeReferenceHandle(reader).TryResolveTypeReference(reader, ref exception);
             else if (handleType == HandleType.TypeSpecification)
                 return typeDefRefOrSpec.ToTypeSpecificationHandle(reader).TryResolveTypeSignature(reader, typeContext, ref exception);
+            else if (handleType == HandleType.ModifiedType)
+            {
+                ModifiedType modifiedType = typeDefRefOrSpec.ToModifiedTypeHandle(reader).GetModifiedType(reader);
+                return modifiedType.Type.TryResolve(reader, typeContext, ref exception);
+            }
             else
                 throw new BadImageFormatException();  // Expected TypeRef, Def or Spec.
         }

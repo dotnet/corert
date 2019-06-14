@@ -9,6 +9,7 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public sealed class Condition
     {
         internal class Waiter
@@ -44,7 +45,7 @@ namespace System.Threading
             for (Waiter current = _waitersHead; current != null; current = current.next)
                 if (current == waiter)
                     return;
-            Debug.Assert(false, "Waiter is not in the waiter list");
+            Debug.Fail("Waiter is not in the waiter list");
         }
 
         private unsafe void AssertIsNotInList(Waiter waiter)
@@ -54,7 +55,7 @@ namespace System.Threading
 
             for (Waiter current = _waitersHead; current != null; current = current.next)
                 if (current == waiter)
-                    Debug.Assert(false, "Waiter is in the waiter list, but should not be");
+                    Debug.Fail("Waiter is in the waiter list, but should not be");
         }
 
         private unsafe void AddWaiter(Waiter waiter)
@@ -98,18 +99,9 @@ namespace System.Threading
             _lock = @lock;
         }
 
-        public bool Wait()
-        {
-            return Wait(Timeout.Infinite);
-        }
+        public bool Wait() => Wait(Timeout.Infinite);
 
-        public bool Wait(TimeSpan timeout)
-        {
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return Wait((int)tm);
-        }
+        public bool Wait(TimeSpan timeout) => Wait(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         public unsafe bool Wait(int millisecondsTimeout)
         {

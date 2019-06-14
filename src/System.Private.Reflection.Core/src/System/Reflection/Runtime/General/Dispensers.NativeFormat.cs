@@ -85,9 +85,9 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
 
             public override bool Equals(Object obj)
             {
-                if (!(obj is RuntimeAssemblyKey))
+                if (!(obj is RuntimeAssemblyKey other))
                     return false;
-                return Equals((RuntimeAssemblyKey)obj);
+                return Equals(other);
             }
 
 
@@ -156,14 +156,29 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
     }
 }
 
+namespace System.Reflection.Runtime.Modules.NativeFormat
+{
+    //-----------------------------------------------------------------------------------------------------------
+    // Modules (these exist only because Modules still exist in the Win8P surface area. There is a 1-1
+    //          mapping between Assemblies and Modules.)
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class NativeFormatRuntimeModule
+    {
+        internal static RuntimeModule GetRuntimeModule(NativeFormatRuntimeAssembly assembly)
+        {
+            return new NativeFormatRuntimeModule(assembly);
+        }
+    }
+}
+
 namespace System.Reflection.Runtime.ParameterInfos.NativeFormat
 {
     //-----------------------------------------------------------------------------------------------------------
     // ParameterInfos for MethodBase objects with Parameter metadata.
     //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class NativeFormatMethodParameterInfo : RuntimeMethodParameterInfo
+    internal sealed partial class NativeFormatMethodParameterInfo
     {
-        internal static NativeFormatMethodParameterInfo GetNativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QTypeDefRefOrSpec qualifiedParameterType, TypeContext typeContext)
+        internal static NativeFormatMethodParameterInfo GetNativeFormatMethodParameterInfo(MethodBase member, MethodHandle methodHandle, int position, ParameterHandle parameterHandle, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
         {
             return new NativeFormatMethodParameterInfo(member, methodHandle, position, parameterHandle, qualifiedParameterType, typeContext);
         }
@@ -179,7 +194,7 @@ namespace System.Reflection.Runtime.CustomAttributes
     //-----------------------------------------------------------------------------------------------------------
     internal abstract partial class RuntimeCustomAttributeData
     {
-        internal static IEnumerable<CustomAttributeData> GetCustomAttributes(MetadataReader reader, IEnumerable<CustomAttributeHandle> customAttributeHandles)
+        internal static IEnumerable<CustomAttributeData> GetCustomAttributes(MetadataReader reader, CustomAttributeHandleCollection customAttributeHandles)
         {
             foreach (CustomAttributeHandle customAttributeHandle in customAttributeHandles)
                 yield return GetCustomAttributeData(reader, customAttributeHandle);

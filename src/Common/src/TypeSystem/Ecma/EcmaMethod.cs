@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Threading;
 
-using Internal.TypeSystem;
-
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
+    public sealed partial class EcmaMethod : MethodDesc, EcmaModule.IEntityHandleObject
     {
         private static class MethodFlags
         {
@@ -26,6 +23,9 @@ namespace Internal.TypeSystem.Ecma
             public const int AggressiveInlining     = 0x0040;
             public const int RuntimeImplemented     = 0x0080;
             public const int InternalCall           = 0x0100;
+            public const int Synchronized           = 0x0200;
+            public const int AggressiveOptimization = 0x0400;
+            public const int NoOptimization         = 0x0800;
 
             public const int AttributeMetadataCache = 0x1000;
             public const int Intrinsic              = 0x2000;
@@ -49,7 +49,7 @@ namespace Internal.TypeSystem.Ecma
 
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
-            this.ToString();
+            InitializeName();
 #endif
         }
 
@@ -146,6 +146,15 @@ namespace Internal.TypeSystem.Ecma
                 if ((methodImplAttributes & MethodImplAttributes.NoInlining) != 0)
                     flags |= MethodFlags.NoInlining;
 
+                // System.Reflection.Primitives we build against doesn't define AggressiveOptimization
+                const MethodImplAttributes MethodImplAttributes_AggressiveOptimization = (MethodImplAttributes)0x0200;
+
+                // No optimization bit beats aggressive optimization bit (CLR compatible behavior)
+                if ((methodImplAttributes & MethodImplAttributes.NoOptimization) != 0)
+                    flags |= MethodFlags.NoOptimization;
+                else if ((methodImplAttributes & MethodImplAttributes_AggressiveOptimization) != 0)
+                    flags |= MethodFlags.AggressiveOptimization;
+
                 if ((methodImplAttributes & MethodImplAttributes.AggressiveInlining) != 0)
                     flags |= MethodFlags.AggressiveInlining;
 
@@ -154,6 +163,9 @@ namespace Internal.TypeSystem.Ecma
 
                 if ((methodImplAttributes & MethodImplAttributes.InternalCall) != 0)
                     flags |= MethodFlags.InternalCall;
+
+                if ((methodImplAttributes & MethodImplAttributes.Synchronized) != 0)
+                    flags |= MethodFlags.Synchronized;
 
                 flags |= MethodFlags.BasicMetadataCache;
             }
@@ -254,6 +266,22 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsAggressiveOptimization
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.AggressiveOptimization) & MethodFlags.AggressiveOptimization) != 0;
+            }
+        }
+
+        public override bool IsNoOptimization
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.NoOptimization) & MethodFlags.NoOptimization) != 0;
+            }
+        }
+
         public override bool IsAggressiveInlining
         {
             get
@@ -286,6 +314,14 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsSynchronized
+        {
+            get
+            {
+                return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Synchronized) & MethodFlags.Synchronized) != 0;
+            }
+        }
+
         public override bool IsNativeCallable
         {
             get
@@ -299,6 +335,27 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 return (GetMethodFlags(MethodFlags.AttributeMetadataCache | MethodFlags.RuntimeExport) & MethodFlags.RuntimeExport) != 0;
+            }
+        }
+
+        public override bool IsSpecialName
+        {
+            get
+            {
+                return (Attributes & MethodAttributes.SpecialName) != 0;
+            }
+        }
+
+        public override bool IsDefaultConstructor
+        {
+            get
+            {
+                MethodAttributes attributes = Attributes;
+                return attributes.IsRuntimeSpecialName() 
+                    && attributes.IsPublic()
+                    && Signature.Length == 0
+                    && Name == ".ctor"
+                    && !_type.IsAbstract;
             }
         }
 
@@ -371,11 +428,6 @@ namespace Internal.TypeSystem.Ecma
                 attributeNamespace, attributeName).IsNil;
         }
 
-        public override string ToString()
-        {
-            return _type.ToString() + "." + Name;
-        }
-
         public override bool IsPInvoke
         {
             get
@@ -400,8 +452,47 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert((int)MethodImportAttributes.CallingConventionStdCall == (int)PInvokeAttributes.CallingConventionStdCall);
             Debug.Assert((int)MethodImportAttributes.CharSetAuto == (int)PInvokeAttributes.CharSetAuto);
             Debug.Assert((int)MethodImportAttributes.CharSetUnicode == (int)PInvokeAttributes.CharSetUnicode);
+            Debug.Assert((int)MethodImportAttributes.SetLastError == (int)PInvokeAttributes.SetLastError);
 
             return new PInvokeMetadata(moduleName, name, (PInvokeAttributes)import.Attributes);
+        }
+
+        public override ParameterMetadata[] GetParameterMetadata()
+        {
+            MetadataReader metadataReader = MetadataReader;
+            
+            // Spot check the enums match
+            Debug.Assert((int)ParameterAttributes.In == (int)ParameterMetadataAttributes.In);
+            Debug.Assert((int)ParameterAttributes.Out == (int)ParameterMetadataAttributes.Out);
+            Debug.Assert((int)ParameterAttributes.Optional == (int)ParameterMetadataAttributes.Optional);
+            Debug.Assert((int)ParameterAttributes.HasDefault == (int)ParameterMetadataAttributes.HasDefault);
+            Debug.Assert((int)ParameterAttributes.HasFieldMarshal == (int)ParameterMetadataAttributes.HasFieldMarshal);
+
+            ParameterHandleCollection parameterHandles = metadataReader.GetMethodDefinition(_handle).GetParameters();
+            ParameterMetadata[] parameterMetadataArray = new ParameterMetadata[parameterHandles.Count];
+            int index = 0;
+            foreach (ParameterHandle parameterHandle in parameterHandles)
+            {
+                Parameter parameter = metadataReader.GetParameter(parameterHandle);
+                MarshalAsDescriptor marshalAsDescriptor = GetMarshalAsDescriptor(parameter);
+                ParameterMetadata data = new ParameterMetadata(parameter.SequenceNumber, (ParameterMetadataAttributes)parameter.Attributes, marshalAsDescriptor);
+                parameterMetadataArray[index++] = data;
+            }
+            return parameterMetadataArray;
+        }
+
+        private MarshalAsDescriptor GetMarshalAsDescriptor(Parameter parameter)
+        {
+            if ((parameter.Attributes & ParameterAttributes.HasFieldMarshal) == ParameterAttributes.HasFieldMarshal)
+            {
+                MetadataReader metadataReader = MetadataReader;
+                BlobReader marshalAsReader = metadataReader.GetBlobReader(parameter.GetMarshallingDescriptor());
+                EcmaSignatureParser parser = new EcmaSignatureParser(Module, marshalAsReader);
+                MarshalAsDescriptor marshalAs = parser.ParseMarshalAsDescriptor();
+                Debug.Assert(marshalAs != null);
+                return marshalAs;
+            }
+            return null;
         }
     }
 }

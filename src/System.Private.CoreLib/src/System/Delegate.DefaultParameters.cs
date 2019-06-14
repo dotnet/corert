@@ -52,7 +52,7 @@ namespace System
                 // Special encoding for MinInt is 0x0001 (which would normally mean -0).
                 if (curVal == 0x0001)
                 {
-                    return Int64.MinValue;
+                    return long.MinValue;
                 }
 
                 // High bit is used to indicate an extended value
@@ -248,7 +248,7 @@ namespace System
                     decimalBits[1] = dataParser.GetInt();
                     decimalBits[2] = dataParser.GetInt();
                     decimalBits[3] = dataParser.GetInt();
-                    defaultValue = new Decimal(decimalBits);
+                    defaultValue = new decimal(decimalBits);
                     return true;
                 case DefaultParamTypeDateTime:
                     defaultValue = new DateTime(dataParser.GetLong());

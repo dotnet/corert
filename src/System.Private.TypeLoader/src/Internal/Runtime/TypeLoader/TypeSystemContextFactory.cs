@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace Internal.Runtime.TypeLoader
 {
-    internal static class TypeSystemContextFactory
+    public static class TypeSystemContextFactory
     {
         // Cache the most recent instance of TypeSystemContext in a weak handle, and reuse it if possible
         // This allows us to avoid recreating the type resolution context again and again, but still allows it to go away once the types are no longer being built
@@ -21,7 +21,7 @@ namespace Internal.Runtime.TypeLoader
 
         private static Lock s_lock = new Lock();
 
-        static public TypeSystemContext Create()
+        public static TypeSystemContext Create()
         {
             using (LockHolder.Hold(s_lock))
             {
@@ -41,13 +41,16 @@ namespace Internal.Runtime.TypeLoader
             TargetArchitecture.X86,
 #elif AMD64
             TargetArchitecture.X64,
+#elif WASM
+            TargetArchitecture.Wasm32,
 #else
 #error Unknown architecture
 #endif
-            TargetOS.Windows));
+            TargetOS.Windows,
+            TargetAbi.Unknown));
         }
 
-        static public void Recycle(TypeSystemContext context)
+        public static void Recycle(TypeSystemContext context)
         {
             // Only cache a reasonably small context that is still in Gen0
             if (context.LoadFactor > 200 || GC.GetGeneration(context) > 0)

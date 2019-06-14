@@ -49,13 +49,26 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override Object RawDefaultValue
+        {
+            get
+            {
+                return null; // Legacy: This is what the desktop returns.
+            }
+        }
+
         public sealed override bool HasDefaultValue
         {
             get
             {
-                return false; // Legacy: Desktop strangely returns true but since we fixed this in Project N for other HasDefaultValues, we'll do so here as well.
+                // Compat: returning "true" makes no sense but this is how it's always been.
+                return true;
             }
         }
+
+        public sealed override Type[] GetOptionalCustomModifiers() => Array.Empty<Type>();
+
+        public sealed override Type[] GetRequiredCustomModifiers() => Array.Empty<Type>();
 
         public sealed override String Name
         {
@@ -70,6 +83,14 @@ namespace System.Reflection.Runtime.ParameterInfos
             get
             {
                 return _parameterType;
+            }
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return 0x08000000; // nil ParamDef token
             }
         }
 

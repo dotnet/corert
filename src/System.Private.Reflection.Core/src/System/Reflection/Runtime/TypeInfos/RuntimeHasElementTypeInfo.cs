@@ -18,13 +18,27 @@ namespace System.Reflection.Runtime.TypeInfos
     //
     // The runtime's implementation of TypeInfo's for the "HasElement" subclass of types. 
     //
-    internal abstract partial class RuntimeHasElementTypeInfo : RuntimeTypeInfo, IKeyedItem<RuntimeHasElementTypeInfo.UnificationKey>
+    internal abstract partial class RuntimeHasElementTypeInfo : RuntimeTypeInfo, IKeyedItem<RuntimeHasElementTypeInfo.UnificationKey>, IRuntimeMemberInfoWithNoMetadataDefinition
     {
         protected RuntimeHasElementTypeInfo(UnificationKey key)
             : base()
         {
             _key = key;
         }
+
+        public sealed override bool IsTypeDefinition => false;
+        public sealed override bool IsGenericTypeDefinition => false;
+        protected sealed override bool HasElementTypeImpl() => true;
+        protected abstract override bool IsArrayImpl();
+        public abstract override bool IsSZArray { get; }
+        public abstract override bool IsVariableBoundArray { get; }
+        protected abstract override bool IsByRefImpl();
+        protected abstract override bool IsPointerImpl();
+        public sealed override bool IsConstructedGenericType => false;
+        public sealed override bool IsGenericParameter => false;
+        public sealed override bool IsGenericTypeParameter => false;
+        public sealed override bool IsGenericMethodParameter => false;
+        public sealed override bool IsByRefLike => false;
 
         //
         // Implements IKeyedItem.PrepareKey.
@@ -62,6 +76,19 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
+        {
+            get
+            {
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_CustomAttributes(this);
+#endif
+
+                return Empty<CustomAttributeData>.Enumerable;
+            }
+        }
+
         public sealed override bool ContainsGenericParameters
         {
             get
@@ -83,6 +110,15 @@ namespace System.Reflection.Runtime.TypeInfos
                     return null;
                 return elementFullName + Suffix;
             }
+        }
+
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            // This logic is written to match CoreCLR's behavior.
+            return other is Type && other is IRuntimeMemberInfoWithNoMetadataDefinition;
         }
 
         public sealed override string Namespace
@@ -110,6 +146,14 @@ namespace System.Reflection.Runtime.TypeInfos
             return _key.ElementType.ToString() + Suffix;
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return 0x02000000; // nil TypeDef token
+            }
+        }
+
         //
         // Left unsealed because this implemention is correct for ByRefs and Pointers but not Arrays.
         //
@@ -117,11 +161,6 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             Debug.Assert(IsByRef || IsPointer);
             return TypeAttributes.AnsiClass;
-        }
-
-        protected sealed override bool HasElementTypeImpl()
-        {
-            return true;
         }
 
         protected sealed override int InternalGetHashCode()
@@ -139,7 +178,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             string elementTypeName = _key.ElementType.InternalGetNameIfAvailable(ref rootCauseForFailure);
             if (elementTypeName == null)

@@ -67,32 +67,32 @@ public:
     {
     }
 
-    virtual void __stdcall QueryInterface() { NotImplemented(); }
-    virtual void __stdcall AddRef() { NotImplemented(); }
-    virtual void __stdcall Release() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE QueryInterface() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE AddRef() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE Release() { NotImplemented(); }
 
     // JIT only ever uses IEEMemoryManager::ClrVirtualAlloc/IEEMemoryManager::ClrVirtualFree
 
-    virtual void * __stdcall ClrVirtualAlloc(void * lpAddress, size_t dwSize, uint32_t flAllocationType, uint32_t flProtect)
+    virtual void * STDMETHODCALLTYPE ClrVirtualAlloc(void * lpAddress, size_t dwSize, uint32_t flAllocationType, uint32_t flProtect)
     {
         return malloc(dwSize);
     }
 
-    virtual uint32_t __stdcall ClrVirtualFree(void * lpAddress, size_t dwSize, uint32_t dwFreeType)
+    virtual uint32_t STDMETHODCALLTYPE ClrVirtualFree(void * lpAddress, size_t dwSize, uint32_t dwFreeType)
     {
         free(lpAddress);
         return 1;
     }
 
-    virtual void __stdcall ClrVirtualQuery() { NotImplemented(); }
-    virtual void __stdcall ClrVirtualProtect() { NotImplemented(); }
-    virtual void __stdcall ClrGetProcessHeap() { NotImplemented(); }
-    virtual void __stdcall ClrHeapCreate() { NotImplemented(); }
-    virtual void __stdcall ClrHeapDestroy() { NotImplemented(); }
-    virtual void __stdcall ClrHeapAlloc() { NotImplemented(); }
-    virtual void __stdcall ClrHeapFree() { NotImplemented(); }
-    virtual void __stdcall ClrHeapValidate() { NotImplemented(); }
-    virtual void __stdcall ClrGetProcessExecutableHeap() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE ClrVirtualQuery() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE ClrVirtualProtect() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE ClrGetProcessHeap() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE ClrHeapCreate() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE ClrHeapDestroy() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE ClrHeapAlloc() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE ClrHeapFree() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE ClrHeapValidate() { NotImplemented(); }
+    virtual void STDMETHODCALLTYPE ClrGetProcessExecutableHeap() { NotImplemented(); }
 };
 
 static EEMemoryManager eeMemoryManager;

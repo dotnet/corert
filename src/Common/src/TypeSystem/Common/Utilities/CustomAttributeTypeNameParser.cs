@@ -20,8 +20,9 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Parses the string '<paramref name="name"/>' and returns the type corresponding to the parsed type name.
         /// The type name string should be in the 'SerString' format as defined by the ECMA-335 standard.
+        /// This is the inverse of what <see cref="CustomAttributeTypeNameFormatter"/> does.
         /// </summary>
-        public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name)
+        public static TypeDesc GetTypeByCustomAttributeTypeName(this ModuleDesc module, string name, bool throwIfNotFound = true, Func<string, ModuleDesc, bool, MetadataType> resolver = null)
         {
             TypeDesc loadedType;
 
@@ -71,7 +72,10 @@ namespace Internal.TypeSystem
             {
                 homeModule = module.Context.ResolveAssembly(homeAssembly);
             }
-            MetadataType typeDef = ResolveCustomAttributeTypeNameToTypeDesc(genericTypeDefName.ToString(), homeModule);
+            MetadataType typeDef = resolver != null ? resolver(genericTypeDefName.ToString(), homeModule, throwIfNotFound) :
+                ResolveCustomAttributeTypeDefinitionName(genericTypeDefName.ToString(), homeModule, throwIfNotFound);
+            if (typeDef == null)
+                return null;
 
             ArrayBuilder<TypeDesc> genericArgs = new ArrayBuilder<TypeDesc>();
 
@@ -101,7 +105,9 @@ namespace Internal.TypeSystem
                         ch += argLen;
                     }
 
-                    TypeDesc argType = module.GetTypeByCustomAttributeTypeName(typeArgName);
+                    TypeDesc argType = module.GetTypeByCustomAttributeTypeName(typeArgName, throwIfNotFound, resolver);
+                    if (argType == null)
+                        return null;
                     genericArgs.Add(argType);
                 }
 
@@ -185,7 +191,7 @@ namespace Internal.TypeSystem
         }
 
 
-        private static MetadataType ResolveCustomAttributeTypeNameToTypeDesc(string name, ModuleDesc module)
+        public static MetadataType ResolveCustomAttributeTypeDefinitionName(string name, ModuleDesc module, bool throwIfNotFound)
         {
             MetadataType containingType = null;
             StringBuilder typeName = new StringBuilder(name.Length);
@@ -219,11 +225,21 @@ namespace Internal.TypeSystem
                 {
                     if (containingType != null)
                     {
-                        containingType = containingType.GetNestedType(typeName.ToString());
+                        MetadataType outerType = containingType;
+                        containingType = outerType.GetNestedType(typeName.ToString());
+                        if (containingType == null)
+                        {
+                            if (throwIfNotFound)
+                                ThrowHelper.ThrowTypeLoadException(typeName.ToString(), outerType.Module);
+                            
+                            return null;
+                        }
                     }
                     else
                     {
-                        containingType = module.GetType(typeName.ToString());
+                        containingType = module.GetType(typeName.ToString(), throwIfNotFound);
+                        if (containingType == null)
+                            return null;
                     }
                     typeName.Length = 0;
                     continue;
@@ -234,13 +250,17 @@ namespace Internal.TypeSystem
 
             if (containingType != null)
             {
-                return containingType.GetNestedType(typeName.ToString());
+                MetadataType type = containingType.GetNestedType(typeName.ToString());
+                if ((type == null) && throwIfNotFound)
+                    ThrowHelper.ThrowTypeLoadException(typeName.ToString(), containingType.Module);
+
+                return type;
             }
 
-            return module.GetType(typeName.ToString());
+            return module.GetType(typeName.ToString(), throwIfNotFound);
         }
 
-        private static MetadataType GetType(this ModuleDesc module, string fullName)
+        private static MetadataType GetType(this ModuleDesc module, string fullName, bool throwIfNotFound = true)
         {
             string namespaceName;
             string typeName;
@@ -255,7 +275,7 @@ namespace Internal.TypeSystem
                 namespaceName = fullName.Substring(0, split);
                 typeName = fullName.Substring(split + 1);
             }
-            return module.GetType(namespaceName, typeName);
+            return module.GetType(namespaceName, typeName, throwIfNotFound);
         }
 
         private static AssemblyName FindAssemblyIfNamePresent(string name)

@@ -11,7 +11,7 @@ namespace Internal.TypeSystem.Ecma
     partial class EcmaAssembly
     {
         internal EcmaAssembly(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, PdbSymbolReader pdbReader)
-            : base(context, peReader, metadataReader, pdbReader)
+            : base(context, peReader, metadataReader, containingAssembly: null, pdbReader)
         {
             _assemblyDefinition = metadataReader.GetAssemblyDefinition();
         }

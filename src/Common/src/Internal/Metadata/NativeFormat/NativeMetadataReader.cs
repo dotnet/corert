@@ -144,10 +144,12 @@ namespace Internal.Metadata.NativeFormat
 
         internal int _value;
 
+#if DEBUG
         public override string ToString()
         {
             return String.Format("{1} : {0,8:X8}", _value, Enum.GetName(typeof(HandleType), this.HandleType));
         }
+#endif
     }
 
     public static class NativeFormatReaderExtensions
@@ -196,7 +198,7 @@ namespace Internal.Metadata.NativeFormat
         /// Used as the root entrypoint for metadata, this is where all top-down
         /// structural walks of metadata must start.
         /// </summary>
-        public IEnumerable<ScopeDefinitionHandle> ScopeDefinitions
+        public ScopeDefinitionHandleCollection ScopeDefinitions
         {
             get
             {

@@ -5,6 +5,7 @@
 
 using System;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 
 namespace Internal.TypeSystem

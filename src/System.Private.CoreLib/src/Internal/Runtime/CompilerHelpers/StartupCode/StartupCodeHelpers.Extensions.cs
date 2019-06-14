@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
 
 using Internal.Runtime.Augments;
 
@@ -11,7 +10,7 @@ using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
 {
-    partial class StartupCodeHelpers
+    public partial class StartupCodeHelpers
     {
         internal static unsafe void InitializeCommandLineArgsW(int argc, char** argv)
         {
@@ -20,25 +19,23 @@ namespace Internal.Runtime.CompilerHelpers
             {
                 args[i] = new string(argv[i]);
             }
-            EnvironmentAugments.SetCommandLineArgs(args);
+            Environment.SetCommandLineArgs(args);
         }
 
-        internal static unsafe void InitializeCommandLineArgs(int argc, byte** argv)
+        internal static unsafe void InitializeCommandLineArgs(int argc, sbyte** argv)
         {
             string[] args = new string[argc];
             for (int i = 0; i < argc; ++i)
             {
-                byte* argval = argv[i];
-                int len = CStrLen(argval);
-                args[i] = Encoding.UTF8.GetString(argval, len);
+                args[i] = new string(argv[i]);
             }
-            EnvironmentAugments.SetCommandLineArgs(args);
+            Environment.SetCommandLineArgs(args);
         }
 
         private static string[] GetMainMethodArguments()
         {
             // GetCommandLineArgs includes the executable name, Main() arguments do not.
-            string[] args = EnvironmentAugments.GetCommandLineArgs();
+            string[] args = Environment.GetCommandLineArgs();
 
             Debug.Assert(args.Length > 0);
 
@@ -46,6 +43,19 @@ namespace Internal.Runtime.CompilerHelpers
             Array.Copy(args, 1, mainArgs, 0, mainArgs.Length);
 
             return mainArgs;
+        }
+
+        private static void SetLatchedExitCode(int exitCode)
+        {
+            Environment.ExitCode = exitCode;
+        }
+
+        // Shuts down the class library and returns the process exit code.
+        private static int Shutdown()
+        {
+            Environment.ShutdownCore();
+
+            return Environment.ExitCode;
         }
     }
 }

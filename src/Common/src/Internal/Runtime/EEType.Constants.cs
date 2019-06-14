@@ -43,9 +43,9 @@ namespace Internal.Runtime
         HasPointersFlag = 0x0020,
 
         /// <summary>
-        /// This type instance was allocated at runtime (rather than being embedded in a module image).
+        /// Type implements ICastable to allow dynamic resolution of interface casts.
         /// </summary>
-        RuntimeAllocatedFlag = 0x0040,
+        ICastableFlag = 0x0040,
 
         /// <summary>
         /// This type is generic and one or more of its type parameters is co- or contra-variant. This
@@ -93,7 +93,7 @@ namespace Internal.Runtime
         ClonedEEType = 0x0001,
 
         /// <summary>
-        /// Represents a paramaterized type. For example a single dimensional array or pointer type
+        /// Represents a parameterized type. For example a single dimensional array or pointer type
         /// </summary>
         ParameterizedEEType = 0x0002,
 
@@ -118,7 +118,7 @@ namespace Internal.Runtime
         /// <summary>
         /// Type implements ICastable to allow dynamic resolution of interface casts.
         /// </summary>
-        ICastableFlag = 0x00000002,
+        UNUSED1 = 0x00000002,
 
         /// <summary>
         /// Type is an instantiation of Nullable<T>.
@@ -141,11 +141,9 @@ namespace Internal.Runtime
         HasCctorFlag = 0x0000020,
 
         /// <summary>
-        /// This EEType has sealed vtable entries (note that this flag is only used for
-        /// dynamically created types because they always have an optional field (hence the
-        /// very explicit flag name).
+        /// Old unused flag
         /// </summary>
-        IsDynamicTypeWithSealedVTableEntriesFlag = 0x00000040,
+        UNUSED2 = 0x00000040,
 
         /// <summary>
         /// This EEType was constructed from a universal canonical template, and has
@@ -160,8 +158,6 @@ namespace Internal.Runtime
 
         /// <summary>
         /// This EEType has sealed vtable entries
-        /// This is for statically generated types - we need two different flags because
-        /// the sealed vtable entries are reached in different ways in the static and dynamic case
         /// </summary>
         HasSealedVTableEntriesFlag = 0x00000200,
 
@@ -179,13 +175,23 @@ namespace Internal.Runtime
         /// This dynamically created types has thread statics
         /// </summary>
         IsDynamicTypeWithThreadStatics = 0x00001000,
-        
+
         /// <summary>
         /// This EEType contains a pointer to dynamic module information
         /// </summary>
         HasDynamicModuleFlag = 0x00002000,
+
+        /// <summary>
+        /// This EEType is an abstract class (but not an interface).
+        /// </summary>
+        IsAbstractClassFlag = 0x00004000,
+
+        /// <summary>
+        /// This EEType is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)
+        /// </summary>
+        IsByRefLikeFlag = 0x00008000,
     }
-    
+
     internal enum EETypeField
     {
         ETF_InterfaceMap,
@@ -198,6 +204,9 @@ namespace Internal.Runtime
         ETF_DynamicModule,
         ETF_GenericDefinition,
         ETF_GenericComposition,
+        ETF_DynamicGcStatics,
+        ETF_DynamicNonGcStatics,
+        ETF_DynamicThreadStaticOffset,
     }
 
     internal enum CorElementType
@@ -287,5 +296,10 @@ namespace Internal.Runtime
         // size for an actual array.
         public const int Pointer = 0;
         public const int ByRef = 1;
+    }
+
+    internal static class StringComponentSize
+    {
+        public const int Value = sizeof(char);
     }
 }

@@ -6,8 +6,6 @@
 #ifndef GCIMPL_H_
 #define GCIMPL_H_
 
-#define CLREvent CLREventStatic
-
 #ifdef SERVER_GC
 #define MULTIPLE_HEAPS 1
 #endif  // SERVER_GC
@@ -38,6 +36,11 @@ void GCProfileWalkHeap();
 
 class gc_heap;
 class CFinalize;
+
+extern bool g_fFinalizerRunOnShutDown;
+extern bool g_built_with_svr_gc;
+extern uint8_t g_build_variant;
+extern VOLATILE(int32_t) g_no_gc_lock;
 
 class GCHeap : public IGCHeapInternal
 {
@@ -73,26 +76,33 @@ public:
     // Gets the amount of bytes objects currently occupy on the GC heap.
     size_t  GetCurrentObjSize();
 
+    uint64_t GetTotalAllocatedBytes();
+
     size_t  GetLastGCStartTime(int generation);
     size_t  GetLastGCDuration(int generation);
     size_t  GetNow();
 
-    void  TraceGCSegments ();    
+    void  DiagTraceGCSegments ();    
     void PublishObject(uint8_t* obj);
     
-    BOOL    IsGCInProgressHelper (BOOL bConsiderGCStart = FALSE);
+    bool IsGCInProgressHelper (bool bConsiderGCStart = false);
 
-    uint32_t    WaitUntilGCComplete (BOOL bConsiderGCStart = FALSE);
+    uint32_t    WaitUntilGCComplete (bool bConsiderGCStart = false);
 
-    void     SetGCInProgress(BOOL fInProgress);
+    void     SetGCInProgress(bool fInProgress);
 
-    CLREvent * GetWaitForGCEvent();
+    bool RuntimeStructuresValid();
+
+    void SetSuspensionPending(bool fSuspensionPending);
+    
+    void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor);
+
+    void SetWaitForGCEvent();
+    void ResetWaitForGCEvent();
 
     HRESULT Initialize ();
 
     //flags can be GC_ALLOC_CONTAINS_REF GC_ALLOC_FINALIZE
-    Object*  Alloc (size_t size, uint32_t flags);
-    Object*  AllocAlign8 (size_t size, uint32_t flags);
     Object*  AllocAlign8 (gc_alloc_context* acontext, size_t size, uint32_t flags);
 private:
     Object*  AllocAlign8Common (void* hp, alloc_context* acontext, size_t size, uint32_t flags);
@@ -100,10 +110,9 @@ public:
     Object*  AllocLHeap (size_t size, uint32_t flags);
     Object* Alloc (gc_alloc_context* acontext, size_t size, uint32_t flags);
 
-    void FixAllocContext (gc_alloc_context* acontext,
-                                            BOOL lockp, void* arg, void *heap);
+    void FixAllocContext (gc_alloc_context* acontext, void* arg, void *heap);
 
-    Object* GetContainingObject(void *pInteriorPtr);
+    Object* GetContainingObject(void *pInteriorPtr, bool fCollectedGenOnly);
 
 #ifdef MULTIPLE_HEAPS
     static void AssignHeap (alloc_context* acontext);
@@ -116,15 +125,15 @@ public:
     void HideAllocContext(alloc_context*);
     void RevealAllocContext(alloc_context*);
 
-    BOOL IsObjectInFixedHeap(Object *pObj);
+    bool IsObjectInFixedHeap(Object *pObj);
 
-    HRESULT GarbageCollect (int generation = -1, BOOL low_memory_p=FALSE, int mode=collection_blocking);
+    HRESULT GarbageCollect (int generation = -1, bool low_memory_p=false, int mode=collection_blocking);
 
     ////
     // GC callback functions
     // Check if an argument is promoted (ONLY CALL DURING
     // THE PROMOTIONSGRANTED CALLBACK.)
-    BOOL    IsPromoted (Object *object);
+    bool IsPromoted (Object *object);
 
     size_t GetPromotedBytes (int heap_index);
     
@@ -152,8 +161,8 @@ public:
     //returns the generation number of an object (not valid during relocation)
     unsigned WhichGeneration (Object* object);
     // returns TRUE is the object is ephemeral 
-    BOOL    IsEphemeral (Object* object);
-    BOOL    IsHeapPointer (void* object, BOOL small_heap_only = FALSE);
+    bool IsEphemeral (Object* object);
+    bool IsHeapPointer (void* object, bool small_heap_only = false);
     
     void    ValidateObjectMember (Object *obj);
 
@@ -162,19 +171,25 @@ public:
 
     unsigned GetCondemnedGeneration();
 
+    void GetMemoryInfo(uint32_t* highMemLoadThreshold, 
+                       uint64_t* totalPhysicalMem, 
+                       uint32_t* lastRecordedMemLoad,
+                       size_t* lastRecordedHeapSize,
+                       size_t* lastRecordedFragmentation);
+
     int GetGcLatencyMode();
     int SetGcLatencyMode(int newLatencyMode);
 
     int GetLOHCompactionMode();
     void SetLOHCompactionMode(int newLOHCompactionyMode);
 
-    BOOL RegisterForFullGCNotification(uint32_t gen2Percentage,
+    bool RegisterForFullGCNotification(uint32_t gen2Percentage,
                                        uint32_t lohPercentage);
-    BOOL CancelFullGCNotification();
+    bool CancelFullGCNotification();
     int WaitForFullGCApproach(int millisecondsTimeout);
     int WaitForFullGCComplete(int millisecondsTimeout);
 
-    int StartNoGCRegion(uint64_t totalSize, BOOL lohSizeKnown, uint64_t lohSize, BOOL disallowFullBlockingGC);
+    int StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohSize, bool disallowFullBlockingGC);
     int EndNoGCRegion();
  
     unsigned GetGcCount();
@@ -184,9 +199,7 @@ public:
 
     PER_HEAP_ISOLATED HRESULT GetGcCounters(int gen, gc_counters* counters);
 
-    size_t GetValidSegmentSize(BOOL large_seg = FALSE);
-
-    static size_t GetValidGen0MaxSize(size_t seg_size);
+    size_t GetValidSegmentSize(bool large_seg = false);
 
     void SetReservedVMLimit (size_t vmlimit);
 
@@ -194,12 +207,12 @@ public:
     PER_HEAP_ISOLATED size_t GetNumberFinalizableObjects();
     PER_HEAP_ISOLATED size_t GetFinalizablePromotedCount();
 
-    void SetFinalizeQueueForShutdown(BOOL fHasLock);
-    BOOL FinalizeAppDomain(AppDomain *pDomain, BOOL fRunFinalizers);
-    BOOL ShouldRestartFinalizerWatchDog();
+    void SetFinalizeQueueForShutdown(bool fHasLock);
+    bool ShouldRestartFinalizerWatchDog();
 
-    void SetCardsAfterBulkCopy( Object**, size_t);
-    void WalkObject (Object* obj, walk_fn fn, void* context);
+    void DiagWalkObject (Object* obj, walk_fn fn, void* context);
+    void DiagWalkObject2 (Object* obj, walk_fn2 fn, void* context);
+    void SetFinalizeRunOnShutdown(bool value);
 
 public:	// FIX 
 
@@ -225,19 +238,24 @@ public:	// FIX
     // frozen segment management functions
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo);
     virtual void UnregisterFrozenSegment(segment_handle seg);
+    virtual bool IsInFrozenSegment(Object *object);
+
+    // Event control functions
+    void ControlEvents(GCEventKeyword keyword, GCEventLevel level);
+    void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level);
 
     void    WaitUntilConcurrentGCComplete ();                               // Use in managd threads
 #ifndef DACCESS_COMPILE    
     HRESULT WaitUntilConcurrentGCCompleteAsync(int millisecondsTimeout);    // Use in native threads. TRUE if succeed. FALSE if failed or timeout
 #endif    
-    BOOL    IsConcurrentGCInProgress();
+    bool IsConcurrentGCInProgress();
 
     // Enable/disable concurrent GC    
     void TemporaryEnableConcurrentGC();
     void TemporaryDisableConcurrentGC();
-    BOOL IsConcurrentGCEnabled();    
+    bool IsConcurrentGCEnabled();
 
-    PER_HEAP_ISOLATED   CLREvent *WaitForGCEvent;     // used for syncing w/GC
+    PER_HEAP_ISOLATED   GCEvent *WaitForGCEvent;     // used for syncing w/GC
 
     PER_HEAP_ISOLATED    CFinalize* m_Finalize;
 
@@ -250,11 +268,11 @@ private:
         // to threads returning to cooperative mode is down after gc.
         // In other words, if the sequence in GCHeap::RestartEE changes,
         // the condition here may have to change as well.
-        return g_TrapReturningThreads == 0;
+        return g_fSuspensionPending == 0;
     }
 public:
     //return TRUE if GC actually happens, otherwise FALSE
-    BOOL    StressHeap(gc_alloc_context * acontext = 0);
+    bool StressHeap(gc_alloc_context * acontext);
 
 #ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
 #ifdef STRESS_HEAP 
@@ -272,13 +290,26 @@ protected:
 #endif  // STRESS_HEAP 
 #endif // FEATURE_REDHAWK
 
-    virtual void DescrGenerationsToProfiler (gen_walk_fn fn, void *context);
+    virtual void DiagDescrGenerations (gen_walk_fn fn, void *context);
+
+    virtual void DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type);
+
+    virtual void DiagWalkFinalizeQueue (void* gc_context, fq_walk_fn fn);
+
+    virtual void DiagScanFinalizeQueue (fq_scan_fn fn, ScanContext* context);
+
+    virtual void DiagScanHandles (handle_scan_fn fn, int gen_number, ScanContext* context);
+
+    virtual void DiagScanDependentHandles (handle_scan_fn fn, int gen_number, ScanContext* context);
+
+    virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p);
 
 public:
     Object * NextObj (Object * object);
-#if defined (FEATURE_BASICFREEZE) && defined (VERIFY_HEAP)
-    BOOL IsInFrozenSegment (Object * object);
-#endif // defined (FEATURE_BASICFREEZE) && defined (VERIFY_HEAP)
+
+    int GetLastGCPercentTimeInGC();
+
+    size_t GetLastGCGenerationSize(int gen);
 };
 
 #endif  // GCIMPL_H_

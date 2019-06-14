@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -13,25 +14,35 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents the thread static region of a given type. This is very similar to <see cref="GCStaticsNode"/>,
     /// since the actual storage will be allocated on the GC heap at runtime and is allowed to contain GC pointers.
     /// </summary>
-    public class ThreadStaticsNode : EmbeddedObjectNode, ISymbolNode
+    public class ThreadStaticsNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private MetadataType _type;
 
         public ThreadStaticsNode(MetadataType type, NodeFactory factory)
         {
+            Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT || factory.Target.Abi == TargetAbi.CppCodegen);
             _type = type;
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         protected override void OnMarked(NodeFactory factory)
         {
             factory.ThreadStaticsRegion.AddEmbeddedObject(this);
         }
 
+        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
+        {
+            return nameMangler.NodeMangler.ThreadStatics(type);
+        }
+
+        int ISymbolNode.Offset => 0;
+
+        int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
+ 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__ThreadStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName(_type));
+            sb.Append(GetMangledName(_type, nameMangler));
         }
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
@@ -42,17 +53,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            DependencyListEntry[] result;
+            DependencyList result = new DependencyList();
+
+            result.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic EEType"));
+
             if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
             {
-                result = new DependencyListEntry[3];
-                result[2] = new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
+                result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
             }
-            else
-                result = new DependencyListEntry[2];
 
-            result[0] = new DependencyListEntry(factory.ThreadStaticsRegion, "ThreadStatics Region");
-            result[1] = new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic EEType");
+            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref result);
             return result;
         }
 
@@ -60,11 +70,17 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
-            builder.RequirePointerAlignment();
-
             // At runtime, an instance of the GCStaticEEType will be created and a GCHandle to it
             // will be written in this location.
+            builder.RequireInitialPointerAlignment();
             builder.EmitPointerReloc(GetGCStaticEETypeNode(factory));
+        }
+
+        public override int ClassCode => 2091208431;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((ThreadStaticsNode)other)._type);
         }
     }
 }

@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ILCompiler</RootNamespace>
+    <AssemblyName>ILCompiler.WebAssembly</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>netstandard1.3</TargetFramework>
+    <NoWarn>8002</NoWarn>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools</OutputPath>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="LLVMSharp">
+      <Version>5.0.0</Version>
+    </PackageReference>  
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs">
+      <Link>IL\ILImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\StackValueKind.cs">
+      <Link>IL\StackValueKind.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
+      <Link>Common\FormattingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
+    <Compile Include="CodeGen\DebugMetadata.cs" />
+    <Compile Include="CodeGen\ILToWebAssemblyImporter_Statics.cs" />
+    <Compile Include="CodeGen\LLVMMisc.cs" />
+    <Compile Include="CodeGen\LLVMPInvokes.cs" />
+    <Compile Include="CodeGen\WebAssemblyObjectWriter.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\RawMainMethodRootProvider.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WebAssemblyCodegenNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WebAssemblyMethodCodeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WebAssemblyVTableSlotNode.cs" />
+    <Compile Include="Compiler\WebAssemblyNodeMangler.cs" />
+    <Compile Include="Compiler\WebAssemblyCodegenCompilation.cs" />
+    <Compile Include="Compiler\WebAssemblyCodegenCompilationBuilder.cs" />
+    <Compile Include="CodeGen\EvaluationStack.cs" />
+    <Compile Include="CodeGen\NodeDataSection.cs" />
+    <Compile Include="CodeGen\ILToWebAssemblyImporter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\..\packages\llvmsharp\5.0.0\lib\netstandard1.1\LLVMSharp.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\packages\libllvm\6.0.0-beta1\runtimes\osx\native\libLLVM.dylib" Condition="'$(NuPkgRid)' == 'osx-x64'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\packages\libllvm\6.0.0-beta1\runtimes\linux-x64\native\libLLVM.so" Condition="'$(NuPkgRid)' == 'linux-x64'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\packages\libllvm\6.0.0-beta1\runtimes\win-x64\native\libLLVM.dll" Condition="'$(NuPkgRid)' == 'win-x64' or '$(NuPkgRid)' == ''">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
+</Project>

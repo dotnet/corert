@@ -1,38 +1,27 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{FBA029C3-B184-4457-AEEC-38D0C2523067}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>
-    </RootNamespace>
     <AssemblyName>repro</AssemblyName>
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <FileAlignment>512</FileAlignment>
-    <CLSCompliant>false</CLSCompliant>
-    <ExcludeResourcesImport>true</ExcludeResourcesImport>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <OutputPath>bin\Debug</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
+    <SkipSigning>true</SkipSigning>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <CopyNuGetImplementations>false</CopyNuGetImplementations>
+    
+    <!-- Supress warnings that often happen in repro code -->
+    <NoWarn>169;414</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <PackageReference Include="Microsoft.NETCore.App">
+      <Version>$(MicrosoftNETCoreAppPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
+      <Version>4.5.1</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="project.json" />
+    <Compile Include="Program.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Import Project="$(MSBuildThisFileDirectory)\..\..\BuildIntegration\Microsoft.NETCore.Native.targets" />

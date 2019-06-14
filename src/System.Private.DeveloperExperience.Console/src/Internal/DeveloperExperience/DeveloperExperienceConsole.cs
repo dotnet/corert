@@ -4,6 +4,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection;
+
 using Internal.StackTraceGenerator;
 
 namespace Internal.DeveloperExperience
@@ -28,6 +30,11 @@ namespace Internal.DeveloperExperience
             Internal.StackTraceGenerator.StackTraceGenerator.TryGetSourceLineInfo(ip, out fileName, out lineNumber, out columnNumber);
             // we take whatever data StackTraceGenerator can get (none/partial/all). No reason to fall-back because the base-type
             // never finds anything.
+        }
+
+        public sealed override void TryGetILOffsetWithinMethod(IntPtr ip, out int ilOffset)
+        {
+            Internal.StackTraceGenerator.StackTraceGenerator.TryGetILOffsetWithinMethod(ip, out ilOffset);
         }
     }
 }

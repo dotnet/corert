@@ -1,0 +1,77 @@
+<Project DefaultTargets="LinkNative">
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+    <Import Project="$(TestRootDir)\dependencies.props" />
+
+    <!-- Override Default MSBuild properties-->
+    <PropertyGroup>
+        <TargetName>$(ExecutableName)</TargetName>
+        <TargetExt>.exe</TargetExt>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <ToolsDir>$(FrameworkLibPath)\..\tools\</ToolsDir>
+        <TargetFramework>netcoreapp2.1</TargetFramework>
+        <!-- Don't warn if some dependencies were rolled forward -->
+        <NoWarn>$(NoWarn);NU1603</NoWarn>
+
+        <!-- Generating complete type metadata makes us hit various light up paths that then don't work -->
+        <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <RdXmlFile Include="default.rd.xml" />
+        <AppContextSwitchOverrides Include="Switch.System.Enum.RelaxedGetValues" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="xunit.abstractions">
+            <Version>$(XunitAbstractionsVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="xunit.assert">
+            <Version>$(XunitPackageVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="xunit.extensibility.core">
+            <Version>$(XunitPackageVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="xunit.core">
+            <Version>$(XunitPackageVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="xunit.runner.utility">
+            <Version>$(XunitRunnerUtilityVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="xunit.extensibility.execution">
+            <Version>$(XunitPackageVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="microsoft.xunit.netcore.extensions">
+            <Version>$(XunitNetcoreExtensionsVersion)</Version>
+        </PackageReference>
+        <PackageReference Include="CoreFx.Private.TestUtilities">
+            <Version>$(CoreFxTestUtilitiesVersion)</Version>
+        </PackageReference>
+    </ItemGroup>
+    <ItemGroup>
+        <!-- Some tests consist of multiple assemblies - make sure ILC sees them -->
+        <IlcCompileInput Include="$(MSBuildProjectDirectory)\*.dll" />
+    </ItemGroup>
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+    <!-- Set OutputPath after the SDK targets have been imported-->
+    <PropertyGroup>
+        <OutputPath>$(MSBuildProjectDirectory)\</OutputPath>
+        <IntermediateOutputPath>$(MSBuildProjectDirectory)\</IntermediateOutputPath>
+    </PropertyGroup>
+    
+    <!-- Switch RuntimeIdentifier according to currently running OSGroup -->
+    <PropertyGroup>
+        <RuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT'">win-x64</RuntimeIdentifier>
+        <RuntimeIdentifier Condition="'$(OSGroup)' == 'Linux'">linux-x64</RuntimeIdentifier>
+        <RuntimeIdentifier Condition="'$(OSGroup)' == 'OSX'">osx-x64</RuntimeIdentifier>
+    </PropertyGroup>
+
+    <!-- Import CoreRT build targets -->
+    <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
+    
+    <!-- Since tests are already compiled, override Compile target to prevent CSC running -->
+    <Target Name="Compile" />
+</Project>

@@ -35,23 +35,6 @@ void InitializeEventTracing();
 // The flags must match those in the ETW manifest exactly
 // !!!!!!! NOTE !!!!!!!!
 
-enum EtwGCRootFlags
-{
-    kEtwGCRootFlagsPinning =            0x1,
-    kEtwGCRootFlagsWeakRef =            0x2,
-    kEtwGCRootFlagsInterior =           0x4,
-    kEtwGCRootFlagsRefCounted =         0x8,
-};
-
-enum EtwGCRootKind
-{
-    kEtwGCRootKindStack =               0,
-    kEtwGCRootKindFinalizer =           1,
-    kEtwGCRootKindHandle =              2,
-    kEtwGCRootKindOther =               3,
-    kEtwGCRootStatic =                  4,
-};
-
 enum EtwTypeFlags
 {
     kEtwTypeFlagsDelegate =                         0x1,

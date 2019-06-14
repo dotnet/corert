@@ -21,7 +21,7 @@ namespace Internal.Reflection
     [AttributeUsage(AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Delegate, Inherited = false)]
     public sealed class ExplicitScopeAttribute : Attribute
     {
-        public ExplicitScopeAttribute(String assemblyIdentity)
+        public ExplicitScopeAttribute(string assemblyIdentity)
         {
         }
     }

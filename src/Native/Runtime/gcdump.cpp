@@ -42,7 +42,21 @@ GCDump::GCDump()
 
 static const char * const calleeSaveRegMaskBitNumberToName[] = 
 {
-#ifdef _ARM_
+#if defined(_TARGET_X86_)
+    "EBX",
+    "ESI",
+    "EDI",
+    "EBP",
+#elif defined(_TARGET_AMD64_)
+    "RBX",
+    "RSI",
+    "RDI",
+    "RBP",
+    "R12",
+    "R13",
+    "R14",
+    "R15"
+#elif defined(_TARGET_ARM_)
     "R4",
     "R5",
     "R6",
@@ -52,17 +66,71 @@ static const char * const calleeSaveRegMaskBitNumberToName[] =
     "R10",
     "R11",
     "LR",
-#else // _ARM_
-    "EBX",
-    "ESI",
-    "EDI",
-    "EBP",
-    "R12",
-    "R13",
-    "R14",
-    "R15"
-#endif // _ARM_
+#elif defined(_TARGET_ARM64_)
+    "LR",
+    "X19",
+    "X20",
+    "X21",
+    "X22",
+    "X23",
+    "X24",
+    "X25",
+    "X26",
+    "X27",
+    "X28",
+    "FP",
+#else
+#error unknown architecture
+#endif
 };
+
+char const * GetReturnKindString(GCInfoHeader::MethodReturnKind returnKind)
+{
+    switch (returnKind)
+    {
+    case GCInfoHeader::MRK_ReturnsScalar:   return "scalar";
+    case GCInfoHeader::MRK_ReturnsObject:   return "object";
+    case GCInfoHeader::MRK_ReturnsByref:    return "byref";
+    case GCInfoHeader::MRK_ReturnsToNative: return "native";
+#if defined(_TARGET_ARM64_)
+    case GCInfoHeader::MRK_Scalar_Obj:      return "{scalar, object}";
+    case GCInfoHeader::MRK_Obj_Obj:         return "{object, object}";
+    case GCInfoHeader::MRK_Byref_Obj:       return "{byref, object}";
+    case GCInfoHeader::MRK_Scalar_Byref:    return "{scalar, byref}";
+    case GCInfoHeader::MRK_Obj_Byref:       return "{object, byref}";
+    case GCInfoHeader::MRK_Byref_Byref:     return "{byref, byref}";
+#endif // defined(_TARGET_ARM64_)
+    default:                                return "???";
+    }
+}
+
+char const * GetFramePointerRegister()
+{
+#if defined(_TARGET_X86_)
+    return "EBP";
+#elif defined(_TARGET_AMD64_)
+    return "RBP";
+#elif defined(_TARGET_ARM_)
+    return "R7";
+#elif defined(_TARGET_ARM64_)
+    return "FP";
+#else
+#error unknown architecture
+#endif
+}
+
+char const * GetStackPointerRegister()
+{
+#if defined(_TARGET_X86_)
+    return "ESP";
+#elif defined(_TARGET_AMD64_)
+    return "RSP";
+#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+    return "SP";
+#else
+#error unknown architecture
+#endif
+}
 
 size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
                                           Tables *       pTables,
@@ -105,23 +173,8 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
         gcPrintf("   epilogSize:     %d\n", pHeader->GetFixedEpilogSize());
 
     gcPrintf("   epilogCount:    %d %s\n", epilogCount, epilogAtEnd ? "[end]" : "");
-    const char * returnKind = "????";
-    unsigned reversePinvokeFrameOffset = 0;     // it can't be 0 because [ebp+0] is the previous ebp
-    switch (pHeader->GetReturnKind())
-    {
-        case GCInfoHeader::MRK_ReturnsScalar:   returnKind = "scalar";    break;
-        case GCInfoHeader::MRK_ReturnsObject:   returnKind = "object";    break;
-        case GCInfoHeader::MRK_ReturnsByref:    returnKind = "byref";     break;
-        case GCInfoHeader::MRK_ReturnsToNative: 
-            returnKind = "to native"; 
-            reversePinvokeFrameOffset = pHeader->GetReversePinvokeFrameOffset();
-            break;
-        case GCInfoHeader::MRK_Unknown:
-            //ASSERT("Unexpected return kind")
-            break;
-    }
-    gcPrintf("   returnKind:     %s\n", returnKind);
-    gcPrintf("   frameKind:      %s", pHeader->HasFramePointer() ? "EBP" : "ESP");
+    gcPrintf("   returnKind:     %s\n", GetReturnKindString(pHeader->GetReturnKind()));
+    gcPrintf("   frameKind:      %s", pHeader->HasFramePointer() ? GetFramePointerRegister() : GetStackPointerRegister());
 #ifdef _TARGET_AMD64_
     if (pHeader->HasFramePointer())
         gcPrintf(" offset: %d", pHeader->GetFramePointerOffset());
@@ -162,13 +215,13 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
     }
 #endif
 
-    if (reversePinvokeFrameOffset != 0)
+    if (pHeader->ReturnsToNative())
     {
-        gcPrintf("   reversePinvokeFrameOffset: 0x%02x\n", reversePinvokeFrameOffset);
+        gcPrintf("   reversePinvokeFrameOffset: 0x%02x\n", pHeader->GetReversePinvokeFrameOffset());
     }
 
 
-    if (!epilogAtEnd || (epilogCount > 2))
+    if (!epilogAtEnd && !pHeader->IsFunclet())
     {
         gcPrintf("   epilog offsets: ");
         unsigned previousOffset = 0;
@@ -186,31 +239,92 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
     return gcInfo - gcInfoStart;
 }
 
+// TODO: Can we unify this code with ReportLocalSlot in RHCodeMan.cpp?
 void GCDump::PrintLocalSlot(UInt32 slotNum, GCInfoHeader const * pHeader)
 {
-    // @TODO: print both EBP/ESP offsets where appropriate
-#ifdef _TARGET_ARM_
-    gcPrintf("local slot 0n%d, [R7+%02X] \n", slotNum, 
-                ((GCInfoHeader*)pHeader)->GetFrameSize() - ((slotNum + 1) * POINTER_SIZE));
-#else
-    const char* regAndSign = "EBP-";
-    size_t offset = pHeader->GetPreservedRegsSaveSize() + (slotNum * POINTER_SIZE);
-# ifdef _TARGET_AMD64_
-    if (((GCInfoHeader*)pHeader)->GetFramePointerOffset() == 0)
+    char const * baseReg;
+    Int32 offset;
+
+    if (pHeader->HasFramePointer())
     {
-        regAndSign = "RBP-";
+        baseReg = GetFramePointerRegister();
+#ifdef _TARGET_ARM_
+        offset = pHeader->GetFrameSize() - ((slotNum + 1) * POINTER_SIZE);
+#elif defined(_TARGET_ARM64_)
+        if (pHeader->AreFPLROnTop())
+        {
+            offset = -(Int32)((slotNum + 1) * POINTER_SIZE);
+        }
+        else
+        {
+            offset = (slotNum + 2) * POINTER_SIZE;
+        }
+#elif defined(_TARGET_X86_)
+        offset = -pHeader->GetPreservedRegsSaveSize() - (slotNum * POINTER_SIZE);
+#elif defined(_TARGET_AMD64_)
+        if (pHeader->GetFramePointerOffset() == 0)
+        {
+            offset = -pHeader->GetPreservedRegsSaveSize() - (slotNum * POINTER_SIZE);
+        }
+        else
+        {
+            offset = (slotNum * POINTER_SIZE);
+        }
+#else
+#error unknown architecture
+#endif
     }
     else
     {
-        regAndSign = "RBP+";
-        offset = (slotNum * POINTER_SIZE);
+        baseReg = GetStackPointerRegister();
+        offset = pHeader->GetFrameSize() - ((slotNum + 1) * POINTER_SIZE);
     }
-# endif
-    gcPrintf("local slot 0n%d, [%s%02X] \n", slotNum, regAndSign, offset);
-#endif
+
+    char const * sign = "+";
+    if (offset < 0)
+    {
+        sign = "-";
+        offset = -offset;
+    }
+    gcPrintf("local slot 0n%d, [%s%s%02X]\n", slotNum, baseReg, sign, offset);
 }
 
-void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteString, 
+// Reads a 7-bit-encoded register mask:
+// - 0RRRRRRR for non-ARM64 registers and { x0-x6 } ARM64 registers
+// - 1RRRRRRR 0RRRRRRR for { x0-x13 } ARM64 registers
+// - 1RRRRRRR 1RRRRRRR 000RRRRR for { x0-x15, xip0, xip1, lr } ARM64 registers
+// Returns the number of bytes read.
+size_t ReadRegisterMaskBy7Bit(PTR_UInt8 pCursor, UInt32* pMask)
+{
+    UInt32 byte0 = *pCursor;
+    if (!(byte0 & 0x80))
+    {
+        *pMask = byte0;
+        return 1;
+    }
+
+#if defined(_TARGET_ARM64_)
+    UInt32 byte1 = *(pCursor + 1);
+    if (!(byte1 & 0x80))
+    {
+        // XOR with 0x80 discards the most significant bit of byte0
+        *pMask = (byte1 << 7) ^ byte0 ^ 0x80;
+        return 2;
+    }
+
+    UInt32 byte2 = *(pCursor + 2);
+    if (!(byte2 & 0x80))
+    {
+        // XOR with 0x4080 discards the most significant bits of byte0 and byte1
+        *pMask = (byte2 << 14) ^ (byte1 << 7) ^ byte0 ^ 0x4080;
+        return 3;
+    }
+#endif
+
+    UNREACHABLE_MSG("Register mask is too long");
+}
+
+void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteString,
                                 GCInfoHeader const * pHeader)
 {
     gcPrintf("%04x: ", callsiteOffset);
@@ -244,13 +358,36 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 if (b & CSR_MASK_R6) { gcPrintf("R6 "); count++; }
                 if (b & CSR_MASK_R7) { gcPrintf("R7 "); count++; }
                 if (b & CSR_MASK_R8) { gcPrintf("R8 "); count++; }
-#else // _ARM_
+#elif defined(_TARGET_ARM64_)
+                UInt16 regs = (b & 0xF);
+                if (b & 0x10) { regs |= (*pCursor++ << 4); }
+
+                ASSERT(!(regs & CSR_MASK_LR));
+                if (regs & CSR_MASK_X19) { gcPrintf("X19 "); count++; }
+                if (regs & CSR_MASK_X20) { gcPrintf("X20 "); count++; }
+                if (regs & CSR_MASK_X21) { gcPrintf("X21 "); count++; }
+                if (regs & CSR_MASK_X22) { gcPrintf("X22 "); count++; }
+                if (regs & CSR_MASK_X23) { gcPrintf("X23 "); count++; }
+                if (regs & CSR_MASK_X24) { gcPrintf("X24 "); count++; }
+                if (regs & CSR_MASK_X25) { gcPrintf("X25 "); count++; }
+                if (regs & CSR_MASK_X26) { gcPrintf("X26 "); count++; }
+                if (regs & CSR_MASK_X27) { gcPrintf("X27 "); count++; }
+                if (regs & CSR_MASK_X28) { gcPrintf("X28 "); count++; }
+                if (regs & CSR_MASK_FP ) { gcPrintf("FP " ); count++; }
+#elif defined(_TARGET_AMD64_)
                 if (b & CSR_MASK_RBX) { gcPrintf("RBX "); count++; }
                 if (b & CSR_MASK_RSI) { gcPrintf("RSI "); count++; }
                 if (b & CSR_MASK_RDI) { gcPrintf("RDI "); count++; }
                 if (b & CSR_MASK_RBP) { gcPrintf("RBP "); count++; }
                 if (b & CSR_MASK_R12) { gcPrintf("R12 "); count++; }
-#endif // _ARM_
+#elif defined(_TARGET_X86_)
+                if (b & CSR_MASK_RBX) { gcPrintf("EBX "); count++; }
+                if (b & CSR_MASK_RSI) { gcPrintf("ESI "); count++; }
+                if (b & CSR_MASK_RDI) { gcPrintf("EDI "); count++; }
+                if (b & CSR_MASK_RBP) { gcPrintf("EBP "); count++; }
+#else
+#error unknown architecture
+#endif
                 gcPrintf("\n");
             }
             break;
@@ -273,7 +410,24 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 case CSR_NUM_R9: regName = "R9"; break;
                 case CSR_NUM_R10: regName = "R10"; break;
                 case CSR_NUM_R11: regName = "R11"; break;
-#else // _ARM_
+#elif defined(_TARGET_ARM64_)
+                case CSR_NUM_X19: regName = "X19"; break;
+                case CSR_NUM_X20: regName = "X20"; break;
+                case CSR_NUM_X21: regName = "X21"; break;
+                case CSR_NUM_X22: regName = "X22"; break;
+                case CSR_NUM_X23: regName = "X23"; break;
+                case CSR_NUM_X24: regName = "X24"; break;
+                case CSR_NUM_X25: regName = "X25"; break;
+                case 0:
+                    switch (*pCursor++)
+                    {
+                    case CSR_NUM_X26: regName = "X26"; break;
+                    case CSR_NUM_X27: regName = "X27"; break;
+                    case CSR_NUM_X28: regName = "X28"; break;
+                    case CSR_NUM_FP : regName = "FP" ; break;
+                    }
+                    break;
+#elif defined(_TARGET_AMD64_)
                 case CSR_NUM_RBX: regName = "RBX"; break;
                 case CSR_NUM_RSI: regName = "RSI"; break;
                 case CSR_NUM_RDI: regName = "RDI"; break;
@@ -282,7 +436,14 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 case CSR_NUM_R13: regName = "R13"; break;
                 case CSR_NUM_R14: regName = "R14"; break;
                 case CSR_NUM_R15: regName = "R15"; break;
-#endif // _ARM_
+#elif defined(_TARGET_X86_)
+                case CSR_NUM_RBX: regName = "EBX"; break;
+                case CSR_NUM_RSI: regName = "ESI"; break;
+                case CSR_NUM_RDI: regName = "EDI"; break;
+                case CSR_NUM_RBP: regName = "EBP"; break;
+#else
+#error unknown architecture
+#endif
                 }
                 gcPrintf("%02x          | 3  %s%s%s \n", b, regName, interior, pinned);
                 count++; 
@@ -293,30 +454,41 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
             {
                 if (b & 0x10)
                 {
-                    // case 4 -- "local slot set"
-                    gcPrintf("%02x          | 4  ", b);
-                    bool isFirst = true;
-
-                    int mask = 0x01;
-                    int slotNum = 0;
-                    while (mask <= 0x08)
+                    // case 4 -- "local slot set" or "common var tail"
+                    if ((b & 0x0f) != 0)
                     {
-                        if (b & mask)
+                        gcPrintf("%02x          | 4  ", b);
+                        bool isFirst = true;
+
+                        int mask = 0x01;
+                        int slotNum = 0;
+                        while (mask <= 0x08)
                         {
-                            if (!isFirst)
+                            if (b & mask)
                             {
-                                if (!first)
-                                    gcPrintf("      ");
-                                gcPrintf("            |    ");
+                                if (!isFirst)
+                                {
+                                    if (!first)
+                                        gcPrintf("      ");
+                                    gcPrintf("            |    ");
+                                }
+
+                                PrintLocalSlot(slotNum, pHeader);
+
+                                isFirst = false;
+                                count++; 
                             }
-
-                            PrintLocalSlot(slotNum, pHeader);
-
-                            isFirst = false;
-                            count++; 
+                            mask <<= 1;
+                            slotNum++;
                         }
-                        mask <<= 1;
-                        slotNum++;
+                    }
+                    else
+                    {
+                        unsigned commonVarInx = 0;
+                        if ((b & 0x20) == 0)
+                            commonVarInx = VarInt::ReadUnsigned(pCursor);
+
+                        gcPrintf("%02x          | 8  set #%04u\n", b, commonVarInx);
                     }
                 }
                 else
@@ -332,50 +504,124 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
             break;
         case 0xC0:
             {
-                gcPrintf("%02x ", b);
-                unsigned mask = 0;
-                PTR_UInt8 pInts = pCursor;
-                unsigned offset = VarInt::ReadUnsigned(pCursor);
-                const char* interior = (b & 0x10) ? "+" : "";
-                const char* pinned   = (b & 0x08) ? "!" : "";
-#ifdef _TARGET_ARM_
-                const char* baseReg  = (b & 0x04) ? "R7" : "SP";
-#else
-                const char* baseReg  = (b & 0x04) ? "EBP" : "ESP";
-#endif
-                const char* sign     = (b & 0x02) ? "-" : "+";
-                if (b & 0x01)
+                if ((b & 0xC7) == 0xC2)
                 {
-                    mask = VarInt::ReadUnsigned(pCursor);
-                }
+                    // case 7 - live scratch regs
+                    gcPrintf("%02x          | 7  ", b);
 
-                int c = 1;
-                while (pInts != pCursor)
-                {
-                    gcPrintf("%02x ", *pInts++);
-                    c++;
-                }
+                    UInt32 regs, byrefRegs = 0, pinnedRegs = 0;
+                    pCursor += ReadRegisterMaskBy7Bit(pCursor, &regs);
+                    if (b & 0x10)
+                        pCursor += ReadRegisterMaskBy7Bit(pCursor, &byrefRegs);
+                    if (b & 0x08)
+                        pCursor += ReadRegisterMaskBy7Bit(pCursor, &pinnedRegs);
 
-                for (; c < 4; c++)
-                {
-                    gcPrintf("   ");
-                }
-
-                gcPrintf("| 6  [%s%s%02X]%s%s\n", baseReg, sign, offset, interior, pinned);
-                count++; 
-
-                while (mask > 0)
-                {
-                    offset += POINTER_SIZE;
-                    if (mask & 1)
+                    for (UInt32 reg = 0; ; reg++)
                     {
-                        if (!first)
-                            gcPrintf("      ");
+                        UInt32 regMask = (1 << reg);
+                        if (regMask > regs)
+                            break;
 
-                        gcPrintf("            |    [%s%s%02X]%s%s\n", baseReg, sign, offset, interior, pinned);
-                        count++; 
+                        if (regs & regMask)
+                        {
+                            char* pinned = (pinnedRegs & regMask) ? "!" : "";
+                            char* interior = (byrefRegs  & regMask) ? "+" : "";
+                            char* regStr = "???";
+
+                            switch (reg)
+                            {
+#if defined(_TARGET_ARM_)
+                            case SR_NUM_R0:   regStr = "R0";   break;
+                            case SR_NUM_R1:   regStr = "R1";   break;
+                            case SR_NUM_R2:   regStr = "R2";   break;
+                            case SR_NUM_R3:   regStr = "R3";   break;
+                            case SR_NUM_R12:  regStr = "R12";  break;
+                            case SR_NUM_LR:   regStr = "LR";   break;
+#elif defined(_TARGET_ARM64_)
+                            case SR_NUM_X0:   regStr = "X0";   break;
+                            case SR_NUM_X1:   regStr = "X1";   break;
+                            case SR_NUM_X2:   regStr = "X2";   break;
+                            case SR_NUM_X3:   regStr = "X3";   break;
+                            case SR_NUM_X4:   regStr = "X4";   break;
+                            case SR_NUM_X5:   regStr = "X5";   break;
+                            case SR_NUM_X6:   regStr = "X6";   break;
+                            case SR_NUM_X7:   regStr = "X7";   break;
+                            case SR_NUM_X8:   regStr = "X8";   break;
+                            case SR_NUM_X9:   regStr = "X9";   break;
+                            case SR_NUM_X10:  regStr = "X10";  break;
+                            case SR_NUM_X11:  regStr = "X11";  break;
+                            case SR_NUM_X12:  regStr = "X12";  break;
+                            case SR_NUM_X13:  regStr = "X13";  break;
+                            case SR_NUM_X14:  regStr = "X14";  break;
+                            case SR_NUM_X15:  regStr = "X15";  break;
+                            case SR_NUM_XIP0: regStr = "XIP0"; break;
+                            case SR_NUM_XIP1: regStr = "XIP1"; break;
+                            case SR_NUM_LR:   regStr = "LR";   break;
+#elif defined(_TARGET_AMD64_)
+                            case SR_NUM_RAX:  regStr = "RAX";  break;
+                            case SR_NUM_RCX:  regStr = "RCX";  break;
+                            case SR_NUM_RDX:  regStr = "RDX";  break;
+                            case SR_NUM_R8:   regStr = "R8";   break;
+                            case SR_NUM_R9:   regStr = "R9";   break;
+                            case SR_NUM_R10:  regStr = "R10";  break;
+                            case SR_NUM_R11:  regStr = "R11";  break;
+#elif defined(_TARGET_X86_)
+                            case SR_NUM_RAX:  regStr = "EAX";  break;
+                            case SR_NUM_RCX:  regStr = "ECX";  break;
+                            case SR_NUM_RDX:  regStr = "EDX";  break;
+#else
+#error unknown architecture
+#endif
+                            }
+                            gcPrintf("%s%s%s ", regStr, interior, pinned);
+                            count++;
+                        }
                     }
-                    mask >>= 1;
+                }
+                else
+                {
+                    // case 6 - stack slot / stack slot set
+                    gcPrintf("%02x ", b);
+                    unsigned mask = 0;
+                    PTR_UInt8 pInts = pCursor;
+                    unsigned offset = VarInt::ReadUnsigned(pCursor);
+                    const char* interior = (b & 0x10) ? "+" : "";
+                    const char* pinned   = (b & 0x08) ? "!" : "";
+                    const char* baseReg  = (b & 0x04) ? GetFramePointerRegister() : GetStackPointerRegister();
+                    const char* sign     = (b & 0x02) ? "-" : "+";
+                    if (b & 0x01)
+                    {
+                        mask = VarInt::ReadUnsigned(pCursor);
+                    }
+
+                    int c = 1;
+                    while (pInts != pCursor)
+                    {
+                        gcPrintf("%02x ", *pInts++);
+                        c++;
+                    }
+
+                    for (; c < 4; c++)
+                    {
+                        gcPrintf("   ");
+                    }
+
+                    gcPrintf("| 6  [%s%s%02X]%s%s\n", baseReg, sign, offset, interior, pinned);
+                    count++; 
+
+                    while (mask > 0)
+                    {
+                        offset += POINTER_SIZE;
+                        if (mask & 1)
+                        {
+                            if (!first)
+                                gcPrintf("      ");
+
+                            gcPrintf("            |    [%s%s%02X]%s%s\n", baseReg, sign, offset, interior, pinned);
+                            count++; 
+                        }
+                        mask >>= 1;
+                    }
                 }
             }
             break;
@@ -386,13 +632,21 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
     //gcPrintf("\n");
 }
 
-
-
-
 size_t   FASTCALL   GCDump::DumpGCTable (PTR_UInt8              gcInfo,
                                          Tables *               pTables,
                                          const GCInfoHeader&    header)
 {
+    PTR_UInt8 pCursor = gcInfo;
+
+    if (header.HasCommonVars())
+    {
+        UInt32 commonVarCount = VarInt::ReadUnsigned(pCursor);
+        for (UInt32 i = 0; i < commonVarCount; i++)
+        {
+            VarInt::SkipUnsigned(pCursor);
+        }
+    }
+
     //
     // Decode the method GC info 
     //
@@ -414,7 +668,6 @@ size_t   FASTCALL   GCDump::DumpGCTable (PTR_UInt8              gcInfo,
     // 11111111 -- STRING TERMINATOR
     //
 
-    PTR_UInt8 pCursor = gcInfo;
     UInt32 curOffset = 0;
 
     for (;;)

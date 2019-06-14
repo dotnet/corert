@@ -1,0 +1,270 @@
+diff --git a/include/llvm/MC/MCObjectStreamer.h b/include/llvm/MC/MCObjectStreamer.h
+index 7c1189e..d1d77c9 100644
+--- a/include/llvm/MC/MCObjectStreamer.h
++++ b/include/llvm/MC/MCObjectStreamer.h
+@@ -101,6 +101,11 @@ public:
+   void EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI,
+                        bool = false) override;
+ 
++  /// \brief EmitValueImpl with additional param, that allows to emit PCRelative
++  /// MCFixup.
++  void EmitValueImpl(const MCExpr *Value, unsigned Size, SMLoc Loc,
++                     bool isPCRelative);
++
+   /// \brief Emit an instruction to a special fragment, because this instruction
+   /// can change its size during relaxation.
+   virtual void EmitInstToFragment(const MCInst &Inst, const MCSubtargetInfo &);
+diff --git a/include/llvm/MC/MCStreamer.h b/include/llvm/MC/MCStreamer.h
+index 5390e79..5b258e7 100644
+--- a/include/llvm/MC/MCStreamer.h
++++ b/include/llvm/MC/MCStreamer.h
+@@ -115,6 +115,7 @@ public:
+   virtual void emitPad(int64_t Offset);
+   virtual void emitRegSave(const SmallVectorImpl<unsigned> &RegList,
+                            bool isVector);
++  virtual void emitLsda(const MCSymbol *Symbol);
+   virtual void emitUnwindRaw(int64_t StackOffset,
+                              const SmallVectorImpl<uint8_t> &Opcodes);
+ 
+@@ -548,6 +549,9 @@ public:
+   /// etc.
+   virtual void EmitBytes(StringRef Data);
+ 
++  /// \brief Emit the given \p Instruction data into the current section.
++  virtual void EmitInstructionBytes(StringRef Data);
++
+   /// Functionally identical to EmitBytes. When emitting textual assembly, this
+   /// method uses .byte directives instead of .ascii or .asciz for readability.
+   virtual void EmitBinaryData(StringRef Data);
+diff --git a/lib/MC/MCObjectStreamer.cpp b/lib/MC/MCObjectStreamer.cpp
+index 174397e..ef7161f 100644
+--- a/lib/MC/MCObjectStreamer.cpp
++++ b/lib/MC/MCObjectStreamer.cpp
+@@ -122,7 +122,7 @@ void MCObjectStreamer::EmitCFISections(bool EH, bool Debug) {
+ }
+ 
+ void MCObjectStreamer::EmitValueImpl(const MCExpr *Value, unsigned Size,
+-                                     SMLoc Loc) {
++                                     SMLoc Loc, bool isPCRelative) {
+   MCStreamer::EmitValueImpl(Value, Size, Loc);
+   MCDataFragment *DF = getOrCreateDataFragment();
+   flushPendingLabels(DF, DF->getContents().size());
+@@ -143,10 +143,16 @@ void MCObjectStreamer::EmitValueImpl(const MCExpr *Value, unsigned Size,
+   }
+   DF->getFixups().push_back(
+       MCFixup::create(DF->getContents().size(), Value,
+-                      MCFixup::getKindForSize(Size, false), Loc));
++                      MCFixup::getKindForSize(Size, isPCRelative), Loc));
+   DF->getContents().resize(DF->getContents().size() + Size, 0);
+ }
+ 
++
++void MCObjectStreamer::EmitValueImpl(const MCExpr *Value, unsigned Size,
++                                     SMLoc Loc) {
++  EmitValueImpl(Value, Size, Loc, false);
++}
++
+ void MCObjectStreamer::EmitCFIStartProcImpl(MCDwarfFrameInfo &Frame) {
+   // We need to create a local symbol to avoid relocations.
+   Frame.Begin = getContext().createTempSymbol();
+diff --git a/lib/MC/MCStreamer.cpp b/lib/MC/MCStreamer.cpp
+index 2bfb9a6..a710098 100644
+--- a/lib/MC/MCStreamer.cpp
++++ b/lib/MC/MCStreamer.cpp
+@@ -830,6 +830,7 @@ void MCStreamer::EmitTBSSSymbol(MCSection *Section, MCSymbol *Symbol,
+ void MCStreamer::ChangeSection(MCSection *, const MCExpr *) {}
+ void MCStreamer::EmitWeakReference(MCSymbol *Alias, const MCSymbol *Symbol) {}
+ void MCStreamer::EmitBytes(StringRef Data) {}
++void MCStreamer::EmitInstructionBytes(StringRef Data) { EmitBytes(Data); }
+ void MCStreamer::EmitBinaryData(StringRef Data) { EmitBytes(Data); }
+ void MCStreamer::EmitValueImpl(const MCExpr *Value, unsigned Size, SMLoc Loc) {
+   visitUsedExpr(*Value);
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
+index a77df7a..e1aa752 100644
+--- a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
++++ b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
+@@ -48,6 +48,14 @@ public:
+ };
+ } // end anonymous namespace
+ 
++Optional<MCFixupKind> ARMAsmBackend::getFixupKind(StringRef Name) const {
++  return StringSwitch<Optional<MCFixupKind>>(Name)
++      .Case("R_ARM_THM_MOVW_ABS_NC", (MCFixupKind)ARM::fixup_t2_movw_lo16)
++      .Case("R_ARM_THM_MOVT_ABS", (MCFixupKind)ARM::fixup_t2_movt_hi16)
++      .Case("R_ARM_THM_JUMP24", (MCFixupKind)ARM::fixup_arm_thumb_blx)
++      .Default(MCAsmBackend::getFixupKind(Name));
++}
++
+ const MCFixupKindInfo &ARMAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
+   const static MCFixupKindInfo InfosLE[ARM::NumTargetFixupKinds] = {
+       // This table *must* be in the order that the fixup_* kinds are defined in
+@@ -386,6 +394,8 @@ unsigned ARMAsmBackend::adjustFixupValue(const MCAssembler &Asm,
+   case FK_Data_2:
+   case FK_Data_4:
+     return Value;
++  case FK_PCRel_4:
++    return Value;
+   case FK_SecRel_2:
+     return Value;
+   case FK_SecRel_4:
+@@ -825,6 +835,9 @@ static unsigned getFixupKindNumBytes(unsigned Kind) {
+   case ARM::fixup_t2_so_imm:
+     return 4;
+ 
++  case FK_PCRel_4:
++    return 4;
++
+   case FK_SecRel_2:
+     return 2;
+   case FK_SecRel_4:
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
+index 0237496..01676a0 100644
+--- a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
++++ b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
+@@ -36,6 +36,7 @@ public:
+ 
+   bool hasNOP() const { return STI->getFeatureBits()[ARM::HasV6T2Ops]; }
+ 
++  Optional<MCFixupKind> getFixupKind(StringRef Name) const override;
+   const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override;
+ 
+   bool shouldForceRelocation(const MCAssembler &Asm, const MCFixup &Fixup,
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp b/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
+index 59f31be..9b95598 100644
+--- a/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
++++ b/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
+@@ -103,6 +103,9 @@ unsigned ARMELFObjectWriter::GetRelocTypeInner(const MCValue &Target,
+         break;
+       }
+       break;
++    case FK_PCRel_4:
++      Type = ELF::R_ARM_REL32;
++      break;
+     case ARM::fixup_arm_blx:
+     case ARM::fixup_arm_uncondbl:
+       switch (Modifier) {
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp b/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
+index 93f4006..81e4caa 100644
+--- a/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
++++ b/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
+@@ -396,6 +396,7 @@ private:
+   void emitPad(int64_t Offset) override;
+   void emitRegSave(const SmallVectorImpl<unsigned> &RegList,
+                    bool isVector) override;
++  void emitLsda(const MCSymbol *Symbol) override;
+   void emitUnwindRaw(int64_t Offset,
+                      const SmallVectorImpl<uint8_t> &Opcodes) override;
+ 
+@@ -461,6 +462,7 @@ public:
+   void emitMovSP(unsigned Reg, int64_t Offset = 0);
+   void emitPad(int64_t Offset);
+   void emitRegSave(const SmallVectorImpl<unsigned> &RegList, bool isVector);
++  void emitLsda(const MCSymbol *Symbol);
+   void emitUnwindRaw(int64_t Offset, const SmallVectorImpl<uint8_t> &Opcodes);
+ 
+   void ChangeSection(MCSection *Section, const MCExpr *Subsection) override {
+@@ -533,6 +535,18 @@ public:
+     MCELFStreamer::EmitBytes(Data);
+   }
+ 
++  /// This function is the one used to emit instruction data into the ELF
++  /// streamer. We override it to add the appropriate mapping symbol if
++  /// necessary.
++  void EmitInstructionBytes(StringRef Data) override {
++    if (IsThumb)
++      EmitThumbMappingSymbol();
++    else
++      EmitARMMappingSymbol();
++
++    MCELFStreamer::EmitBytes(Data);
++  }
++
+   void FlushPendingMappingSymbol() {
+     if (!LastEMSInfo->hasInfo())
+       return;
+@@ -698,6 +712,7 @@ private:
+   bool CantUnwind;
+   SmallVector<uint8_t, 64> Opcodes;
+   UnwindOpcodeAssembler UnwindOpAsm;
++  const MCSymbol *Lsda;
+ };
+ 
+ } // end anonymous namespace
+@@ -740,6 +755,10 @@ void ARMTargetELFStreamer::emitRegSave(const SmallVectorImpl<unsigned> &RegList,
+   getStreamer().emitRegSave(RegList, isVector);
+ }
+ 
++void ARMTargetELFStreamer::emitLsda(const MCSymbol *Symbol) {
++  getStreamer().emitLsda(Symbol);
++}
++
+ void ARMTargetELFStreamer::emitUnwindRaw(int64_t Offset,
+                                       const SmallVectorImpl<uint8_t> &Opcodes) {
+   getStreamer().emitUnwindRaw(Offset, Opcodes);
+@@ -1233,6 +1252,7 @@ void ARMELFStreamer::EHReset() {
+   PendingOffset = 0;
+   UsedFP = false;
+   CantUnwind = false;
++  Lsda = nullptr;
+ 
+   Opcodes.clear();
+   UnwindOpAsm.Reset();
+@@ -1330,6 +1350,8 @@ void ARMELFStreamer::FlushUnwindOpcodes(bool NoHandlerData) {
+   }
+ 
+   // Finalize the unwind opcode sequence
++  if (Lsda != nullptr && Opcodes.size() <= 4u)
++    PersonalityIndex = ARM::EHABI::AEABI_UNWIND_CPP_PR1;
+   UnwindOpAsm.Finalize(PersonalityIndex, Opcodes);
+ 
+   // For compact model 0, we have to emit the unwind opcodes in the .ARM.exidx
+@@ -1374,7 +1396,13 @@ void ARMELFStreamer::FlushUnwindOpcodes(bool NoHandlerData) {
+   //
+   // In case that the .handlerdata directive is not specified by the
+   // programmer, we should emit zero to terminate the handler data.
+-  if (NoHandlerData && !Personality)
++  if (Lsda != nullptr) {
++    const MCSymbolRefExpr *LsdaRef =
++      MCSymbolRefExpr::create(Lsda,
++                              MCSymbolRefExpr::VK_None,
++                              getContext());
++    EmitValue(LsdaRef, 4);
++  } else if (NoHandlerData && !Personality)
+     EmitIntValue(0, 4);
+ }
+ 
+@@ -1457,6 +1485,10 @@ void ARMELFStreamer::emitRegSave(const SmallVectorImpl<unsigned> &RegList,
+     UnwindOpAsm.EmitRegSave(Mask);
+ }
+ 
++void ARMELFStreamer::emitLsda(const MCSymbol *Symbol) {
++  Lsda = Symbol;
++}
++
+ void ARMELFStreamer::emitUnwindRaw(int64_t Offset,
+                                    const SmallVectorImpl<uint8_t> &Opcodes) {
+   FlushPendingOffset();
+diff --git a/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp b/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
+index 4a94318..f4f5aa1 100644
+--- a/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
++++ b/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
+@@ -61,6 +61,7 @@ void ARMTargetStreamer::emitMovSP(unsigned Reg, int64_t Offset) {}
+ void ARMTargetStreamer::emitPad(int64_t Offset) {}
+ void ARMTargetStreamer::emitRegSave(const SmallVectorImpl<unsigned> &RegList,
+                                     bool isVector) {}
++void ARMTargetStreamer::emitLsda(const MCSymbol *Symbol) {}
+ void ARMTargetStreamer::emitUnwindRaw(int64_t StackOffset,
+                                       const SmallVectorImpl<uint8_t> &Opcodes) {
+ }
+diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
+index b654b8c..58d2515 100644
+--- a/tools/CMakeLists.txt
++++ b/tools/CMakeLists.txt
+@@ -46,6 +46,7 @@ add_llvm_external_project(clang)
+ add_llvm_external_project(llgo)
+ add_llvm_external_project(lld)
+ add_llvm_external_project(lldb)
++add_llvm_external_project(ObjWriter)
+ 
+ # Automatically add remaining sub-directories containing a 'CMakeLists.txt'
+ # file as external projects.

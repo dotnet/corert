@@ -92,6 +92,18 @@ namespace Internal.StackGenerator.Dia
             enumLineNumbers = new IDiaEnumLineNumbers(_enumLineNumbers);
             return hr;
         }
+
+        public int FindILOffsetsByRVA(int rva, int length, out IDiaEnumLineNumbers enumLineNumbers)
+        {
+            enumLineNumbers = null;
+            IntPtr _enumLineNumbers;
+            int hr = S.StdCall<int>(GetVTableMember(46), Punk, rva, length, out _enumLineNumbers);
+            GC.KeepAlive(this);
+            if (hr != S_OK)
+                return hr;
+            enumLineNumbers = new IDiaEnumLineNumbers(_enumLineNumbers);
+            return hr;
+        }
     }
 
     internal sealed class IDiaEnumSymbols : ComInterface

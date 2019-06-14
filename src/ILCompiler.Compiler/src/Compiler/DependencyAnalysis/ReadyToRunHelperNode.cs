@@ -7,6 +7,8 @@ using System;
 using Internal.Text;
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.DependencyAnalysis
 {
     public enum ReadyToRunHelperId
@@ -20,49 +22,38 @@ namespace ILCompiler.DependencyAnalysis
         GetNonGCStaticBase,
         GetGCStaticBase,
         GetThreadStaticBase,
+        GetThreadNonGcStaticBase,
         DelegateCtor,
         ResolveVirtualFunction,
-        ResolveGenericVirtualMethod,
+        CctorTrigger,
 
         // The following helpers are used for generic lookups only
         TypeHandle,
+        NecessaryTypeHandle,
+        DeclaringTypeHandle,
+        MethodHandle,
         FieldHandle,
         MethodDictionary,
-        MethodEntry
+        TypeDictionary,
+        MethodEntry,
+        VirtualEntry,
+        VirtualDispatchCell,
+        DefaultConstructor,
+        TypeHandleForCasting,
     }
 
-    public partial class ReadyToRunHelperNode : AssemblyStubNode
+    public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithDebugInfo
     {
-        private ReadyToRunHelperId _id;
-        private Object _target;
+        private readonly ReadyToRunHelperId _id;
+        private readonly Object _target;
 
-        public ReadyToRunHelperNode(NodeFactory factory, ReadyToRunHelperId id, Object target)
+        public ReadyToRunHelperNode(ReadyToRunHelperId id, Object target)
         {
             _id = id;
             _target = target;
 
             switch (id)
             {
-                case ReadyToRunHelperId.NewHelper:
-                case ReadyToRunHelperId.NewArr1:
-                    {
-                        // Make sure that if the EEType can't be generated, we throw the exception now.
-                        // This way we can fail generating code for the method that references the EEType
-                        // and (depending on the policy), we could avoid scraping the entire compilation.
-                        TypeDesc type = (TypeDesc)target;
-                        factory.ConstructedTypeSymbol(type);
-                    }
-                    break;
-                case ReadyToRunHelperId.IsInstanceOf:
-                case ReadyToRunHelperId.CastClass:
-                    {
-                        // Make sure that if the EEType can't be generated, we throw the exception now.
-                        // This way we can fail generating code for the method that references the EEType
-                        // and (depending on the policy), we could avoid scraping the entire compilation.
-                        TypeDesc type = (TypeDesc)target;
-                        factory.NecessaryTypeSymbol(type);
-                    }
-                    break;
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                 case ReadyToRunHelperId.GetGCStaticBase:
                 case ReadyToRunHelperId.GetThreadStaticBase:
@@ -72,10 +63,26 @@ namespace ILCompiler.DependencyAnalysis
                         defType.ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizesAndFields);
                     }
                     break;
+                case ReadyToRunHelperId.VirtualCall:
+                case ReadyToRunHelperId.ResolveVirtualFunction:
+                    {
+                        // Make sure we aren't trying to callvirt Object.Finalize
+                        MethodDesc method = (MethodDesc)target;
+                        if (method.IsFinalizer)
+                            ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramCallVirtFinalize, method);
+
+                        // Method should be in fully canonical form. Otherwise we're being wasteful and generate more
+                        // helpers than needed.
+                        Debug.Assert(!method.IsCanonicalMethod(CanonicalFormKind.Any) ||
+                            method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
+                    }
+                    break;
             }
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override bool IsVisibleFromManagedCode => false;
+
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public ReadyToRunHelperId Id => _id;
         public Object Target =>  _target;
@@ -84,81 +91,140 @@ namespace ILCompiler.DependencyAnalysis
         {
             switch (_id)
             {
-                case ReadyToRunHelperId.NewHelper:
-                    sb.Append("__NewHelper_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
-                    break;
-                case ReadyToRunHelperId.NewArr1:
-                    sb.Append("__NewArr1_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
-                    break;
                 case ReadyToRunHelperId.VirtualCall:
-                    sb.Append("__VirtualCall_").Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
-                    break;
-                case ReadyToRunHelperId.IsInstanceOf:
-                    sb.Append("__IsInstanceOf_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
-                    break;
-                case ReadyToRunHelperId.CastClass:
-                    sb.Append("__CastClass_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    sb.Append("__VirtualCall_").Append(nameMangler.GetMangledMethodName((MethodDesc)_target));
                     break;
                 case ReadyToRunHelperId.GetNonGCStaticBase:
-                    sb.Append("__GetNonGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    sb.Append("__GetNonGCStaticBase_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
                     break;
                 case ReadyToRunHelperId.GetGCStaticBase:
-                    sb.Append("__GetGCStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    sb.Append("__GetGCStaticBase_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
                     break;
                 case ReadyToRunHelperId.GetThreadStaticBase:
-                    sb.Append("__GetThreadStaticBase_").Append(NodeFactory.NameMangler.GetMangledTypeName((TypeDesc)_target));
+                    sb.Append("__GetThreadStaticBase_").Append(nameMangler.GetMangledTypeName((TypeDesc)_target));
                     break;
                 case ReadyToRunHelperId.DelegateCtor:
-                    {
-                        var createInfo = (DelegateCreationInfo)_target;
-                        sb.Append("__DelegateCtor_");
-                        createInfo.Constructor.AppendMangledName(nameMangler, sb);
-                        sb.Append("__");
-                        createInfo.Target.AppendMangledName(nameMangler, sb);
-                        if (createInfo.Thunk != null)
-                        {
-                            sb.Append("__");
-                            createInfo.Thunk.AppendMangledName(nameMangler, sb);
-                        }
-                    }
+                    ((DelegateCreationInfo)_target).AppendMangledName(nameMangler, sb);
                     break;
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     sb.Append("__ResolveVirtualFunction_");
-                    sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
-                    break;
-                case ReadyToRunHelperId.ResolveGenericVirtualMethod:
-                    sb.Append("__ResolveGenericVirtualMethod_");
-                    sb.Append(NodeFactory.NameMangler.GetMangledMethodName((MethodDesc)_target));
+                    sb.Append(nameMangler.GetMangledMethodName((MethodDesc)_target));
                     break;
                 default:
                     throw new NotImplementedException();
             }
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
+        public override bool IsShareable => true;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            if (_id == ReadyToRunHelperId.VirtualCall)
+            if (_id == ReadyToRunHelperId.VirtualCall || _id == ReadyToRunHelperId.ResolveVirtualFunction)
             {
+                var targetMethod = (MethodDesc)_target;
+
                 DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
-                dependencyList.Add(factory.VTable(((MethodDesc)_target).OwningType), "ReadyToRun Virtual Method Call Target VTable");
+
+#if !SUPPORT_JIT
+                factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
+
+                if (!factory.VTable(targetMethod.OwningType).HasFixedSlots)
+
+                {
+                    dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
+                }
+#endif
+
                 return dependencyList;
             }
-            else if (_id == ReadyToRunHelperId.ResolveVirtualFunction)
+            else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
-                DependencyList dependencyList = new DependencyList();
-                dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Address Load");
-                return dependencyList;
+                var info = (DelegateCreationInfo)_target;
+                if (info.NeedsVirtualMethodUseTracking)
+                {
+                    MethodDesc targetMethod = info.TargetMethod;
+
+                    DependencyList dependencyList = new DependencyList();
+#if !SUPPORT_JIT
+                    factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencyList, factory, targetMethod);
+
+                    if (!factory.VTable(info.TargetMethod.OwningType).HasFixedSlots)
+                    {
+                        dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
+                    }
+#endif
+
+                    return dependencyList;
+                }
             }
-            else
+
+            return null;
+        }
+
+        DebugLocInfo[] INodeWithDebugInfo.DebugLocInfos
+        {
+            get
             {
-                return null;
+                if (_id == ReadyToRunHelperId.VirtualCall)
+                {
+                    // Generate debug information that lets debuggers step into the virtual calls.
+                    // We generate a step into sequence point at the point where the helper jumps to
+                    // the target of the virtual call.
+                    TargetDetails target = ((MethodDesc)_target).Context.Target;
+                    int debuggerStepInOffset = -1;
+                    switch (target.Architecture)
+                    {
+                        case TargetArchitecture.X64:
+                            debuggerStepInOffset = 3;
+                            break;
+                    }
+                    if (debuggerStepInOffset != -1)
+                    {
+                        return new DebugLocInfo[]
+                        {
+                            new DebugLocInfo(0, String.Empty, WellKnownLineNumber.DebuggerStepThrough),
+                            new DebugLocInfo(debuggerStepInOffset, String.Empty, WellKnownLineNumber.DebuggerStepIn)
+                        };
+                    }
+                }
+
+                return Array.Empty<DebugLocInfo>();
             }
         }
+
+        DebugVarInfo[] INodeWithDebugInfo.DebugVarInfos
+        {
+            get
+            {
+                return Array.Empty<DebugVarInfo>();
+            }
+        }
+
+#if !SUPPORT_JIT
+        public override int ClassCode => -911637948;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            var compare = _id.CompareTo(((ReadyToRunHelperNode)other)._id);
+            if (compare != 0)
+                return compare;
+
+            switch (_id)
+            {
+                case ReadyToRunHelperId.GetNonGCStaticBase:
+                case ReadyToRunHelperId.GetGCStaticBase:
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    return comparer.Compare((TypeDesc)_target, (TypeDesc)((ReadyToRunHelperNode)other)._target);
+                case ReadyToRunHelperId.VirtualCall:
+                case ReadyToRunHelperId.ResolveVirtualFunction:
+                    return comparer.Compare((MethodDesc)_target, (MethodDesc)((ReadyToRunHelperNode)other)._target);
+                case ReadyToRunHelperId.DelegateCtor:
+                    return ((DelegateCreationInfo)_target).CompareTo((DelegateCreationInfo)((ReadyToRunHelperNode)other)._target, comparer);
+                default:
+                    throw new NotImplementedException();
+            }
+            
+        }
+#endif
     }
 }

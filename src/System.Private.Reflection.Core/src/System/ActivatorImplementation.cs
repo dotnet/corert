@@ -14,6 +14,7 @@ namespace System
 {
     internal static class ActivatorImplementation
     {
+        [DebuggerGuidedStepThrough]
         public static object CreateInstance(Type type, bool nonPublic)
         {
             if (type == null)
@@ -34,9 +35,11 @@ namespace System
             if (constructor == null)
                 throw new MissingMethodException(SR.Arg_NoDefCTor);
             object result = constructor.Invoke(Array.Empty<object>());
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
 
+        [DebuggerGuidedStepThrough]
         public static object CreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes)
         {
             if (type == null)
@@ -48,7 +51,7 @@ namespace System
                 bindingAttr |= BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
 
             if (activationAttributes != null && activationAttributes.Length > 0)
-                throw new NotSupportedException(SR.NotSupported_ActivAttr);
+                throw new PlatformNotSupportedException(SR.NotSupported_ActivAttr);
 
             type = type.UnderlyingSystemType;
             CreateInstanceCheckType(type);
@@ -104,6 +107,7 @@ namespace System
             }
 
             object result = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             if (state != null)
                 binder.ReorderArgumentArray(ref args, state);
             return result;
@@ -114,8 +118,14 @@ namespace System
             if (type == null || !type.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Arg_MustBeType);
 
+            if (type.IsAbstract)
+                throw new MissingMethodException(type.IsInterface ? SR.Acc_CreateInterface : SR.Acc_CreateAbst);  // Strange but compatible exception.
+
             if (type.ContainsGenericParameters)
                 throw new ArgumentException(SR.Format(SR.Acc_CreateGenericEx, type));
+
+            if (type.IsByRefLike)
+                throw new NotSupportedException(SR.NotSupported_ByRefLike);
 
             Type elementType = type;
             while (elementType.HasElementType)

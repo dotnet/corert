@@ -10,20 +10,22 @@ using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class ObjectAndOffsetSymbolNode : DependencyNodeCore<NodeFactory>, ISymbolNode
+    public class ObjectAndOffsetSymbolNode : DependencyNodeCore<NodeFactory>, ISymbolDefinitionNode
     {
         private ObjectNode _object;
         private int _offset;
         private Utf8String _name;
+        private bool _includeCompilationUnitPrefix;
 
-        public ObjectAndOffsetSymbolNode(ObjectNode obj, int offset, Utf8String name)
+        public ObjectAndOffsetSymbolNode(ObjectNode obj, int offset, Utf8String name, bool includeCompilationUnitPrefix)
         {
             _object = obj;
             _offset = offset;
             _name = name;
+            _includeCompilationUnitPrefix = includeCompilationUnitPrefix;
         }
 
-        protected override string GetName() => $"Symbol {_name.ToString()} at offset {_offset.ToStringInvariant()}";
+        protected override string GetName(NodeFactory factory) => $"Symbol {_name.ToString()} at offset {_offset.ToStringInvariant()}";
 
         public override bool HasConditionalStaticDependencies => false;
         public override bool HasDynamicDependencies => false;
@@ -32,9 +34,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
+            if (_includeCompilationUnitPrefix)
+                sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append(_name);
         }
-        public int Offset => _offset;
+
+        int ISymbolNode.Offset => 0;
+        int ISymbolDefinitionNode.Offset => _offset;
+        public bool RepresentsIndirectionCell => false;
 
         public void SetSymbolOffset(int offset)
         {

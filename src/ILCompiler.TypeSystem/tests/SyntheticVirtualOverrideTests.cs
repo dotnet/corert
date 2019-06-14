@@ -169,6 +169,19 @@ namespace TypeSystemTests
                 _name = name;
             }
 
+            protected override int ClassCode
+            {
+                get
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+            {
+                throw new NotImplementedException();
+            }
+
             public override bool IsVirtual
             {
                 get
@@ -212,11 +225,6 @@ namespace TypeSystemTests
             public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
             {
                 return false;
-            }
-
-            public override string ToString()
-            {
-                return "[::Synthetic]" + _owningType.ToString() + "." + _name;
             }
         }
     }

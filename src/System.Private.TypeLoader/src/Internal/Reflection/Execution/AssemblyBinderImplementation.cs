@@ -2,20 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.IO;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Threading;
+using System;
+using System.IO;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
 
-using global::System.Reflection.Runtime.General;
+using System.Reflection.Runtime.General;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Runtime.Augments;
-using global::Internal.Runtime.TypeLoader;
+using Internal.Reflection.Core;
+using Internal.Runtime.TypeLoader;
 
-using global::Internal.Metadata.NativeFormat;
+using Internal.Metadata.NativeFormat;
 
 namespace Internal.Reflection.Execution
 {
@@ -26,82 +24,65 @@ namespace Internal.Reflection.Execution
     // native process. There is no support for probing for assemblies in directories, user-supplied files, GACs, NICs or any
     // other repository.
     //=============================================================================================================================
-    public sealed class AssemblyBinderImplementation : AssemblyBinder
+    public sealed partial class AssemblyBinderImplementation : AssemblyBinder
     {
-        private sealed class AssemblyNameKey : IEquatable<AssemblyNameKey>
-        {
-            private string _assemblyNameAsString;
-            private AssemblyName _assemblyName;
-
-            public AssemblyNameKey(string assemblyNameString, AssemblyName assemblyName)
-            {
-                _assemblyNameAsString = assemblyNameString;
-                _assemblyName = assemblyName;
-            }
-
-            public override bool Equals(object other)
-            {
-                AssemblyNameKey otherKey = other as AssemblyNameKey;
-
-                if (otherKey == null)
-                    return false;
-                else
-                    return Equals(otherKey);
-            }
-
-            public bool Equals(AssemblyNameKey other)
-            {
-                return _assemblyNameAsString.Equals(other._assemblyNameAsString);
-            }
-
-            public override int GetHashCode()
-            {
-                return _assemblyNameAsString.GetHashCode();
-            }
-
-            public AssemblyName AssemblyName
-            {
-                get
-                {
-                    return _assemblyName;
-                }
-            }
-        }
-
         private AssemblyBinderImplementation()
         {
-            _scopeGroups = new KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[0];
+            _scopeGroups = new KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[0];
             ModuleList.AddModuleRegistrationCallback(RegisterModule);
         }
 
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
 
-        public sealed override bool Bind(AssemblyName refName, out AssemblyBindResult result, out Exception exception)
+        partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
+        partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, bool cacheMissedLookups, ref AssemblyBindResult result, ref Exception exception, ref Exception preferredException, ref bool resultBoolean);
+        partial void InsertEcmaLoadedAssemblies(List<AssemblyBindResult> loadedAssemblies);
+
+        public sealed override bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
+        {
+            bool? result = null;
+            exception = null;
+            bindResult = default(AssemblyBindResult);
+
+            BindEcmaByteArray(rawAssembly, rawSymbolStore, ref bindResult, ref exception, ref result);
+
+            // If the Ecma assembly binder isn't linked in, simply throw PlatformNotSupportedException
+            if (!result.HasValue)
+                throw new PlatformNotSupportedException();
+            else
+                return result.Value;
+        }
+
+        public sealed override bool Bind(RuntimeAssemblyName refName, bool cacheMissedLookups, out AssemblyBindResult result, out Exception exception)
         {
             bool foundMatch = false;
             result = default(AssemblyBindResult);
             exception = null;
 
+            Exception preferredException = null;
+
+            refName = refName.CanonicalizePublicKeyToken();
+
             // At least one real-world app calls Type.GetType() for "char" using the assembly name "mscorlib". To accomodate this,
             // we will adopt the desktop CLR rule that anything named "mscorlib" automatically binds to the core assembly.
             bool useMscorlibNameCompareFunc = false;
-            AssemblyName compareRefName = refName;
+            RuntimeAssemblyName compareRefName = refName;
             if (refName.Name == "mscorlib")
             {
                 useMscorlibNameCompareFunc = true;
-                compareRefName = new AssemblyName(AssemblyBinder.DefaultAssemblyNameForGetType);
+                compareRefName = AssemblyNameParser.Parse(AssemblyBinder.DefaultAssemblyNameForGetType);
             }
 
-            foreach (KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup> group in ScopeGroups)
+            foreach (KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup> group in ScopeGroups)
             {
                 bool nameMatches;
                 if (useMscorlibNameCompareFunc)
                 {
-                    nameMatches = MscorlibAssemblyNameMatches(compareRefName, group.Key.AssemblyName);
+                    nameMatches = MscorlibAssemblyNameMatches(compareRefName, group.Key);
                 }
                 else
                 {
-                    nameMatches = AssemblyNameMatches(refName, group.Key.AssemblyName);
+                    nameMatches = AssemblyNameMatches(refName, group.Key, ref preferredException);
                 }
 
                 if (nameMatches)
@@ -121,19 +102,42 @@ namespace Internal.Reflection.Execution
                 }
             }
 
+            BindEcmaAssemblyName(refName, cacheMissedLookups, ref result, ref exception, ref preferredException, ref foundMatch);
+            if (exception != null)
+                return false;
+
             if (!foundMatch)
             {
-                exception = new IOException(SR.Format(SR.FileNotFound_AssemblyNotFound, refName.FullName));
+                exception = preferredException ?? new FileNotFoundException(SR.Format(SR.FileNotFound_AssemblyNotFound, refName.FullName));
                 return false;
             }
 
             return true;
         }
 
+        public sealed override IList<AssemblyBindResult> GetLoadedAssemblies()
+        {
+            List<AssemblyBindResult> loadedAssemblies = new List<AssemblyBindResult>(ScopeGroups.Length);
+            foreach (KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup> group in ScopeGroups)
+            {
+                ScopeDefinitionGroup scopeDefinitionGroup = group.Value;
+
+                AssemblyBindResult result = default(AssemblyBindResult);
+                result.Reader = scopeDefinitionGroup.CanonicalScope.Reader;
+                result.ScopeDefinitionHandle = scopeDefinitionGroup.CanonicalScope.Handle;
+                result.OverflowScopes = scopeDefinitionGroup.OverflowScopes;
+                loadedAssemblies.Add(result);
+            }
+
+            InsertEcmaLoadedAssemblies(loadedAssemblies);
+
+            return loadedAssemblies;
+        }
+
         //
         // Name match routine for mscorlib references
         //
-        private bool MscorlibAssemblyNameMatches(AssemblyName coreAssemblyName, AssemblyName defName)
+        private bool MscorlibAssemblyNameMatches(RuntimeAssemblyName coreAssemblyName, RuntimeAssemblyName defName)
         {
             //
             // The defName came from trusted metadata so it should be fully specified.
@@ -141,12 +145,15 @@ namespace Internal.Reflection.Execution
             Debug.Assert(defName.Version != null);
             Debug.Assert(defName.CultureName != null);
 
+            Debug.Assert((coreAssemblyName.Flags & AssemblyNameFlags.PublicKey) == 0);
+            Debug.Assert((defName.Flags & AssemblyNameFlags.PublicKey) == 0);
+
             if (defName.Name != coreAssemblyName.Name)
                 return false;
-            byte[] defPkt = defName.GetPublicKeyToken();
+            byte[] defPkt = defName.PublicKeyOrToken;
             if (defPkt == null)
                 return false;
-            if (!ArePktsEqual(defPkt, coreAssemblyName.GetPublicKeyToken()))
+            if (!ArePktsEqual(defPkt, coreAssemblyName.PublicKeyOrToken))
                 return false;
             return true;
         }
@@ -154,7 +161,7 @@ namespace Internal.Reflection.Execution
         //
         // Encapsulates the assembly ref->def matching policy.
         //
-        private bool AssemblyNameMatches(AssemblyName refName, AssemblyName defName)
+        private bool AssemblyNameMatches(RuntimeAssemblyName refName, RuntimeAssemblyName defName, ref Exception preferredException)
         {
             //
             // The defName came from trusted metadata so it should be fully specified.
@@ -162,14 +169,19 @@ namespace Internal.Reflection.Execution
             Debug.Assert(defName.Version != null);
             Debug.Assert(defName.CultureName != null);
 
+            Debug.Assert((defName.Flags & AssemblyNameFlags.PublicKey) == 0);
+            Debug.Assert((refName.Flags & AssemblyNameFlags.PublicKey) == 0);
+
             if (!(refName.Name.Equals(defName.Name, StringComparison.OrdinalIgnoreCase)))
                 return false;
 
             if (refName.Version != null)
             {
-                int compareResult = refName.Version.CompareTo(defName.Version);
-                if (compareResult > 0)
+                if (!AssemblyVersionMatches(refVersion: refName.Version, defVersion: defName.Version))
+                {
+                    preferredException = new FileLoadException(SR.Format(SR.FileLoadException_RefDefMismatch, refName.FullName, defName.Version, refName.Version));
                     return false;
+                }
             }
 
             if (refName.CultureName != null)
@@ -178,18 +190,17 @@ namespace Internal.Reflection.Execution
                     return false;
             }
 
-            // Bartok cannot handle const enums for now.
-            /*const*/
-            AssemblyNameFlags ignorableFlags = AssemblyNameFlags.PublicKey;
-            if ((refName.Flags & ~ignorableFlags) != (defName.Flags & ~ignorableFlags))
+            AssemblyNameFlags materialRefNameFlags = refName.Flags.ExtractAssemblyNameFlags();
+            AssemblyNameFlags materialDefNameFlags = defName.Flags.ExtractAssemblyNameFlags();
+            if (materialRefNameFlags != materialDefNameFlags)
             {
                 return false;
             }
 
-            byte[] refPublicKeyToken = refName.GetPublicKeyToken();
+            byte[] refPublicKeyToken = refName.PublicKeyOrToken;
             if (refPublicKeyToken != null)
             {
-                byte[] defPublicKeyToken = defName.GetPublicKeyToken();
+                byte[] defPublicKeyToken = defName.PublicKeyOrToken;
                 if (defPublicKeyToken == null)
                     return false;
                 if (!ArePktsEqual(refPublicKeyToken, defPublicKeyToken))
@@ -199,10 +210,31 @@ namespace Internal.Reflection.Execution
             return true;
         }
 
-
-        internal new AssemblyName CreateAssemblyNameFromMetadata(MetadataReader reader, ScopeDefinitionHandle scopeDefinitionHandle)
+        private static bool AssemblyVersionMatches(Version refVersion, Version defVersion)
         {
-            return base.CreateAssemblyNameFromMetadata(reader, scopeDefinitionHandle);
+            if (defVersion.Major < refVersion.Major)
+                return false;
+            if (defVersion.Major > refVersion.Major)
+                return true;
+
+            if (defVersion.Minor < refVersion.Minor)
+                return false;
+            if (defVersion.Minor > refVersion.Minor)
+                return true;
+
+            if (refVersion.Build == -1)
+                return true;
+            if (defVersion.Build < refVersion.Build)
+                return false;
+            if (defVersion.Build > refVersion.Build)
+                return true;
+
+            if (refVersion.Revision == -1)
+                return true;
+            if (defVersion.Revision < refVersion.Revision)
+                return false;
+
+            return true;
         }
 
         /// <summary>
@@ -214,22 +246,24 @@ namespace Internal.Reflection.Execution
         /// <param name="moduleInfo">Module to register</param>
         private void RegisterModule(ModuleInfo moduleInfo)
         {
-            if (moduleInfo.MetadataReader == null)
+            NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
+
+            if (nativeFormatModuleInfo == null)
             {
                 return;
             }
 
-            LowLevelDictionaryWithIEnumerable<AssemblyNameKey, ScopeDefinitionGroup> scopeGroups = new LowLevelDictionaryWithIEnumerable<AssemblyNameKey, ScopeDefinitionGroup>();
-            foreach (KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup> oldGroup in _scopeGroups)
+            LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> scopeGroups = new LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup>();
+            foreach (KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup> oldGroup in _scopeGroups)
             {
                 scopeGroups.Add(oldGroup.Key, oldGroup.Value);
             }
-            AddScopesFromReaderToGroups(scopeGroups, moduleInfo.MetadataReader);
+            AddScopesFromReaderToGroups(scopeGroups, nativeFormatModuleInfo.MetadataReader);
 
             // Update reader and scope list
-            KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[] scopeGroupsArray = new KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[scopeGroups.Count];
+            KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[] scopeGroupsArray = new KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[scopeGroups.Count];
             int i = 0;
-            foreach (KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup> data in scopeGroups)
+            foreach (KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup> data in scopeGroups)
             {
                 scopeGroupsArray[i] = data;
                 i++;
@@ -238,7 +272,7 @@ namespace Internal.Reflection.Execution
             _scopeGroups = scopeGroupsArray;
         }
 
-        private KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[] ScopeGroups
+        private KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[] ScopeGroups
         {
             get
             {
@@ -246,23 +280,20 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        private void AddScopesFromReaderToGroups(LowLevelDictionaryWithIEnumerable<AssemblyNameKey, ScopeDefinitionGroup> groups, MetadataReader reader)
+        private void AddScopesFromReaderToGroups(LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> groups, MetadataReader reader)
         {
             foreach (ScopeDefinitionHandle scopeDefinitionHandle in reader.ScopeDefinitions)
             {
-                AssemblyName defName = this.CreateAssemblyNameFromMetadata(reader, scopeDefinitionHandle);
-                string defFullName = defName.FullName;
-                AssemblyNameKey nameKey = new AssemblyNameKey(defFullName, defName);
-
+                RuntimeAssemblyName defName = scopeDefinitionHandle.ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
                 ScopeDefinitionGroup scopeDefinitionGroup;
-                if (groups.TryGetValue(nameKey, out scopeDefinitionGroup))
+                if (groups.TryGetValue(defName, out scopeDefinitionGroup))
                 {
                     scopeDefinitionGroup.AddOverflowScope(new QScopeDefinition(reader, scopeDefinitionHandle));
                 }
                 else
                 {
                     scopeDefinitionGroup = new ScopeDefinitionGroup(new QScopeDefinition(reader, scopeDefinitionHandle));
-                    groups.Add(nameKey, scopeDefinitionGroup);
+                    groups.Add(defName, scopeDefinitionGroup);
                 }
             }
         }
@@ -279,7 +310,7 @@ namespace Internal.Reflection.Execution
             return true;
         }
 
-        private volatile KeyValuePair<AssemblyNameKey, ScopeDefinitionGroup>[] _scopeGroups;
+        private volatile KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[] _scopeGroups;
 
         private class ScopeDefinitionGroup
         {

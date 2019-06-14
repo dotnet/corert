@@ -79,23 +79,13 @@ namespace Internal.TypeSystem
             }
         }
 
+        // Type system implementations that support the notion of intrinsic types
+        // will provide an implementation that adds the flag if necessary.
+        partial void AddComputedIntrinsicFlag(ref TypeFlags flags);
+
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;
-
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                for (int i = 0; i < _instantiation.Length; i++)
-                {
-                    if (_instantiation[i].ContainsGenericVariables)
-                    {
-                        flags |= TypeFlags.ContainsGenericVariables;
-                        break;
-                    }
-                }
-            }
 
             if ((mask & TypeFlags.CategoryMask) != 0)
             {
@@ -108,6 +98,24 @@ namespace Internal.TypeSystem
 
                 if (_typeDef.HasVariance)
                     flags |= TypeFlags.HasGenericVariance;
+            }
+
+            if ((mask & TypeFlags.HasFinalizerComputed) != 0)
+            {
+                flags |= TypeFlags.HasFinalizerComputed;
+
+                if (_typeDef.HasFinalizer)
+                    flags |= TypeFlags.HasFinalizer;
+            }
+
+            if ((mask & TypeFlags.AttributeCacheComputed) != 0)
+            {
+                flags |= TypeFlags.AttributeCacheComputed;
+
+                if (_typeDef.IsByRefLike)
+                    flags |= TypeFlags.IsByRefLike;
+
+                AddComputedIntrinsicFlag(ref flags);
             }
 
             return flags;
@@ -152,6 +160,14 @@ namespace Internal.TypeSystem
             if (typicalCctor == null)
                 return null;
             return _typeDef.Context.GetMethodForInstantiatedType(typicalCctor, this);
+        }
+
+        public override MethodDesc GetDefaultConstructor()
+        {
+            MethodDesc typicalCtor = _typeDef.GetDefaultConstructor();
+            if (typicalCtor == null)
+                return null;
+            return _typeDef.Context.GetMethodForInstantiatedType(typicalCtor, this);
         }
 
         public override MethodDesc GetFinalizer()
@@ -259,15 +275,6 @@ namespace Internal.TypeSystem
             return _typeDef;
         }
 
-        public override string ToString()
-        {
-            var sb = new StringBuilder(_typeDef.ToString());
-            sb.Append('<');
-            sb.Append(_instantiation.ToString());
-            sb.Append('>');
-            return sb.ToString();
-        }
-
         // Properties that are passed through from the type definition
         public override ClassLayoutMetadata GetClassLayout()
         {
@@ -298,11 +305,28 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsModuleType
+        {
+            get
+            {
+                // The global module type cannot be generic.
+                return false;
+            }
+        }
+
         public override bool IsSealed
         {
             get
             {
                 return _typeDef.IsSealed;
+            }
+        }
+
+        public override bool IsAbstract
+        {
+            get
+            {
+                return _typeDef.IsAbstract;
             }
         }
 

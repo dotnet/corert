@@ -2,6 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#ifndef __GCENV_BASE_INCLUDED__
+
+//
+// This macro returns val rounded up as necessary to be a multiple of alignment; alignment must be a power of 2
+//
 inline UIntNative ALIGN_UP( UIntNative val, UIntNative alignment )
 {
     // alignment must be a power of 2 for this implementation to work (need modulo otherwise)
@@ -32,6 +37,8 @@ inline T* ALIGN_DOWN(T* val, UIntNative alignment)
     return reinterpret_cast<T*>(ALIGN_DOWN(reinterpret_cast<UIntNative>(val), alignment));
 }
 
+#endif // !__GCENV_BASE_INCLUDED__
+
 inline bool IS_ALIGNED(UIntNative val, UIntNative alignment)
 {
     ASSERT(0 == (alignment & (alignment - 1)));
@@ -45,3 +52,24 @@ inline bool IS_ALIGNED(T* val, UIntNative alignment)
     return IS_ALIGNED(reinterpret_cast<UIntNative>(val), alignment);
 }
 
+// Convert from a PCODE to the corresponding PINSTR.  On many architectures this will be the identity function;
+// on ARM, this will mask off the THUMB bit.
+inline TADDR PCODEToPINSTR(PCODE pc)
+{
+#ifdef _TARGET_ARM_
+    return dac_cast<TADDR>(pc & ~THUMB_CODE);
+#else
+    return dac_cast<TADDR>(pc);
+#endif
+}
+
+// Convert from a PINSTR to the corresponding PCODE.  On many architectures this will be the identity function;
+// on ARM, this will raise the THUMB bit.
+inline PCODE PINSTRToPCODE(TADDR addr)
+{
+#ifdef _TARGET_ARM_
+    return dac_cast<PCODE>(addr | THUMB_CODE);
+#else
+    return dac_cast<PCODE>(addr);
+#endif
+}

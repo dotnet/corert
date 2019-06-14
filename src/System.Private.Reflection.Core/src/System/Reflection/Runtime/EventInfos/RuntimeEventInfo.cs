@@ -64,6 +64,13 @@ namespace System.Reflection.Runtime.EventInfos
             }
         }
 
+        public sealed override MethodInfo[] GetOtherMethods(bool nonPublic)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+
         public sealed override Module Module
         {
             get

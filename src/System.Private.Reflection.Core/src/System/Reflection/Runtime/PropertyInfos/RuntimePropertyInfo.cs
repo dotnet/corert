@@ -133,14 +133,16 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
         }
 
+        public sealed override Type[] GetOptionalCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(ContextTypeInfo.TypeContext, optional: true);
+
+        public sealed override Type[] GetRequiredCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(ContextTypeInfo.TypeContext, optional: false);
+
         public sealed override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_GetValue(this, obj, index);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (_lazyGetterInvoker == null)
             {
                 if (!CanRead)
@@ -150,8 +152,10 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
             if (index == null)
                 index = Array.Empty<Object>();
-            return _lazyGetterInvoker.Invoke(obj, index);
+            return _lazyGetterInvoker.Invoke(obj, index, binder, invokeAttr, culture);
         }
+
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
 
         public sealed override Module Module
         {
@@ -183,8 +187,14 @@ namespace System.Reflection.Runtime.PropertyInfos
                     ReflectionTrace.PropertyInfo_PropertyType(this);
 #endif
 
-                TypeContext typeContext = ContextTypeInfo.TypeContext;
-                return PropertyTypeHandle.Resolve(typeContext);
+                Type propertyType = _lazyPropertyType;
+                if (propertyType == null)
+                {
+                    TypeContext typeContext = ContextTypeInfo.TypeContext;
+                    _lazyPropertyType = propertyType = PropertyTypeHandle.Resolve(typeContext);
+                }
+
+                return propertyType;
             }
         }
 
@@ -215,8 +225,6 @@ namespace System.Reflection.Runtime.PropertyInfos
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_SetValue(this, obj, value, index);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (_lazySetterInvoker == null)
             {
                 if (!CanWrite)
@@ -238,7 +246,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 }
                 arguments[index.Length] = value;
             }
-            _lazySetterInvoker.Invoke(obj, arguments);
+            _lazySetterInvoker.Invoke(obj, arguments, binder, invokeAttr, culture);
         }
 
         public sealed override String ToString()
@@ -339,13 +347,17 @@ namespace System.Reflection.Runtime.PropertyInfos
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override bool Equals(Object obj);
         public abstract override int GetHashCode();
-        public abstract override Object GetConstantValue();
         public abstract override int MetadataToken { get; }
+
+        public sealed override object GetConstantValue() => GetConstantValue(raw: false);
+        public sealed override object GetRawConstantValue() => GetConstantValue(raw: true);
+
+        protected abstract bool GetDefaultValueIfAny(bool raw, out object defaultValue);
 
         /// <summary>
         /// Return a qualified handle that can be used to get the type of the property.
         /// </summary>
-        protected abstract QTypeDefRefOrSpec PropertyTypeHandle { get; }
+        protected abstract QSignatureTypeHandle PropertyTypeHandle { get; }
 
         protected enum PropertyMethodSemantics
         {
@@ -373,6 +385,21 @@ namespace System.Reflection.Runtime.PropertyInfos
         protected readonly RuntimeTypeInfo ContextTypeInfo;
         protected readonly RuntimeTypeInfo _reflectedType;
 
+        private object GetConstantValue(bool raw)
+        {
+#if ENABLE_REFLECTION_TRACE
+            if (ReflectionTrace.Enabled)
+                ReflectionTrace.PropertyInfo_GetConstantValue(this);
+#endif
+
+            object defaultValue;
+            if (!GetDefaultValueIfAny(raw, out defaultValue))
+            {
+                throw new InvalidOperationException(SR.Arg_EnumLitValueNotFound);
+            }
+            return defaultValue;
+        }
+
         private volatile MethodInvoker _lazyGetterInvoker = null;
         private volatile MethodInvoker _lazySetterInvoker = null;
 
@@ -380,6 +407,8 @@ namespace System.Reflection.Runtime.PropertyInfos
         private volatile RuntimeNamedMethodInfo _lazySetter;
 
         private volatile ParameterInfo[] _lazyIndexParameters;
+
+        private volatile Type _lazyPropertyType;
 
         private String _debugName;
     }

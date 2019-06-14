@@ -6,9 +6,10 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
+    [ReflectionBlocked]
     public struct LockHolder : IDisposable
     {
-        Lock _lock;
+        private Lock _lock;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LockHolder Hold(Lock l)

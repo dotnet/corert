@@ -7,12 +7,17 @@
 class UnixNativeCodeManager : public ICodeManager
 {
     TADDR m_moduleBase;
+
+    PTR_VOID m_pvManagedCodeStartRange;
+    UInt32 m_cbManagedCodeRange;
+
     PTR_PTR_VOID m_pClasslibFunctions;
     UInt32 m_nClasslibFunctions;
 
 public:
     UnixNativeCodeManager(TADDR moduleBase,
-                         PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions);
+                          PTR_VOID pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
+                          PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions);
 
     virtual ~UnixNativeCodeManager();
 
@@ -24,6 +29,8 @@ public:
                         MethodInfo *    pMethodInfoOut);
 
     bool IsFunclet(MethodInfo * pMethodInfo);
+
+    bool IsFilter(MethodInfo * pMethodInfo);
 
     PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                              REGDISPLAY *   pRegisterSet);
@@ -56,4 +63,8 @@ public:
     PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo);
 
     void * GetClasslibFunction(ClasslibFunctionId functionId);
+
+    PTR_VOID GetAssociatedData(PTR_VOID ControlPC);
+
+    PTR_VOID GetOsModuleHandle();
 };

@@ -1,4 +1,4 @@
-##Runtime
+## Runtime
 
 - Build managed parts
 	- Build language source to IL
@@ -20,7 +20,7 @@
 	- Toolchain support to write the GCInfo into final binary
 	- Runtime to consume GCInfo produced by RyuJIT today for precise GC
 
-##Toolchain
+## Toolchain
 
 - Split compilation
 	- Design document
@@ -33,29 +33,29 @@
 - Stubs - Delegates, etc.
 - Adjustments for RyuJIT / UTC difference
 
-##Reflection
+## Reflection
 
 - Produce compact metadata in the final binary
 - Produce mapping tables
 - Runtime consumption
 
-##Interop
+## Interop
 
 - Move MCG [Marshaling Code Generator](http://blogs.msdn.com/b/dotnet/archive/2014/06/13/net-native-deep-dive-debugging-into-interop-code.aspx) to github
 - Package MCG as standalone tool
 - Integrate MCG with ILToNative toolchain
 
-##Framework
+## Framework
 
 - Move all .NET Native System.Private* libraries over to github
 - Complete .NET Native specific libraries in corefx (build, port to Unix)
 - Port to Win32/Unix
 
-##Shared generics
+## Shared generics
 
 - Toolchain - produce supporting tables and fixups
 
-##CPPCodegen
+## CPPCodegen
 
 - Complete IL to CPP codegenerator
 - Portable EH

@@ -1,4 +1,4 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props') And '$(RepoLocalBuild)'!='true'" Project="..\dir.props" />
 
   <!--
@@ -6,14 +6,6 @@
   -->
   <PropertyGroup>
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
-  </PropertyGroup>
-
-  <!--
-    Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer.
-    Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
-  -->
-  <PropertyGroup>
-    <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
   </PropertyGroup>
 
   <!-- Initialize the basic BuildOS, BuildType, BuildConfig from build script, if present -->
@@ -66,104 +58,30 @@
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
     <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
-    <ProductBinDir Condition="'$(ProductBinDir)'==''">$(BinDir)Product/</ProductBinDir>
-    <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests/</TestWorkingDir>
-
-    <!-- Folder where restored Nuget packages will go -->
-    <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(BinDir)packages/</PackagesOutDir>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
+    <PackageOutputRoot Condition="'$(PackageOutputRoot)'=='' and '$(NonShippingPackage)' == 'true'">$(BinDir)packages_noship/</PackageOutputRoot>
+    <PackageOutputRoot Condition="'$(PackageOutputRoot)'==''">$(BinDir)packages/</PackageOutputRoot>
 
     <!-- Input Directories -->
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
-    <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ProjectDir)Tools/</ToolRuntimePath>
-    <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolRuntimePath)dotnetcli/</DotnetCliPath>
-    <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTaskDir)'==''">$(ToolsDir)</BuildToolsTaskDir>
-    <PackagingTaskDir>$(BuildToolsTaskDir)</PackagingTaskDir>
-  </PropertyGroup>
-
-  <!-- Set up the default output and intermediate paths -->
-  <PropertyGroup>
-    <OSPlatformConfig>$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)</OSPlatformConfig>
-
-    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(ProductBinDir)</BaseOutputPath>
-    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/</OutputPath>
-
-    <!-- Folder where we will drop the Nuget package for the toolchain -->
-    <ProductPackageDir Condition="'$(ProductPackageDir)'==''">$(BaseOutputPath)$(OSPlatformConfig)/packaging/</ProductPackageDir>
+    <RestorePackagesPath>$(PackagesDir)</RestorePackagesPath>
     
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
-    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\</IntermediateOutputPath>
-    <AotPackageReferencePath Condition="'$(AotPackageReferencePath)'==''">$(IntermediateOutputRootPath)\CoreRTRef</AotPackageReferencePath>
-
-    <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)\</TestPath>
-
-    <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
   </PropertyGroup>
 
-  <!-- list of nuget package sources passed to dnu -->
-  <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
-    <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corert/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
-  </ItemGroup>
+  <!-- Import Build tools common props file where repo-independent properties are found -->
+  <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
 
-    <!-- list of directories to perform batch restore -->
-  <ItemGroup>
-    <DnuRestoreDir Include="&quot;$(MSBuildProjectDirectory)\src&quot;" />
-  </ItemGroup>
+  <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
+  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
   <PropertyGroup>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)' == '' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
-    <DnuToolPath Condition="'$(DnuToolPath)'==''">$(DotnetToolCommand)</DnuToolPath>
-
-    <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
-
-    <DnuRestoreCommand>"$(DnuToolPath)"</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(ParallelRestore)'=='true'">$(DnuRestoreCommand) --parallel</DnuRestoreCommand>  
-    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
+    <!-- Default any assembly not specifying a key to use the Open Key -->
+    <AssemblyKey>Open</AssemblyKey>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
-    <!-- When we do a traversal build we get all packages up front, don't restore them again -->
-    <RestorePackages>false</RestorePackages>
-  </PropertyGroup>
-
-  <!-- Use Roslyn Compilers to build -->
-  <PropertyGroup>
-    <UseSharedCompilation>true</UseSharedCompilation>
-  </PropertyGroup>
-
-  <!--
-    On Unix we always use a version of Roslyn we restore from NuGet and we have to work around some known issues.
-  -->
-  <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
-    <!--
-      Portable PDBs are now supported in Linux and OSX with .Net Core MSBuild.
-    -->
-    <DebugType>Portable</DebugType>
-
-    <!--
-      Delay signing with the ECMA key currently doesn't work.
-      https://github.com/dotnet/roslyn/issues/2444
-    -->
-    <UseECMAKey>false</UseECMAKey>
-
-    <!--
-      Full signing with Open key doesn't work with Portable Csc.
-      https://github.com/dotnet/roslyn/issues/8210
-    -->
-    <UseOpenKey>false</UseOpenKey>
-  </PropertyGroup>
+  <!-- Import the packaging props -->
+  <Import Project="$(MSBuildThisFileDirectory)Packaging.props" />
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(ConfigurationGroup)' == 'Debug'">
@@ -185,7 +103,10 @@
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-    <LangVersion>7</LangVersion>
+    <LangVersion>latest</LangVersion>
+    <LangVersion Condition="'$(SkipImportRoslynProps)' != 'true' or '$(IsProjectNLibrary)' == 'true'">preview</LangVersion>
+    <UseSharedCompilation>true</UseSharedCompilation>
+    <DebugType Condition="'$(IsProjectNLibrary)' != 'true'">portable</DebugType>
   </PropertyGroup>
 
   <!-- Set up handling of build warnings -->
@@ -194,30 +115,149 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
-
   <!-- Set up some common paths -->
   <PropertyGroup>
     <CommonPath>$(SourceDir)Common\src</CommonPath>
     <CommonTestPath>$(SourceDir)Common\tests</CommonTestPath>
   </PropertyGroup>
 
-  <!-- Set up common target properties that we use to conditionally include sources -->
+  <!-- Set up the default output and intermediate paths -->
   <PropertyGroup>
-    <TargetsWindows Condition="'$(OSGroup)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsLinux Condition="'$(OSGroup)' == 'Linux'">true</TargetsLinux>
-    <TargetsOSX Condition="'$(OSGroup)' == 'OSX'">true</TargetsOSX>
-    <TargetsFreeBSD Condition="'$(OSGroup)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <OSPlatformConfig>$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)</OSPlatformConfig>
 
-    <TargetsUnix Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">true</TargetsUnix>
+    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
+
+    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)</OutputPath>
+
+    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)/</IntermediateOutputRootPath>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)</IntermediateOutputPath>
+
+    <RuntimePath Condition="'$(RuntimePath)' == ''">$(IntermediateOutputRootPath)test-runtime/</RuntimePath>
+
+    <!-- Use the shared tools host and runtime for testing -->
+    <TestHostRootPath Condition="'$(TestHostRootPath)' == ''">$(DotnetCliPath)</TestHostRootPath>
+
+    <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(BinDirConfiguration)/</PackageOutputPath>
+    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
+
+    <!-- Folder where we will drop the Nuget package for the toolchain -->
+    <ProductPackageDir Condition="'$(ProductPackageDir)'==''">$(BaseOutputPath)$(OSPlatformConfig)/packaging/</ProductPackageDir>
+
+    <RestoreOutputPath Condition="'$(RestoreOutputPath)'==''">$(IntermediateOutputPath)</RestoreOutputPath>
+
+    <AotPackageReferencePath Condition="'$(AotPackageReferencePath)'==''">$(IntermediateOutputRootPath)\AotPackageReference</AotPackageReferencePath>
+
+    <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
   </PropertyGroup>
-  <!-- Make some assumptions based on TargetsPlatform -->
-  <PropertyGroup Condition="'$(UseUnixPackageTargetRuntimeDefaults)' == 'true' OR '$(UsePackageTargetRuntimeDefaults)' == 'true'">
-    <PackageTargetRuntime Condition=" '$(TargetsLinux)' == 'true'  AND '$(PackageTargetRuntime)' == ''">linux</PackageTargetRuntime>
-    <PackageTargetRuntime Condition=" '$(TargetsOSX)' == 'true'  AND '$(PackageTargetRuntime)' == ''">osx</PackageTargetRuntime>
-    <PackageTargetRuntime Condition=" '$(TargetsUnix)' == 'true' AND '$(PackageTargetRuntime)' == ''">unix</PackageTargetRuntime>
+
+  <ItemGroup>
+    <SupplementalTestData Include="$(RuntimePath)*" />
+  </ItemGroup>
+
+  <!-- initialize all the targets variables to false as they should only be set below -->
+  <PropertyGroup>
+    <TargetsWindows>false</TargetsWindows>
+    <TargetsUnix>false</TargetsUnix>
+    <TargetsLinux>false</TargetsLinux>
+    <TargetsOSX>false</TargetsOSX>
+    <TargetsFreeBSD>false</TargetsFreeBSD>
+    <TargetsNetBSD>false</TargetsNetBSD>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(UseWindowsPackageTargetRuntimeDefault)' == 'true' OR '$(UsePackageTargetRuntimeDefaults)' == 'true'">
-    <PackageTargetRuntime Condition=" '$(TargetsWindows)' == 'true' AND '$(PackageTargetRuntime)' == ''">win7</PackageTargetRuntime>
+
+  <!-- Setup properties per OSGroup -->
+  <Choose>
+    <When Condition="'$(OSGroup)'=='AnyOS'">
+      <PropertyGroup>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='Windows_NT'">
+      <PropertyGroup>
+        <TargetsWindows>true</TargetsWindows>
+        <PackageTargetRuntime>win-corert</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(Platform)'=='wasm'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsWindows>false</TargetsWindows>
+        <PackageTargetRuntime>unix-corert</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='Unix'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <PackageTargetRuntime>unix-corert</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='Linux'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsLinux>true</TargetsLinux>
+        <PackageTargetRuntime>linux-corert</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='OSX'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsOSX>true</TargetsOSX>
+        <PackageTargetRuntime>osx-corert</PackageTargetRuntime>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='FreeBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsFreeBSD>true</TargetsFreeBSD>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(OSGroup)'=='NetBSD'">
+      <PropertyGroup>
+        <TargetsUnix>true</TargetsUnix>
+        <TargetsNetBSD>true</TargetsNetBSD>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ConfigurationErrorMsg>$(ConfigurationErrorMsg);Unknown OSGroup [$(OSGroup)] specificed in your project.</ConfigurationErrorMsg>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <!-- Set up various other constants -->
+  <PropertyGroup>
+    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsWindows)'=='true'">
+    <DefineConstants>PLATFORM_WINDOWS;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
+    <DefineConstants>PLATFORM_UNIX;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsOSX)'=='true'">
+    <DefineConstants>PLATFORM_OSX;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'x64'">
+    <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'x86'">
+    <DefineConstants>X86;BIT32;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm'">
+    <DefineConstants>ARM;BIT32;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'armel'">
+    <DefineConstants>ARM;BIT32;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
+    <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'wasm'">
+    <DefineConstants>WASM;BIT32;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetFramework)' == ''">.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
+    <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -225,7 +265,19 @@
     <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true')">true</SkipTests>
   </PropertyGroup>
 
-  <!-- Use the latest Roslyn compilers -->
-  <Import Condition="'$(CompilerPropsAlreadyImported)'!='true' and '$(OsEnvironment)'=='Windows_NT'" Project="$(BuildToolsTaskDir)roslyn/build/Microsoft.Net.Compilers.props" />
+  <PropertyGroup>
+    <!-- On Windows fallback to ILAsm from the framework for now -->
+    <IlasmToolPath Condition="'$(OSEnvironment)'=='Windows_NT'">%WINDIR%\Microsoft.NET\Framework\v4.0.30319\ilasm.exe</IlasmToolPath>
+  </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- Also update init-tools.cmd and init-tools.sh -->
+    <RoslynVersion>3.2.0-beta3-19310-04</RoslynVersion>
+    <RoslynPackageName>Microsoft.Net.Compilers.Toolset</RoslynPackageName>
+    <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName.ToLower())/$(RoslynVersion)/</RoslynPackageDir>
+    <RoslynPropsFile>$(RoslynPackageDir)build/$(RoslynPackageName).props</RoslynPropsFile>
+  </PropertyGroup>
+
+  <!-- Use Roslyn Compilers to build -->
+  <Import Project="$(RoslynPropsFile)" Condition="'$(SkipImportRoslynProps)' != 'true'" />
 </Project>

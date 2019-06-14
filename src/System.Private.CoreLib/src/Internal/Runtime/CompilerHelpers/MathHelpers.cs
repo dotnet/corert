@@ -6,6 +6,8 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime;
+
 namespace Internal.Runtime.CompilerHelpers
 {
     /// <summary>
@@ -22,64 +24,64 @@ namespace Internal.Runtime.CompilerHelpers
 
         // Helper to multiply two 32-bit uints
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static UInt64 Mul32x32To64(UInt32 a, UInt32 b)
+        private static ulong Mul32x32To64(uint a, uint b)
         {
-            return a * (UInt64)b;
+            return a * (ulong)b;
         }
 
         // Helper to get high 32-bit of 64-bit int
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static UInt32 Hi32Bits(Int64 a)
+        private static uint Hi32Bits(long a)
         {
-            return (UInt32)(a >> 32);
+            return (uint)(a >> 32);
         }
 
         // Helper to get high 32-bit of 64-bit int
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static UInt32 Hi32Bits(UInt64 a)
+        private static uint Hi32Bits(ulong a)
         {
-            return (UInt32)(a >> 32);
+            return (uint)(a >> 32);
         }
 
         [RuntimeExport("LMulOvf")]
-        public static Int64 LMulOvf(Int64 i, Int64 j)
+        public static long LMulOvf(long i, long j)
         {
-            Int64 ret;
+            long ret;
 
             // Remember the sign of the result
-            Int32 sign = (Int32)(Hi32Bits(i) ^ Hi32Bits(j));
+            int sign = (int)(Hi32Bits(i) ^ Hi32Bits(j));
 
             // Convert to unsigned multiplication
             if (i < 0) i = -i;
             if (j < 0) j = -j;
 
             // Get the upper 32 bits of the numbers
-            UInt32 val1High = Hi32Bits(i);
-            UInt32 val2High = Hi32Bits(j);
+            uint val1High = Hi32Bits(i);
+            uint val2High = Hi32Bits(j);
 
-            UInt64 valMid;
+            ulong valMid;
 
             if (val1High == 0)
             {
                 // Compute the 'middle' bits of the long multiplication
-                valMid = Mul32x32To64(val2High, (UInt32)i);
+                valMid = Mul32x32To64(val2High, (uint)i);
             }
             else
             {
                 if (val2High != 0)
                     goto ThrowExcep;
                 // Compute the 'middle' bits of the long multiplication
-                valMid = Mul32x32To64(val1High, (UInt32)j);
+                valMid = Mul32x32To64(val1High, (uint)j);
             }
 
             // See if any bits after bit 32 are set
             if (Hi32Bits(valMid) != 0)
                 goto ThrowExcep;
 
-            ret = (Int64)(Mul32x32To64((UInt32)i, (UInt32)j) + (valMid << 32));
+            ret = (long)(Mul32x32To64((uint)i, (uint)j) + (valMid << 32));
 
             // check for overflow
-            if (Hi32Bits(ret) < (UInt32)valMid)
+            if (Hi32Bits(ret) < (uint)valMid)
                 goto ThrowExcep;
 
             if (sign >= 0)
@@ -102,39 +104,39 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [RuntimeExport("ULMulOvf")]
-        public static UInt64 ULMulOvf(UInt64 i, UInt64 j)
+        public static ulong ULMulOvf(ulong i, ulong j)
         {
-            UInt64 ret;
+            ulong ret;
 
             // Get the upper 32 bits of the numbers
-            UInt32 val1High = Hi32Bits(i);
-            UInt32 val2High = Hi32Bits(j);
+            uint val1High = Hi32Bits(i);
+            uint val2High = Hi32Bits(j);
 
-            UInt64 valMid;
+            ulong valMid;
 
             if (val1High == 0)
             {
                 if (val2High == 0)
-                    return Mul32x32To64((UInt32)i, (UInt32)j);
+                    return Mul32x32To64((uint)i, (uint)j);
                 // Compute the 'middle' bits of the long multiplication
-                valMid = Mul32x32To64(val2High, (UInt32)i);
+                valMid = Mul32x32To64(val2High, (uint)i);
             }
             else
             {
                 if (val2High != 0)
                     goto ThrowExcep;
                 // Compute the 'middle' bits of the long multiplication
-                valMid = Mul32x32To64(val1High, (UInt32)j);
+                valMid = Mul32x32To64(val1High, (uint)j);
             }
 
             // See if any bits after bit 32 are set
             if (Hi32Bits(valMid) != 0)
                 goto ThrowExcep;
 
-            ret = Mul32x32To64((UInt32)i, (UInt32)j) + (valMid << 32);
+            ret = Mul32x32To64((uint)i, (uint)j) + (valMid << 32);
 
             // check for overflow
-            if (Hi32Bits(ret) < (UInt32)valMid)
+            if (Hi32Bits(ret) < (uint)valMid)
                 goto ThrowExcep;
             return ret;
 
@@ -210,10 +212,114 @@ namespace Internal.Runtime.CompilerHelpers
             // Note that this expression also works properly for val = NaN case
             // We need to compare with the very next double to two63. 0x402 is epsilon to get us there.
             if (val > -two63 - 0x402 && val < two63)
-                return ((Int64)val);
+                return ((long)val);
 
             return ThrowIntOvf();
         }
+
+#if ARM
+        private const string RuntimeLibrary = "[MRT]";
+
+        [RuntimeImport(RuntimeLibrary, "RhpIDiv")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern int RhpIDiv(int i, int j);
+
+        public static int IDiv(int i, int j)
+        {
+            if (j == 0)
+                return ThrowIntDivByZero();
+            else if (j == -1 && i == int.MinValue)
+                return ThrowIntArithExc();
+            else
+                return RhpIDiv(i, j);
+        }
+
+        [RuntimeImport(RuntimeLibrary, "RhpUDiv")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern uint RhpUDiv(uint i, uint j);
+
+        public static long UDiv(uint i, uint j)
+        {
+            if (j == 0)
+                return ThrowUIntDivByZero();
+            else
+                return RhpUDiv(i, j);
+        }
+
+        [RuntimeImport(RuntimeLibrary, "RhpULDiv")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern ulong RhpULDiv(ulong i, ulong j);
+
+        public static ulong ULDiv(ulong i, ulong j)
+        {
+            if (j == 0)
+                return ThrowULngDivByZero();
+            else
+                return RhpULDiv(i, j);
+        }
+
+        [RuntimeImport(RuntimeLibrary, "RhpLDiv")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern long RhpLDiv(long i, long j);
+
+        public static long LDiv(long i, long j)
+        {
+            if (j == 0)
+                return ThrowLngDivByZero();
+            else if (j == -1 && i == long.MinValue)
+                return ThrowLngArithExc();
+            else
+                return RhpLDiv(i, j);
+        }
+
+        [RuntimeImport(RuntimeLibrary, "RhpIMod")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern int RhpIMod(int i, int j);
+
+        public static int IMod(int i, int j)
+        {
+            if (j == 0)
+                return ThrowIntDivByZero();
+            else
+                return RhpIMod(i, j);
+        }
+
+        [RuntimeImport(RuntimeLibrary, "RhpUMod")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern uint RhpUMod(uint i, uint j);
+
+        public static long UMod(uint i, uint j)
+        {
+            if (j == 0)
+                return ThrowUIntDivByZero();
+            else
+                return RhpUMod(i, j);
+        }
+
+        [RuntimeImport(RuntimeLibrary, "RhpULMod")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern ulong RhpULMod(ulong i, ulong j);
+
+        public static ulong ULMod(ulong i, ulong j)
+        {
+            if (j == 0)
+                return ThrowULngDivByZero();
+            else
+                return RhpULMod(i, j);
+        }
+
+        [RuntimeImport(RuntimeLibrary, "RhpLMod")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern long RhpLMod(long i, long j);
+
+        public static long LMod(long i, long j)
+        {
+            if (j == 0)
+                return ThrowLngDivByZero();
+            else
+                return RhpLMod(i, j);
+        }
+#endif // ARM
 
         //
         // Matching return types of throw helpers enables tailcalling them. It improves performance 
@@ -243,5 +349,43 @@ namespace Internal.Runtime.CompilerHelpers
         {
             throw new OverflowException();
         }
+
+#if ARM
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int ThrowIntDivByZero()
+        {
+            throw new DivideByZeroException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static uint ThrowUIntDivByZero()
+        {
+            throw new DivideByZeroException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static long ThrowLngDivByZero()
+        {
+            throw new DivideByZeroException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ulong ThrowULngDivByZero()
+        {
+            throw new DivideByZeroException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int ThrowIntArithExc()
+        {
+            throw new ArithmeticException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static long ThrowLngArithExc()
+        {
+            throw new ArithmeticException();
+        }
+#endif // ARM
     }
 }

@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaField : FieldDesc, EcmaModule.IEntityHandleObject
+    public sealed partial class EcmaField : FieldDesc, EcmaModule.IEntityHandleObject
     {
         private static class FieldFlags
         {
@@ -21,9 +21,11 @@ namespace Internal.TypeSystem.Ecma
             public const int InitOnly               = 0x0004;
             public const int Literal                = 0x0008;
             public const int HasRva                 = 0x0010;
+            public const int NotSerialized          = 0x0020;
 
             public const int AttributeMetadataCache = 0x0100;
             public const int ThreadStatic           = 0x0200;
+            public const int Intrinsic              = 0x0400;
         };
 
         private EcmaType _type;
@@ -41,7 +43,7 @@ namespace Internal.TypeSystem.Ecma
 
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
-            this.ToString();
+            InitializeName();
 #endif
         }
 
@@ -135,6 +137,9 @@ namespace Internal.TypeSystem.Ecma
                 if ((fieldAttributes & FieldAttributes.HasFieldRVA) != 0)
                     flags |= FieldFlags.HasRva;
 
+                if ((fieldAttributes & FieldAttributes.NotSerialized) != 0)
+                    flags |= FieldFlags.NotSerialized;
+
                 flags |= FieldFlags.BasicMetadataCache;
             }
 
@@ -151,13 +156,15 @@ namespace Internal.TypeSystem.Ecma
                     if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
                         continue;
 
-                    if (metadataReader.StringComparer.Equals(namespaceHandle, "System"))
+                    if (metadataReader.StringComparer.Equals(nameHandle, "ThreadStaticAttribute")
+                        && metadataReader.StringComparer.Equals(namespaceHandle, "System"))
                     {
-                        if (metadataReader.StringComparer.Equals(nameHandle, "ThreadStaticAttribute"))
-                        {
-                            // TODO: Thread statics
-                            //flags |= FieldFlags.ThreadStatic;
-                        }
+                        flags |= FieldFlags.ThreadStatic;
+                    }
+                    else if (metadataReader.StringComparer.Equals(nameHandle, "IntrinsicAttribute")
+                        && metadataReader.StringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices"))
+                    {
+                        flags |= FieldFlags.Intrinsic;
                     }
                 }
 
@@ -252,11 +259,6 @@ namespace Internal.TypeSystem.Ecma
             return !MetadataReader.GetCustomAttributeHandle(MetadataReader.GetFieldDefinition(_handle).GetCustomAttributes(),
                 attributeNamespace, attributeName).IsNil;
         }
-
-        public override string ToString()
-        {
-            return _type.ToString() + "." + Name;
-        }
     }
 
     public static class EcmaFieldExtensions
@@ -270,7 +272,7 @@ namespace Internal.TypeSystem.Ecma
             int addr = field.MetadataReader.GetFieldDefinition(field.Handle).GetRelativeVirtualAddress();
             var memBlock = field.Module.PEReader.GetSectionData(addr).GetContent();
 
-            int size = field.FieldType.GetElementSize();
+            int size = field.FieldType.GetElementSize().AsInt;
             if (size > memBlock.Length)
                 throw new BadImageFormatException();
 

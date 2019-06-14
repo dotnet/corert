@@ -6,31 +6,40 @@ using System;
 using System.Collections.Generic;
 
 using Internal.Text;
+using Internal.TypeSystem;
+using Internal.Runtime;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a node that points to various symbols and can be sequentially addressed.
     /// </summary>
-    internal sealed class ExternalReferencesTableNode : ObjectNode, ISymbolNode
+    public sealed class ExternalReferencesTableNode : ObjectNode, ISymbolDefinitionNode
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private readonly ObjectAndOffsetSymbolNode _endSymbol;
+        private readonly string _blobName;
+        private readonly NodeFactory _nodeFactory;
 
         private Dictionary<SymbolAndDelta, uint> _insertedSymbolsDictionary = new Dictionary<SymbolAndDelta, uint>();
         private List<SymbolAndDelta> _insertedSymbols = new List<SymbolAndDelta>();
 
-        public ExternalReferencesTableNode()
+        public ExternalReferencesTableNode(string blobName, NodeFactory nodeFactory)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _blobName = blobName;
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__external_" + blobName + "_references_End", true);
+            _nodeFactory = nodeFactory;
         }
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        public ISymbolDefinitionNode EndSymbol => _endSymbol;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__external_references");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__external_" + _blobName + "_references");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         /// <summary>
         /// Adds a new entry to the table. Thread safety: not thread safe. Expected to be called at the final
@@ -38,6 +47,15 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public uint GetIndex(ISymbolNode symbol, int delta = 0)
         {
+#if DEBUG
+            if (_nodeFactory.MarkingComplete)
+            {
+                var node = symbol as ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>;
+                if (node != null)
+                    Debug.Assert(node.Marked);
+            }
+#endif
+
             SymbolAndDelta key = new SymbolAndDelta(symbol, delta);
 
             uint index;
@@ -51,35 +69,67 @@ namespace ILCompiler.DependencyAnalysis
             return index;
         }
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (_nodeFactory.Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
             // Zero out the dictionary so that we AV if someone tries to insert after we're done.
             _insertedSymbolsDictionary = null;
 
-            var builder = new ObjectDataBuilder(factory);
+            var builder = new ObjectDataBuilder(factory, relocsOnly);
 
             foreach (SymbolAndDelta symbolAndDelta in _insertedSymbols)
             {
-                // TODO: set low bit if the linkage of the symbol is IAT_PVALUE.
-                builder.EmitPointerReloc(symbolAndDelta.Symbol, symbolAndDelta.Delta);
+                if (factory.Target.Abi == TargetAbi.ProjectN)
+                {
+                    int delta = symbolAndDelta.Delta;
+                    if (symbolAndDelta.Symbol.RepresentsIndirectionCell)
+                    {
+                        delta = (int)((uint)delta | IndirectionConstants.RVAPointsToIndirection);
+                    }
+                    builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_ADDR32NB, delta);
+                }
+                else if (factory.Target.SupportsRelativePointers)
+                {
+                    // TODO: set low bit if the linkage of the symbol is IAT_PVALUE.
+                    builder.EmitReloc(symbolAndDelta.Symbol, RelocType.IMAGE_REL_BASED_RELPTR32, symbolAndDelta.Delta);
+                }
+                else
+                {
+                    builder.EmitPointerReloc(symbolAndDelta.Symbol, symbolAndDelta.Delta);
+                }
             }
 
             _endSymbol.SetSymbolOffset(builder.CountBytes);
             
-            builder.DefinedSymbols.Add(this);
-            builder.DefinedSymbols.Add(_endSymbol);
+            builder.AddSymbol(this);
+            builder.AddSymbol(_endSymbol);
 
             return builder.ToObjectData();
+        }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        public override int ClassCode => (int)ObjectNodeOrder.ExternalReferencesTableNode;
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return string.Compare(_blobName, ((ExternalReferencesTableNode)other)._blobName);
         }
 
         struct SymbolAndDelta : IEquatable<SymbolAndDelta>

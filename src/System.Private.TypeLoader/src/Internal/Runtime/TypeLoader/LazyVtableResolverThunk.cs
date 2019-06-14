@@ -14,10 +14,12 @@ using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.Runtime.CallConverter;
 
+using ArgIterator = Internal.Runtime.CallConverter.ArgIterator;
+
 namespace Internal.Runtime.TypeLoader
 {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
-    internal static class LazyVTableResolver
+    public static class LazyVTableResolver
     {
         private static object s_lockObject = new object();
         private static object s_lazyVtableThunksPoolHeap;
@@ -25,13 +27,13 @@ namespace Internal.Runtime.TypeLoader
         private static volatile IntPtr[] s_thunks = InitialThunks();
 
         [DllImport("*", ExactSpelling = true, EntryPoint = "VTableResolver_Init")]
-        private unsafe extern static int VTableResolver_Init(out IntPtr firstResolverThunk,
+        private extern static unsafe int VTableResolver_Init(out IntPtr firstResolverThunk,
                                                      IntPtr vtableResolveCallback,
                                                      IntPtr universalTransition,
                                                      out int pregeneratedThunkCount);
 
         [DllImport("*", ExactSpelling = true, EntryPoint = "VTableResolver_GetCommonCallingStub")]
-        private unsafe extern static IntPtr VTableResolver_GetCommonCallingStub();
+        private extern static unsafe IntPtr VTableResolver_GetCommonCallingStub();
 
         /// <summary>
         /// Build initial array of vtable thunks. These thunks are the ones directly embedded in 
@@ -295,7 +297,7 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 TypeSystem.NativeFormat.NativeFormatType definingNativeFormatType = (TypeSystem.NativeFormat.NativeFormatType)definingType.GetTypeDefinition();
-                IntPtr moduleToLookIn = definingNativeFormatType.MetadataUnit.RuntimeModule;
+                NativeFormatModuleInfo moduleToLookIn = definingNativeFormatType.MetadataUnit.RuntimeModuleInfo;
 
                 TypeLoaderEnvironment.VirtualResolveDataResult virtualSlotInfo;
                 if (!TypeLoaderEnvironment.TryGetVirtualResolveData(moduleToLookIn, definingType.RuntimeTypeHandle, Array.Empty<RuntimeTypeHandle>(), ref methodSignatureComparer, out virtualSlotInfo))
@@ -316,7 +318,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="functionPointer">If there is no corresponding method defined in metadata, this is
         /// the function pointer that should be used for calls to this vtable slot</param>
         /// <returns>MethodDesc of function that defined the slot if possible.</returns>
-        private unsafe static MethodDesc ResolveVTableSlotIndexToMethodDescOrFunctionPointer(DefType type, int vtableSlotIndex, out IntPtr functionPointer)
+        private static unsafe MethodDesc ResolveVTableSlotIndexToMethodDescOrFunctionPointer(DefType type, int vtableSlotIndex, out IntPtr functionPointer)
         {
             Debug.Assert(type.RetrieveRuntimeTypeHandleIfPossible());
             Debug.Assert(type.RuntimeTypeHandle.ToEETypePtr()->NumVtableSlots > vtableSlotIndex);
@@ -490,7 +492,7 @@ namespace Internal.Runtime.TypeLoader
                     continue;
 
                 MethodSignatureComparer sigComparer = new MethodSignatureComparer(method.MetadataReader, method.Handle);
-                if (!sigComparer.IsMatchingNativeLayoutMethodNameAndSignature(methodNameAndSig.Name, methodNameAndSig.Signature.NativeLayoutSignature))
+                if (!sigComparer.IsMatchingNativeLayoutMethodNameAndSignature(methodNameAndSig.Name, methodNameAndSig.Signature))
                     continue;
 
                 // At this point we've matched
@@ -778,7 +780,7 @@ namespace Internal.Runtime.TypeLoader
         /// Based on the structure of our code, these functions are always Instance, non-generic methods
         /// and therefore, we don't need to be concerned about an extra generic dictionary parameter
         /// </summary>
-        static private bool TryGetVTableCallableAddress(MethodDesc method, out IntPtr result)
+        private static bool TryGetVTableCallableAddress(MethodDesc method, out IntPtr result)
         {
             TypeLoaderEnvironment.MethodAddressType dummy;
             IntPtr methodAddressNonUnboxing;

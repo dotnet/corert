@@ -19,6 +19,7 @@ namespace Internal.TypeSystem
         UnmanagedCallingConventionCdecl      = 0x0001,
         UnmanagedCallingConventionStdCall    = 0x0002,
         UnmanagedCallingConventionThisCall   = 0x0003,
+        CallingConventionVarargs             = 0x0005,
 
         Static = 0x0010,
     }
@@ -26,7 +27,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the parameter types, the return type, and flags of a method.
     /// </summary>
-    public sealed class MethodSignature
+    public sealed partial class MethodSignature : TypeSystemEntity
     {
         internal MethodSignatureFlags _flags;
         internal int _genericParameterCount;
@@ -131,6 +132,33 @@ namespace Internal.TypeSystem
         {
             return TypeHashingAlgorithms.ComputeMethodSignatureHashCode(_returnType.GetHashCode(), _parameters);
         }
+
+        public SignatureEnumerator GetEnumerator()
+        {
+            return new SignatureEnumerator(this);
+        }
+
+        public override TypeSystemContext Context => _returnType.Context;
+
+        public struct SignatureEnumerator
+        {
+            private int _index;
+            private MethodSignature _signature;
+
+            public SignatureEnumerator(MethodSignature signature)
+            {
+                _signature = signature;
+                _index = -1;
+            }
+
+            public TypeDesc Current => _signature[_index];
+
+            public bool MoveNext()
+            {
+                _index++;
+                return _index < _signature.Length;
+            }
+        }
     }
 
     /// <summary>
@@ -221,7 +249,7 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MethodDesc : TypeSystemEntity
     {
-        public readonly static MethodDesc[] EmptyMethods = new MethodDesc[0];
+        public static readonly MethodDesc[] EmptyMethods = new MethodDesc[0];
 
         private int _hashcode;
 
@@ -313,26 +341,6 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Gets a value indicating whether the method's <see cref="Instantiation"/>
-        /// contains any generic variables.
-        /// </summary>
-        public bool ContainsGenericVariables
-        {
-            get
-            {
-                // TODO: Cache?
-
-                Instantiation instantiation = this.Instantiation;
-                for (int i = 0; i < instantiation.Length; i++)
-                {
-                    if (instantiation[i].ContainsGenericVariables)
-                        return true;
-                }
-                return false;
-            }
-        }
-
-        /// <summary>
         /// Gets a value indicating whether this method is an instance constructor.
         /// </summary>
         public bool IsConstructor
@@ -342,6 +350,18 @@ namespace Internal.TypeSystem
                 // TODO: Precise check
                 // TODO: Cache?
                 return this.Name == ".ctor";
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a public parameterless instance constructor
+        /// on a non-abstract type.
+        /// </summary>
+        public virtual bool IsDefaultConstructor
+        {
+            get
+            {
+                return OwningType.GetDefaultConstructor() == this;
             }
         }
 
@@ -455,6 +475,26 @@ namespace Internal.TypeSystem
             get
             {
                 return GetTypicalMethodDefinition() == this;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is an uninstantiated generic method.
+        /// </summary>
+        public bool IsGenericMethodDefinition
+        {
+            get
+            {
+                return HasInstantiation && IsMethodDefinition;
+            }
+        }
+
+        public bool IsFinalizer
+        {
+            get
+            {
+                TypeDesc owningType = OwningType;
+                return (owningType.IsObject && Name == "Finalize") || (owningType.HasFinalizer && owningType.GetFinalizer() == this);
             }
         }
 

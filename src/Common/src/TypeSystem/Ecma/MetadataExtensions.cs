@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -38,6 +39,20 @@ namespace Internal.TypeSystem.Ecma
             return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
         }
 
+        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EcmaMethod This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+            var attributeHandles = metadataReader.GetMethodDefinition(This.Handle).GetCustomAttributes();
+            foreach (var attributeHandle in attributeHandles)
+            {
+                if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
+                {
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
+                }
+            }
+        }
+
         public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EcmaField This,
             string attributeNamespace, string attributeName)
         {
@@ -52,23 +67,57 @@ namespace Internal.TypeSystem.Ecma
             return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
         }
 
+        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EcmaField This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+            var attributeHandles = metadataReader.GetFieldDefinition(This.Handle).GetCustomAttributes();
+            foreach (var attributeHandle in attributeHandles)
+            {
+                if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
+                {
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.Module));
+                }
+            }
+        }
+
+        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EcmaAssembly This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+            var attributeHandles = metadataReader.GetAssemblyDefinition().GetCustomAttributes();
+            foreach (var attributeHandle in attributeHandles)
+            {
+                if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
+                {
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This));
+                }
+            }
+        }
+
         public static CustomAttributeHandle GetCustomAttributeHandle(this MetadataReader metadataReader, CustomAttributeHandleCollection customAttributes,
             string attributeNamespace, string attributeName)
         {
             foreach (var attributeHandle in customAttributes)
             {
-                StringHandle namespaceHandle, nameHandle;
-                if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
-                    continue;
-
-                if (metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace)
-                    && metadataReader.StringComparer.Equals(nameHandle, attributeName))
+                if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
                 {
                     return attributeHandle;
                 }
             }
 
             return default(CustomAttributeHandle);
+        }
+
+        private static bool IsEqualCustomAttributeName(CustomAttributeHandle attributeHandle, MetadataReader metadataReader, 
+            string attributeNamespace, string attributeName)
+        {
+            StringHandle namespaceHandle, nameHandle;
+            if (!metadataReader.GetAttributeNamespaceAndName(attributeHandle, out namespaceHandle, out nameHandle))
+                return false;
+
+            return metadataReader.StringComparer.Equals(namespaceHandle, attributeNamespace)
+                && metadataReader.StringComparer.Equals(nameHandle, attributeName);
         }
 
         public static bool GetAttributeNamespaceAndName(this MetadataReader metadataReader, CustomAttributeHandle attributeHandle,
@@ -146,6 +195,71 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public static PInvokeFlags GetDelegatePInvokeFlags(this EcmaType type)
+        {
+            PInvokeFlags flags = new PInvokeFlags();
+
+            if (!type.IsDelegate)
+            {
+                return flags;
+            }
+
+            var customAttributeValue = type.GetDecodedCustomAttribute(
+                               "System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute");
+
+            if (customAttributeValue == null)
+            {
+                return flags;
+            }
+
+            if (!customAttributeValue.HasValue)
+            {
+                return flags;
+            }
+
+            if (customAttributeValue.Value.FixedArguments.Length == 1)
+            {
+                CallingConvention callingConvention = (CallingConvention)customAttributeValue.Value.FixedArguments[0].Value;
+
+                switch (callingConvention)
+                {
+                    case CallingConvention.StdCall:
+                        flags.UnmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConventionStdCall;
+                        break;
+                    case CallingConvention.Cdecl:
+                        flags.UnmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConventionCdecl;
+                        break;
+                    case CallingConvention.ThisCall:
+                        flags.UnmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConventionThisCall;
+                        break;
+                    case CallingConvention.Winapi:
+                        flags.UnmanagedCallingConvention = MethodSignatureFlags.UnmanagedCallingConventionStdCall;
+                        break;
+                }
+            }
+
+            foreach (var namedArgument in customAttributeValue.Value.NamedArguments)
+            {
+                if (namedArgument.Name == "CharSet")
+                {
+                    flags.CharSet = (CharSet)namedArgument.Value;
+                }
+                else if (namedArgument.Name == "BestFitMapping")
+                {
+                    flags.BestFitMapping = (bool)namedArgument.Value;
+                }
+                else if (namedArgument.Name == "SetLastError")
+                {
+                    flags.SetLastError = (bool)namedArgument.Value;
+                }
+                else if (namedArgument.Name == "ThrowOnUnmappableChar")
+                {
+                    flags.ThrowOnUnmappableChar = (bool)namedArgument.Value;
+                }
+            }
+            return flags;
+        }
+
         // This mask is the fastest way to check if a type is nested from its flags,
         // but it should not be added to the BCL enum as its semantics can be misleading.
         // Consider, for example, that (NestedFamANDAssem & NestedMask) == NestedFamORAssem.
@@ -156,6 +270,17 @@ namespace Internal.TypeSystem.Ecma
         public static bool IsNested(this TypeAttributes flags)
         {
             return (flags & NestedMask) != 0;
+        }
+
+        public static bool IsRuntimeSpecialName(this MethodAttributes flags)
+        {
+            return (flags & (MethodAttributes.SpecialName | MethodAttributes.RTSpecialName))
+                == (MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
+        }
+
+        public static bool IsPublic(this MethodAttributes flags)
+        {
+            return (flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
         }
     }
 }

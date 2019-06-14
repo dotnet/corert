@@ -4,6 +4,7 @@
 
 using System;
 using System.Text;
+using System.Diagnostics;
 
 namespace Internal.Text
 {
@@ -23,6 +24,13 @@ namespace Internal.Text
         public Utf8StringBuilder Clear()
         {
             _length = 0;
+            return this;
+        }
+
+        public Utf8StringBuilder Truncate(int newLength)
+        {
+            Debug.Assert(newLength <= _length);
+            _length = newLength;
             return this;
         }
 
@@ -70,6 +78,11 @@ namespace Internal.Text
             return Encoding.UTF8.GetString(_buffer, 0, _length);
         }
 
+        public string ToString(int start)
+        {
+            return Encoding.UTF8.GetString(_buffer, start, _length - start);
+        }
+
         public Utf8String ToUtf8String()
         {
             var ret = new byte[_length];
@@ -89,6 +102,51 @@ namespace Internal.Text
             byte[] newBuffer = new byte[newSize];
             Buffer.BlockCopy(_buffer, 0, newBuffer, 0, _length);
             _buffer = newBuffer;
+        }
+
+        // Find the boundary of the last character prior to a position 
+        // If pos points to the last byte of a char, then return pos; Otherwise,
+        // return the position of the last byte of the preceding char.
+        public int LastCharBoundary(int pos)
+        {
+            Debug.Assert(pos < _length);
+
+            if (_buffer[pos] < 128 /*10000000*/)
+            {
+                // This is a single byte character
+                return pos;
+            }
+
+            int origPos = pos;
+
+            // Skip following bytes of a multi-byte character until the first byte is seen
+            while (_buffer[pos] < 192 /*11000000*/)
+            {
+                pos--;
+            }
+
+            if (pos == origPos - 3)
+            {
+                // We just skipped a four-byte character
+                Debug.Assert(_buffer[pos] >= 240 /*11110000*/);
+                return origPos;
+            }
+
+            if (pos == origPos - 2 && _buffer[pos] < 240 && _buffer[pos] >= 224 /*11100000*/)
+            {
+                // We just skipped a three-byte character
+                return origPos;
+            }
+
+            if (pos == origPos - 1 && _buffer[pos] < 224)
+            {
+                // We just skipped a two-byte character
+                Debug.Assert(_buffer[pos] >= 192 /*11000000*/);
+                return origPos;
+            }
+
+            // We were in the middle of a multi-byte character
+            return pos - 1;
         }
     }
 }

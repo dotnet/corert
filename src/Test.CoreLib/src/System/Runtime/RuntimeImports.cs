@@ -6,6 +6,13 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Internal.Runtime;
+
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
 
 namespace System.Runtime
 {
@@ -44,6 +51,23 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpRegisterFrozenSegment")]
         internal static extern bool RhpRegisterFrozenSegment(IntPtr pSegmentStart, int length);
 
+        [RuntimeImport(RuntimeLibrary, "RhpGetModuleSection")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern IntPtr RhGetModuleSection(ref TypeManagerHandle module, ReadyToRunSectionType section, out int length);
+
+        internal static IntPtr RhGetModuleSection(TypeManagerHandle module, ReadyToRunSectionType section, out int length)
+        {
+            return RhGetModuleSection(ref module, section, out length);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpCreateTypeManager")]
+        internal static extern unsafe TypeManagerHandle RhpCreateTypeManager(IntPtr osModule, IntPtr moduleHeader, IntPtr* pClasslibFunctions, int nClasslibFunctions);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpRegisterOsModule")]
+        internal static extern unsafe IntPtr RhpRegisterOsModule(IntPtr osModule);
+
         //
         // calls to runtime for allocation
         // These calls are needed in types which cannot use "new" to allocate and need to do it manually
@@ -78,5 +102,12 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
         internal extern static void MemoryBarrier();
+
+        // Moves memory from smem to dmem. Size must be a positive value.
+        // This copy uses an intrinsic to be safe for copying arbitrary bits of
+        // heap memory
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
+        internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
     }
 }

@@ -5,6 +5,7 @@
 using System;
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -12,47 +13,51 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a blob of native metadata describing assemblies, the types in them, and their members.
     /// The data is used at runtime to e.g. support reflection.
     /// </summary>
-    internal sealed class MetadataNode : ObjectNode, ISymbolNode
+    public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode
     {
         ObjectAndOffsetSymbolNode _endSymbol;
 
         public MetadataNode()
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__embedded_metadata_End", true);
         }
 
         public ISymbolNode EndSymbol => _endSymbol;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__embedded_metadata");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__embedded_metadata");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
         public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node has no relocations.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            byte[] blob = factory.MetadataManager.GetMetadataBlob();
+            byte[] blob = factory.MetadataManager.GetMetadataBlob(factory);
             _endSymbol.SetSymbolOffset(blob.Length);
 
             return new ObjectData(
                 blob,
                 Array.Empty<Relocation>(),
                 1,
-                new ISymbolNode[]
+                new ISymbolDefinitionNode[]
                 {
                     this,
                     _endSymbol
                 });
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        public override int ClassCode => (int)ObjectNodeOrder.MetadataNode;
     }
 }

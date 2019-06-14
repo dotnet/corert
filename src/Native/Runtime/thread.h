@@ -14,19 +14,19 @@ class Thread;
 // runtime build.
 #define KEEP_THREAD_LAYOUT_CONSTANT
 
-#if defined(_X86_) || defined(_ARM_)
+#ifndef BIT64
 # if defined(FEATURE_SVR_GC) || defined(KEEP_THREAD_LAYOUT_CONSTANT)
 #  define SIZEOF_ALLOC_CONTEXT 40
-# else // FEATURE_SVR_GC
+# else
 #  define SIZEOF_ALLOC_CONTEXT 28
-# endif // FEATURE_SVR_GC
-#elif defined(_AMD64_) || defined(_ARM64_)
+# endif
+#else // BIT64
 # if defined(FEATURE_SVR_GC) || defined(KEEP_THREAD_LAYOUT_CONSTANT)
 #  define SIZEOF_ALLOC_CONTEXT 56
-# else // FEATURE_SVR_GC
+# else
 #  define SIZEOF_ALLOC_CONTEXT 40
-# endif // FEATURE_SVR_GC
-#endif // _AMD64_
+# endif
+#endif // BIT64
 
 #define TOP_OF_STACK_MARKER ((PTR_VOID)(UIntNative)(IntNative)-1)
 
@@ -46,7 +46,9 @@ struct ExInfo;
 typedef DPTR(ExInfo) PTR_ExInfo;
 
 
-// also defined in ExceptionHandling.cs, layouts must match
+// Also defined in ExceptionHandling.cs, layouts must match.
+// When adding new fields to this struct, ensure they get properly initialized in the exception handling 
+// assembly stubs
 struct ExInfo
 {
 
@@ -59,8 +61,6 @@ struct ExInfo
     StackFrameIterator      m_frameIter;
     volatile void*          m_notifyDebuggerSP;
 };
-
-
 
 struct ThreadBuffer
 {
@@ -77,7 +77,11 @@ struct ThreadBuffer
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
+#ifdef BIT64
+    UIntNative              m_uHijackedReturnValueFlags;            // used on ARM64 only; however, ARM64 and AMD64 share field offsets
+#endif // BIT64
     PTR_ExInfo              m_pExInfoStackHead;
+    Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
     PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
@@ -91,6 +95,11 @@ struct ThreadBuffer
     // Thread Statics Storage for dynamic types
     UInt32          m_numDynamicTypesTlsCells;
     PTR_PTR_UInt8   m_pDynamicTypesTlsCells;
+
+#ifndef PROJECTN
+    PTR_PTR_VOID    m_pThreadLocalModuleStatics;
+    UInt32          m_numThreadLocalModuleStatics;
+#endif // PROJECTN
 };
 
 struct ReversePInvokeFrame
@@ -130,12 +139,13 @@ private:
     bool IsStateSet(ThreadStateFlags flags);
 
     static UInt32_BOOL HijackCallback(HANDLE hThread, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext);
-    bool InternalHijack(PAL_LIMITED_CONTEXT * pCtx, void* HijackTargets[3]);
+    bool InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[]);
 
     bool CacheTransitionFrameForSuspend();
     void ResetCachedTransitionFrame();
     void CrossThreadUnhijack();
     void UnhijackWorker();
+    void EnsureRuntimeInitialized();
 #ifdef _DEBUG
     bool DebugIsSuspended();
 #endif
@@ -154,7 +164,7 @@ public:
 
     bool                IsInitialized();
 
-    gc_alloc_context *     GetAllocContext();  // @TODO: I would prefer to not expose this in this way
+    gc_alloc_context *  GetAllocContext();  // @TODO: I would prefer to not expose this in this way
 
 #ifndef DACCESS_COMPILE
     UInt64              GetPalThreadIdForLogging();
@@ -169,7 +179,7 @@ public:
     bool                Hijack();
     void                Unhijack();
 #ifdef FEATURE_GC_STRESS
-    static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pCtx);
+    static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
 #endif // FEATURE_GC_STRESS
     bool                IsHijacked();
     void *              GetHijackedReturnAddress();
@@ -248,12 +258,23 @@ public:
 
     bool InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame);
     void InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame);
+
+    void InlinePInvoke(PInvokeTransitionFrame * pFrame);
+    void InlinePInvokeReturn(PInvokeTransitionFrame * pFrame);
+
+    Object * GetThreadAbortException();
+    void SetThreadAbortException(Object *exception);
+
+#ifndef PROJECTN
+    Object* GetThreadStaticStorageForModule(UInt32 moduleIndex);
+    Boolean SetThreadStaticStorageForModule(Object * pStorage, UInt32 moduleIndex);
+#endif // PROJECTN
 };
 
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 typedef DPTR(Object) PTR_Object;
 typedef DPTR(PTR_Object) PTR_PTR_Object;
-#endif // !GCENV_INCLUDED
+#endif // !__GCENV_BASE_INCLUDED__
 #ifdef DACCESS_COMPILE
 
 // The DAC uses DebuggerEnumGcRefContext in place of a GCCONTEXT when doing reference
@@ -279,10 +300,10 @@ typedef DacScanCallbackData EnumGcRefScanContext;
 typedef void EnumGcRefCallbackFunc(PTR_PTR_Object, EnumGcRefScanContext* callbackData, UInt32 flags);
 
 #else // DACCESS_COMPILE
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 struct ScanContext;
 typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
-#endif // !GCENV_INCLUDED
+#endif // !__GCENV_BASE_INCLUDED__
 typedef promote_func EnumGcRefCallbackFunc;
 typedef ScanContext  EnumGcRefScanContext;
 

@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace Internal.TypeSystem
 {
-    static public class ConstructedTypeRewritingHelpers
+    public static class ConstructedTypeRewritingHelpers
     {
         /// <summary>
         /// Determine if the construction of a type contains one of a given set of types. This is a deep

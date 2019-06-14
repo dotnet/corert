@@ -126,4 +126,7 @@
   <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
     <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
   </data>
+  <data name="FileLoadException_RefDefMismatch" xml:space="preserve">
+    <value>Cannot load assembly '{0}'. The assembly exists but its version {1} is lower than the requested version {2}.</value>
+  </data>
 </root>

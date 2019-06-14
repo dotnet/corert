@@ -63,5 +63,16 @@ namespace Internal.TypeSystem
                 return _methodDef.UnboxingStub;
             }
         }
+
+#if DEBUG
+        public override string ToString()
+        {
+            var sb = new System.Text.StringBuilder(_methodDef.ToString());
+            sb.Append('<');
+            sb.Append(_instantiation.ToString());
+            sb.Append('>');
+            return sb.ToString();
+        }
+#endif
     }
 }

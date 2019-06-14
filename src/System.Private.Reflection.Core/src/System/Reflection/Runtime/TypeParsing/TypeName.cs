@@ -131,9 +131,26 @@ namespace System.Reflection.Runtime.TypeParsing
 
             // Don't change these flags - we may be talking to a third party type here and we need to invoke it the way CoreClr does.
             BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic;
-            if (getTypeOptions.IgnoreCase)
-                bf |= BindingFlags.IgnoreCase;
-            Type nestedType = declaringType.GetNestedType(_nestedTypeName, bf);
+            Type nestedType;
+            if (!getTypeOptions.IgnoreCase)
+            {
+                nestedType = declaringType.GetNestedType(_nestedTypeName, bf);
+            }
+            else
+            {
+                // Return the first name that matches. Which one gets returned on a multiple match is an implementation detail.
+                // Unfortunately, compat prevents us from just throwing AmbiguousMatchException.
+                nestedType = null;
+                string lowerNestedTypeName = _nestedTypeName.ToLowerInvariant(); //@todo: Once String.Equals() works with StringComparison.InvariantIgnoreCase, it would be better to use that.
+                foreach (Type nt in declaringType.GetNestedTypes(bf))
+                {
+                    if (nt.Name.ToLowerInvariant() == lowerNestedTypeName)
+                    {
+                        nestedType = nt;
+                        break;
+                    }
+                }
+            }
             if (nestedType == null && getTypeOptions.ThrowOnError)
                 throw Helpers.CreateTypeLoadException(ToString(), containingAssemblyIfAny);
             return nestedType;

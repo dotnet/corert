@@ -48,8 +48,15 @@ donestack:
         mov     ecx, dword ptr [eax + 4]
         mov     eax,[ebx + OFFSETOF__CallDescrData__pTarget]
         call    eax
-LABELED_RETURN_ADDRESS ReturnFromCallDescrThunk ; Symbol used to identify thunk call to managed function so the special case unwinder can unwind through this function
 
+        EXPORT_POINTER_TO_ADDRESS _PointerToReturnFromCallDescrThunk
+
+        ; Symbol used to identify thunk call to managed function so the special 
+        ; case unwinder can unwind through this function. Sadly we cannot directly
+        ; export this symbol right now because it confuses DIA unwinder to believe
+        ; it's the beginning of a new method, therefore we export the address
+        ; by means of an auxiliary variable.
+        
         ; Save FP return value if necessary
         mov     ecx, [ebx + OFFSETOF__CallDescrData__fpReturnSize]
         cmp     ecx, 0

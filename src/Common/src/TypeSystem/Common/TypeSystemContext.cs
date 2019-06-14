@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
 {
     public abstract partial class TypeSystemContext
     {
-        public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown))
+        public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown, TargetAbi.Unknown))
         {
         }
 
@@ -57,9 +57,16 @@ namespace Internal.TypeSystem
             SystemModule = systemModule;
         }
 
-        public abstract DefType GetWellKnownType(WellKnownType wellKnownType);
+        public abstract DefType GetWellKnownType(WellKnownType wellKnownType, bool throwIfNotFound = true);
 
         public virtual ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
+        {
+            if (throwIfNotFound)
+                throw new NotSupportedException();
+            return null;
+        }
+
+        internal virtual ModuleDesc ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound = true)
         {
             if (throwIfNotFound)
                 throw new NotSupportedException();

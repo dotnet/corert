@@ -1,0 +1,97 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
+         This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
+    -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <RidSpecificAssets>true</RidSpecificAssets>
+    <OutputPath>$(RuntimePath)</OutputPath>
+    <XUnitRunnerPackageId>xunit.runner.console</XUnitRunnerPackageId>
+    <XUnitRunner>xunit.console</XUnitRunner>
+    <XUnitTestAdapterPackageId>xunit.runner.visualstudio</XUnitTestAdapterPackageId>
+    <XUnitAdapter>xunit.runner.visualstudio.dotnetcore.testadapter</XUnitAdapter>
+    <TestPlatformHostPackageId>microsoft.testplatform.testhost</TestPlatformHostPackageId>
+    <TestPlatformHost>testhost</TestPlatformHost>
+    <!-- In case the project language is not set -->
+    <Language Condition="'$(Language)' == ''">unknown</Language>
+    <!-- Don't warn if some dependencies were rolled forward -->
+    <NoWarn>$(NoWarn);NU1603</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit">
+      <Version>$(XUnitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="$(XUnitRunnerPackageId)">
+      <Version>$(XUnitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions">
+      <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="$(XUnitTestAdapterPackageId)">
+      <Version>$(XUnitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk">
+      <Version>$(MicrosoftDotNetTestSdkVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.TestPlatform.ObjectModel">
+      <Version>$(MicrosoftDotNetTestSdkVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="$(TestPlatformHostPackageId)">
+      <Version>$(MicrosoftDotNetTestSdkVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyModel">
+      <Version>2.0.4</Version>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>9.0.1</Version>
+    </PackageReference>
+  </ItemGroup>
+  <Target Name="AddTestPlatformDependenciesNetCore" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\netcoreapp2.0\$(XUnitRunner).dll')"
+            Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitRunner).dll."
+    />
+    <Error Condition="!Exists('$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\netcoreapp1.0\$(XUnitAdapter).dll')"
+            Text="Error: looks the package $(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll."
+    />
+    <Error Condition="!Exists('$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftDotNetTestSdkVersion)\lib\netstandard1.5\$(TestPlatformHost).dll')"
+            Text="Error: looks the package $(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftDotNetTestSdkVersion) not restored or missing $(TestPlatformHost).dll."
+    />
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\netcoreapp2.0\*.*">
+        <Private>false</Private>
+        <NuGetPackageId>$(XUnitRunnerPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\netcoreapp1.0\*.*">
+        <Private>false</Private>
+        <NuGetPackageId>$(XUnitTestAdapterPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftDotNetTestSdkVersion)\lib\netstandard1.5\$(TestPlatformHost).dll">
+        <Private>false</Private>
+        <NuGetPackageId>$(TestPlatformHostPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(MicrosoftDotNetTestSdkVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+    </ItemGroup>
+  </Target>
+  <ItemGroup>
+    <!-- xunit core -->
+    <PackageToInclude Include="xunit.abstractions" />
+    <PackageToInclude Include="xunit.assert" />
+    <PackageToInclude Include="xunit.extensibility.core" />
+    <PackageToInclude Include="xunit.extensibility.execution" />
+    <PackageToInclude Include="xunit.runner.utility" />
+    <PackageToInclude Include="Microsoft.DotNet.XUnitExtensions" />
+    
+    <!-- test sdk -->
+    <PackageToInclude Include="Microsoft.NET.Test.Sdk" />
+    <PackageToInclude Include="Microsoft.TestPlatform.TestHost" />
+    <PackageToInclude Include="Microsoft.TestPlatform.ObjectModel" />
+    <PackageToInclude Include="Microsoft.Extensions.DependencyModel" />
+
+    <PackageToInclude Include="Newtonsoft.Json" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

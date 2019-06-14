@@ -24,11 +24,12 @@ namespace Internal.Runtime.TypeLoader
     internal class NativeLayoutInfoLoadContext
     {
         public TypeSystemContext _typeSystemContext;
-        public IntPtr _moduleHandle;
+        public NativeFormatModuleInfo _module;
         private ExternalReferencesTable _staticInfoLookup;
         private ExternalReferencesTable _externalReferencesLookup;
         public Instantiation _typeArgumentHandles;
         public Instantiation _methodArgumentHandles;
+        public ulong[] _debuggerPreparedExternalReferences;
 
         private TypeDesc GetInstantiationType(ref NativeParser parser, uint arity)
         {
@@ -66,8 +67,15 @@ namespace Internal.Runtime.TypeLoader
         {
             if (!_externalReferencesLookup.IsInitialized())
             {
-                bool success = _externalReferencesLookup.InitializeNativeReferences(_moduleHandle);
-                Debug.Assert(success);
+                if (this._debuggerPreparedExternalReferences == null)
+                {
+                    bool success = _externalReferencesLookup.InitializeNativeReferences(_module);
+                    Debug.Assert(success);
+                }
+                else
+                {
+                    _externalReferencesLookup.InitializeDebuggerReference(this._debuggerPreparedExternalReferences);
+                }
             }
         }
 
@@ -88,7 +96,7 @@ namespace Internal.Runtime.TypeLoader
         {
             if (!_staticInfoLookup.IsInitialized())
             {
-                bool success = _staticInfoLookup.InitializeNativeStatics(_moduleHandle);
+                bool success = _staticInfoLookup.InitializeNativeStatics(_module);
                 Debug.Assert(success);
             }
 
@@ -132,17 +140,26 @@ namespace Internal.Runtime.TypeLoader
                         // Skip encoded bounds and lobounds
                         uint boundsCount = parser.GetUnsigned();
                         while (boundsCount > 0)
+                        {
                             parser.GetUnsigned();
+                            boundsCount--;
+                        }
 
                         uint loBoundsCount = parser.GetUnsigned();
                         while (loBoundsCount > 0)
+                        {
                             parser.GetUnsigned();
+                            loBoundsCount--;
+                        }
 
                         return _typeSystemContext.GetArrayType(elementType, rank);
                     }
 
+                case TypeSignatureKind.BuiltIn:
+                    return _typeSystemContext.GetWellKnownType((WellKnownType)data);
+
                 case TypeSignatureKind.FunctionPointer:
-                    Debug.Assert(false, "NYI!");
+                    Debug.Fail("NYI!");
                     parser.ThrowBadImageFormatException();
                     return null;
 
@@ -152,7 +169,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        internal MethodDesc GetMethod(ref NativeParser parser, out IntPtr methodNameSigPtr, out IntPtr methodSigPtr)
+        internal MethodDesc GetMethod(ref NativeParser parser, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
         {
             MethodFlags flags = (MethodFlags)parser.GetUnsigned();
 
@@ -161,7 +178,7 @@ namespace Internal.Runtime.TypeLoader
                 functionPointer = GetExternalReferencePointer(parser.GetUnsigned());
 
             DefType containingType = (DefType)GetType(ref parser);
-            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignature(ref parser, out methodNameSigPtr, out methodSigPtr);
+            MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignature(ref parser, _module.Handle, out methodNameSig, out methodSig);
 
             bool unboxingStub = (flags & MethodFlags.IsUnboxingStub) != 0;
 
@@ -189,9 +206,9 @@ namespace Internal.Runtime.TypeLoader
 
         internal MethodDesc GetMethod(ref NativeParser parser)
         {
-            IntPtr methodSigPtr;
-            IntPtr methodNameSigPtr;
-            return GetMethod(ref parser, out methodNameSigPtr, out methodSigPtr);
+            RuntimeSignature methodSig;
+            RuntimeSignature methodNameSig;
+            return GetMethod(ref parser, out methodNameSig, out methodSig);
         }
 
         internal TypeDesc[] GetTypeSequence(ref NativeParser parser)

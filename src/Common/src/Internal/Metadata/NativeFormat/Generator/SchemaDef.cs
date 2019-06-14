@@ -26,25 +26,23 @@ public enum RecordDefFlags
 [Flags]
 public enum MemberDefFlags
 {
-    Map = 0x0001, // => Dictionary<string, RecordType> for MetadataWriter
-                  // => List<RecordType> for MetadataReader
-    List = 0x0002, // => List<RecordType>
-    Array = 0x0004, // => RecordType[]
+    Map = 0x0001,   // => List<RecordType> for writer
+    List = 0x0002,  // => List<RecordType> for writer
+    Array = 0x0004, // => RecordType[] for writer
 
     Collection = MemberDefFlags.Map | MemberDefFlags.List | MemberDefFlags.Array,
     Sequence = MemberDefFlags.List | MemberDefFlags.Array,
 
-    RecordRef = 0x0008, // => RecordTypeHandle
-
-    Ref = MemberDefFlags.RecordRef,
+    RecordRef = 0x0008,
 
     Child = 0x0010, // Member instance is logically defined and owned by record;
                     // otherwise instance may be shared (such as a TypeRef).
-    Name = 0x0020, // May be used as the member"s simple name for diagnostics.
+    Name = 0x0020, // May be used as the member's simple name for diagnostics.
     NotPersisted = 0x0040, // Indicates member is not written to or read from metadata.
     Compare = 0x0080, // Indicates member should be used for equality functionality.
     EnumerateForHashCode = 0x0100, // Indicates that the collection is safe to be enumerated in GetHashCode
                                    // without causing reentrancy
+    CustomCompare = 0x0200, // Indicates that this member uses a custom comparer
 }
 
 public enum MemberTypeKind
@@ -86,14 +84,14 @@ public class MemberDef
             else
             {
                 typeName = (kind == MemberTypeKind.WriterField) ? 
-                    (TypeName != null ? (string)TypeName : "MetadataRecord"): $"{ TypeName}Handle";
+                    (TypeName != null ? (string)TypeName : "MetadataRecord"): $"{TypeName}Handle";
             }
         }
         else
         {
             typeName = (string)TypeName;
         }
-        if ((Flags & (MemberDefFlags.Array | MemberDefFlags.List | MemberDefFlags.Map)) != 0)
+        if ((Flags & MemberDefFlags.Collection) != 0)
         {
             if (kind == MemberTypeKind.WriterField)
             {
@@ -119,10 +117,7 @@ public class MemberDef
         if (typeSet == null)
             return null;
 
-        string result = "One of: " + typeSet[0];
-        for (int i = 1; i < typeSet.Length; i++)
-            result += ", " + typeSet[i];
-        return result;
+        return "One of: " + String.Join(", ", typeSet);
     }
 }
 
@@ -161,14 +156,16 @@ public class EnumType
 
 public class PrimitiveType
 {
-    public PrimitiveType(string name, string typeName)
+    public PrimitiveType(string name, string typeName, bool customCompare = false)
     {
         Name = name;
         TypeName = typeName;
+        CustomCompare = customCompare;
     }
 
     readonly public string Name;
     readonly public string TypeName;
+    readonly public bool CustomCompare;
 }
 
 /// <summary>
@@ -176,7 +173,7 @@ public class PrimitiveType
 /// </summary>
 class SchemaDef
 {
-    public readonly static EnumType[] EnumTypes = new EnumType[]
+    public static readonly EnumType[] EnumTypes = new EnumType[]
     {
         new EnumType("AssemblyFlags", "uint"),
         new EnumType("AssemblyHashAlgorithm", "uint"),
@@ -196,11 +193,10 @@ class SchemaDef
         new EnumType("TypeAttributes", "uint"),
     };
 
-    public readonly static PrimitiveType[] PrimitiveTypes = new PrimitiveType[]
+    public static readonly PrimitiveType[] PrimitiveTypes = new PrimitiveType[]
     {
         new PrimitiveType("bool", "Boolean"),
         new PrimitiveType("char", "Char"),
-        new PrimitiveType("string", "String"),
         new PrimitiveType("byte", "Byte"),
         new PrimitiveType("sbyte", "SByte"),
         new PrimitiveType("short", "Int16"),
@@ -209,12 +205,12 @@ class SchemaDef
         new PrimitiveType("uint", "UInt32"),
         new PrimitiveType("long", "Int64"),
         new PrimitiveType("ulong", "UInt64"),
-        new PrimitiveType("float", "Single"),
-        new PrimitiveType("double", "Double"),
+        new PrimitiveType("float", "Single", customCompare: true),
+        new PrimitiveType("double", "Double", customCompare: true),
     };
 
     // These enums supplement those defined by System.Reflection.Primitives.
-    public readonly static RecordDef[] EnumSchema = new RecordDef[]
+    public static readonly RecordDef[] EnumSchema = new RecordDef[]
     {
         // AssemblyFlags - as defined in ECMA
         new RecordDef(
@@ -287,13 +283,14 @@ class SchemaDef
     // that represent contant primitive type values. Adds concept of constant managed reference, which
     // must always have a null value (thus the use of the NotPersisted flag).
 
-    private readonly static RecordDef[] ConstantValueRecordSchema =
+    private static readonly RecordDef[] ConstantValueRecordSchema =
         (
             from primitiveType in PrimitiveTypes select
                 new RecordDef(
                     name: "Constant" + primitiveType.TypeName + "Value",
                     members: new MemberDef[] {
-                        new MemberDef(name: "Value", typeName: primitiveType.Name)
+                        new MemberDef(name: "Value", typeName: primitiveType.Name,
+                            flags: primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0)
                     }
                 )
         )
@@ -305,6 +302,12 @@ class SchemaDef
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", typeName: "Object", flags: MemberDefFlags.NotPersisted)
                     }
+                ),
+                new RecordDef(
+                    name: "ConstantStringValue",
+                    members: new MemberDef[] {
+                        new MemberDef(name: "Value", typeName: "string")
+                    }
                 )
             }
         )
@@ -315,13 +318,14 @@ class SchemaDef
     // an array TypeDefOrRefOrSpec handles corresponding to System.Type arguments to the instantiation of a custom attribute, or to store
     // custom initialized object[] arrays in custom attributes).
 
-    private readonly static RecordDef[] ConstantArrayRecordSchema =
+    private static readonly RecordDef[] ConstantArrayRecordSchema =
         (
             from primitiveType in PrimitiveTypes select
                 new RecordDef(
                     name: "Constant" + primitiveType.TypeName + "Array",
                     members: new MemberDef[] {
-                        new MemberDef(name: "Value", flags: MemberDefFlags.Array, typeName: primitiveType.TypeName)
+                        new MemberDef(name: "Value", typeName: primitiveType.TypeName,
+                            flags: MemberDefFlags.Array | (primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0))
                     }
                 )
         )
@@ -333,12 +337,25 @@ class SchemaDef
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", flags: MemberDefFlags.RecordRef | MemberDefFlags.List)
                     }
-                )
+                ),
+                new RecordDef(
+                    name: "ConstantStringArray",
+                    members: new MemberDef[] {
+                        new MemberDef(name: "Value", typeName: new string[] { "ConstantStringValue", "ConstantReferenceValue" }, flags: MemberDefFlags.RecordRef | MemberDefFlags.List)
+                    }
+                ),
+                new RecordDef(
+                    name: "ConstantEnumArray",
+                    members: new MemberDef[] {
+                        new MemberDef("ElementType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                        new MemberDef("Value", ConstantEnumArrayValue, MemberDefFlags.RecordRef)
+                    }
+                ),
             }
         )
         .ToArray();
 
-    private readonly static RecordDef[] ConstantRecordSchema = 
+    private static readonly RecordDef[] ConstantRecordSchema = 
         ConstantValueRecordSchema.Concat(ConstantArrayRecordSchema)
         .OrderBy(record => record.Name, StringComparer.Ordinal)
         .ToArray();
@@ -347,7 +364,7 @@ class SchemaDef
     // Common tuple definitions
     //
 
-    private readonly static string[] EnumConstantValue = new string[]
+    private static readonly string[] EnumConstantValue = new string[]
     {
         "ConstantByteValue",
         "ConstantSByteValue",
@@ -359,20 +376,32 @@ class SchemaDef
         "ConstantUInt64Value",
     };
 
-    private readonly static string[] TypeDefOrRef = new string[]
+    private static readonly string[] ConstantEnumArrayValue = new string[]
+    {
+        "ConstantByteArray",
+        "ConstantSByteArray",
+        "ConstantInt16Array",
+        "ConstantUInt16Array",
+        "ConstantInt32Array",
+        "ConstantUInt32Array",
+        "ConstantInt64Array",
+        "ConstantUInt64Array",
+    };
+
+    private static readonly string[] TypeDefOrRef = new string[]
     {
         "TypeDefinition",
         "TypeReference",
     };
 
-    private readonly static string[] TypeDefOrRefOrSpec = new string[]
+    private static readonly string[] TypeDefOrRefOrSpec = new string[]
     {
         "TypeDefinition",
         "TypeReference",
         "TypeSpecification",
     };
 
-    private readonly static string[] TypeDefOrRefOrSpecOrMod = new string[]
+    private static readonly string[] TypeDefOrRefOrSpecOrMod = new string[]
     {
         "TypeDefinition",
         "TypeReference",
@@ -380,7 +409,7 @@ class SchemaDef
         "ModifiedType",
     };
 
-    private readonly static string[] TypeSig = new string[]
+    private static readonly string[] TypeSig = new string[]
     {
         "TypeInstantiationSignature",
         "SZArraySignature",
@@ -392,10 +421,10 @@ class SchemaDef
         "MethodTypeVariableSignature",
     };
 
-    private readonly static string[] TypeDefOrRefOrSpecOrConstant =
+    private static readonly string[] TypeDefOrRefOrSpecOrConstant =
         TypeDefOrRefOrSpec.Concat(from constantRecord in ConstantRecordSchema select constantRecord.Name).ToArray();
 
-    private readonly static string[] MethodDefOrRef = new string[]
+    private static readonly string[] MethodDefOrRef = new string[]
     {
         "QualifiedMethod",
         "MemberReference",
@@ -408,7 +437,7 @@ class SchemaDef
     // Member tuple format: (name, type, flags)
     // These are largely based on the definitions in ECMA335.
     //
-    public readonly static RecordDef[] RecordSchema = new RecordDef[]
+    public static readonly RecordDef[] RecordSchema = new RecordDef[]
     {
         new RecordDef(
             name: "TypeDefinition",
@@ -464,6 +493,9 @@ class SchemaDef
                 new MemberDef("EntryPoint", "QualifiedMethod", MemberDefFlags.RecordRef),
                 new MemberDef("GlobalModuleType", "TypeDefinition", MemberDefFlags.RecordRef),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
+                new MemberDef("ModuleName", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child | MemberDefFlags.Compare),
+                new MemberDef("Mvid", "Byte", MemberDefFlags.Array | MemberDefFlags.Compare),
+                new MemberDef("ModuleCustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
         new RecordDef(
@@ -602,7 +634,7 @@ class SchemaDef
             name: "ConstantBoxedEnumValue",
             members: new MemberDef[] {
                 new MemberDef("Value", EnumConstantValue, MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("Type", TypeDefOrRef, MemberDefFlags.RecordRef)
+                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef)
             }
         ),
         new RecordDef(
@@ -612,7 +644,7 @@ class SchemaDef
                 new MemberDef("Flags", "GenericParameterAttributes"),
                 new MemberDef("Kind", "GenericParameterKind"),
                 new MemberDef("Name", "ConstantStringValue", MemberDefFlags.RecordRef | MemberDefFlags.Child),
-                new MemberDef("Constraints", TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
+                new MemberDef("Constraints", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.EnumerateForHashCode),
                 new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
@@ -742,16 +774,14 @@ class SchemaDef
     /// <summary>
     // Contains a list of records with corresponding Handle types (currently all of them).
     /// </summary>
-    public readonly static string[] HandleSchema = (from record in RecordSchema select record.Name).ToArray();
+    public static readonly string[] HandleSchema = (from record in RecordSchema select record.Name).ToArray();
 
-    public readonly static string[] TypeNamesWithCollectionTypes =
+    public static readonly string[] TypeNamesWithCollectionTypes =
         RecordSchema.SelectMany(r =>
             from member in r.Members
             let memberTypeName = member.TypeName as string
             where memberTypeName != null &&
-                ((member.Flags & MemberDefFlags.Array) != 0 ||
-                (member.Flags & MemberDefFlags.List) != 0 ||
-                (member.Flags & MemberDefFlags.Map) != 0) &&
+                (member.Flags & MemberDefFlags.Collection) != 0 &&
                 !PrimitiveTypes.Any(pt => pt.TypeName == memberTypeName)
             select memberTypeName
         ).Concat(new[] { "ScopeDefinition" }).Distinct().ToArray();

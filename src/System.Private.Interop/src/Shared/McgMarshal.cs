@@ -4,8 +4,12 @@
 // ----------------------------------------------------------------------------------
 // Interop library code
 //
-// Marshalling helpers used by MCG
-//
+// Marshalling helpers used by MCG generated stub
+// McgMarshal covers full marshalling surface area and is entrypoint for all marshalling support.
+// In long term:
+//  1. MCG generated code should  call McgMarshal to do marshalling
+//  2. Public Marhshal API should call McgMarshal to do marshalling
+
 // NOTE:
 //   These source code are being published to InternalAPIs and consumed by RH builds
 //   Use PublishInteropAPI.bat to keep the InternalAPI copies in sync
@@ -22,9 +26,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
-using Internal.NativeFormat;
 
 #if !CORECLR
 using Internal.Runtime.Augments;
@@ -44,16 +46,14 @@ namespace System.Runtime.InteropServices
     [CLSCompliant(false)]
     public static partial class McgMarshal
     {
-        [ThreadStatic]
-        internal static int s_lastWin32Error;
-
-#if ENABLE_WINRT
-        private static object s_thunkPoolHeap;
-#endif
-
         public static void SaveLastWin32Error()
         {
-            s_lastWin32Error = ExternalInterop.GetLastWin32Error();
+            PInvokeMarshal.SaveLastWin32Error();
+        }
+
+        public static void ClearLastWin32Error()
+        {
+            PInvokeMarshal.ClearLastWin32Error();
         }
 
         public static bool GuidEquals(ref Guid left, ref Guid right)
@@ -80,15 +80,24 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        public static bool IsCOMObject(Type type)
+        /// <summary>
+        /// Return true if the type is __COM or derived from __COM. False otherwise
+        /// </summary>
+        public static bool IsComObject(Type type)
         {
 #if RHTESTCL
             return false;
-#elif CORECLR
-            return type.GetTypeInfo().IsSubclassOf(typeof(__ComObject));
 #else
-            return InteropExtensions.AreTypesAssignable(type.TypeHandle, typeof(__ComObject).TypeHandle);
+            return type == typeof(__ComObject) || type.GetTypeInfo().IsSubclassOf(typeof(__ComObject));
 #endif
+        }
+
+        /// <summary>
+        /// Return true if the object is a RCW. False otherwise
+        /// </summary>
+        internal static bool IsComObject(object obj)
+        {
+            return (obj is __ComObject);
         }
 
         public static T FastCast<T>(object value) where T : class
@@ -137,7 +146,7 @@ namespace System.Runtime.InteropServices
         }
 
 #if ENABLE_MIN_WINRT
-        public static unsafe void SetExceptionErrorCode(Exception exception, int errorCode)
+        public static unsafe void SetExceptionErrorCode(Exception exception, int errorCode)	
         {
             InteropExtensions.SetExceptionErrorCode(exception, errorCode);
         }
@@ -148,7 +157,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr GetHandle(CriticalHandle criticalHandle)
         {
-            return criticalHandle.handle;
+            return InteropExtensions.GetCriticalHandle(criticalHandle);
         }
 
         /// <summary>
@@ -157,7 +166,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static void SetHandle(CriticalHandle criticalHandle, IntPtr handle)
         {
-            criticalHandle.handle = handle;
+            InteropExtensions.SetCriticalHandle(criticalHandle, handle);
         }
 #endif
     }
@@ -178,7 +187,16 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        public unsafe static void TypeToTypeName(
+        internal static Type TypeNameToType(string nativeTypeName, int nativeTypeKind)
+        {
+#if ENABLE_WINRT
+            return McgTypeHelpers.TypeNameToType(nativeTypeName, nativeTypeKind, checkTypeKind: false);
+#else
+            throw new NotSupportedException("TypeNameToType");
+#endif
+        }
+
+        public static unsafe void TypeToTypeName(
             Type type,
             out HSTRING nativeTypeName,
             out int nativeTypeKind)
@@ -190,6 +208,24 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
+        /// <summary>
+        /// Fetch type name
+        /// </summary>
+        /// <param name="typeHandle">type</param>
+        /// <returns>type name</returns>
+        internal static string TypeToTypeName(RuntimeTypeHandle typeHandle, out int nativeTypeKind)
+        {
+#if ENABLE_WINRT
+            TypeKind typekind;
+            string typeName;
+            McgTypeHelpers.TypeToTypeName(typeHandle, out typeName, out typekind);
+            nativeTypeKind = (int)typekind;
+            return typeName;
+#else
+           throw new NotSupportedException("TypeToTypeName");
+#endif
+        }
+
         #endregion
 
         #region String marshalling
@@ -197,13 +233,13 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe void StringBuilderToUnicodeString(System.Text.StringBuilder stringBuilder, ushort* destination)
         {
-            stringBuilder.UnsafeCopyTo((char*)destination);
+            PInvokeMarshal.StringBuilderToUnicodeString(stringBuilder, destination);
         }
 
         [CLSCompliant(false)]
         public static unsafe void UnicodeStringToStringBuilder(ushort* newBuffer, System.Text.StringBuilder stringBuilder)
         {
-            stringBuilder.ReplaceBuffer((char*)newBuffer);
+            PInvokeMarshal.UnicodeStringToStringBuilder(newBuffer, stringBuilder);
         }
 
 #if !RHTESTCL
@@ -212,59 +248,13 @@ namespace System.Runtime.InteropServices
         public static unsafe void StringBuilderToAnsiString(System.Text.StringBuilder stringBuilder, byte* pNative,
             bool bestFit, bool throwOnUnmappableChar)
         {
-            int len;
-
-            // Convert StringBuilder to UNICODE string
-
-            // Optimize for the most common case. If there is only a single char[] in the StringBuilder,
-            // get it and convert it to ANSI
-            char[] buffer = stringBuilder.GetBuffer(out len);
-
-            if (buffer != null)
-            {
-                fixed (char* pManaged = buffer)
-                {
-                    StringToAnsiString(pManaged, len, pNative, /*terminateWithNull=*/true, bestFit, throwOnUnmappableChar);
-                }
-            }
-            else // Otherwise, convert StringBuilder to string and then convert to ANSI
-            {
-                string str = stringBuilder.ToString();
-
-                // Convert UNICODE string to ANSI string
-                fixed (char* pManaged = str)
-                {
-                    StringToAnsiString(pManaged, str.Length, pNative, /*terminateWithNull=*/true, bestFit, throwOnUnmappableChar);
-                }
-            }
+            PInvokeMarshal.StringBuilderToAnsiString(stringBuilder, pNative, bestFit, throwOnUnmappableChar);
         }
 
         [CLSCompliant(false)]
         public static unsafe void AnsiStringToStringBuilder(byte* newBuffer, System.Text.StringBuilder stringBuilder)
         {
-            if (newBuffer == null)
-                throw new ArgumentNullException(nameof(newBuffer));
-
-            int lenAnsi;
-            int lenUnicode;
-            CalculateStringLength(newBuffer, out lenAnsi, out lenUnicode);
-
-            if (lenUnicode > 0)
-            {
-                char[] buffer = new char[lenUnicode];
-                fixed (char* pTemp = buffer)
-                {
-                    ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(newBuffer),
-                                                               lenAnsi,
-                                                               new System.IntPtr(pTemp),
-                                                               lenUnicode);
-                }
-                stringBuilder.ReplaceBuffer(buffer);
-            }
-            else
-            {
-                stringBuilder.Clear();
-            }
+            PInvokeMarshal.AnsiStringToStringBuilder(newBuffer, stringBuilder);
         }
 
         /// <summary>
@@ -276,31 +266,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe string AnsiStringToString(byte* pchBuffer)
         {
-            if (pchBuffer == null)
-            {
-                return null;
-            }
-
-            int lenAnsi;
-            int lenUnicode;
-            CalculateStringLength(pchBuffer, out lenAnsi, out lenUnicode);
-
-            string result = String.Empty;
-
-            if (lenUnicode > 0)
-            {
-                result = new String(' ', lenUnicode); // TODO: FastAllocate not accessible here
-
-                fixed (char* pTemp = result)
-                {
-                    ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(pchBuffer),
-                                                               lenAnsi,
-                                                               new System.IntPtr(pTemp),
-                                                               lenUnicode);
-                }
-            }
-
-            return result;
+            return PInvokeMarshal.AnsiStringToString(pchBuffer);
         }
 
         /// <summary>
@@ -311,17 +277,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe byte* StringToAnsiString(string str, bool bestFit, bool throwOnUnmappableChar)
         {
-            if (str != null)
-            {
-                int lenUnicode = str.Length;
-
-                fixed (char* pManaged = str)
-                {
-                    return StringToAnsiString(pManaged, lenUnicode, null, /*terminateWithNull=*/true, bestFit, throwOnUnmappableChar);
-                }
-            }
-
-            return null;
+            return PInvokeMarshal.StringToAnsiString(str, bestFit, throwOnUnmappableChar);
         }
 
         /// <summary>
@@ -337,63 +293,19 @@ namespace System.Runtime.InteropServices
         public static unsafe void ByValWideCharArrayToAnsiCharArray(char[] managedArray, byte* pNative, int expectedCharCount,
             bool bestFit, bool throwOnUnmappableChar)
         {
-            // Zero-init pNative if it is NULL
-            if (managedArray == null)
-            {
-                // @TODO - Create a more efficient version of zero initialization
-                for (int i = 0; i < expectedCharCount; i++)
-                {
-                    pNative[i] = 0;
-                }
-            }
-
-            int lenUnicode = managedArray.Length;
-            if (lenUnicode < expectedCharCount)
-                throw new ArgumentException(SR.WrongSizeArrayInNStruct);
-
-            fixed (char* pManaged = managedArray)
-            {
-                StringToAnsiString(pManaged, lenUnicode, pNative, /*terminateWithNull=*/false, bestFit, throwOnUnmappableChar);
-            }
+            PInvokeMarshal.ByValWideCharArrayToAnsiCharArray(managedArray, pNative, expectedCharCount, bestFit, throwOnUnmappableChar);
         }
 
         [CLSCompliant(false)]
         public static unsafe void ByValAnsiCharArrayToWideCharArray(byte* pNative, char[] managedArray)
         {
-            // This should never happen because it is a embedded array
-            Debug.Assert(pNative != null);
-
-            // This should never happen because the array is always allocated by the marshaller
-            Debug.Assert(managedArray != null);
-
-            // COMPAT: Use the managed array length as the maximum length of native buffer
-            // This obviously doesn't make sense but desktop CLR does that
-            int lenInBytes = managedArray.Length;
-            fixed (char* pManaged = managedArray)
-            {
-                ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(pNative),
-                                                           lenInBytes,
-                                                           new System.IntPtr(pManaged),
-                                                           lenInBytes);
-            }
+            PInvokeMarshal.ByValAnsiCharArrayToWideCharArray(pNative, managedArray);
         }
 
         [CLSCompliant(false)]
         public static unsafe void WideCharArrayToAnsiCharArray(char[] managedArray, byte* pNative, bool bestFit, bool throwOnUnmappableChar)
         {
-            // Do nothing if array is NULL. This matches desktop CLR behavior
-            if (managedArray == null)
-                return;
-
-            // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
-            if (pNative == null)
-                throw new ArgumentNullException(nameof(pNative));
-
-            int lenUnicode = managedArray.Length;
-            fixed (char* pManaged = managedArray)
-            {
-                StringToAnsiString(pManaged, lenUnicode, pNative, /*terminateWithNull=*/false, bestFit, throwOnUnmappableChar);
-            }
+            PInvokeMarshal.WideCharArrayToAnsiCharArray(managedArray, pNative, bestFit, throwOnUnmappableChar);
         }
 
         /// <summary>
@@ -410,24 +322,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe void AnsiCharArrayToWideCharArray(byte* pNative, char[] managedArray)
         {
-            // Do nothing if native is NULL. This matches desktop CLR behavior
-            if (pNative == null)
-                return;
-
-            // Desktop CLR crash (AV at runtime) - we can do better in .NET Native
-            if (managedArray == null)
-                throw new ArgumentNullException(nameof(managedArray));
-
-            // COMPAT: Use the managed array length as the maximum length of native buffer
-            // This obviously doesn't make sense but desktop CLR does that
-            int lenInBytes = managedArray.Length;
-            fixed (char* pManaged = managedArray)
-            {
-                ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(pNative),
-                                                           lenInBytes,
-                                                           new System.IntPtr(pManaged),
-                                                           lenInBytes);
-            }
+            PInvokeMarshal.AnsiCharArrayToWideCharArray(pNative, managedArray);
         }
 
         /// <summary>
@@ -436,11 +331,7 @@ namespace System.Runtime.InteropServices
         /// <param name="managedArray">single UNICODE wide char value</param>
         public static unsafe byte WideCharToAnsiChar(char managedValue, bool bestFit, bool throwOnUnmappableChar)
         {
-            // @TODO - we really shouldn't allocate one-byte arrays and then destroy it
-            byte* nativeArray = StringToAnsiString(&managedValue, 1, null, /*terminateWithNull=*/false, bestFit, throwOnUnmappableChar);
-            byte native = (*nativeArray);
-            ExternalInterop.CoTaskMemFree(nativeArray);
-            return native;
+            return PInvokeMarshal.WideCharToAnsiChar(managedValue, bestFit, throwOnUnmappableChar);
         }
 
         /// <summary>
@@ -449,12 +340,7 @@ namespace System.Runtime.InteropServices
         /// <param name="nativeValue">Single ANSI byte value.</param>
         public static unsafe char AnsiCharToWideChar(byte nativeValue)
         {
-            char[] buffer = new char[1];
-            fixed (char* pTemp = buffer)
-            {
-                ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(&nativeValue), 1, new System.IntPtr(pTemp), 1);
-                return buffer[0];
-            }
+            return PInvokeMarshal.AnsiCharToWideChar(nativeValue);
         }
 
         /// <summary>
@@ -467,25 +353,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe void StringToByValAnsiString(string str, byte* pNative, int charCount, bool bestFit, bool throwOnUnmappableChar)
         {
-            if (pNative == null)
-                throw new ArgumentNullException(nameof(pNative));
-
-            if (str != null)
-            {
-                // Truncate the string if it is larger than specified by SizeConst
-                int lenUnicode = str.Length;
-                if (lenUnicode >= charCount)
-                    lenUnicode = charCount - 1;
-
-                fixed (char* pManaged = str)
-                {
-                    StringToAnsiString(pManaged, lenUnicode, pNative, /*terminateWithNull=*/true, bestFit, throwOnUnmappableChar);
-                }
-            }
-            else
-            {
-                (*pNative) = (byte)'\0';
-            }
+            PInvokeMarshal.StringToByValAnsiString(str, pNative, charCount, bestFit, throwOnUnmappableChar);
         }
 
         /// <summary>
@@ -497,158 +365,160 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static unsafe string ByValAnsiStringToString(byte* pchBuffer, int charCount)
         {
-            // Match desktop CLR behavior
-            if (charCount == 0)
-                throw new MarshalDirectiveException();
-
-            int lenAnsi = GetAnsiStringLen(pchBuffer);
-            int lenUnicode = charCount;
-
-            string result = String.Empty;
-
-            if (lenUnicode > 0)
-            {
-                char* unicodeBuf = stackalloc char[lenUnicode];
-                int unicodeCharWritten = ExternalInterop.ConvertMultiByteToWideChar(new System.IntPtr(pchBuffer),
-                                                                                    lenAnsi,
-                                                                                    new System.IntPtr(unicodeBuf),
-                                                                                    lenUnicode);
-
-                // If conversion failure, return empty string to match desktop CLR behavior
-                if (unicodeCharWritten > 0)
-                    result = new string(unicodeBuf, 0, unicodeCharWritten);
-            }
-
-            return result;
-        }
-
-        private static unsafe int GetAnsiStringLen(byte* pchBuffer)
-        {
-            byte* pchBufferOriginal = pchBuffer;
-            while (*pchBuffer != 0)
-            {
-                pchBuffer++;
-            }
-
-            return (int)(pchBuffer - pchBufferOriginal);
-        }
-
-        // c# string (UTF-16) to UTF-8 encoded byte array
-        private static unsafe byte* StringToAnsiString(char* pManaged, int lenUnicode, byte* pNative, bool terminateWithNull,
-            bool bestFit, bool throwOnUnmappableChar)
-        {
-            bool allAscii = true;
-
-            for (int i = 0; i < lenUnicode; i++)
-            {
-                if (pManaged[i] >= 128)
-                {
-                    allAscii = false;
-                    break;
-                }
-            }
-
-            int length;
-
-            if (allAscii) // If all ASCII, map one UNICODE character to one ANSI char
-            {
-                length = lenUnicode;
-            }
-            else // otherwise, let OS count number of ANSI chars
-            {
-                length = ExternalInterop.GetByteCount(pManaged, lenUnicode);
-            }
-
-            if (pNative == null)
-            {
-                pNative = (byte*)ExternalInterop.CoTaskMemAlloc((System.IntPtr)(length + 1));
-            }
-            if (allAscii) // ASCII conversion
-            {
-                byte* pDst = pNative;
-                char* pSrc = pManaged;
-
-                while (lenUnicode > 0)
-                {
-                    unchecked
-                    {
-                        *pDst++ = (byte)(*pSrc++);
-                        lenUnicode--;
-                    }
-                }
-            }
-            else // Let OS convert
-            {
-                uint flags = (bestFit ? 0 : ExternalInterop.Constants.WC_NO_BEST_FIT_CHARS);
-                int defaultCharUsed = 0;
-                ExternalInterop.ConvertWideCharToMultiByte(pManaged,
-                                                           lenUnicode,
-                                                           new System.IntPtr(pNative),
-                                                           length,
-                                                           flags,
-                                                           throwOnUnmappableChar ? new System.IntPtr(&defaultCharUsed) : default(IntPtr)
-                                                           );
-                if (defaultCharUsed != 0)
-                {
-                    throw new ArgumentException(SR.Arg_InteropMarshalUnmappableChar);
-                }
-            }
-
-            // Zero terminate
-            if (terminateWithNull)
-                *(pNative + length) = 0;
-
-            return pNative;
+            return PInvokeMarshal.ByValAnsiStringToString(pchBuffer, charCount);
         }
 
         /// <summary>
-        /// This is a auxiliary function that counts the length of the ansi buffer and
-        ///  estimate the length of the buffer in Unicode. It returns true if all bytes
-        ///  in the buffer are ANSII.
+        /// CoTaskMemAlloc + ZeroMemory
+        /// @TODO - we can probably optimize the zero memory part later
         /// </summary>
-        private static unsafe bool CalculateStringLength(byte* pchBuffer, out int ansiBufferLen, out int unicodeBufferLen)
+        public unsafe static void* CoTaskMemAllocAndZeroMemory(IntPtr size)
         {
-            ansiBufferLen = 0;
+            void *ptr = (void*)PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((void*)size));
+            if (ptr == null)
+                return ptr;
 
-            bool allAscii = true;
-
+            byte *pByte = (byte*)ptr;
+            long lSize = size.ToInt64();
+            while (lSize > 0)
             {
-                byte* p = pchBuffer;
-                byte b = *p++;
-
-                while (b != 0)
-                {
-                    if (b >= 128)
-                    {
-                        allAscii = false;
-                    }
-
-                    ansiBufferLen++;
-
-                    b = *p++;
-                }
+                lSize--;
+                (*pByte++) = 0;
             }
 
-            if (allAscii)
-            {
-                unicodeBufferLen = ansiBufferLen;
-            }
-            else // If non ASCII, let OS calculate number of characters
-            {
-                unicodeBufferLen = ExternalInterop.GetCharCount(new IntPtr(pchBuffer), ansiBufferLen);
-            }
-            return allAscii;
+            return ptr;
         }
 
+        /// <summary>
+        /// Free allocated memory. The allocated memory should be allocated by CoTaskMemAlloc
+        /// </summary>
+        public static void SafeCoTaskMemFree(IntPtr allocatedMemory)
+        {
+            if (allocatedMemory != IntPtr.Zero)
+                PInvokeMarshal.CoTaskMemFree(allocatedMemory);
+        }
+
+        /// <summary>
+        /// Free allocated memory. The allocated memory should be allocated by CoTaskMemAlloc
+        /// </summary>
+        public static unsafe void SafeCoTaskMemFree(void* pv)
+        {
+            if (pv != null)
+                PInvokeMarshal.CoTaskMemFree(new IntPtr(pv));
+        }
+
+        /// <summary>
+        /// Allocate a buffer with enough size to store the unicode characters saved in source
+        /// Buffer is allocated with CoTaskMemAlloc
+        /// </summary>
+        public unsafe static void *AllocUnicodeBuffer(string source)
+        {
+            if (source == null)
+                return null;
+
+            int byteLen = checked((source.Length + 1) * 2);
+
+            char* pBuf = (char*)PInvokeMarshal.CoTaskMemAlloc(new UIntPtr((uint)byteLen));
+            if (pBuf == null)
+                throw new System.OutOfMemoryException();
+
+            return pBuf;
+        }
+
+        /// <summary>
+        /// Copy unicode characters in source into dest, and terminating with null
+        /// </summary>
+        public unsafe static void CopyUnicodeString(string source, void* _dest)
+        {
+            if (source == null)
+                return;
+
+            char* dest = (char *)_dest;
+            fixed (char* pSource = source)
+            {
+                int len = source.Length;
+                char* src = pSource;
+
+                // Copy characters one by one, including the null terminator
+                for (int i = 0; i <= len; ++i)
+                {
+                    *(dest++) = *(src++);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Convert String to BSTR 
+        /// </summary>
+        public unsafe static ushort* ConvertStringToBSTR(
+                ushort* ptrToFirstCharInBSTR,
+                string strManaged)
+        {
+            if (strManaged == null)
+                return null;
+
+            if (ptrToFirstCharInBSTR == null)
+            {
+                // If caller don't provided buffer, allocate the buffer and create string using SysAllocStringLen
+                fixed (char* ch = strManaged)
+                {
+                    return (ushort*) ExternalInterop.SysAllocStringLen(ch, (uint)strManaged.Length);
+                }
+            }
+            else 
+            {
+                // If caller provided a buffer, construct the BSTR manually. 
+
+                // set length
+                *((int*)ptrToFirstCharInBSTR - 1) = checked(strManaged.Length * 2);
+
+                // copy characters from the managed string
+                fixed (char* ch = strManaged)
+                {
+                    InteropExtensions.Memcpy(
+                        (System.IntPtr)ptrToFirstCharInBSTR,
+                        (System.IntPtr)ch,
+                        (strManaged.Length + 1) * 2);
+                }
+
+                return ptrToFirstCharInBSTR;
+            }
+        }
+
+        /// <summary>
+        /// Convert BSTR to String 
+        /// </summary>
+        public unsafe static string ConvertBSTRToString(ushort* bstr)
+        {
+            if (bstr == null)
+                return null;
+            return new string((char*)bstr, 0, (int)ExternalInterop.SysStringLen(bstr));
+        }
+
+        /// <summary>
+        /// Free Allocated BSTR
+        /// </summary>
+        public static unsafe void SysFreeString(void* pBSTR)
+        {
+            SysFreeString(new IntPtr(pBSTR));
+        }
+
+        /// <summary>
+        /// Free Allocated BSTR
+        /// </summary>
+        public unsafe static void SysFreeString(IntPtr pBSTR)
+        {
+            ExternalInterop.SysFreeString(pBSTR);
+        } 
 #endif
 
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
        
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static unsafe HSTRING StringToHString(string sourceString)
         {
             if (sourceString == null)
-                throw new ArgumentNullException("sourceString", SR.Null_HString);
+                throw new ArgumentNullException(nameof(sourceString), SR.Null_HString);
 
             return StringToHStringInternal(sourceString);
         }
@@ -683,9 +553,9 @@ namespace System.Runtime.InteropServices
                 return hr;
             }
         }
-#endif //ENABLE_WINRT
+#endif //ENABLE_MIN_WINRT
 
-        #endregion
+#endregion
 
         #region COM marshalling
 
@@ -718,14 +588,14 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public unsafe static int ComAddRef(IntPtr pComItf)
+        public static unsafe int ComAddRef(IntPtr pComItf)
         {
             return CalliIntrinsics.StdCall__AddRef(((__com_IUnknown*)(void*)pComItf)->pVtable->
                 pfnAddRef, pComItf);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal unsafe static int ComRelease_StdCall(IntPtr pComItf)
+        internal static unsafe int ComRelease_StdCall(IntPtr pComItf)
         {
             return CalliIntrinsics.StdCall__Release(((__com_IUnknown*)(void*)pComItf)->pVtable->
                 pfnRelease, pComItf);
@@ -735,7 +605,7 @@ namespace System.Runtime.InteropServices
         /// Inline version of ComRelease
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)] //reduces MCG-generated code size
-        public unsafe static int ComRelease(IntPtr pComItf)
+        public static unsafe int ComRelease(IntPtr pComItf)
         {
             IntPtr pRelease = ((__com_IUnknown*)(void*)pComItf)->pVtable->pfnRelease;
 
@@ -750,7 +620,7 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public unsafe static int ComSafeRelease(IntPtr pComItf)
+        public static unsafe int ComSafeRelease(IntPtr pComItf)
         {
             if (pComItf != default(IntPtr))
             {
@@ -809,9 +679,9 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle interfaceType)
         {
             return McgComHelpers.ComInterfaceToObjectInternal(
-                pComItf, 
-                interfaceType, 
-                default(RuntimeTypeHandle), 
+                pComItf,
+                interfaceType,
+                default(RuntimeTypeHandle),
                 McgComHelpers.CreateComObjectFlags.SkipTypeResolutionAndUnboxing
             );
         }
@@ -883,13 +753,13 @@ namespace System.Runtime.InteropServices
             return result;
         }
 
-        public unsafe static IntPtr ComQueryInterfaceNoThrow(IntPtr pComItf, ref Guid iid)
+        public static unsafe IntPtr ComQueryInterfaceNoThrow(IntPtr pComItf, ref Guid iid)
         {
             int hr = 0;
             return ComQueryInterfaceNoThrow(pComItf, ref iid, out hr);
         }
 
-        public unsafe static IntPtr ComQueryInterfaceNoThrow(IntPtr pComItf, ref Guid iid, out int hr)
+        public static unsafe IntPtr ComQueryInterfaceNoThrow(IntPtr pComItf, ref Guid iid, out int hr)
         {
             IntPtr pComIUnk;
             hr = ComQueryInterfaceWithHR(pComItf, ref iid, out pComIUnk);
@@ -897,7 +767,7 @@ namespace System.Runtime.InteropServices
             return pComIUnk;
         }
 
-        internal unsafe static int ComQueryInterfaceWithHR(IntPtr pComItf, ref Guid iid, out IntPtr ppv)
+        internal static unsafe int ComQueryInterfaceWithHR(IntPtr pComItf, ref Guid iid, out IntPtr ppv)
         {
             IntPtr pComIUnk;
             int hr;
@@ -978,10 +848,7 @@ namespace System.Runtime.InteropServices
 
             if (typeHnd.IsComClass())
             {
-                Debug.Assert(obj == null || obj is __ComObject);
-                ///
-                /// This code path should be executed only for WinRT classes
-                ///
+                // This code path should be executed only for WinRT classes
                 typeHnd = typeHnd.GetDefaultInterface();
                 Debug.Assert(!typeHnd.IsNull());
             }
@@ -1092,7 +959,7 @@ namespace System.Runtime.InteropServices
             {
                 len = (uint)src.Length;
 
-                dst = (System.IntPtr*)ExternalInterop.CoTaskMemAlloc((System.IntPtr)(len * (sizeof(System.IntPtr))));
+                dst = (System.IntPtr*)PInvokeMarshal.CoTaskMemAlloc((System.UIntPtr)(len * (sizeof(System.IntPtr))));
 
                 for (uint i = 0; i < len; i++)
                 {
@@ -1158,7 +1025,7 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        public static unsafe IntPtr CreateInstanceFromApp(Guid clsid)
+        public static unsafe IntPtr CoCreateInstanceEx(Guid clsid, string server)
         {
 #if ENABLE_WINRT
             Interop.COM.MULTI_QI results;
@@ -1170,7 +1037,26 @@ namespace System.Runtime.InteropServices
                 results.pIID = new IntPtr(pIID);
                 results.pItf = IntPtr.Zero;
                 results.hr = 0;
-                int hr = ExternalInterop.CoCreateInstanceFromApp(pClsid, IntPtr.Zero, 0x15 /* (CLSCTX_SERVER) */, IntPtr.Zero, 1, pResults);
+                int hr;
+                            
+                // if server name is specified, do remote server activation
+                if (!String.IsNullOrEmpty(server))
+                {
+                    Interop.COM.COSERVERINFO serverInfo;
+                    fixed (char* pName = server)
+                    {
+                        serverInfo.Name = new IntPtr(pName);
+                        IntPtr pServerInfo = new IntPtr(&serverInfo);
+
+                        hr = ExternalInterop.CoCreateInstanceFromApp(pClsid, IntPtr.Zero, (int)Interop.COM.CLSCTX.CLSCTX_REMOTE_SERVER, pServerInfo, 1, pResults);
+                    }
+            
+                }
+                else
+                {
+                   hr = ExternalInterop.CoCreateInstanceFromApp(pClsid, IntPtr.Zero, (int)Interop.COM.CLSCTX.CLSCTX_SERVER, IntPtr.Zero, 1, pResults);
+                }
+
                 if (hr < 0)
                 {
                     throw McgMarshal.GetExceptionForHR(hr, /*isWinRTScenario = */ false);
@@ -1179,13 +1065,18 @@ namespace System.Runtime.InteropServices
                 {
                     throw McgMarshal.GetExceptionForHR(results.hr, /* isWinRTScenario = */ false);
                 }
-                return results.pItf;
+            return results.pItf;
             }
 #else
-            throw new PlatformNotSupportedException("CreateInstanceFromApp");
+            throw new PlatformNotSupportedException("CoCreateInstanceEx");
 #endif
+
         }
 
+        public static unsafe IntPtr CoCreateInstanceEx(Guid clsid)
+        {
+            return CoCreateInstanceEx(clsid, string.Empty);
+        }
         #endregion
 
         #region Testing
@@ -1227,16 +1118,37 @@ namespace System.Runtime.InteropServices
             return list;
         }
 
-        #endregion
+#endregion
 
         /// <summary>
-        /// This method returns HR for the exception being thrown.
+        /// This method propagate the exception being thrown.
         /// 1. On Windows8+, WinRT scenarios we do the following.
         ///      a. Check whether the exception has any IRestrictedErrorInfo associated with it.
         ///          If so, it means that this exception was actually caused by a native exception in which case we do simply use the same
         ///              message and stacktrace.
         ///      b.  If not, this is actually a managed exception and in this case we RoOriginateLanguageException with the msg, hresult and the IErrorInfo
-        ///          aasociated with the managed exception. This helps us to retrieve the same exception in case it comes back to native.
+        ///          associated with the managed exception. This helps us to retrieve the same exception in case it comes back to native.
+        /// 2. On win8 and for classic COM scenarios.
+        ///     a. This method should not be called
+        /// </summary>
+        /// <param name="ex"></param>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static bool PropagateException(Exception ex)
+        {
+#if ENABLE_WINRT
+            return ExceptionHelpers.PropagateException(ex);
+#else
+            // TODO : ExceptionHelpers should be platform specific , move it to
+            // seperate source files
+            return true;
+#endif
+        }
+
+        /// <summary>
+        /// This method returns HR for the exception being thrown.
+        /// 1. On Windows8+, WinRT scenarios 
+        ///     The work to propagate the exception should have already performed in the exception filter
+        ///     by calling PropagateException()
         /// 2. On win8 and for classic COM scenarios.
         ///     a. We create IErrorInfo for the given Exception object and SetErrorInfo with the given IErrorInfo.
         /// </summary>
@@ -1245,7 +1157,7 @@ namespace System.Runtime.InteropServices
         public static int GetHRForExceptionWinRT(Exception ex)
         {
 #if ENABLE_WINRT
-            return ExceptionHelpers.GetHRForExceptionWithErrorPropogationNoThrow(ex, true);
+            return ExceptionHelpers.GetHRForExceptionWithErrorPropagationNoThrow(ex, true);
 #else
             // TODO : ExceptionHelpers should be platform specific , move it to
             // seperate source files
@@ -1258,7 +1170,7 @@ namespace System.Runtime.InteropServices
         public static int GetHRForException(Exception ex)
         {
 #if ENABLE_WINRT
-            return ExceptionHelpers.GetHRForExceptionWithErrorPropogationNoThrow(ex, false);
+            return ExceptionHelpers.GetHRForExceptionWithErrorPropagationNoThrow(ex, false);
 #else
             return ex.HResult;
 #endif
@@ -1285,14 +1197,12 @@ namespace System.Runtime.InteropServices
         {
 #if ENABLE_WINRT
             return ExceptionHelpers.GetExceptionForHRInternalNoThrow(hr, isWinRTScenario, !isWinRTScenario);
-#elif CORECLR
-            return Marshal.GetExceptionForHR(hr);
 #else
-            return new COMException(hr.ToString(),hr);
+            return Marshal.GetExceptionForHR(hr);
 #endif
         }
 
-        #region Shared templates
+#region Shared templates
 #if ENABLE_MIN_WINRT
         public static void CleanupNative<T>(IntPtr pObject)
         {
@@ -1306,7 +1216,7 @@ namespace System.Runtime.InteropServices
             }
         }
 #endif
-        #endregion
+#endregion
 
 #if ENABLE_MIN_WINRT
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1327,7 +1237,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr pResult = default(IntPtr);
 
-            int hr = CalliIntrinsics.StdCall<int>(
+            int hr = CalliIntrinsics.StdCall__int(
                 pIActivationFactoryInternal->pVtable->pfnActivateInstance,
                 pIActivationFactoryInternal,
                 &pResult
@@ -1351,7 +1261,7 @@ namespace System.Runtime.InteropServices
         {
             return obj.QueryInterface_NoAddRef_Internal(
                 typeHnd);
-        }     
+        }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static object GetDynamicAdapter(__ComObject obj, RuntimeTypeHandle requestedType, RuntimeTypeHandle existingType)
@@ -1362,321 +1272,29 @@ namespace System.Runtime.InteropServices
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static object GetDynamicAdapter(__ComObject obj, RuntimeTypeHandle requestedType)
         {
-            return obj.GetDynamicAdapter(requestedType,default(RuntimeTypeHandle));
+            return obj.GetDynamicAdapter(requestedType, default(RuntimeTypeHandle));
         }
-        
-        #region "PInvoke Delegate"
 
-#if !CORECLR
-        private static class AsmCode
-        {
-            private const MethodImplOptions InternalCall = (MethodImplOptions)0x1000;
-
-            [MethodImplAttribute(InternalCall)]
-            [RuntimeImport("*", "InteropNative_GetCurrentThunkContext")]
-            public static extern IntPtr GetCurrentInteropThunkContext();
-
-            [MethodImplAttribute(InternalCall)]
-
-            [RuntimeImport("*", "InteropNative_GetCommonStubAddress")]
-
-            public static extern IntPtr GetInteropCommonStubAddress();
-        }
-#endif
+#region "PInvoke Delegate"
 
         public static IntPtr GetStubForPInvokeDelegate(RuntimeTypeHandle delegateType, Delegate dele)
         {
-            return GetStubForPInvokeDelegate(dele);
-        }
-
-        /// <summary>
-        /// Return the stub to the pinvoke marshalling stub
-        /// </summary>
-        /// <param name="del">The delegate</param>
-        static internal IntPtr GetStubForPInvokeDelegate(Delegate del)
-        {
-            if (del == null)
-                return IntPtr.Zero;
-
-            NativeFunctionPointerWrapper fpWrapper = del.Target as NativeFunctionPointerWrapper;
-            if (fpWrapper != null)
-            {
-                //
-                // Marshalling a delegate created from native function pointer back into function pointer
-                // This is easy - just return the 'wrapped' native function pointer
-                //
-                return fpWrapper.NativeFunctionPointer;
-            }
-            else
-            {
-                //
-                // Marshalling a managed delegate created from managed code into a native function pointer
-                //
-                return GetOrAllocateThunk(del);
-            }
-        }
-        /// <summary>
-        /// Used to lookup whether a delegate already has an entry
-        /// </summary>
-        private static System.Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk> s_pInvokeDelegateThunkHashSet;
-
-        static Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk> GetDelegateThunkHashSet()
-        {
-            //
-            // Create the hashset on-demand to avoid the dependency in the McgModule.ctor
-            // Otherwise NUTC will complain that McgModule being eager ctor depends on a deferred
-            // ctor type
-            //
-            if (s_pInvokeDelegateThunkHashSet == null)
-            {
-                const int DefaultSize = 101; // small prime number to avoid resizing in start up code
-
-                Interlocked.CompareExchange(
-                    ref s_pInvokeDelegateThunkHashSet,
-                    new System.Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk>(DefaultSize, true),
-                    null
-                );
-            }
-
-            return s_pInvokeDelegateThunkHashSet;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal unsafe struct ThunkContextData
-        {
-            public GCHandle Handle;        //  A weak GCHandle to the delegate
-            public IntPtr FunctionPtr;     // Function pointer for open static delegates
-        };
-
-        internal class EquatablePInvokeDelegateThunk : IEquatable<EquatablePInvokeDelegateThunk>
-        {
-            internal IntPtr Thunk;       //  Thunk pointer
-            internal GCHandle Handle;    //  A weak GCHandle to the delegate
-            internal IntPtr ContextData;     //   ThunkContextData pointer which will be stored in the context slot of the thunk
-            internal int HashCode;
-            internal EquatablePInvokeDelegateThunk(Delegate del, IntPtr pThunk)
-            {
-                // if it is an open static delegate get the function pointer
-                IntPtr functionPtr  = del.GetRawFunctionPointerForOpenStaticDelegate();
-
-                //
-                // Allocate a weak GC handle pointing to the delegate
-                // Whenever the delegate dies, we'll know next time when we recycle thunks
-                //
-                Handle = GCHandle.Alloc(del, GCHandleType.Weak);
-                Thunk = pThunk;
-                HashCode = GetHashCodeOfDelegate(del);
-
-                ThunkContextData context;
-                context.Handle = Handle;
-                context.FunctionPtr = functionPtr;
-
-                //
-                // Allocate unmanaged memory for GCHandle of delegate and function pointer of open static delegate
-                // We will store this pointer on the context slot of thunk data
-                //
-                ContextData = Marshal.AllocHGlobal(2*IntPtr.Size);
-                unsafe
-                {
-                    ThunkContextData* thunkData = (ThunkContextData*)ContextData;
-
-                    (*thunkData).Handle = context.Handle;
-                    (*thunkData).FunctionPtr = context.FunctionPtr;
-                }
-            }
-
-            ~EquatablePInvokeDelegateThunk()
-            {
-                Handle.Free();
-                Marshal.FreeHGlobal(ContextData);
-            }
-
-            public static int GetHashCodeOfDelegate(Delegate del)
-            {
-                return RuntimeHelpers.GetHashCode(del);
-            }
-
-            public bool Equals(EquatablePInvokeDelegateThunk other)
-            {
-                return Thunk == other.Thunk;
-            }
-
-            public bool Equals(Delegate del)
-            {
-                return (Object.ReferenceEquals(del, Handle.Target));
-            }
-
-            public override int GetHashCode()
-            {
-                return HashCode;
-            }
-
-            public override bool Equals(Object obj)
-            {
-                // If parameter is null return false.
-                if (obj == null)
-                {
-                    return false;
-                }
-
-                // If parameter cannot be cast to EquatablePInvokeDelegateThunk return false.
-                EquatablePInvokeDelegateThunk other = obj as EquatablePInvokeDelegateThunk;
-                if ((Object)other == null)
-                {
-                    return false;
-                }
-
-                // Return true if the thunks match
-                return Thunk == other.Thunk;
-            }
-
-        }
-
-        const int THUNK_RECYCLING_FREQUENCY = 200;                                                  // Every 200 thunks that we allocate, do a round of cleanup
-
-#if ENABLE_WINRT
-        private static int s_numInteropThunksAllocatedSinceLastCleanup = 0;
-#endif
-
-        static private IntPtr GetOrAllocateThunk(Delegate del)
-        {
-#if ENABLE_WINRT
-            System.Collections.Generic.Internal.HashSet<EquatablePInvokeDelegateThunk> delegateHashSet = GetDelegateThunkHashSet();
-            try
-            {
-                delegateHashSet.LockAcquire();
-
-                EquatablePInvokeDelegateThunk key = null;
-                int hashCode = EquatablePInvokeDelegateThunk.GetHashCodeOfDelegate(del);
-                for (int entry = delegateHashSet.FindFirstKey(ref key, hashCode); entry >= 0; entry = delegateHashSet.FindNextKey(ref key, entry))
-                {
-                    if (key.Equals(del))
-                        return key.Thunk;
-                }
-                
-                if (s_thunkPoolHeap == null)
-                {
-                    s_thunkPoolHeap = RuntimeAugments.CreateThunksHeap(AsmCode.GetInteropCommonStubAddress());
-                    Debug.Assert(s_thunkPoolHeap != null);
-                }
-
-                //
-                // Keep allocating thunks until we reach the recycling frequency - we have a virtually unlimited
-                // number of thunks that we can allocate (until we run out of virtual address space), but we
-                // still need to cleanup thunks that are no longer being used, to avoid leaking memory.
-                // This is helpful to detect bugs where user are calling into thunks whose delegate are already
-                // collected. In desktop CLR, they'll simple AV, while in .NET Native, there is a good chance we'll
-                // detect the delegate instance is NULL (by looking at the GCHandle in the map) and throw out a
-                // good exception
-                //
-                if (s_numInteropThunksAllocatedSinceLastCleanup == THUNK_RECYCLING_FREQUENCY)
-                {
-                    //
-                    // Cleanup the thunks that were previously allocated and are no longer in use to avoid memory leaks
-                    //
-
-                    GC.Collect();
-
-                    foreach (EquatablePInvokeDelegateThunk delegateThunk in delegateHashSet.Keys)
-                    {
-                        // if the delegate has already been collected free the thunk and remove the entry from the hashset
-                        if (delegateThunk.Handle.Target == null)
-                        {
-                            RuntimeAugments.FreeThunk(s_thunkPoolHeap, delegateThunk.Thunk);
-                            bool removed = delegateHashSet.Remove(delegateThunk, delegateThunk.HashCode);
-                            if (!removed)
-                                Environment.FailFast("Inconsistency in delegate map");
-                        }
-                    }
-                    s_numInteropThunksAllocatedSinceLastCleanup = 0;
-                }
-
-
-                IntPtr pThunk = RuntimeAugments.AllocateThunk(s_thunkPoolHeap);
-                Debug.Assert(pThunk != IntPtr.Zero);
-
-                if (pThunk == IntPtr.Zero)
-                {
-                    // We've either run out of memory, or failed to allocate a new thunk due to some other bug. Now we should fail fast
-                    Environment.FailFast("Insufficient number of thunks.");
-                    return IntPtr.Zero;
-                }
-                else
-                {
-                    McgPInvokeDelegateData pinvokeDelegateData;
-                    McgModuleManager.GetPInvokeDelegateData(del.GetTypeHandle(), out pinvokeDelegateData);
-
-                    s_numInteropThunksAllocatedSinceLastCleanup++;
-
-                    
-                    EquatablePInvokeDelegateThunk delegateThunk = new EquatablePInvokeDelegateThunk(del, pThunk);
-                    
-                    delegateHashSet.Add(delegateThunk , delegateThunk.HashCode);
-                    
-                    //
-                    //  For open static delegates set target to ReverseOpenStaticDelegateStub which calls the static function pointer directly
-                    //
-                    IntPtr pTarget =  del.GetRawFunctionPointerForOpenStaticDelegate()  == IntPtr.Zero  ?  pinvokeDelegateData.ReverseStub : pinvokeDelegateData.ReverseOpenStaticDelegateStub;
-                    
-                    RuntimeAugments.SetThunkData(s_thunkPoolHeap, pThunk, delegateThunk.ContextData, pTarget);
-
-                    return pThunk;
-                }
-            }
-            finally
-            {
-                delegateHashSet.LockRelease();
-            }
+#if CORECLR
+             throw new NotSupportedException();
 #else
-            throw new PlatformNotSupportedException("GetOrAllocateThunk");
+            return PInvokeMarshal.GetFunctionPointerForDelegate(dele);
 #endif
         }
 
         /// <summary>
         /// Retrieve the corresponding P/invoke instance from the stub
         /// </summary>
-        static public Delegate GetPInvokeDelegateForStub(IntPtr pStub, RuntimeTypeHandle delegateType)
+        public static Delegate GetPInvokeDelegateForStub(IntPtr pStub, RuntimeTypeHandle delegateType)
         {
+#if CORECLR
             if (pStub == IntPtr.Zero)
                 return null;
-#if ENABLE_WINRT
-            //
-            // First try to see if this is one of the thunks we've allocated when we marshal a managed
-            // delegate to native code
-            //
-            IntPtr pContext;
-            IntPtr pTarget;
-            if (RuntimeAugments.TryGetThunkData(s_thunkPoolHeap, pStub, out pContext, out pTarget))
-            {
-                GCHandle handle;
-                unsafe
-                {
-                    // Pull out Handle from context
-                    handle = (*((ThunkContextData*)pContext)).Handle;
-                }
-                Delegate target = InteropExtensions.UncheckedCast<Delegate>(handle.Target);
 
-                //
-                // The delegate might already been garbage collected
-                // User should use GC.KeepAlive or whatever ways necessary to keep the delegate alive
-                // until they are done with the native function pointer
-                //
-                if (target == null)
-                {
-                    Environment.FailFast(
-                        "The corresponding delegate has been garbage collected. " +
-                        "Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer."
-                    );
-                }
-
-                return target;
-            }
-#endif
-            //
-            // Otherwise, the stub must be a pure native function pointer
-            // We need to create the delegate that points to the invoke method of a
-            // NativeFunctionPointerWrapper derived class
-            //
             McgPInvokeDelegateData pInvokeDelegateData;
             if (!McgModuleManager.GetPInvokeDelegateData(delegateType, out pInvokeDelegateData))
             {
@@ -1687,77 +1305,32 @@ namespace System.Runtime.InteropServices
                 pInvokeDelegateData.ForwardDelegateCreationStub,
                 pStub
             );
+#else
+            return PInvokeMarshal.GetDelegateForFunctionPointer(pStub, delegateType);
+#endif
         }
 
         /// <summary>
         /// Retrieves the function pointer for the current open static delegate that is being called
         /// </summary>
-        static public IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer()
+        public static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer()
         {
-#if RHTESTCL || CORECLR
-            throw new NotSupportedException();
+#if !RHTESTCL && PROJECTN
+            return PInvokeMarshal.GetCurrentCalleeOpenStaticDelegateFunctionPointer();
 #else
-            //
-            // RH keeps track of the current thunk that is being called through a secret argument / thread
-            // statics. No matter how that's implemented, we get the current thunk which we can use for
-            // look up later
-            //
-            IntPtr pContext = AsmCode.GetCurrentInteropThunkContext();
-            Debug.Assert(pContext != null);
-
-            IntPtr fnPtr;
-            unsafe
-            {
-                // Pull out function pointer for open static delegate
-                fnPtr = (*((ThunkContextData*)pContext)).FunctionPtr;
-            }
-            Debug.Assert(fnPtr != null);
-
-            return fnPtr;
+            throw new NotSupportedException();
 #endif
         }
 
         /// <summary>
         /// Retrieves the current delegate that is being called
         /// </summary>
-        static public T GetCurrentCalleeDelegate<T>() where T : class // constraint can't be System.Delegate
+        public static T GetCurrentCalleeDelegate<T>() where T : class // constraint can't be System.Delegate
         {
-#if RHTESTCL || CORECLR
-            throw new NotSupportedException();
+#if !RHTESTCL && PROJECTN
+            return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
 #else
-            //
-            // RH keeps track of the current thunk that is being called through a secret argument / thread
-            // statics. No matter how that's implemented, we get the current thunk which we can use for
-            // look up later
-            //
-            IntPtr pContext = AsmCode.GetCurrentInteropThunkContext();
-
-            Debug.Assert(pContext != null);
-
-            GCHandle handle;
-            unsafe
-            {
-                // Pull out Handle from context
-                handle = (*((ThunkContextData*)pContext)).Handle;
-
-            }
-
-            T target = InteropExtensions.UncheckedCast<T>(handle.Target);
-
-            //
-            // The delegate might already been garbage collected
-            // User should use GC.KeepAlive or whatever ways necessary to keep the delegate alive
-            // until they are done with the native function pointer
-            //
-            if (target == null)
-            {
-                Environment.FailFast(
-                    "The corresponding delegate has been garbage collected. " +
-                    "Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer."
-                );
-            }
-            return target;
-
+            throw new NotSupportedException();
 #endif
         }
 #endregion
@@ -1795,6 +1368,18 @@ namespace System.Runtime.InteropServices
                     if (ret != null)
                         return ret;
                 }
+#if ENABLE_WINRT
+                else if(McgModuleManager.UseDynamicInterop)
+                {
+                    BoxingInterfaceKind boxingInterfaceKind;
+                    RuntimeTypeHandle[] genericTypeArgument;
+                    if (DynamicInteropBoxingHelpers.TryGetBoxingArgumentTypeHandleFromString(className, out boxingInterfaceKind, out genericTypeArgument))
+                    {
+                        Debug.Assert(target is __ComObject);
+                        return DynamicInteropBoxingHelpers.Unboxing(boxingInterfaceKind, genericTypeArgument, target);
+                    }
+                }
+#endif
             }
             return null;
         }
@@ -1820,9 +1405,9 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle boxingWrapperType;
             IntPtr boxingStub;
             int boxingPropertyType;
-            if (McgModuleManager.TryGetBoxingWrapperType(expectedTypeHandle, target is Type, out boxingWrapperType, out boxingPropertyType,out boxingStub))
+            if (McgModuleManager.TryGetBoxingWrapperType(expectedTypeHandle, target, out boxingWrapperType, out boxingPropertyType, out boxingStub))
             {
-                if(!boxingWrapperType.IsInvalid())
+                if (!boxingWrapperType.IsInvalid())
                 {
                     //
                     // IReference<T> / IReferenceArray<T> / IKeyValuePair<K, V>

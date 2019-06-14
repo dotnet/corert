@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Internal.Runtime.Augments;
 using Internal.StackGenerator.Dia;
@@ -13,11 +15,27 @@ namespace Internal.StackTraceGenerator
 {
     public static class StackTraceGenerator
     {
+        /// <summary>
+        /// Check the AppCompat switch 'Diagnostics.DisableDiaStackTraceResolution'.
+        /// This is used for testing of metadata-based stack trace resolution.
+        /// </summary>
+        private static bool IsDiaStackTraceResolutionDisabled()
+        {
+            bool disableDia = false;
+            AppContext.TryGetSwitch("Diagnostics.DisableDiaStackTraceResolution", out disableDia);
+            return disableDia;
+        }
+
         //
         // Makes reasonable effort to construct one useful line of a stack trace. Returns null if it can't.
         //
         public static String CreateStackTraceString(IntPtr ip, bool includeFileInfo)
         {
+            if (IsDiaStackTraceResolutionDisabled())
+            {
+                return null;
+            }
+
             try
             {
                 int hr;
@@ -62,11 +80,33 @@ namespace Internal.StackTraceGenerator
             fileName = null;
             lineNumber = 0;
             columnNumber = 0;
-            int rva;
-            IDiaSession session = GetDiaSession(ip, out rva);
-            if (session == null)
-                return;
-            TryGetSourceLineInfo(session, rva, out fileName, out lineNumber, out columnNumber);
+            if (!IsDiaStackTraceResolutionDisabled())
+            {
+                int rva;
+                IDiaSession session = GetDiaSession(ip, out rva);
+                if (session != null)
+                {
+                    TryGetSourceLineInfo(session, rva, out fileName, out lineNumber, out columnNumber);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Makes reasonable effort to find the IL offset corresponding to the given address within a method.
+        /// Returns StackFrame.OFFSET_UNKNOWN if not available.
+        /// </summary>
+        public static void TryGetILOffsetWithinMethod(IntPtr ip, out int ilOffset)
+        {
+            ilOffset = StackFrame.OFFSET_UNKNOWN;
+            if (!IsDiaStackTraceResolutionDisabled())
+            {
+                int rva;
+                IDiaSession session = GetDiaSession(ip, out rva);
+                if (session != null)
+                {
+                    TryGetILOffsetInfo(session, rva, out ilOffset);
+                }
+            }
         }
 
         //
@@ -82,9 +122,9 @@ namespace Internal.StackTraceGenerator
                 {
                     byte[] _clsid = clsId.ToByteArray();
                     byte[] _iid = iid.ToByteArray();
-                    fixed (byte* pclsid = _clsid)
+                    fixed (byte* pclsid = &_clsid[0])
                     {
-                        fixed (byte* piid = _iid)
+                        fixed (byte* piid = &_iid[0])
                         {
                             IntPtr _dataSource;
                             hr = CoCreateInstance(pclsid, (IntPtr)0, CLSCTX_INPROC, piid, out _dataSource);
@@ -195,6 +235,31 @@ namespace Internal.StackTraceGenerator
                     }
                 }
             }
+        }
+
+        private static void TryGetILOffsetInfo(IDiaSession session, int rva, out int ilOffset)
+        {
+            IDiaEnumLineNumbers lineNumbers;
+            int hr = session.FindILOffsetsByRVA(rva, 1, out lineNumbers);
+            if (hr == S_OK)
+            {
+                int numLineNumbers;
+                hr = lineNumbers.Count(out numLineNumbers);
+                if (hr == S_OK && numLineNumbers > 0)
+                {
+                    IDiaLineNumber ln;
+                    hr = lineNumbers.Item(0, out ln);
+                    if (hr == S_OK)
+                    {
+                        hr = ln.LineNumber(out ilOffset);
+                        if (hr == S_OK)
+                        {
+                            return;
+                        }
+                    }
+                }
+            }
+            ilOffset = StackFrame.OFFSET_UNKNOWN;
         }
 
         //
@@ -510,7 +575,7 @@ namespace Internal.StackTraceGenerator
                 return null;
             }
 
-            IntPtr moduleBase = RuntimeAugments.GetModuleFromPointer(ip);
+            IntPtr moduleBase = RuntimeAugments.GetOSModuleFromPointer(ip);
             if (moduleBase == IntPtr.Zero)
             {
                 rva = -1;
@@ -521,33 +586,17 @@ namespace Internal.StackTraceGenerator
 
             if (s_loadedModules == null)
             {
-                // Lazily create the parallel arrays s_loadedModules and s_perModuleDebugInfo
-                int moduleCount = RuntimeAugments.GetLoadedModules(null);
-
-                s_loadedModules = new IntPtr[moduleCount];
-                s_perModuleDebugInfo = new IDiaSession[moduleCount];
-
-                // Actually read the module addresses into the array
-                RuntimeAugments.GetLoadedModules(s_loadedModules);
+                // Lazily create the map from module bases to debug info
+                s_loadedModules = new Dictionary<IntPtr, IDiaSession>();
             }
 
             // Locate module index based on base address
-            int moduleIndex = s_loadedModules.Length;
-            do
-            {
-                if (--moduleIndex < 0)
-                {
-                    return null;
-                }
-            }
-            while(s_loadedModules[moduleIndex] != moduleBase);
-
-            IDiaSession diaSession = s_perModuleDebugInfo[moduleIndex];
-            if (diaSession != null)
+            IDiaSession diaSession;
+            if (s_loadedModules.TryGetValue(moduleBase, out diaSession))
             {
                 return diaSession;
             }
-            
+
             string modulePath = RuntimeAugments.TryGetFullPathToApplicationModule(moduleBase);
             if (modulePath == null)
             {
@@ -580,13 +629,17 @@ namespace Internal.StackTraceGenerator
                 return null;
             }
 
-            s_perModuleDebugInfo[moduleIndex] = diaSession;
+            s_loadedModules.Add(moduleBase, diaSession);
             return diaSession;
         }
 
         // CoCreateInstance is not in WindowsApp_Downlevel.lib and ExactSpelling = true is required
         // to force MCG to resolve it.
-        [DllImport("api-ms-win-core-com-l1-1-0.dll", ExactSpelling =true)]
+        //
+        // This api is a WACK violation but it cannot be changed to CoCreateInstanceApp() without breaking the stack generator altogether.
+        // The toolchain will not include this library in the dependency closure as long as (1) the program is being compiled as a store app and not a console .exe
+        // and (2) the /buildType switch passed to ILC is set to the "ret".
+        [DllImport("api-ms-win-core-com-l1-1-0.dll", ExactSpelling = true)]
         private static extern unsafe int CoCreateInstance(byte* rclsid, IntPtr pUnkOuter, int dwClsContext, byte* riid, out IntPtr ppv);
 
         private const int S_OK = 0;
@@ -596,17 +649,7 @@ namespace Internal.StackTraceGenerator
         /// Loaded binary module addresses.
         /// </summary>
         [ThreadStatic]
-        private static IntPtr[] s_loadedModules;
-
-        /// <summary>
-        /// DIA session COM interfaces for the individual native application modules.
-        /// The array is constructed upon the first call to GetDiaSession but the
-        /// COM interface instances are created lazily on demand.
-        /// This array is parallel to s_loadedModules - it has the same number of elements
-        /// and the corresponding entries have the same indices.
-        /// </summary>
-        [ThreadStatic]
-        private static IDiaSession[] s_perModuleDebugInfo;
+        private static Dictionary<IntPtr, IDiaSession> s_loadedModules;
     }
 }
 

@@ -7,6 +7,27 @@
 #ifndef __GCENV_OS_H__
 #define __GCENV_OS_H__
 
+#ifdef Sleep
+// This is a funny workaround for the fact that "common.h" defines Sleep to be
+// Dont_Use_Sleep, with the hope of causing linker errors whenever someone tries to use sleep.
+//
+// However, GCToOSInterface defines a function called Sleep, which (due to this define) becomes
+// "Dont_Use_Sleep", which the GC in turn happily uses. The symbol that GCToOSInterface actually
+// exported was called "GCToOSInterface::Dont_Use_Sleep". While we progress in making the GC standalone,
+// we'll need to break the dependency on common.h (the VM header) and this problem will become moot.
+#undef Sleep
+#endif // Sleep
+
+#ifdef HAS_SYSTEM_YIELDPROCESSOR
+// YieldProcessor is defined to Dont_Use_YieldProcessor. Restore it to the system-default implementation for the GC.
+#undef YieldProcessor
+#define YieldProcessor System_YieldProcessor
+#endif
+
+#define NUMA_NODE_UNDEFINED UINT16_MAX
+
+bool ParseIndexOrRange(const char** config_string, size_t* start_index, size_t* end_index);
+
 // Critical section used by the GC
 class CLRCriticalSection
 {
@@ -36,19 +57,175 @@ struct VirtualReserveFlags
     };
 };
 
-// Affinity of a GC thread
-struct GCThreadAffinity
-{
-    static const int None = -1;
+// An event is a synchronization object whose state can be set and reset
+// indicating that an event has occured. It is used pervasively throughout
+// the GC.
+//
+// Note that GCEvent deliberately leaks its contents by not having a non-trivial destructor.
+// This is by design; since all uses of GCEvent have static lifetime, their destructors
+// are run on process exit, potentially concurrently with other threads that may still be
+// operating on the static event. To avoid these sorts of unsafety, GCEvent chooses to
+// not have a destructor at all. The cost of this is leaking a small amount of memory, but
+// this is not a problem since a majority of the uses of GCEvent are static. See CoreCLR#11111
+// for more details on the hazards of static destructors.
+class GCEvent {
+private:
+    class Impl;
+    Impl *m_impl;
 
-    // Processor group index, None if no group is specified
-    int Group;
-    // Processor index, None if no affinity is specified
-    int Processor;
+public:
+    // Constructs a new uninitialized event.
+    GCEvent();
+
+    // Closes the event. Attempting to use the event past calling CloseEvent
+    // is a logic error.
+    void CloseEvent();
+
+    // "Sets" the event, indicating that a particular event has occured. May
+    // wake up other threads waiting on this event. Depending on whether or
+    // not this event is an auto-reset event, the state of the event may
+    // or may not be automatically reset after Set is called.
+    void Set();
+
+    // Resets the event, resetting it back to a non-signalled state. Auto-reset
+    // events automatically reset once the event is set, while manual-reset
+    // events do not reset until Reset is called. It is a no-op to call Reset
+    // on an auto-reset event.
+    void Reset();
+
+    // Waits for some period of time for this event to be signalled. The
+    // period of time may be infinite (if the timeout argument is INFINITE) or
+    // it may be a specified period of time, in milliseconds.
+    // Returns:
+    //   One of three values, depending on how why this thread was awoken:
+    //      WAIT_OBJECT_0 - This event was signalled and woke up this thread.
+    //      WAIT_TIMEOUT  - The timeout interval expired without this event being signalled.
+    //      WAIT_FAILED   - The wait failed.
+    uint32_t Wait(uint32_t timeout, bool alertable);
+
+    // Determines whether or not this event is valid.
+    // Returns:
+    //  true if this event is invalid (i.e. it has not yet been initialized or
+    //  has already been closed), false otherwise
+    bool IsValid() const
+    {
+        return m_impl != nullptr;
+    }
+
+    // Initializes this event to be a host-aware manual reset event with the
+    // given initial state.
+    // Returns:
+    //   true if the initialization succeeded, false if it did not
+    bool CreateManualEventNoThrow(bool initialState);
+
+    // Initializes this event to be a host-aware auto-resetting event with the
+    // given initial state.
+    // Returns:
+    //   true if the initialization succeeded, false if it did not
+    bool CreateAutoEventNoThrow(bool initialState);
+
+    // Initializes this event to be a host-unaware manual reset event with the
+    // given initial state.
+    // Returns:
+    //   true if the initialization succeeded, false if it did not
+    bool CreateOSManualEventNoThrow(bool initialState);
+
+    // Initializes this event to be a host-unaware auto-resetting event with the
+    // given initial state.
+    // Returns:
+    //   true if the initialization succeeded, false if it did not
+    bool CreateOSAutoEventNoThrow(bool initialState);
 };
 
 // GC thread function prototype
 typedef void (*GCThreadFunction)(void* param);
+
+#ifdef BIT64
+// Right now we support maximum 1024 procs - meaning that we will create at most
+// that many GC threads and GC heaps.
+#define MAX_SUPPORTED_CPUS 1024
+#else
+#define MAX_SUPPORTED_CPUS 64
+#endif // BIT64
+
+// Add of processor indices used to store affinity.
+class AffinitySet
+{
+    static const size_t BitsPerBitsetEntry = 8 * sizeof(uintptr_t);
+
+    uintptr_t m_bitset[MAX_SUPPORTED_CPUS / BitsPerBitsetEntry];
+
+    static uintptr_t GetBitsetEntryMask(size_t cpuIndex)
+    {
+        return (uintptr_t)1 << (cpuIndex & (BitsPerBitsetEntry - 1));
+    }
+
+    static size_t GetBitsetEntryIndex(size_t cpuIndex)
+    {
+        return cpuIndex / BitsPerBitsetEntry;
+    }
+
+public:
+
+    static const size_t BitsetDataSize = MAX_SUPPORTED_CPUS / BitsPerBitsetEntry;
+
+    AffinitySet()
+    {
+        memset(m_bitset, 0, sizeof(m_bitset));
+    }
+
+    uintptr_t* GetBitsetData()
+    {
+        return m_bitset;
+    }
+
+    // Check if the set contains a processor
+    bool Contains(size_t cpuIndex) const
+    {
+        return (m_bitset[GetBitsetEntryIndex(cpuIndex)] & GetBitsetEntryMask(cpuIndex)) != 0;
+    }
+
+    // Add a processor to the set
+    void Add(size_t cpuIndex)
+    {
+        m_bitset[GetBitsetEntryIndex(cpuIndex)] |= GetBitsetEntryMask(cpuIndex);
+    }
+
+    // Remove a processor from the set
+    void Remove(size_t cpuIndex)
+    {
+        m_bitset[GetBitsetEntryIndex(cpuIndex)] &= ~GetBitsetEntryMask(cpuIndex);
+    }
+
+    // Check if the set is empty
+    bool IsEmpty() const
+    {
+        for (size_t i = 0; i < MAX_SUPPORTED_CPUS / BitsPerBitsetEntry; i++)
+        {
+            if (m_bitset[i] != 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Return number of processors in the affinity set
+    size_t Count() const
+    {
+        size_t count = 0;
+        for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
+        {
+            if (Contains(i))
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+};
 
 // Interface that the GC uses to invoke OS specific functionality
 class GCToOSInterface
@@ -73,13 +250,21 @@ public:
 
     // Reserve virtual memory range.
     // Parameters:
-    //  address   - starting virtual address, it can be NULL to let the function choose the starting address
     //  size      - size of the virtual memory range
     //  alignment - requested memory alignment
     //  flags     - flags to control special settings like write watching
     // Return:
     //  Starting virtual address of the reserved range
-    static void* VirtualReserve(void *address, size_t size, size_t alignment, uint32_t flags);
+    // Notes:
+    //  Previous uses of this API aligned the `size` parameter to the platform
+    //  allocation granularity. This is not required by POSIX or Windows. Windows will
+    //  round the size up to the nearest page boundary. POSIX does not specify what is done,
+    //  but Linux probably also rounds up. If an implementation of GCToOSInterface needs to
+    //  align to the allocation granularity, it will do so in its implementation.
+    //
+    //  Windows guarantees that the returned mapping will be aligned to the allocation
+    //  granularity.
+    static void* VirtualReserve(size_t size, size_t alignment, uint32_t flags);
 
     // Release virtual memory range previously reserved using VirtualReserve
     // Parameters:
@@ -95,7 +280,14 @@ public:
     //  size    - size of the virtual memory range
     // Return:
     //  true if it has succeeded, false if it has failed
-    static bool VirtualCommit(void *address, size_t size);
+    static bool VirtualCommit(void *address, size_t size, uint16_t node = NUMA_NODE_UNDEFINED);
+
+    // Reserve and Commit virtual memory range for Large Pages
+    // Parameters:
+    //  size    - size of the virtual memory range
+    // Return:
+    //  Address of the allocated memory
+    static void* VirtualReserveAndCommitLargePages(size_t size);
 
     // Decomit virtual memory range.
     // Parameters:
@@ -144,15 +336,6 @@ public:
     // Thread and process
     //
 
-    // Create a new thread
-    // Parameters:
-    //  function - the function to be executed by the thread
-    //  param    - parameters of the thread
-    //  affinity - processor affinity of the thread
-    // Return:
-    //  true if it has succeeded, false if it has failed
-    static bool CreateThread(GCThreadFunction function, void* param, GCThreadAffinity* affinity);
-
     // Causes the calling thread to sleep for the specified number of milliseconds
     // Parameters:
     //  sleepMSec   - time to sleep before switching to another thread
@@ -171,11 +354,11 @@ public:
 
     // Set ideal processor for the current thread
     // Parameters:
-    //  processorIndex - index of the processor in the group
-    //  affinity - ideal processor affinity for the thread
+    //  srcProcNo - processor number the thread currently runs on
+    //  dstProcNo - processor number the thread should be migrated to
     // Return:
     //  true if it has succeeded, false if it has failed
-    static bool SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity);
+    static bool SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t dstProcNo);
 
     // Get numeric id of the current thread if possible on the
     // current platform. It is indended for logging purposes only.
@@ -192,36 +375,42 @@ public:
     // Processor topology
     //
 
-    // Get number of logical processors
-    static uint32_t GetLogicalCpuCount();
-
-    // Get size of the largest cache on the processor die
+    // Get size of the on die cache per logical processor
     // Parameters:
     //  trueSize - true to return true cache size, false to return scaled up size based on
     //             the processor architecture
     // Return:
     //  Size of the cache
-    static size_t GetLargestOnDieCacheSize(bool trueSize = true);
+    static size_t GetCacheSizePerLogicalCpu(bool trueSize = true);
 
     // Get number of processors assigned to the current process
     // Return:
     //  The number of processors
     static uint32_t GetCurrentProcessCpuCount();
 
-    // Get affinity mask of the current process
+    // Sets the calling thread's affinity to only run on the processor specified.
     // Parameters:
-    //  processMask - affinity mask for the specified process
-    //  systemMask  - affinity mask for the system
+    //  procNo - The requested affinity for the calling thread.
+    //
     // Return:
-    //  true if it has succeeded, false if it has failed
-    // Remarks:
-    //  A process affinity mask is a bit vector in which each bit represents the processors that
-    //  a process is allowed to run on. A system affinity mask is a bit vector in which each bit
-    //  represents the processors that are configured into a system.
-    //  A process affinity mask is a subset of the system affinity mask. A process is only allowed
-    //  to run on the processors configured into a system. Therefore, the process affinity mask cannot
-    //  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
-    static bool GetCurrentProcessAffinityMask(uintptr_t *processMask, uintptr_t *systemMask);
+    //  true if setting the affinity was successful, false otherwise.
+    static bool SetThreadAffinity(uint16_t procNo);
+
+    // Boosts the calling thread's thread priority to a level higher than the default
+    // for new threads.
+    // Parameters:
+    //  None.
+    // Return:
+    //  true if the priority boost was successful, false otherwise.
+    static bool BoostThreadPriority();
+
+    // Set the set of processors enabled for GC threads for the current process based on config specified affinity mask and set
+    // Parameters:
+    //  configAffinityMask - mask specified by the GCHeapAffinitizeMask config
+    //  configAffinitySet - affinity set specified by the GCHeapAffinitizeRanges config
+    // Return:
+    //  set of enabled processors
+    static const AffinitySet* SetGCThreadsAffinitySet(uintptr_t configAffinityMask, const AffinitySet* configAffinitySet);
 
     //
     // Global memory info
@@ -235,10 +424,14 @@ public:
     // Get the physical memory that this process can use.
     // Return:
     //  non zero if it has succeeded, 0 if it has failed
+    //  *is_restricted is set to true if asked and running in restricted.
     // Remarks:
     //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit 
     //  specified, it returns amount of actual physical memory.
-    static uint64_t GetPhysicalMemoryLimit();
+    //
+    // PERF TODO: Requires more work to not treat the restricted case to be special. 
+    // To be removed before 3.0 ships.
+    static uint64_t GetPhysicalMemoryLimit(bool* is_restricted=NULL);
 
     // Get memory status
     // Parameters:
@@ -249,6 +442,9 @@ public:
     // Remarks:
     //  Any parameter can be null.
     static void GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file);
+
+    // Get size of an OS memory page
+    static size_t GetPageSize();
 
     //
     // Misc
@@ -278,6 +474,34 @@ public:
     // Return:
     //  Time stamp in milliseconds
     static uint32_t GetLowPrecisionTimeStamp();
+
+    // Gets the total number of processors on the machine, not taking
+    // into account current process affinity.
+    // Return:
+    //  Number of processors on the machine
+    static uint32_t GetTotalProcessorCount();
+
+    // Is NUMA support available
+    static bool CanEnableGCNumaAware();
+
+    // Get processor number and optionally its NUMA node number for the specified heap number
+    // Parameters:
+    //  heap_number - heap number to get the result for
+    //  proc_no     - set to the selected processor number
+    //  node_no     - set to the NUMA node of the selected processor or to NUMA_NODE_UNDEFINED
+    // Return:
+    //  true if it succeeded
+    static bool GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_no, uint16_t* node_no);
+
+    // Parse the confing string describing affinitization ranges and update the passed in affinitySet accordingly
+    // Parameters:
+    //  config_string - string describing the affinitization range, platform specific
+    //  start_index  - the range start index extracted from the config_string
+    //  end_index    - the range end index extracted from the config_string, equal to the start_index if only an index and not a range was passed in
+    // Return:
+    //  true if the configString was successfully parsed, false if it was not correct
+    static bool ParseGCHeapAffinitizeRangesEntry(const char** config_string, size_t* start_index, size_t* end_index);
+
 };
 
 #endif // __GCENV_OS_H__

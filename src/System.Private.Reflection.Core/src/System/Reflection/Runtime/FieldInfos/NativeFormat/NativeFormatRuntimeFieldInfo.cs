@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 
 using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.General.NativeFormat;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.CustomAttributes;
@@ -20,8 +21,9 @@ using Internal.Metadata.NativeFormat;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-
 using Internal.Reflection.Tracing;
+
+using Internal.Runtime.TypeLoader;
 
 namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 {
@@ -59,23 +61,6 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             _field = fieldHandle.GetField(_reader);
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.FieldInfo_CustomAttributes(this);
-#endif
-
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.CustomAttributes);
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _fieldHandle, _definingTypeInfo.TypeDefinitionHandle))
-                    yield return cad;
-            }
-        }
-
         public sealed override FieldAttributes Attributes
         {
             get
@@ -83,6 +68,10 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
                 return _field.Flags;
             }
         }
+
+        public sealed override Type[] GetOptionalCustomModifiers() => FieldTypeHandle.GetCustomModifiers(_reader, _contextTypeInfo.TypeContext, optional: true);
+
+        public sealed override Type[] GetRequiredCustomModifiers() => FieldTypeHandle.GetCustomModifiers(_reader, _contextTypeInfo.TypeContext, optional: false);
 
         public sealed override int MetadataToken
         {
@@ -107,10 +96,25 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             return (new QTypeDefRefOrSpec(_reader, typeHandle).FormatTypeName(typeContext)) + " " + this.Name;
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            if (!(other is NativeFormatRuntimeFieldInfo otherField))
+                return false;
+            if (!(_reader == otherField._reader))
+                return false;
+            if (!(_fieldHandle.Equals(otherField._fieldHandle)))
+                return false;
+            if (!(_definingTypeInfo.Equals(otherField._definingTypeInfo)))
+                return false;
+            return true;
+        }
+
         public sealed override bool Equals(Object obj)
         {
-            NativeFormatRuntimeFieldInfo other = obj as NativeFormatRuntimeFieldInfo;
-            if (other == null)
+            if (!(obj is NativeFormatRuntimeFieldInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;
@@ -128,14 +132,19 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             return _fieldHandle.GetHashCode();
         }
 
-        protected sealed override bool TryGetDefaultValue(out object defaultValue)
+        public sealed override RuntimeFieldHandle FieldHandle
         {
-            return ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
-                            _reader,
-                            _fieldHandle,
-                            this.FieldType,
-                            this.CustomAttributes,
-                            out defaultValue);
+            get
+            {
+                return TypeLoaderEnvironment.Instance.GetRuntimeFieldHandleForComponents(
+                    DeclaringType.TypeHandle,
+                    Name);
+            }
+        }
+
+        protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object defaultValue)
+        {
+            return DefaultValueParser.GetDefaultValueIfAny(_reader, _field.DefaultValue, FieldType, CustomAttributes, raw, out defaultValue);
         }
 
         protected sealed override FieldAccessor TryGetFieldAccessor()
@@ -148,12 +157,17 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
             get
             {
                 TypeContext typeContext = _contextTypeInfo.TypeContext;
-                Handle typeHandle = _field.Signature.GetFieldSignature(_reader).Type;
-                return typeHandle.Resolve(_reader, typeContext);
+                return FieldTypeHandle.Resolve(_reader, typeContext);
             }
         }
 
         protected sealed override RuntimeTypeInfo DefiningType { get { return _definingTypeInfo; } }
+
+        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _field.CustomAttributes);
+  
+        protected sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
+ 
+        private Handle FieldTypeHandle => _field.Signature.GetFieldSignature(_reader).Type;
 
         private readonly NativeFormatRuntimeNamedTypeInfo _definingTypeInfo;
         private readonly FieldHandle _fieldHandle;

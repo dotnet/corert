@@ -20,9 +20,9 @@ namespace System.Reflection.Runtime.General
 
         public override bool Equals(object obj)
         {
-            if (!(obj is RuntimeTypeHandleKey))
+            if (!(obj is RuntimeTypeHandleKey other))
                 return false;
-            return Equals((RuntimeTypeHandleKey)obj);
+            return Equals(other);
         }
 
         public bool Equals(RuntimeTypeHandleKey other)

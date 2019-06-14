@@ -16,7 +16,7 @@ namespace System.Runtime.CompilerServices
     {
         public DependencyReductionTypeRemoved()
         {
-            Debug.Assert(false, "A type that was removed by dependency reduction has been instantiated.");
+            Debug.Fail("A type that was removed by dependency reduction has been instantiated.");
             throw new Exception("A type that was removed by dependency reduction has been instantiated.");
         }
     }

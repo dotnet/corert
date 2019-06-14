@@ -6,15 +6,15 @@ using System;
 using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
-
-using Internal.Metadata.NativeFormat;
+using System.Runtime.InteropServices;
 
 using Internal.Runtime.Augments;
-using Internal.Runtime.TypeLoader;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Execution.PayForPlayExperience;
 using Internal.Reflection.Extensions.NonPortable;
+
+using System.Reflection.Runtime.General;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -31,9 +31,19 @@ namespace Internal.Reflection.Execution
             _executionEnvironment = executionEnvironment;
         }
 
-        public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase)
+        public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, string defaultAssemblyName)
         {
-            return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);
+            if (defaultAssemblyName == null)
+            {
+                return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);
+            }
+            else
+            {
+                LowLevelListWithIList<String> defaultAssemblies = new LowLevelListWithIList<String>();
+                defaultAssemblies.Add(defaultAssemblyName);
+                defaultAssemblies.AddRange(ReflectionExecution.DefaultAssemblyNamesForGetType);
+                return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
+            }
         }
 
         public sealed override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle)
@@ -83,23 +93,6 @@ namespace Internal.Reflection.Execution
             return _executionDomain.CreateMissingMetadataException(pertainant);
         }
 
-        public sealed override EnumInfo GetEnumInfoIfAvailable(Type enumType)
-        {
-            // Handle the weird case of an enum type nested under a generic type that makes the
-            // enum itself generic.
-            if (enumType.IsConstructedGenericType)
-            {
-                enumType = enumType.GetGenericTypeDefinition();
-            }
-
-            MetadataReader reader;
-            TypeDefinitionHandle typeDefinitionHandle;
-            if (!ReflectionExecution.ExecutionEnvironment.TryGetMetadataForNamedType(enumType.TypeHandle, out reader, out typeDefinitionHandle))
-                return null;
-
-            return new EnumInfoImplementation(enumType, reader, typeDefinitionHandle);
-        }
-
         // This is called from the ToString() helper of a RuntimeType that does not have full metadata.
         // This helper makes a "best effort" to give the caller something better than "EETypePtr nnnnnnnnn".
         public sealed override String GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle)
@@ -107,105 +100,23 @@ namespace Internal.Reflection.Execution
             return Type.GetTypeFromHandle(runtimeTypeHandle).ToDisplayStringIfAvailable(null);
         }
 
-        public sealed override String GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress)
+        public sealed override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress)
         {
             RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
-            MethodHandle methodHandle;
-            RuntimeTypeHandle[] genericMethodTypeArgumentHandles;
-            if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(methodStartAddress,
-                ref declaringTypeHandle, out methodHandle, out genericMethodTypeArgumentHandles))
+            QMethodDefinition methodHandle;
+            if (!ReflectionExecution.ExecutionEnvironment.TryGetMethodForStartAddress(methodStartAddress,
+                ref declaringTypeHandle, out methodHandle))
             {
                 return null;
             }
 
-            MethodBase methodBase = ReflectionCoreExecution.ExecutionDomain.GetMethod(
-                                        declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles);
-            if (methodBase == null || string.IsNullOrEmpty(methodBase.Name))
-                return null;
-
-            // get type name
-            string typeName = string.Empty;
-            Type declaringType = Type.GetTypeFromHandle(declaringTypeHandle);
-            if (declaringType != null)
-                typeName = declaringType.ToDisplayStringIfAvailable(null);
-            if (string.IsNullOrEmpty(typeName))
-                typeName = "<unknown>";
-
-            StringBuilder fullMethodName = new StringBuilder();
-            fullMethodName.Append(typeName);
-            fullMethodName.Append('.');
-            fullMethodName.Append(methodBase.Name);
-            fullMethodName.Append('(');
-
-            // get parameter list
-            ParameterInfo[] paramArr = methodBase.GetParametersNoCopy();
-            for (int i = 0; i < paramArr.Length; ++i)
-            {
-                if (i != 0)
-                    fullMethodName.Append(", ");
-
-                ParameterInfo param = paramArr[i];
-                string paramTypeName = string.Empty;
-                if (param.ParameterType != null)
-                    paramTypeName = param.ParameterType.ToDisplayStringIfAvailable(null);
-                if (string.IsNullOrEmpty(paramTypeName))
-                    paramTypeName = "<unknown>";
-                else
-                {
-                    // remove namespace from param type-name
-                    int idxSeparator = paramTypeName.IndexOf(".");
-                    if (idxSeparator >= 0)
-                        paramTypeName = paramTypeName.Remove(0, idxSeparator + 1);
-                }
-
-                string paramName = param.Name;
-                if (string.IsNullOrEmpty(paramName))
-                    paramName = "<unknown>";
-
-                fullMethodName.Append(paramTypeName);
-                fullMethodName.Append(' ');
-                fullMethodName.Append(paramName);
-            }
-            fullMethodName.Append(')');
-            return fullMethodName.ToString();
+            // We don't use the type argument handles as we want the uninstantiated method info
+            return ReflectionCoreExecution.ExecutionDomain.GetMethod(declaringTypeHandle, methodHandle, genericMethodTypeArgumentHandles: null);
         }
 
-        private String GetTypeFullNameFromTypeRef(TypeReferenceHandle typeReferenceHandle, MetadataReader reader)
+        public sealed override Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle)
         {
-            String s = "";
-
-            TypeReference typeReference = typeReferenceHandle.GetTypeReference(reader);
-            s = typeReference.TypeName.GetString(reader);
-            Handle parentHandle = typeReference.ParentNamespaceOrType;
-            HandleType parentHandleType = parentHandle.HandleType;
-            if (parentHandleType == HandleType.TypeReference)
-            {
-                String containingTypeName = GetTypeFullNameFromTypeRef(parentHandle.ToTypeReferenceHandle(reader), reader);
-                s = containingTypeName + "+" + s;
-            }
-            else if (parentHandleType == HandleType.NamespaceReference)
-            {
-                NamespaceReferenceHandle namespaceReferenceHandle = parentHandle.ToNamespaceReferenceHandle(reader);
-                for (;;)
-                {
-                    NamespaceReference namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
-                    String namespacePart = namespaceReference.Name.GetStringOrNull(reader);
-                    if (namespacePart == null)
-                        break; // Reached the root namespace.
-                    s = namespacePart + "." + s;
-                    if (namespaceReference.ParentScopeOrNamespace.HandleType != HandleType.NamespaceReference)
-                        break; // Should have reached the root namespace first but this helper is for ToString() - better to
-                    // return partial information than crash.
-                    namespaceReferenceHandle = namespaceReference.ParentScopeOrNamespace.ToNamespaceReferenceHandle(reader);
-                }
-            }
-            else
-            {
-                // If we got here, the metadata is illegal but this helper is for ToString() - better to 
-                // return something partial than throw.
-            }
-
-            return s;
+            return Type.GetTypeFromHandle(typeHandle).Assembly;
         }
 
         public sealed override IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle)
@@ -233,6 +144,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
+#if PROJECTN
         /// <summary>
         /// Reflection-based implementation of ValueType.GetHashCode. Matches the implementation created by the ValueTypeTransform.
         /// </summary>
@@ -310,6 +222,7 @@ namespace Internal.Reflection.Execution
 
             return true;
         }
+#endif
 
         /// <summary>
         /// Retrieves the default value for a parameter of a method.
@@ -324,13 +237,12 @@ namespace Internal.Reflection.Execution
         {
             defaultValue = null;
 
-            MethodBase methodInfo = defaultParametersContext as MethodBase;
-            if (methodInfo == null)
+            if (!(defaultParametersContext is MethodBase methodBase))
             {
                 return false;
             }
 
-            ParameterInfo parameterInfo = methodInfo.GetParametersNoCopy()[argIndex];
+            ParameterInfo parameterInfo = methodBase.GetParametersNoCopy()[argIndex];
             if (!parameterInfo.HasDefaultValue)
             {
                 // If the parameter is optional, with no default value and we're asked for its default value,
@@ -364,6 +276,11 @@ namespace Internal.Reflection.Execution
         public sealed override MethodInfo GetDelegateMethod(Delegate del)
         {
             return DelegateMethodInfoRetriever.GetDelegateMethodInfo(del);
+        }
+
+        public sealed override Exception GetExceptionForHR(int hr)
+        {
+            return Marshal.GetExceptionForHR(hr);
         }
 
         private ExecutionDomain _executionDomain;

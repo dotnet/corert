@@ -2,19 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Reflection.Runtime.Assemblies;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.MethodInfos;
-using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.CustomAttributes;
 
-using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Tracing;
 
 using Internal.Metadata.NativeFormat;
@@ -46,25 +41,6 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_CustomAttributes(this);
-#endif
-
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);
-                foreach (CustomAttributeData cad in customAttributes)
-                    yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _typeDefinitionHandle))
-                {
-                    yield return cad;
-                }
-            }
-        }
-
         protected sealed override Guid? ComputeGuidFromCustomAttributes()
         {
             //
@@ -79,15 +55,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                 if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.InteropServices", "GuidAttribute"))
                 {
                     CustomAttribute ca = cah.GetCustomAttribute(_reader);
-                    IEnumerator<FixedArgumentHandle> fahEnumerator = ca.FixedArguments.GetEnumerator();
+                    FixedArgumentHandleCollection.Enumerator fahEnumerator = ca.FixedArguments.GetEnumerator();
                     if (!fahEnumerator.MoveNext())
                         continue;
                     FixedArgumentHandle guidStringArgumentHandle = fahEnumerator.Current;
                     if (fahEnumerator.MoveNext())
                         continue;
                     FixedArgument guidStringArgument = guidStringArgumentHandle.GetFixedArgument(_reader);
-                    String guidString = guidStringArgument.Value.ParseConstantValue(_reader) as String;
-                    if (guidString == null)
+                    if (!(guidStringArgument.Value.ParseConstantValue(_reader) is string guidString))
                         continue;
                     return new Guid(guidString);
                 }
@@ -128,6 +103,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             if (_typeDefinition.GenericParameters.GetEnumerator().MoveNext())
                 return this;
             return base.GetGenericTypeDefinition();
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
         }
 
         public sealed override string ToString()
@@ -194,13 +177,15 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             ConstantStringValueHandle nameHandle = _typeDefinition.Name;
             string name = nameHandle.GetString(_reader);
 
             return name.EscapeTypeNameIdentifier();
         }
+
+        protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);
 
         internal sealed override RuntimeTypeInfo[] RuntimeGenericTypeParameters
         {

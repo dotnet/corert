@@ -2,23 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
+using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    public class MultiFileCompilationModuleGroup : CompilationModuleGroup
+    public abstract class MultiFileCompilationModuleGroup : CompilationModuleGroup
     {
-        private HashSet<EcmaModule> _compilationModuleSet;
+        private HashSet<ModuleDesc> _compilationModuleSet;
 
-        public MultiFileCompilationModuleGroup(IEnumerable<EcmaModule> compilationModuleSet)
+        public MultiFileCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
         {
-            _compilationModuleSet = new HashSet<EcmaModule>(compilationModuleSet);
+            _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
+
+            // The fake assembly that holds compiler generated types is part of the compilation.
+            _compilationModuleSet.Add(context.GeneratedAssembly);
         }
 
-        public override bool ContainsType(TypeDesc type)
+        public sealed override bool ContainsType(TypeDesc type)
         {
             EcmaType ecmaType = type as EcmaType;
 
@@ -33,7 +39,12 @@ namespace ILCompiler
             return true;
         }
 
-        public override bool ContainsMethod(MethodDesc method)
+        public sealed override bool ContainsTypeDictionary(TypeDesc type)
+        {
+            return ContainsType(type);
+        }
+
+        public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
             if (method.HasInstantiation)
                 return true;
@@ -41,19 +52,35 @@ namespace ILCompiler
             return ContainsType(method.OwningType);
         }
 
-        private bool BuildingLibrary
+        public sealed override bool ContainsMethodDictionary(MethodDesc method)
         {
-            get
-            {
-                foreach (var module in _compilationModuleSet)
-                {
-                    if (module.PEReader.PEHeaders.IsExe)
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }
+            Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
+            return ContainsMethodBody(method, false);
+        }
+
+        public sealed override bool ImportsMethod(MethodDesc method, bool unboxingStub)
+        {
+            return false;
+        }
+        
+        public sealed override ExportForm GetExportTypeForm(TypeDesc type)
+        {
+            return ExportForm.None;
+        }
+
+        public sealed override ExportForm GetExportTypeFormDictionary(TypeDesc type)
+        {
+            return ExportForm.None;
+        }
+
+        public sealed override ExportForm GetExportMethodForm(MethodDesc method, bool unboxingStub)
+        {
+            return ExportForm.None;
+        }
+
+        public override ExportForm GetExportMethodDictionaryForm(MethodDesc method)
+        {
+            return ExportForm.None;
         }
 
         private bool IsModuleInCompilationGroup(EcmaModule module)
@@ -61,7 +88,7 @@ namespace ILCompiler
             return _compilationModuleSet.Contains(module);
         }
 
-        public override bool IsSingleFileCompilation
+        public sealed override bool IsSingleFileCompilation
         {
             get
             {
@@ -69,50 +96,44 @@ namespace ILCompiler
             }
         }
 
-        public override bool ShouldProduceFullType(TypeDesc type)
+        public sealed override bool ShouldReferenceThroughImportTable(TypeDesc type)
         {
-            // TODO: Remove this once we have delgate constructor transform added and GetMethods() tells us about
-            //       the virtuals we add on to delegate types.
-            if (type.IsDelegate)
-                return false;
-
-            // Fully build all types when building a library
-            if (BuildingLibrary)
-                return true;
-
-            // Fully build all shareable types so they will be identical in each module
-            if (ShouldShareAcrossModules(type))
-                return true;
-
-            // If referring to a type from another module, VTables, interface maps, etc should assume the
-            // type is fully build.
-            if (!ContainsType(type))
-                return true;
-
             return false;
         }
 
-        public override bool ShouldShareAcrossModules(MethodDesc method)
+        public override bool CanHaveReferenceThroughImportTable
         {
-            if (method is InstantiatedMethod)
-                return true;
-
-            return ShouldShareAcrossModules(method.OwningType);
-        }
-
-        public override bool ShouldShareAcrossModules(TypeDesc type)
-        {
-            if (type.IsParameterizedType || type.IsFunctionPointer || type is InstantiatedType)
+            get
             {
-                return true;
+                return false;
             }
+        } 
+    }
 
-            return false;
+    /// <summary>
+    /// Represents a non-leaf multifile compilation group where types contained in the group are always fully expanded.
+    /// </summary>
+    public class MultiFileSharedCompilationModuleGroup : MultiFileCompilationModuleGroup
+    {
+        public MultiFileSharedCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+            : base(context, compilationModuleSet)
+        {
         }
 
-        public override bool ShouldReferenceThroughImportTable(TypeDesc type)
+        public override bool ShouldProduceFullVTable(TypeDesc type)
         {
-            return false;
+            return ConstructedEETypeNode.CreationAllowed(type);
+        }
+
+        public override bool ShouldPromoteToFullType(TypeDesc type)
+        {
+            return ShouldProduceFullVTable(type);
+        }
+
+        public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
+        {
+            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) && 
+                   type.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any);
         }
     }
 }

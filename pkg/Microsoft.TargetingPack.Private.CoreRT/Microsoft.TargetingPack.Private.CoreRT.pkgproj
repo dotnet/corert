@@ -1,0 +1,25 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
+    <PackagePlatforms>x64;</PackagePlatforms>
+    <PackageTargetFramework>netcoreapp2.1</PackageTargetFramework>
+    <!-- Override this property so that the package name won't look like runtime.[RID].[TFM].[ID] -->
+    <PackageTargetRuntime></PackageTargetRuntime>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- PackageTargetRuntime needs to be reset because if let unset, it's going to be set to globally configured value 
+         which will cause the package assets to be placed into runtime/[RID]/lib/[TFM]/ path, instead of lib/[TFM] -->
+    <ProjectReference Include="$(PackageSourceDirectory)System.Private.CoreLib\src\System.Private.CoreLib.csproj">
+      <AdditionalProperties>$(AdditionalProperties);PackageTargetRuntime=</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="$(PackageSourceDirectory)System.Private.Interop\src\System.Private.Interop.csproj">
+      <AdditionalProperties>$(AdditionalProperties);PackageTargetRuntime=</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />
+  <Target Name="GetPackageDependencies"/>
+</Project>
+

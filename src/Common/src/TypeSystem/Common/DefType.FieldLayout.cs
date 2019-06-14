@@ -55,15 +55,16 @@ namespace Internal.TypeSystem
         {
             public StaticsBlock NonGcStatics;
             public StaticsBlock GcStatics;
-            public StaticsBlock ThreadStatics;
+            public StaticsBlock ThreadNonGcStatics;
+            public StaticsBlock ThreadGcStatics;
         }
 
         ThreadSafeFlags _fieldLayoutFlags;
 
-        int _instanceFieldSize;
-        int _instanceFieldAlignment;
-        int _instanceByteCountUnaligned;
-        int _instanceByteAlignment;
+        LayoutInt _instanceFieldSize;
+        LayoutInt _instanceFieldAlignment;
+        LayoutInt _instanceByteCountUnaligned;
+        LayoutInt _instanceByteAlignment;
 
         // Information about various static blocks is rare, so we keep it out of line.
         StaticBlockInfo _staticBlockInfo;
@@ -88,7 +89,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// The number of bytes required to hold a field of this type
         /// </summary>
-        public int InstanceFieldSize
+        public LayoutInt InstanceFieldSize
         {
             get
             {
@@ -103,7 +104,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// What is the alignment requirement of the fields of this type
         /// </summary>
-        public int InstanceFieldAlignment
+        public LayoutInt InstanceFieldAlignment
         {
             get
             {
@@ -118,18 +119,18 @@ namespace Internal.TypeSystem
         /// <summary>
         /// The number of bytes required when allocating this type on this GC heap
         /// </summary>
-        public int InstanceByteCount
+        public LayoutInt InstanceByteCount
         {
             get
             {
-                return AlignmentHelper.AlignUp(InstanceByteCountUnaligned, InstanceByteAlignment);
+                return LayoutInt.AlignUp(InstanceByteCountUnaligned, InstanceByteAlignment, Context.Target);
             }
         }
 
         /// <summary>
         /// The number of bytes used by the instance fields of this type and its parent types without padding at the end for alignment/gc.
         /// </summary>
-        public int InstanceByteCountUnaligned
+        public LayoutInt InstanceByteCountUnaligned
         {
             get
             {
@@ -144,7 +145,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// The alignment required for instances of this type on the GC heap
         /// </summary>
-        public int InstanceByteAlignment
+        public LayoutInt InstanceByteAlignment
         {
             get
             {
@@ -159,7 +160,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// How many bytes must be allocated to represent the non GC visible static fields of this type.
         /// </summary>
-        public int NonGCStaticFieldSize
+        public LayoutInt NonGCStaticFieldSize
         {
             get
             {
@@ -167,14 +168,14 @@ namespace Internal.TypeSystem
                 {
                     ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
                 }
-                return _staticBlockInfo == null ? 0 : _staticBlockInfo.NonGcStatics.Size;
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.NonGcStatics.Size;
             }
         }
 
         /// <summary>
         /// What is the alignment required for allocating the non GC visible static fields of this type.
         /// </summary>
-        public int NonGCStaticFieldAlignment
+        public LayoutInt NonGCStaticFieldAlignment
         {
             get
             {
@@ -182,14 +183,14 @@ namespace Internal.TypeSystem
                 {
                     ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
                 }
-                return _staticBlockInfo == null ? 0 : _staticBlockInfo.NonGcStatics.LargestAlignment;
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.NonGcStatics.LargestAlignment;
             }
         }
 
         /// <summary>
         /// How many bytes must be allocated to represent the GC visible static fields of this type.
         /// </summary>
-        public int GCStaticFieldSize
+        public LayoutInt GCStaticFieldSize
         {
             get
             {
@@ -197,14 +198,14 @@ namespace Internal.TypeSystem
                 {
                     ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
                 }
-                return _staticBlockInfo == null ? 0 : _staticBlockInfo.GcStatics.Size;
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.GcStatics.Size;
             }
         }
 
         /// <summary>
         /// What is the alignment required for allocating the GC visible static fields of this type.
         /// </summary>
-        public int GCStaticFieldAlignment
+        public LayoutInt GCStaticFieldAlignment
         {
             get
             {
@@ -212,7 +213,39 @@ namespace Internal.TypeSystem
                 {
                     ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
                 }
-                return _staticBlockInfo == null ? 0 : _staticBlockInfo.GcStatics.LargestAlignment;
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.GcStatics.LargestAlignment;
+            }
+        }
+
+        /// <summary>
+        /// How many bytes must be allocated to represent the non GC visible thread static fields
+        /// of this type.
+        /// </summary>
+        public LayoutInt ThreadNonGcStaticFieldSize
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticRegionLayout))
+                {
+                    ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
+                }
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.ThreadNonGcStatics.Size;
+            }
+        }
+
+        /// <summary>
+        /// What is the alignment required for allocating the non GC visible thread static fields
+        /// of this type.
+        /// </summary>
+        public LayoutInt ThreadNonGcStaticFieldAlignment
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedStaticRegionLayout))
+                {
+                    ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
+                }
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.ThreadNonGcStatics.LargestAlignment;
             }
         }
 
@@ -220,7 +253,7 @@ namespace Internal.TypeSystem
         /// How many bytes must be allocated to represent the (potentially GC visible) thread static
         /// fields of this type.
         /// </summary>
-        public int ThreadStaticFieldSize
+        public LayoutInt ThreadGcStaticFieldSize
         {
             get
             {
@@ -228,7 +261,7 @@ namespace Internal.TypeSystem
                 {
                     ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
                 }
-                return _staticBlockInfo == null ? 0 : _staticBlockInfo.ThreadStatics.Size;
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.ThreadGcStatics.Size;
             }
         }
 
@@ -236,7 +269,7 @@ namespace Internal.TypeSystem
         /// What is the alignment required for allocating the (potentially GC visible) thread static
         /// fields of this type.
         /// </summary>
-        public int ThreadStaticFieldAlignment
+        public LayoutInt ThreadGcStaticFieldAlignment
         {
             get
             {
@@ -244,7 +277,7 @@ namespace Internal.TypeSystem
                 {
                     ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizes);
                 }
-                return _staticBlockInfo == null ? 0 : _staticBlockInfo.ThreadStatics.LargestAlignment;
+                return _staticBlockInfo == null ? LayoutInt.Zero : _staticBlockInfo.ThreadGcStatics.LargestAlignment;
             }
         }
 
@@ -260,6 +293,18 @@ namespace Internal.TypeSystem
                     ComputeValueTypeShapeCharacteristics();
                 }
                 return (_valueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.HomogenousFloatAggregate) != 0;
+            }
+        }
+
+        internal ValueTypeShapeCharacteristics ValueTypeShapeCharacteristics
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedValueTypeShapeCharacteristics))
+                {
+                    ComputeValueTypeShapeCharacteristics();
+                }
+                return _valueTypeShapeCharacteristics;
             }
         }
 
@@ -314,15 +359,17 @@ namespace Internal.TypeSystem
 
             var computedStaticLayout = this.Context.GetLayoutAlgorithmForType(this).ComputeStaticFieldLayout(this, layoutKind);
 
-            if ((computedStaticLayout.NonGcStatics.Size != 0) ||
-                (computedStaticLayout.GcStatics.Size != 0) ||
-                (computedStaticLayout.ThreadStatics.Size != 0))
+            if ((computedStaticLayout.NonGcStatics.Size != LayoutInt.Zero) ||
+                (computedStaticLayout.GcStatics.Size != LayoutInt.Zero) ||
+                (computedStaticLayout.ThreadNonGcStatics.Size != LayoutInt.Zero) ||
+                (computedStaticLayout.ThreadGcStatics.Size != LayoutInt.Zero))
             {
                 var staticBlockInfo = new StaticBlockInfo
                 {
                     NonGcStatics = computedStaticLayout.NonGcStatics,
                     GcStatics = computedStaticLayout.GcStatics,
-                    ThreadStatics = computedStaticLayout.ThreadStatics
+                    ThreadNonGcStatics = computedStaticLayout.ThreadNonGcStatics,
+                    ThreadGcStatics = computedStaticLayout.ThreadGcStatics
                 };
                 _staticBlockInfo = staticBlockInfo;
             }
@@ -361,5 +408,4 @@ namespace Internal.TypeSystem
             _fieldLayoutFlags.AddFlags(flagsToAdd);
         }
     }
-
 }

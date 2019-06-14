@@ -11,13 +11,13 @@ namespace Internal.TypeSystem
     {
         public override bool IsCanonicalSubtype(CanonicalFormKind policy)
         {
-            Debug.Assert(false, "IsCanonicalSubtype of an indefinite type");
+            Debug.Fail("IsCanonicalSubtype of an indefinite type");
             return false;
         }
 
         protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {
-            Debug.Assert(false, "ConvertToCanonFormImpl for an indefinite type");
+            Debug.Fail("ConvertToCanonFormImpl for an indefinite type");
             return this;
         }
     }
@@ -27,13 +27,13 @@ namespace Internal.TypeSystem
     {
         public override bool IsCanonicalSubtype(CanonicalFormKind policy)
         {
-            Debug.Assert(false, "IsCanonicalSubtype of an indefinite type");
+            Debug.Fail("IsCanonicalSubtype of an indefinite type");
             return false;
         }
 
         protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {
-            Debug.Assert(false, "ConvertToCanonFormImpl for an indefinite type");
+            Debug.Fail("ConvertToCanonFormImpl for an indefinite type");
             return this;
         }
     }

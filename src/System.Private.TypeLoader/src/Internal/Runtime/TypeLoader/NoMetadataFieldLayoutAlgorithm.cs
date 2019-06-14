@@ -44,27 +44,25 @@ namespace Internal.Runtime.TypeLoader
 
             ComputedInstanceFieldLayout layout = new ComputedInstanceFieldLayout()
             {
-                ByteCountAlignment = IntPtr.Size,
-                ByteCountUnaligned = eeType->IsInterface ? IntPtr.Size : checked((int)eeType->FieldByteCountNonGCAligned),
-                FieldAlignment = eeType->FieldAlignmentRequirement,
+                ByteCountAlignment = new LayoutInt(IntPtr.Size),
+                ByteCountUnaligned = new LayoutInt(eeType->IsInterface ? IntPtr.Size : checked((int)eeType->FieldByteCountNonGCAligned)),
+                FieldAlignment = new LayoutInt(eeType->FieldAlignmentRequirement),
                 Offsets = (layoutKind == InstanceLayoutKind.TypeOnly) ? null : Array.Empty<FieldAndOffset>(), // No fields in EETypes
-                PackValue = 0, // This isn't explicitly encoded, though FieldSize should take it into account
-                // TODO, as we add more metadata handling logic, find out if its necessary.
             };
 
             if (eeType->IsValueType)
             {
                 int valueTypeSize = checked((int)eeType->ValueTypeSize);
-                layout.FieldSize = valueTypeSize;
+                layout.FieldSize = new LayoutInt(valueTypeSize);
             }
             else
             {
-                layout.FieldSize = IntPtr.Size;
+                layout.FieldSize = new LayoutInt(IntPtr.Size);
             }
 
             if ((eeType->RareFlags & EETypeRareFlags.RequiresAlign8Flag) == EETypeRareFlags.RequiresAlign8Flag)
             {
-                layout.ByteCountAlignment = 8;
+                layout.ByteCountAlignment = new LayoutInt(8);
             }
 
             return layout;
@@ -85,7 +83,8 @@ namespace Internal.Runtime.TypeLoader
                 GcStatics = default(StaticsBlock),
                 NonGcStatics = default(StaticsBlock),
                 Offsets = Array.Empty<FieldAndOffset>(), // No fields are considered to exist for completely NoMetadataTypes
-                ThreadStatics = default(StaticsBlock),
+                ThreadGcStatics = default(StaticsBlock),
+                ThreadNonGcStatics = default(StaticsBlock),
             };
             return staticLayout;
         }
@@ -111,13 +110,11 @@ namespace Internal.Runtime.TypeLoader
             }
             else
             {
-                // We must delegate to algorithms that can work off of a sort of metadata
-                if (type.HasNativeLayout)
-                    return s_nativeLayoutFieldAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
-                else if (type is MetadataType)
-                    return _metadataFieldLayoutAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
-                else
-                    return null; // If there isn't any form of metadata, it can't matter... as HFA is not part of the ABI except on ARM
+                Debug.Assert(
+                    type.Context.Target.Architecture == TargetArchitecture.X86 ||
+                    type.Context.Target.Architecture == TargetArchitecture.X64);
+
+                return null;
             }
         }
 
@@ -139,13 +136,11 @@ namespace Internal.Runtime.TypeLoader
             }
             else
             {
-                // We must delegate to algorithms that can work off of a sort of metadata
-                if (type.HasNativeLayout)
-                    return s_nativeLayoutFieldAlgorithm.ComputeValueTypeShapeCharacteristics(type);
-                else if (type is MetadataType)
-                    return _metadataFieldLayoutAlgorithm.ComputeValueTypeShapeCharacteristics(type);
-                else
-                    return ValueTypeShapeCharacteristics.None; // If there isn't any form of metadata, it can't matter... as HFA is not part of the ABI except on ARM
+                Debug.Assert(
+                    type.Context.Target.Architecture == TargetArchitecture.X86 ||
+                    type.Context.Target.Architecture == TargetArchitecture.X64);
+
+                return ValueTypeShapeCharacteristics.None;
             }
         }
     }

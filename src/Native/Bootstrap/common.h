@@ -47,6 +47,7 @@ extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT);
 extern "C" Object * __castclass(void * obj, MethodTable * pMT);
 extern "C" Object * __isinst(void * obj, MethodTable * pMT);
 extern "C" __NORETURN void __throw_exception(void * pEx);
+extern "C" void __debug_break();
 
 Object * __load_string_literal(const char * string);
 
@@ -73,14 +74,15 @@ struct RawEEType
 	void*       m_pIndirectionModule;
 };
 
-struct ReversePInvokeFrame
-{
-    void*   m_savedPInvokeTransitionFrame;
-    void*   m_savedThread;
-};
+struct ReversePInvokeFrame;
 
 void __reverse_pinvoke(ReversePInvokeFrame* pRevFrame);
 void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame);
+
+struct PInvokeTransitionFrame;
+
+void __pinvoke(PInvokeTransitionFrame* pFrame);
+void __pinvoke_return(PInvokeTransitionFrame* pFrame);
 
 typedef size_t UIntNative;
 

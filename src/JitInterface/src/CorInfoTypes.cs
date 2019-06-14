@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Internal.JitInterface
@@ -136,10 +137,6 @@ namespace Internal.JitInterface
         mdtBaseType = 0x72000000,
     }
 
-    public enum SIZE_T : ulong { } // Really should be IntPtr
-
-    public enum GSCookie : ulong { } // Really should be IntPtr
-
     public enum HRESULT { }
 
     public unsafe struct CORINFO_SIG_INFO
@@ -163,7 +160,7 @@ namespace Internal.JitInterface
         private bool hasExplicitThis() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
         private uint totalILArgs() { return (uint)(numArgs + (hasThis() ? 1 : 0)); }
         private bool isVarArg() { return ((getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_VARARG) || (getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_NATIVEVARARG)); }
-        private bool hasTypeArg() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0); }
+        internal bool hasTypeArg() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0); }
     };
 
     //----------------------------------------------------------------------------
@@ -196,6 +193,7 @@ namespace Internal.JitInterface
     // Constant Lookups are either:
     //     IAT_VALUE: immediate (relocatable) values,
     //     IAT_PVALUE: immediate values access via an indirection through an immediate (relocatable) address
+    //     IAT_RELPVALUE: immediate values access via a relative indirection through an immediate offset
     //     IAT_PPVALUE: immediate values access via a double indirection through an immediate (relocatable) address
     //
     // Runtime Lookups
@@ -223,6 +221,7 @@ namespace Internal.JitInterface
         // If accessType is
         //     IAT_VALUE   --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE  --> "addr" stores a pointer to a location which will hold the real handle
+        //     IAT_RELPVALUE --> "addr" stores a relative pointer to a location which will hold the real handle
         //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
 
         public InfoAccessType accessType;
@@ -279,30 +278,43 @@ namespace Internal.JitInterface
         public byte _testForFixup;
         public bool testForFixup { get { return _testForFixup != 0; } set { _testForFixup = value ? (byte)1 : (byte)0; } }
 
-        public SIZE_T offset0;
-        public SIZE_T offset1;
-        public SIZE_T offset2;
-        public SIZE_T offset3;
+        public IntPtr offset0;
+        public IntPtr offset1;
+        public IntPtr offset2;
+        public IntPtr offset3;
+
+        public byte _indirectFirstOffset;
+        public bool indirectFirstOffset { get { return _indirectFirstOffset != 0; } set { _indirectFirstOffset = value ? (byte)1 : (byte)0; } }
+
+        public byte _indirectSecondOffset;
+        public bool indirectSecondOffset { get { return _indirectSecondOffset != 0; } set { _indirectSecondOffset = value ? (byte)1 : (byte)0; } }
+
     }
 
     // Result of calling embedGenericHandle
-    [StructLayout(LayoutKind.Explicit)]
-    public struct CORINFO_LOOKUP
+    public unsafe struct CORINFO_LOOKUP
     {
-        [FieldOffset(0)]
         public CORINFO_LOOKUP_KIND lookupKind;
 
         // If kind.needsRuntimeLookup then this indicates how to do the lookup
-        [FieldOffset(24)]
         public CORINFO_RUNTIME_LOOKUP runtimeLookup;
 
         // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
         // Otherwise, it's a representative...  If accessType is
         //     IAT_VALUE --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE --> "addr" stores a pointer to a location which will hold the real handle
+        //     IAT_RELPVALUE --> "addr" stores a relative pointer to a location which will hold the real handle
         //     IAT_PPVALUE --> "addr" stores a double indirection to a location which will hold the real handle
-        [FieldOffset(24)]
-        public CORINFO_CONST_LOOKUP constLookup;
+        public ref CORINFO_CONST_LOOKUP constLookup
+        {
+            get
+            {
+                // constLookup is union with runtimeLookup
+                Debug.Assert(sizeof(CORINFO_RUNTIME_LOOKUP) >= sizeof(CORINFO_CONST_LOOKUP));
+                fixed (CORINFO_RUNTIME_LOOKUP * p = &runtimeLookup)
+                    return ref *(CORINFO_CONST_LOOKUP *)p;
+            }
+        }
     }
 
     public unsafe struct CORINFO_RESOLVED_TOKEN
@@ -420,10 +432,11 @@ namespace Internal.JitInterface
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
     }
 
-    internal enum CorInfoIntrinsics
+    public enum CorInfoIntrinsics
     {
         CORINFO_INTRINSIC_Sin,
         CORINFO_INTRINSIC_Cos,
+        CORINFO_INTRINSIC_Cbrt,
         CORINFO_INTRINSIC_Sqrt,
         CORINFO_INTRINSIC_Abs,
         CORINFO_INTRINSIC_Round,
@@ -432,9 +445,12 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_Tan,
         CORINFO_INTRINSIC_Tanh,
         CORINFO_INTRINSIC_Asin,
+        CORINFO_INTRINSIC_Asinh,
         CORINFO_INTRINSIC_Acos,
+        CORINFO_INTRINSIC_Acosh,
         CORINFO_INTRINSIC_Atan,
         CORINFO_INTRINSIC_Atan2,
+        CORINFO_INTRINSIC_Atanh,
         CORINFO_INTRINSIC_Log10,
         CORINFO_INTRINSIC_Pow,
         CORINFO_INTRINSIC_Exp,
@@ -467,6 +483,11 @@ namespace Internal.JitInterface
         CORINFO_INTRINSIC_MemoryBarrier,
         CORINFO_INTRINSIC_GetCurrentManagedThread,
         CORINFO_INTRINSIC_GetManagedThreadId,
+        CORINFO_INTRINSIC_ByReference_Ctor,
+        CORINFO_INTRINSIC_ByReference_Value,
+        CORINFO_INTRINSIC_Span_GetItem,
+        CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
+        CORINFO_INTRINSIC_GetRawHandle,
 
         CORINFO_INTRINSIC_Count,
         CORINFO_INTRINSIC_Illegal = -1,         // Not a true intrinsic,
@@ -477,7 +498,8 @@ namespace Internal.JitInterface
     {
         IAT_VALUE,      // The info value is directly available
         IAT_PVALUE,     // The value needs to be accessed via an       indirection
-        IAT_PPVALUE     // The value needs to be accessed via a double indirection
+        IAT_PPVALUE,    // The value needs to be accessed via a double indirection
+        IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
     }
 
     public enum CorInfoGCType
@@ -506,6 +528,19 @@ namespace Internal.JitInterface
         // failures are negative
         INLINE_FAIL = -1,   // Inlining not OK for this case only
         INLINE_NEVER = -2,   // This method should never be inlined, regardless of context
+    }
+
+    public enum CorInfoInlineTypeCheck
+    {
+        CORINFO_INLINE_TYPECHECK_NONE = 0x00000000, // It's not okay to compare type's vtable with a native type handle
+        CORINFO_INLINE_TYPECHECK_PASS = 0x00000001, // It's okay to compare type's vtable with a native type handle
+        CORINFO_INLINE_TYPECHECK_USE_HELPER = 0x00000002, // Use a specialized helper to compare type's vtable with native type handle
+    }
+
+    public enum CorInfoInlineTypeCheckSource
+    {
+        CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE = 0x00000000, // Type handle comes from the vtable
+        CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN  = 0x00000001, // Type handle comes from an ldtoken
     }
 
     public enum CorInfoInlineRestrictions
@@ -576,7 +611,7 @@ namespace Internal.JitInterface
 
     // these are the attribute flags for fields and methods (getMethodAttribs)
     [Flags]
-    internal enum CorInfoFlag : uint
+    public enum CorInfoFlag : uint
     {
         //  CORINFO_FLG_UNUSED                = 0x00000001,
         //  CORINFO_FLG_UNUSED                = 0x00000002,
@@ -587,7 +622,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_VIRTUAL = 0x00000040,
         //  CORINFO_FLG_UNUSED                = 0x00000080,
         CORINFO_FLG_NATIVE = 0x00000100,
-        //  CORINFO_FLG_UNUSED                = 0x00000200,
+        CORINFO_FLG_INTRINSIC_TYPE = 0x00000200, // This type is marked by [Intrinsic]
         CORINFO_FLG_ABSTRACT = 0x00000400,
 
         CORINFO_FLG_EnC = 0x00000800, // member was added by Edit'n'Continue
@@ -601,12 +636,12 @@ namespace Internal.JitInterface
         CORINFO_FLG_NOGCCHECK = 0x00200000, // This method is FCALL that has no GC check.  Don't put alone in loops
         CORINFO_FLG_INTRINSIC = 0x00400000, // This method MAY have an intrinsic ID
         CORINFO_FLG_CONSTRUCTOR = 0x00800000, // This method is an instance or type initializer
-        //  CORINFO_FLG_UNUSED                = 0x01000000,
+        CORINFO_FLG_AGGRESSIVE_OPT = 0x01000000, // The method may contain hot code and should be aggressively optimized if possible
         //  CORINFO_FLG_UNUSED                = 0x02000000,
         CORINFO_FLG_NOSECURITYWRAP = 0x04000000, // The method requires no security checks
         CORINFO_FLG_DONT_INLINE = 0x10000000, // The method should not be inlined
         CORINFO_FLG_DONT_INLINE_CALLER = 0x20000000, // The method should not be inlined, nor should its callers. It cannot be tail called.
-        //  CORINFO_FLG_UNUSED                = 0x40000000,
+        CORINFO_FLG_JIT_INTRINSIC = 0x40000000, // Method is a potential jit intrinsic; verify identity by name check
 
         // These are internal flags that can only be on Classes
         CORINFO_FLG_VALUECLASS = 0x00010000, // is the class a value class
@@ -638,7 +673,9 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_NONE = 0,
         CORINFO_EH_CLAUSE_FILTER = 0x0001, // If this bit is on, then this EH entry is for a filter
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
-        CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault   clause
+        CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault clause
+        CORINFO_EH_CLAUSE_DUPLICATED = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
+        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one. (Used by CoreRT ABI.)
     };
 
     public struct CORINFO_EH_CLAUSE
@@ -1009,6 +1046,10 @@ namespace Internal.JitInterface
         CORINFO_VIRTUALCALL_VTABLE
     };
 
+    public enum CORINFO_VIRTUALCALL_NO_CHUNK : uint
+    {
+        Value = 0xFFFFFFFF,
+    }
 
     public unsafe struct CORINFO_CALL_INFO
     {
@@ -1082,6 +1123,7 @@ namespace Internal.JitInterface
 
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
         CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
+        CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
     }
 
     // Set of flags returned in CORINFO_FIELD_INFO::fieldFlags
@@ -1204,160 +1246,24 @@ namespace Internal.JitInterface
         // between offsets.
     };
 
+    public enum ILNum
+    {
+        VARARGS_HND_ILNUM   = -1, // Value for the CORINFO_VARARGS_HANDLE varNumber
+        RETBUF_ILNUM        = -2, // Pointer to the return-buffer
+        TYPECTXT_ILNUM      = -3, // ParamTypeArg for CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+
+        UNKNOWN_ILNUM       = -4, // Unknown variable
+
+        MAX_ILNUM           = -4  // Sentinal value. This should be set to the largest magnitude value in the enum
+                                  // so that the compression routines know the enum's range.
+    };
+
     public struct ILVarInfo
     {
         public uint startOffset;
         public uint endOffset;
         public uint varNumber;
     };
-
-    public struct NativeVarInfo
-    {
-        public uint startOffset;
-        public uint endOffset;
-        public uint varNumber;
-        public VarLoc varLoc;
-    };
-
-    // The following 16 bytes come from coreclr types. See comment below.
-    public struct VarLoc
-    {
-       public int vlType;
-       // The 64bit field is here to keep VarLoc 8byte aligned on Amd64.
-       // For x86, we need to change the VarLoc definition here.
-       public long A;   
-       public int B;
-
-        /*
-           Changes to the following types may require revisiting the above layout.
-     
-            In coreclr\src\inc\cordebuginfo.h
-
-            enum VarLocType
-            {
-                VLT_REG,        // variable is in a register
-                VLT_REG_BYREF,  // address of the variable is in a register
-                VLT_REG_FP,     // variable is in an fp register
-                VLT_STK,        // variable is on the stack (memory addressed relative to the frame-pointer)
-                VLT_STK_BYREF,  // address of the variable is on the stack (memory addressed relative to the frame-pointer)
-                VLT_REG_REG,    // variable lives in two registers
-                VLT_REG_STK,    // variable lives partly in a register and partly on the stack
-                VLT_STK_REG,    // reverse of VLT_REG_STK
-                VLT_STK2,       // variable lives in two slots on the stack
-                VLT_FPSTK,      // variable lives on the floating-point stack
-                VLT_FIXED_VA,   // variable is a fixed argument in a varargs function (relative to VARARGS_HANDLE)
-
-                VLT_COUNT,
-                VLT_INVALID,
-        #ifdef MDIL
-                VLT_MDIL_SYMBOLIC = 0x20
-        #endif
-
-            };
-
-            struct VarLoc
-            {
-                VarLocType      vlType;
-
-                union
-                {
-                    // VLT_REG/VLT_REG_FP -- Any pointer-sized enregistered value (TYP_INT, TYP_REF, etc)
-                    // eg. EAX
-                    // VLT_REG_BYREF -- the specified register contains the address of the variable
-                    // eg. [EAX]
-
-                    struct
-                    {
-                        RegNum      vlrReg;
-                    } vlReg;
-
-                    // VLT_STK -- Any 32 bit value which is on the stack
-                    // eg. [ESP+0x20], or [EBP-0x28]
-                    // VLT_STK_BYREF -- the specified stack location contains the address of the variable
-                    // eg. mov EAX, [ESP+0x20]; [EAX]
-
-                    struct
-                    {
-                        RegNum      vlsBaseReg;
-                        signed      vlsOffset;
-                    } vlStk;
-
-                    // VLT_REG_REG -- TYP_LONG with both DWords enregistred
-                    // eg. RBM_EAXEDX
-
-                    struct
-                    {
-                        RegNum      vlrrReg1;
-                        RegNum      vlrrReg2;
-                    } vlRegReg;
-
-                    // VLT_REG_STK -- Partly enregistered TYP_LONG
-                    // eg { LowerDWord=EAX UpperDWord=[ESP+0x8] }
-
-                    struct
-                    {
-                        RegNum      vlrsReg;
-                        struct
-                        {
-                            RegNum      vlrssBaseReg;
-                            signed      vlrssOffset;
-                        }           vlrsStk;
-                    } vlRegStk;
-
-                    // VLT_STK_REG -- Partly enregistered TYP_LONG
-                    // eg { LowerDWord=[ESP+0x8] UpperDWord=EAX }
-
-                    struct
-                    {
-                        struct
-                        {
-                            RegNum      vlsrsBaseReg;
-                            signed      vlsrsOffset;
-                        }           vlsrStk;
-                        RegNum      vlsrReg;
-                    } vlStkReg;
-
-                    // VLT_STK2 -- Any 64 bit value which is on the stack,
-                    // in 2 successsive DWords.
-                    // eg 2 DWords at [ESP+0x10]
-
-                    struct
-                    {
-                        RegNum      vls2BaseReg;
-                        signed      vls2Offset;
-                    } vlStk2;
-
-                    // VLT_FPSTK -- enregisterd TYP_DOUBLE (on the FP stack)
-                    // eg. ST(3). Actually it is ST("FPstkHeigth - vpFpStk")
-
-                    struct
-                    {
-                        unsigned        vlfReg;
-                    } vlFPstk;
-
-                    // VLT_FIXED_VA -- fixed argument of a varargs function.
-                    // The argument location depends on the size of the variable
-                    // arguments (...). Inspecting the VARARGS_HANDLE indicates the
-                    // location of the first arg. This argument can then be accessed
-                    // relative to the position of the first arg
-
-                    struct
-                    {
-                        unsigned        vlfvOffset;
-                    } vlFixedVarArg;
-
-                    // VLT_MEMORY
-
-                    struct
-                    {
-                        void        *rpValue; // pointer to the in-process
-                        // location of the value.
-                    } vlMemory;
-                };
-            };
-        */
-    };
-
 
     // This enum is used for JIT to tell EE where this token comes from.
     // E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or 
@@ -1386,6 +1292,9 @@ namespace Internal.JitInterface
 
         // token comes from CEE_NEWOBJ
         CORINFO_TOKENKIND_NewObj = 0x200 | CORINFO_TOKENKIND_Method,
+
+        // token comes from CEE_LDVIRTFTN
+        CORINFO_TOKENKIND_Ldvirtftn = 0x400 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod
@@ -1400,6 +1309,13 @@ namespace Internal.JitInterface
         CORJIT_SKIPPED = unchecked((int)0x80000004)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 4)*/,
         CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/
     };
+
+    public enum TypeCompareState
+    {
+        MustNot = -1, // types are not equal
+        May = 0,      // types may be equal (must test at runtime)
+        Must = 1,     // type are equal
+    }
 
     public enum CorJitFlag : uint
     {
@@ -1418,7 +1334,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_UNUSED3 = 10,
         CORJIT_FLAG_UNUSED4 = 11,
         CORJIT_FLAG_UNUSED5 = 12,
-        CORJIT_FLAG_USE_SSE3_4 = 13,
+        CORJIT_FLAG_UNUSED6 = 13,
         CORJIT_FLAG_USE_AVX = 14,
         CORJIT_FLAG_USE_AVX2 = 15,
         CORJIT_FLAG_USE_AVX_512 = 16,
@@ -1444,6 +1360,48 @@ namespace Internal.JitInterface
         CORJIT_FLAG_USE_PINVOKE_HELPERS = 36, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE = 37, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
         CORJIT_FLAG_DESKTOP_QUIRKS = 38, // The JIT should generate desktop-quirk-compatible code
+        CORJIT_FLAG_TIER0 = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
+        CORJIT_FLAG_TIER1 = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
+        CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
+        CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
+
+#region ARM64
+        CORJIT_FLAG_HAS_ARM64_AES           = 43, // ID_AA64ISAR0_EL1.AES is 1 or better
+        CORJIT_FLAG_HAS_ARM64_ATOMICS       = 44, // ID_AA64ISAR0_EL1.Atomic is 2 or better
+        CORJIT_FLAG_HAS_ARM64_CRC32         = 45, // ID_AA64ISAR0_EL1.CRC32 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_DCPOP         = 46, // ID_AA64ISAR1_EL1.DPB is 1 or better
+        CORJIT_FLAG_HAS_ARM64_DP            = 47, // ID_AA64ISAR0_EL1.DP is 1 or better
+        CORJIT_FLAG_HAS_ARM64_FCMA          = 48, // ID_AA64ISAR1_EL1.FCMA is 1 or better
+        CORJIT_FLAG_HAS_ARM64_FP            = 49, // ID_AA64PFR0_EL1.FP is 0 or better
+        CORJIT_FLAG_HAS_ARM64_FP16          = 50, // ID_AA64PFR0_EL1.FP is 1 or better
+        CORJIT_FLAG_HAS_ARM64_JSCVT         = 51, // ID_AA64ISAR1_EL1.JSCVT is 1 or better
+        CORJIT_FLAG_HAS_ARM64_LRCPC         = 52, // ID_AA64ISAR1_EL1.LRCPC is 1 or better
+        CORJIT_FLAG_HAS_ARM64_PMULL         = 53, // ID_AA64ISAR0_EL1.AES is 2 or better
+        CORJIT_FLAG_HAS_ARM64_SHA1          = 54, // ID_AA64ISAR0_EL1.SHA1 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SHA256        = 55, // ID_AA64ISAR0_EL1.SHA2 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SHA512        = 56, // ID_AA64ISAR0_EL1.SHA2 is 2 or better
+        CORJIT_FLAG_HAS_ARM64_SHA3          = 57, // ID_AA64ISAR0_EL1.SHA3 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD          = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD_V81      = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD_FP16     = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SM3           = 61, // ID_AA64ISAR0_EL1.SM3 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SM4           = 62, // ID_AA64ISAR0_EL1.SM4 is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SVE           = 63, // ID_AA64PFR0_EL1.SVE is 1 or better
+#endregion
+
+#region x86/x64
+        CORJIT_FLAG_USE_SSE3 = 43,
+        CORJIT_FLAG_USE_SSSE3 = 44,
+        CORJIT_FLAG_USE_SSE41 = 45,
+        CORJIT_FLAG_USE_SSE42 = 46,
+        CORJIT_FLAG_USE_AES = 47,
+        CORJIT_FLAG_USE_BMI1 = 48,
+        CORJIT_FLAG_USE_BMI2 = 49,
+        CORJIT_FLAG_USE_FMA = 50,
+        CORJIT_FLAG_USE_LZCNT = 51,
+        CORJIT_FLAG_USE_PCLMULQDQ = 52,
+        CORJIT_FLAG_USE_POPCNT = 53,
+#endregion
     }
 
     public struct CORJIT_FLAGS

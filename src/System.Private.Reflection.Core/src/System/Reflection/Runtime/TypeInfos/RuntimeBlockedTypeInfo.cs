@@ -30,7 +30,7 @@ namespace System.Reflection.Runtime.TypeInfos
     //
     // Since these represent "internal framework types", the app cannot prove we are lying.
     // 
-    internal sealed partial class RuntimeBlockedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeBlockedTypeInfo : RuntimeTypeDefinitionTypeInfo
     {
         private RuntimeBlockedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
@@ -86,6 +86,10 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+#if DEBUG
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => base.HasSameMetadataDefinitionAs(other);
+#endif
+
         public sealed override bool IsGenericTypeDefinition
         {
             get
@@ -122,6 +126,14 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override string ToString()
         {
             return _typeHandle.LastResortString();
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
         }
 
         protected sealed override TypeAttributes GetAttributeFlagsImpl()
@@ -174,7 +186,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             return GeneratedName;
         }

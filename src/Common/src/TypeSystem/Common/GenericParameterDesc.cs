@@ -160,11 +160,11 @@ namespace Internal.TypeSystem
         {
             TypeFlags flags = 0;
 
-            flags |= TypeFlags.ContainsGenericVariablesComputed | TypeFlags.ContainsGenericVariables;
-
             flags |= TypeFlags.GenericParameter;
 
             flags |= TypeFlags.HasGenericVarianceComputed;
+
+            flags |= TypeFlags.AttributeCacheComputed;
 
             return flags;
         }

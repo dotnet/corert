@@ -17,6 +17,7 @@ namespace Internal.TypeSystem
         ARM64,
         X64,
         X86,
+        Wasm32,
     }
 
     /// <summary>
@@ -30,13 +31,35 @@ namespace Internal.TypeSystem
         OSX,
         FreeBSD,
         NetBSD,
+        WebAssembly,
+    }
+
+    public enum TargetAbi
+    {
+        Unknown,
+        /// <summary>
+        /// Cross-platform console model
+        /// </summary>
+        CoreRT,
+        /// <summary>
+        /// Windows-specific UWP model
+        /// </summary>
+        ProjectN,
+        /// <summary>
+        /// Jit runtime ABI
+        /// </summary>
+        Jit,
+        /// <summary>
+        /// Cross-platform portable C++ codegen
+        /// </summary>
+        CppCodegen,
     }
 
     /// <summary>
     /// Represents various details about the compilation target that affect
     /// layout, padding, allocations, or ABI.
     /// </summary>
-    public class TargetDetails
+    public partial class TargetDetails
     {
         /// <summary>
         /// Gets the target CPU architecture.
@@ -50,6 +73,11 @@ namespace Internal.TypeSystem
         /// Gets the target ABI.
         /// </summary>
         public TargetOS OperatingSystem
+        {
+            get;
+        }
+
+        public TargetAbi Abi
         {
             get;
         }
@@ -68,12 +96,51 @@ namespace Internal.TypeSystem
                         return 8;
                     case TargetArchitecture.ARM:
                     case TargetArchitecture.X86:
+                    case TargetArchitecture.Wasm32:
                         return 4;
                     default:
-                        throw new NotImplementedException();
+                        throw new NotSupportedException();
                 }
             }
         }
+
+        public bool SupportsRelativePointers
+        {
+            get
+            {
+                return (Abi != TargetAbi.CppCodegen) && (Architecture != TargetArchitecture.Wasm32);
+            }
+        }
+
+        /// <summary>
+        /// Gets the maximum alignment to which something can be aligned
+        /// </summary>
+        public int MaximumAlignment
+        {
+            get
+            {
+                if (Abi == TargetAbi.ProjectN)
+                {
+                    // ProjectN doesn't support hardware intrinsics
+                    return 8;
+                }
+                else if (Architecture == TargetArchitecture.ARM)
+                {
+                    // Corresponds to alignment required for __m128 (there's no __m256)
+                    return 8;
+                }
+                else if (Architecture == TargetArchitecture.ARM64)
+                {
+                    // Corresponds to alignmet required for __m256
+                    return 16;
+                }
+
+                // 256-bit vector is the type with the higest alignment we support
+                return 32;
+            }
+        }
+
+        public LayoutInt LayoutPointerSize => new LayoutInt(PointerSize);
 
         /// <summary>
         /// Gets the default field packing size.
@@ -82,61 +149,121 @@ namespace Internal.TypeSystem
         {
             get
             {
-                // We use default packing size of 8 irrespective of the platform.
-                return 8;
+                if (Abi == TargetAbi.ProjectN)
+                {
+                    // We use default packing size of 8 irrespective of the platform to match NUTC.
+                    return 8;
+                }
+
+                // We use default packing size of 32 irrespective of the platform.
+                return 32;
             }
         }
 
         /// <summary>
-        /// Gets the minimum required method alignment.
+        /// Gets the minimum required alignment for methods whose address is visible
+        /// to managed code.
         /// </summary>
         public int MinimumFunctionAlignment
         {
             get
             {
                 // We use a minimum alignment of 4 irrespective of the platform.
+                // This is to prevent confusing the method address with a fat function pointer.
                 return 4;
             }
         }
 
-        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS)
+        /// <summary>
+        /// Gets the alignment that is optimal for this platform.
+        /// </summary>
+        public int OptimumFunctionAlignment
+        {
+            get
+            {
+                // Matches the choice in the C++ compiler.
+                // We want a number that is optimized for micro-op caches in the processor.
+                return 16;
+            }
+        }
+
+        public int MinimumCodeAlignment
+        {
+            get
+            {
+                switch (Architecture)
+                {
+                    case TargetArchitecture.ARM:
+                        return 2;
+                    case TargetArchitecture.ARM64:
+                        return 4;
+                    default:
+                        return 1;
+                }
+            }
+        }
+
+        public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi)
         {
             Architecture = architecture;
             OperatingSystem = targetOS;
+            Abi = abi;
+        }
+
+        /// <summary>
+        /// Gets the dyadic logarithm of the maximum size of a primitive type
+        /// </summary>
+        public static int MaximumLog2PrimitiveSize
+        {
+            get
+            {
+                return 3;
+            }
+        }
+
+        /// <summary>
+        /// Gets the maximum size of a primitive type
+        /// </summary>
+        public static int MaximumPrimitiveSize
+        {
+            get
+            {
+                return 1 << MaximumLog2PrimitiveSize;
+            }
         }
 
         /// <summary>
         /// Retrieves the size of a well known type.
         /// </summary>
-        public int GetWellKnownTypeSize(DefType type)
+        public LayoutInt GetWellKnownTypeSize(DefType type)
         {
             switch (type.Category)
             {
                 case TypeFlags.Void:
-                    return PointerSize;
+                    return new LayoutInt(PointerSize);
                 case TypeFlags.Boolean:
-                    return 1;
+                    return new LayoutInt(1);
                 case TypeFlags.Char:
-                    return 2;
+                    return new LayoutInt(2);
                 case TypeFlags.Byte:
                 case TypeFlags.SByte:
-                    return 1;
+                    return new LayoutInt(1);
                 case TypeFlags.UInt16:
                 case TypeFlags.Int16:
-                    return 2;
+                    return new LayoutInt(2);
                 case TypeFlags.UInt32:
                 case TypeFlags.Int32:
-                    return 4;
+                    return new LayoutInt(4);
                 case TypeFlags.UInt64:
                 case TypeFlags.Int64:
-                    return 8;
+                    return new LayoutInt(8);
                 case TypeFlags.Single:
-                    return 4;
+                    return new LayoutInt(4);
                 case TypeFlags.Double:
-                    return 8;
+                    return new LayoutInt(8);
                 case TypeFlags.UIntPtr:
                 case TypeFlags.IntPtr:
-                    return PointerSize;
+                    return new LayoutInt(PointerSize);
             }
 
             // Add new well known types if necessary
@@ -147,7 +274,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Retrieves the alignment required by a well known type.
         /// </summary>
-        public int GetWellKnownTypeAlignment(DefType type)
+        public LayoutInt GetWellKnownTypeAlignment(DefType type)
         {
             // Size == Alignment for all platforms.
             return GetWellKnownTypeSize(type);
@@ -157,22 +284,27 @@ namespace Internal.TypeSystem
         /// Given an alignment of the fields of a type, determine the alignment that is necessary for allocating the object on the GC heap
         /// </summary>
         /// <returns></returns>
-        public int GetObjectAlignment(int fieldAlignment)
+        public LayoutInt GetObjectAlignment(LayoutInt fieldAlignment)
         {
             switch (Architecture)
             {
                 case TargetArchitecture.ARM:
                     // ARM supports two alignments for objects on the GC heap (4 byte and 8 byte)
-                    if (fieldAlignment <= 4)
-                        return 4;
+                    if (fieldAlignment.IsIndeterminate)
+                        return LayoutInt.Indeterminate;
+
+                    if (fieldAlignment.AsInt <= 4)
+                        return new LayoutInt(4);
                     else
-                        return 8;
+                        return new LayoutInt(8);
                 case TargetArchitecture.X64:
-                    return 8;
+                case TargetArchitecture.ARM64:
+                    return new LayoutInt(8);
                 case TargetArchitecture.X86:
-                    return 4;
+                case TargetArchitecture.Wasm32:
+                    return new LayoutInt(4);
                 default:
-                    throw new NotImplementedException();
+                    throw new NotSupportedException();
             }
         }
 

@@ -34,28 +34,6 @@ partial class Interop
 
 #endif   
 
-    internal unsafe partial class MinCore
-    {
-
-#if RHTESTCL
-        [DllImport(CORE_SYNCH_L2)]
-        [McgGeneratedNativeCallCodeAttribute]
-        static internal extern void Sleep(int milliseconds);
-#else
-        private static readonly System.Threading.WaitHandle s_sleepHandle = new System.Threading.ManualResetEvent(false);
-        static internal void Sleep(uint milliseconds)
-        {
-#if CORECLR
-            System.Threading.Thread.Sleep(0);
-#else
-            if (milliseconds == 0)
-                System.Threading.SpinWait.Yield();
-            else
-                s_sleepHandle.WaitOne((int)milliseconds);
-#endif
-        }
-#endif
-    }
     internal unsafe partial class COM
     {
         //
@@ -80,6 +58,8 @@ partial class Interop
         internal static Guid IID_IDispatch = new Guid(0x00020400, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
         internal static Guid IID_IManagedActivationFactory = new Guid(0x60D27C8D, 0x5F61, 0x4CCE, 0xB7, 0x51, 0x69, 0x0F, 0xAE, 0x66, 0xAA, 0x53);
         internal static Guid IID_IActivationFactoryInternal = new Guid(0x00000035, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
+        // CBE53FB5-F967-4258-8D34-42F5E25833DE
+        internal static Guid IID_ILanguageExceptionStackBackTrace = new Guid(unchecked((int)0xCBE53FB5), unchecked((short)0xF967), 0x4258, 0x8D, 0x34, 0x42, 0xF5, 0xE2, 0x58, 0x33,0xDE);
         //
         // Jupiter IIDs.
         //
@@ -105,6 +85,24 @@ partial class Interop
             internal IntPtr pIID;
             internal IntPtr pItf;
             internal int hr;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct COSERVERINFO
+        {
+            internal int  Reserved1;
+            internal IntPtr Name;
+            internal IntPtr AuthInfo;
+            internal int Reserved2;
+        }
+
+        [Flags]
+        internal enum CLSCTX : int
+        {
+            CLSCTX_INPROC_SERVER = 0x1,
+            CLSCTX_LOCAL_SERVER = 0x4,
+            CLSCTX_REMOTE_SERVER = 0x10,
+            CLSCTX_SERVER = CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER | CLSCTX_REMOTE_SERVER
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -165,6 +163,9 @@ partial class Interop
 
         internal const int TYPE_E_TYPEMISMATCH = unchecked((int)0x80028CA0);
         internal const int DISP_E_OVERFLOW = unchecked((int)0x8002000A);
+
+        internal const int CLASS_E_NOAGGREGATION = unchecked((int)0x80040110);
+        internal const int CLASS_E_CLASSNOTAVAILABLE = unchecked((int)0x80040111);
 
         /// <summary>
         /// Error indicates that you are accessing a CCW whose target object has already been garbage

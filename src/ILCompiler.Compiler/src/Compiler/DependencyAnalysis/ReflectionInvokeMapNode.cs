@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -17,14 +16,14 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a map between reflection metadata and generated method bodies.
     /// </summary>
-    internal sealed class ReflectionInvokeMapNode : ObjectNode, ISymbolNode
+    internal sealed class ReflectionInvokeMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
 
         public ReflectionInvokeMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, this.GetMangledName() + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__method_to_entrypoint_map_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -38,21 +37,31 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.CompilationUnitPrefix).Append("__method_to_entrypoint_map");
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__method_to_entrypoint_map");
         }
         public int Offset => 0;
+        public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection Section => _externalReferences.Section;
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        private bool MethodRequiresInstArg(MethodDesc method, bool isUnboxingStub)
+        {
+            // Similar to RequiresInstArg, but will do the right thing for instantiating unboxing stubs (canonical non-generic instance methods on valuetypes)
+            return method.IsSharedByGenericInstantiations && (method.HasInstantiation || method.Signature.IsStatic || (method.ImplementationType.IsValueType && !isUnboxingStub));
+        }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
+
+            // Ensure the native layout blob has been saved
+            factory.MetadataManager.NativeLayoutInfo.SaveNativeLayoutInfoWriter(factory);
 
             var writer = new NativeWriter();
             var typeMapHashTable = new VertexHashtable();
@@ -61,37 +70,40 @@ namespace ILCompiler.DependencyAnalysis
             hashTableSection.Place(typeMapHashTable);
 
             // Get a list of all methods that have a method body and metadata from the metadata manager.
-            foreach (var mappingEntry in factory.MetadataManager.GetMethodMapping())
+            foreach (var mappingEntry in factory.MetadataManager.GetMethodMapping(factory))
             {
                 MethodDesc method = mappingEntry.Entity;
 
-                // The current format requires us to have an EEType for the owning type. We might want to lift this.
-                if (!factory.MetadataManager.TypeGeneratesEEType(method.OwningType))
+                if (!factory.MetadataManager.ShouldMethodBeInInvokeMap(method))
                     continue;
 
-                // We have a method body, we have a metadata token, but we can't get an invoke stub. Bail.
-                if (!factory.MetadataManager.HasReflectionInvokeStub(method))
-                    continue;
+                bool useUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
 
                 InvokeTableFlags flags = 0;
 
                 if (method.HasInstantiation)
                     flags |= InvokeTableFlags.IsGenericMethod;
 
-                if (method.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstArg())
+                if (MethodRequiresInstArg(method.GetCanonMethodTarget(CanonicalFormKind.Specific), useUnboxingStub))
                     flags |= InvokeTableFlags.RequiresInstArg;
 
-                // TODO: better check for default public(!) constructor
-                if (method.IsConstructor && method.Signature.Length == 0)
+                if (method.IsDefaultConstructor)
                     flags |= InvokeTableFlags.IsDefaultConstructor;
 
-                // TODO: HasVirtualInvoke
+                if (ReflectionVirtualInvokeMapNode.NeedsVirtualInvokeInfo(method))
+                    flags |= InvokeTableFlags.HasVirtualInvoke;
 
                 if (!method.IsAbstract)
                     flags |= InvokeTableFlags.HasEntrypoint;
 
-                // Once we have a true multi module compilation story, we'll need to start emitting entries where this is not set.
-                flags |= InvokeTableFlags.HasMetadataHandle;
+                if (mappingEntry.MetadataHandle != 0)
+                    flags |= InvokeTableFlags.HasMetadataHandle;
+
+                if (!factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
+                    flags |= InvokeTableFlags.NeedsParameterInterpretation;
+
+                if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
+                    flags |= InvokeTableFlags.IsUniversalCanonicalEntry;
 
                 // TODO: native signature for P/Invokes and NativeCallable methods
                 if (method.IsRawPInvoke() || method.IsNativeCallable)
@@ -106,11 +118,12 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // Only store the offset portion of the metadata handle to get better integer compression
                     vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant((uint)(mappingEntry.MetadataHandle & MetadataGeneration.MetadataOffsetMask)));
+                        writer.GetUnsignedConstant((uint)(mappingEntry.MetadataHandle & MetadataManager.MetadataOffsetMask)));
                 }
                 else
                 {
-                    // TODO: no MD handle case
+                    var nameAndSig = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition()));
+                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)nameAndSig.SavedVertex.VertexOffset));
                 }
 
                 // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
@@ -122,26 +135,32 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     vertex = writer.GetTuple(vertex,
                         writer.GetUnsignedConstant(_externalReferences.GetIndex(
-                            factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)))));
+                            factory.MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific), useUnboxingStub))));
                 }
 
-                // TODO: data to generate the generic dictionary with the type loader
-                MethodDesc invokeStubMethod = factory.MetadataManager.GetReflectionInvokeStub(method);
-                MethodDesc canonInvokeStubMethod = invokeStubMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (invokeStubMethod != canonInvokeStubMethod)
+                if ((flags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
                 {
-                    vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.FatFunctionPointer(invokeStubMethod), FatFunctionPointerConstants.Offset) << 1));
-                }
-                else
-                {
-                    vertex = writer.GetTuple(vertex,
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(invokeStubMethod)) << 1));
+                    MethodDesc canonInvokeStubMethod = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
+                    if (canonInvokeStubMethod.IsSharedByGenericInstantiations)
+                    {
+                        vertex = writer.GetTuple(vertex,
+                            writer.GetUnsignedConstant(((uint)factory.MetadataManager.DynamicInvokeTemplateData.GetIdForMethod(canonInvokeStubMethod) << 1) | 1));
+                    }
+                    else
+                    {
+                        vertex = writer.GetTuple(vertex,
+                            writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(canonInvokeStubMethod)) << 1));
+                    }
                 }
 
                 if ((flags & InvokeTableFlags.IsGenericMethod) != 0)
                 {
-                    if ((flags & InvokeTableFlags.RequiresInstArg) == 0 || (flags & InvokeTableFlags.HasEntrypoint) == 0)
+                    if ((flags & InvokeTableFlags.IsUniversalCanonicalEntry) != 0)
+                    {
+                        var nameAndSigGenericMethod = factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method));
+                        vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)nameAndSigGenericMethod.SavedVertex.VertexOffset));
+                    }
+                    else if ((flags & InvokeTableFlags.RequiresInstArg) == 0 || (flags & InvokeTableFlags.HasEntrypoint) == 0)
                     {
                         VertexSequence args = new VertexSequence();
                         for (int i = 0; i < method.Instantiation.Length; i++)
@@ -162,13 +181,14 @@ namespace ILCompiler.DependencyAnalysis
                 typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
             }
 
-            MemoryStream ms = new MemoryStream();
-            writer.Save(ms);
-            byte[] hashTableBytes = ms.ToArray();
+            byte[] hashTableBytes = writer.Save();
 
             _endSymbol.SetSymbolOffset(hashTableBytes.Length);
 
-            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolNode[] { this, _endSymbol });
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        public override int ClassCode => (int)ObjectNodeOrder.ReflectionInvokeMapNode;
     }
 }

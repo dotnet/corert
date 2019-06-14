@@ -13,14 +13,7 @@ namespace Internal.TypeSystem
     // Includes functionality for runtime type loading
     public partial class DefType
     {
-        internal const int MaximumAlignmentPossible = 8;
-
-        public override IEnumerable<FieldDesc> GetFields()
-        {
-            // TODO davidwr! This isn't right for types with metadata, although it will work for now.
-            // Right now it serves to verify that none of our loading paths for the template type loader use it.
-            throw new NotImplementedException();
-        }
+        internal static readonly LayoutInt MaximumAlignmentPossible = new LayoutInt(8);
 
         internal IEnumerable<FieldDesc> GetDiagnosticFields()
         {

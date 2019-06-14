@@ -9,5 +9,9 @@ add_compile_options(-Wno-unused-private-field)
 add_compile_options(-Wno-tautological-undefined-compare)
 endif()
 
-add_subdirectory(base)
+if(NOT CLR_CMAKE_PLATFORM_WASM)
+    add_subdirectory(base)
+endif(NOT CLR_CMAKE_PLATFORM_WASM)
+
 add_subdirectory(cpp)
+add_subdirectory(dll)

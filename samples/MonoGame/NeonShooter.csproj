@@ -1,0 +1,92 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);WINDOWS;LINUX</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game.cs">
+      <Link>Game.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\Art.cs">
+      <Link>Game\Art.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\BlackHole.cs">
+      <Link>Game\BlackHole.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\BloomComponent.cs">
+      <Link>Game\BloomComponent.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\BloomSettings.cs">
+      <Link>Game\BloomSettings.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\Bullet.cs">
+      <Link>Game\Bullet.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\ColorUtil.cs">
+      <Link>Game\ColorUtil.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\Enemy.cs">
+      <Link>Game\Enemy.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\EnemySpawner.cs">
+      <Link>Game\EnemySpawner.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\Entity.cs">
+      <Link>Game\Entity.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\EntityManager.cs">
+      <Link>Game\EntityManager.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\Extensions.cs">
+      <Link>Game\Extensions.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\Grid.cs">
+      <Link>Game\Grid.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\Input.cs">
+      <Link>Game\Input.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\MathUtil.cs">
+      <Link>Game\MathUtil.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\ParticleManager.cs">
+      <Link>Game\ParticleManager.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\ParticleState.cs">
+      <Link>Game\ParticleState.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\PlayerShip.cs">
+      <Link>Game\PlayerShip.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\PlayerStatus.cs">
+      <Link>Game\PlayerStatus.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Game\Sound.cs">
+      <Link>Game\Sound.cs</Link>
+    </Compile>
+    <Compile Include="MonoGame.Samples\NeonShooter\Program.cs">
+      <Link>Program.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <MonoGameContentReference Include="MonoGame.Samples\NeonShooter\Content\NeonShooter.mgcb">
+      <Link>Content\NeonShooter.mgcb</Link>
+    </MonoGameContentReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-*" />
+    <PackageReference Include="MonoGame.Content.Builder" Version="3.7.0.9" />
+    <PackageReference Include="MonoGame.Framework.DesktopGL.Core" Version="3.7.0.7" />
+  </ItemGroup>
+
+</Project>

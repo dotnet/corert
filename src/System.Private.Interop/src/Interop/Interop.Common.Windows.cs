@@ -28,23 +28,14 @@ namespace System.Runtime.InteropServices
         {
 #if TARGET_CORE_API_SET
             internal const string CORE_DEBUG = "api-ms-win-core-debug-l1-1-0.dll";
-            internal const string CORE_ERRORHANDLING = "api-ms-win-core-errorhandling-l1-1-0.dll";
 #else
         internal const string CORE_DEBUG = "kernel32.dll";
-        internal const string CORE_ERRORHANDLING = "kernel32.dll";
 #endif //TARGET_CORE_API_SET
         }
-#if CORECLR
-        
-        static internal int GetLastWin32Error()
-        {
-           return 0;
-        }
-#else
 
         [DllImport(Libraries.CORE_DEBUG, EntryPoint = "OutputDebugStringW")]
         [McgGeneratedNativeCallCodeAttribute]
-        static internal unsafe extern void OutputDebugString(char* lpOutputString);
+        internal static extern unsafe void OutputDebugString(char* lpOutputString);
 
         internal static unsafe void OutputDebugString(string outputString)
         {
@@ -53,17 +44,5 @@ namespace System.Runtime.InteropServices
                 OutputDebugString(pOutputString);
             }
         }
-
-
-        [DllImport(Libraries.CORE_ERRORHANDLING, EntryPoint = "GetLastError")]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern int GetLastWin32Error();
-
-        [DllImport(Libraries.CORE_ERRORHANDLING, EntryPoint = "SetLastError")]
-        [McgGeneratedNativeCallCodeAttribute]
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        static internal extern void SetLastWin32Error(int errorCode);
-#endif 
     }
 }

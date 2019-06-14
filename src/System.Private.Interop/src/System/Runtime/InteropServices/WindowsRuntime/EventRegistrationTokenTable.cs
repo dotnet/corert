@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-#if !CORECLR
-extern alias CoreFX_Collections;
-#endif
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +14,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     public sealed class EventRegistrationTokenTable<T> where T : class
     {
         // Note this dictionary is also used as the synchronization object for this table
-        private CoreFX_Collections::System.Collections.Generic.Dictionary<EventRegistrationToken, T> m_tokens = new CoreFX_Collections::System.Collections.Generic.Dictionary<EventRegistrationToken, T>();
+        private System.Collections.Generic.Dictionary<EventRegistrationToken, T> m_tokens = new System.Collections.Generic.Dictionary<EventRegistrationToken, T>();
 
         // Cached multicast delegate which will invoke all of the currently registered delegates.  This
         // will be accessed frequently in common coding paterns, so we don't want to calculate it repeatedly.
@@ -27,12 +24,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             // T must be a delegate type, but we cannot constrain on being a delegate.  Therefore, we'll do a
             // static check at construction time
-            /*
             if (!typeof(Delegate).IsAssignableFrom(typeof(T)))
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_EventTokenTableRequiresDelegate", typeof(T)));
+            {   
+                throw new InvalidOperationException(SR.Format(SR.TypeNotDelegate,typeof(T)));
             }
-             */
         }
 
         // The InvocationList property provides access to a delegate which will invoke every registered event handler
@@ -171,7 +166,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // }
 
             ulong tokenValue = /* ((ulong)(uint)typeof(T).MetadataToken << 32) | */ handlerHashCode;
-            return new EventRegistrationToken(unchecked((long)tokenValue));
+            return new EventRegistrationToken(tokenValue);
         }
 
         public void RemoveEventHandler(EventRegistrationToken token)
@@ -190,7 +185,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public void RemoveEventHandler(T handler)
         {
-            // To match the Windows Runtime behaivor when adding a null handler, removing one is a no-op
+            // To match the Windows Runtime behavior when adding a null handler, removing one is a no-op
             if (handler == null)
             {
                 return;
@@ -282,14 +277,15 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             where TKey : class
             where TValue : class
         {
-            TValue value;
-            TKey foundKey = table.FindEquivalentKeyUnsafe(key, out value);
-            if (foundKey == default(TKey))
+            foreach (KeyValuePair<TKey, TValue> item in table)
             {
-                value = callback(key);
-                table.Add(key, value);
+                if (Object.Equals(item.Key, key))
+                    return item.Value;
+
             }
 
+            TValue value = callback(key);
+            table.Add(key, value);
             return value;
         }
     }

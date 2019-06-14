@@ -23,6 +23,8 @@ namespace Internal.TypeSystem
         /// </summary>
         public abstract MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);
 
+        public abstract MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);
+
         /// <summary>
         /// Resolves a virtual method call.
         /// </summary>

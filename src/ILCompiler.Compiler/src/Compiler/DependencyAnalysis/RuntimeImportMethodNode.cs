@@ -10,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a method that is imported from the runtime library.
     /// </summary>
-    public class RuntimeImportMethodNode : ExternSymbolNode, IMethodNode
+    public class RuntimeImportMethodNode : ExternSymbolNode, IMethodNode, IExportableSymbolNode
     {
         private MethodDesc _method;
 
@@ -26,6 +26,28 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return _method;
             }
+        }
+
+        public ExportForm GetExportForm(NodeFactory factory)
+        {
+            // Force non-fake exports for RuntimeImportMethods that have '*' as their module. ('*' means the method is 
+            // REALLY a reference to the linked in native code)
+            if (((EcmaMethod)_method).GetRuntimeImportDllName() == "*")
+            {
+                ExportForm exportForm = factory.CompilationModuleGroup.GetExportMethodForm(_method, false);
+                if (exportForm == ExportForm.ByName)
+                    return ExportForm.None; // Method symbols exported by name are naturally handled by the linker
+                return exportForm;
+            }
+
+            return ExportForm.None; 
+        }
+
+        public override int ClassCode => -1173492615;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_method, ((RuntimeImportMethodNode)other)._method);
         }
     }
 }

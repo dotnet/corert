@@ -27,8 +27,8 @@
 #if defined(_LIBUNWIND_IS_NATIVE_ONLY)
 # if defined(__i386__)
 #  define _LIBUNWIND_TARGET_I386
-#  define _LIBUNWIND_CONTEXT_SIZE 8
-#  define _LIBUNWIND_CURSOR_SIZE 15
+#  define _LIBUNWIND_CONTEXT_SIZE 13
+#  define _LIBUNWIND_CURSOR_SIZE 23
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_X86
 # elif defined(__x86_64__)
 #  define _LIBUNWIND_TARGET_X86_64 1
@@ -40,8 +40,8 @@
 #      define _LIBUNWIND_CURSOR_SIZE 66
 #    endif
 #  else
-#    define _LIBUNWIND_CONTEXT_SIZE 21
-#    define _LIBUNWIND_CURSOR_SIZE 33
+#    define _LIBUNWIND_CONTEXT_SIZE 38
+#    define _LIBUNWIND_CURSOR_SIZE 50
 #  endif
 #  define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_X86_64
 # elif defined(__powerpc64__)
@@ -118,7 +118,12 @@
   #define _LIBUNWIND_HIGHEST_DWARF_REGISTER _LIBUNWIND_HIGHEST_DWARF_REGISTER_SPARC
   #define _LIBUNWIND_CONTEXT_SIZE 16
   #define _LIBUNWIND_CURSOR_SIZE 23
-# else
+#elif defined(_WASM_)
+#define _LIBUNWIND_TARGET_WASM 1
+// TODO: Determine the right values
+#define _LIBUNWIND_CONTEXT_SIZE 0xbadf00d
+#define _LIBUNWIND_CURSOR_SIZE 0xbadf00d
+#else
 #  error "Unsupported architecture."
 # endif
 #else // !_LIBUNWIND_IS_NATIVE_ONLY

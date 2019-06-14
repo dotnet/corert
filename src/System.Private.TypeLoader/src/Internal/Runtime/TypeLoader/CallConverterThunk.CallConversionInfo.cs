@@ -51,7 +51,7 @@ namespace Internal.Runtime.TypeLoader
         //
         // Method signature and generic context info. Signatures are parsed lazily when they are really needed
         //
-        private RuntimeMethodSignature _methodSignature;
+        private RuntimeSignature _methodSignature;
         private volatile bool _signatureParsed;
         private RuntimeTypeHandle[] _typeArgs;
         private RuntimeTypeHandle[] _methodArgs;
@@ -66,6 +66,8 @@ namespace Internal.Runtime.TypeLoader
                 case ThunkKind.StandardToStandardInstantiating: return "StandardToStandardInstantiating";
                 case ThunkKind.StandardToGenericInstantiating: return "StandardToGenericInstantiating";
                 case ThunkKind.StandardToGenericInstantiatingIfNotHasThis: return "StandardToGenericInstantiatingIfNotHasThis";
+                case ThunkKind.StandardToGenericPassthruInstantiating: return "StandardToGenericPassthruInstantiating";
+                case ThunkKind.StandardToGenericPassthruInstantiatingIfNotHasThis: return "StandardToGenericPassthruInstantiatingIfNotHasThis";
                 case ThunkKind.StandardToGeneric: return "StandardToGeneric";
                 case ThunkKind.GenericToStandard: return "GenericToStandard";
                 case ThunkKind.StandardUnboxing: return "StandardUnboxing";
@@ -120,7 +122,7 @@ namespace Internal.Runtime.TypeLoader
                     }
             }
 
-            Debug.Assert(false, "UNREACHABLE");
+            Debug.Fail("UNREACHABLE");
             return false;
         }
 
@@ -177,26 +179,18 @@ namespace Internal.Runtime.TypeLoader
 
                 TypeSystemContext context = TypeSystemContextFactory.Create();
                 {
-                    NativeLayoutInfoLoadContext nativeLayoutContext = new NativeLayoutInfoLoadContext();
-
-                    if (_methodSignature.IsNativeLayoutSignature)
-                        nativeLayoutContext._moduleHandle = RuntimeAugments.GetModuleFromPointer(_methodSignature.NativeLayoutSignature);
-                    else
-                        nativeLayoutContext._moduleHandle = _methodSignature.ModuleHandle;
-
-                    nativeLayoutContext._typeSystemContext = context;
-                    nativeLayoutContext._typeArgumentHandles = Instantiation.Empty;
-                    nativeLayoutContext._methodArgumentHandles = Instantiation.Empty;
+                    Instantiation typeInstantiation = Instantiation.Empty;
+                    Instantiation methodInstantiation = Instantiation.Empty;
 
                     if (_typeArgs != null && _typeArgs.Length > 0)
-                        nativeLayoutContext._typeArgumentHandles = context.ResolveRuntimeTypeHandles(_typeArgs);
+                        typeInstantiation = context.ResolveRuntimeTypeHandles(_typeArgs);
                     if (_methodArgs != null && _methodArgs.Length > 0)
-                        nativeLayoutContext._methodArgumentHandles = context.ResolveRuntimeTypeHandles(_methodArgs);
+                        methodInstantiation = context.ResolveRuntimeTypeHandles(_methodArgs);
 
                     bool hasThis;
                     TypeDesc[] parameters;
                     bool[] paramsByRefForced;
-                    if (!TypeLoaderEnvironment.Instance.GetCallingConverterDataFromMethodSignature(context, _methodSignature, nativeLayoutContext, out hasThis, out parameters, out paramsByRefForced))
+                    if (!TypeLoaderEnvironment.Instance.GetCallingConverterDataFromMethodSignature(context, _methodSignature, typeInstantiation, methodInstantiation, out hasThis, out parameters, out paramsByRefForced))
                     {
                         Debug.Assert(false);
                         Environment.FailFast("Failed to get type handles for parameters in method signature");
@@ -252,7 +246,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        public static int RegisterCallConversionInfo(ThunkKind thunkKind, IntPtr targetPointer, RuntimeMethodSignature methodSignature, IntPtr instantiatingArg, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs)
+        public static int RegisterCallConversionInfo(ThunkKind thunkKind, IntPtr targetPointer, RuntimeSignature methodSignature, IntPtr instantiatingArg, RuntimeTypeHandle[] typeArgs, RuntimeTypeHandle[] methodArgs)
         {
             CallConversionInfo newConversionInfo = new CallConversionInfo();
             newConversionInfo._registrationKind = CallConversionInfoRegistrationKind.UsesMethodSignatureAndGenericArgs;
@@ -504,6 +498,25 @@ namespace Internal.Runtime.TypeLoader
             {
                 EnsureCallConversionInfoLoaded();
                 return _argIteratorData;
+            }
+        }
+
+        public bool HasKnownTargetPointerAndInstantiatingArgument
+        {
+            get
+            {
+                // If the target method pointer and/or dictionary are passed as arguments to the converter, they are 
+                // considered unknown.
+                // Similarly, delegate thunks and reflection DynamicInvoke thunks do not have any target pointer or 
+                // dictionary pointers stored in their CallConversionInfo structures.
+                if (CallerHasExtraParameterWhichIsFunctionTarget || IsDelegateThunk || IsAnyDynamicInvokerThunk || _targetFunctionPointer == IntPtr.Zero)
+                    return false;
+
+                if (_instantiatingArg != IntPtr.Zero)
+                    return true;
+
+                // Null instantiating arguments are considered known values for non-instantiating stubs.
+                return _thunkKind == ThunkKind.StandardToGeneric || _thunkKind == ThunkKind.GenericToStandard || _thunkKind == ThunkKind.StandardUnboxing;
             }
         }
 

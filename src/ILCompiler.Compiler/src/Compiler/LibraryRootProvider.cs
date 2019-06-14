@@ -23,10 +23,6 @@ namespace ILCompiler
         {
             foreach (TypeDesc type in _module.GetAllTypes())
             {
-                // Skip delegates (since their Invoke methods have no IL)
-                if (type.IsDelegate)
-                    continue;
-
                 try
                 {
                     rootProvider.AddCompilationRoot(type, "Library module type");
@@ -43,16 +39,21 @@ namespace ILCompiler
 
                 // If this is not a generic definition, root all methods
                 if (!type.HasInstantiation)
+                {
                     RootMethods(type, "Library module method", rootProvider);
+                    rootProvider.RootThreadStaticBaseForType(type, "Library module type statics");
+                    rootProvider.RootGCStaticBaseForType(type, "Library module type statics");
+                    rootProvider.RootNonGCStaticBaseForType(type, "Library module type statics");
+                }
             }
         }
 
         private void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)
         {
-            foreach (MethodDesc method in type.GetMethods())
+            foreach (MethodDesc method in type.GetAllMethods())
             {
                 // Skip methods with no IL and uninstantiated generic methods
-                if (method.IsIntrinsic || method.IsAbstract || method.HasInstantiation)
+                if (method.IsAbstract || method.HasInstantiation)
                     continue;
 
                 if (method.IsInternalCall)
@@ -81,9 +82,13 @@ namespace ILCompiler
         /// in its signature. Unresolvable types in a method's signature prevent RyuJIT from generating
         /// even a stubbed out throwing implementation.
         /// </summary>
-        private static void CheckCanGenerateMethod(MethodDesc method)
+        public static void CheckCanGenerateMethod(MethodDesc method)
         {
             MethodSignature signature = method.Signature;
+
+            // Vararg methods are not supported in .NET Core
+            if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
+                ThrowHelper.ThrowBadImageFormatException();
 
             CheckTypeCanBeUsedInSignature(signature.ReturnType);
 

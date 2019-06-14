@@ -18,14 +18,14 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // The runtime's implementation of constructors exposed on array types.
     //
-    internal sealed partial class RuntimeSyntheticConstructorInfo : RuntimeConstructorInfo
+    internal sealed partial class RuntimeSyntheticConstructorInfo : RuntimeConstructorInfo, IRuntimeMemberInfoWithNoMetadataDefinition
     {
-        private RuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        private RuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, InvokerOptions options, CustomMethodInvokerAction action)
         {
             _syntheticMethodId = syntheticMethodId;
             _declaringType = declaringType;
             _options = options;
-            _invoker = invoker;
+            _action = action;
             _runtimeParameterTypes = runtimeParameterTypes;
         }
 
@@ -61,14 +61,30 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
+        }
+
+        [DebuggerGuidedStepThrough]
         public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
-            binder.EnsureNotCustomBinder();
-
             if (parameters == null)
                 parameters = Array.Empty<Object>();
 
-            Object ctorAllocatedObject = this.MethodInvoker.Invoke(null, parameters);
+            Object ctorAllocatedObject = this.MethodInvoker.Invoke(null, parameters, binder, invokeAttr, culture);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return ctorAllocatedObject;
         }
 
@@ -88,10 +104,18 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            // This logic is written to match CoreCLR's behavior.
+            return other is ConstructorInfo && other is IRuntimeMemberInfoWithNoMetadataDefinition;
+        }
+
         public sealed override bool Equals(object obj)
         {
-            RuntimeSyntheticConstructorInfo other = obj as RuntimeSyntheticConstructorInfo;
-            if (other == null)
+            if (!(obj is RuntimeSyntheticConstructorInfo other))
                 return false;
             if (_syntheticMethodId != other._syntheticMethodId)
                 return false;
@@ -110,6 +134,14 @@ namespace System.Reflection.Runtime.MethodInfos
             // A constructor's "return type" is always System.Void and we don't want to allocate a ParameterInfo object to record that revelation. 
             // In deference to that, ComputeToString() lets us pass null as a synonym for "void."
             return RuntimeMethodHelpers.ComputeToString(this, Array.Empty<RuntimeTypeInfo>(), RuntimeParameters, returnParameter: null);
+        }
+
+        public sealed override RuntimeMethodHandle MethodHandle
+        {
+            get
+            {
+                throw new PlatformNotSupportedException();
+            }
         }
 
         protected sealed override RuntimeParameterInfo[] RuntimeParameters
@@ -131,28 +163,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        protected sealed override MethodInvoker UncachedMethodInvoker
-        {
-            get
-            {
-                RuntimeTypeInfo[] runtimeParameterTypes = _runtimeParameterTypes;
-                RuntimeTypeHandle[] runtimeParameterTypeHandles = new RuntimeTypeHandle[runtimeParameterTypes.Length];
-                for (int i = 0; i < runtimeParameterTypes.Length; i++)
-                    runtimeParameterTypeHandles[i] = runtimeParameterTypes[i].TypeHandle;
-                return ReflectionCoreExecution.ExecutionEnvironment.GetSyntheticMethodInvoker(
-                    _declaringType.TypeHandle,
-                    runtimeParameterTypeHandles,
-                    _options,
-                    _invoker);
-            }
-        }
+        protected sealed override MethodInvoker UncachedMethodInvoker => new CustomMethodInvoker(_declaringType, _runtimeParameterTypes, _options, _action);
 
         private volatile RuntimeParameterInfo[] _lazyParameters;
 
         private readonly SyntheticMethodId _syntheticMethodId;
-        private readonly RuntimeTypeInfo _declaringType;
+        private readonly RuntimeArrayTypeInfo _declaringType;
         private readonly RuntimeTypeInfo[] _runtimeParameterTypes;
         private readonly InvokerOptions _options;
-        private readonly Func<Object, Object[], Object> _invoker;
+        private readonly CustomMethodInvokerAction _action;
     }
 }

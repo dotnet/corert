@@ -8,11 +8,8 @@ using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
 
-using global::Internal.Metadata.NativeFormat;
-
 using global::Internal.Runtime.Augments;
 
-using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
 
 namespace Internal.Reflection.Execution.PayForPlayExperience
@@ -116,7 +113,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     bool first = true;
 
                     // write out generic parameters
-                    if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
+                    if (method.IsConstructedGenericMethod)
                     {
                         first = true;
                         friendlyName.Append('<');

@@ -96,70 +96,50 @@ namespace System.Reflection.Runtime.General
         private readonly Handle _handle;
     }
 
-
-    public struct QTypeDefinition : IEquatable<QTypeDefinition>
+    public partial struct QMethodDefinition
     {
-        public QTypeDefinition(MetadataReader reader, TypeDefinitionHandle handle)
+        private QMethodDefinition(object reader, int token)
         {
             _reader = reader;
-            _handle = handle;
+            _handle = token;
         }
 
-        public MetadataReader Reader { get { return _reader; } }
-        public TypeDefinitionHandle Handle { get { return _handle; } }
-
-        public override bool Equals(Object obj)
+        public static QMethodDefinition FromObjectAndInt(object reader, int token)
         {
-            if (!(obj is QTypeDefinition))
-                return false;
-            return Equals((QTypeDefinition)obj);
-        }
-
-        public bool Equals(QTypeDefinition other)
-        {
-            if (!(_reader == other._reader))
-                return false;
-            if (!(_handle.Equals(other._handle)))
-                return false;
-            return true;
-        }
-
-        public override int GetHashCode()
-        {
-            return _handle.GetHashCode();
-        }
-
-        private readonly MetadataReader _reader;
-        private readonly TypeDefinitionHandle _handle;
-    }
-
-
-    public struct QTypeDefRefOrSpec
-    {
-        public QTypeDefRefOrSpec(MetadataReader reader, Handle handle, bool skipCheck = false)
-        {
-            if (!skipCheck)
-            {
-                if (!handle.IsTypeDefRefOrSpecHandle(reader))
-                    throw new BadImageFormatException();
-            }
-            Debug.Assert(handle.IsTypeDefRefOrSpecHandle(reader));
-            _reader = reader;
-            _handle = handle.ToIntToken();
+            return new QMethodDefinition(reader, token);
         }
 
         public object Reader { get { return _reader; } }
+        public int Token { get { return _handle; } }
+
+        public bool IsValid { get { return _reader == null; } }
+
+        public static readonly QMethodDefinition Null = default(QMethodDefinition);
+
+        private readonly object _reader;
+        private readonly int _handle;
+    }
+
+    public partial struct QTypeDefinition
+    {   
+        public object Reader { get { return _reader; } }
+        public int Token { get { return _handle; } }
+
+        public bool IsValid { get { return _reader == null; } }
+
+        public static readonly QTypeDefinition Null = default(QTypeDefinition);
+
+        private readonly object _reader;
+        private readonly int _handle;
+    }
+
+
+    public partial struct QTypeDefRefOrSpec
+    {
+        public object Reader { get { return _reader; } }
         public int Handle { get { return _handle; } }
 
-        public bool IsNull { get { return _reader == null; } }
-
-        public bool IsNativeFormatMetadataBased
-        {
-            get
-            {
-                return Reader is global::Internal.Metadata.NativeFormat.MetadataReader;
-            }
-        }
+        public bool IsValid { get { return _reader == null; } }
 
         public static readonly QTypeDefRefOrSpec Null = default(QTypeDefRefOrSpec);
 

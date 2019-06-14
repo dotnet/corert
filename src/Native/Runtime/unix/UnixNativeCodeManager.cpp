@@ -11,6 +11,7 @@
 #include "ICodeManager.h"
 #include "UnixNativeCodeManager.h"
 #include "varint.h"
+#include "holder.h"
 
 #include "CommonMacros.inl"
 
@@ -24,9 +25,9 @@
 #define UBF_FUNC_KIND_HANDLER   0x01
 #define UBF_FUNC_KIND_FILTER    0x02
 
-#define UBF_FUNC_HAS_EHINFO     0x04
-
-#define UBF_FUNC_REVERSE_PINVOKE 0x08
+#define UBF_FUNC_HAS_EHINFO             0x04
+#define UBF_FUNC_REVERSE_PINVOKE        0x08
+#define UBF_FUNC_HAS_ASSOCIATED_DATA    0x10
 
 struct UnixNativeMethodInfo
 {
@@ -40,8 +41,10 @@ struct UnixNativeMethodInfo
 static_assert(sizeof(UnixNativeMethodInfo) <= sizeof(MethodInfo), "UnixNativeMethodInfo too big");
 
 UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase, 
+                                             PTR_VOID pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
                                              PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions)
     : m_moduleBase(moduleBase), 
+      m_pvManagedCodeStartRange(pvManagedCodeStartRange), m_cbManagedCodeRange(cbManagedCodeRange),
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
 }
@@ -53,6 +56,13 @@ UnixNativeCodeManager::~UnixNativeCodeManager()
 bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC, 
                                            MethodInfo *    pMethodInfoOut)
 {
+    // Stackwalker may call this with ControlPC that does not belong to this code manager
+    if (dac_cast<TADDR>(ControlPC) < dac_cast<TADDR>(m_pvManagedCodeStartRange) ||
+        dac_cast<TADDR>(m_pvManagedCodeStartRange) + m_cbManagedCodeRange <= dac_cast<TADDR>(ControlPC))
+    {
+        return false;
+    }
+
     UnixNativeMethodInfo * pMethodInfo = (UnixNativeMethodInfo *)pMethodInfoOut;
     UIntNative startAddress;
     UIntNative lsda;
@@ -95,6 +105,14 @@ bool UnixNativeCodeManager::IsFunclet(MethodInfo * pMethodInfo)
     return (unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT;
 }
 
+bool UnixNativeCodeManager::IsFilter(MethodInfo * pMethodInfo)
+{
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+
+    uint8_t unwindBlockFlags = *(pNativeMethodInfo->pLSDA);
+    return (unwindBlockFlags & UBF_FUNC_KIND_MASK) == UBF_FUNC_KIND_FILTER;
+}
+
 PTR_VOID UnixNativeCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
                                                 REGDISPLAY *   pRegisterSet)
 {
@@ -115,14 +133,100 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
                                        REGDISPLAY *    pRegisterSet,
                                        GCEnumContext * hCallback)
 {
-    // @TODO: CORERT: EnumGcRefs
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+
+    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+        p += sizeof(int32_t);
+
+    UInt32 codeOffset = (UInt32)(PINSTRToPCODE(dac_cast<TADDR>(safePointAddress)) - PINSTRToPCODE(dac_cast<TADDR>(pNativeMethodInfo->pMethodStartAddress)));
+
+    GcInfoDecoder decoder(
+        GCInfoToken(p),
+        GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
+        codeOffset - 1 // TODO: Is this adjustment correct?
+    );
+
+    ICodeManagerFlags flags = (ICodeManagerFlags)0;
+    if (pNativeMethodInfo->executionAborted)
+        flags = ICodeManagerFlags::ExecutionAborted;
+    if (IsFilter(pMethodInfo))
+        flags = (ICodeManagerFlags)(flags | ICodeManagerFlags::NoReportUntracked);
+
+    if (!decoder.EnumerateLiveSlots(
+        pRegisterSet,
+        false /* reportScratchSlots */,
+        flags,
+        hCallback->pCallback,
+        hCallback
+        ))
+    {
+        assert(false);
+    }
 }
 
 UIntNative UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(MethodInfo * pMethodInfo, REGDISPLAY * pRegisterSet)
 {
-    // @TODO: CORERT: GetConservativeUpperBoundForOutgoingArgs
-    assert(false);
-    return false;
+    // Return value
+    UIntNative upperBound;
+
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+
+    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
+    if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
+    {
+        // Reverse PInvoke transition should be on the main function body only
+        assert(pNativeMethodInfo->pMainLSDA == pNativeMethodInfo->pLSDA);
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
+            p += sizeof(int32_t);
+
+        GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+        INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
+        assert(slot != NO_REVERSE_PINVOKE_FRAME);
+
+        TADDR basePointer = NULL;
+        UINT32 stackBasedRegister = decoder.GetStackBaseRegister();
+        if (stackBasedRegister == NO_STACK_BASE_REGISTER)
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetSP());
+        }
+        else
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
+        }
+
+        // Reverse PInvoke case.  The embedded reverse PInvoke frame is guaranteed to reside above
+        // all outgoing arguments.
+        upperBound = (UIntNative)dac_cast<TADDR>(basePointer + slot);
+    }
+    else
+    {
+        // The passed in pRegisterSet should be left intact
+        REGDISPLAY localRegisterSet = *pRegisterSet;
+
+        bool result = VirtualUnwind(&localRegisterSet);
+        assert(result);
+
+        // All common ABIs have outgoing arguments under caller SP (minus slot reserved for return address).
+        // There are ABI-specific optimizations that could applied here, but they are not worth the complexity
+        // given that this path is used rarely.
+        upperBound = dac_cast<TADDR>(localRegisterSet.GetSP() - sizeof(TADDR));
+    }
+
+    return upperBound;
 }
 
 bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
@@ -135,21 +239,32 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
-        // Reverse PInvoke transition should on the main function body only
+        // Reverse PInvoke transition should be on the main function body only
         assert(pNativeMethodInfo->pMainLSDA == pNativeMethodInfo->pLSDA);
 
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
 
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
+        INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
+        assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
-        // @TODO: CORERT: Encode reverse PInvoke frame slot in GCInfo: https://github.com/dotnet/corert/issues/2115
-        // INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
-        // assert(slot != NO_REVERSE_PINVOKE_FRAME);
-
-        *ppPreviousTransitionFrame = (PTR_VOID)-1;
+        TADDR basePointer = NULL;
+        UINT32 stackBasedRegister = decoder.GetStackBaseRegister();
+        if (stackBasedRegister == NO_STACK_BASE_REGISTER)
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetSP());
+        }
+        else
+        {
+            basePointer = dac_cast<TADDR>(pRegisterSet->GetFP());
+        }
+        *ppPreviousTransitionFrame = *(void**)(basePointer + slot);
         return true;
     }
 
@@ -216,6 +331,9 @@ bool UnixNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
+
     // return if there is no EH info associated with this method
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) == 0)
     {
@@ -265,7 +383,7 @@ bool UnixNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
     switch (pEHClauseOut->m_clauseKind)
     {
     case EH_CLAUSE_TYPED:
-        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = dac_cast<UInt8*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + VarInt::ReadUnsigned(pEnumState->pEHInfo);
 
         // Read target type
         {
@@ -276,17 +394,22 @@ bool UnixNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
         }
         break;
     case EH_CLAUSE_FAULT:
-        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = dac_cast<UInt8*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + VarInt::ReadUnsigned(pEnumState->pEHInfo);
         break;
     case EH_CLAUSE_FILTER:
-        pEHClauseOut->m_handlerAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
-        pEHClauseOut->m_filterAddress = pEnumState->pMethodStartAddress + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_handlerAddress = dac_cast<UInt8*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + VarInt::ReadUnsigned(pEnumState->pEHInfo);
+        pEHClauseOut->m_filterAddress = dac_cast<UInt8*>(PINSTRToPCODE(dac_cast<TADDR>(pEnumState->pMethodStartAddress))) + VarInt::ReadUnsigned(pEnumState->pEHInfo);
         break;
     default:
         UNREACHABLE_MSG("unexpected EHClauseKind");
     }
 
     return true;
+}
+
+PTR_VOID UnixNativeCodeManager::GetOsModuleHandle()
+{
+    return (PTR_VOID)m_moduleBase;
 }
 
 PTR_VOID UnixNativeCodeManager::GetMethodStartAddress(MethodInfo * pMethodInfo)
@@ -307,25 +430,48 @@ void * UnixNativeCodeManager::GetClasslibFunction(ClasslibFunctionId functionId)
     return m_pClasslibFunctions[id];
 }
 
+PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
+{
+    UnixNativeMethodInfo methodInfo;
+    if (!FindMethodInfo(ControlPC, (MethodInfo*)&methodInfo))
+        return NULL;
+
+    PTR_UInt8 p = methodInfo.pMainLSDA;
+
+    uint8_t unwindBlockFlags = *p++;
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)
+        return NULL;
+
+    return dac_cast<PTR_VOID>(p + *dac_cast<PTR_Int32>(p));
+}
+
 extern "C" bool __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, UInt32 cbRange);
+extern "C" void __stdcall UnregisterCodeManager(ICodeManager * pCodeManager);
+extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, UInt32 cbRange);
 
 extern "C"
-bool RhpRegisterUnixModule(void * pModule, 
-                           void * pvStartRange, UInt32 cbRange,
-                           void ** pClasslibFunctions, UInt32 nClasslibFunctions)
+bool RhRegisterOSModule(void * pModule,
+                        void * pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
+                        void * pvUnboxingStubsStartRange, UInt32 cbUnboxingStubsRange,
+                        void ** pClasslibFunctions, UInt32 nClasslibFunctions)
 {
-    UnixNativeCodeManager * pUnixNativeCodeManager = new (nothrow) UnixNativeCodeManager((TADDR)pModule,
+    NewHolder<UnixNativeCodeManager> pUnixNativeCodeManager = new (nothrow) UnixNativeCodeManager((TADDR)pModule,
+        pvManagedCodeStartRange, cbManagedCodeRange,
         pClasslibFunctions, nClasslibFunctions);
+
     if (pUnixNativeCodeManager == nullptr)
+        return false;
+
+    if (!RegisterCodeManager(pUnixNativeCodeManager, pvManagedCodeStartRange, cbManagedCodeRange))
+        return false;
+
+    if (!RegisterUnboxingStubs(pvUnboxingStubsStartRange, cbUnboxingStubsRange))
     {
+        UnregisterCodeManager(pUnixNativeCodeManager);
         return false;
     }
 
-    if (!RegisterCodeManager(pUnixNativeCodeManager, pvStartRange, cbRange))
-    {
-        delete pUnixNativeCodeManager;
-        return false;
-    }
+    pUnixNativeCodeManager.SuppressRelease();
 
     return true;
 }

@@ -1,0 +1,46 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ClCompile Include="PInvokeNative.cpp" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\native\</IntermediateOutputPath>
+    <OutputName>PInvokeNative</OutputName>
+    <NativeObjectExt Condition="'$(OS)' == 'Windows_NT'">.obj</NativeObjectExt>
+    <NativeObjectExt Condition="'$(OS)' != 'Windows_NT'">.o</NativeObjectExt>
+    <PInvokeNativeObject>$(IntermediateOutputPath)$(OutputName)$(NativeObjectExt)</PInvokeNativeObject>
+    <DefineConstants>$(DefineConstants);$(OS)</DefineConstants>
+    <UseDebugCrt Condition="'$(Configuration)' == 'Debug'">true</UseDebugCrt>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <NativeLibrary Include="$(PInvokeNativeObject)" />
+  </ItemGroup>
+
+
+  <Target Name="PInvokeCompile"
+        Inputs="@(ClCompile)"
+        Outputs="$(PInvokeNativeObject)"
+        BeforeTargets="LinkNative">
+
+    <ItemGroup>
+      <PInvokeCompilerArg Include="@(ClCompile)" />
+      <PInvokeCompilerArg Include="/Fo$(PInvokeNativeObject)" Condition="'$(OS)' == 'Windows_NT'" />
+      <PInvokeCompilerArg Include="-o $(PInvokeNativeObject)" Condition="'$(OS)' != 'Windows_NT'" />
+      <PInvokeCompilerArg Include="@(CppCompilerAndLinkerArg)" />
+      <PInvokeCompilerArg Include="-D $(OS)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <Exec Command="$(CppCompiler) @(PInvokeCompilerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
+    <WriteLinesToFile File="$(IntermediateOutputPath)pinvoke_cl.rsp" Lines="@(PInvokeCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
+    <Exec Command="$(CppCompiler) @&quot;$(IntermediateOutputPath)pinvoke_cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
+
+</Project>

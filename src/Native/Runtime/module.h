@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
+#ifndef __module_h__
+#define __module_h__
+
 #include "ICodeManager.h"
 
 #include "SectionMethodList.h"
@@ -12,6 +16,8 @@ struct IndirectionCell;
 struct VSDInterfaceTargetInfo;
 class DispatchMap;
 struct BlobHeader;
+
+#ifdef PROJECTN
 
 class Module : public ICodeManager
 {
@@ -102,7 +108,7 @@ public:
     
     PTR_ModuleHeader GetModuleHeader();
 
-    HANDLE GetOsModuleHandle();
+    PTR_VOID GetOsModuleHandle();
 
     BlobHeader * GetReadOnlyBlobs(UInt32 * pcbBlobs);
 
@@ -113,11 +119,13 @@ public:
 
     void * RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader);
 
+    PTR_VOID GetAssociatedData(PTR_VOID ControlPC);
+
 private:
     Module(ModuleHeader * pModuleHeader);
 #ifdef FEATURE_CUSTOM_IMPORTS
     static void DoCustomImports(ModuleHeader * pModuleHeader);
-    PTR_UInt8 GetBaseAddress() { return (PTR_UInt8)(size_t)GetOsModuleHandle(); }
+    PTR_UInt8 GetBaseAddress() { return (PTR_UInt8)GetOsModuleHandle(); }
 #endif // FEATURE_CUSTOM_IMPORTS
 
 
@@ -142,3 +150,52 @@ private:
     ReaderWriterLock            m_loopHijackMapLock;
     MapSHash<UInt32, void*>     m_loopHijackIndexToTargetMap;
 };
+
+#else // PROJECTN
+
+// Stubbed out implementation of "Module" code manager. The "Module" code managed is needed for MDIL binder
+// generated binaries in ProjectN only.
+
+class Module : public ICodeManager
+{
+    friend struct DefaultSListTraits<Module>;
+    friend class RuntimeInstance;
+
+public:
+    static Module * Create(ModuleHeader *pModuleHeader) { return NULL; }
+    void Destroy() { }
+
+    bool ContainsCodeAddress(PTR_VOID pvAddr) { return false; }
+    bool ContainsDataAddress(PTR_VOID pvAddr) { return false; }
+    bool ContainsReadOnlyDataAddress(PTR_VOID pvAddr) { return false; }
+    bool ContainsStubAddress(PTR_VOID pvAddr) { return false; }
+
+    static void EnumStaticGCRefsBlock(void * pfnCallback, void * pvCallbackData, PTR_StaticGcDesc pStaticGcInfo, PTR_UInt8 pbStaticData) { }
+    void EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData) { }
+
+    bool IsClasslibModule() { return false; }
+    void * GetClasslibInitializeFinalizerThread() { return NULL; }
+
+    bool IsContainedBy(HANDLE hOsHandle) { return false; }
+
+    DispatchMap ** GetDispatchMapLookupTable() { return NULL; }
+
+    PTR_ModuleHeader GetModuleHeader() { return NULL; }
+
+    EEType * GetArrayBaseType() { return NULL; }
+
+    bool IsFinalizerInitComplete() { return false; }
+    void SetFinalizerInitComplete() { }
+
+    void UnsynchronizedResetHijackedLoops() { }
+    void UnsynchronizedHijackAllLoops() { }
+
+    void * RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader) { return NULL; }
+
+private:
+    PTR_Module m_pNext;
+};
+
+#endif // PROJECTN
+
+#endif // __module_h__

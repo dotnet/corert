@@ -272,7 +272,7 @@ namespace Internal.JitInterface
 
             foreach (FunctionDecl decl in functionData)
             {
-                tr.WriteLine("        [UnmanagedFunctionPointerAttribute(CallingConvention.StdCall)]");
+                tr.WriteLine("        [UnmanagedFunctionPointerAttribute(default(CallingConvention))]");
 
                 string returnType = decl.ReturnAsParm ? "void" : decl.ReturnType.ManagedTypeName;
                 int marshalAs = returnType.LastIndexOf(']');
@@ -409,7 +409,7 @@ struct JitInterfaceCallbacks
             foreach (FunctionDecl decl in functionData)
             {
                 string returnType = decl.ReturnAsParm ? "void" : decl.ReturnType.NativeTypeName;
-                tw.Write("    " + returnType + " (__stdcall * " + decl.FunctionName + ")(");
+                tw.Write("    " + returnType + " (* " + decl.FunctionName + ")(");
                 tw.Write("void * thisHandle");
                 tw.Write(", CorInfoException** ppException");
                 if (decl.ReturnAsParm)

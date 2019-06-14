@@ -1,0 +1,57 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <PackageTargetRuntime>$(NuPkgRid)</PackageTargetRuntime>
+  </PropertyGroup>
+
+  <!-- This target defines files and properties that need to be included in the package regardless of platform -->
+    <PropertyGroup>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
+    <PackagePlatforms>x64;</PackagePlatforms>
+    <PreventImplementationReference>true</PreventImplementationReference>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <File Include="$(PackageSourceDirectory)\BuildIntegration\*">
+      <TargetPath>targets</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\tools\*" Exclude="$(BaseOutputPath)\$(OSPlatformConfig)\tools\*.pdb">
+      <TargetPath>tools</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\*" Exclude="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\*.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\framework\*">
+      <TargetPath>framework</TargetPath>
+    </File>
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\inc\*">
+      <TargetPath>inc</TargetPath>
+    </File>
+    <!-- Workaround to avoid linker warnings on Windows - include all pdb files for static native libraries -->
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapper.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapper.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrappercpp.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrappercpp.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapperdll.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\bootstrapperdll.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\PortableRuntime.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+    <File Condition="Exists('$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.ServerGC.pdb')" Include="$(BaseOutputPath)\$(OSPlatformConfig)\sdk\Runtime.ServerGC.pdb">
+      <TargetPath>sdk</TargetPath>
+    </File>
+  </ItemGroup>
+  <Target Name="GetPackageDependencies"/>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />
+</Project>

@@ -10,8 +10,9 @@
 // type is being compared.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Runtime;
+
 using Internal.Runtime.Augments;
 
 namespace Internal.IntrinsicSupport
@@ -20,32 +21,30 @@ namespace Internal.IntrinsicSupport
     {
         private static bool ImplementsIComparable(RuntimeTypeHandle t)
         {
-            int interfaceCount = RuntimeAugments.GetInterfaceCount(t);
+            EETypePtr objectType = t.ToEETypePtr();
+            EETypePtr icomparableType = typeof(IComparable<>).TypeHandle.ToEETypePtr();
+            int interfaceCount = objectType.Interfaces.Count;
             for (int i = 0; i < interfaceCount; i++)
             {
-                RuntimeTypeHandle interfaceType = RuntimeAugments.GetInterface(t, i);
+                EETypePtr interfaceType = objectType.Interfaces[i];
 
-                if (!RuntimeAugments.IsGenericType(interfaceType))
+                if (!interfaceType.IsGeneric)
                     continue;
 
-                RuntimeTypeHandle genericDefinition;
-                RuntimeTypeHandle[] genericTypeArgs;
-                genericDefinition = RuntimeAugments.GetGenericInstantiation(interfaceType,
-                                                                            out genericTypeArgs);
-
-                if (genericDefinition.Equals(typeof(IComparable<>).TypeHandle))
+                if (interfaceType.GenericDefinition == icomparableType)
                 {
-                    if (genericTypeArgs.Length != 1)
+                    var instantiation = interfaceType.Instantiation;
+                    if (instantiation.Length != 1)
                         continue;
 
-                    if (RuntimeAugments.IsValueType(t))
+                    if (objectType.IsValueType)
                     {
-                        if (genericTypeArgs[0].Equals(t))
+                        if (instantiation[0] == objectType)
                         {
                             return true;
                         }
                     }
-                    else if (RuntimeAugments.IsAssignableFrom(genericTypeArgs[0], t))
+                    else if (RuntimeImports.AreTypesAssignable(objectType, instantiation[0]))
                     {
                         return true;
                     }
@@ -94,7 +93,7 @@ namespace Internal.IntrinsicSupport
             return RuntimeAugments.NewObject(comparerType);
         }
 
-        private static Comparer<T> GetUnknownComparer<T>()
+        internal static Comparer<T> GetUnknownComparer<T>()
         {
             return (Comparer<T>)GetComparer(typeof(T).TypeHandle);
         }
@@ -113,88 +112,5 @@ namespace Internal.IntrinsicSupport
         {
             return new ObjectComparer<T>();
         }
-
-        // This routine emulates System.Collection.Comparer.Default.Compare(), which lives in the System.Collections.NonGenerics contract.
-        // To avoid adding a reference to that contract just for this hack, we'll replicate the implementation here.
-        private static int CompareObjects(object x, object y)
-        {
-            if (x == y)
-                return 0;
-
-            if (x == null)
-                return -1;
-
-            if (y == null)
-                return 1;
-
-            {
-                // System.Collection.Comparer.Default.Compare() compares strings using the CurrentCulture.
-                string sx = x as string;
-                string sy = y as string;
-                if (sx != null && sy != null)
-                    return string.Compare(sx, sy, StringComparison.CurrentCulture);
-            }
-
-            IComparable ix = x as IComparable;
-            if (ix != null)
-                return ix.CompareTo(y);
-
-            IComparable iy = y as IComparable;
-            if (iy != null)
-                return -iy.CompareTo(x);
-
-            throw new ArgumentException(SR.Argument_ImplementIComparable);
-        }
-
-        //-----------------------------------------------------------------------
-        // Implementations of EqualityComparer<T> for the various possible scenarios
-        //-----------------------------------------------------------------------
-
-        private sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
-        {
-            public sealed override int Compare(T x, T y)
-            {
-                if (x != null)
-                {
-                    if (y != null)
-                        return x.CompareTo(y);
-
-                    return 1;
-                }
-
-                if (y != null)
-                    return -1;
-
-                return 0;
-            }
-        }
-
-        private sealed class NullableComparer<T> : Comparer<Nullable<T>> where T : struct, IComparable<T>
-        {
-            public sealed override int Compare(Nullable<T> x, Nullable<T> y)
-            {
-                if (x.HasValue)
-                {
-                    if (y.HasValue)
-                        return x.Value.CompareTo(y.Value);
-
-                    return 1;
-                }
-
-                if (y.HasValue)
-                    return -1;
-
-                return 0;
-            }
-        }
-
-        private sealed class ObjectComparer<T> : Comparer<T>
-        {
-            public sealed override int Compare(T x, T y)
-            {
-                return ComparerHelpers.CompareObjects(x, y);
-            }
-        }
     }
 }
-

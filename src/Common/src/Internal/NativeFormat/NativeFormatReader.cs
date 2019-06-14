@@ -15,13 +15,13 @@ namespace Internal.NativeFormat
 {
     internal unsafe partial struct NativePrimitiveDecoder
     {
-        static public void ThrowBadImageFormatException()
+        public static void ThrowBadImageFormatException()
         {
             Debug.Assert(false);
             throw new BadImageFormatException();
         }
 
-        static public uint DecodeUnsigned(ref byte* stream, byte* streamEnd)
+        public static uint DecodeUnsigned(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
                 ThrowBadImageFormatException();
@@ -75,7 +75,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public int DecodeSigned(ref byte* stream, byte* streamEnd)
+        public static int DecodeSigned(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
                 ThrowBadImageFormatException();
@@ -129,7 +129,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public ulong DecodeUnsignedLong(ref byte* stream, byte* streamEnd)
+        public static ulong DecodeUnsignedLong(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
                 ThrowBadImageFormatException();
@@ -155,7 +155,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public long DecodeSignedLong(ref byte* stream, byte* streamEnd)
+        public static long DecodeSignedLong(ref byte* stream, byte* streamEnd)
         {
             if (stream >= streamEnd)
                 ThrowBadImageFormatException();
@@ -181,7 +181,7 @@ namespace Internal.NativeFormat
             return value;
         }
 
-        static public void SkipInteger(ref byte* stream)
+        public static void SkipInteger(ref byte* stream)
         {
             byte val = *stream;
             if ((val & 1) == 0)
@@ -223,7 +223,7 @@ namespace Internal.NativeFormat
         public NativeReader(byte* base_, uint size)
         {
             // Limit the maximum blob size to prevent buffer overruns triggered by boundary integer overflows
-            if (size >= UInt32.MaxValue / 4)
+            if (size >= uint.MaxValue / 4)
                 ThrowBadImageFormatException();
 
             Debug.Assert(base_ <= base_ + size);
@@ -390,7 +390,7 @@ namespace Internal.NativeFormat
             }
             set
             {
-                Debug.Assert(value >= 0 && value < _reader.Size);
+                Debug.Assert(value < _reader.Size);
                 _offset = value;
             }
         }
@@ -411,6 +411,13 @@ namespace Internal.NativeFormat
         {
             uint value;
             _offset = _reader.DecodeUnsigned(_offset, out value);
+            return value;
+        }
+
+        public ulong GetUnsignedLong()
+        {
+            ulong value;
+            _offset = _reader.DecodeUnsignedLong(_offset, out value);
             return value;
         }
 
@@ -447,7 +454,7 @@ namespace Internal.NativeFormat
         }
     }
 
-    struct NativeHashtable
+    internal struct NativeHashtable
     {
         private NativeReader _reader;
         private uint _baseOffset;
@@ -480,9 +487,9 @@ namespace Internal.NativeFormat
         //
         public struct Enumerator
         {
-            NativeParser _parser;
-            uint _endOffset;
-            byte _lowHashcode;
+            private NativeParser _parser;
+            private uint _endOffset;
+            private byte _lowHashcode;
 
             internal Enumerator(NativeParser parser, uint endOffset, byte lowHashcode)
             {
@@ -518,10 +525,10 @@ namespace Internal.NativeFormat
 
         public struct AllEntriesEnumerator
         {
-            NativeHashtable _table;
-            NativeParser _parser;
-            uint _currentBucket;
-            uint _endOffset;
+            private NativeHashtable _table;
+            private NativeParser _parser;
+            private uint _currentBucket;
+            private uint _endOffset;
 
             internal AllEntriesEnumerator(NativeHashtable table)
             {

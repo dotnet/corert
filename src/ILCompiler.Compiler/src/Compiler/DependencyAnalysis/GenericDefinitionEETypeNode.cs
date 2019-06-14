@@ -10,7 +10,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class GenericDefinitionEETypeNode : EETypeNode, ISymbolNode
+    internal sealed class GenericDefinitionEETypeNode : EETypeNode
     {
         public GenericDefinitionEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
@@ -24,15 +24,24 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            return null;
+            DependencyList dependencyList = null;
+
+            // Ask the metadata manager if we have any dependencies due to reflectability.
+            factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencyList, factory, _type);
+
+            return dependencyList;
+        }
+
+        protected internal override void ComputeOptionalEETypeFields(NodeFactory factory, bool relocsOnly)
+        {
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory);
+            ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory, relocsOnly);
 
-            dataBuilder.Alignment = dataBuilder.TargetPointerSize;
-            dataBuilder.DefinedSymbols.Add(this);
+            dataBuilder.RequireInitialPointerAlignment();
+            dataBuilder.AddSymbol(this);
             EETypeRareFlags rareFlags = 0;
 
             short flags = (short)EETypeKind.GenericTypeDefEEType;
@@ -42,12 +51,17 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (short)EETypeFlags.IsInterfaceFlag;
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
                 rareFlags = rareFlags | EETypeRareFlags.HasCctorFlag;
+            if (_type.IsByRefLike)
+                rareFlags |= EETypeRareFlags.IsByRefLikeFlag;
 
             if (rareFlags != 0)
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, (uint)rareFlags);
 
             if (HasOptionalFields)
                 flags |= (short)EETypeFlags.OptionalFieldsFlag;
+
+            if (_type.IsEnum)
+                flags |= (short)EETypeBuilderHelpers.ComputeElementTypeFlags(_type);
 
             dataBuilder.EmitShort((short)_type.Instantiation.Length);
             dataBuilder.EmitShort(flags);
@@ -64,5 +78,7 @@ namespace ILCompiler.DependencyAnalysis
 
             return dataBuilder.ToObjectData();
         }
+
+        public override int ClassCode => -160325006;
     }
 }

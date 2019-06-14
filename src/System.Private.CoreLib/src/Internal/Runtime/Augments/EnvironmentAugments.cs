@@ -3,61 +3,46 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime;
-using System.Runtime.CompilerServices;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Internal.Runtime.Augments
 {
-    /// <summary>For internal use only.  Exposes runtime functionality to the Environments implementation in corefx.</summary>
+    // TODO: Delete this file once corefx has consumed https://github.com/dotnet/coreclr/pull/22106
+    // and its corresponding mirrored build from corert, and then the resulting corefx builds
+    // have been consumed back here, such that the CI tests which currently expect to find
+    // EnvironmentAugments have been updated to no longer need it.
+
     public static class EnvironmentAugments
     {
-        public static int CurrentManagedThreadId => System.Threading.ManagedThreadId.Current;
-        public static void FailFast(string message, Exception error) => RuntimeExceptionHelpers.FailFast(message, error);
-
+        public static int CurrentManagedThreadId => Environment.CurrentManagedThreadId;
         public static void Exit(int exitCode) => Environment.Exit(exitCode);
-        public static int ExitCode { get { return 0; } set { throw new PlatformNotSupportedException(); } }
-
-        private static string[] s_commandLineArgs;
-
-        internal static void SetCommandLineArgs(string[] args)
+        public static int ExitCode { get { return Environment.ExitCode; } set { Environment.ExitCode = value; } }
+        public static void FailFast(string message, Exception error) => Environment.FailFast(message, error);
+        public static string[] GetCommandLineArgs() => Environment.GetCommandLineArgs();
+        public static bool HasShutdownStarted => Environment.HasShutdownStarted;
+        public static int TickCount => Environment.TickCount;
+        public static string GetEnvironmentVariable(string variable) => Environment.GetEnvironmentVariable(variable);
+        public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) => Environment.GetEnvironmentVariable(variable, target);
+        public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables()
         {
-            s_commandLineArgs = args;
-        }
-
-        public static string[] GetCommandLineArgs()
-        {
-            return (string[])s_commandLineArgs?.Clone();
-        }
-
-        public static bool HasShutdownStarted => false; // .NET Core does not have shutdown finalization
-
-        public static string StackTrace
-        {
-            // Disable inlining to have predictable stack frame to skip
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            get
+            IDictionaryEnumerator de = Environment.GetEnvironmentVariables().GetEnumerator();
+            while (de.MoveNext())
             {
-                // RhGetCurrentThreadStackTrace returns the number of frames(cFrames) added to input buffer.
-                // It returns a negative value, -cFrames which is the required array size, if the buffer is too small.
-                // Initial array length is deliberately chosen to be 0 so that we reallocate to exactly the right size
-                // for StackFrameHelper.FormatStackTrace call. If we want to do this optimistically with one call change
-                // FormatStackTrace to accept an explicit length.
-                IntPtr[] frameIPs = Array.Empty<IntPtr>();
-                int cFrames = RuntimeImports.RhGetCurrentThreadStackTrace(frameIPs);
-                if (cFrames < 0)
-                {
-                    frameIPs = new IntPtr[-cFrames];
-                    cFrames = RuntimeImports.RhGetCurrentThreadStackTrace(frameIPs);
-                    if (cFrames < 0)
-                    {
-                        return "";
-                    }
-                }
-
-                return Internal.Diagnostics.StackTraceHelper.FormatStackTrace(frameIPs, 1, true);
+                yield return new KeyValuePair<string, string>((string)de.Key, (string)de.Value);
             }
         }
-
-        public static int TickCount => Environment.TickCount;
+        public static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
+        {
+            IDictionaryEnumerator de = Environment.GetEnvironmentVariables(target).GetEnumerator();
+            while (de.MoveNext())
+            {
+                yield return new KeyValuePair<string, string>((string)de.Key, (string)de.Value);
+            }
+        }
+        public static int ProcessorCount => Environment.ProcessorCount;
+        public static void SetEnvironmentVariable(string variable, string value) => Environment.SetEnvironmentVariable(variable, value);
+        public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) => Environment.SetEnvironmentVariable(variable, value, target);
+        public static string StackTrace => Environment.StackTrace; // this will temporarily result in an extra frame in Environment.StackTrace calls
     }
 }

@@ -5,10 +5,11 @@
 using System;
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class BlobNode : ObjectNode, ISymbolNode
+    public class BlobNode : ObjectNode, ISymbolDefinitionNode
     {
         private Utf8String _name;
         private ObjectNodeSection _section;
@@ -31,12 +32,22 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(_name);
         }
         public int Offset => 0;
+        public override bool IsShareable => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            return new ObjectData(_data, Array.Empty<Relocation>(), _alignment, new ISymbolNode[] { this });
+            return new ObjectData(_data, Array.Empty<Relocation>(), _alignment, new ISymbolDefinitionNode[] { this });
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+#if !SUPPORT_JIT
+        public override int ClassCode => -470351029;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return _name.CompareTo(((BlobNode)other)._name);
+        }
+#endif
     }
 }

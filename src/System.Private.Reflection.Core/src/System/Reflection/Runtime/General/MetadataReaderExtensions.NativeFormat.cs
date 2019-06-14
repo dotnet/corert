@@ -23,21 +23,8 @@ namespace System.Reflection.Runtime.General
     //
     // Collect various metadata reading tasks for better chunking...
     //
-    internal static class MetadataReaderExtensions
+    public static class NativeFormatMetadataReaderExtensions
     {
-        public static string GetString(this ConstantStringValueHandle handle, MetadataReader reader)
-        {
-            return reader.GetConstantStringValue(handle).Value;
-        }
-
-        // Useful for namespace Name string which can be a null handle.
-        public static String GetStringOrNull(this ConstantStringValueHandle handle, MetadataReader reader)
-        {
-            if (reader.IsNull(handle))
-                return null;
-            return reader.GetConstantStringValue(handle).Value;
-        }
-
         public static bool StringOrNullEquals(this ConstantStringValueHandle handle, String valueOrNull, MetadataReader reader)
         {
             if (valueOrNull == null)
@@ -97,14 +84,6 @@ namespace System.Reflection.Runtime.General
         }
 
 
-        public static bool IsTypeDefRefOrSpecHandle(this Handle handle, MetadataReader reader)
-        {
-            HandleType handleType = handle.HandleType;
-            return handleType == HandleType.TypeDefinition ||
-                handleType == HandleType.TypeReference ||
-                handleType == HandleType.TypeSpecification;
-        }
-
         public static bool IsNamespaceDefinitionHandle(this Handle handle, MetadataReader reader)
         {
             HandleType handleType = handle.HandleType;
@@ -156,16 +135,49 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        // If a typedef/ref/spec handle has one or more custom modifiers wrapped around it, unwrap it. All we care about is the actual type.
-        public static Handle WithoutCustomModifiers(this Handle h, MetadataReader reader)
+        // Return any custom modifiers modifying the passed-in type and whose required/optional bit matches the passed in boolean.
+        // Because this is intended to service the GetCustomModifiers() apis, this helper will always return a freshly allocated array
+        // safe for returning to api callers.
+        internal static Type[] GetCustomModifiers(this Handle handle, MetadataReader reader, TypeContext typeContext, bool optional)
         {
-            HandleType handleType;
-            while ((handleType = h.HandleType) == HandleType.ModifiedType)
+            HandleType handleType = handle.HandleType;
+            Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification || handleType == HandleType.ModifiedType);
+            if (handleType != HandleType.ModifiedType)
+                return Array.Empty<Type>();
+
+            LowLevelList<Type> customModifiers = new LowLevelList<Type>();
+            do
             {
-                h = h.ToModifiedTypeHandle(reader).GetModifiedType(reader).Type;
+                ModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
+                if (optional == modifiedType.IsOptional)
+                {
+                    Type customModifier = modifiedType.ModifierType.Resolve(reader, typeContext);
+                    customModifiers.Insert(0, customModifier);
+                }
+
+                handle = modifiedType.Type;
+                handleType = handle.HandleType;
             }
-            Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification);
-            return h;
+            while (handleType == HandleType.ModifiedType);
+            return customModifiers.ToArray();
+        }
+
+        public static Handle SkipCustomModifiers(this Handle handle, MetadataReader reader)
+        {
+            HandleType handleType = handle.HandleType;
+            Debug.Assert(handleType == HandleType.TypeDefinition || handleType == HandleType.TypeReference || handleType == HandleType.TypeSpecification || handleType == HandleType.ModifiedType);
+            if (handleType != HandleType.ModifiedType)
+                return handle;
+
+            do
+            {
+                ModifiedType modifiedType = handle.ToModifiedTypeHandle(reader).GetModifiedType(reader);
+                handle = modifiedType.Type;
+                handleType = handle.HandleType;
+            }
+            while (handleType == HandleType.ModifiedType);
+
+            return handle;
         }
 
         public static MethodSignature ParseMethodSignature(this Handle handle, MetadataReader reader)
@@ -314,49 +326,60 @@ namespace System.Reflection.Runtime.General
             return value;
         }
 
+        public static Object ParseConstantNumericValue(this Handle handle, MetadataReader reader)
+        {
+            switch (handle.HandleType)
+            {
+                case HandleType.ConstantBooleanValue:
+                    return handle.ToConstantBooleanValueHandle(reader).GetConstantBooleanValue(reader).Value;
+                case HandleType.ConstantCharValue:
+                    return handle.ToConstantCharValueHandle(reader).GetConstantCharValue(reader).Value;
+                case HandleType.ConstantByteValue:
+                    return handle.ToConstantByteValueHandle(reader).GetConstantByteValue(reader).Value;
+                case HandleType.ConstantSByteValue:
+                    return handle.ToConstantSByteValueHandle(reader).GetConstantSByteValue(reader).Value;
+                case HandleType.ConstantInt16Value:
+                    return handle.ToConstantInt16ValueHandle(reader).GetConstantInt16Value(reader).Value;
+                case HandleType.ConstantUInt16Value:
+                    return handle.ToConstantUInt16ValueHandle(reader).GetConstantUInt16Value(reader).Value;
+                case HandleType.ConstantInt32Value:
+                    return handle.ToConstantInt32ValueHandle(reader).GetConstantInt32Value(reader).Value;
+                case HandleType.ConstantUInt32Value:
+                    return handle.ToConstantUInt32ValueHandle(reader).GetConstantUInt32Value(reader).Value;
+                case HandleType.ConstantInt64Value:
+                    return handle.ToConstantInt64ValueHandle(reader).GetConstantInt64Value(reader).Value;
+                case HandleType.ConstantUInt64Value:
+                    return handle.ToConstantUInt64ValueHandle(reader).GetConstantUInt64Value(reader).Value;
+                case HandleType.ConstantSingleValue:
+                    return handle.ToConstantSingleValueHandle(reader).GetConstantSingleValue(reader).Value;
+                case HandleType.ConstantDoubleValue:
+                    return handle.ToConstantDoubleValueHandle(reader).GetConstantDoubleValue(reader).Value;
+                default:
+                    throw new BadImageFormatException();
+            }
+        }
+
         public static Exception TryParseConstantValue(this Handle handle, MetadataReader reader, out Object value)
         {
             HandleType handleType = handle.HandleType;
             switch (handleType)
             {
                 case HandleType.ConstantBooleanValue:
-                    value = handle.ToConstantBooleanValueHandle(reader).GetConstantBooleanValue(reader).Value;
+                case HandleType.ConstantCharValue:
+                case HandleType.ConstantByteValue:
+                case HandleType.ConstantSByteValue:
+                case HandleType.ConstantInt16Value:
+                case HandleType.ConstantUInt16Value:
+                case HandleType.ConstantInt32Value:
+                case HandleType.ConstantUInt32Value:
+                case HandleType.ConstantInt64Value:
+                case HandleType.ConstantUInt64Value:
+                case HandleType.ConstantSingleValue:
+                case HandleType.ConstantDoubleValue:
+                    value = handle.ParseConstantNumericValue(reader);
                     return null;
                 case HandleType.ConstantStringValue:
                     value = handle.ToConstantStringValueHandle(reader).GetConstantStringValue(reader).Value;
-                    return null;
-                case HandleType.ConstantCharValue:
-                    value = handle.ToConstantCharValueHandle(reader).GetConstantCharValue(reader).Value;
-                    return null;
-                case HandleType.ConstantByteValue:
-                    value = handle.ToConstantByteValueHandle(reader).GetConstantByteValue(reader).Value;
-                    return null;
-                case HandleType.ConstantSByteValue:
-                    value = handle.ToConstantSByteValueHandle(reader).GetConstantSByteValue(reader).Value;
-                    return null;
-                case HandleType.ConstantInt16Value:
-                    value = handle.ToConstantInt16ValueHandle(reader).GetConstantInt16Value(reader).Value;
-                    return null;
-                case HandleType.ConstantUInt16Value:
-                    value = handle.ToConstantUInt16ValueHandle(reader).GetConstantUInt16Value(reader).Value;
-                    return null;
-                case HandleType.ConstantInt32Value:
-                    value = handle.ToConstantInt32ValueHandle(reader).GetConstantInt32Value(reader).Value;
-                    return null;
-                case HandleType.ConstantUInt32Value:
-                    value = handle.ToConstantUInt32ValueHandle(reader).GetConstantUInt32Value(reader).Value;
-                    return null;
-                case HandleType.ConstantInt64Value:
-                    value = handle.ToConstantInt64ValueHandle(reader).GetConstantInt64Value(reader).Value;
-                    return null;
-                case HandleType.ConstantUInt64Value:
-                    value = handle.ToConstantUInt64ValueHandle(reader).GetConstantUInt64Value(reader).Value;
-                    return null;
-                case HandleType.ConstantSingleValue:
-                    value = handle.ToConstantSingleValueHandle(reader).GetConstantSingleValue(reader).Value;
-                    return null;
-                case HandleType.ConstantDoubleValue:
-                    value = handle.ToConstantDoubleValueHandle(reader).GetConstantDoubleValue(reader).Value;
                     return null;
                 case HandleType.TypeDefinition:
                 case HandleType.TypeReference:
@@ -385,7 +408,7 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        public static IEnumerable TryParseConstantArray(this Handle handle, MetadataReader reader, out Exception exception)
+        private static Array TryParseConstantArray(this Handle handle, MetadataReader reader, out Exception exception)
         {
             exception = null;
 
@@ -393,56 +416,115 @@ namespace System.Reflection.Runtime.General
             switch (handleType)
             {
                 case HandleType.ConstantBooleanArray:
-                    return handle.ToConstantBooleanArrayHandle(reader).GetConstantBooleanArray(reader).Value;
-
-                case HandleType.ConstantStringArray:
-                    return handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value;
+                    return handle.ToConstantBooleanArrayHandle(reader).GetConstantBooleanArray(reader).Value.ToArray();
 
                 case HandleType.ConstantCharArray:
-                    return handle.ToConstantCharArrayHandle(reader).GetConstantCharArray(reader).Value;
+                    return handle.ToConstantCharArrayHandle(reader).GetConstantCharArray(reader).Value.ToArray();
 
                 case HandleType.ConstantByteArray:
-                    return handle.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value;
+                    return handle.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value.ToArray();
 
                 case HandleType.ConstantSByteArray:
-                    return handle.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value;
+                    return handle.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value.ToArray();
 
                 case HandleType.ConstantInt16Array:
-                    return handle.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value;
+                    return handle.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value.ToArray();
 
                 case HandleType.ConstantUInt16Array:
-                    return handle.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value;
+                    return handle.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value.ToArray();
 
                 case HandleType.ConstantInt32Array:
-                    return handle.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value;
+                    return handle.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value.ToArray();
 
                 case HandleType.ConstantUInt32Array:
-                    return handle.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value;
+                    return handle.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value.ToArray();
 
                 case HandleType.ConstantInt64Array:
-                    return handle.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value;
+                    return handle.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value.ToArray();
 
                 case HandleType.ConstantUInt64Array:
-                    return handle.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value;
+                    return handle.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value.ToArray();
 
                 case HandleType.ConstantSingleArray:
-                    return handle.ToConstantSingleArrayHandle(reader).GetConstantSingleArray(reader).Value;
+                    return handle.ToConstantSingleArrayHandle(reader).GetConstantSingleArray(reader).Value.ToArray();
 
                 case HandleType.ConstantDoubleArray:
-                    return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value;
+                    return handle.ToConstantDoubleArrayHandle(reader).GetConstantDoubleArray(reader).Value.ToArray();
 
-                case HandleType.ConstantHandleArray:
+                case HandleType.ConstantEnumArray:
+                    return TryParseConstantEnumArray(handle.ToConstantEnumArrayHandle(reader), reader, out exception);
+
+                case HandleType.ConstantStringArray:
                     {
-                        Handle[] constantHandles = handle.ToConstantHandleArrayHandle(reader).GetConstantHandleArray(reader).Value.ToArray();
-                        object[] elements = new object[constantHandles.Length];
-                        for (int i = 0; i < constantHandles.Length; i++)
+                        HandleCollection constantHandles = handle.ToConstantStringArrayHandle(reader).GetConstantStringArray(reader).Value;
+                        string[] elements = new string[constantHandles.Count];
+                        int i = 0;
+                        foreach (Handle constantHandle in constantHandles)
                         {
-                            exception = constantHandles[i].TryParseConstantValue(reader, out elements[i]);
+                            object elementValue;
+                            exception = constantHandle.TryParseConstantValue(reader, out elementValue);
                             if (exception != null)
                                 return null;
+                            elements[i] = (string)elementValue;
+                            i++;
                         }
                         return elements;
                     }
+
+                case HandleType.ConstantHandleArray:
+                    {
+                        HandleCollection constantHandles = handle.ToConstantHandleArrayHandle(reader).GetConstantHandleArray(reader).Value;
+                        object[] elements = new object[constantHandles.Count];
+                        int i = 0;
+                        foreach (Handle constantHandle in constantHandles)
+                        {
+                            exception = constantHandle.TryParseConstantValue(reader, out elements[i]);
+                            if (exception != null)
+                                return null;
+                            i++;
+                        }
+                        return elements;
+                    }
+                default:
+                    throw new BadImageFormatException();
+            }
+        }
+
+        private static Array TryParseConstantEnumArray(this ConstantEnumArrayHandle handle, MetadataReader reader, out Exception exception)
+        {
+            exception = null;
+
+            ConstantEnumArray enumArray = handle.GetConstantEnumArray(reader);
+            Type elementType = enumArray.ElementType.TryResolve(reader, new TypeContext(null, null), ref exception);
+            if (exception != null)
+                return null;
+
+            switch (enumArray.Value.HandleType)
+            {
+                case HandleType.ConstantByteArray:
+                    return enumArray.Value.ToConstantByteArrayHandle(reader).GetConstantByteArray(reader).Value.ToArray(elementType);
+
+                case HandleType.ConstantSByteArray:
+                    return enumArray.Value.ToConstantSByteArrayHandle(reader).GetConstantSByteArray(reader).Value.ToArray(elementType);
+
+                case HandleType.ConstantInt16Array:
+                    return enumArray.Value.ToConstantInt16ArrayHandle(reader).GetConstantInt16Array(reader).Value.ToArray(elementType);
+
+                case HandleType.ConstantUInt16Array:
+                    return enumArray.Value.ToConstantUInt16ArrayHandle(reader).GetConstantUInt16Array(reader).Value.ToArray(elementType);
+
+                case HandleType.ConstantInt32Array:
+                    return enumArray.Value.ToConstantInt32ArrayHandle(reader).GetConstantInt32Array(reader).Value.ToArray(elementType);
+
+                case HandleType.ConstantUInt32Array:
+                    return enumArray.Value.ToConstantUInt32ArrayHandle(reader).GetConstantUInt32Array(reader).Value.ToArray(elementType);
+
+                case HandleType.ConstantInt64Array:
+                    return enumArray.Value.ToConstantInt64ArrayHandle(reader).GetConstantInt64Array(reader).Value.ToArray(elementType);
+
+                case HandleType.ConstantUInt64Array:
+                    return enumArray.Value.ToConstantUInt64ArrayHandle(reader).GetConstantUInt64Array(reader).Value.ToArray(elementType);
+
                 default:
                     throw new BadImageFormatException();
             }
@@ -466,7 +548,7 @@ namespace System.Reflection.Runtime.General
         //
         // This check performs without instantating the Type object and bloating memory usage. On the flip side,
         // it doesn't check on whether the type is defined in a paricular assembly. The desktop CLR typically doesn't
-        // check this either so this is useful from a compat persective as well.
+        // check this either so this is useful from a compat perspective as well.
         //
         public static bool IsCustomAttributeOfType(this CustomAttributeHandle customAttributeHandle,
                                                    MetadataReader reader,
@@ -560,7 +642,7 @@ namespace System.Reflection.Runtime.General
                 yield return namespaceHandle;
 
                 NamespaceDefinition namespaceDefinition = namespaceHandle.GetNamespaceDefinition(reader);
-                foreach (NamespaceDefinitionHandle childNamespaceHandle in GetTransitiveNamespaces(reader, namespaceDefinition.NamespaceDefinitions))
+                foreach (NamespaceDefinitionHandle childNamespaceHandle in GetTransitiveNamespaces(reader, namespaceDefinition.NamespaceDefinitions.AsEnumerable()))
                     yield return childNamespaceHandle;
             }
         }
@@ -592,7 +674,7 @@ namespace System.Reflection.Runtime.General
 
                 yield return typeDefinitionHandle;
 
-                foreach (TypeDefinitionHandle nestedTypeDefinitionHandle in GetTransitiveTypes(reader, typeDefinition.NestedTypes, publicOnly))
+                foreach (TypeDefinitionHandle nestedTypeDefinitionHandle in GetTransitiveTypes(reader, typeDefinition.NestedTypes.AsEnumerable(), publicOnly))
                     yield return nestedTypeDefinitionHandle;
             }
         }
@@ -635,64 +717,257 @@ namespace System.Reflection.Runtime.General
             return fullName.ToString();
         }
 
-        public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeDefinitionHandle scopeDefinitionHandle, MetadataReader reader)
+        public static IEnumerable<NamespaceDefinitionHandle> AsEnumerable(this NamespaceDefinitionHandleCollection collection)
         {
-            ScopeDefinition scopeDefinition = scopeDefinitionHandle.GetScopeDefinition(reader);
-            return CreateRuntimeAssemblyNameFromMetadata(
-                reader,
-                scopeDefinition.Name,
-                scopeDefinition.MajorVersion,
-                scopeDefinition.MinorVersion,
-                scopeDefinition.BuildNumber,
-                scopeDefinition.RevisionNumber,
-                scopeDefinition.Culture,
-                scopeDefinition.PublicKey,
-                scopeDefinition.Flags
-                );
+            foreach (NamespaceDefinitionHandle handle in collection)
+                yield return handle;
         }
 
-        public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeReferenceHandle scopeReferenceHandle, MetadataReader reader)
+        public static IEnumerable<TypeDefinitionHandle> AsEnumerable(this TypeDefinitionHandleCollection collection)
         {
-            ScopeReference scopeReference = scopeReferenceHandle.GetScopeReference(reader);
-            return CreateRuntimeAssemblyNameFromMetadata(
-                reader,
-                scopeReference.Name,
-                scopeReference.MajorVersion,
-                scopeReference.MinorVersion,
-                scopeReference.BuildNumber,
-                scopeReference.RevisionNumber,
-                scopeReference.Culture,
-                scopeReference.PublicKeyOrToken,
-                scopeReference.Flags
-                );
+            foreach (TypeDefinitionHandle handle in collection)
+                yield return handle;
         }
 
-        private static RuntimeAssemblyName CreateRuntimeAssemblyNameFromMetadata(
-            MetadataReader reader,
-            ConstantStringValueHandle name,
-            ushort majorVersion,
-            ushort minorVersion,
-            ushort buildNumber,
-            ushort revisionNumber,
-            ConstantStringValueHandle culture,
-            IEnumerable<byte> publicKeyOrToken,
-            NativeFormatAssemblyFlags assemblyFlags)
+        public static Handle[] ToArray(this HandleCollection collection)
         {
-            AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
-            if (0 != (assemblyFlags & NativeFormatAssemblyFlags.PublicKey))
-                assemblyNameFlags |= AssemblyNameFlags.PublicKey;
-            if (0 != (assemblyFlags & NativeFormatAssemblyFlags.Retargetable))
-                assemblyNameFlags |= AssemblyNameFlags.Retargetable;
-            int contentType = ((int)assemblyFlags) & 0x00000E00;
-            assemblyNameFlags |= (AssemblyNameFlags)contentType;
+            int count = collection.Count;
+            Handle[] result = new Handle[count];
+            int i = 0;
+            foreach (Handle element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
 
-            return new RuntimeAssemblyName(
-                name.GetString(reader),
-                new Version(majorVersion, minorVersion, buildNumber, revisionNumber),
-                culture.GetStringOrNull(reader),
-                assemblyNameFlags,
-                publicKeyOrToken.ToArray()
-                );
+        public static bool[] ToArray(this BooleanCollection collection)
+        {
+            int count = collection.Count;
+            bool[] result = new bool[count];
+            int i = 0;
+            foreach (bool element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static char[] ToArray(this CharCollection collection)
+        {
+            int count = collection.Count;
+            char[] result = new char[count];
+            int i = 0;
+            foreach (char element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static float[] ToArray(this SingleCollection collection)
+        {
+            int count = collection.Count;
+            float[] result = new float[count];
+            int i = 0;
+            foreach (float element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static double[] ToArray(this DoubleCollection collection)
+        {
+            int count = collection.Count;
+            double[] result = new double[count];
+            int i = 0;
+            foreach (double element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static byte[] ToArray(this ByteCollection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            byte[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (byte[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new byte[count];
+            }
+            int i = 0;
+            foreach (byte element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static sbyte[] ToArray(this SByteCollection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            sbyte[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (sbyte[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new sbyte[count];
+            }
+            int i = 0;
+            foreach (sbyte element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static ushort[] ToArray(this UInt16Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            ushort[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (ushort[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new ushort[count];
+            }
+            int i = 0;
+            foreach (ushort element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static short[] ToArray(this Int16Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            short[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (short[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new short[count];
+            }
+            int i = 0;
+            foreach (short element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static uint[] ToArray(this UInt32Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            uint[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (uint[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new uint[count];
+            }
+            int i = 0;
+            foreach (uint element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static int[] ToArray(this Int32Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            int[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (int[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new int[count];
+            }
+            int i = 0;
+            foreach (int element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static ulong[] ToArray(this UInt64Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            ulong[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (ulong[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new ulong[count];
+            }
+            int i = 0;
+            foreach (ulong element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
+        }
+
+        public static long[] ToArray(this Int64Collection collection, Type enumType = null)
+        {
+            int count = collection.Count;
+            long[] result;
+            if (enumType != null)
+            {
+                Debug.Assert(enumType.IsEnum);
+                result = (long[])Array.CreateInstance(enumType, count);
+            }
+            else
+            {
+                result = new long[count];
+            }
+            int i = 0;
+            foreach (long element in collection)
+            {
+                result[i++] = element;
+            }
+            Debug.Assert(i == count);
+            return result;
         }
     }
 }

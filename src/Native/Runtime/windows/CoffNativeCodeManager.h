@@ -4,7 +4,7 @@
 
 #pragma once
 
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
 struct T_RUNTIME_FUNCTION {
     uint32_t BeginAddress;
     uint32_t EndAddress;
@@ -40,6 +40,10 @@ typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 class CoffNativeCodeManager : public ICodeManager
 {
     TADDR m_moduleBase;
+
+    PTR_VOID m_pvManagedCodeStartRange;
+    UInt32 m_cbManagedCodeRange;
+
     PTR_RUNTIME_FUNCTION m_pRuntimeFunctionTable;
     UInt32 m_nRuntimeFunctionTable;
 
@@ -48,6 +52,7 @@ class CoffNativeCodeManager : public ICodeManager
 
 public:
     CoffNativeCodeManager(TADDR moduleBase, 
+                          PTR_VOID pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
                           PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, UInt32 nRuntimeFunctionTable,
                           PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions);
     ~CoffNativeCodeManager();
@@ -60,6 +65,8 @@ public:
                         MethodInfo *    pMethodInfoOut);
 
     bool IsFunclet(MethodInfo * pMethodInfo);
+
+    bool IsFilter(MethodInfo * pMethodInfo);
 
     PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                              REGDISPLAY *   pRegisterSet);
@@ -92,4 +99,8 @@ public:
     PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo);
 
     void * GetClasslibFunction(ClasslibFunctionId functionId);
+
+    PTR_VOID GetAssociatedData(PTR_VOID ControlPC);
+
+    PTR_VOID GetOsModuleHandle();
 };

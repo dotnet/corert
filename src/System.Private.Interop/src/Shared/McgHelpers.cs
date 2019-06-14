@@ -151,7 +151,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 default:
-                    Debug.Assert(false, "IListThunk wrong oper");
+                    Debug.Fail("IListThunk wrong oper");
                     break;
             }
 
@@ -213,7 +213,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 default:
-                    Debug.Assert(false, "IListBlittableThunk wrong oper");
+                    Debug.Fail("IListBlittableThunk wrong oper");
                     break;
             }
 
@@ -269,7 +269,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 default:
-                    Debug.Assert(false, "IReadOnlyListThunk wrong oper");
+                    Debug.Fail("IReadOnlyListThunk wrong oper");
                     break;
             }
 
@@ -311,7 +311,7 @@ namespace System.Runtime.InteropServices
                     break;
 
                 default:
-                    Debug.Assert(false, "IReadOnlyListThunk wrong oper");
+                    Debug.Fail("IReadOnlyListThunk wrong oper");
                     break;
             }
 
@@ -376,7 +376,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        internal unsafe static int GetAt(IntPtr pComThis, uint index, IntPtr pItem)
+        internal static unsafe int GetAt(IntPtr pComThis, uint index, IntPtr pItem)
         {
             int hr = Interop.COM.S_OK;
 
@@ -394,7 +394,7 @@ namespace System.Runtime.InteropServices
 
                 *((IntPtr*)pItem) = McgMarshal.ObjectToComInterface(item, interfaceType.GetElementInterfaceType());
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -407,7 +407,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        internal unsafe static int get_Size(System.IntPtr pComThis, System.IntPtr pSize)
+        internal static unsafe int get_Size(System.IntPtr pComThis, System.IntPtr pSize)
         {
             int hr = Interop.COM.S_OK;
 
@@ -424,7 +424,7 @@ namespace System.Runtime.InteropServices
 
                 *((uint*)pSize) = (uint)CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.GetCount, 0, ref dummy);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -433,7 +433,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int GetView(System.IntPtr pComThis, System.IntPtr pView)
+        static unsafe int GetView(System.IntPtr pComThis, System.IntPtr pView)
         {
             int hr = Interop.COM.S_OK;
 
@@ -452,7 +452,7 @@ namespace System.Runtime.InteropServices
 
                 *((IntPtr*)pView) = McgMarshal.ObjectToComInterface(view, interfaceType.GetVectorViewType());
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -462,7 +462,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        internal unsafe static int IndexOf(System.IntPtr pComThis, System.IntPtr _value, System.IntPtr pIndex, System.IntPtr pFound)
+        internal static unsafe int IndexOf(System.IntPtr pComThis, System.IntPtr _value, System.IntPtr pIndex, System.IntPtr pFound)
         {
             int hr = Interop.COM.S_OK;
 
@@ -492,7 +492,7 @@ namespace System.Runtime.InteropServices
 
                 *((int*)pIndex) = index;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -501,7 +501,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int SetAt(System.IntPtr pComThis, uint index, IntPtr _value)
+        static unsafe int SetAt(System.IntPtr pComThis, uint index, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -525,7 +525,7 @@ namespace System.Runtime.InteropServices
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.SetItem, (int)index, ref value);
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -539,7 +539,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int InsertAt(System.IntPtr pComThis, uint index, IntPtr _value)
+        static unsafe int InsertAt(System.IntPtr pComThis, uint index, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -565,7 +565,7 @@ namespace System.Runtime.InteropServices
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Insert, (int)index, ref value);
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -578,7 +578,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int RemoveAt(System.IntPtr pComThis, uint index)
+        static unsafe int RemoveAt(System.IntPtr pComThis, uint index)
         {
             int hr = Interop.COM.S_OK;
 
@@ -600,7 +600,7 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -614,7 +614,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int Append(System.IntPtr pComThis, IntPtr _value)
+        static unsafe int Append(System.IntPtr pComThis, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -631,7 +631,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Add, 0, ref value);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -641,7 +641,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int RemoveAtEnd(System.IntPtr pComThis)
+        static unsafe int RemoveAtEnd(System.IntPtr pComThis)
         {
             int hr = Interop.COM.S_OK;
 
@@ -667,7 +667,7 @@ namespace System.Runtime.InteropServices
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.RemoveAt, (int)(listCount - 1), ref dummy);
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -681,7 +681,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int Clear(System.IntPtr pComThis)
+        static unsafe int Clear(System.IntPtr pComThis)
         {
             int hr = Interop.COM.S_OK;
 
@@ -698,7 +698,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Clear, 0, ref dummy);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -708,7 +708,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        internal unsafe static int GetMany(System.IntPtr pComThis, uint startIndex, uint len, System.IntPtr pDest, System.IntPtr pCount)
+        internal static unsafe int GetMany(System.IntPtr pComThis, uint startIndex, uint len, System.IntPtr pDest, System.IntPtr pCount)
         {
             int hr = Interop.COM.S_OK;
 
@@ -754,7 +754,7 @@ namespace System.Runtime.InteropServices
 
                 *((uint*)pCount) = itemCount;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -763,7 +763,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int ReplaceAll(System.IntPtr pComThis, uint length, IntPtr pItems)
+        static unsafe int ReplaceAll(System.IntPtr pComThis, uint length, IntPtr pItems)
         {
             int hr = Interop.COM.S_OK;
 
@@ -789,7 +789,7 @@ namespace System.Runtime.InteropServices
                     CalliIntrinsics.Call<int>(thunk, list, Toolbox.IList_Oper.Add, 0, ref value);
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -853,7 +853,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        internal unsafe static int GetAt(IntPtr pComThis, uint _index, IntPtr pItem)
+        internal static unsafe int GetAt(IntPtr pComThis, uint _index, IntPtr pItem)
         {
             int hr = Interop.COM.S_OK;
 
@@ -870,7 +870,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.GetItem, ref index, pItem);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -883,7 +883,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        internal unsafe static int get_Size(System.IntPtr pComThis, System.IntPtr pSize)
+        internal static unsafe int get_Size(System.IntPtr pComThis, System.IntPtr pSize)
         {
             int hr = Interop.COM.S_OK;
 
@@ -901,7 +901,7 @@ namespace System.Runtime.InteropServices
 
                 *((uint*)pSize) = (uint)size;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -910,7 +910,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int GetView(System.IntPtr pComThis, System.IntPtr pView)
+        static unsafe int GetView(System.IntPtr pComThis, System.IntPtr pView)
         {
             int hr = Interop.COM.S_OK;
 
@@ -928,7 +928,7 @@ namespace System.Runtime.InteropServices
 
                 *((IntPtr*)pView) = McgMarshal.ObjectToComInterface(view, interfaceType.GetVectorViewType());
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -938,7 +938,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        internal unsafe static int IndexOf(System.IntPtr pComThis, System.IntPtr _value, System.IntPtr pIndex, System.IntPtr pFound)
+        internal static unsafe int IndexOf(System.IntPtr pComThis, System.IntPtr _value, System.IntPtr pIndex, System.IntPtr pFound)
         {
             int hr = Interop.COM.S_OK;
 
@@ -967,7 +967,7 @@ namespace System.Runtime.InteropServices
 
                 *((int*)pIndex) = index;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -976,7 +976,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int SetAt(System.IntPtr pComThis, uint _index, IntPtr _value)
+        static unsafe int SetAt(System.IntPtr pComThis, uint _index, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -992,7 +992,7 @@ namespace System.Runtime.InteropServices
                 int index = (int)_index;
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.SetItem, ref index, (IntPtr)(&_value));
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -1006,7 +1006,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int InsertAt(System.IntPtr pComThis, uint _index, IntPtr _value)
+        static unsafe int InsertAt(System.IntPtr pComThis, uint _index, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1023,7 +1023,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.Insert, ref index, (IntPtr)(&_value));
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -1036,7 +1036,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int RemoveAt(System.IntPtr pComThis, uint _index)
+        static unsafe int RemoveAt(System.IntPtr pComThis, uint _index)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1053,7 +1053,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.RemoveAt, ref index, default(IntPtr));
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -1067,7 +1067,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int Append(System.IntPtr pComThis, IntPtr _value)
+        static unsafe int Append(System.IntPtr pComThis, IntPtr _value)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1084,7 +1084,7 @@ namespace System.Runtime.InteropServices
 
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.Add, ref dummy, (IntPtr)(&_value));
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1094,7 +1094,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int RemoveAtEnd(System.IntPtr pComThis)
+        static unsafe int RemoveAtEnd(System.IntPtr pComThis)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1122,7 +1122,7 @@ namespace System.Runtime.InteropServices
                     CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.RemoveAt, ref index, default(IntPtr));
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
                 if (hrExcep is ArgumentOutOfRangeException)
@@ -1136,7 +1136,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        unsafe static int Clear(System.IntPtr pComThis)
+        static unsafe int Clear(System.IntPtr pComThis)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1152,7 +1152,7 @@ namespace System.Runtime.InteropServices
                 int dummy = 0;
                 CalliIntrinsics.Call<object>(thunk, list, Toolbox.IList_Oper.Clear, ref dummy, default(IntPtr));
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1162,7 +1162,7 @@ namespace System.Runtime.InteropServices
 
 
         [NativeCallable]
-        internal unsafe static int GetMany(System.IntPtr pComThis, uint startIndex, uint len, System.IntPtr pDest, System.IntPtr pCount)
+        internal static unsafe int GetMany(System.IntPtr pComThis, uint startIndex, uint len, System.IntPtr pDest, System.IntPtr pCount)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1204,7 +1204,7 @@ namespace System.Runtime.InteropServices
 
                 *((uint*)pCount) = itemCount;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1213,7 +1213,7 @@ namespace System.Runtime.InteropServices
         }
 
         [NativeCallable]
-        unsafe static int ReplaceAll(System.IntPtr pComThis, uint length, IntPtr pItems)
+        static unsafe int ReplaceAll(System.IntPtr pComThis, uint length, IntPtr pItems)
         {
             int hr = Interop.COM.S_OK;
 
@@ -1239,7 +1239,7 @@ namespace System.Runtime.InteropServices
                     pItems = (IntPtr)((byte*)pItems + byteSize);
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1389,7 +1389,7 @@ namespace System.Runtime.InteropServices
                 // Marshal to native iterator
                  *((IntPtr*)pResult) =  McgMarshal.ObjectToComInterface(enumerator, interfaceType.GetIteratorType());
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1468,7 +1468,7 @@ namespace System.Runtime.InteropServices
 
                 *((IntPtr*)pValue) = McgMarshal.ObjectToComInterface(item, interfaceType.GetElementInterfaceType());
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1493,7 +1493,7 @@ namespace System.Runtime.InteropServices
                 object item = null;
                 *((byte*)pValue) = (byte)CalliIntrinsics.Call<int>(thunk, iterator, Toolbox.IIterator_Oper.get_HasCurrent, ref item, 0);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1518,7 +1518,7 @@ namespace System.Runtime.InteropServices
                 object item = null;
                 *((byte*)pValue) = (byte)CalliIntrinsics.Call<int>(thunk, iterator, Toolbox.IIterator_Oper.MoveNext, ref item, 0);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1553,7 +1553,7 @@ namespace System.Runtime.InteropServices
                     dst[i] = McgMarshal.ObjectToComInterface(src[i], interfaceType.GetElementInterfaceType());
                 }
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1619,7 +1619,7 @@ namespace System.Runtime.InteropServices
                 int dummy = 0;
                 CalliIntrinsics.Call<Array>(thunk, iterator, Toolbox.IIterator_Oper.get_Current, pValue, ref dummy);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1646,7 +1646,7 @@ namespace System.Runtime.InteropServices
 
                 *((byte*)pValue) = (byte)has;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1673,7 +1673,7 @@ namespace System.Runtime.InteropServices
 
                 *((byte*)pValue) = (byte)has;
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1700,9 +1700,9 @@ namespace System.Runtime.InteropServices
 
                 *((uint*)pCount) = (uint)count;
 
-                InteropExtensions.CopyToNative(data, 0, pDest, count);
+                PInvokeMarshal.CopyToNative(data, 0, pDest, count);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1753,7 +1753,7 @@ namespace System.Runtime.InteropServices
                 // Call handler.Invoke(asyncInfo, asyncStatus)
                 CalliIntrinsics.Call<int>(thunk, handler, asyncInfo, asyncStatus);
             }
-            catch (System.Exception hrExcep)
+            catch (System.Exception hrExcep) when (McgMarshal.PropagateException(hrExcep))
             {
                 hr = McgMarshal.GetHRForExceptionWinRT(hrExcep);
             }
@@ -1762,16 +1762,4 @@ namespace System.Runtime.InteropServices
         }
     }
 #endif
-
-    public static class SpinWaitExtensions
-    {
-        public static void Yield()
-        {
-#if CORECLR
-            System.Threading.Thread.Sleep(0);
-#else
-            System.Threading.SpinWait.Yield();
-#endif
-        }
-    }
 }

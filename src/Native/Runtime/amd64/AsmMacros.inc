@@ -215,6 +215,24 @@ Name label proc
 PUBLIC Name
         endm
 
+EXPORT_POINTER_TO_ADDRESS macro Name
+
+        local   AddressToExport
+
+AddressToExport  label   proc
+
+        .const
+
+        align   8
+
+Name    dq      offset AddressToExport
+
+        public  Name
+
+        .code
+
+        endm
+
 _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 ;;
@@ -352,7 +370,15 @@ PTFF_SAVE_RAX           equ 00000100h   ;; RAX is saved if it contains a GC ref 
 PTFF_SAVE_ALL_SCRATCH   equ 00007F00h
 PTFF_RAX_IS_GCREF       equ 00010000h   ;; iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
 PTFF_RAX_IS_BYREF       equ 00020000h   ;; iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
+PTFF_THREAD_ABORT       equ 00040000h   ;; indicates that ThreadAbortException should be thrown when returning from the transition
 
+;; These must match the TrapThreadsFlags enum
+TrapThreadsFlags_None            equ 0
+TrapThreadsFlags_AbortInProgress equ 1
+TrapThreadsFlags_TrapThreads     equ 2
+
+;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
+STATUS_REDHAWK_THREAD_ABORT      equ 43h
 
 ;;
 ;; CONSTANTS -- SYMBOLS

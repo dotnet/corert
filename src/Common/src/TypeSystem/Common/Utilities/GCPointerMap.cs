@@ -13,7 +13,7 @@ namespace Internal.TypeSystem
     /// Represents a bitmap of GC pointers within a memory region divided into
     /// pointer-sized cells.
     /// </summary>
-    public partial struct GCPointerMap : IEquatable<GCPointerMap>
+    public partial struct GCPointerMap : IEquatable<GCPointerMap>, IComparable<GCPointerMap>
     {
         // Each bit in this array represents a pointer-sized cell.
         private int[] _gcFlags;
@@ -130,6 +130,21 @@ namespace Internal.TypeSystem
                 sb.Append(bit ? '1' : '0');
             return sb.ToString();
         }
+        
+        public int CompareTo(GCPointerMap other)
+        {
+            if (_numCells != other._numCells)
+                return _numCells - other._numCells;
+
+            for (int i = 0; i < _gcFlags.Length; i++)
+            {
+                if (_gcFlags[i] != other._gcFlags[i])
+                    return _gcFlags[i] - other._gcFlags[i];
+            }
+
+            Debug.Assert(Equals(other));
+            return 0;
+        }
     }
 
     /// <summary>
@@ -149,8 +164,9 @@ namespace Internal.TypeSystem
 
         public GCPointerMapBuilder(int numBytes, int pointerSize)
         {
-            // Don't care about the remainder - the remainder is not big enough to hold a GC pointer.
-            int numPointerSizedCells = numBytes / pointerSize;
+            // Align the size up. The size of the pointer map is used to infer the statics storage size that has
+            // to include space for non-GC statics smaller than pointer size.
+            int numPointerSizedCells = (numBytes + pointerSize - 1) / pointerSize;
 
             if (numPointerSizedCells > 0)
             {
@@ -204,7 +220,7 @@ namespace Internal.TypeSystem
         public GCPointerMap ToGCMap()
         {
             Debug.Assert(_delta == 0);
-            return new GCPointerMap(_gcFlags, _limit / _pointerSize);
+            return new GCPointerMap(_gcFlags, (_limit + _pointerSize - 1) / _pointerSize);
         }
 
         public BitEnumerator GetEnumerator()
@@ -232,7 +248,7 @@ namespace Internal.TypeSystem
         public BitEnumerator(int[] buffer, int startBit, int numBits)
         {
             Debug.Assert(startBit >= 0 && numBits >= 0);
-            Debug.Assert(startBit + numBits < buffer.Length << 5);
+            Debug.Assert(startBit + numBits <= buffer.Length << 5);
 
             _buffer = buffer;
             _currentBit = startBit - 1;

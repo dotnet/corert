@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 
 namespace System.Runtime.CompilerServices
 {
@@ -8,7 +12,7 @@ namespace System.Runtime.CompilerServices
     internal interface ICastableObject
         // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
         : ICastable
-        // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+    // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
     {
         object CastToInterface(EETypePtr interfaceType, bool produceCastErrorException, out Exception castError);
     }
@@ -16,6 +20,7 @@ namespace System.Runtime.CompilerServices
     public abstract class CastableObject : ICastableObject
     {
         // THIS FIELD IS USED BY THE RUNTIME DIRECTLY! IT MUST NOT BE REMOVED BY THE REDUCER
+        [System.Diagnostics.DebuggerBrowsable(Diagnostics.DebuggerBrowsableState.Never)]
         private object _hiddenCacheField;
 
         object ICastableObject.CastToInterface(EETypePtr interfaceType, bool produceCastErrorException, out Exception castError)

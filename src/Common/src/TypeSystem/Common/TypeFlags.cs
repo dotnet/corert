@@ -48,13 +48,17 @@ namespace Internal.TypeSystem
         SignatureTypeVariable   = 0x1D,
         SignatureMethodVariable = 0x1E,
 
-        ContainsGenericVariables         = 0x100,
-        ContainsGenericVariablesComputed = 0x200,
+        HasGenericVariance         = 0x100,
+        HasGenericVarianceComputed = 0x200,
 
-        HasGenericVariance         = 0x400,
-        HasGenericVarianceComputed = 0x800,
+        HasStaticConstructor         = 0x400,
+        HasStaticConstructorComputed = 0x800,
 
-        HasStaticConstructor         = 0x1000,
-        HasStaticConstructorComputed = 0x2000,
+        HasFinalizerComputed = 0x1000,
+        HasFinalizer         = 0x2000,
+
+        IsByRefLike            = 0x04000,
+        AttributeCacheComputed = 0x08000,
+        IsIntrinsic            = 0x10000,
     }
 }

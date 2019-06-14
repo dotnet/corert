@@ -23,7 +23,7 @@ namespace System.Reflection.Runtime.TypeInfos
     // TypeInfos that represent type definitions (i.e. Foo or Foo<>, but not Foo<int> or arrays/pointers/byrefs.)
     // that not opted into pay-for-play metadata.
     // 
-    internal sealed partial class RuntimeNoMetadataNamedTypeInfo : RuntimeTypeInfo
+    internal sealed partial class RuntimeNoMetadataNamedTypeInfo : RuntimeTypeDefinitionTypeInfo
     {
         private RuntimeNoMetadataNamedTypeInfo(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition)
         {
@@ -83,6 +83,10 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
+#if DEBUG
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => base.HasSameMetadataDefinitionAs(other);
+#endif
+
         public sealed override string Namespace
         {
             get
@@ -106,6 +110,14 @@ namespace System.Reflection.Runtime.TypeInfos
         public sealed override string ToString()
         {
             return _typeHandle.LastResortString();
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
+            }
         }
 
         protected sealed override TypeAttributes GetAttributeFlagsImpl()
@@ -150,7 +162,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             rootCauseForFailure = this;
             return null;

@@ -42,9 +42,9 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 
             public override bool Equals(object obj)
             {
-                if (!(obj is UnificationKey))
+                if (!(obj is UnificationKey other))
                     return false;
-                return Equals((UnificationKey)obj);
+                return Equals(other);
             }
 
             public bool Equals(UnificationKey other)

@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
+using System.Threading;
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
-    public struct CustomAttributeNamedArgument
+    public readonly struct CustomAttributeNamedArgument
     {
         // This constructor is the one used by .Net Native as the current metadata format only contains the name and the "isField" value,
         // not the actual member. To keep .Net Native running as before, we'll use the name and isField as the principal data and 
@@ -73,7 +76,9 @@ namespace System.Reflection
 
                     if (memberInfo == null)
                         throw RuntimeAugments.Callbacks.CreateMissingMetadataException(_attributeType);
-                    _lazyMemberInfo = memberInfo;
+
+                    // Cast-away readonly to initialize lazy-initalized field
+                    Volatile.Write(ref Unsafe.AsRef(_lazyMemberInfo), memberInfo);
                 }
                 return memberInfo;
             }
@@ -86,12 +91,32 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            // base.ToString() is a temporary implementation: this silly looking line officially tags this method as needing further work.
-            if (string.Empty.Length > 0) throw new NotImplementedException();
-            return base.ToString();
+            if (_attributeType == null)
+                return base.ToString(); // Someone called ToString() on default(CustomAttributeNamedArgument)
+
+            try
+            {
+                bool typed;
+                if (_lazyMemberInfo == null)
+                {
+                    // If we haven't resolved the memberName into a MemberInfo yet, don't do so just for ToString()'s sake (it can trigger a MissingMetadataException.)
+                    // Just use the fully type-qualified format by fiat.
+                    typed = true;
+                }
+                else
+                {
+                    Type argumentType = IsField ? ((FieldInfo)_lazyMemberInfo).FieldType : ((PropertyInfo)_lazyMemberInfo).PropertyType;
+                    typed = argumentType != typeof(object);
+                }
+                return string.Format(CultureInfo.CurrentCulture, "{0} = {1}", MemberName, TypedValue.ToString(typed));
+            }
+            catch (MissingMetadataException)
+            {
+                return base.ToString(); // Failsafe. Code inside "try" should still strive to avoid trigging a MissingMetadataException as caught exceptions are annoying when debugging.
+            }
         }
 
         private readonly Type _attributeType;
-        private volatile MemberInfo _lazyMemberInfo;
+        private readonly MemberInfo _lazyMemberInfo;
     }
 }

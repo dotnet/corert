@@ -11,9 +11,9 @@ namespace Internal.TypeSystem
 
     public partial class FieldDesc
     {
-        private int _offset = FieldAndOffset.InvalidOffset;
+        private LayoutInt _offset = FieldAndOffset.InvalidOffset;
 
-        public int Offset
+        public LayoutInt Offset
         {
             get
             {
@@ -33,21 +33,18 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// For static fields, represents whether or not the field is held in the GC or non GC statics region
-        /// Does not apply to thread static fields.
+        /// For static fields, represents whether or not the field is held in the GC or non GC statics region.
         /// </summary>
         public bool HasGCStaticBase
         {
             get
             {
-                // If this assert fires then make sure the caller checks the IsThreadStatic attribute
-                // of FieldDesc before checking its HasGCStaticBase property.
-                Debug.Assert(IsStatic && !IsThreadStatic);
+                Debug.Assert(IsStatic);
                 return Context.ComputeHasGCStaticBase(this);
             }
         }
 
-        internal void InitializeOffset(int offset)
+        internal void InitializeOffset(LayoutInt offset)
         {
             Debug.Assert(_offset == FieldAndOffset.InvalidOffset || _offset == offset);
             _offset = offset;

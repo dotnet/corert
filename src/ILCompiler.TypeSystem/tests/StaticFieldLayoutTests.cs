@@ -39,13 +39,13 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "int1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     case "byte1":
-                        Assert.Equal(4, field.Offset);
+                        Assert.Equal(4, field.Offset.AsInt);
                         break;
                     case "char1":
-                        Assert.Equal(6, field.Offset);
+                        Assert.Equal(6, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -70,7 +70,7 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "bool1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -95,13 +95,13 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "int1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     case "byte1":
-                        Assert.Equal(4, field.Offset);
+                        Assert.Equal(4, field.Offset.AsInt);
                         break;
                     case "char1":
-                        Assert.Equal(6, field.Offset);
+                        Assert.Equal(6, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -126,10 +126,10 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "string1":
-                        Assert.Equal(8, field.Offset);
+                        Assert.Equal(8, field.Offset.AsInt);
                         break;
                     case "class1":
-                        Assert.Equal(16, field.Offset);
+                        Assert.Equal(16, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -154,19 +154,19 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "string1":
-                        Assert.Equal(8, field.Offset);
+                        Assert.Equal(8, field.Offset.AsInt);
                         break;
                     case "int1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     case "class1":
-                        Assert.Equal(16, field.Offset);
+                        Assert.Equal(16, field.Offset.AsInt);
                         break;
                     case "int2":
-                        Assert.Equal(4, field.Offset);
+                        Assert.Equal(4, field.Offset.AsInt);
                         break;
                     case "string2":
-                        Assert.Equal(24, field.Offset);
+                        Assert.Equal(24, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -192,10 +192,10 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "int3":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     case "string3":
-                        Assert.Equal(8, field.Offset);
+                        Assert.Equal(8, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -227,10 +227,10 @@ namespace TypeSystemTests
                         Assert.True(field.IsLiteral);
                         break;
                     case "Int1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     case "String1":
-                        Assert.Equal(8, field.Offset);
+                        Assert.Equal(8, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -256,7 +256,7 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "selfRef1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -300,7 +300,7 @@ namespace TypeSystemTests
             var t = ilModule.GetType("StaticFieldLayout", "FunctionPointerType");
             var field = t.GetField("StaticMethodField");
 
-            Assert.Equal(8, field.Offset);
+            Assert.Equal(8, field.Offset.AsInt);
             Assert.False(field.HasGCStaticBase);
         }
     }

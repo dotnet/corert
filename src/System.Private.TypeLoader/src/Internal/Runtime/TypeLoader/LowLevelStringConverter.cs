@@ -6,9 +6,12 @@
 using System;
 using System.Text;
 
+using System.Reflection.Runtime.General;
+
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.TypeLoader;
+using Internal.TypeSystem;
 
 namespace System
 {
@@ -17,6 +20,36 @@ namespace System
         public static string ToStringInvariant(this int arg)
         {
             return arg.LowLevelToString();
+        }
+
+        public static string ToStringInvariant(this uint arg)
+        {
+            return arg.LowLevelToString();
+        }
+
+        public static string ToStringInvariant(this byte arg)
+        {
+            return arg.LowLevelToString();
+        }
+
+        public static string ToStringInvariant(this ushort arg)
+        {
+            return arg.LowLevelToString();
+        }
+
+        public static string ToStringInvariant(this ulong arg)
+        {
+            return arg.LowLevelToString();
+        }
+
+        public static string ToStringInvariant(this float arg)
+        {
+            return "FLOAT";
+        }
+
+        public static string ToStringInvariant(this double arg)
+        {
+            return "DOUBLE";
         }
     }
 }
@@ -28,9 +61,39 @@ namespace Internal.Runtime.TypeLoader
     /// Calling regular ToString() on these types goes through a lot of the CultureInfo machinery
     /// which is not low level enough for the type loader purposes.
     /// </summary>
-    internal static class LowLevelStringConverter
+    internal static partial class LowLevelStringConverter
     {
         private const string HexDigits = "0123456789ABCDEF";
+
+        private static string LowLevelToString(ulong arg, int shift)
+        {
+            StringBuilder sb = new StringBuilder(16);
+            while (shift > 0)
+            {
+                shift -= 4;
+                int digit = (int)((arg >> shift) & 0xF);
+                sb.Append(HexDigits[digit]);
+            }
+            return sb.ToString();
+        }
+
+        public static string LowLevelToString(this LayoutInt arg)
+        {
+            if (arg.IsIndeterminate)
+                return "Indeterminate";
+            else
+                return ((uint)arg.AsInt).LowLevelToString();
+        }
+
+        public static string LowLevelToString(this byte arg)
+        {
+            return LowLevelToString((ulong)arg, 4 * 2);
+        }
+
+        public static string LowLevelToString(this ushort arg)
+        {
+            return LowLevelToString((ulong)arg, 4 * 4);
+        }
 
         public static string LowLevelToString(this int arg)
         {
@@ -39,43 +102,36 @@ namespace Internal.Runtime.TypeLoader
 
         public static string LowLevelToString(this uint arg)
         {
-            StringBuilder sb = new StringBuilder(8);
-            int shift = 4 * 8;
-            while (shift > 0)
-            {
-                shift -= 4;
-                int digit = (int)((arg >> shift) & 0xF);
-                sb.Append(HexDigits[digit]);
-            }
+            return LowLevelToString((ulong)arg, 4 * 8);
+        }
 
-            return sb.ToString();
+        public static string LowLevelToString(this ulong arg)
+        {
+            return LowLevelToString((ulong)arg, 4 * 16);
         }
 
         public static string LowLevelToString(this IntPtr arg)
         {
-            StringBuilder sb = new StringBuilder(IntPtr.Size * 4);
-            ulong num = (ulong)arg;
-
-            int shift = IntPtr.Size * 8;
-            while (shift > 0)
-            {
-                shift -= 4;
-                int digit = (int)((num >> shift) & 0xF);
-                sb.Append(HexDigits[digit]);
-            }
-
-            return sb.ToString();
+            return LowLevelToString((ulong)arg, IntPtr.Size * 8);
         }
 
         public static string LowLevelToString(this RuntimeTypeHandle rtth)
         {
-            MetadataReader reader;
-            TypeDefinitionHandle typeDefHandle;
             TypeReferenceHandle typeRefHandle;
+            QTypeDefinition qTypeDefinition;
+            MetadataReader reader;
 
             // Try to get the name from metadata
-            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out reader, out typeDefHandle))
+            if (TypeLoaderEnvironment.Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
             {
+#if ECMA_METADATA_SUPPORT
+                string result = EcmaMetadataFullName(qTypeDefinition);
+                if (result != null)
+                    return result;
+#endif
+
+                reader = qTypeDefinition.NativeFormatReader;
+                TypeDefinitionHandle typeDefHandle = qTypeDefinition.NativeFormatHandle;
                 return typeDefHandle.GetFullName(reader);
             }
 
@@ -86,20 +142,12 @@ namespace Internal.Runtime.TypeLoader
             }
 
             // Fallback implementation when no metadata available
-            string prefix = "EEType:0x";
+            return LowLevelToStringRawEETypeAddress(rtth);
+        }
 
-            StringBuilder sb = new StringBuilder(prefix.Length + IntPtr.Size * 4);
-            ulong num = (ulong)rtth.ToIntPtr();
-
-            int shift = IntPtr.Size * 8;
-            while (shift > 0)
-            {
-                shift -= 4;
-                int digit = (int)((num >> shift) & 0xF);
-                sb.Append(HexDigits[digit]);
-            }
-
-            return sb.ToString();
+        public static string LowLevelToStringRawEETypeAddress(this RuntimeTypeHandle rtth)
+        {
+            return "EEType:0x" + LowLevelToString(rtth.ToIntPtr());
         }
     }
 }

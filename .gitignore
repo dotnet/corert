@@ -13,6 +13,7 @@ tests_downloaded/
 *.user
 *.userosscache
 *.sln.docstates
+launchSettings.json
 
 # Build results
 [Dd]ebug/
@@ -26,6 +27,8 @@ bld/
 [Bb]in/
 [Oo]bj/
 msbuild.log
+msbuild.err
+msbuild.wrn
 project.lock.json
 
 # Visual Studio 2015
@@ -285,3 +288,9 @@ src/ILCompiler/reproNative/repro.cpp
 src/ILCompiler/reproNative/repro.s
 src/ILCompiler/reproNative/reproNative.sln
 src/ILCompiler/reproNative/reproNativeCpp.sln
+
+# Visual Studio Code
+.vscode/
+
+#python import files
+*.pyc

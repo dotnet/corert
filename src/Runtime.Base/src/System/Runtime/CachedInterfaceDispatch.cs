@@ -7,16 +7,17 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime
 {
-    internal unsafe static class CachedInterfaceDispatch
+    internal static unsafe class CachedInterfaceDispatch
     {
         [RuntimeExport("RhpCidResolve")]
         unsafe private static IntPtr RhpCidResolve(IntPtr callerTransitionBlockParam, IntPtr pCell)
         {
             IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
-            object pObject = Unsafe.As<IntPtr, Object>(ref *(IntPtr*)locationOfThisPointer);
+            object pObject = Unsafe.As<IntPtr, object>(ref *(IntPtr*)locationOfThisPointer);
             IntPtr dispatchResolveTarget = RhpCidResolve_Worker(pObject, pCell);
 
             if (dispatchResolveTarget == InternalCalls.RhpGetCastableObjectDispatchHelper())
@@ -100,7 +101,7 @@ namespace System.Runtime
                                                                           slot);
         }
 
-        private unsafe static IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
+        private static unsafe IntPtr RhResolveDispatchWorker(object pObject, void* cell, ref DispatchCellInfo cellInfo)
         {
             // Type of object we're dispatching on.
             EEType* pInstanceType = pObject.EEType;
@@ -133,7 +134,7 @@ namespace System.Runtime
                                                                                  cellInfo.InterfaceSlot);
                     }
                     else
-                // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
+                    // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
                     {
                         // Dispatch not resolved through normal dispatch map, using the CastableObject path
                         pTargetCode = InternalCalls.RhpGetCastableObjectDispatchHelper();
@@ -149,7 +150,7 @@ namespace System.Runtime
             }
             else
             {
-#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
+#if SUPPORTS_NATIVE_METADATA_TYPE_LOADING_AND_SUPPORTS_TOKEN_BASED_DISPATCH_CELLS
                 // Attempt to convert dispatch cell to non-metadata form if we haven't acquired a cache for this cell yet
                 if (cellInfo.HasCache == 0)
                 {

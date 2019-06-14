@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace Internal.Runtime
 {
     // Extensions to EEType that are specific to the use in Runtime.Base.
-    unsafe partial struct EEType
+    internal unsafe partial struct EEType
     {
         internal DispatchResolve.DispatchMap* DispatchMap
         {
@@ -23,11 +23,18 @@ namespace Internal.Runtime
 
         internal EEType* GetArrayEEType()
         {
-#if INPLACE_RUNTIME
-            return EETypePtr.EETypePtrOf<Array>().ToPointer();
-#else
+            fixed (EEType* pThis = &this)
+            {
+                IntPtr pGetArrayEEType = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(new IntPtr(pThis), ClassLibFunctionId.GetSystemArrayEEType);
+                if (pGetArrayEEType != IntPtr.Zero)
+                    return (EEType*)CalliIntrinsics.Call<IntPtr>(pGetArrayEEType);
+            }
+#if PROJECTN
             fixed (EEType* pThis = &this)
                 return InternalCalls.RhpGetArrayBaseType(pThis);
+#else
+            EH.FallbackFailFast(RhFailFastReason.InternalError, null);
+            return null;
 #endif
         }
 
@@ -50,15 +57,15 @@ namespace Internal.Runtime
                 return RelatedParameterType->GetClasslibException(id);
             }
 
-            return EH.GetClasslibException(id, GetAssociatedModuleAddress());
+            return EH.GetClasslibExceptionFromEEType(id, GetAssociatedModuleAddress());
 #endif
         }
 
-        internal void SetToCloneOf(EEType *pOrigType)
+        internal void SetToCloneOf(EEType* pOrigType)
         {
             Debug.Assert((_usFlags & (ushort)EETypeFlags.EETypeKindMask) == 0, "should be a canonical type");
-            this._usFlags |= (ushort)EETypeKind.ClonedEEType;
-            this._relatedType._pCanonicalType = pOrigType;
+            _usFlags |= (ushort)EETypeKind.ClonedEEType;
+            _relatedType._pCanonicalType = pOrigType;
         }
 
         // Returns an address in the module most closely associated with this EEType that can be handed to
@@ -70,7 +77,7 @@ namespace Internal.Runtime
         {
             fixed (EEType* pThis = &this)
             {
-                if (!IsRuntimeAllocated && !IsDynamicType)
+                if (!IsDynamicType)
                     return (IntPtr)pThis;
 
                 // There are currently four types of runtime allocated EETypes, arrays, pointers, byrefs, and generic types.
@@ -109,7 +116,7 @@ namespace Internal.Runtime
         /// <summary>
         /// Return true if both types are good for simple casting: canonical, no related type via IAT, no generic variance
         /// </summary>
-        static internal bool BothSimpleCasting(EEType* pThis, EEType* pOther)
+        internal static bool BothSimpleCasting(EEType* pThis, EEType* pOther)
         {
             return ((pThis->_usFlags | pOther->_usFlags) & (ushort)EETypeFlags.ComplexCastingMask) == (ushort)EETypeKind.CanonicalEEType;
         }

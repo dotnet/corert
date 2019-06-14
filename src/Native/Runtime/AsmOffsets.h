@@ -30,12 +30,16 @@ ASM_OFFSET(    0,     0, Object, m_pEEType)
 
 ASM_OFFSET(    4,     8, Array, m_Length)
 
+ASM_OFFSET(    4,     8, String, m_Length)
+ASM_OFFSET(    8,     C, String, m_FirstChar)
+ASM_CONST(     2,     2, STRING_COMPONENT_SIZE)
+ASM_CONST(     E,    16, STRING_BASE_SIZE)
+ASM_CONST(3FFFFFDF,3FFFFFDF,MAX_STRING_LENGTH)
+
 ASM_OFFSET(    0,     0, EEType, m_usComponentSize)
 ASM_OFFSET(    2,     2, EEType, m_usFlags)
 ASM_OFFSET(    4,     4, EEType, m_uBaseSize)
-#if defined(CORERT)
-// If this ever changes, you must update src\ILCompiler.Compiler\src\Compiler\DependencyAnalysis\EETypeNode.cs GetVTableOffset()
-// to reflect the updated VTable offset
+#if defined(EETYPE_TYPE_MANAGER)
 ASM_OFFSET(   18,    20, EEType, m_VTable)
 #else
 ASM_OFFSET(   14,    18, EEType, m_VTable)
@@ -47,14 +51,16 @@ ASM_OFFSET(   2c,    40, Thread, m_pTransitionFrame)
 ASM_OFFSET(   30,    48, Thread, m_pHackPInvokeTunnel)
 ASM_OFFSET(   40,    68, Thread, m_ppvHijackedReturnAddressLocation)
 ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
-ASM_OFFSET(   48,    78, Thread, m_pExInfoStackHead)
+#ifdef BIT64
+ASM_OFFSET(    0,    78, Thread, m_uHijackedReturnValueFlags)
+#endif
+ASM_OFFSET(   48,    80, Thread, m_pExInfoStackHead)
+ASM_OFFSET(   4c,    88, Thread, m_threadAbortException)
 
 ASM_SIZEOF(   14,    20, EHEnum)
 
 ASM_OFFSET(    0,     0, gc_alloc_context, alloc_ptr)
 ASM_OFFSET(    4,     8, gc_alloc_context, alloc_limit)
-
-ASM_OFFSET(    4,     8, RuntimeInstance, m_pThreadStore)
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
@@ -111,6 +117,10 @@ private:
 void BogusFunction()
 {
     // Sample usage to generate the error
-    FindCompileTimeConstant<offsetof(ExInfo, m_passNumber)> bogus_variable;
+    FindCompileTimeConstant<sizeof(ExInfo)> bogus_variable;
+    FindCompileTimeConstant<offsetof(ExInfo, m_notifyDebuggerSP)> bogus_variable2;
+    FindCompileTimeConstant<sizeof(StackFrameIterator)> bogus_variable3;
+    FindCompileTimeConstant<sizeof(PAL_LIMITED_CONTEXT)> bogus_variable4;
+    FindCompileTimeConstant<offsetof(PAL_LIMITED_CONTEXT, IP)> bogus_variable5;
 }
 #endif // defined(__cplusplus) && defined(USE_COMPILE_TIME_CONSTANT_FINDER)

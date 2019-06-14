@@ -9,11 +9,12 @@ namespace ILCompiler.DependencyAnalysis
     [Flags]
     public enum FrameInfoFlags
     {
-        Handler         = 0x01,
-        Filter          = 0x02,
+        Handler             = 0x01,
+        Filter              = 0x02,
 
-        HasEHInfo       = 0x04,
-        ReversePInvoke  = 0x08,
+        HasEHInfo           = 0x04,
+        ReversePInvoke      = 0x08,
+        HasAssociatedData   = 0x10,
     }
 
     public struct FrameInfo
@@ -32,6 +33,22 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    public struct DebugEHClauseInfo
+    {
+        public uint TryOffset;
+        public uint TryLength;
+        public uint HandlerOffset;
+        public uint HandlerLength;
+
+        public DebugEHClauseInfo(uint tryOffset, uint tryLength, uint handlerOffset, uint handlerLength)
+        {
+            TryOffset = tryOffset;
+            TryLength = tryLength;
+            HandlerOffset = handlerOffset;
+            HandlerLength = handlerLength;
+        }
+    }
+
     public interface INodeWithCodeInfo
     {
         FrameInfo[] FrameInfos
@@ -44,9 +61,16 @@ namespace ILCompiler.DependencyAnalysis
             get;
         }
 
+        DebugEHClauseInfo[] DebugEHClauseInfos
+        {
+            get;
+        }
+
         ObjectNode.ObjectData EHInfo
         {
             get;
         }
+
+        ISymbolNode GetAssociatedDataNode(NodeFactory factory);
     }
 }

@@ -12,14 +12,6 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MetadataType : DefType
     {
-        public override bool HasFinalizer
-        {
-            get
-            {
-                return GetFinalizer() != null;
-            }
-        }
-
         public abstract override string Name { get; }
 
         public abstract override string Namespace { get; }
@@ -51,7 +43,7 @@ namespace Internal.TypeSystem
         /// If true, this is the special &lt;Module&gt; type that contains the definitions
         /// of global fields and methods in the module.
         /// </summary>
-        public bool IsModuleType
+        public virtual bool IsModuleType
         {
             get
             {
@@ -73,6 +65,11 @@ namespace Internal.TypeSystem
         /// If true, the type cannot be used as a base type of any other type.
         /// </summary>
         public abstract bool IsSealed { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the type is abstract and cannot be allocated.
+        /// </summary>
+        public abstract bool IsAbstract { get; }
 
         /// <summary>
         /// Returns true if the type has given custom attribute.
@@ -102,11 +99,13 @@ namespace Internal.TypeSystem
 
     public struct FieldAndOffset
     {
-        public const int InvalidOffset = -1;
+        public static readonly LayoutInt InvalidOffset = new LayoutInt(int.MaxValue);
 
         public readonly FieldDesc Field;
-        public readonly int Offset;
-        public FieldAndOffset(FieldDesc field, int offset)
+
+        public readonly LayoutInt Offset;
+
+        public FieldAndOffset(FieldDesc field, LayoutInt offset)
         {
             Field = field;
             Offset = offset;

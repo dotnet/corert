@@ -265,7 +265,7 @@ namespace Internal.Reflection.Execution
             return false;
         }
 
-        private unsafe static int NormalizedPrimitiveTypeSizeForIntegerTypes(this Type type)
+        private static unsafe int NormalizedPrimitiveTypeSizeForIntegerTypes(this Type type)
         {
             // Strip InstantiatedTypeInfo - IsEnum is not implemented on InstantiatedTypeInfo
             if (type is InstantiatedTypeInfo)

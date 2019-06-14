@@ -86,29 +86,7 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
                                           void * pSecondPointer,
                                           bool fFailOnNonNull)
 {
-#if defined(_X86_) || defined(_ARM_)
-    // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
-    Int64 iNewValue = (Int64)((UInt64)(UIntNative)pFirstPointer | ((UInt64)(UIntNative)pSecondPointer << 32));
-
-    // Read the old value in the location. If fFailOnNonNull is set we just assume this was zero and we'll
-    // fail below if that's not the case.
-    Int64 iOldValue = fFailOnNonNull ? 0 : *(Int64 volatile *)pPairLocation;
-
-    Int64 iUpdatedOldValue = PalInterlockedCompareExchange64((Int64*)pPairLocation, iNewValue, iOldValue);
-    if (iUpdatedOldValue == iOldValue)
-    {
-        // Successful update. Return the previous value of the second pointer. For cache entry updates
-        // (fFailOnNonNull == true) this is guaranteed to be NULL in this case and the result being being
-        // NULL in the success case is all the caller cares about. For indirection cell updates the second
-        // pointer represents the old cache and the caller needs this data so they can schedule the cache
-        // for deletion once it becomes safe to do so.
-        return (void*)(UInt32)(iOldValue >> 32);
-    }
-
-    // The update failed due to a racing update to the same location. Return the new value of the second
-    // pointer (either a new cache that lost the race or a non-NULL pointer in the cache entry update case).
-    return pSecondPointer;
-#elif defined(_AMD64_)
+#if defined(BIT64)
     // The same comments apply to the AMD64 version. The CompareExchange looks a little different since the
     // API was refactored in terms of Int64 to avoid creating a 128-bit integer type.
 
@@ -130,8 +108,28 @@ static void * UpdatePointerPairAtomically(void * pPairLocation,
     // Failure, return the new second pointer value.
     return pSecondPointer;
 #else
-#error Unsupported architecture
-#endif
+    // Stuff the two pointers into a 64-bit value as the proposed new value for the CompareExchange64 below.
+    Int64 iNewValue = (Int64)((UInt64)(UIntNative)pFirstPointer | ((UInt64)(UIntNative)pSecondPointer << 32));
+
+    // Read the old value in the location. If fFailOnNonNull is set we just assume this was zero and we'll
+    // fail below if that's not the case.
+    Int64 iOldValue = fFailOnNonNull ? 0 : *(Int64 volatile *)pPairLocation;
+
+    Int64 iUpdatedOldValue = PalInterlockedCompareExchange64((Int64*)pPairLocation, iNewValue, iOldValue);
+    if (iUpdatedOldValue == iOldValue)
+    {
+        // Successful update. Return the previous value of the second pointer. For cache entry updates
+        // (fFailOnNonNull == true) this is guaranteed to be NULL in this case and the result being being
+        // NULL in the success case is all the caller cares about. For indirection cell updates the second
+        // pointer represents the old cache and the caller needs this data so they can schedule the cache
+        // for deletion once it becomes safe to do so.
+        return (void*)(UInt32)(iOldValue >> 32);
+    }
+
+    // The update failed due to a racing update to the same location. Return the new value of the second
+    // pointer (either a new cache that lost the race or a non-NULL pointer in the cache entry update case).
+    return pSecondPointer;
+#endif // BIT64
 }
 
 // Helper method for updating an interface dispatch cache entry atomically. See comments by the usage of
@@ -188,12 +186,12 @@ static InterfaceDispatchCache * UpdateCellStubAndCache(InterfaceDispatchCell * p
 // any more) we can place them on one of several free lists based on their size.
 //
 
-#ifdef _AMD64_
+#if defined(_AMD64_) || defined(_ARM64_)
 
 // Head of the list of discarded cache blocks that can't be re-used just yet.
-InterfaceDispatchCache * g_pDiscardedCacheList; // for AMD64, m_pCell is not used and we can link the discarded blocks themselves
+InterfaceDispatchCache * g_pDiscardedCacheList; // for AMD64 and ARM64, m_pCell is not used and we can link the discarded blocks themselves
 
-#else // ifdef _AMD64_
+#else // defined(_AMD64_) || defined(_ARM64_)
 
 struct DiscardedCacheBlock
 {
@@ -207,7 +205,7 @@ static DiscardedCacheBlock * g_pDiscardedCacheList = NULL;
 // Free list of DiscardedCacheBlock items
 static DiscardedCacheBlock * g_pDiscardedCacheFree = NULL;
 
-#endif // ifdef _AMD64_
+#endif // defined(_AMD64_) || defined(_ARM64_)
 
 // Free lists for each cache size up to the maximum. We allocate from these in preference to new memory.
 static InterfaceDispatchCache * g_rgFreeLists[CID_MAX_CACHE_SIZE_LOG2 + 1];
@@ -352,13 +350,13 @@ static void DiscardCache(InterfaceDispatchCache * pCache)
 
     CrstHolder lh(&g_sListLock);
 
-#ifdef _AMD64_
+#if defined(_AMD64_) || defined(_ARM64_)
 
-    // on AMD64, we can thread the list through the blocks directly
+    // on AMD64 and ARM64, we can thread the list through the blocks directly
     pCache->m_pNextFree = g_pDiscardedCacheList;
     g_pDiscardedCacheList = pCache;
 
-#else // _AMD64_
+#else // defined(_AMD64_) || defined(_ARM64_)
 
     // on other architectures, we cannot overwrite pCache->m_pNextFree yet
     // because it shares storage with m_pCell which may still be used as a back
@@ -378,7 +376,7 @@ static void DiscardCache(InterfaceDispatchCache * pCache)
 
         g_pDiscardedCacheList = pDiscardedCacheBlock;
     }
-#endif // _AMD64_
+#endif // defined(_AMD64_) || defined(_ARM64_)
 }
 
 // Called during a GC to empty the list of discarded caches (which we can now guarantee aren't being accessed)
@@ -388,7 +386,7 @@ void ReclaimUnusedInterfaceDispatchCaches()
     // No need for any locks, we're not racing with any other threads any more.
 
     // Walk the list of discarded caches.
-#ifdef _AMD64_
+#if defined(_AMD64_) || defined(_ARM64_)
 
     // on AMD64, this is threaded directly through the cache blocks
     InterfaceDispatchCache * pCache = g_pDiscardedCacheList;
@@ -406,7 +404,7 @@ void ReclaimUnusedInterfaceDispatchCaches()
         pCache = pNextCache;
     }
 
-#else // _AMD64_
+#else // defined(_AMD64_) || defined(_ARM64_)
 
     // on other architectures, we use an auxiliary list instead
     DiscardedCacheBlock * pDiscardedCacheBlock = g_pDiscardedCacheList;
@@ -428,7 +426,7 @@ void ReclaimUnusedInterfaceDispatchCaches()
         pDiscardedCacheBlock = pNextDiscardedCacheBlock;
     }
 
-#endif // _AMD64_
+#endif // defined(_AMD64_) || defined(_ARM64_)
 
     // We processed all the discarded entries, so we can simply NULL the list head.
     g_pDiscardedCacheList = NULL;
@@ -498,11 +496,11 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell
     if (InterfaceDispatchCell::IsCache(newCacheValue))
     {
         pCache = (InterfaceDispatchCache*)newCacheValue;
-#ifndef _AMD64_
-        // Set back pointer to interface dispatch cell for non-AMD64
-        // for AMD64, we have enough registers to make this trick unnecessary
+#if !defined(_AMD64_) && !defined(_ARM64_)
+        // Set back pointer to interface dispatch cell for non-AMD64 and non-ARM64
+        // for AMD64 and ARM64, we have enough registers to make this trick unnecessary
         pCache->m_pCell = pCell;
-#endif // _AMD64_
+#endif // !defined(_AMD64_) && !defined(_ARM64_)
 
         // Add entry to the first unused slot.
         InterfaceDispatchCacheEntry * pCacheEntry = &pCache->m_rgEntries[cOldCacheEntries];
@@ -512,7 +510,7 @@ COOP_PINVOKE_HELPER(PTR_Code, RhpUpdateDispatchCellCache, (InterfaceDispatchCell
 
     // Publish the new cache by atomically updating both the cache and stub pointers in the indirection
     // cell. This returns us a cache to discard which may be NULL (no previous cache), the previous cache
-    // value or the cache we just allocated (another thread peformed an update first).
+    // value or the cache we just allocated (another thread performed an update first).
     InterfaceDispatchCache * pDiscardedCache = UpdateCellStubAndCache(pCell, pStub, newCacheValue);
     if (pDiscardedCache)
         DiscardCache(pDiscardedCache);

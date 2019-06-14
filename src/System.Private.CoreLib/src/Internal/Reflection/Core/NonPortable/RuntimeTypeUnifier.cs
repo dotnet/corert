@@ -5,16 +5,18 @@
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+
+using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Core.NonPortable
 {
     //
     // ! If you change this policy to not unify all instances, you must change the implementation of Equals/GetHashCode in the runtime type classes.
     //
-    // The RuntimeTypeUnifier and its companion RuntimeTypeUnifierEx maintains a record of all System.Type objects 
-    // created by the runtime. The split into two classes is an artifact of reflection being implemented partly in System.Private.CoreLib and
-    // partly in S.R.R. 
+    // The RuntimeTypeUnifier maintains a record of all System.Type objects created by the runtime. The split into two classes is an artifact of 
+    // reflection being implemented partly in System.Private.CoreLib and partly in S.R.R.
     //
     // Though the present incarnation enforces the "one instance per semantic identity rule", its surface area is also designed
     // to be able to switch to a non-unified model if desired.
@@ -42,11 +44,72 @@ namespace Internal.Reflection.Core.NonPortable
         // Retrieves the unified Type object for given RuntimeTypeHandle (this is basically the Type.GetTypeFromHandle() api without the input validation.)
         //
         public static Type GetTypeForRuntimeTypeHandle(RuntimeTypeHandle runtimeTypeHandle)
+            => RuntimeTypeHandleToTypeCache.Table.GetOrAdd(runtimeTypeHandle.RawValue);
+
+        internal static Type GetRuntimeTypeForEEType(EETypePtr eeType)
+            => RuntimeTypeHandleToTypeCache.Table.GetOrAdd(eeType.RawValue);
+
+        //
+        // TypeTable mapping raw RuntimeTypeHandles (normalized or otherwise) to Types.
+        //
+        // Unlike most unifier tables, RuntimeTypeHandleToRuntimeTypeCache exists for fast lookup, not unification. It hashes and compares 
+        // on the raw IntPtr value of the RuntimeTypeHandle. Because Redhawk can and does create multiple EETypes for the same 
+        // semantically identical type, the same RuntimeType can legitimately appear twice in this table. The factory, however, 
+        // does a second lookup in the true unifying tables rather than creating the Type itself.
+        // Thus, the one-to-one relationship between Type reference identity and Type semantic identity is preserved.
+        //
+        private sealed class RuntimeTypeHandleToTypeCache : ConcurrentUnifierW<IntPtr, Type>
         {
-            Type type = RuntimeTypeHandleToTypeCache.Table.GetOrAdd(new RawRuntimeTypeHandleKey(runtimeTypeHandle));
-            return type;
+            private RuntimeTypeHandleToTypeCache() { }
+
+            protected sealed override Type Factory(IntPtr rawRuntimeTypeHandleKey)
+            {
+                EETypePtr eeType = new EETypePtr(rawRuntimeTypeHandleKey);
+                RuntimeTypeHandle runtimeTypeHandle = new RuntimeTypeHandle(eeType);
+
+                // Desktop compat: Allows Type.GetTypeFromHandle(default(RuntimeTypeHandle)) to map to null.
+                if (runtimeTypeHandle.IsNull)
+                    return null;
+
+                ReflectionExecutionDomainCallbacks callbacks = RuntimeAugments.Callbacks;
+
+                if (eeType.IsDefType)
+                {
+                    if (eeType.IsGenericTypeDefinition)
+                    {
+                        return callbacks.GetNamedTypeForHandle(runtimeTypeHandle, isGenericTypeDefinition: true);
+                    }
+                    else if (eeType.IsGeneric)
+                    {
+                        return callbacks.GetConstructedGenericTypeForHandle(runtimeTypeHandle);
+                    }
+                    else
+                    {
+                        return callbacks.GetNamedTypeForHandle(runtimeTypeHandle, isGenericTypeDefinition: false);
+                    }
+                }
+                else if (eeType.IsArray)
+                {
+                    if (!eeType.IsSzArray)
+                        return callbacks.GetMdArrayTypeForHandle(runtimeTypeHandle, eeType.ArrayRank);
+                    else
+                        return callbacks.GetArrayTypeForHandle(runtimeTypeHandle);
+                }
+                else if (eeType.IsPointer)
+                {
+                    return callbacks.GetPointerTypeForHandle(runtimeTypeHandle);
+                }
+                else if (eeType.IsByRef)
+                {
+                    return callbacks.GetByRefTypeForHandle(runtimeTypeHandle);
+                }
+                else
+                {
+                    throw new ArgumentException(SR.Arg_InvalidRuntimeTypeHandle);
+                }
+            }
+
+            public static readonly RuntimeTypeHandleToTypeCache Table = new RuntimeTypeHandleToTypeCache();
         }
     }
 }
-
-

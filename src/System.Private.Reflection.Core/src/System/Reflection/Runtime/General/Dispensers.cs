@@ -43,65 +43,85 @@ namespace System.Reflection.Runtime.Assemblies
         }
 
         /// <summary>
+        /// Returns non-null or throws.
+        /// </summary>
+        internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(byte[] rawAssembly, byte[] pdbSymbolStore)
+        {
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            AssemblyBindResult bindResult;
+            Exception exception;
+            if (!binder.Bind(rawAssembly, pdbSymbolStore, out bindResult, out exception))
+            {
+                if (exception != null)
+                    throw exception;
+                else
+                    throw new BadImageFormatException();
+            }
+
+            RuntimeAssembly result = GetRuntimeAssembly(bindResult);
+            return result;
+        }
+
+        /// <summary>
         /// Returns null if no assembly matches the assemblyRefName. Throws for other error cases.
         /// </summary>
         internal static RuntimeAssembly GetRuntimeAssemblyIfExists(RuntimeAssemblyName assemblyRefName)
         {
-            return s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+            object runtimeAssemblyOrException = s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+            if (runtimeAssemblyOrException is RuntimeAssembly runtimeAssembly)
+                return runtimeAssembly;
+            return null;
         }
 
         internal static Exception TryGetRuntimeAssembly(RuntimeAssemblyName assemblyRefName, out RuntimeAssembly result)
         {
-            result = GetRuntimeAssemblyIfExists(assemblyRefName);
-            if (result != null)
+            object runtimeAssemblyOrException = s_assemblyRefNameToAssemblyDispenser.GetOrAdd(assemblyRefName);
+            if (runtimeAssemblyOrException is RuntimeAssembly runtimeAssembly)
+            {
+                result = runtimeAssembly;
                 return null;
+            }
             else
-                return new FileNotFoundException(SR.Format(SR.FileNotFound_AssemblyNotFound, assemblyRefName.FullName));
+            {
+                result = null;
+                return (Exception)runtimeAssemblyOrException;
+            }
         }
 
-        private static readonly Dispenser<RuntimeAssemblyName, RuntimeAssembly> s_assemblyRefNameToAssemblyDispenser =
-            DispenserFactory.CreateDispenser<RuntimeAssemblyName, RuntimeAssembly>(
+        // The "object" here is either a RuntimeAssembly or an Exception.
+        private static readonly Dispenser<RuntimeAssemblyName, object> s_assemblyRefNameToAssemblyDispenser =
+            DispenserFactory.CreateDispenser<RuntimeAssemblyName, object>(
                 DispenserScenario.AssemblyRefName_Assembly,
                 delegate (RuntimeAssemblyName assemblyRefName)
                 {
                     AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
-                    AssemblyName convertedAssemblyRefName = assemblyRefName.ToAssemblyName();
                     AssemblyBindResult bindResult;
                     Exception exception;
-                    if (!binder.Bind(convertedAssemblyRefName, out bindResult, out exception))
-                        return null;
-                    RuntimeAssembly result = null;
+                    if (!binder.Bind(assemblyRefName, cacheMissedLookups: true, out bindResult, out exception))
+                        return exception;
 
-                    GetNativeFormatRuntimeAssembly(bindResult, ref result);
-                    if (result != null)
-                        return result;
-
-                    GetEcmaRuntimeAssembly(bindResult, ref result);
-                    if (result != null)
-                        return result;
-
-                    return null;
+                    return GetRuntimeAssembly(bindResult);
                 }
         );
 
-        // Use C# partial method feature to avoid complex #if logic, whichever code files are included will drive behavior
-       static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
-       static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
-    }
-}
-
-namespace System.Reflection.Runtime.Modules
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // Modules (these exist only because Modules still exist in the Win8P surface area. There is a 1-1
-    //          mapping between Assemblies and Modules.)
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeModule
-    {
-        internal static RuntimeModule GetRuntimeModule(RuntimeAssembly assembly)
+        private static RuntimeAssembly GetRuntimeAssembly(AssemblyBindResult bindResult)
         {
-            return new RuntimeModule(assembly);
+            RuntimeAssembly result = null;
+
+            GetNativeFormatRuntimeAssembly(bindResult, ref result);
+            if (result != null)
+                return result;
+
+            GetEcmaRuntimeAssembly(bindResult, ref result);
+            if (result != null)
+                return result;
+
+            throw new PlatformNotSupportedException();
         }
+
+        // Use C# partial method feature to avoid complex #if logic, whichever code files are included will drive behavior
+        static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
+        static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
     }
 }
 
@@ -123,9 +143,20 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeSyntheticConstructorInfo : RuntimeConstructorInfo
     {
-        internal static RuntimeSyntheticConstructorInfo GetRuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        internal static RuntimeSyntheticConstructorInfo GetRuntimeSyntheticConstructorInfo(SyntheticMethodId syntheticMethodId, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, InvokerOptions options, CustomMethodInvokerAction action)
         {
-            return new RuntimeSyntheticConstructorInfo(syntheticMethodId, declaringType, runtimeParameterTypes, options, invoker);
+            return new RuntimeSyntheticConstructorInfo(syntheticMethodId, declaringType, runtimeParameterTypes, options, action);
+        }
+    }
+
+    //-----------------------------------------------------------------------------------------------------------
+    // Nullary constructor for types manufactured by Type.GetTypeFromCLSID().
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class RuntimeCLSIDNullaryConstructorInfo : RuntimeConstructorInfo
+    {
+        internal static RuntimeCLSIDNullaryConstructorInfo GetRuntimeCLSIDNullaryConstructorInfo(RuntimeCLSIDTypeInfo declaringType)
+        {
+            return new RuntimeCLSIDNullaryConstructorInfo(declaringType);
         }
     }
 
@@ -158,9 +189,9 @@ namespace System.Reflection.Runtime.MethodInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeSyntheticMethodInfo : RuntimeMethodInfo
     {
-        internal static RuntimeMethodInfo GetRuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, RuntimeTypeInfo returnType, InvokerOptions options, Func<Object, Object[], Object> invoker)
+        internal static RuntimeMethodInfo GetRuntimeSyntheticMethodInfo(SyntheticMethodId syntheticMethodId, String name, RuntimeArrayTypeInfo declaringType, RuntimeTypeInfo[] runtimeParameterTypes, RuntimeTypeInfo returnType, InvokerOptions options, CustomMethodInvokerAction action)
         {
-            return new RuntimeSyntheticMethodInfo(syntheticMethodId, name, declaringType, runtimeParameterTypes, returnType, options, invoker).WithDebugName();
+            return new RuntimeSyntheticMethodInfo(syntheticMethodId, name, declaringType, runtimeParameterTypes, returnType, options, action).WithDebugName();
         }
     }
 }
@@ -172,7 +203,7 @@ namespace System.Reflection.Runtime.ParameterInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, QTypeDefRefOrSpec qualifiedParameterType, TypeContext typeContext)
+        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
         {
             return new RuntimeThinMethodParameterInfo(member, position, qualifiedParameterType, typeContext);
         }

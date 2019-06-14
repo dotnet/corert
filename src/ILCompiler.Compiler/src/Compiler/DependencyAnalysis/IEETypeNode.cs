@@ -9,7 +9,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// A dependency analysis node that represents a runtime type data structure.
     /// </summary>
-    public interface IEETypeNode : ISymbolNode
+    public interface IEETypeNode : ISortableSymbolNode
     {
         TypeDesc Type { get; }
     }

@@ -21,9 +21,22 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public EcmaAssembly(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader)
-            : base(context, peReader, metadataReader)
+        public override IAssemblyDesc Assembly
         {
+            get
+            {
+                return this;
+            }
+        }
+
+        public EcmaAssembly(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader)
+            : base(context, peReader, metadataReader, containingAssembly: null)
+        {
+            if (!metadataReader.IsAssembly)
+            {
+                ThrowHelper.ThrowBadImageFormatException();
+            }
+
             _assemblyDefinition = metadataReader.GetAssemblyDefinition();
         }
 

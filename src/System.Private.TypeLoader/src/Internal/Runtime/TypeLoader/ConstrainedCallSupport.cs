@@ -2,16 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-// The function signature of the following architectures is know for the constrained call helper functions
-#if ARM
-#elif X86
-#elif AMD64
-#elif ARM64
-#else
-#error Unknown architecture!
-#endif
-
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -34,10 +24,9 @@ namespace Internal.Runtime.TypeLoader
         private delegate IntPtr ResolveCallOnReferenceTypeDel(ref object thisPtr, IntPtr callDescIntPtr);
         private delegate IntPtr ResolveCallOnValueTypeDel(IntPtr thisPtr, IntPtr callDescIntPtr);
 #endif
-        private delegate IntPtr RuntimeCacheFuncSignatureDel(IntPtr context, IntPtr callDescIntPtr, object contextObject, out IntPtr auxResult);
 
         [DllImport("*", ExactSpelling = true, EntryPoint = "ConstrainedCallSupport_GetStubs")]
-        private unsafe extern static void ConstrainedCallSupport_GetStubs(out IntPtr constrainedCallSupport_DerefThisAndCall_CommonCallingStub, out IntPtr constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
+        private extern static unsafe void ConstrainedCallSupport_GetStubs(out IntPtr constrainedCallSupport_DerefThisAndCall_CommonCallingStub, out IntPtr constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
 
         private static IntPtr s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub;
         private static IntPtr s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub;
@@ -51,14 +40,8 @@ namespace Internal.Runtime.TypeLoader
 
         static ConstrainedCallSupport()
         {
-            // TODO: export this unmanaged API in CoreRT
-#if !CORERT
             ConstrainedCallSupport_GetStubs(out s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub,
                                             out s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub);
-#else
-            s_constrainedCallSupport_DerefThisAndCall_CommonCallingStub = IntPtr.Zero;
-            s_constrainedCallSupport_DirectConstrainedCall_CommonCallingStub = IntPtr.Zero;
-#endif
         }
 
         // There are multiple possible paths here.
@@ -108,9 +91,9 @@ namespace Internal.Runtime.TypeLoader
             private static IntPtr s_boxAndToStringFuncPtr;
             private static IntPtr s_boxAndGetHashCodeFuncPtr;
             private static IntPtr s_boxAndEqualsFuncPtr;
-            private static int s_resolveCallOnReferenceTypeCacheMissFunc;
 
             private static LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>> s_nonGenericConstrainedCallDescs = new LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>>();
+            private static LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>> s_nonGenericConstrainedCallDescsDirect = new LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>>();
 
             public static unsafe IntPtr GetDirectConstrainedCallPtr(RuntimeTypeHandle constraintType, RuntimeTypeHandle constrainedMethodType, int constrainedMethodSlot)
             {
@@ -132,21 +115,21 @@ namespace Internal.Runtime.TypeLoader
                 IntPtr constrainedCallDesc = Get(constraintType, constrainedMethodType, constrainedMethodSlot, true);
                 RuntimeAugments.SetThunkData(s_DirectConstrainedCall_ThunkPoolHeap, thunk, constrainedCallDesc, s_resolveDirectConstrainedCallFuncPtr);
 
-                SerializedDebugData.RegisterTailCallThunk(thunk);
-
                 return thunk;
             }
 
             public static unsafe IntPtr Get(RuntimeTypeHandle constraintType, RuntimeTypeHandle constrainedMethodType, int constrainedMethodSlot, bool directConstrainedCall = false)
             {
-                lock (s_nonGenericConstrainedCallDescs)
+                LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>> nonGenericConstrainedCallDescsDirect = directConstrainedCall ? s_nonGenericConstrainedCallDescsDirect : s_nonGenericConstrainedCallDescs;
+
+                lock (nonGenericConstrainedCallDescsDirect)
                 {
                     // Get list of constrained call descs associated with a given type
                     LowLevelList<IntPtr> associatedCallDescs;
-                    if (!s_nonGenericConstrainedCallDescs.TryGetValue(constraintType, out associatedCallDescs))
+                    if (!nonGenericConstrainedCallDescsDirect.TryGetValue(constraintType, out associatedCallDescs))
                     {
                         associatedCallDescs = new LowLevelList<IntPtr>();
-                        s_nonGenericConstrainedCallDescs.Add(constraintType, associatedCallDescs);
+                        nonGenericConstrainedCallDescsDirect.Add(constraintType, associatedCallDescs);
                     }
 
                     // Perform linear scan of associated call descs to see if one matches
@@ -219,26 +202,21 @@ namespace Internal.Runtime.TypeLoader
                 s_boxAndToStringFuncPtr = Intrinsics.AddrOf((BoxAndCallDel<string>)BoxAndToString);
                 s_boxAndGetHashCodeFuncPtr = Intrinsics.AddrOf((BoxAndCallDel<int>)BoxAndGetHashCode);
                 s_boxAndEqualsFuncPtr = Intrinsics.AddrOf((BoxAndCallDel2<bool>)BoxAndEquals);
-                s_resolveCallOnReferenceTypeCacheMissFunc = RuntimeAugments.RegisterResolutionFunctionWithRuntimeCache(
-                    Intrinsics.AddrOf((RuntimeCacheFuncSignatureDel)ResolveCallOnReferenceTypeCacheMiss));
             }
 
 #if ARM
-            private unsafe static IntPtr ResolveCallOnReferenceType(IntPtr unused1, ref object thisPtr, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnReferenceType(IntPtr unused1, ref object thisPtr, IntPtr callDescIntPtr)
 #else
-            private unsafe static IntPtr ResolveCallOnReferenceType(ref object thisPtr, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnReferenceType(ref object thisPtr, IntPtr callDescIntPtr)
 #endif
             {
-                IntPtr ignoredAuxResult;
-                return RuntimeAugments.RuntimeCacheLookup(thisPtr.GetType().TypeHandle.ToIntPtr(), callDescIntPtr, s_resolveCallOnReferenceTypeCacheMissFunc, thisPtr, out ignoredAuxResult);
-            }
-
-            private unsafe static IntPtr ResolveCallOnReferenceTypeCacheMiss(IntPtr context, IntPtr callDescIntPtr, object contextObject, out IntPtr auxResult)
-            {
-                auxResult = IntPtr.Zero;
-                NonGenericConstrainedCallDesc* callDesc = (NonGenericConstrainedCallDesc*)callDescIntPtr;
-                IntPtr target = RuntimeAugments.ResolveDispatch(contextObject, callDesc->_constrainedMethodType, callDesc->_constrainedMethodSlot);
-                return GetThunkThatDereferencesThisPointerAndTailCallsTarget(target);
+                return RuntimeAugments.RuntimeCacheLookup(thisPtr.GetType().TypeHandle.ToIntPtr(), callDescIntPtr,
+                    (IntPtr context, IntPtr callDescPtr, object contextObject, ref IntPtr auxResult) =>
+                    {
+                        NonGenericConstrainedCallDesc* callDesc = (NonGenericConstrainedCallDesc*)callDescPtr;
+                        IntPtr target = RuntimeAugments.ResolveDispatch(contextObject, callDesc->_constrainedMethodType, callDesc->_constrainedMethodSlot);
+                        return GetThunkThatDereferencesThisPointerAndTailCallsTarget(target);
+                    }, thisPtr, out _);
             }
 
             // Resolve a constrained call in case where the call is an MDIL constrained call directly through a function pointer located in the generic dictionary
@@ -284,9 +262,9 @@ namespace Internal.Runtime.TypeLoader
             }
 
 #if ARM
-            private unsafe static IntPtr ResolveCallOnValueType(IntPtr unused1, IntPtr unused2, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnValueType(IntPtr unused1, IntPtr unused2, IntPtr callDescIntPtr)
 #else
-            private unsafe static IntPtr ResolveCallOnValueType(IntPtr unused, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnValueType(IntPtr unused, IntPtr callDescIntPtr)
 #endif
             {
                 NonGenericConstrainedCallDesc* callDesc = (NonGenericConstrainedCallDesc*)callDescIntPtr;
@@ -312,33 +290,7 @@ namespace Internal.Runtime.TypeLoader
 
                 if (decodeUnboxing)
                 {
-                    exactTarget = RuntimeAugments.GetCodeTarget(targetOnTypeVtable);
-                    if (RuntimeAugments.IsGenericType(callDesc->_constraintType))
-                    {
-                        IntPtr fatFunctionPointerTarget;
-                        if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(exactTarget, out fatFunctionPointerTarget))
-                        {
-                            // If this is an unboxing and instantiating stub, use seperate table, find target, and create fat function pointer
-                            exactTarget = FunctionPointerOps.GetGenericMethodFunctionPointer(fatFunctionPointerTarget,
-                                                                                             callDesc->_constraintType.ToIntPtr());
-                        }
-                        else
-                        {
-                            IntPtr newExactTarget;
-                            if (CallConverterThunk.TryGetNonUnboxingFunctionPointerFromUnboxingAndInstantiatingStub(exactTarget,
-                                callDesc->_constraintType, out newExactTarget))
-                            {
-                                // CallingConventionConverter determined non-unboxing stub
-                                exactTarget = newExactTarget;
-                            }
-                            else
-                            {
-                                // Target method was a method on a generic, but it wasn't a shared generic, and thus none of the above
-                                // complex unboxing stub digging logic was necessary. Do nothing, and use exactTarget as discovered
-                                // from GetCodeTarget
-                            }
-                        }
-                    }
+                    exactTarget = TypeLoaderEnvironment.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(targetOnTypeVtable, callDesc->_constraintType);
                 }
                 else
                 {
@@ -420,7 +372,6 @@ namespace Internal.Runtime.TypeLoader
             private RuntimeMethodHandle _constrainedMethod;
 
             private static IntPtr s_resolveCallOnReferenceTypeFuncPtr;
-            private static int s_resolveCallOnReferenceTypeCacheMissFunc;
             private static IntPtr s_resolveCallOnValueTypeFuncPtr;
 
             private static LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>> s_genericConstrainedCallDescs = new LowLevelDictionary<RuntimeTypeHandle, LowLevelList<IntPtr>>();
@@ -486,45 +437,40 @@ namespace Internal.Runtime.TypeLoader
             {
                 s_resolveCallOnReferenceTypeFuncPtr = Intrinsics.AddrOf((ResolveCallOnReferenceTypeDel)ResolveCallOnReferenceType);
                 s_resolveCallOnValueTypeFuncPtr = Intrinsics.AddrOf((ResolveCallOnValueTypeDel)ResolveCallOnValueType);
-                s_resolveCallOnReferenceTypeCacheMissFunc = RuntimeAugments.RegisterResolutionFunctionWithRuntimeCache(
-                    Intrinsics.AddrOf((RuntimeCacheFuncSignatureDel)ResolveCallOnReferenceTypeCacheMiss));
             }
 
 #if ARM
-            private unsafe static IntPtr ResolveCallOnReferenceType(IntPtr unused1, ref object thisPtr, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnReferenceType(IntPtr unused1, ref object thisPtr, IntPtr callDescIntPtr)
 #else
-            private unsafe static IntPtr ResolveCallOnReferenceType(ref object thisPtr, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnReferenceType(ref object thisPtr, IntPtr callDescIntPtr)
 #endif
             {
-                IntPtr ignoredAuxResult;
-                return RuntimeAugments.RuntimeCacheLookup(thisPtr.GetType().TypeHandle.ToIntPtr(), callDescIntPtr, s_resolveCallOnReferenceTypeCacheMissFunc, thisPtr, out ignoredAuxResult);
-            }
+                return RuntimeAugments.RuntimeCacheLookup(thisPtr.GetType().TypeHandle.ToIntPtr(), callDescIntPtr,
+                    (IntPtr context, IntPtr callDescPtr, object contextObject, ref IntPtr auxResult) =>
+                    {
+                        // Perform a normal GVM dispatch, then change the function pointer to dereference the this pointer.
+                        GenericConstrainedCallDesc* callDesc = (GenericConstrainedCallDesc*)callDescPtr;
+                        IntPtr target = RuntimeAugments.GVMLookupForSlot(contextObject.GetType().TypeHandle, callDesc->_constrainedMethod);
 
-            private unsafe static IntPtr ResolveCallOnReferenceTypeCacheMiss(IntPtr context, IntPtr callDescIntPtr, object contextObject, out IntPtr auxResult)
-            {
-                auxResult = IntPtr.Zero;
+                        if (FunctionPointerOps.IsGenericMethodPointer(target))
+                        {
+                            GenericMethodDescriptor* genMethodDesc = FunctionPointerOps.ConvertToGenericDescriptor(target);
+                            IntPtr actualCodeTarget = GetThunkThatDereferencesThisPointerAndTailCallsTarget(genMethodDesc->MethodFunctionPointer);
 
-                // Perform a normal GVM dispatch, then change the function pointer to dereference the this pointer.
-                GenericConstrainedCallDesc* callDesc = (GenericConstrainedCallDesc*)callDescIntPtr;
-                IntPtr target = RuntimeAugments.GVMLookupForSlot(contextObject.GetType().TypeHandle, callDesc->_constrainedMethod);
-
-                if (FunctionPointerOps.IsGenericMethodPointer(target))
-                {
-                    GenericMethodDescriptor* genMethodDesc = FunctionPointerOps.ConvertToGenericDescriptor(target);
-                    IntPtr actualCodeTarget = GetThunkThatDereferencesThisPointerAndTailCallsTarget(genMethodDesc->MethodFunctionPointer);
-
-                    return FunctionPointerOps.GetGenericMethodFunctionPointer(actualCodeTarget, genMethodDesc->InstantiationArgument);
-                }
-                else
-                {
-                    return GetThunkThatDereferencesThisPointerAndTailCallsTarget(target);
-                }
+                            return FunctionPointerOps.GetGenericMethodFunctionPointer(actualCodeTarget, genMethodDesc->InstantiationArgument);
+                        }
+                        else
+                        {
+                            return GetThunkThatDereferencesThisPointerAndTailCallsTarget(target);
+                        }
+                    },
+                    thisPtr, out _);
             }
 
 #if ARM
-            private unsafe static IntPtr ResolveCallOnValueType(IntPtr unused1, IntPtr unused2, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnValueType(IntPtr unused1, IntPtr unused2, IntPtr callDescIntPtr)
 #else
-            private unsafe static IntPtr ResolveCallOnValueType(IntPtr unused, IntPtr callDescIntPtr)
+            private static unsafe IntPtr ResolveCallOnValueType(IntPtr unused, IntPtr callDescIntPtr)
 #endif
             {
                 GenericConstrainedCallDesc* callDesc = (GenericConstrainedCallDesc*)callDescIntPtr;
@@ -587,8 +533,6 @@ namespace Internal.Runtime.TypeLoader
                     result = thunk;
                     s_deferenceAndCallThunks.Add(target, result);
                 }
-
-                SerializedDebugData.RegisterTailCallThunk(result);
             }
 
             return result;

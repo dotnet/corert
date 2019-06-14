@@ -13,9 +13,18 @@ namespace Internal.TypeSystem
             get;
         }
 
-        public ModuleDesc(TypeSystemContext context)
+        /// <summary>
+        /// Gets the assembly this module is part of (the assembly manifest module).
+        /// </summary>
+        public virtual IAssemblyDesc Assembly
+        {
+            get;
+        }
+
+        public ModuleDesc(TypeSystemContext context, IAssemblyDesc assembly)
         {
             Context = context;
+            Assembly = assembly;
         }
 
         /// <summary>

@@ -13,6 +13,7 @@ class MdilModule;
 class EEType;
 class OptionalFields;
 class TypeManager;
+struct TypeManagerHandle;
 class DynamicModule;
 struct EETypeRef;
 enum GenericVarianceType : UInt8;
@@ -224,8 +225,8 @@ private:
     UInt16              m_usNumVtableSlots;
     UInt16              m_usNumInterfaces;
     UInt32              m_uHashCode;
-#if defined(CORERT)
-    TypeManager**     m_ppTypeManager;
+#if defined(EETYPE_TYPE_MANAGER)
+    TypeManagerHandle*  m_ppTypeManager;
 #endif
 
     TgtPTR_Void         m_VTable[];  // make this explicit so the binder gets the right alignment
@@ -257,7 +258,8 @@ private:
         // This type contain gc pointers
         HasPointersFlag         = 0x0020,
 
-        // Unused               = 0x0040,
+        // Type implements ICastable to allow dynamic resolution of interface casts.
+        ICastableTypeFlag       = 0x0040,
 
         // This type is generic and one or more of it's type parameters is co- or contra-variant. This only
         // applies to interface and delegate types.
@@ -286,8 +288,8 @@ public:
         // This type requires 8-byte alignment for its fields on certain platforms (only ARM currently).
         RequiresAlign8Flag      = 0x00000001,
 
-        // Type implements ICastable to allow dynamic resolution of interface casts.
-        ICastableFlag           = 0x00000002,
+        // Old unused flag
+        UNUSED1                 = 0x00000002,
 
         // Type is an instantiation of Nullable<T>.
         IsNullableFlag          = 0x00000004,
@@ -301,35 +303,37 @@ public:
         // This EEType has a Class Constructor
         HasCctorFlag            = 0x0000020,
 
-        // This EEType has sealed vtable entries (note that this flag is only used for
-        // dynamically created types because they always have an optional field (hence the
-        // very explicit flag name).
-        IsDynamicTypeWithSealedVTableEntriesFlag    = 0x00000040,
+        // Old unused flag
+        UNUSED2                 = 0x00000040,
 
         // This EEType was constructed from a universal canonical template, and has
         // its own dynamically created DispatchMap (does not use the DispatchMap of its template type)
-        HasDynamicallyAllocatedDispatchMapFlag = 0x00000080,
+        HasDynamicallyAllocatedDispatchMapFlag      = 0x00000080,
 
         // This EEType represents a structure that is an HFA (only ARM currently)
-        IsHFAFlag               = 0x00000100,
+        IsHFAFlag                           = 0x00000100,
 
         // This EEType has sealed vtable entries
-        // This is for statically generated types - we need two different flags because
-        // the sealed vtable entries are reached in different ways in the static and dynamic case
-        HasSealedVTableEntriesFlag = 0x00000200,
+        HasSealedVTableEntriesFlag          = 0x00000200,
 
         // This dynamically created type has gc statics
-        IsDynamicTypeWithGcStaticsFlag = 0x00000400,
+        IsDynamicTypeWithGcStaticsFlag      = 0x00000400,
 
         // This dynamically created type has non gc statics
-        IsDynamicTypeWithNonGcStaticsFlag = 0x00000800,
+        IsDynamicTypeWithNonGcStaticsFlag   = 0x00000800,
 
         // This dynamically created type has thread statics
-        IsDynamicTypeWithThreadStaticsFlag = 0x00001000,
+        IsDynamicTypeWithThreadStaticsFlag  = 0x00001000,
 
         // This EEType was constructed from a module where the open type is defined in
         // a dynamically loaded type
-        HasDynamicModuleFlag    = 0x00002000,
+        HasDynamicModuleFlag                = 0x00002000,
+
+        // This EEType is for an abstract (but non-interface) type
+        IsAbstractClassFlag                 = 0x00004000,  
+
+        // This EEType is for a Byref-like class (TypedReference, Span&lt;T&gt;,...)
+        IsByRefLikeFlag                     = 0x00008000,
     };
 
     // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
@@ -470,10 +474,30 @@ public:
 
     DynamicModule* get_DynamicModule();
 
-#if defined(CORERT)
-    TypeManager* GetTypeManager()
-         { return *m_ppTypeManager; }
+    TypeManagerHandle* GetTypeManagerPtr()
+    { 
+#if defined(EETYPE_TYPE_MANAGER)
+        return m_ppTypeManager;
+#else
+        return NULL;
 #endif
+    }
+
+#ifdef PROJECTN
+    //
+    // PROJX-TODO
+    // Needed while we exist in a world where some things are built using CoreRT and some built using 
+    // the traditional .NET Native tool chain.
+    //
+    bool HasTypeManager()
+    {
+#if defined(EETYPE_TYPE_MANAGER)
+        return m_ppTypeManager != nullptr;
+#else
+        return false;
+#endif
+    }
+#endif // PROJECTN
 
 #ifndef BINDER
     DispatchMap *GetDispatchMap();
@@ -521,18 +545,6 @@ public:
     bool RequiresAlign8()
         { return (get_RareFlags() & RequiresAlign8Flag) != 0; }
 
-    // Determine whether a type supports ICastable.
-    bool IsICastable()
-        { return (get_RareFlags() & ICastableFlag) != 0; }
-
-    // Retrieve the address of the method that implements ICastable.IsInstanceOfInterface for
-    // ICastable types.
-    inline PTR_Code get_ICastableIsInstanceOfInterfaceMethod();
-
-    // Retrieve the vtable slot number of the method that implements ICastable.GetImplType for ICastable
-    // types.
-    inline PTR_Code get_ICastableGetImplTypeMethod();
-
     // Determine whether a type is an instantiation of Nullable<T>.
     bool IsNullable()
         { return (get_RareFlags() & IsNullableFlag) != 0; }
@@ -556,33 +568,15 @@ public:
     bool HasDynamicallyAllocatedDispatchMap()
         { return (get_RareFlags() & HasDynamicallyAllocatedDispatchMapFlag) != 0; }
 
-    // Retrieve the generic type definition EEType for this generic instance
-    void set_GenericDefinition(EEType *pTypeDef);
-
-    // Retrieve the generic type definition EEType for this generic instance
-    EETypeRef & get_GenericDefinition();
-
     inline void set_GenericComposition(GenericComposition *);
-    inline GenericComposition *get_GenericComposition();
-
-    // Retrieve the number of generic arguments for this generic type instance
-    UInt32 get_GenericArity();
-
-    // Retrieve the generic arguments to this type
-    EETypeRef * get_GenericArguments();
-
-    // Retrieve the generic variance associated with this type
-    GenericVarianceType* get_GenericVariance();
 
     // Retrieve template used to create the dynamic type
     EEType * get_DynamicTemplateType();
 
     bool HasDynamicGcStatics() { return (get_RareFlags() & IsDynamicTypeWithGcStaticsFlag) != 0; }
-    UInt8 ** get_DynamicGcStaticsPointer();
     void set_DynamicGcStatics(UInt8 *pStatics);
 
     bool HasDynamicNonGcStatics() { return (get_RareFlags() & IsDynamicTypeWithNonGcStaticsFlag) != 0; }
-    UInt8 ** get_DynamicNonGcStaticsPointer();
     void set_DynamicNonGcStatics(UInt8 *pStatics);
 
     bool HasDynamicThreadStatics() { return (get_RareFlags() & IsDynamicTypeWithThreadStaticsFlag) != 0; }

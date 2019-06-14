@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic.Internal;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime;
 using Internal.Runtime.Augments;
 
 namespace System.Runtime.InteropServices
@@ -13,8 +15,48 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// This class has all the helpers which are needed to provide the Exception support for WinRT and ClassicCOM
     /// </summary>
-    public unsafe static partial class ExceptionHelpers
+    public static unsafe partial class ExceptionHelpers
     {
+#if DEBUG
+        [ThreadStatic]
+        private static Dictionary<Exception, bool> t_propagatedExceptions = new Dictionary<Exception, bool>();
+#endif
+        
+        public static bool PropagateException(Exception ex)
+        {
+#if DEBUG
+            Debug.Assert(!ExceptionHelpers.t_propagatedExceptions.ContainsKey(ex));
+            ExceptionHelpers.t_propagatedExceptions.Add(ex, true);
+#endif
+            try
+            {
+                IntPtr pRestrictedErrorInfo;
+                object restrictedErrorInfo;
+                if (InteropExtensions.TryGetRestrictedErrorObject(ex, out restrictedErrorInfo) && restrictedErrorInfo != null)
+                {
+                    // We have the restricted errorInfo associated with this object and hence this exception was created by an hr entering managed through native.
+                    pRestrictedErrorInfo = McgMarshal.ObjectToComInterface(restrictedErrorInfo, InternalTypes.IRestrictedErrorInfo);
+                    if (pRestrictedErrorInfo != IntPtr.Zero)
+                    {
+                        // We simply call SetRestrictedErrorInfo since we do not want to originate the exception again.
+                        ExternalInterop.SetRestrictedErrorInfo(pRestrictedErrorInfo);
+                        McgMarshal.ComSafeRelease(pRestrictedErrorInfo);
+                    }
+                }
+                else
+                {
+                    // we are in windows 8.1+ and hence we can preserve our exception so that we can reuse this exception in case it comes back and provide richer exception support.
+                    OriginateLanguageException(ex);
+                }
+            }
+            catch (Exception)
+            {
+                // We can't throw an exception here and hence simply swallow it.
+            }
+            
+            return true;
+        }
+
         /// <summary>
         ///  This class is a helper class to call into IRestrictedErrorInfo methods.
         /// </summary>
@@ -31,7 +73,7 @@ namespace System.Runtime.InteropServices
                 {
                     // Get the errorDetails associated with the restrictedErrorInfo.
                     __com_IRestrictedErrorInfo* pComRestrictedErrorInfo = (__com_IRestrictedErrorInfo*)pRestrictedErrorInfo;
-                    result = CalliIntrinsics.StdCall<int>(
+                    result = CalliIntrinsics.StdCall__int(
                        pComRestrictedErrorInfo->pVtable->pfnGetErrorDetails,
                        pRestrictedErrorInfo,
                        out pErrDes,
@@ -55,11 +97,11 @@ namespace System.Runtime.InteropServices
                 finally
                 {
                     if (pErrDes != IntPtr.Zero)
-                        ExternalInterop.SysFreeString(pErrDes);
+                        McgMarshal.SysFreeString(pErrDes);
                     if (pResErrDes != IntPtr.Zero)
-                        ExternalInterop.SysFreeString(pResErrDes);
+                        McgMarshal.SysFreeString(pResErrDes);
                     if (pErrCapSid != IntPtr.Zero)
-                        ExternalInterop.SysFreeString(pErrCapSid);
+                        McgMarshal.SysFreeString(pErrCapSid);
                 }
 
                 return result >= 0;
@@ -74,7 +116,7 @@ namespace System.Runtime.InteropServices
                 try
                 {
                     __com_IRestrictedErrorInfo* pComRestrictedErrorInfo = (__com_IRestrictedErrorInfo*)pRestrictedErrorInfo;
-                    int result = CalliIntrinsics.StdCall<int>(pComRestrictedErrorInfo->pVtable->pfnGetReference, pRestrictedErrorInfo, out pReference);
+                    int result = CalliIntrinsics.StdCall__int(pComRestrictedErrorInfo->pVtable->pfnGetReference, pRestrictedErrorInfo, out pReference);
                     if (result >= 0)
                     {
                         errReference = Interop.COM.ConvertBSTRToString(pReference);
@@ -87,7 +129,7 @@ namespace System.Runtime.InteropServices
                 finally
                 {
                     if (pReference != IntPtr.Zero)
-                        ExternalInterop.SysFreeString(pReference);
+                        McgMarshal.SysFreeString(pReference);
                 }
             }
         }
@@ -159,6 +201,78 @@ namespace System.Runtime.InteropServices
             internal System.IntPtr pfnGetReference;
         }
 
+        internal unsafe struct __com_ILanguageExceptionStackBackTrace
+        {
+            internal __vtable_ILanguageExceptionStackBackTrace* pVtable;
+        }
+
+        internal unsafe struct __vtable_ILanguageExceptionStackBackTrace
+        {
+            private IntPtr pfnQueryInterface;
+            private IntPtr pfnAddRef;
+            private IntPtr pfnRelease;
+            internal IntPtr pfnGetStackBackTrace;
+            
+            public static IntPtr pNativeVtable;
+            private static __vtable_ILanguageExceptionStackBackTrace s_theCcwVtable = new __vtable_ILanguageExceptionStackBackTrace
+            {
+                // IUnknown
+                pfnQueryInterface = AddrOfIntrinsics.AddrOf<AddrOfQueryInterface>(__vtable_IUnknown.QueryInterface),
+                pfnAddRef = AddrOfIntrinsics.AddrOf<AddrOfAddRef>(__vtable_IUnknown.AddRef),
+                pfnRelease = AddrOfIntrinsics.AddrOf<AddrOfRelease>(__vtable_IUnknown.Release),
+                // ILanguageExceptionStackBackTrace
+                pfnGetStackBackTrace = AddrOfIntrinsics.AddrOf<System.Runtime.InteropServices.AddrOfIntrinsics.AddrOfILanguageExceptionStackBackTraceGetStackBackTrace>(GetStackBackTrace),
+            };
+
+            internal static IntPtr GetVtableFuncPtr()
+            {
+                return AddrOfIntrinsics.AddrOf<AddrOfGetCCWVtable>(GetCcwvtable_ILanguageExceptionStackBackTrace);
+            }
+
+            internal static unsafe IntPtr GetCcwvtable_ILanguageExceptionStackBackTrace()
+            {
+                if (pNativeVtable == default(IntPtr))
+                {
+                    fixed (void* pVtbl = &s_theCcwVtable)
+                    {
+                        McgMarshal.GetCCWVTableCopy(pVtbl, ref __vtable_ILanguageExceptionStackBackTrace.pNativeVtable,sizeof(__vtable_ILanguageExceptionStackBackTrace));
+
+                    }
+                }
+                return __vtable_ILanguageExceptionStackBackTrace.pNativeVtable;
+            }
+
+            [NativeCallable]
+            public static int GetStackBackTrace(IntPtr pComThis, uint maxFramesToCapture, IntPtr stackBackTrace, IntPtr framesCaptured)
+            {
+                try
+                {
+                    object target = ComCallableObject.FromThisPointer(pComThis).TargetObject;
+                    Debug.Assert(target is Exception);
+                    IntPtr[] stackIPs = InteropExtensions.ExceptionGetStackIPs(target as Exception);
+                    uint* pFramesCaptured = (uint*)framesCaptured;
+                    *pFramesCaptured = Math.Min((uint)stackIPs.Length, maxFramesToCapture);
+                    if (stackBackTrace != IntPtr.Zero)
+                    {
+                        unsafe
+                        {
+                            IntPtr* pStackBackTrace = (IntPtr*)stackBackTrace;
+                            for (uint i = 0; i < *pFramesCaptured ; i++)
+                            {
+                                *pStackBackTrace = stackIPs[i];
+                                pStackBackTrace++;
+                            }
+                        }
+                    }
+                    return Interop.COM.S_OK;
+                }
+                catch (System.Exception hrExcep)
+                {
+                    return McgMarshal.GetHRForExceptionWinRT(hrExcep);
+                }
+            }
+        }
+
 #pragma warning restore 649, 169
 
         /// <summary>
@@ -184,7 +298,7 @@ namespace System.Runtime.InteropServices
         /// <param name="ex"></param>
         /// <param name="isWinRTScenario"></param>
         /// <returns></returns>
-        internal static int GetHRForExceptionWithErrorPropogationNoThrow(Exception ex, bool isWinRTScenario)
+        internal static int GetHRForExceptionWithErrorPropagationNoThrow(Exception ex, bool isWinRTScenario)
         {
             int hr = ex.HResult;
 
@@ -199,24 +313,10 @@ namespace System.Runtime.InteropServices
                 // Check whether the exception has an associated RestrictedErrorInfo associated with it.
                 if (isWinRTScenario)
                 {
-                    IntPtr pRestrictedErrorInfo;
-                    object restrictedErrorInfo;
-                    if (InteropExtensions.TryGetRestrictedErrorObject(ex, out restrictedErrorInfo) && restrictedErrorInfo != null)
-                    {
-                        // We have the restricted errorInfo associated with this object and hence this exception was created by an hr entering managed through native.
-                        pRestrictedErrorInfo = McgMarshal.ObjectToComInterface(restrictedErrorInfo, InternalTypes.IRestrictedErrorInfo);
-                        if (pRestrictedErrorInfo != IntPtr.Zero)
-                        {
-                            // We simply call SetRestrictedErrorInfo since we do not want to originate the exception again.
-                            ExternalInterop.SetRestrictedErrorInfo(pRestrictedErrorInfo);
-                            McgMarshal.ComSafeRelease(pRestrictedErrorInfo);
-                        }
-                    }
-                    else
-                    {
-                        // we are in windows blue and hence we can preserve our exception so that we can reuse this exception in case it comes back and provide richer exception support.
-                        OriginateLanguageException(ex);
-                    }
+#if DEBUG
+                    Debug.Assert(ExceptionHelpers.t_propagatedExceptions.ContainsKey(ex));
+                    ExceptionHelpers.t_propagatedExceptions.Remove(ex);
+#endif
                 }
                 else
                 {
@@ -563,7 +663,7 @@ namespace System.Runtime.InteropServices
                     exception = new System.Security.VerificationException();
                     break;
                 case __HResults.E_NOTIMPL:
-                    exception = new NotImplementedException();
+                    exception = NotImplemented.ByDesign;
                     break;
                 case __HResults.E_OUTOFMEMORY:
                 case __HResults.CTL_E_OUTOFMEMORY:
@@ -699,7 +799,7 @@ namespace System.Runtime.InteropServices
                 //
 
                 // TODO: Add Symbolic Name into Messaage, convert 0x80020006 to DISP_E_UNKNOWNNAME
-                string hrMessage = String.Format("{0} 0x{1:X}", SR.Excep_FromHResult, errorCode);
+                string hrMessage = String.Format("{0} 0x{1}", SR.Excep_FromHResult, errorCode.LowLevelToString());
 
                 message = ExternalInterop.GetMessage(errorCode);
 
@@ -718,7 +818,7 @@ namespace System.Runtime.InteropServices
                 InteropExtensions.SetExceptionMessage(exception, message);
             }
 
-            InteropExtensions.SetExceptionErrorCode(exception, errorCode);
+            exception.HResult = errorCode;
 
             return exception;
         }
@@ -794,7 +894,7 @@ namespace System.Runtime.InteropServices
                             // We have an LanguageExceptionErrorInfo.
                             IntPtr pUnk;
                             __com_ILanguageExceptionErrorInfo* pComLanguageExceptionErrorInfo = (__com_ILanguageExceptionErrorInfo*)pLanguageExceptionErrorInfo;
-                            int result = CalliIntrinsics.StdCall<int>(pComLanguageExceptionErrorInfo->pVtable->pfnGetLanguageException, pLanguageExceptionErrorInfo, out pUnk);
+                            int result = CalliIntrinsics.StdCall__int(pComLanguageExceptionErrorInfo->pVtable->pfnGetLanguageException, pLanguageExceptionErrorInfo, out pUnk);
                             McgMarshal.ComSafeRelease(pLanguageExceptionErrorInfo);
 
                             if (result >= 0 && pUnk != IntPtr.Zero)

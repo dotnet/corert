@@ -10,6 +10,7 @@ namespace System.Runtime.InteropServices.ComTypes
     {
         [MarshalAs(UnmanagedType.U2)]
         public short cfFormat;
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible",  Justification="Backwards compatibility")]
         public IntPtr ptd;
         [MarshalAs(UnmanagedType.U4)]
         public DVASPECT dwAspect;

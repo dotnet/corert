@@ -1,23 +1,70 @@
-<Project ToolsVersion="14.0" DefaultTargets="LinkNative" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="LinkNative" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\</OutputPath>
-    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\</IntermediateOutputPath>
+    <OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
+    <OutputPath>$(MSBuildProjectDirectory)\bin\$(Configuration)\$(Platform)\</OutputPath>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(Platform)\</IntermediateOutputPath>
+    <DebugType Condition="'$(DebugType)' == ''">portable</DebugType>
+    <DefineConstants Condition="$(NativeCodeGen) == 'cpp'">$(DefineConstants);CODEGEN_CPP</DefineConstants>
+    <RootAllApplicationAssemblies>false</RootAllApplicationAssemblies>
+    <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
   </PropertyGroup>
 
   <PropertyGroup>
-    <ProjectJson>$(MSBuildThisFileDirectory)\project.json</ProjectJson>
-    <ProjectLockJson>$(MSBuildThisFileDirectory)\project.lock.json</ProjectLockJson>
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.App">
+      <Version>$(MicrosoftNETCoreAppPackageVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Reuse restored assets from the repro project -->
+  <PropertyGroup>
+    <RestoreOutputPath>$(IntermediateOutputRootPath)\repro</RestoreOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- For Ready To Run testing, use the CoreCLR framework assemblies instead of the AOT ones -->
+    <IlcReference Condition="'$(NativeCodeGen)' == 'readytorun'" Include="$(CoreRT_CoreCLRRuntimeDir)/*.dll" />
+  </ItemGroup>
+
+  <!--
+    When building a library as a reference, the returned build outputs include both the 
+    IL assembly produced by CSC and the native obj produced by Ilc. Separate the native
+    object file here so it isn't passed to CSC, and instead redirect it to be picked up
+    by the LinkNative target.
+  -->
+  <Target Name="RemoveObjFiles" AfterTargets="ResolveProjectReferences" Condition="'$(IlcMultiModule)' == 'true'">
+    <ItemGroup>
+        <ObjFiles Include="@(_ResolvedProjectReferencePaths)" Condition="'%(Extension)' == '.obj' or '%(Extension)' == '.bc'" />
+        <LinkerArg Include="@(_ResolvedProjectReferencePaths)" Condition="'%(Extension)' == '.obj'" />
+        <IlcReference Include="@(_ResolvedProjectReferencePaths)" Condition="'%(Extension)' == '.dll'" />
+        <_ResolvedProjectReferencePaths Remove="@(ObjFiles)" />
+    </ItemGroup>
+  </Target>
+  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
-  <!-- Use the source primary copy for development convenience -->
-  <Import Project="$(MSBuildThisFileDirectory)\..\..\Test.Common.targets" />
+  <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
+
+  <ItemGroup>
+    <CustomLinkerArg Include="$(AdditionalLinkerFlags)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <DefineConstants Condition="'$(IlcMultiModule)' == 'true'">MULTIMODULE_BUILD;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <IlcArg Include="--targetarch=$(Platform)" />
+    <IlcArg Include="--stacktracedata" />
+  </ItemGroup>
+
 </Project>

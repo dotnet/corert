@@ -2,41 +2,45 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Threading;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-
-using global::Internal.Runtime.Augments;
-using global::Internal.Reflection.Execution;
-using global::Internal.Reflection.Core.Execution;
-
-using global::Internal.Metadata.NativeFormat;
-
-using TargetException = System.ArgumentException;
+using System;
+using Internal.Runtime.Augments;
 
 namespace Internal.Reflection.Execution.FieldAccessors
 {
-    internal sealed class ValueTypeFieldAccessorForStaticFields : StaticFieldAccessor
+    internal sealed class ValueTypeFieldAccessorForStaticFields : RegularStaticFieldAccessor
     {
-        private IntPtr _fieldAddress;
-
-        public ValueTypeFieldAccessorForStaticFields(IntPtr cctorContext, IntPtr fieldAddress, RuntimeTypeHandle fieldTypeHandle)
-            : base(cctorContext, fieldTypeHandle)
+        public ValueTypeFieldAccessorForStaticFields(IntPtr cctorContext, IntPtr staticsBase, int fieldOffset, bool isGcStatic, RuntimeTypeHandle fieldTypeHandle)
+            : base(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle)
         {
-            _fieldAddress = fieldAddress;
         }
 
-        protected sealed override Object GetFieldBypassCctor(Object obj)
+        unsafe protected sealed override Object GetFieldBypassCctor()
         {
-            return RuntimeAugments.LoadValueTypeField(_fieldAddress, FieldTypeHandle);
+#if !PROJECTN
+            if (IsGcStatic)
+            {
+                // The _staticsBase variable points to a GC handle, which points at the GC statics base of the type.
+                // We need to perform a double indirection in a GC-safe manner.
+                object gcStaticsRegion = RuntimeAugments.LoadReferenceTypeField(*(IntPtr*)StaticsBase);
+                return RuntimeAugments.LoadValueTypeField(gcStaticsRegion, FieldOffset, FieldTypeHandle);
+            }
+#endif
+            return RuntimeAugments.LoadValueTypeField(StaticsBase + FieldOffset, FieldTypeHandle);
         }
 
-        protected sealed override void SetFieldBypassCctor(Object obj, Object value)
+        unsafe protected sealed override void UncheckedSetFieldBypassCctor(Object value)
         {
-            value = RuntimeAugments.CheckArgument(value, FieldTypeHandle);
-            RuntimeAugments.StoreValueTypeField(_fieldAddress, value, FieldTypeHandle);
+#if !PROJECTN
+            if (IsGcStatic)
+            {
+                // The _staticsBase variable points to a GC handle, which points at the GC statics base of the type.
+                // We need to perform a double indirection in a GC-safe manner.
+                object gcStaticsRegion = RuntimeAugments.LoadReferenceTypeField(*(IntPtr*)StaticsBase);
+                RuntimeAugments.StoreValueTypeField(gcStaticsRegion, FieldOffset, value, FieldTypeHandle);
+                return;
+            }
+#endif
+            RuntimeAugments.StoreValueTypeField(StaticsBase + FieldOffset, value, FieldTypeHandle);
         }
     }
 }

@@ -38,7 +38,7 @@ namespace MetadataTransformTests
             EcmaModule module = null;
             try
             {
-                module = EcmaModule.Create(this, new PEReader(File.OpenRead(simpleName + ".dll")));
+                module = EcmaModule.Create(this, new PEReader(File.OpenRead(simpleName + ".dll")), containingAssembly: null);
             }
             catch (FileNotFoundException)
             {
@@ -53,5 +53,8 @@ namespace MetadataTransformTests
         {
             return GetModuleForSimpleName(name.Name, throwIfNotFound);
         }
+
+        public override bool SupportsUniversalCanon => true;
+        public override bool SupportsCanon => true;
     }
 }

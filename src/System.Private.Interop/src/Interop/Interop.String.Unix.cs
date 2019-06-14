@@ -10,50 +10,30 @@ namespace System.Runtime.InteropServices
 {
     public partial class ExternalInterop
     {
-        public static partial class Constants
-        {
-            // TODO: These are windows specific , unfortunately
-            // the API signature is same for Windows and non-Windows and we need
-            // these defined to make the compiler happy.These are not used on non-windows
-            // platforms.
-            public const uint WC_NO_BEST_FIT_CHARS = 0x00000400;
-            public const uint CP_ACP = 0;
-            public const uint MB_PRECOMPOSED = 1;
-        }
-
 
         internal static unsafe uint SysStringLen(void* pBSTR)
         {
-            throw new PlatformNotSupportedException("SysStringLen");
+            throw new PlatformNotSupportedException();
         }
 
         internal static unsafe uint SysStringLen(IntPtr pBSTR)
         {
-            throw new PlatformNotSupportedException("SysStringLen");
+            throw new PlatformNotSupportedException();
         }
 
-        unsafe public static int ConvertWideCharToMultiByte(char* wideCharStr, int wideCharLen, IntPtr multiByteStr, int multiByteLen)
+        internal static unsafe IntPtr SysAllocString(IntPtr pStrIn)
         {
-            return System.Text.Encoding.UTF8.GetBytes(wideCharStr, wideCharLen,(byte*)multiByteStr, multiByteLen);
+            throw new PlatformNotSupportedException();
         }
 
-        unsafe public static int GetByteCount(char* wideCharStr, int wideCharLen)
+        internal static unsafe char* SysAllocStringLen(char* pStrIn, uint len)
         {
-            return System.Text.Encoding.UTF8.GetByteCount(wideCharStr, wideCharLen);
+            throw new PlatformNotSupportedException();
         }
 
-        unsafe public static int ConvertMultiByteToWideChar(IntPtr multiByteStr,
-                                                            int multiByteLen,
-                                                            IntPtr wideCharStr,
-                                                            int wideCharLen)
+        public static unsafe void SysFreeString(IntPtr pBstr)
         {
-            return System.Text.Encoding.UTF8.GetChars((byte*)multiByteStr, multiByteLen, (char*)wideCharStr, wideCharLen);
+            throw new PlatformNotSupportedException();
         }
-
-        public static unsafe int GetCharCount(byte* multiByteStr, int multiByteLen)
-        {
-            return System.Text.Encoding.UTF8.GetCharCount(multiByteStr, multiByteLen);
-        }
-
     }
 }

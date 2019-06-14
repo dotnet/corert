@@ -5,7 +5,7 @@
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Method)]
-    internal sealed class DllImportAttribute : Attribute
+    public sealed class DllImportAttribute : Attribute
     {
         public CallingConvention CallingConvention;
 

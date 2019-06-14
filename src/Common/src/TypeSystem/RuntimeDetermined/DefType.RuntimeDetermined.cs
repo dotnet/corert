@@ -10,6 +10,10 @@ namespace Internal.TypeSystem
         {
             get
             {
+                // Handles situation when shared code refers to uninstantiated generic
+                // type definitions (think: LDTOKEN).
+                // Walking the instantiation would make us assert. This is simply
+                // not a runtime determined type.
                 if (IsGenericDefinition)
                     return false;
 
@@ -40,6 +44,41 @@ namespace Internal.TypeSystem
                 {
                     return Context.GetInstantiatedType(typeDefinition, sharedInstantiation);
                 }
+            }
+
+            return this;
+        }
+
+        public override TypeDesc GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            TypeDesc typeDefinition = GetTypeDefinition();
+            if (this == typeDefinition)
+                return this;
+
+            Instantiation instantiation = Instantiation;
+            TypeDesc[] clone = null;
+
+            for (int i = 0; i < instantiation.Length; i++)
+            {
+                TypeDesc uninst = instantiation[i];
+                TypeDesc inst = uninst.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
+                if (inst != uninst)
+                {
+                    if (clone == null)
+                    {
+                        clone = new TypeDesc[instantiation.Length];
+                        for (int j = 0; j < clone.Length; j++)
+                        {
+                            clone[j] = instantiation[j];
+                        }
+                    }
+                    clone[i] = inst;
+                }
+            }
+
+            if (clone != null)
+            {
+                return Context.GetInstantiatedType((MetadataType)typeDefinition, new Instantiation(clone));
             }
 
             return this;

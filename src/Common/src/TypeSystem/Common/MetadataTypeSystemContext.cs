@@ -11,6 +11,7 @@ namespace Internal.TypeSystem
     {
         private static readonly string[] s_wellKnownTypeNames = new string[] {
             "Void",
+
             "Boolean",
             "Char",
             "SByte",
@@ -40,6 +41,9 @@ namespace Internal.TypeSystem
             "RuntimeFieldHandle",
 
             "Exception",
+
+            "TypedReference",
+            "ByReference`1",
         };
 
         private MetadataType[] _wellKnownTypes;
@@ -53,7 +57,7 @@ namespace Internal.TypeSystem
         {
         }
 
-        public void SetSystemModule(ModuleDesc systemModule)
+        public virtual void SetSystemModule(ModuleDesc systemModule)
         {
             InitializeSystemModule(systemModule);
 
@@ -65,16 +69,27 @@ namespace Internal.TypeSystem
             // Initialize all well known types - it will save us from checking the name for each loaded type
             for (int typeIndex = 0; typeIndex < _wellKnownTypes.Length; typeIndex++)
             {
-                MetadataType type = systemModule.GetType("System", s_wellKnownTypeNames[typeIndex]);
-                type.SetWellKnownType((WellKnownType)(typeIndex + 1));
-                _wellKnownTypes[typeIndex] = type;
+                // Require System.Object to be present as a minimal sanity check. 
+                // The set of required well-known types is not strictly defined since different .NET profiles implement different subsets.
+                MetadataType type = systemModule.GetType("System", s_wellKnownTypeNames[typeIndex], typeIndex == (int)WellKnownType.Object);
+                if (type != null)
+                {
+                    type.SetWellKnownType((WellKnownType)(typeIndex + 1));
+                    _wellKnownTypes[typeIndex] = type;
+                }
             }
         }
 
-        public override DefType GetWellKnownType(WellKnownType wellKnownType)
+        public override DefType GetWellKnownType(WellKnownType wellKnownType, bool throwIfNotFound = true)
         {
             Debug.Assert(_wellKnownTypes != null, "Forgot to call SetSystemModule?");
-            return _wellKnownTypes[(int)wellKnownType - 1];
+
+            int typeIndex = (int)wellKnownType - 1;
+            DefType type = _wellKnownTypes[typeIndex];
+            if (type == null && throwIfNotFound) 
+                ThrowHelper.ThrowTypeLoadException("System", s_wellKnownTypeNames[typeIndex], SystemModule);
+
+            return type;
         }
 
         protected sealed internal override bool ComputeHasStaticConstructor(TypeDesc type)

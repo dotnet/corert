@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -11,6 +10,6 @@ internal static partial class Interop
     internal unsafe partial class Sys
     {
         [DllImport(Interop.Libraries.CoreLibNative, EntryPoint = "CoreLibNative_GetTickCount64")]
-        internal static unsafe extern ulong GetTickCount64();
+        internal static extern ulong GetTickCount64();
     }
 }

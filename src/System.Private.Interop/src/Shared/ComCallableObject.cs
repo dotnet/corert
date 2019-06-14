@@ -23,8 +23,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-using System.Diagnostics.Contracts;
-using Internal.NativeFormat;
 
 namespace System.Runtime.InteropServices
 {
@@ -91,6 +89,11 @@ namespace System.Runtime.InteropServices
         RuntimeTypeHandle m_interfaceType;             // Refer to interface RuntimeTypeHandle
         // TODO: Define unqiue vtable for shared CCW instances, store McgInterfaceData pointer at negative offset
 
+#if !CORECLR && ENABLE_WINRT
+        // for dynamic created stub, remove/delete stub during __interface_ccw destroy
+        int m_dynamicMethodStart;
+        int m_dynamicMethodEnd; // [m_dynamicMethodStart, m_dynamicMethodEnd)
+#endif
         /// <summary>
         /// Cache for single memory block, perfect for calls like IDependencyProperty.SetValue (System.Object converts to CCW, passed to native code, then released).
         /// Last block not freed at shut-down. Consider more complicated caching when there are evidence for it
@@ -107,11 +110,19 @@ namespace System.Runtime.InteropServices
             IntPtr vt = typeHandle.GetCcwVtable();
 
 #if !CORECLR && ENABLE_WINRT
+            int dynamicMethodStart = 0;
+            int dynamicMethodEnd = 0;
+
             if (vt == default(IntPtr) && McgModuleManager.UseDynamicInterop)
             {
                 // TODO Design an interface, such as IMcgCCWData and each McgModule implements this interface
                 // Dynamic has its own mcg module
-                vt = DynamicInteropHelpers.GetCCWVTable_NoThrow(managedCCW.TargetObject, typeHandle);
+
+                vt = DynamicInteropHelpers.GetCCWVTable_NoThrow(
+                    managedCCW.TargetObject, 
+                    typeHandle, 
+                    out dynamicMethodStart, 
+                    out dynamicMethodEnd);
             }
 #endif
             if (vt == default(IntPtr))
@@ -130,7 +141,10 @@ namespace System.Runtime.InteropServices
             pCcw->m_pVtable = vt.ToPointer();
             pCcw->m_pNativeCCW = managedCCW.NativeCCW;
             pCcw->m_interfaceType = typeHandle;
-
+#if !CORECLR && ENABLE_WINRT
+            pCcw->m_dynamicMethodStart = dynamicMethodStart;
+            pCcw->m_dynamicMethodEnd = dynamicMethodEnd;
+#endif
             managedCCW.NativeCCW->Link(pCcw);
 
             return pCcw;
@@ -138,6 +152,14 @@ namespace System.Runtime.InteropServices
 
         internal static void Destroy(__interface_ccw* pInterfaceCCW)
         {
+#if !CORECLR && ENABLE_WINRT
+            // Remove these dynamic thunk [m_dynamicMethodStart, m_dynamicMethodEnd)
+            for (int i = pInterfaceCCW->m_dynamicMethodStart; i < pInterfaceCCW->m_dynamicMethodEnd; i++)
+            {
+                System.IntPtr thunkAddress  = ((System.IntPtr*)pInterfaceCCW->m_pVtable)[i];
+                InteropCallInterceptor.FreeThunk(thunkAddress);
+            }
+#endif
             McgComHelpers.CachedFree(pInterfaceCCW, ref s_cached_interface_ccw);
         }
 
@@ -227,7 +249,7 @@ namespace System.Runtime.InteropServices
         /// Combined Ref Count of COM and Jupiter
         /// COM takes lower 32-bit while Jupiter takes higher 32-bit.
         /// It's OK for COM ref count to overflow
-        /// Be verycareful when you read this because you can't read this atomicly under x86 directly.
+        /// Be verycareful when you read this because you can't read this atomically under x86 directly.
         /// Only use CombinedRefCount property for thread-safety
         /// </summary>
         long m_lRefCount;
@@ -806,7 +828,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         static Lock s_ccwLookupMapLock;
 
-        static internal void InitializeStatics()
+        internal static void InitializeStatics()
         {
             const int CCWLookupMapDefaultSize = 101;
 
@@ -1075,16 +1097,18 @@ namespace System.Runtime.InteropServices
         /// </summary>
         bool m_hasCCWTemplateData;
 
-
+        /// <summary>
+        /// Target object's RuntimeTypeHandle
+        /// </summary>
         RuntimeTypeHandle m_type;
 #endregion
 
 #region RefCounted handle support
 
-        static internal void InitRefCountedHandleCallback()
+        internal static void InitRefCountedHandleCallback()
         {
             // TODO: <https://github.com/dotnet/corert/issues/1596>
-#if !CORERT
+#if PROJECTN || CORECLR
             //
             // Register the callback to ref-counted handles
             // Inside this callback we'll determine whether the ref count handle to the target object
@@ -1198,7 +1222,7 @@ namespace System.Runtime.InteropServices
 #pragma warning restore 618
 
             // whether CCWTempalte Data exists for this type
-            m_hasCCWTemplateData = m_type.IsSupportCCWTemplate();
+            m_hasCCWTemplateData = m_type.IsCCWTemplateSupported();
             if (locked)
                 CCWLookupMap.RegisterLocked(m_pNativeCCW);
             else
@@ -1457,6 +1481,18 @@ namespace System.Runtime.InteropServices
                 }
             }
 
+#if !RHTESTCL && PROJECTN && ENABLE_WINRT
+            // TODO: Dynamic Boxing support
+            // TODO: Optimize--it is possible that the following dynamic code is faster than above static code(CCWTemplate)
+            // if we cann't find a interfaceType for giving guid, try to enumerate all interfaces implemented by this target object to see anyone matchs given guid
+            if (McgModuleManager.UseDynamicInterop && !m_hasCCWTemplateData && interfaceType.IsNull() && !Internal.Runtime.Augments.RuntimeAugments.IsValueType(m_type))
+            {
+                RuntimeTypeHandle interfaceTypeHandleFromDynamic =  DynamicInteropCCWTemplateHelper.FindInterfaceInCCWTemplate(m_type, ref iid);
+                if (!interfaceTypeHandleFromDynamic.IsNull())
+                    return GetComInterfaceForType_NoCheck(interfaceTypeHandleFromDynamic, ref iid);
+            }
+#endif
+
             //
             // We are not aggregating and don't have a Type for the iid so we must return null
             //
@@ -1492,7 +1528,13 @@ namespace System.Runtime.InteropServices
             //
             foreach(RuntimeTypeHandle implementedInterface in ccwType.GetImplementedInterfaces())
             {
-                Debug.Assert(!implementedInterface.IsInvalid());
+                // DR may reduce a type away
+                // The root cause is that there are mismatch between DR's necessary Types and Mcg analysis Result's necessary Types
+                if (implementedInterface.IsInvalid())
+                {
+                    continue;
+                }
+
                 bool match = false;
                 if (interfaceType.IsNull())
                 {
@@ -1679,6 +1721,10 @@ namespace System.Runtime.InteropServices
 #endif
             // IDispatch is not supported for UWP apps
             new CCWWellKnownType() {guid = Interop.COM.IID_IDispatch, type = InternalTypes.IDispatch, ccwSupport = CCWSupport.NotSupport },
+#if ENABLE_WINRT
+            // ILanguageExceptionStackBackTrace is supported iff managed object is an Exception object
+            new CCWWellKnownType() {guid = Interop.COM.IID_ILanguageExceptionStackBackTrace, type = InternalTypes.ILanguageExceptionStackBackTrace,  ccwSupport = CCWSupport.DependsOnCast, castToType = typeof(Exception).TypeHandle},
+#endif
         };
 
         private static bool IsWellKnownInterface(ref Guid guid, object targetObject,ref RuntimeTypeHandle interfaceType,out bool isCCWSupported)

@@ -28,13 +28,17 @@ namespace Internal.IL.Stubs
         internal byte[] _instructions;
         internal int _length;
         internal int _startOffsetForLinking;
+        internal ArrayBuilder<ILSequencePoint> _sequencePoints;
 
         private ArrayBuilder<LabelAndOffset> _offsetsNeedingPatching;
 
-        internal ILCodeStream()
+        private ILEmitter _emitter;
+
+        internal ILCodeStream(ILEmitter emitter)
         {
             _instructions = Array.Empty<byte>();
             _startOffsetForLinking = -1;
+            _emitter = emitter;
         }
 
         private void EmitByte(byte b)
@@ -98,6 +102,20 @@ namespace Internal.IL.Stubs
             else
             {
                 Emit(ILOpcode.ldarg);
+                EmitUInt16((ushort)index);
+            }
+        }
+
+        public void EmitLdArga(int index)
+        {
+            if (index < 0x100)
+            {
+                Emit(ILOpcode.ldarga_s);
+                EmitByte((byte)index);
+            }
+            else
+            {
+                Emit(ILOpcode.ldarga);
                 EmitUInt16((ushort)index);
             }
         }
@@ -187,6 +205,213 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public void EmitUnaligned()
+        {
+            Emit(ILOpcode.unaligned);
+            EmitByte(1);
+        }
+
+        public void EmitLdInd(TypeDesc type)
+        {
+            switch (type.UnderlyingType.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Boolean:
+                    Emit(ILOpcode.ldind_i1);
+                    break;
+                case TypeFlags.Char:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                    Emit(ILOpcode.ldind_i2);
+                    break;
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                    Emit(ILOpcode.ldind_i4);
+                    break;
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                    Emit(ILOpcode.ldind_i8);
+                    break;
+                case TypeFlags.Single:
+                    Emit(ILOpcode.ldind_r4);
+                    break;
+                case TypeFlags.Double:
+                    Emit(ILOpcode.ldind_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    Emit(ILOpcode.ldind_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                    Emit(ILOpcode.ldind_ref);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                case TypeFlags.SignatureMethodVariable:
+                case TypeFlags.SignatureTypeVariable:
+                    Emit(ILOpcode.ldobj, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Fail("Unexpected TypeDesc category");
+                    break;
+            }
+        }
+        public void EmitStInd(TypeDesc type)
+        {
+            switch (type.UnderlyingType.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Boolean:
+                    Emit(ILOpcode.stind_i1);
+                    break;
+                case TypeFlags.Char:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                    Emit(ILOpcode.stind_i2);
+                    break;
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                    Emit(ILOpcode.stind_i4);
+                    break;
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                    Emit(ILOpcode.stind_i8);
+                    break;
+                case TypeFlags.Single:
+                    Emit(ILOpcode.stind_r4);
+                    break;
+                case TypeFlags.Double:
+                    Emit(ILOpcode.stind_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    Emit(ILOpcode.stind_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                    Emit(ILOpcode.stind_ref);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    Emit(ILOpcode.stobj, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Fail("Unexpected TypeDesc category");
+                    break;
+            }
+        }
+
+        public void EmitStElem(TypeDesc type)
+        {
+            switch (type.UnderlyingType.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Boolean:
+                    Emit(ILOpcode.stelem_i1);
+                    break;
+                case TypeFlags.Char:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                    Emit(ILOpcode.stelem_i2);
+                    break;
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                    Emit(ILOpcode.stelem_i4);
+                    break;
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                    Emit(ILOpcode.stelem_i8);
+                    break;
+                case TypeFlags.Single:
+                    Emit(ILOpcode.stelem_r4);
+                    break;
+                case TypeFlags.Double:
+                    Emit(ILOpcode.stelem_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    Emit(ILOpcode.stelem_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                    Emit(ILOpcode.stelem_ref);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    Emit(ILOpcode.stelem, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Fail("Unexpected TypeDesc category");
+                    break;
+            }
+        }
+
+        public void EmitLdElem(TypeDesc type)
+        {
+            switch (type.UnderlyingType.Category)
+            {
+                case TypeFlags.Byte:
+                case TypeFlags.SByte:
+                case TypeFlags.Boolean:
+                    Emit(ILOpcode.ldelem_i1);
+                    break;
+                case TypeFlags.Char:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int16:
+                    Emit(ILOpcode.ldelem_i2);
+                    break;
+                case TypeFlags.UInt32:
+                case TypeFlags.Int32:
+                    Emit(ILOpcode.ldelem_i4);
+                    break;
+                case TypeFlags.UInt64:
+                case TypeFlags.Int64:
+                    Emit(ILOpcode.ldelem_i8);
+                    break;
+                case TypeFlags.Single:
+                    Emit(ILOpcode.ldelem_r4);
+                    break;
+                case TypeFlags.Double:
+                    Emit(ILOpcode.ldelem_r8);
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
+                    Emit(ILOpcode.ldelem_i);
+                    break;
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                    Emit(ILOpcode.ldelem_ref);
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    Emit(ILOpcode.ldelem, _emitter.NewToken(type));
+                    break;
+                default:
+                    Debug.Fail("Unexpected TypeDesc category");
+                    break;
+            }
+        }
+
         public void EmitLabel(ILCodeLabel label)
         {
             label.Place(this, _length);
@@ -216,6 +441,19 @@ namespace Internal.IL.Stubs
                 _instructions[offset + 3] = (byte)(value >> 24);
             }
         }
+
+        public void DefineSequencePoint(string document, int lineNumber)
+        {
+            // Last sequence point defined for this offset wins.
+            if (_sequencePoints.Count > 0 && _sequencePoints[_sequencePoints.Count - 1].Offset == _length)
+            {
+                _sequencePoints[_sequencePoints.Count - 1] = new ILSequencePoint(_length, document, lineNumber);
+            }
+            else
+            {
+                _sequencePoints.Add(new ILSequencePoint(_length, document, lineNumber));
+            }
+        }
     }
 
     /// <summary>
@@ -229,19 +467,38 @@ namespace Internal.IL.Stubs
     /// </summary>
     public enum ILLocalVariable { }
 
-    internal class ILStubMethodIL : MethodIL
+    public class ILStubMethodIL : MethodIL
     {
-        private byte[] _ilBytes;
-        private LocalVariableDefinition[] _locals;
-        private Object[] _tokens;
-        private MethodDesc _method;
+        private readonly byte[] _ilBytes;
+        private readonly LocalVariableDefinition[] _locals;
+        private readonly Object[] _tokens;
+        private readonly MethodDesc _method;
+        private readonly MethodDebugInformation _debugInformation;
 
-        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens)
+        private const int MaxStackNotSet = -1;
+        private int _maxStack;
+
+        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens, MethodDebugInformation debugInfo = null)
         {
             _ilBytes = ilBytes;
             _locals = locals;
             _tokens = tokens;
             _method = owningMethod;
+            _maxStack = MaxStackNotSet;
+
+            if (debugInfo == null)
+                debugInfo = MethodDebugInformation.None;
+            _debugInformation = debugInfo;
+        }
+
+        public ILStubMethodIL(ILStubMethodIL methodIL)
+        {
+            _ilBytes = methodIL._ilBytes;
+            _locals = methodIL._locals;
+            _tokens = methodIL._tokens;
+            _method = methodIL._method;
+            _debugInformation = methodIL._debugInformation;
+            _maxStack = methodIL._maxStack;
         }
 
         public override MethodDesc OwningMethod
@@ -256,12 +513,19 @@ namespace Internal.IL.Stubs
         {
             return _ilBytes;
         }
+
+        public override MethodDebugInformation GetDebugInfo()
+        {
+            return _debugInformation;
+        }
+
         public override int MaxStack
         {
             get
             {
-                // Conservative estimate...
-                return _ilBytes.Length;
+                if (_maxStack == MaxStackNotSet)
+                    _maxStack = this.ComputeMaxStack();
+                return _maxStack;
             }
         }
 
@@ -334,7 +598,7 @@ namespace Internal.IL.Stubs
 
         public ILCodeStream NewCodeStream()
         {
-            ILCodeStream stream = new ILCodeStream();
+            ILCodeStream stream = new ILCodeStream(this);
             _codeStreams.Add(stream);
             return stream;
         }
@@ -387,11 +651,14 @@ namespace Internal.IL.Stubs
         public MethodIL Link(MethodDesc owningMethod)
         {
             int totalLength = 0;
+            int numSequencePoints = 0;
+
             for (int i = 0; i < _codeStreams.Count; i++)
             {
                 ILCodeStream ilCodeStream = _codeStreams[i];
                 ilCodeStream._startOffsetForLinking = totalLength;
                 totalLength += ilCodeStream._length;
+                numSequencePoints += ilCodeStream._sequencePoints.Count;
             }
 
             byte[] ilInstructions = new byte[totalLength];
@@ -404,11 +671,51 @@ namespace Internal.IL.Stubs
                 copiedLength += ilCodeStream._length;
             }
 
-            return new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray());
+            MethodDebugInformation debugInfo = null;
+            if (numSequencePoints > 0)
+            {
+                ILSequencePoint[] sequencePoints = new ILSequencePoint[numSequencePoints];
+                int copiedSequencePointLength = 0;
+                for (int codeStreamIndex = 0; codeStreamIndex < _codeStreams.Count; codeStreamIndex++)
+                {
+                    ILCodeStream ilCodeStream = _codeStreams[codeStreamIndex];
+
+                    for (int sequencePointIndex = 0; sequencePointIndex < ilCodeStream._sequencePoints.Count; sequencePointIndex++)
+                    {
+                        ILSequencePoint sequencePoint = ilCodeStream._sequencePoints[sequencePointIndex];
+                        sequencePoints[copiedSequencePointLength] = new ILSequencePoint(
+                            ilCodeStream._startOffsetForLinking + sequencePoint.Offset,
+                            sequencePoint.Document,
+                            sequencePoint.LineNumber);
+                        copiedSequencePointLength++;
+                    }
+                }
+
+                debugInfo = new EmittedMethodDebugInformation(sequencePoints);
+            }
+
+            var result = new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), debugInfo);
+            result.CheckStackBalance();
+            return result;
+        }
+
+        private class EmittedMethodDebugInformation : MethodDebugInformation
+        {
+            private readonly ILSequencePoint[] _sequencePoints;
+
+            public EmittedMethodDebugInformation(ILSequencePoint[] sequencePoints)
+            {
+                _sequencePoints = sequencePoints;
+            }
+
+            public override IEnumerable<ILSequencePoint> GetSequencePoints()
+            {
+                return _sequencePoints;
+            }
         }
     }
 
-    public abstract class ILStubMethod : MethodDesc
+    public abstract partial class ILStubMethod : MethodDesc
     {
         public abstract MethodIL EmitIL();
 

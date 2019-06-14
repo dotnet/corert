@@ -51,17 +51,17 @@ namespace TypeSystemTests
             MetadataType tX86 = _testModuleX86.GetType("Sequential", "ClassDoubleBool");
             MetadataType tARM = _testModuleARM.GetType("Sequential", "ClassDoubleBool");
 
-            Assert.Equal(0x8, tX64.InstanceByteAlignment);
-            Assert.Equal(0x8, tARM.InstanceByteAlignment);
-            Assert.Equal(0x4, tX86.InstanceByteAlignment);
+            Assert.Equal(0x8, tX64.InstanceByteAlignment.AsInt);
+            Assert.Equal(0x8, tARM.InstanceByteAlignment.AsInt);
+            Assert.Equal(0x4, tX86.InstanceByteAlignment.AsInt);
 
-            Assert.Equal(0x11, tX64.InstanceByteCountUnaligned);
-            Assert.Equal(0x11, tARM.InstanceByteCountUnaligned);
-            Assert.Equal(0x11, tX86.InstanceByteCountUnaligned);
+            Assert.Equal(0x11, tX64.InstanceByteCountUnaligned.AsInt);
+            Assert.Equal(0x11, tARM.InstanceByteCountUnaligned.AsInt);
+            Assert.Equal(0x11, tX86.InstanceByteCountUnaligned.AsInt);
 
-            Assert.Equal(0x18, tX64.InstanceByteCount);
-            Assert.Equal(0x18, tARM.InstanceByteCount);
-            Assert.Equal(0x14, tX86.InstanceByteCount);
+            Assert.Equal(0x18, tX64.InstanceByteCount.AsInt);
+            Assert.Equal(0x18, tARM.InstanceByteCount.AsInt);
+            Assert.Equal(0x14, tX86.InstanceByteCount.AsInt);
         }
 
         [Fact]
@@ -71,17 +71,17 @@ namespace TypeSystemTests
             MetadataType tX86 = _testModuleX86.GetType("Sequential", "ClassBoolDoubleBool");
             MetadataType tARM = _testModuleARM.GetType("Sequential", "ClassBoolDoubleBool");
 
-            Assert.Equal(0x8, tX64.InstanceByteAlignment);
-            Assert.Equal(0x8, tARM.InstanceByteAlignment);
-            Assert.Equal(0x4, tX86.InstanceByteAlignment);
+            Assert.Equal(0x8, tX64.InstanceByteAlignment.AsInt);
+            Assert.Equal(0x8, tARM.InstanceByteAlignment.AsInt);
+            Assert.Equal(0x4, tX86.InstanceByteAlignment.AsInt);
 
-            Assert.Equal(0x19, tX64.InstanceByteCountUnaligned);
-            Assert.Equal(0x11, tARM.InstanceByteCountUnaligned);
-            Assert.Equal(0x11, tX86.InstanceByteCountUnaligned);
+            Assert.Equal(0x19, tX64.InstanceByteCountUnaligned.AsInt);
+            Assert.Equal(0x11, tARM.InstanceByteCountUnaligned.AsInt);
+            Assert.Equal(0x11, tX86.InstanceByteCountUnaligned.AsInt);
 
-            Assert.Equal(0x20, tX64.InstanceByteCount);
-            Assert.Equal(0x18, tARM.InstanceByteCount);
-            Assert.Equal(0x14, tX86.InstanceByteCount);
+            Assert.Equal(0x20, tX64.InstanceByteCount.AsInt);
+            Assert.Equal(0x18, tARM.InstanceByteCount.AsInt);
+            Assert.Equal(0x14, tX86.InstanceByteCount.AsInt);
         }
     }
 }

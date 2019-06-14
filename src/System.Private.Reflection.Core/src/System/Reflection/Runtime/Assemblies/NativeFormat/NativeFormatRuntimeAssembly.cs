@@ -8,8 +8,12 @@ using System.Text;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.Modules;
+using System.Reflection.Runtime.Modules.NativeFormat;
 using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.TypeParsing;
 using System.Reflection.Runtime.CustomAttributes;
 using System.Collections.Generic;
@@ -17,7 +21,6 @@ using System.Collections.Generic;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
-
 using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.Assemblies.NativeFormat
@@ -42,9 +45,6 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                 foreach (QScopeDefinition scope in AllScopes)
                 {
                     foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(scope.Reader, scope.ScopeDefinition.CustomAttributes))
-                        yield return cad;
-
-                    foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(scope.Reader, scope.Handle))
                         yield return cad;
                 }
             }
@@ -91,6 +91,63 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
             }
         }
 
+        public sealed override MethodInfo EntryPoint
+        {
+            get
+            {
+                // The scope that defines metadata for the owning type of the entrypoint will be the one
+                // to carry the entrypoint token information. Find it by iterating over all scopes.
+
+                foreach (QScopeDefinition scope in AllScopes)
+                {
+                    MetadataReader reader = scope.Reader;
+
+                    QualifiedMethodHandle entrypointHandle = scope.ScopeDefinition.EntryPoint;
+                    if (!entrypointHandle.IsNull(reader))
+                    {
+                        QualifiedMethod entrypointMethod = entrypointHandle.GetQualifiedMethod(reader);
+                        TypeDefinitionHandle declaringTypeHandle = entrypointMethod.EnclosingType;
+                        MethodHandle methodHandle = entrypointMethod.Method;
+                        NativeFormatRuntimeNamedTypeInfo containingType = NativeFormatRuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, declaringTypeHandle, default(RuntimeTypeHandle));
+                        return RuntimeNamedMethodInfo<NativeFormatMethodCommon>.GetRuntimeNamedMethodInfo(new NativeFormatMethodCommon(methodHandle, containingType, containingType), containingType);
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        protected sealed override IEnumerable<TypeForwardInfo> TypeForwardInfos
+        {
+            get
+            {
+                foreach (QScopeDefinition scope in AllScopes)
+                {
+                    MetadataReader reader = scope.Reader;
+                    ScopeDefinition scopeDefinition = scope.ScopeDefinition;
+                    IEnumerable<NamespaceDefinitionHandle> topLevelNamespaceHandles = new NamespaceDefinitionHandle[] { scopeDefinition.RootNamespaceDefinition };
+                    IEnumerable<NamespaceDefinitionHandle> allNamespaceHandles = reader.GetTransitiveNamespaces(topLevelNamespaceHandles);
+                    foreach (NamespaceDefinitionHandle namespaceHandle in allNamespaceHandles)
+                    {
+                        string namespaceName = null;
+                        foreach (TypeForwarderHandle typeForwarderHandle in namespaceHandle.GetNamespaceDefinition(reader).TypeForwarders)
+                        {
+                            if (namespaceName == null)
+                            {
+                                namespaceName = namespaceHandle.ToNamespaceName(reader);
+                            }
+
+                            TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
+                            string typeName = typeForwarder.Name.GetString(reader);
+                            RuntimeAssemblyName redirectedAssemblyName = typeForwarder.Scope.ToRuntimeAssemblyName(reader);
+
+                            yield return new TypeForwardInfo(redirectedAssemblyName, namespaceName, typeName);
+                        }
+                    }
+                }
+            }
+        }
+
         public sealed override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);
@@ -104,6 +161,24 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
         public sealed override Stream GetManifestResourceStream(String name)
         {
             return ReflectionCoreExecution.ExecutionEnvironment.GetManifestResourceStream(this, name);
+        }
+
+        public sealed override string ImageRuntimeVersion
+        {
+            get
+            {
+                // Needed to make RuntimeEnvironment.GetSystemVersion() work. Will not be correct always but anticipating most callers are not making
+                // actual decisions based on the value.
+                return "v4.0.30319";
+            }
+        }
+
+        public sealed override Module ManifestModule
+        {
+            get
+            {
+                return NativeFormatRuntimeModule.GetRuntimeModule(this);
+            }
         }
 
         internal sealed override RuntimeAssemblyName RuntimeAssemblyName
@@ -151,6 +226,13 @@ namespace System.Reflection.Runtime.Assemblies.NativeFormat
                     yield return overflowScope;
                 }
             }
+        }
+
+        internal sealed override void RunModuleConstructor()
+        {
+            // Nothing to do for the native format. ILC groups all module cctors into StartupCodeTrigger, and this executes at 
+            // the begining of the process. All module cctors execute eagerly.
+            return;
         }
     }
 }

@@ -8,6 +8,7 @@ using System.IO;
 using System.Text;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.Modules;
 using System.Reflection.Runtime.TypeInfos;
@@ -17,15 +18,17 @@ using System.Collections.Generic;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core.NonPortable;
 
 using Internal.Reflection.Tracing;
+using System.Security;
 
 namespace System.Reflection.Runtime.Assemblies
 {
     //
     // The runtime's implementation of an Assembly. 
     //
-    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>
+    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>, IRuntimeImplemented
     {
         public bool Equals(RuntimeAssembly other)
         {
@@ -48,13 +51,12 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
-        public sealed override Module ManifestModule
+        public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            get
-            {
-                return RuntimeModule.GetRuntimeModule(this);
-            }
+            throw new PlatformNotSupportedException();
         }
+
+        public abstract override Module ManifestModule { get; }
 
         public sealed override IEnumerable<Module> Modules
         {
@@ -63,7 +65,6 @@ namespace System.Reflection.Runtime.Assemblies
                 yield return ManifestModule;
             }
         }
-
 
         public sealed override Type GetType(String name, bool throwOnError, bool ignoreCase)
         {
@@ -106,13 +107,9 @@ namespace System.Reflection.Runtime.Assemblies
         public sealed override event ModuleResolveEventHandler ModuleResolve;
 #pragma warning restore 0067
 
-        public sealed override bool ReflectionOnly
-        {
-            get
-            {
-                return false; // ReflectionOnly loading not supported.
-            }
-        }
+        public sealed override bool ReflectionOnly => false; // ReflectionOnly loading not supported.
+
+        public sealed override bool IsCollectible => false; // Unloading not supported.
 
         internal abstract RuntimeAssemblyName RuntimeAssemblyName { get; }
 
@@ -123,6 +120,69 @@ namespace System.Reflection.Runtime.Assemblies
                 ReflectionTrace.Assembly_GetName(this);
 #endif
             return RuntimeAssemblyName.ToAssemblyName();
+        }
+
+        public sealed override Type[] GetForwardedTypes()
+        {
+            List<Type> types = new List<Type>();
+            List<Exception> exceptions = null;
+
+            foreach (TypeForwardInfo typeForwardInfo in TypeForwardInfos)
+            {
+                string fullTypeName = typeForwardInfo.NamespaceName.Length == 0 ? typeForwardInfo.TypeName : typeForwardInfo.NamespaceName + "." + typeForwardInfo.TypeName;
+                RuntimeAssemblyName redirectedAssemblyName = typeForwardInfo.RedirectedAssemblyName;
+
+                Type type = null;
+                RuntimeAssembly redirectedAssembly;
+                Exception exception = RuntimeAssembly.TryGetRuntimeAssembly(redirectedAssemblyName, out redirectedAssembly);
+                if (exception == null)
+                {
+                    type = redirectedAssembly.GetTypeCore(fullTypeName, ignoreCase: false); // GetTypeCore() will follow any further type-forwards if needed.
+                    if (type == null)
+                        exception = Helpers.CreateTypeLoadException(fullTypeName.EscapeTypeNameIdentifier(), redirectedAssembly);
+                }
+
+                Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null.
+
+                if (type != null)
+                {
+                    types.Add(type);
+                    AddPublicNestedTypes(type, types);
+                }
+                else
+                {
+                    if (exceptions == null)
+                    {
+                        exceptions = new List<Exception>();
+                    }
+                    exceptions.Add(exception);
+                }
+            }
+
+            if (exceptions != null)
+            {
+                int numTypes = types.Count;
+                int numExceptions = exceptions.Count;
+                types.AddRange(new Type[numExceptions]); // add one null Type for each exception.
+                exceptions.InsertRange(0, new Exception[numTypes]); // align the Exceptions with the null Types.
+                throw new ReflectionTypeLoadException(types.ToArray(), exceptions.ToArray());
+            }
+
+            return types.ToArray();
+        }
+
+        /// <summary>
+        /// Intentionally excludes forwards to nested types.
+        /// </summary>
+        protected abstract IEnumerable<TypeForwardInfo> TypeForwardInfos { get; }
+
+        private static void AddPublicNestedTypes(Type type, List<Type> types)
+        {
+            foreach (Type nestedType in type.GetNestedTypes(BindingFlags.Public))
+            {
+                types.Add(nestedType);
+                AddPublicNestedTypes(nestedType, types);
+            }
         }
 
         /// <summary>
@@ -143,13 +203,20 @@ namespace System.Reflection.Runtime.Assemblies
         // Types that derive from RuntimeAssembly must implement the following public surface area members
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override IEnumerable<TypeInfo> DefinedTypes { get; }
+        public abstract override MethodInfo EntryPoint { get; }
         public abstract override IEnumerable<Type> ExportedTypes { get; }
         public abstract override ManifestResourceInfo GetManifestResourceInfo(String resourceName);
         public abstract override String[] GetManifestResourceNames();
         public abstract override Stream GetManifestResourceStream(String name);
+        public abstract override string ImageRuntimeVersion { get; }
         public abstract override bool Equals(Object obj);
         public abstract override int GetHashCode();
 
+        /// <summary>
+        /// Ensures a module is loaded and that its module constructor is executed. If the module is fully
+        /// loaded and its constructor already ran, we do not run it again.
+        /// </summary>
+        internal abstract void RunModuleConstructor();
 
         /// <summary>
         /// Perform a lookup for a type based on a name. Overriders are expected to
@@ -181,6 +248,64 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
+        public sealed override bool GlobalAssemblyCache
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public sealed override long HostContext
+        {
+            get
+            {
+                return 0;
+            }
+        }
+
+        public sealed override Module LoadModule(string moduleName, byte[] rawModule, byte[] rawSymbolStore)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override FileStream GetFile(string name)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override FileStream[] GetFiles(bool getResourceModules)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override SecurityRuleSet SecurityRuleSet
+        {
+            get
+            {
+                return SecurityRuleSet.None;
+            }
+        }
+
+        /// <summary>
+        /// Returns a *freshly allocated* array of loaded Assemblies.
+        /// </summary>
+        internal static Assembly[] GetLoadedAssemblies()
+        {
+            // Important: The result of this method is the return value of the AppDomain.GetAssemblies() api so
+            // so it must return a freshly allocated array on each call.
+
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            IList<AssemblyBindResult> bindResults = binder.GetLoadedAssemblies();
+            Assembly[] results = new Assembly[bindResults.Count];
+            for (int i = 0; i < bindResults.Count; i++)
+            {
+                Assembly assembly = GetRuntimeAssembly(bindResults[i]);
+                results[i] = assembly;
+            }
+            return results;
+        }
+
         private volatile CaseSensitiveTypeCache _lazyCaseSensitiveTypeTable;
 
         private sealed class CaseSensitiveTypeCache : ConcurrentUnifier<string, RuntimeTypeInfo>
@@ -199,6 +324,3 @@ namespace System.Reflection.Runtime.Assemblies
         }
     }
 }
-
-
-

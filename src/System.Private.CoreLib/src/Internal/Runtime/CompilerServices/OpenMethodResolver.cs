@@ -4,9 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime;
+
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
 {
@@ -17,39 +20,63 @@ namespace Internal.Runtime.CompilerServices
     //    so that repeated allocation of the same resolver will not leak.
     // 3) Use the ResolveMethod function to do the virtual lookup. This function takes advantage of 
     //    a lockless cache so the resolution is very fast for repeated lookups.
+    [ReflectionBlocked]
     public struct OpenMethodResolver : IEquatable<OpenMethodResolver>
     {
         public const short DispatchResolve = 0;
         public const short GVMResolve = 1;
         public const short OpenNonVirtualResolve = 2;
+        public const short OpenNonVirtualResolveLookthruUnboxing = 3;
 
         private readonly short _resolveType;
+        private readonly GCHandle _readerGCHandle;
         private readonly int _handle;
         private readonly IntPtr _methodHandleOrSlotOrCodePointer;
+        private readonly IntPtr _nonVirtualOpenInvokeCodePointer;
         private readonly EETypePtr _declaringType;
 
-        public OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, int slot, int handle)
+        public OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, int slot, GCHandle readerGCHandle, int handle)
         {
             _resolveType = DispatchResolve;
             _declaringType = declaringTypeOfSlot.ToEETypePtr();
             _methodHandleOrSlotOrCodePointer = new IntPtr(slot);
             _handle = handle;
+            _readerGCHandle = readerGCHandle;
+            _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
         }
 
-        public unsafe OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, RuntimeMethodHandle gvmSlot, int handle)
+        public unsafe OpenMethodResolver(RuntimeTypeHandle declaringTypeOfSlot, RuntimeMethodHandle gvmSlot, GCHandle readerGCHandle, int handle)
         {
             _resolveType = GVMResolve;
             _methodHandleOrSlotOrCodePointer = *(IntPtr*)&gvmSlot;
             _declaringType = declaringTypeOfSlot.ToEETypePtr();
             _handle = handle;
+            _readerGCHandle = readerGCHandle;
+            _nonVirtualOpenInvokeCodePointer = IntPtr.Zero;
         }
 
-        public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, int handle)
+        public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle)
         {
             _resolveType = OpenNonVirtualResolve;
+            _nonVirtualOpenInvokeCodePointer = _methodHandleOrSlotOrCodePointer = codePointer;
+            _declaringType = declaringType.ToEETypePtr();
+            _handle = handle;
+            _readerGCHandle = readerGCHandle;
+        }
+
+        public OpenMethodResolver(RuntimeTypeHandle declaringType, IntPtr codePointer, GCHandle readerGCHandle, int handle, short resolveType)
+        {
+            _resolveType = resolveType;
             _methodHandleOrSlotOrCodePointer = codePointer;
             _declaringType = declaringType.ToEETypePtr();
             _handle = handle;
+            _readerGCHandle = readerGCHandle;
+            if (resolveType == OpenNonVirtualResolve)
+                _nonVirtualOpenInvokeCodePointer = codePointer;
+            else if (resolveType == OpenNonVirtualResolveLookthruUnboxing)
+                _nonVirtualOpenInvokeCodePointer = RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(codePointer, declaringType);
+            else
+                throw new NotSupportedException();
         }
 
         public short ResolverType
@@ -78,11 +105,34 @@ namespace Internal.Runtime.CompilerServices
             }
         }
 
+        public bool IsOpenNonVirtualResolve
+        {
+            get
+            {
+                switch(_resolveType)
+                {
+                    case OpenNonVirtualResolve:
+                    case OpenNonVirtualResolveLookthruUnboxing:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+
         public IntPtr CodePointer
         {
             get
             {
                 return _methodHandleOrSlotOrCodePointer;
+            }
+        }
+
+        public object Reader
+        {
+            get
+            {
+                return _readerGCHandle.Target;
             }
         }
 
@@ -106,7 +156,7 @@ namespace Internal.Runtime.CompilerServices
             }
             else
             {
-                return _methodHandleOrSlotOrCodePointer;
+                throw new NotSupportedException(); // Should never happen, in this case, the dispatch should be resolved in the other ResolveMethod function
             }
         }
 
@@ -117,6 +167,10 @@ namespace Internal.Runtime.CompilerServices
 
         unsafe public static IntPtr ResolveMethod(IntPtr resolver, object thisObject)
         {
+            IntPtr nonVirtualOpenInvokeCodePointer = ((OpenMethodResolver*)resolver)->_nonVirtualOpenInvokeCodePointer;
+            if (nonVirtualOpenInvokeCodePointer != IntPtr.Zero)
+                return nonVirtualOpenInvokeCodePointer;
+
             return TypeLoaderExports.OpenInstanceMethodLookup(resolver, thisObject);
         }
 
@@ -146,7 +200,7 @@ namespace Internal.Runtime.CompilerServices
 
         public override int GetHashCode()
         {
-            return CalcHashCode(_resolveType, _handle, _methodHandleOrSlotOrCodePointer.GetHashCode(), _declaringType.GetHashCode());
+            return CalcHashCode(_resolveType, _handle, _methodHandleOrSlotOrCodePointer.GetHashCode(), _declaringType.IsNull ? 0 : _declaringType.GetHashCode());
         }
 
         public bool Equals(OpenMethodResolver other)

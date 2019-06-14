@@ -66,13 +66,12 @@ internal static string System.SR.GetResourceString(string resourceKey)
 internal static string System.SR.GetResourceString(string resourceKey, string defaultString)
 
 # System.Runtime.RuntimeImports
-internal static extern void System.Runtime.RuntimeImports._ecvt_s(byte* buffer, int sizeInBytes, double value, int count, int* dec, int* sign)
 internal static extern double System.Runtime.RuntimeImports.acos(double x)
 internal static extern bool System.Runtime.RuntimeImports.AreTypesAssignable(System.EETypePtr pSourceType, System.EETypePtr pTargetType)
 internal static extern bool System.Runtime.RuntimeImports.AreTypesEquivalent(System.EETypePtr pType1, System.EETypePtr pType2)
 internal static extern double System.Runtime.RuntimeImports.asin(double x)
 internal static extern double System.Runtime.RuntimeImports.atan(double x)
-internal static extern double System.Runtime.RuntimeImports.atan2(double x, double y)
+internal static extern double System.Runtime.RuntimeImports.atan2(double y, double x)
 internal static extern double System.Runtime.RuntimeImports.ceil(double x)
 internal static extern double System.Runtime.RuntimeImports.cos(double x)
 internal static extern double System.Runtime.RuntimeImports.cosh(double x)
@@ -87,15 +86,13 @@ internal static extern double System.Runtime.RuntimeImports.log10(double x)
 internal static extern double System.Runtime.RuntimeImports.modf(double x, double* intptr)
 internal static extern double System.Runtime.RuntimeImports.pow(double x, double y)
 internal static extern object System.Runtime.RuntimeImports.RhBox(System.EETypePtr pEEType, void* pData)
-internal static extern void System.Runtime.RuntimeImports.RhBulkMoveWithWriteBarrier(byte* dmem, byte* smem, int size)
 internal static extern void System.Runtime.RuntimeImports.RhCallDescrWorker(System.IntPtr callDescr)
 internal static extern void System.Runtime.RuntimeImports.RhCheckArrayStore(object array, object obj)
 internal static extern void System.Runtime.RuntimeImports.RhCollect(int generation, System.InternalGCCollectionMode mode)
 private static extern int System.Runtime.RuntimeImports.RhCompatibleReentrantWaitAny(int alertable, int timeout, int count, System.IntPtr* handles)
 internal static extern bool System.Runtime.RuntimeImports.RhCreateGenericInstanceDescForType2(System.EETypePtr pEEType, int arity, int nonGcStaticDataSize, int nonGCStaticDataOffset, int gcStaticDataSize, int threadStaticsOffset, void* pGcStaticsDesc, void* pThreadStaticsDesc, int* pGenericVarianceFlags)
-internal static extern bool System.Runtime.RuntimeImports.RhFindBlob(System.IntPtr hOsModule, uint blobId, byte** ppbBlob, uint* pcbBlob)
+private static extern bool System.Runtime.RuntimeImports.RhFindBlob(ref System.Runtime.TypeManagerHandle typeManagerHandle, uint blobId, byte** ppbBlob, uint* pcbBlob)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhFindMethodStartAddress(System.IntPtr codeAddr)
-internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetCodeTarget(System.IntPtr pCode)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetJmpStubCodeTarget(System.IntPtr pCode)
 internal static extern long System.Runtime.RuntimeImports.RhGetCurrentObjSize()
 internal static extern int System.Runtime.RuntimeImports.RhGetCurrentThreadStackTrace(System.IntPtr[] outputBuffer)
@@ -105,28 +102,26 @@ internal static extern int System.Runtime.RuntimeImports.RhGetGcCollectionCount(
 internal static extern int System.Runtime.RuntimeImports.RhGetGCDescSize(System.EETypePtr eeType)
 internal static extern System.Runtime.GCLatencyMode System.Runtime.RuntimeImports.RhGetGcLatencyMode()
 internal static extern long System.Runtime.RuntimeImports.RhGetGCNow()
-internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetGcStaticFieldData(System.EETypePtr pEEType)
 internal static extern long System.Runtime.RuntimeImports.RhGetGcTotalMemory()
 internal static extern int System.Runtime.RuntimeImports.RhGetGeneration(object obj)
 internal static extern long System.Runtime.RuntimeImports.RhGetLastGCDuration(int generation)
 internal static extern long System.Runtime.RuntimeImports.RhGetLastGCStartTime(int generation)
-internal static extern uint System.Runtime.RuntimeImports.RhGetLoadedModules(System.IntPtr[] resultArray)
+internal static extern uint System.Runtime.RuntimeImports.RhGetLoadedOSModules(System.IntPtr[] resultArray)
 internal static extern int System.Runtime.RuntimeImports.RhGetLohCompactionMode()
 internal static extern int System.Runtime.RuntimeImports.RhGetMaxGcGeneration()
 internal static extern int System.Runtime.RuntimeImports.RhGetModuleFileName(System.IntPtr moduleHandle, out char* moduleName)
-internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetModuleFromEEType(System.IntPtr pEEType)
-internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetModuleFromPointer(System.IntPtr pointerVal)
-internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetNonGcStaticFieldData(System.EETypePtr pEEType)
+internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetOSModuleFromEEType(System.IntPtr pEEType)
+internal static extern System.Runtime.TypeManagerHandle System.Runtime.RuntimeImports.RhGetModuleFromEEType(System.IntPtr pEEType)
+internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetOSModuleFromPointer(System.IntPtr pointerVal)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetRuntimeHelperForType(System.EETypePtr pEEType, System.Runtime.RuntimeImports.RuntimeHelperKind kind)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetThreadLocalStorageForDynamicType(int index, int tlsStorageSize, int numTlsCells)
-internal static extern byte* System.Runtime.RuntimeImports.RhGetThreadStaticFieldAddress(System.EETypePtr pEEType, System.IntPtr fieldCookie)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhGetUniversalTransitionThunk()
 internal static System.IntPtr System.Runtime.RuntimeImports.RhHandleAlloc(object value, System.Runtime.InteropServices.GCHandleType type)
 internal static System.IntPtr System.Runtime.RuntimeImports.RhHandleAllocDependent(object primary, object secondary)
 internal static System.IntPtr System.Runtime.RuntimeImports.RhHandleAllocVariable(object value, uint type)
 internal static extern uint System.Runtime.RuntimeImports.RhHandleCompareExchangeVariableType(System.IntPtr handle, uint oldType, uint newType)
 internal static extern void System.Runtime.RuntimeImports.RhHandleFree(System.IntPtr handle)
-internal static extern object System.Runtime.RuntimeImports.RhHandleGet(System.IntPtr handle)
+internal static object System.Runtime.RuntimeImports.RhHandleGet(System.IntPtr handle)
 internal static extern object System.Runtime.RuntimeImports.RhHandleGetDependent(System.IntPtr handle, out object secondary)
 internal static extern uint System.Runtime.RuntimeImports.RhHandleGetVariableType(System.IntPtr handle)
 internal static extern void System.Runtime.RuntimeImports.RhHandleSet(System.IntPtr handle, object value)
@@ -136,7 +131,6 @@ internal static extern bool System.Runtime.RuntimeImports.RhIsPromoted(object ob
 internal static extern bool System.Runtime.RuntimeImports.RhIsServerGc()
 internal static extern object System.Runtime.RuntimeImports.RhMemberwiseClone(object obj)
 internal static extern System.Array System.Runtime.RuntimeImports.RhNewArray(System.EETypePtr pEEType, int length)
-internal static extern string System.Runtime.RuntimeImports.RhNewArrayAsString(System.EETypePtr pEEType, int length)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhNewInterfaceDispatchCell(System.EETypePtr pEEType, int slotNumber)
 internal static extern object System.Runtime.RuntimeImports.RhNewObject(System.EETypePtr pEEType)
 internal static extern void System.Runtime.RuntimeImports.RhpEtwExceptionThrown(char* exceptionTypeName, char* exceptionMessage, System.IntPtr faultingIP, long hresult)
@@ -148,7 +142,7 @@ internal static void System.Runtime.RuntimeImports.RhReRegisterForFinalize(objec
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhResolveDispatch(object pObject, System.EETypePtr pInterfaceType, ushort slot)
 internal static extern System.IntPtr System.Runtime.RuntimeImports.RhResolveDispatchOnType(System.EETypePtr instanceType, System.EETypePtr interfaceType, ushort slot)
 internal static extern void* System.Runtime.RuntimeImports.RhSetErrorInfoBuffer(void* pNewBuffer)
-internal static extern void System.Runtime.RuntimeImports.RhSetGcLatencyMode(System.Runtime.GCLatencyMode newLatencyMode)
+internal static extern int System.Runtime.RuntimeImports.RhSetGcLatencyMode(System.Runtime.GCLatencyMode newLatencyMode)
 internal static extern void System.Runtime.RuntimeImports.RhSetLohCompactionMode(int newLohCompactionMode)
 internal static extern void System.Runtime.RuntimeImports.RhSpinWait(int iterations)
 internal static extern void System.Runtime.RuntimeImports.RhSuppressFinalize(object obj)
@@ -167,20 +161,18 @@ internal static extern bool System.Runtime.RuntimeImports.TryArrayCopy(System.Ar
 internal static System.Runtime.RuntimeImports.RhCorElementTypeInfo System.Runtime.RuntimeImports.GetRhCorElementTypeInfo(System.Runtime.RuntimeImports.RhCorElementType elementType)
 internal static int System.Runtime.RuntimeImports.RhCompatibleReentrantWaitAny(bool alertable, int timeout, int count, System.IntPtr* handles)
 internal static void System.Runtime.RuntimeImports.RhWaitForPendingFinalizers(bool allowReentrantWait)
-public static extern void System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle)
+public static void System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray(System.Array array, System.RuntimeFieldHandle fldHandle)
 
 # System.Runtime.CompilerSerivces
 public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Create()
 public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine)
 public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
 public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
-private void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.EnsureTaskCreated()
 public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Start<TStateMachine>(ref TStateMachine stateMachine)
 public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetResult()
 public void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetException(System.Exception exception)
-internal static void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetException(System.Threading.Tasks.Task task, System.Exception exception)
 internal void System.Runtime.CompilerServices.AsyncTaskMethodBuilder.SetNotificationForWaitCompletion(bool enabled)
-private object System.Runtime.CompilerServices.AsyncTaskMethodBuilder.ObjectIdForDebugger.get
+internal object System.Runtime.CompilerServices.AsyncTaskMethodBuilder.ObjectIdForDebugger.get
 public System.Threading.Tasks.Task System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Task.get
 
 # System.Runtime.CompilerServices.RuntimeHelpers
@@ -211,7 +203,6 @@ public static System.IntPtr System.IntPtr.operator +(System.IntPtr pointer, int 
 public static bool System.IntPtr.operator ==(System.IntPtr value1, System.IntPtr value2)
 public static int System.IntPtr.Size.get
 public static System.IntPtr System.IntPtr.Subtract(System.IntPtr pointer, int offset)
-internal bool System.IntPtr.IsNull()
 public int System.IntPtr.ToInt32()
 public long System.IntPtr.ToInt64()
 public void* System.IntPtr.ToPointer()
@@ -221,13 +212,10 @@ public string System.IntPtr.ToString(string format)
 private static System.Text.StringBuilder System.Text.StringBuilderCache.t_cachedInstance
 private int string._stringLength
 private char string._firstChar
-private void* System.IntPtr._value
-private static volatile System.Collections.Generic.ArraySortHelper<TKey, TValue> System.Collections.Generic.ArraySortHelper<TKey, TValue>.s_defaultArraySortHelper
+private readonly void* System.IntPtr._value
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentCulture
 private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_DefaultThreadCurrentUICulture
-private static volatile System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
-private System.Threading.Tasks.Task System.Runtime.CompilerServices.AsyncVoidMethodBuilder.m_task
-private System.Threading.Tasks.Task<System.Threading.Tasks.VoidTaskResult> System.Runtime.CompilerServices.AsyncTaskMethodBuilder.m_task
+private static readonly System.Globalization.CultureInfo System.Globalization.CultureInfo.s_InvariantCultureInfo
 private System.Threading.Tasks.Task<TResult> System.Runtime.CompilerServices.AsyncTaskMethodBuilder<TResult>.m_task
 private volatile int System.Threading.Tasks.Task.m_taskId
 internal volatile int System.Threading.Tasks.Task.m_stateFlags

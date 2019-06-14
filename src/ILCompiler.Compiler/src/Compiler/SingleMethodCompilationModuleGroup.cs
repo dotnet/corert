@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -27,9 +29,15 @@ namespace ILCompiler
             }
         }
 
-        public override bool ContainsMethod(MethodDesc method)
+        public override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
             return method == _method;
+        }
+
+        public sealed override bool ContainsMethodDictionary(MethodDesc method)
+        {
+            Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
+            return ContainsMethodBody(method, false);
         }
 
         public override bool ContainsType(TypeDesc type)
@@ -37,24 +45,62 @@ namespace ILCompiler
             return false;
         }
 
-        public override bool ShouldProduceFullType(TypeDesc type)
+        public override bool ContainsTypeDictionary(TypeDesc type)
         {
             return false;
         }
 
-        public override bool ShouldShareAcrossModules(MethodDesc method)
+        public override bool ImportsMethod(MethodDesc method, bool unboxingStub)
         {
-            return true;
+            return false;
         }
 
-        public override bool ShouldShareAcrossModules(TypeDesc type)
+        public override ExportForm GetExportTypeForm(TypeDesc type)
         {
-            return true;
+            return ExportForm.None;
+        }
+
+        public override ExportForm GetExportTypeFormDictionary(TypeDesc type)
+        {
+            return ExportForm.None;
+        }
+
+        public override ExportForm GetExportMethodForm(MethodDesc method, bool unboxingStub)
+        {
+            return ExportForm.None;
+        }
+
+        public override ExportForm GetExportMethodDictionaryForm(MethodDesc method)
+        {
+            return ExportForm.None;
+        }
+
+        public override bool ShouldProduceFullVTable(TypeDesc type)
+        {
+            return false;
+        }
+
+        public override bool ShouldPromoteToFullType(TypeDesc type)
+        {
+            return false;
+        }
+
+        public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
+        {
+            return false;
         }
 
         public override bool ShouldReferenceThroughImportTable(TypeDesc type)
         {
             return false;
+        }
+
+        public override bool CanHaveReferenceThroughImportTable
+        {
+            get
+            {
+                return false;
+            }
         }
     }
 }

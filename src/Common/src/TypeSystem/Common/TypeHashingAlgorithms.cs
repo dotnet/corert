@@ -13,7 +13,7 @@ using System.Text;
 
 namespace Internal.NativeFormat
 {
-    static public class TypeHashingAlgorithms
+    public static class TypeHashingAlgorithms
     {
         public struct HashCodeBuilder
         {

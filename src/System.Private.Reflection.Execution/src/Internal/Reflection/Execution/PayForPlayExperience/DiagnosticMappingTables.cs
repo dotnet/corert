@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
 using global::System.Text;
 using global::System.Collections.Generic;
 
@@ -12,12 +10,11 @@ using global::Internal.Metadata.NativeFormat;
 
 using global::Internal.Runtime.Augments;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
+using System.Reflection.Runtime.General;
 
 namespace Internal.Reflection.Execution.PayForPlayExperience
 {
-    internal static class DiagnosticMappingTables
+    internal static partial class DiagnosticMappingTables
     {
         // Get the diagnostic name string for a type. This attempts to reformat the string into something that is essentially human readable.
         //  Returns true if the function is successful.
@@ -45,15 +42,24 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                 return true;
             }
 
-            TypeDefinitionHandle typeDefinitionHandle;
-            if (executionEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out reader, out typeDefinitionHandle))
+            QTypeDefinition qTypeDefinition;
+            if (executionEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out qTypeDefinition))
             {
-                diagnosticName = GetTypeFullNameFromTypeDef(typeDefinitionHandle, reader, genericParameterOffsets);
-                return true;
+                TryGetFullNameFromTypeDefEcma(qTypeDefinition, genericParameterOffsets, ref diagnosticName);
+                if (diagnosticName != null)
+                    return true;
+                
+                if (qTypeDefinition.IsNativeFormatMetadataBased)
+                {
+                    TypeDefinitionHandle typeDefinitionHandle = qTypeDefinition.NativeFormatHandle;
+                    diagnosticName = GetTypeFullNameFromTypeDef(typeDefinitionHandle, qTypeDefinition.NativeFormatReader, genericParameterOffsets);
+                    return true;
+                }
             }
             return false;
         }
 
+        static partial void TryGetFullNameFromTypeDefEcma(QTypeDefinition qTypeDefinition, List<int> genericParameterOffsets, ref string result);
 
         private static String GetTypeFullNameFromTypeRef(TypeReferenceHandle typeReferenceHandle, MetadataReader reader, List<int> genericParameterOffsets)
         {

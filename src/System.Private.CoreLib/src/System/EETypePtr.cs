@@ -31,12 +31,17 @@ namespace System
             _value = (EEType*)value;
         }
 
+        internal EETypePtr(EEType* value)
+        {
+            _value = value;
+        }
+
         internal EEType* ToPointer()
         {
             return _value;
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is EETypePtr)
             {
@@ -83,6 +88,19 @@ namespace System
             if (this.RawValue == other.RawValue)
                 return true;
             return RuntimeImports.AreTypesEquivalent(this, other);
+        }
+
+        //
+        // An even faster version of FastEquals that only checks if two EEType pointers are identical.
+        // Note: this method might return false for cases where FastEquals would return true.
+        // Only use if you know what you're doing.
+        //
+        internal bool FastEqualsUnreliable(EETypePtr other)
+        {
+            Debug.Assert(!this.IsNull);
+            Debug.Assert(!other.IsNull);
+
+            return this.RawValue == other.RawValue;
         }
 
         // Caution: You cannot safely compare RawValue's as RH does NOT unify EETypes. Use the == or Equals() methods exposed by EETypePtr itself.
@@ -146,11 +164,13 @@ namespace System
         {
             get
             {
-                // String is currently the only non-array type with a non-zero component size.
-                return (_value->ComponentSize == sizeof(char)) && !_value->IsArray && !_value->IsGenericTypeDefinition;
+                return _value->IsString;
             }
         }
 
+        /// <summary>
+        /// Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
+        /// </summary>
         internal bool IsPrimitive
         {
             get
@@ -162,6 +182,10 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// WARNING: Never call unless the EEType came from an instanced object. Nested enums can be open generics (typeof(Outer<>).NestedEnum) 
+        /// and this helper has undefined behavior when passed such as a enum.
+        /// </summary>
         internal bool IsEnum
         {
             get
@@ -170,8 +194,17 @@ namespace System
                 // A: When it's nested inside a generic type.
                 if (!(IsDefType))
                     return false;
-                EETypePtr baseType = this.BaseType;
-                return baseType == EETypePtr.EETypePtrOf<Enum>();
+
+                // Generic type definitions that return true for IsPrimitive are type definitions of generic enums.
+                // Otherwise check the base type.
+                return
+                    // RHBind doesn't emit CorElementType on generic type definitions, so this only works for
+                    // open generics outside ProjectN. When we fix this, also remove the N-specific fallback for getting
+                    // the underlying type of open enums in RuntimeAugments.
+#if !PROJECTN
+                    (IsGenericTypeDefinition && IsPrimitive) ||
+#endif
+                    this.BaseType == EETypePtr.EETypePtrOf<Enum>();
             }
         }
 
@@ -209,7 +242,7 @@ namespace System
         {
             get
             {
-                return new EETypePtr((IntPtr)_value->GenericDefinition);
+                return new EETypePtr(_value->GenericDefinition);
             }
         }
 
@@ -240,6 +273,22 @@ namespace System
             }
         }
 
+        internal bool IsAbstract
+        {
+            get
+            {
+                return _value->IsAbstract;
+            }
+        }
+
+        internal bool IsByRefLike
+        {
+            get
+            {
+                return _value->IsByRefLike;
+            }
+        }
+
         internal bool IsNullable
         {
             get
@@ -260,7 +309,7 @@ namespace System
         {
             get
             {
-                return new EETypePtr((IntPtr)_value->NullableType);
+                return new EETypePtr(_value->NullableType);
             }
         }
 
@@ -268,7 +317,7 @@ namespace System
         {
             get
             {
-                return new EETypePtr((IntPtr)_value->RelatedParameterType);
+                return new EETypePtr(_value->RelatedParameterType);
             }
         }
 
@@ -298,7 +347,7 @@ namespace System
                 if (IsPointer || IsByRef)
                     return new EETypePtr(default(IntPtr));
 
-                EETypePtr baseEEType = new EETypePtr((IntPtr)_value->NonArrayBaseType);
+                EETypePtr baseEEType = new EETypePtr(_value->NonArrayBaseType);
                 return baseEEType;
             }
         }
@@ -356,6 +405,7 @@ namespace System
         }
 
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static EETypePtr EETypePtrOf<T>()
         {
             // Compilers are required to provide a low level implementation of this method.
@@ -388,8 +438,7 @@ namespace System
                 {
                     Debug.Assert((uint)index < _value->NumInterfaces);
 
-                    EEType* interfaceType = _value->InterfaceMap[index].InterfaceType;
-                    return new EETypePtr((IntPtr)interfaceType);
+                    return new EETypePtr(_value->InterfaceMap[index].InterfaceType);
                 }
             }
         }
@@ -418,7 +467,7 @@ namespace System
                 get
                 {
                     Debug.Assert((uint)index < _argumentCount);
-                    return new EETypePtr((IntPtr)_arguments[index].Value);
+                    return new EETypePtr(_arguments[index].Value);
                 }
             }
         }

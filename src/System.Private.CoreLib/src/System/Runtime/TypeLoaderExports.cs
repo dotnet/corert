@@ -11,11 +11,12 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
-    // Initialize the cache eagerly to avoid null checks
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.SystemRuntimeTypeLoaderExports)]
+    [ReflectionBlocked]
     public static class TypeLoaderExports
     {
+#if PROJECTN
         [RuntimeExport("GetThreadStaticsForDynamicType")]
+#endif
         public static IntPtr GetThreadStaticsForDynamicType(int index)
         {
             IntPtr result = RuntimeImports.RhGetThreadLocalStorageForDynamicType(index, 0, 0);
@@ -32,7 +33,9 @@ namespace System.Runtime
             return result;
         }
 
+#if PROJECTN
         [RuntimeExport("ActivatorCreateInstanceAny")]
+#endif
         public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
         {
             EETypePtr pEEType = new EETypePtr(pEETypePtr);
@@ -52,7 +55,14 @@ namespace System.Runtime
             Entry entry = LookupInCache(s_cache, pEETypePtr, pEETypePtr);
             if (entry == null)
             {
-                entry = CacheMiss(pEETypePtr, pEETypePtr, SignatureKind.DefaultConstructor);
+                entry = CacheMiss(pEETypePtr, pEETypePtr,
+                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
+                    {
+                        IntPtr result = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
+                        if (result == IntPtr.Zero)
+                            result = RuntimeAugments.GetFallbackDefaultConstructor();
+                        return result;
+                    });
             }
             RawCalliHelper.Call(entry.Result, ptrToData);
         }
@@ -73,14 +83,19 @@ namespace System.Runtime
         // Initialize the cache eagerly to avoid null checks.
         // Use array with just single element to make this pay-for-play. The actual cache will be allocated only 
         // once the lazy lookups are actually needed.
-        private static Entry[] s_cache = new Entry[1];
+        private static Entry[] s_cache;
 
         private static Lock s_lock;
         private static GCHandle s_previousCache;
-        private volatile static IntPtr[] s_resolutionFunctionPointers = new IntPtr[4];
-        private static int s_nextResolutionFunctionPointerIndex = (int)SignatureKind.Count;
 
+        internal static void Initialize()
+        {
+            s_cache = new Entry[1];
+        }
+
+#if PROJECTN
         [RuntimeExport("GenericLookup")]
+#endif
         public static IntPtr GenericLookup(IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
@@ -91,8 +106,10 @@ namespace System.Runtime
             return entry.Result;
         }
 
+#if PROJECTN
         [RuntimeExport("GenericLookupAndCallCtor")]
-        public static void GenericLookupAndCallCtor(Object arg, IntPtr context, IntPtr signature)
+#endif
+        public static void GenericLookupAndCallCtor(object arg, IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
             if (entry == null)
@@ -102,29 +119,35 @@ namespace System.Runtime
             RawCalliHelper.Call(entry.Result, arg);
         }
 
+#if PROJECTN
         [RuntimeExport("GenericLookupAndAllocObject")]
-        public static Object GenericLookupAndAllocObject(IntPtr context, IntPtr signature)
+#endif
+        public static object GenericLookupAndAllocObject(IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
             if (entry == null)
             {
                 entry = CacheMiss(context, signature);
             }
-            return RawCalliHelper.Call<Object>(entry.Result, entry.AuxResult);
+            return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult);
         }
 
+#if PROJECTN
         [RuntimeExport("GenericLookupAndAllocArray")]
-        public static Object GenericLookupAndAllocArray(IntPtr context, IntPtr arg, IntPtr signature)
+#endif
+        public static object GenericLookupAndAllocArray(IntPtr context, IntPtr arg, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
             if (entry == null)
             {
                 entry = CacheMiss(context, signature);
             }
-            return RawCalliHelper.Call<Object>(entry.Result, entry.AuxResult, arg);
+            return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult, arg);
         }
 
+#if PROJECTN
         [RuntimeExport("GenericLookupAndCheckArrayElemType")]
+#endif
         public static void GenericLookupAndCheckArrayElemType(IntPtr context, object arg, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
@@ -135,33 +158,58 @@ namespace System.Runtime
             RawCalliHelper.Call(entry.Result, entry.AuxResult, arg);
         }
 
+#if PROJECTN
         [RuntimeExport("GenericLookupAndCast")]
-        public static Object GenericLookupAndCast(Object arg, IntPtr context, IntPtr signature)
+#endif
+        public static object GenericLookupAndCast(object arg, IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
             if (entry == null)
             {
                 entry = CacheMiss(context, signature);
             }
-            return RawCalliHelper.Call<Object>(entry.Result, arg, entry.AuxResult);
+            return RawCalliHelper.Call<object>(entry.Result, arg, entry.AuxResult);
         }
 
-        public unsafe static IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
+#if PROJECTN
+        [RuntimeExport("UpdateTypeFloatingDictionary")]
+#endif
+        public static IntPtr UpdateTypeFloatingDictionary(IntPtr eetypePtr, IntPtr dictionaryPtr)
+        {
+            // No caching needed. Update is in-place, and happens once per dictionary
+            return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(eetypePtr, dictionaryPtr);
+        }
+
+#if PROJECTN
+        [RuntimeExport("UpdateMethodFloatingDictionary")]
+#endif
+        public static IntPtr UpdateMethodFloatingDictionary(IntPtr dictionaryPtr)
+        {
+            // No caching needed. Update is in-place, and happens once per dictionary
+            return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(dictionaryPtr, dictionaryPtr);
+        }
+
+        public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
         {
             Entry entry = LookupInCache(s_cache, delegateObj.m_pEEType, new IntPtr(whichThunk));
             if (entry == null)
             {
-                entry = CacheMiss(delegateObj.m_pEEType, new IntPtr(whichThunk), SignatureKind.GenericDelegateThunk, delegateObj);
+                entry = CacheMiss(delegateObj.m_pEEType, new IntPtr(whichThunk),
+                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
+                        => RuntimeAugments.TypeLoaderCallbacks.GetDelegateThunk((Delegate)contextObject, (int)signature),
+                    delegateObj);
             }
             return entry.Result;
         }
 
-        public unsafe static IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
+        public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
             Entry entry = LookupInCache(s_cache, obj.m_pEEType, *(IntPtr*)&slot);
             if (entry == null)
             {
-                entry = CacheMiss(obj.m_pEEType, *(IntPtr*)&slot, SignatureKind.GenericVirtualMethod);
+                entry = CacheMiss(obj.m_pEEType, *(IntPtr*)&slot,
+                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
+                        => Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
             }
             return entry.Result;
         }
@@ -172,7 +220,10 @@ namespace System.Runtime
             Entry entry = LookupInCache(s_cache, obj.m_pEEType, openResolver);
             if (entry == null)
             {
-                entry = CacheMiss(obj.m_pEEType, openResolver, SignatureKind.OpenInstanceResolver, obj);
+                entry = CacheMiss(obj.m_pEEType, openResolver,
+                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
+                        => Internal.Runtime.CompilerServices.OpenMethodResolver.ResolveMethodWorker(signature, contextObject),
+                    obj);
             }
             return entry.Result;
         }
@@ -191,59 +242,27 @@ namespace System.Runtime
             return entry;
         }
 
-        private enum SignatureKind
-        {
-            GenericDictionary,
-            GenericVirtualMethod,
-            OpenInstanceResolver,
-            DefaultConstructor,
-            GenericDelegateThunk,
-            Count
-        }
-
-        internal static int RegisterResolutionFunction(IntPtr resolutionFunction)
-        {
-            if (s_lock == null)
-                Interlocked.CompareExchange(ref s_lock, new Lock(), null);
-
-            s_lock.Acquire();
-            try
-            {
-                int newResolutionFunctionId = s_nextResolutionFunctionPointerIndex;
-                IntPtr[] resolutionFunctionPointers = null;
-                if (newResolutionFunctionId < s_resolutionFunctionPointers.Length)
-                {
-                    resolutionFunctionPointers = s_resolutionFunctionPointers;
-                }
-                else
-                {
-                    resolutionFunctionPointers = new IntPtr[s_resolutionFunctionPointers.Length * 2];
-                    Array.Copy(s_resolutionFunctionPointers, resolutionFunctionPointers, s_resolutionFunctionPointers.Length);
-                    s_resolutionFunctionPointers = resolutionFunctionPointers;
-                }
-                Volatile.Write(ref s_resolutionFunctionPointers[newResolutionFunctionId], resolutionFunction);
-                s_nextResolutionFunctionPointerIndex++;
-                return newResolutionFunctionId;
-            }
-            finally
-            {
-                s_lock.Release();
-            }
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static IntPtr RuntimeCacheLookupInCache(IntPtr context, IntPtr signature, int registeredResolutionFunction, object contextObject, out IntPtr auxResult)
+        internal static IntPtr RuntimeCacheLookupInCache(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
             if (entry == null)
             {
-                entry = CacheMiss(context, signature, (SignatureKind)registeredResolutionFunction, contextObject);
+                entry = CacheMiss(context, signature, factory, contextObject);
             }
             auxResult = entry.AuxResult;
             return entry.Result;
         }
 
-        private unsafe static Entry CacheMiss(IntPtr context, IntPtr signature, SignatureKind signatureKind = SignatureKind.GenericDictionary, object contextObject = null)
+        private static Entry CacheMiss(IntPtr ctx, IntPtr sig)
+        {
+            return CacheMiss(ctx, sig,
+                (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
+                    RuntimeAugments.TypeLoaderCallbacks.GenericLookupFromContextAndSignature(context, signature, out auxResult)
+                );
+        }
+
+        private static unsafe Entry CacheMiss(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject = null)
         {
             IntPtr result = IntPtr.Zero, auxResult = IntPtr.Zero;
             bool previouslyCached = false;
@@ -271,31 +290,7 @@ namespace System.Runtime
             //
             if (!previouslyCached)
             {
-                switch (signatureKind)
-                {
-                    case SignatureKind.GenericDictionary:
-                        result = RuntimeAugments.TypeLoaderCallbacks.GenericLookupFromContextAndSignature(context, signature, out auxResult);
-                        break;
-                    case SignatureKind.GenericVirtualMethod:
-                        result = Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature);
-                        break;
-                    case SignatureKind.OpenInstanceResolver:
-                        result = Internal.Runtime.CompilerServices.OpenMethodResolver.ResolveMethodWorker(signature, contextObject);
-                        break;
-                    case SignatureKind.DefaultConstructor:
-                        {
-                            result = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
-                            if (result == IntPtr.Zero)
-                                result = RuntimeAugments.GetFallbackDefaultConstructor();
-                        }
-                        break;
-                    case SignatureKind.GenericDelegateThunk:
-                        result = RuntimeAugments.TypeLoaderCallbacks.GetDelegateThunk((Delegate)contextObject, (int)signature);
-                        break;
-                    default:
-                        result = RawCalliHelper.Call<IntPtr>(s_resolutionFunctionPointers[(int)signatureKind], context, signature, contextObject, out auxResult);
-                        break;
-                }
+                result = factory(context, signature, contextObject, ref auxResult);
             }
 
             //
@@ -425,6 +420,9 @@ namespace System.Runtime
         }
     }
 
+    [ReflectionBlocked]
+    public delegate IntPtr RuntimeObjectFactory(IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult);
+
     [System.Runtime.InteropServices.McgIntrinsicsAttribute]
     internal class RawCalliHelper
     {
@@ -435,7 +433,7 @@ namespace System.Runtime
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static void Call(System.IntPtr pfn, Object arg)
+        public static void Call(System.IntPtr pfn, object arg)
         {
         }
 
@@ -453,12 +451,18 @@ namespace System.Runtime
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static void Call(System.IntPtr pfn, IntPtr arg1, Object arg2)
+        public static void Call(System.IntPtr pfn, IntPtr arg1, object arg2)
         {
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public static T Call<T>(System.IntPtr pfn, Object arg1, IntPtr arg2)
+        public static T Call<T>(System.IntPtr pfn, object arg1, IntPtr arg2)
+        {
+            return default(T);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static T Call<T>(IntPtr pfn, string[] arg0)
         {
             return default(T);
         }

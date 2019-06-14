@@ -58,7 +58,7 @@ namespace Internal.TypeSystem.Ecma
                         break;
 
                     default:
-                        Debug.Assert(false, "unexpected methodDeclHandleKind");
+                        Debug.Fail("unexpected methodDeclHandleKind");
                         break;
                 }
 
@@ -113,7 +113,7 @@ namespace Internal.TypeSystem.Ecma
                         break;
 
                     default:
-                        Debug.Assert(false, "unexpected methodDeclHandleKind");
+                        Debug.Fail("unexpected methodDeclHandleKind");
                         break;
                 }
 

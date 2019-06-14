@@ -74,7 +74,12 @@ ALTERNATE_ENTRY Rhp&FunctionName&@0
         mov  edx, [ebp-4]    ; Get the extra argument to pass to the callee
         lea  ecx, [ebp-10h]  ; Get pointer to edx value pushed above
         call eax
-LABELED_RETURN_ADDRESS ReturnFrom&FunctionName
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToReturnFrom&FunctionName
+
+        ; We cannot make the label public as that tricks DIA stackwalker into thinking
+        ; it's the beginning of a method. For this reason we export an auxiliary variable
+        ; holding the address instead.
 
         pop edx
         pop ecx
@@ -83,6 +88,7 @@ LABELED_RETURN_ADDRESS ReturnFrom&FunctionName
         jmp eax
 
 FASTCALL_ENDFUNC
+
         endm
         
         ; To enable proper step-in behavior in the debugger, we need to have two instances
@@ -90,7 +96,7 @@ FASTCALL_ENDFUNC
         ; for the other, it steps over it.
         UNIVERSAL_TRANSITION UniversalTransition
         UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
-        
+
 endif
 
 end

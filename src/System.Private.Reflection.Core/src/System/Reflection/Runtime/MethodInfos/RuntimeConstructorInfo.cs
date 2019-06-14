@@ -44,6 +44,11 @@ namespace System.Reflection.Runtime.MethodInfos
             throw new NotSupportedException();
         }
 
+        public sealed override MethodBody GetMethodBody()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public sealed override ParameterInfo[] GetParameters()
         {
 #if ENABLE_REFLECTION_TRACE
@@ -65,16 +70,17 @@ namespace System.Reflection.Runtime.MethodInfos
             return RuntimeParameters;
         }
 
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+
         public abstract override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
 
+        [DebuggerGuidedStepThrough]
         public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
 #endif
-            binder.EnsureNotCustomBinder();
-
             if (parameters == null)
                 parameters = Array.Empty<Object>();
             MethodInvoker methodInvoker;
@@ -102,15 +108,16 @@ namespace System.Reflection.Runtime.MethodInfos
                 throw;
             }
 
-            return methodInvoker.Invoke(obj, parameters);
+            object result = methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
-        public sealed override int MetadataToken
-        {
-            get
-            {
-                throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
-            }
+        public abstract override MethodBase MetadataDefinitionMethod { get; }
+
+        public abstract override int MetadataToken 
+        { 
+            get; 
         }
 
         public sealed override Module Module
@@ -118,6 +125,14 @@ namespace System.Reflection.Runtime.MethodInfos
             get
             {
                 return DeclaringType.Module;
+            }
+        }
+
+        public sealed override bool IsConstructedGenericMethod
+        {
+            get
+            {
+                return false;
             }
         }
 
@@ -156,6 +171,8 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override String ToString();
 
+        public abstract override RuntimeMethodHandle MethodHandle { get; }
+
         protected MethodInvoker MethodInvoker
         {
             get
@@ -167,6 +184,8 @@ namespace System.Reflection.Runtime.MethodInfos
                 return _lazyMethodInvoker;
             }
         }
+
+        internal IntPtr LdFtnResult => MethodInvoker.LdFtnResult;
 
         protected abstract RuntimeParameterInfo[] RuntimeParameters { get; }
 

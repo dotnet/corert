@@ -12,6 +12,8 @@
 include AsmMacros.inc
 
 RhpCallFunclet equ @RhpCallFunclet@0
+RhpThrowHwEx equ @RhpThrowHwEx@0
+
 extern RhpCallFunclet : proc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,15 +30,6 @@ FASTCALL_FUNC  RhpThrowHwEx, 0
 
         esp_offsetof_ExInfo     textequ %0
         esp_offsetof_Context    textequ %SIZEOF__ExInfo
-
-
-        add     edx, 1  ;; 'faulting IP' += 1, we do this because everywhere else we treat the faulting IP as
-                        ;; a return-address and optionally subtract one when doing EH-related things (but not
-                        ;; subtracting 1 when doing GC-related things).  The fault IP here will be the start
-                        ;; of the faulting instruction, so +1 will point to either the next instruction or the
-                        ;; middle of this instruction.  Either way, when the dispatch / stackwalk code deals
-                        ;; with this address it'll apply a -1 for EH range checks and the GC-related operations
-                        ;; don't need to be precise here because the fault location isn't a GC safe point 
 
         push    edx         ; make it look like we were called by pushing the faulting IP like a return address
         push    ebp
@@ -81,7 +74,8 @@ FASTCALL_FUNC  RhpThrowHwEx, 0
         ;; ecx still contains the exception code
         ;; edx contains the address of the ExInfo
         call    RhThrowHwEx
-ALTERNATE_ENTRY RhpThrowHwEx2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpThrowHwEx2
 
         ;; no return
         int 3
@@ -157,7 +151,8 @@ FASTCALL_FUNC  RhpThrowEx, 0
         ;; ecx still contains the exception object
         ;; edx contains the address of the ExInfo
         call    RhThrowEx
-ALTERNATE_ENTRY RhpThrowEx2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpThrowEx2
 
         ;; no return
         int 3
@@ -212,6 +207,7 @@ FASTCALL_FUNC  RhpRethrow, 0
         mov     [edx + OFFSETOF__ExInfo__m_exception], esi          ;; init the exception object to null
         mov     byte ptr [edx + OFFSETOF__ExInfo__m_passNumber], 1  ;; init to the first pass 
         mov     dword ptr [edx + OFFSETOF__ExInfo__m_idxCurClause], 0FFFFFFFFh
+        mov     byte ptr [edx + OFFSETOF__ExInfo__m_kind], 0        ;; init to a deterministic value (ExKind.None)
 
         ;; link the ExInfo into the thread's ExInfo chain
         mov     ecx, [eax + OFFSETOF__Thread__m_pExInfoStackHead]   ;; ecx <- currently active ExInfo
@@ -225,7 +221,8 @@ FASTCALL_FUNC  RhpRethrow, 0
         ;; ecx contains the currently active ExInfo
         ;; edx contains the address of the new ExInfo
         call    RhRethrow
-ALTERNATE_ENTRY RhpRethrow2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpRethrow2
 
         ;; no return
         int 3
@@ -278,20 +275,24 @@ endm
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FASTCALL_FUNC  RhpCallCatchFunclet, 0
 
-        FUNCLET_CALL_PROLOGUE 1
+        FUNCLET_CALL_PROLOGUE 2
 
-        esp_offsetof_ResumeIP   textequ %00h         ;; [esp + 00h]: continuation address
-                                                     ;; [esp + 04h]: edi save
-                                                     ;; [esp + 08h]: esi save
-                                                     ;; [esp + 0Ch]: ebx save
-        esp_offsetof_PrevEBP    textequ %10h         ;; [esp + 10h]: prev ebp
-        esp_offsetof_RetAddr    textequ %14h         ;; [esp + 14h]: return address
-        esp_offsetof_RegDisplay textequ %18h         ;; [esp + 18h]: REGDISPLAY*
-        esp_offsetof_ExInfo     textequ %1ch         ;; [esp + 1Ch]: ExInfo*
+        esp_offsetof_ResumeIP                   textequ %00h        ;; [esp + 00h]: continuation address
+        esp_offsetof_is_handling_thread_abort   textequ %04h        ;; [esp + 04h]: set if we are handling ThreadAbortException
+                                                                    ;; [esp + 08h]: edi save
+                                                                    ;; [esp + 0ch]: esi save
+                                                                    ;; [esp + 10h]: ebx save
+        esp_offsetof_PrevEBP                    textequ %14h        ;; [esp + 14h]: prev ebp
+        esp_offsetof_RetAddr                    textequ %18h        ;; [esp + 18h]: return address
+        esp_offsetof_RegDisplay                 textequ %1ch        ;; [esp + 1Ch]: REGDISPLAY*
+        esp_offsetof_ExInfo                     textequ %20h        ;; [esp + 20h]: ExInfo*
 
         ;; Clear the DoNotTriggerGc state before calling out to our managed catch funclet.
         INLINE_GETTHREAD    eax, ebx        ;; eax <- Thread*, ebx is trashed
         lock and            dword ptr [eax + OFFSETOF__Thread__m_ThreadStateFlags], NOT TSF_DoNotTriggerGc
+
+        cmp         ecx, [eax + OFFSETOF__Thread__m_threadAbortException]
+        setz        byte ptr [esp + esp_offsetof_is_handling_thread_abort]
 
         mov         edi, [esp + esp_offsetof_RegDisplay]            ;; edi <- REGDISPLAY *
 
@@ -314,7 +315,8 @@ FASTCALL_FUNC  RhpCallCatchFunclet, 0
         ;; EDX: funclet IP
         ;; EAX: funclet EBP
         call        RhpCallFunclet
-ALTERNATE_ENTRY RhpCallCatchFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpCallCatchFunclet2
 
         ;; eax: resume IP
         mov         [esp + esp_offsetof_ResumeIP], eax              ;; save for later
@@ -337,6 +339,25 @@ ALTERNATE_ENTRY RhpCallCatchFunclet2
 
     @@: mov         [edx + OFFSETOF__Thread__m_pExInfoStackHead], ecx   ;; store the new head on the Thread
 
+        test        [RhpTrapThreads], TrapThreadsFlags_AbortInProgress
+        jz          @f
+
+        ;; test if the exception handled by the catch was the ThreadAbortException
+        cmp         byte ptr [esp + esp_offsetof_is_handling_thread_abort], 0
+        je          @f
+
+        ;; RhpCallFunclet preserved our local EBP value, so let's fetch the correct one for the resume address
+        mov         ecx, [esp + esp_offsetof_RegDisplay]            ;; ecx <- REGDISPLAY *
+        mov         ecx, [ecx + OFFSETOF__REGDISPLAY__pRbp]
+        mov         ebp, [ecx]
+
+        ;; It was the ThreadAbortException, so rethrow it
+        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
+        mov         edx, [esp + esp_offsetof_ResumeIP]
+        mov         esp, eax                                        ;; reset the SP to resume SP value
+        jmp         RhpThrowHwEx                                    ;; Throw the ThreadAbortException as a special kind of hardware exception        
+
+    @@:
         ;; RhpCallFunclet preserved our local EBP value, so let's fetch the correct one for the resume address
         mov         ecx, [esp + esp_offsetof_RegDisplay]            ;; ecx <- REGDISPLAY *
         mov         ecx, [ecx + OFFSETOF__REGDISPLAY__pRbp]
@@ -390,7 +411,8 @@ FASTCALL_FUNC  RhpCallFinallyFunclet, 0
         ;; EDX: funclet IP
         ;; EAX: funclet EBP
         call        RhpCallFunclet
-ALTERNATE_ENTRY RhpCallFinallyFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpCallFinallyFunclet2
 
         pop         edx     ;; restore REGDISPLAY*
 
@@ -443,7 +465,8 @@ FASTCALL_FUNC  RhpCallFilterFunclet, 0
         mov         edx, [esp + 0]                  ;; reload filter funclet address
 
         call        RhpCallFunclet
-ALTERNATE_ENTRY RhpCallFilterFunclet2
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToRhpCallFilterFunclet2
 
         ;; EAX contains the result of the filter execution
         mov         edx, [ebp + 8]

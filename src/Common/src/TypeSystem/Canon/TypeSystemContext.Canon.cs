@@ -44,6 +44,11 @@ namespace Internal.TypeSystem
             }
         }
 
+        protected internal virtual ModuleDesc CanonTypesModule
+        {
+            get { return SystemModule; }
+        }
+
         /// <summary>
         /// Returns true if and only if the '<paramref name="type"/>' is __Canon or __UniversalCanon
         /// that matches the <paramref name="kind"/> parameter.
@@ -66,7 +71,16 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Converts the instantiation into a canonical form. Returns the canonical instantiation. The '<paramref name="changed"/>'
+        /// Converts an instantiation into its canonical form.
+        /// </summary>
+        public Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind)
+        {
+            bool changed;
+            return ConvertInstantiationToCanonForm(instantiation, kind, out changed);
+        }
+
+        /// <summary>
+        /// Converts an instantiation into its canonical form. Returns the canonical instantiation. The '<paramref name="changed"/>'
         /// parameter indicates whether the returned canonical instantiation is different from the specific instantiation
         /// passed as the input.
         /// </summary>
@@ -82,6 +96,22 @@ namespace Internal.TypeSystem
         protected internal virtual TypeDesc ConvertToCanon(TypeDesc typeToConvert, CanonicalFormKind kind)
         {
             throw new NotSupportedException();
+        }
+
+        public abstract bool SupportsCanon { get; }
+        public abstract bool SupportsUniversalCanon { get; }
+
+        public MetadataType GetCanonType(string name)
+        {
+            switch (name)
+            {
+                case TypeSystem.CanonType.FullName:
+                    return CanonType;
+                case TypeSystem.UniversalCanonType.FullName:
+                    return UniversalCanonType;
+            }
+
+            return null;
         }
     }
 }

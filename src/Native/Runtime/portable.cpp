@@ -35,7 +35,7 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 
-#ifdef USE_PORTABLE_HELPERS
+#if defined(USE_PORTABLE_HELPERS)
 
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame);
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpPublishObject(void* pObject, UIntNative cbSize);
@@ -171,18 +171,45 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     return pObject;
 }
 
-//
-// PInvoke
-//
-COOP_PINVOKE_HELPER(void, RhpPInvoke, (void* pFrame))
+COOP_PINVOKE_HELPER(String *, RhNewString, (EEType * pArrayEEType, int numElements))
 {
-    // TODO: RhpPInvoke
+    // TODO: Implement. We tail call to RhpNewArray for now since there's a bunch of TODOs in the places
+    // that matter anyway.
+    return (String*)RhpNewArray(pArrayEEType, numElements);
 }
 
-COOP_PINVOKE_HELPER(void, RhpPInvokeReturn, (void* pFrame))
+#endif
+#if defined(USE_PORTABLE_HELPERS)
+
+#ifdef _ARM_
+COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (EEType* pEEType))
 {
-    // TODO: RhpPInvokeReturn
+    Object * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
 }
+
+COOP_PINVOKE_HELPER(Object *, RhpNewFastMisalign, (EEType* pEEType))
+{
+    Object * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+
+COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (EEType* pEEType))
+{
+    Object * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+
+COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (EEType * pArrayEEType, int numElements))
+{
+    Array * pObject = nullptr;
+    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    return pObject;
+}
+#endif
 
 COOP_PINVOKE_HELPER(void, RhpInitialDynamicInterfaceDispatch, ())
 {
@@ -261,8 +288,12 @@ void * ReturnFromUniversalTransition_DebugStepTailCall;
 
 // @TODO Implement CallDescrThunk
 EXTERN_C void * ReturnFromCallDescrThunk;
+#ifdef USE_PORTABLE_HELPERS
 void * ReturnFromCallDescrThunk;
+#endif
 
+#if defined(USE_PORTABLE_HELPERS) || defined(PLATFORM_UNIX)
+#if !defined (_ARM64_)
 // 
 // Return address hijacking
 //
@@ -290,9 +321,12 @@ COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
+#endif
+#endif // defined(USE_PORTABLE_HELPERS) || defined(PLATFORM_UNIX)
 
-#ifdef USE_PORTABLE_HELPERS
+#if defined(USE_PORTABLE_HELPERS)
 
+#if !defined (_ARM64_)
 COOP_PINVOKE_HELPER(void, RhpAssignRef, (Object ** dst, Object * ref))
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
@@ -306,6 +340,7 @@ COOP_PINVOKE_HELPER(void, RhpCheckedAssignRef, (Object ** dst, Object * ref))
     *dst = ref;
     InlineCheckedWriteBarrier(dst, ref);
 }
+#endif
 
 COOP_PINVOKE_HELPER(Object *, RhpCheckedLockCmpXchg, (Object ** location, Object * value, Object * comparand))
 {
@@ -337,12 +372,19 @@ COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int
 
 #endif // USE_PORTABLE_HELPERS
 
+#if !defined(_ARM64_)
 COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
 {
     PalMemoryBarrier();
 }
+#endif
 
-#ifdef USE_PORTABLE_HELPERS
+#if defined(USE_PORTABLE_HELPERS)
+EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+{
+    return NULL;
+}
+
 COOP_PINVOKE_HELPER(void *, RhpGetThunksBase, ())
 {
     return NULL;
@@ -378,25 +420,36 @@ COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* pThunkDataAddres
     return NULL;
 }
 
-COOP_PINVOKE_HELPER(void*, RhpGetNextThunkStubsBlockAddress, (void* pCurrentThunkStubsBlockAddress))
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
     return NULL;
 }
-#endif
 
 COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-COOP_PINVOKE_HELPER(void, RhpETWLogLiveCom, (Int32 eventType, void * ccwHandle, void * objectId, void * typeRawValue, void * iUnknown, void * vTable, Int32 comRefCount, Int32 jupiterRefCount, Int32 flags))
+#ifdef CALLDESCR_FPARGREGSARERETURNREGS
+COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (UIntNative* pReturnVoidStub, UIntNative* pReturnIntegerStub, UIntNative* pCommonStub))
+#else
+COOP_PINVOKE_HELPER(void, CallingConventionConverter_GetStubs, (UIntNative* pReturnVoidStub, UIntNative* pReturnIntegerStub, UIntNative* pCommonStub, UIntNative* pReturnFloatingPointReturn4Thunk, UIntNative* pReturnFloatingPointReturn8Thunk))
+#endif
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-COOP_PINVOKE_HELPER(bool, RhpETWShouldWalkCom, ())
+COOP_PINVOKE_HELPER(void *, RhGetCommonStubAddress, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
-    return false;
+    return NULL;
 }
+
+COOP_PINVOKE_HELPER(void *, RhGetCurrentThunkContext, ())
+{
+    ASSERT_UNCONDITIONALLY("NYI");
+    return NULL;
+}
+
+#endif

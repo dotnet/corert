@@ -13,34 +13,16 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the namespace of the type.
         /// </summary>
-        public virtual string Namespace
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public virtual string Namespace => null;
 
         /// <summary>
         /// Gets the name of the type as represented in the metadata.
         /// </summary>
-        public virtual string Name
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public virtual string Name => null;
 
         /// <summary>
         /// Gets the containing type of this type or null if the type is not nested.
         /// </summary>
-        public virtual DefType ContainingType
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public virtual DefType ContainingType => null;
     }
 }

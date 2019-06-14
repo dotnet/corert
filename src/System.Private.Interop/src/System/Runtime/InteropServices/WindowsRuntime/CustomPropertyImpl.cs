@@ -19,6 +19,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // MCG emits references to this internal type into generated interop code, so we apply the [DependencyReductionRoot]
     // attribute to it so that it survives initial tree shaking.
     [System.Runtime.CompilerServices.DependencyReductionRootAttribute]
+    [McgInternalTypeAttribute]
     internal sealed class CustomPropertyImpl : global::Windows.UI.Xaml.Data.ICustomProperty
     {
         /// <summary>
@@ -132,7 +133,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                     );
 
                     // We need to make sure it has the same HR that we were returning in desktop
-                    InteropExtensions.SetExceptionErrorCode(ex, __HResults.COR_E_METHODACCESS);
+                    ex.HResult = __HResults.COR_E_METHODACCESS;
                     throw ex;
                 }
             }

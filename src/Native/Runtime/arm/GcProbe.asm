@@ -7,6 +7,7 @@
         TEXTAREA
 
     SETALIAS    GetLoopIndirCells, ?GetLoopIndirCells@ModuleHeader@@QAAPAEXZ
+    ;; ARM64TODO: do same fix here as on Arm64?
     SETALIAS    g_fGcStressStarted, ?g_GCShadow@@3PAEA
     SETALIAS    g_pTheRuntimeInstance, ?g_pTheRuntimeInstance@@3PAVRuntimeInstance@@A
     SETALIAS    RuntimeInstance__ShouldHijackLoopForGcStress, ?ShouldHijackLoopForGcStress@RuntimeInstance@@QAA_NI@Z
@@ -28,7 +29,7 @@ m_ChainPointer  field 4         ; r11 - OS frame chain used for quick stackwalks
 m_RIP           field 4         ; lr
 m_FramePointer  field 4         ; r7
 m_pThread       field 4
-m_dwFlags       field 4         ; bitmask of saved registers
+m_Flags         field 4         ; bitmask of saved registers
 m_PreservedRegs field (4 * 6)   ; r4-r6,r8-r10
 m_CallersSP     field 4         ; sp at routine entry
 m_SavedR0       field 4         ; r0
@@ -87,14 +88,14 @@ PROBE_FRAME_SIZE    field 0
     ;;
     ;;  $threadReg  : register containing the Thread* (this will be preserved)
     ;;  $trashReg   : register that can be trashed by this macro
-    ;;  $BITMASK    : value to initialize m_dwFlags field with (register or #constant)
+    ;;  $BITMASK    : value to initialize m_Flags field with (register or #constant)
     ;;  $frameSize  : total size of the method's stack frame (including probe frame size)
     MACRO
         INIT_PROBE_FRAME $threadReg, $trashReg, $BITMASK, $frameSize
 
         str         $threadReg, [sp, #m_pThread]    ; Thread *
         mov         $trashReg, $BITMASK             ; Bitmask of preserved registers
-        str         $trashReg, [sp, #m_dwFlags]
+        str         $trashReg, [sp, #m_Flags]
         add         $trashReg, sp, #$frameSize
         str         $trashReg, [sp, #m_CallersSP]
     MEND
@@ -106,7 +107,7 @@ PROBE_FRAME_SIZE    field 0
     ;;                the current thread will be calculated inline into r2 ($trashReg must not equal r2 in
     ;;                this case)
     ;;  $trashReg   : register that can be trashed by this macro
-    ;;  $BITMASK    : value to initialize m_dwFlags field with (register or #constant)
+    ;;  $BITMASK    : value to initialize m_Flags field with (register or #constant)
     MACRO
         PROLOG_PROBE_FRAME $threadReg, $trashReg, $BITMASK
 
@@ -198,7 +199,7 @@ __PPF_ThreadReg SETS "r2"
 ;;  All other registers trashed
 ;;
 
-    EXTERN RhpWaitForGC
+    EXTERN RhpWaitForGCNoAbort
 
     MACRO
         WaitForGCCompletion
@@ -208,7 +209,7 @@ __PPF_ThreadReg SETS "r2"
         bne         %ft0
 
         ldr         r2, [r4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
-        bl          RhpWaitForGC
+        bl          RhpWaitForGCNoAbort
 0
     MEND
 
@@ -318,10 +319,13 @@ __PPF_ThreadReg SETS "r2"
     NESTED_END RhpGcStressProbe
 #endif ;; FEATURE_GC_STRESS
 
+    EXTERN RhpThrowHwEx
+
     LEAF_ENTRY RhpGcProbe
         ldr         r3, =RhpTrapThreads
         ldr         r3, [r3]
-        cbnz        r3, %0
+        tst         r3, #TrapThreadsFlags_TrapThreads
+        bne         %0
         bx          lr
 0
         b           RhpGcProbeRare
@@ -333,7 +337,18 @@ __PPF_ThreadReg SETS "r2"
         mov         r4, r2
         WaitForGCCompletion
 
+        ldr         r2, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
+        tst         r2, #PTFF_THREAD_ABORT
+        bne         %1
+
         EPILOG_PROBE_FRAME
+
+1        
+        FREE_PROBE_FRAME
+        EPILOG_NOP mov         r0, #STATUS_REDHAWK_THREAD_ABORT
+        EPILOG_NOP mov         r1, lr ;; return address as exception PC
+        EPILOG_BRANCH RhpThrowHwEx
+
     NESTED_END RhpGcProbe
 
     LEAF_ENTRY RhpGcPoll
@@ -342,7 +357,8 @@ __PPF_ThreadReg SETS "r2"
         push        {r0}
         ldr         r0, =RhpTrapThreads
         ldr         r0, [r0]
-        cbnz        r0, %0
+        tst         r0, #TrapThreadsFlags_TrapThreads
+        bne         %0
         pop         {r0}
         bx          lr
 0
@@ -360,7 +376,7 @@ __PPF_ThreadReg SETS "r2"
         WaitForGCCompletion
 
         EPILOG_PROBE_FRAME
-    NESTED_END RhpGcPoll
+    NESTED_END RhpGcPollRare
 
     LEAF_ENTRY RhpGcPollStress
         ;
@@ -550,7 +566,8 @@ DREG_SZ equ     (SIZEOF__PAL_LIMITED_CONTEXT - (OFFSETOF__PAL_LIMITED_CONTEXT__L
 
         ldr         r1, =RhpTrapThreads
         ldr         r1, [r1]
-        cbnz        r1, %0
+        tst         r1, #TrapThreadsFlags_TrapThreads
+        bne         %0
 
         bl          RhDebugBreak
 0
@@ -694,18 +711,27 @@ NoGcStress
 #endif ;; FEATURE_GC_STRESS
 
         mov         r2, sp ; sp is address of PInvokeTransitionFrame
-        bl          RhpWaitForGC
+        bl          RhpWaitForGCNoAbort
 
 DoneWaitingForGc
+        ldr         r12, [sp, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
+        tst         r12, #PTFF_THREAD_ABORT
+        bne         Abort
         ; restore condition codes
         ldr         r12, [sp, #m_SavedAPSR]
         msr         apsr_nzcvqg, r12
-
         FREE_PROBE_FRAME
         EPILOG_VPOP {d16-d31}
         EPILOG_VPOP {d4-d15}
-
-        EPILOG_POP {r12,pc}      ; recover the hijack target and jump to it
+        EPILOG_POP  {r12,pc}      ; recover the hijack target and jump to it
+Abort
+        FREE_PROBE_FRAME
+        EPILOG_VPOP {d16-d31}
+        EPILOG_VPOP {d4-d15}
+        EPILOG_POP  r12
+        EPILOG_NOP  mov         r0, #STATUS_REDHAWK_THREAD_ABORT
+        EPILOG_POP  r1            ;hijack target address as exception PC
+        EPILOG_BRANCH RhpThrowHwEx
 
     LEAF_END RhpLoopHijack
 

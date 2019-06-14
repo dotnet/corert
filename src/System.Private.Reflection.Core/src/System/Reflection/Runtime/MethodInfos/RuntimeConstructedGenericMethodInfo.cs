@@ -49,10 +49,14 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            return _genericMethodDefinition.HasSameMetadataDefinitionAs(other);
+        }
+
         public sealed override bool Equals(Object obj)
         {
-            RuntimeConstructedGenericMethodInfo other = obj as RuntimeConstructedGenericMethodInfo;
-            if (other == null)
+            if (!(obj is RuntimeConstructedGenericMethodInfo other))
                 return false;
             if (!_genericMethodDefinition.Equals(other._genericMethodDefinition))
                 return false;
@@ -71,9 +75,19 @@ namespace System.Reflection.Runtime.MethodInfos
             return _genericMethodDefinition.GetHashCode();
         }
 
+        public sealed override int GenericParameterCount => _genericMethodDefinition.GenericParameterCount;
+
         public sealed override MethodInfo GetGenericMethodDefinition()
         {
             return _genericMethodDefinition;
+        }
+
+        public sealed override bool IsConstructedGenericMethod
+        {
+            get
+            {
+                return true;
+            }
         }
 
         public sealed override bool IsGenericMethod
@@ -89,6 +103,22 @@ namespace System.Reflection.Runtime.MethodInfos
             get
             {
                 return false;
+            }
+        }
+
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                return _genericMethodDefinition.MetadataDefinitionMethod;
+            }
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return _genericMethodDefinition.MetadataToken;
             }
         }
 
@@ -126,6 +156,14 @@ namespace System.Reflection.Runtime.MethodInfos
             return _genericMethodDefinition.ComputeToString(this);
         }
 
+        public sealed override RuntimeMethodHandle MethodHandle
+        {
+            get
+            {
+                return _genericMethodDefinition.GetRuntimeMethodHandle(GetGenericArguments());
+            }
+        }
+
         protected sealed override MethodInvoker UncachedMethodInvoker
         {
             get
@@ -161,6 +199,18 @@ namespace System.Reflection.Runtime.MethodInfos
         internal sealed override RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter)
         {
             return _genericMethodDefinition.GetRuntimeParameters(this, out returnParameter);
+        }
+
+        internal sealed override RuntimeMethodInfo WithReflectedTypeSetToDeclaringType
+        {
+            get
+            {
+                if (_genericMethodDefinition.ReflectedType.Equals(_genericMethodDefinition.DeclaringType))
+                    return this;
+
+                RuntimeNamedMethodInfo newGenericMethodDefinition = (RuntimeNamedMethodInfo)(_genericMethodDefinition.WithReflectedTypeSetToDeclaringType);
+                return RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(newGenericMethodDefinition, _genericTypeArguments);
+            }
         }
 
         private readonly RuntimeNamedMethodInfo _genericMethodDefinition;

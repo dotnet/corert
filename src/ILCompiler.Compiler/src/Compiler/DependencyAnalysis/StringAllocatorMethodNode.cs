@@ -22,15 +22,17 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     class StringAllocatorMethodNode : DependencyNodeCore<NodeFactory>, IMethodNode
     {
-        private MethodDesc _allocationMethod;
+        private readonly MethodDesc _allocationMethod;
+        private readonly MethodDesc _constructorMethod;
 
         public MethodDesc Method => _allocationMethod;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(NodeFactory.NameMangler.GetMangledMethodName(_allocationMethod));
+            sb.Append(nameMangler.GetMangledMethodName(_allocationMethod));
         }
         public int Offset => 0;
+        public bool RepresentsIndirectionCell => false;
 
         public StringAllocatorMethodNode(MethodDesc constructorMethod)
         {
@@ -42,17 +44,23 @@ namespace ILCompiler.DependencyAnalysis
             signatureBuilder.ReturnType = constructorMethod.OwningType;
 
             _allocationMethod = constructorMethod.OwningType.GetKnownMethod("Ctor", signatureBuilder.ToSignature());
+            _constructorMethod = constructorMethod;
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            return new[] {
-                new DependencyListEntry(
-                    factory.ConstructedTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
-                    "String constructor call"),
-                new DependencyListEntry(
-                    factory.MethodEntrypoint(_allocationMethod),
-                    "String constructor call") };
+            DependencyList result = new DependencyList();
+
+            result.Add(
+                factory.ConstructedTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
+                "String constructor call");
+            result.Add(
+                factory.MethodEntrypoint(_allocationMethod),
+                "String constructor call");
+
+            factory.MetadataManager.GetDependenciesDueToReflectability(ref result, factory, _constructorMethod);
+
+            return result;
         }
 
         public override bool HasConditionalStaticDependencies => false;
@@ -63,6 +71,13 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        int ISortableNode.ClassCode => 1991750873;
+
+        int ISortableNode.CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_allocationMethod, ((StringAllocatorMethodNode)other)._allocationMethod);
+        }
     }
 }

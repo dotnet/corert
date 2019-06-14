@@ -15,6 +15,7 @@ namespace Internal.TypeSystem
         ClassLoadBadFormat,
         ClassLoadExplicitLayout,
         ClassLoadValueClassTooLarge,
+        ClassLoadRankTooLarge,
 
         // MissingMethodException
         MissingMethod,
@@ -26,7 +27,13 @@ namespace Internal.TypeSystem
         FileLoadErrorGeneric,
 
         // InvalidProgramException
+        InvalidProgramDefault,
         InvalidProgramSpecific,
         InvalidProgramVararg,
+        InvalidProgramCallVirtFinalize,
+        InvalidProgramNativeCallable,
+
+        // BadImageFormatException
+        BadImageFormatGeneric,
     }
 }

@@ -7,13 +7,15 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ClonedConstructedEETypeNode : ConstructedEETypeNode, ISymbolNode
+    internal sealed class ClonedConstructedEETypeNode : ConstructedEETypeNode, ISymbolDefinitionNode
     {
         public ClonedConstructedEETypeNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
         }
 
-        protected override string GetName() => this.GetMangledName() + " cloned";
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler) + " cloned";
+
+        public override ISymbolNode NodeForLinkage(NodeFactory factory) => this;
 
         //
         // A cloned type must be named differently than the type it is a clone of so the linker
@@ -23,11 +25,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append("__Cloned_EEType_").Append(nameMangler.GetMangledTypeName(_type));
         }
-
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
+        public override bool IsShareable => true;
 
         protected override void OutputRelatedType(NodeFactory factory, ref ObjectDataBuilder objData)
         {
@@ -36,5 +34,7 @@ namespace ILCompiler.DependencyAnalysis
             //
             objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_type));
         }
+
+        public override int ClassCode => -288888778;
     }
 }

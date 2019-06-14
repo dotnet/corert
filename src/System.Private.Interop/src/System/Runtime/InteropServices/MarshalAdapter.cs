@@ -2,16 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-// This file provides an implementation of the pieces of the Marshal class which are required by the Interop
-// API contract but are not provided by the version of Marshal which is part of the Redhawk test library.
-// This partial class is combined with the version from the Redhawk test library, in order to provide the
-// Marshal implementation for System.Private.CoreLib.
-//
-
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Versioning;
@@ -37,7 +29,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static IntPtr /* IUnknown* */ GetIUnknownForObject(Object o)
         {
-            return MarshalImpl.GetIUnknownForObject(o);
+            return McgMarshal.ObjectToComInterface(o, InternalTypes.IUnknown);
         }
 
         //====================================================================
@@ -45,7 +37,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static Object GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk)
         {
-            object obj = MarshalImpl.GetObjectForIUnknown(pUnk);
+            object obj = McgMarshal.ComInterfaceToObject(pUnk, InternalTypes.IUnknown);
 #if CORECLR
             if (obj == null)
             {
@@ -62,7 +54,13 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr /* IUnknown* */ GetComInterfaceForObject(Object o, Type T)
         {
-            IntPtr ptr = MarshalImpl.GetComInterfaceForObject(o, T);
+            if (o == null)
+                throw new ArgumentNullException(nameof(o));
+
+            if (T == null)
+                throw new ArgumentNullException(nameof(T));
+
+            IntPtr ptr = McgMarshal.ObjectToComInterface(o, T.TypeHandle);
 #if CORECLR
             if (ptr == default(IntPtr))
             {
@@ -82,7 +80,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, Type t)
         {
-            Delegate dlg = MarshalImpl.GetDelegateForFunctionPointer(ptr, t);
+            Delegate dlg = McgMarshal.GetPInvokeDelegateForStub(ptr, t.TypeHandle);
 #if CORECLR
             if (dlg == null) // fall back to public marshal API
             {
@@ -94,32 +92,42 @@ namespace System.Runtime.InteropServices
 
         public static bool IsComObject(object o)
         {
-            return MarshalImpl.IsComObject(o);            
+            if (o == null)
+                throw new ArgumentNullException(nameof(o));
+            return McgMarshal.IsComObject(o);
         }
 
         public static int ReleaseComObject(object o)
         {
-            return MarshalImpl.ReleaseComObject(o);            
+            if (o == null)
+                throw new ArgumentNullException(nameof(o));
+            return McgMarshal.Release(o as __ComObject);
         }
 
         public static int FinalReleaseComObject(object o)
         {
-            return MarshalImpl.FinalReleaseComObject(o);
+            return McgMarshal.FinalReleaseComObject(o);
         }
 
         public static int QueryInterface(IntPtr pUnk, ref Guid iid, out IntPtr ppv)
         {
-            return MarshalImpl.QueryInterface(pUnk, ref iid, out ppv);
+            int hr = 0;
+            ppv = McgMarshal.ComQueryInterfaceNoThrow(pUnk, ref iid, out hr);
+#if CORECLR
+            if (ppv == default(IntPtr))
+                return Marshal.QueryInterface(pUnk, ref iid, out ppv);
+#endif
+            return hr;
         }
 
         public static int AddRef(IntPtr pUnk)
         {
-            return MarshalImpl.AddRef(pUnk);
+            return McgMarshal.ComAddRef(pUnk);
         }
 
         public static int Release(IntPtr pUnk)
         {
-            return MarshalImpl.Release(pUnk);
+            return McgMarshal.ComRelease(pUnk);
         }
     }
 #pragma warning restore 618

@@ -47,8 +47,7 @@ namespace System.Runtime.InteropServices
     /// The unmanaged calli and reverse calli thunks does a GC wait which again would deadlock. The simple
     /// solution here is to simply converts all of them to managed calls (CalliIntrinsics.Call) and callbacks
     /// (Simply don't add NativeCallable) and only utilize them under x64/arm (where the calling convention
-    /// doesn't matter). This works out just fine because x86 isn't a supported platform in .NET Native anyway,
-    /// and under x86 we can "safely" just let everything leak.
+    /// doesn't matter).
     ///
     /// See __vtable_IFindDependentWrappers for how to do this
     ///
@@ -569,10 +568,10 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Initialize RCWWalker
         /// </summary>
-        private unsafe static void Initialize(__com_IJupiterObject* pJupiterObject)
+        private static unsafe void Initialize(__com_IJupiterObject* pJupiterObject)
         {
             IntPtr pGCManager;
-            int hr = CalliIntrinsics.StdCall<int>(pJupiterObject->pVtable->pfnGetJupiterGCManager, pJupiterObject, &pGCManager);
+            int hr = CalliIntrinsics.StdCall__int(pJupiterObject->pVtable->pfnGetJupiterGCManager, pJupiterObject, &pGCManager);
             if (hr >= 0)
             {
                 // disable warning for ref volatile
@@ -600,7 +599,7 @@ namespace System.Runtime.InteropServices
             // AddRef on IGCManager
             //
             __com_IUnknown* pGCManagerUnk = (__com_IUnknown*)pGCManager;
-            CalliIntrinsics.StdCall<int>(pGCManagerUnk->pVtable->pfnAddRef, pGCManager);
+            CalliIntrinsics.StdCall__int(pGCManagerUnk->pVtable->pfnAddRef, pGCManager);
 
             s_clrServices.pVtable = __vtable_ICLRServices.GetVtable();
 
@@ -610,7 +609,7 @@ namespace System.Runtime.InteropServices
                 // Tell Jupiter that we are ready for tracking life time of objects and provide Jupiter with
                 // our life time realted services through ICLRServices
                 //
-                CalliIntrinsics.StdCall<int>(
+                CalliIntrinsics.StdCall__int(
                     pGCManager->pVTable->pfnSetCLRServices,
                     pGCManager,
                     pCLRServices
@@ -657,7 +656,7 @@ namespace System.Runtime.InteropServices
             // Notify Jupiter that we've created a new RCW for this Jupiter object
             // To avoid surprises, we should notify them before we fire the first AfterAddRef
             //
-            CalliIntrinsics.StdCall<int>(pJupiterObject->pVtable->pfnConnect, pJupiterObject);
+            CalliIntrinsics.StdCall__int(pJupiterObject->pVtable->pfnConnect, pJupiterObject);
 
             //
             // Tell Jupiter that we've done AddRef for IJupiterObject* and IUnknown*
@@ -688,7 +687,7 @@ namespace System.Runtime.InteropServices
             // We should do this *after* we made a AddRef because we should never
             // be in a state where report refs > actual refs
             //
-            CalliIntrinsics.StdCall<int>(pJupiterObject->pVtable->pfnAfterAddRef, pJupiterObject);
+            CalliIntrinsics.StdCall__int(pJupiterObject->pVtable->pfnAfterAddRef, pJupiterObject);
         }
 
         /// <summary>
@@ -707,7 +706,7 @@ namespace System.Runtime.InteropServices
 
             __com_IJupiterObject* pJupiterObject = comObject.GetIJupiterObject_NoAddRef();
 
-            CalliIntrinsics.StdCall<int>(pJupiterObject->pVtable->pfnBeforeRelease, pJupiterObject);
+            CalliIntrinsics.StdCall__int(pJupiterObject->pVtable->pfnBeforeRelease, pJupiterObject);
         }
 
         /// <summary>
@@ -1134,7 +1133,6 @@ namespace System.Runtime.InteropServices
     // This struct intentionally does no self-synchronization. It's up to the caller to
     // to use DependentHandles in a thread-safe way.
     //=========================================================================================
-    [ComVisible(false)]
     struct DependentHandle
     {
         #region Constructors

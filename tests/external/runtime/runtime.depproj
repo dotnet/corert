@@ -1,0 +1,40 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
+    <NugetTargetMoniker>.NETCoreApp,Version=v3.0</NugetTargetMoniker>
+    <NugetTargetMonikerShort>netcoreapp3.0</NugetTargetMonikerShort>
+    <RidSpecificAssets>true</RidSpecificAssets>
+    <OutputPath>$(IntermediateOutputRootPath)CoreClrRuntime</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.App">
+      <Version>3.0.0-preview5-27626-15</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.TestHost">
+      <Version>2.0.8</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
+      <Version>4.6.0-preview.18571.1</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.core">
+      <Version>2.4.1</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.core">
+      <Version>1.0.0-beta-build0015</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.runner.utility">
+      <Version>2.4.1</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.extensibility.execution">
+      <Version>2.4.1</Version>
+    </PackageReference>
+    
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

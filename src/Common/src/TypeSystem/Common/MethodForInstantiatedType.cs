@@ -4,17 +4,20 @@
 
 using System;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.TypeSystem
 {
     public sealed partial class MethodForInstantiatedType : MethodDesc
     {
-        private MethodDesc _typicalMethodDef;
-        private InstantiatedType _instantiatedType;
+        private readonly MethodDesc _typicalMethodDef;
+        private readonly InstantiatedType _instantiatedType;
 
         private MethodSignature _signature;
 
         internal MethodForInstantiatedType(MethodDesc typicalMethodDef, InstantiatedType instantiatedType)
         {
+            Debug.Assert(typicalMethodDef.GetTypicalMethodDefinition() == typicalMethodDef);
             _typicalMethodDef = typicalMethodDef;
             _instantiatedType = instantiatedType;
         }
@@ -119,17 +122,20 @@ namespace Internal.TypeSystem
             return _typicalMethodDef;
         }
 
+        public override bool IsDefaultConstructor
+        {
+            get
+            {
+                return _typicalMethodDef.IsDefaultConstructor;
+            }
+        }
+
         public override string Name
         {
             get
             {
                 return _typicalMethodDef.Name;
             }
-        }
-
-        public override string ToString()
-        {
-            return OwningType.ToString() + "." + Name;
         }
     }
 }

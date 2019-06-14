@@ -1,0 +1,49 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreReleaseLabel>alpha</PreReleaseLabel>
+    <PackageProjectDirectory>$(ProjectDir)pkg/</PackageProjectDirectory>
+    <PackageSourceDirectory>$(ProjectDir)src/</PackageSourceDirectory>
+    <PackageDescriptionFile>$(PackageProjectDirectory)descriptions.json</PackageDescriptionFile>
+    <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+    <ReleaseNotes>TODO</ReleaseNotes>
+    <ProjectUrl>https://dot.net</ProjectUrl>
+    <PackagingTaskDir>$(BuildToolsTaskDir)</PackagingTaskDir>
+    <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
+    <!-- We're currently not building a "live" baseline, instead we're using .NETCore 1.0 RTM stable versions as the baseline -->
+    <SkipBaseLineCheck>true</SkipBaseLineCheck>
+    <LineupPackageId>Microsoft.DotNet.CoreRT.Targets</LineupPackageId>
+    <LineupPackageVersion Condition="'$(LineupPackageVersion)' == ''">1.0.0</LineupPackageVersion>
+
+    <!-- by default all packages will use the same version which revs with respect to product version -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">1.0.0</PackageVersion>
+    <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
+    <LicenseUrl>https://github.com/dotnet/corert/blob/master/LICENSE.TXT</LicenseUrl>
+  </PropertyGroup>
+
+  <Import Condition="Exists('$(PackageProjectDirectory)baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="$(PackageProjectDirectory)baseline/baseline.props" />
+
+  <ItemGroup>
+    <PackageIndex Include="$(PackageProjectDirectory)packageIndex.json" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <!-- Add required legal files to packages -->
+    <File Condition="'$(PackageIsEmpty)' != 'true' AND Exists('$(PackageLicenseFile)')"
+          Include="$(PackageLicenseFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+    <File Condition="'$(PackageIsEmpty)' != 'true' AND Exists('$(PackageThirdPartyNoticesFile)')"
+          Include="$(PackageThirdPartyNoticesFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+
+    <!-- Add version file to packages -->
+    <File Condition="'$(PackageIsEmpty)' != 'true' AND Exists('$(SyncInfoFile)')"
+          Include="$(SyncInfoFile)" >
+        <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+  </ItemGroup>
+</Project>

@@ -4,6 +4,8 @@
 
 // Implementation of Redhawk PAL inline functions
 
+#include <errno.h>
+
 FORCEINLINE Int32 PalInterlockedIncrement(_Inout_ _Interlocked_operand_ Int32 volatile *pDst)
 {
     return __sync_add_and_fetch(pDst, 1);
@@ -41,7 +43,11 @@ FORCEINLINE Int32 PalInterlockedCompareExchange(_Inout_ _Interlocked_operand_ In
 
 FORCEINLINE Int64 PalInterlockedCompareExchange64(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValue, Int64 iComparand)
 {
+#if defined(_WASM_)
+    PORTABILITY_ASSERT("Emscripten does not support 64-bit atomics until version 1.37.33");
+#else // _WASM_
     return __sync_val_compare_and_swap(pDst, iComparand, iValue);
+#endif // _WASM_
 }
 
 #if defined(_AMD64_)
@@ -88,4 +94,14 @@ FORCEINLINE void PalMemoryBarrier()
     __sync_synchronize();
 }
 
-#define PalDebugBreak() __builtin_trap()
+#define PalDebugBreak() abort()
+
+FORCEINLINE Int32 PalGetLastError()
+{
+    return errno;
+}
+
+FORCEINLINE void PalSetLastError(Int32 error)
+{
+    errno = error;
+}

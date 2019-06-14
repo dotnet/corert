@@ -65,7 +65,7 @@ namespace System.Runtime
 
     internal class ThunksHeap
     {
-        class AllocatedBlock
+        private class AllocatedBlock
         {
             internal IntPtr _blockBaseAddress;
             internal AllocatedBlock _nextBlock;
@@ -81,16 +81,16 @@ namespace System.Runtime
         private static IntPtr ClearThumbBit(IntPtr value)
         {
 #if ARM
-            Debug.Assert(((nuint)value & 1) == 1);
-            value = (IntPtr)((nuint)value - 1);
+            Debug.Assert(((nint)value & 1) == 1);
+            value = (IntPtr)((nint)value - 1);
 #endif
             return value;
         }
         private static IntPtr SetThumbBit(IntPtr value)
         {
 #if ARM
-            Debug.Assert(((nuint)value & 1) == 0);
-            value = (IntPtr)((nuint)value + 1);
+            Debug.Assert(((nint)value & 1) == 0);
+            value = (IntPtr)((nint)value + 1);
 #endif
             return value;
         }
@@ -126,7 +126,7 @@ namespace System.Runtime
             }
         }
 
-        public unsafe static ThunksHeap CreateThunksHeap(IntPtr commonStubAddress)
+        public static unsafe ThunksHeap CreateThunksHeap(IntPtr commonStubAddress)
         {
             try
             {
@@ -135,7 +135,7 @@ namespace System.Runtime
                 if (newHeap._nextAvailableThunkPtr != IntPtr.Zero)
                     return newHeap;
             }
-            catch { }
+            catch (Exception) { }
 
             return null;
         }
@@ -156,7 +156,7 @@ namespace System.Runtime
             {
                 newBlockInfo = new AllocatedBlock();
             }
-            catch
+            catch (Exception)
             {
                 return false;
             }
@@ -296,7 +296,7 @@ namespace System.Runtime
             int thunkIndex = (int)((thunkAddressValue - currentThunksBlockAddress) / (nuint)Constants.ThunkCodeSize);
 
             // Compute the address of the data block that corresponds to the current thunk
-            IntPtr thunkDataBlockAddress = InternalCalls.RhpGetThunkDataBlockAddress((IntPtr)thunkAddressValue);
+            IntPtr thunkDataBlockAddress = InternalCalls.RhpGetThunkDataBlockAddress((IntPtr)((nint)thunkAddressValue));
 
             return thunkDataBlockAddress + thunkIndex * Constants.ThunkDataSize;
         }
@@ -356,7 +356,7 @@ namespace System.Runtime
         private static IntPtr[] s_currentlyMappedThunkBlocks = new IntPtr[Constants.NumThunkBlocksPerMapping];
         private static int s_currentlyMappedThunkBlocksIndex = Constants.NumThunkBlocksPerMapping;
 
-        public unsafe static IntPtr GetNewThunksBlock()
+        public static unsafe IntPtr GetNewThunksBlock()
         {
             IntPtr nextThunksBlock;
 
@@ -389,10 +389,11 @@ namespace System.Runtime
                 // Each mapping consists of multiple blocks of thunk stubs/data pairs. Keep track of those
                 // so that we do not create a new mapping until all blocks in the sections we just mapped are consumed
                 IntPtr currentThunksBlock = nextThunksBlock;
+                int thunkBlockSize = InternalCalls.RhpGetThunkBlockSize();
                 for (int i = 0; i < Constants.NumThunkBlocksPerMapping; i++)
                 {
                     s_currentlyMappedThunkBlocks[i] = currentThunksBlock;
-                    currentThunksBlock = InternalCalls.RhpGetNextThunkStubsBlockAddress(currentThunksBlock);
+                    currentThunksBlock += thunkBlockSize;
                 }
                 s_currentlyMappedThunkBlocksIndex = 1;
             }
@@ -422,7 +423,7 @@ namespace System.Runtime
         }
 
         // TODO: [Feature] Keep track of mapped sections and free them if we need to.
-        // public unsafe static void FreeThunksBlock()
+        // public static unsafe void FreeThunksBlock()
         // {
         // }
     }

@@ -1,0 +1,33 @@
+<!--
+
+    Running all 7000 Pri-0 CoreCLR tests would take forever. Exclude down to a set that provides
+    broad coverage and an expected reasonable run time (< 30 minutes)
+
+-->
+<Project DefaultTargets = "GetListOfTestCmds" 
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
+  <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
+    <Includelist Include="$(xunitteStbiNBAse)\baseservices\threading\DeadThreads\DeadThreads\DeadThreads.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\GC\API\GC\Collect0\Collect0.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\GC\API\GC\Collect1\Collect1.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\GC\API\GCHandleCollector\Count\Count.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\GC\Coverage\LargeObjectAlloc\LargeObjectAlloc.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\GC\Regressions\v2.0-beta2\452950\452950\452950.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\GC\Regressions\v2.0-beta2\460373\460373\460373.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\GC\Scenarios\FinalizeTimeout\FinalizeTimeout\FinalizeTimeout.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\GC\Scenarios\GCStress\gcstress\gcstress.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\GC\Scenarios\NDPin\ndpin\ndpin.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\GC\Scenarios\RanCollect\rancollect\rancollect.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\opt\Inline\tests\calli\calli.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\opt\Inline\tests\mathfunc\mathfunc.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\SIMD\AbsGeneric_r\AbsGeneric_r.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\SIMD\AbsSqrt_r\AbsSqrt_r.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\SIMD\AddingSequence_r\AddingSequence_r.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\SIMD\CtorFromArray_r\CtorFromArray_r.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\SIMD\Matrix4x4_r\Matrix4x4_r.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\SIMD\MinMax_r\MinMax_r.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\SIMD\Mul_ro\Mul_ro.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\SIMD\SqrtGeneric_r\SqrtGeneric_r.cmd" /> 
+    <Includelist Include="$(xunitteStbiNBAse)\JIT\SIMD\Vector3_r\Vector3_r.cmd" />    
+  </ItemGroup>
+</Project>

@@ -20,17 +20,19 @@ typedef UInt64 CORDB_ADDRESS;
 #ifndef DACCESS_COMPILE
 
 struct DebugEventPayload;
+class Module;
 
 class DebugEventSource
 {
 public:
+    static void SendModuleLoadEvent(void* addressInModule);
     static void SendModuleLoadEvent(Module* pModule);
     static void SendModuleUnloadEvent(Module* pModule);
     static void SendExceptionThrownEvent(CORDB_ADDRESS faultingIP, CORDB_ADDRESS faultingFrameSP);
     static void SendExceptionCatchHandlerFoundEvent(CORDB_ADDRESS handlerIP, CORDB_ADDRESS HandlerFrameSP);
     static void SendExceptionUnhandledEvent();
     static void SendExceptionFirstPassFrameEnteredEvent(CORDB_ADDRESS ipInFrame, CORDB_ADDRESS frameSP);
-
+    static void SendCustomEvent(void* payload, int length);
 private:
     static void SendRawEvent(DebugEventPayload* payload);
 };

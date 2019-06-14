@@ -21,8 +21,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-using System.Diagnostics.Contracts;
-using Internal.NativeFormat;
 
 namespace System.Runtime.InteropServices
 {
@@ -187,10 +185,10 @@ namespace System.Runtime.InteropServices
             void * arg7)
         {
             // This method is implemented elsewhere in the toolchain
-            return 0;
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* pComThis,
                     ulong arg0,
@@ -198,9 +196,9 @@ namespace System.Runtime.InteropServices
                     void* arg2)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return 0;
         }
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* pComThis,
                     IntPtr arg0,
@@ -210,50 +208,44 @@ namespace System.Runtime.InteropServices
                     IntPtr arg4)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return 0;
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     uint arg0)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* arg0)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
-                    System.IntPtr pfn,
-                    void* arg0,
-                    void* arg1)
-        {
-            // This method is implemented elsewhere in the toolchain
-            return default(T);
-        }
-        internal static T StdCall<T>(
+
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* arg0,
                     uint arg1,
                     void* arg2)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* arg0,
                     void* arg1,
                     void* arg2)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     void* arg0,
                     uint arg1,
@@ -261,18 +253,19 @@ namespace System.Runtime.InteropServices
                     void* arg3)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     int hr,
                     void* errorMsg,
                     System.IntPtr pUnk)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+
+        internal static int StdCall__int(
                     System.IntPtr pfn,
                     System.IntPtr pComThis,
                     out System.IntPtr arg1,
@@ -285,18 +278,19 @@ namespace System.Runtime.InteropServices
             arg3 = default(IntPtr);
             arg4 = default(IntPtr);
             arg2 = 0;
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
             System.IntPtr pfn,
             System.IntPtr pComThis,
             out System.IntPtr arg)
         {
             // This method is implemented elsewhere in the toolchain
             arg = default(IntPtr);
-            return default(T);
+            return default(int);
         }
-        internal static T StdCall<T>(
+
+        internal static int StdCall__int(
             System.IntPtr pfn,
             System.IntPtr pComThis,
             System.Guid arg1,
@@ -304,10 +298,10 @@ namespace System.Runtime.InteropServices
         {
             // This method is implemented elsewhere in the toolchain
             arg2 = default(IntPtr);
-            return default(T);
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
             IntPtr pfn,
             void* pComThis,
             IntPtr piid,
@@ -318,10 +312,10 @@ namespace System.Runtime.InteropServices
             IntPtr pclsid)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
               IntPtr pfn,
               void* pComThis,
               IntPtr pStm,
@@ -332,10 +326,10 @@ namespace System.Runtime.InteropServices
               int mshlflags)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
               IntPtr pfn,
               void* pComThis,
               IntPtr pStm,
@@ -343,25 +337,25 @@ namespace System.Runtime.InteropServices
               IntPtr ppvObj)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
               IntPtr pfn,
               void* pComThis,
               IntPtr pStm)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
 
-        internal static T StdCall<T>(
+        internal static int StdCall__int(
               IntPtr pfn,
               void* pComThis,
               int dwReserved)
         {
             // This method is implemented elsewhere in the toolchain
-            return default(T);
+            return default(int);
         }
 
         private const MethodImplOptions InternalCall = (MethodImplOptions)0x1000;
@@ -370,7 +364,7 @@ namespace System.Runtime.InteropServices
         // We need to call via an imported stub to do a stdcall without triggering GC
         // We can't use managed calli because the native target address could potentially satisfy a magic
         // bit check and causing the stub to believe it is a managed method which leads to crash.
-#if !RHTESTCL && !CORECLR
+#if !RHTESTCL && PROJECTN
         [MethodImplAttribute(InternalCall)]
 #if X86
         [RuntimeImport("*", "@StdCallCOOP0@8")]
@@ -492,7 +486,7 @@ namespace System.Runtime.InteropServices
             return default(T);
         }
 
-#if ENABLE_WINRT
+#if ENABLE_MIN_WINRT
         // For SharedCCW_IVector/SharedCCW_IVectorView
         internal static T Call<T>(IntPtr pfn, object list, Toolbox.IList_Oper oper, int index, ref object item)
         {
@@ -510,8 +504,7 @@ namespace System.Runtime.InteropServices
             return default(T);
         }
 
-#if !RHTESTCL && !CORECLR
-
+#if ENABLE_WINRT
         // For SharedCcw_AsyncOperationCompletedHandler
         internal static T Call<T>(IntPtr pfn, object handler, object asyncInfo, global::Windows.Foundation.AsyncStatus status)
         {
@@ -523,7 +516,7 @@ namespace System.Runtime.InteropServices
         {
             return default(T);
         }
-#endif // ENABLE_WINRT
+#endif // ENABLE_MIN_WINRT
         // For ForwardDelegateCreationStub
         internal static Delegate Call__Delegate(System.IntPtr pfn, System.IntPtr pStub)
         {
@@ -612,23 +605,25 @@ namespace System.Runtime.InteropServices
             IntPtr puArgErr);
 
         // IStream
-        internal delegate int AddrOfIStreamClone(IntPtr pComThis, out IntPtr ppstm);
+        internal delegate int AddrOfIStreamClone(IntPtr pComThis, IntPtr ppstm);
         internal delegate int AddrOfIStreamCopyTo(IntPtr pComThis, IntPtr pstm, long cb, IntPtr pcbRead, IntPtr pcbWritten);
         internal delegate int AddrOfIStreamLockRegion(IntPtr pComThis, long libOffset, long cb, int dwLockType);
         internal delegate int AddrOfIStreamRead(IntPtr pComThis, IntPtr pv, int cb, IntPtr pcbRead);
         internal delegate int AddrOfIStreamSeek(IntPtr pComThis, long dlibMove, int dwOrigin, IntPtr plibNewPosition);
         internal delegate int AddrOfIStreamSetSize(IntPtr pComThis, long libNewSize);
-        internal delegate int AddrOfIStreamStat(IntPtr pComThis, out System.Runtime.InteropServices.ComTypes.STATSTG pstatstg, int grfStatFlag);
+        internal delegate int AddrOfIStreamStat(IntPtr pComThis, IntPtr pstatstg, int grfStatFlag);
         internal delegate int AddrOfIStreamUnlockRegion(IntPtr pComThis, long libOffset, long cb, int dwLockType);
         internal delegate int AddrOfIStreamWrite(IntPtr pComThis, IntPtr pv, int cb, IntPtr pcbWritten);
 
-#if !RHTESTCL && !CORECLR
+#if !RHTESTCL && ENABLE_MIN_WINRT
         // ICommand
         internal delegate int AddrOfICommandremove_CanExecuteChanged(IntPtr pComThis, System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken unsafe_token);
 #endif        
+        // ILanguageExceptionStackBackTrace
+        internal delegate int AddrOfILanguageExceptionStackBackTraceGetStackBackTrace(IntPtr pComThis, uint maxFramesToCapture, IntPtr stackBackTrace, IntPtr framesCaptured);
     }
 
-#if !CORECLR && ENABLE_WINRT
+#if ENABLE_MIN_WINRT
     [McgIntrinsics]
     internal class WinRTAddrOfIntrinsics
     {
@@ -636,7 +631,7 @@ namespace System.Runtime.InteropServices
         internal delegate int AddrOfGetIndexedProperty(System.IntPtr pComThis, HSTRING unsafe_name, TypeName unsafe_type, IntPtr __IntPtr__unsafe_customProperty);
         internal delegate int AddrOfTarget19(IntPtr p0, IntPtr p1, int p2);
     }
-#endif // !CORECLR && ENABLE_WINRT
+#endif // ENABLE_MIN_WINRT
 
     public delegate IntPtr AddrOfGetCCWVtable();
     public delegate int AddrOfRelease(IntPtr pComThis);

@@ -45,6 +45,21 @@ namespace Internal.Runtime.CompilerHelpers
             throw new PlatformNotSupportedException();
         }
 
+        public static void ThrowNotImplementedException()
+        {
+            throw NotImplemented.ByDesign;
+        }
+
+        public static void ThrowNotSupportedException()
+        {
+            throw new NotSupportedException();
+        }
+
+        public static void ThrowBadImageFormatException(ExceptionStringID id)
+        {
+            throw TypeLoaderExceptionHelper.CreateBadImageFormatException(id);
+        }
+
         public static void ThrowTypeLoadException(ExceptionStringID id, string className, string typeName)
         {
             throw TypeLoaderExceptionHelper.CreateTypeLoadException(id, className, typeName);
@@ -70,7 +85,12 @@ namespace Internal.Runtime.CompilerHelpers
             throw TypeLoaderExceptionHelper.CreateFileNotFoundException(id, fileName);
         }
 
-        public static void ThrowInvalidProgramException(ExceptionStringID id, string methodName)
+        public static void ThrowInvalidProgramException(ExceptionStringID id)
+        {
+            throw TypeLoaderExceptionHelper.CreateInvalidProgramException(id);
+        }
+
+        public static void ThrowInvalidProgramExceptionWithArgument(ExceptionStringID id, string methodName)
         {
             throw TypeLoaderExceptionHelper.CreateInvalidProgramException(id, methodName);
         }

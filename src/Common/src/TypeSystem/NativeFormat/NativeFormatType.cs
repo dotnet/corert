@@ -68,7 +68,7 @@ namespace Internal.TypeSystem.NativeFormat
 
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
-            this.ToString();
+            InitializeName();
 #endif
         }
 
@@ -234,15 +234,6 @@ namespace Internal.TypeSystem.NativeFormat
         {
             TypeFlags flags = 0;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                // TODO: Do we really want to get the instantiation to figure out whether the type is generic?
-                if (this.HasInstantiation)
-                    flags |= TypeFlags.ContainsGenericVariables;
-            }
-
             if ((mask & TypeFlags.CategoryMask) != 0 && (flags & TypeFlags.CategoryMask) == 0)
             {
                 TypeDesc baseType = this.BaseType;
@@ -286,6 +277,22 @@ namespace Internal.TypeSystem.NativeFormat
                         break;
                     }
                 }
+            }
+
+            if ((mask & TypeFlags.HasFinalizerComputed) != 0)
+            {
+                flags |= TypeFlags.HasFinalizerComputed;
+
+                if (GetFinalizer() != null)
+                    flags |= TypeFlags.HasFinalizer;
+            }
+
+            if ((mask & TypeFlags.AttributeCacheComputed) != 0)
+            {
+                flags |= TypeFlags.AttributeCacheComputed;
+
+                if (IsValueType && HasCustomAttribute("System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
+                    flags |= TypeFlags.IsByRefLike;
             }
 
             return flags;
@@ -395,10 +402,35 @@ namespace Internal.TypeSystem.NativeFormat
             foreach (var handle in _typeDefinition.Methods)
             {
                 var methodDefinition = metadataReader.GetMethod(handle);
-                if ((methodDefinition.Flags & MethodAttributes.SpecialName) != 0 &&
+                if (methodDefinition.Flags.IsRuntimeSpecialName() &&
                     methodDefinition.Name.StringEquals(".cctor", metadataReader))
                 {
                     MethodDesc method = (MethodDesc)_metadataUnit.GetMethod(handle, this);
+                    return method;
+                }
+            }
+
+            return null;
+        }
+
+        public override MethodDesc GetDefaultConstructor()
+        {
+            if (IsAbstract)
+                return null;
+
+            MetadataReader metadataReader = this.MetadataReader;
+
+            foreach (var handle in _typeDefinition.Methods)
+            {
+                var methodDefinition = metadataReader.GetMethod(handle);
+                MethodAttributes attributes = methodDefinition.Flags;
+                if (attributes.IsRuntimeSpecialName() && attributes.IsPublic() &&
+                    methodDefinition.Name.StringEquals(".ctor", metadataReader))
+                {
+                    MethodDesc method = (MethodDesc)_metadataUnit.GetMethod(handle, this);
+                    if (method.Signature.Length != 0)
+                        continue;
+
                     return method;
                 }
             }
@@ -423,7 +455,7 @@ namespace Internal.TypeSystem.NativeFormat
                 if (impl == null)
                 {
                     // TODO: invalid input: the type doesn't derive from our System.Object
-                    throw new TypeLoadException(this.GetFullName());
+                    ThrowHelper.ThrowTypeLoadException(this);
                 }
 
                 if (impl.OwningType != objectType)
@@ -434,8 +466,8 @@ namespace Internal.TypeSystem.NativeFormat
                 return null;
             }
 
-            // TODO: Better exception type. Should be: "CoreLib doesn't have a required thing in it".
-            throw new NotImplementedException();
+            // Class library doesn't have finalizers
+            return null;
         }
 
         public override IEnumerable<FieldDesc> GetFields()
@@ -510,11 +542,6 @@ namespace Internal.TypeSystem.NativeFormat
                 attributeNamespace, attributeName);
         }
 
-        public override string ToString()
-        {
-            return "[" + NativeFormatModule.GetName().Name + "]" + this.GetFullName();
-        }
-
         public override ClassLayoutMetadata GetClassLayout()
         {
             ClassLayoutMetadata result;
@@ -545,11 +572,11 @@ namespace Internal.TypeSystem.NativeFormat
                     if ((fieldDefinition.Flags & FieldAttributes.Static) != 0)
                         continue;
 
-                    // Note: GetOffset() returns -1 when offset was not set in the metadata which maps nicely
-                    //       to FieldAndOffset.InvalidOffset.
-                    Debug.Assert(FieldAndOffset.InvalidOffset == -1);
+                    // Note: GetOffset() returns -1 when offset was not set in the metadata
+                    int fieldOffsetInMetadata = (int)fieldDefinition.Offset;
+                    LayoutInt fieldOffset = fieldOffsetInMetadata == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(fieldOffsetInMetadata);
                     result.Offsets[index] =
-                        new FieldAndOffset(_metadataUnit.GetField(handle, this), checked((int)fieldDefinition.Offset));
+                        new FieldAndOffset(_metadataUnit.GetField(handle, this), fieldOffset);
 
                     index++;
                 }
@@ -589,6 +616,14 @@ namespace Internal.TypeSystem.NativeFormat
             get
             {
                 return (_typeDefinition.Flags & TypeAttributes.Sealed) != 0;
+            }
+        }
+
+        public override bool IsAbstract
+        {
+            get
+            {
+                return (_typeDefinition.Flags & TypeAttributes.Abstract) != 0;
             }
         }
     }

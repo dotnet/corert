@@ -36,5 +36,5 @@ EXTERN_C volatile UInt32 RhpTrapThreads;
 // static
 inline bool ThreadStore::IsTrapThreadsRequested()
 {
-    return (RhpTrapThreads != 0);
+    return (RhpTrapThreads & (UInt32)TrapThreadsFlags::TrapThreads) != 0;
 }

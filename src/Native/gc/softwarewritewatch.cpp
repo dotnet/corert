@@ -3,19 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 #include "common.h"
-#include "softwarewritewatch.h"
-
 #include "gcenv.h"
+#include "env/gcenv.os.h"
+#include "softwarewritewatch.h"
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 #ifndef DACCESS_COMPILE
 
-static_assert((static_cast<size_t>(1) << SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift) == OS_PAGE_SIZE, "Unexpected OS_PAGE_SIZE");
+static_assert((static_cast<size_t>(1) << SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift) == WRITE_WATCH_UNIT_SIZE, "Unexpected WRITE_WATCH_UNIT_SIZE");
 
 extern "C"
 {
-    uint8_t *g_sw_ww_table = nullptr;
-    bool g_sw_ww_enabled_for_gc_heap = false;
+    uint8_t *g_gc_sw_ww_table = nullptr;
+    bool g_gc_sw_ww_enabled_for_gc_heap = false;
 }
 
 void SoftwareWriteWatch::StaticClose()
@@ -25,8 +25,8 @@ void SoftwareWriteWatch::StaticClose()
         return;
     }
 
-    g_sw_ww_enabled_for_gc_heap = false;
-    g_sw_ww_table = nullptr;
+    g_gc_sw_ww_enabled_for_gc_heap = false;
+    g_gc_sw_ww_table = nullptr;
 }
 
 bool SoftwareWriteWatch::GetDirtyFromBlock(
@@ -95,7 +95,7 @@ bool SoftwareWriteWatch::GetDirtyFromBlock(
             block[byteIndex] = 0;
         }
 
-        void *pageAddress = firstPageAddressInBlock + byteIndex * OS_PAGE_SIZE;
+        void *pageAddress = firstPageAddressInBlock + byteIndex * WRITE_WATCH_UNIT_SIZE;
         assert(pageAddress >= GetHeapStartAddress());
         assert(pageAddress < GetHeapEndAddress());
         assert(dirtyPageIndex < dirtyPageCount);
@@ -184,7 +184,7 @@ void SoftwareWriteWatch::GetDirty(
                 break;
             }
             currentBlock += sizeof(size_t);
-            firstPageAddressInCurrentBlock += sizeof(size_t) * OS_PAGE_SIZE;
+            firstPageAddressInCurrentBlock += sizeof(size_t) * WRITE_WATCH_UNIT_SIZE;
         }
 
         while (currentBlock < fullBlockEnd)
@@ -202,7 +202,7 @@ void SoftwareWriteWatch::GetDirty(
                 break;
             }
             currentBlock += sizeof(size_t);
-            firstPageAddressInCurrentBlock += sizeof(size_t) * OS_PAGE_SIZE;
+            firstPageAddressInCurrentBlock += sizeof(size_t) * WRITE_WATCH_UNIT_SIZE;
         }
         if (currentBlock < fullBlockEnd)
         {

@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.General.NativeFormat;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
@@ -78,17 +79,29 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
                     ReflectionTrace.PropertyInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes))
-                    yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _propertyHandle, _definingTypeInfo.TypeDefinitionHandle))
-                    yield return cad;
+                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes);
             }
+        }
+
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            if (!(other is NativeFormatRuntimePropertyInfo otherProperty))
+                return false;
+            if (!(_reader == otherProperty._reader))
+                return false;
+            if (!(_propertyHandle.Equals(otherProperty._propertyHandle)))
+                return false;
+            if (!(_definingTypeInfo.Equals(otherProperty._definingTypeInfo)))
+                return false;
+            return true;
         }
 
         public sealed override bool Equals(Object obj)
         {
-            NativeFormatRuntimePropertyInfo other = obj as NativeFormatRuntimePropertyInfo;
-            if (other == null)
+            if (!(obj is NativeFormatRuntimePropertyInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;
@@ -106,26 +119,6 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             return _propertyHandle.GetHashCode();
         }
 
-        public sealed override Object GetConstantValue()
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.PropertyInfo_GetConstantValue(this);
-#endif
-
-            Object defaultValue;
-            if (!ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
-                _reader,
-                _propertyHandle,
-                this.PropertyType,
-                this.CustomAttributes,
-                out defaultValue))
-            {
-                throw new InvalidOperationException();
-            }
-            return defaultValue;
-        }
-
         public sealed override int MetadataToken
         {
             get
@@ -134,12 +127,17 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
-        protected sealed override QTypeDefRefOrSpec PropertyTypeHandle
+        protected sealed override QSignatureTypeHandle PropertyTypeHandle
         {
             get
             {
-                return new QTypeDefRefOrSpec(_reader, _property.Signature.GetPropertySignature(_reader).Type);
+                return new QSignatureTypeHandle(_reader, _property.Signature.GetPropertySignature(_reader).Type);
             }
+        }
+
+        protected sealed override bool GetDefaultValueIfAny(bool raw, out object defaultValue)
+        {
+            return DefaultValueParser.GetDefaultValueIfAny(_reader, _property.DefaultValue, PropertyType, CustomAttributes, raw, out defaultValue);
         }
 
         protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)

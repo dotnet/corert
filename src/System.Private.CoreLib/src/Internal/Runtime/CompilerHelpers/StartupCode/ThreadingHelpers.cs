@@ -3,10 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 
 namespace Internal.Runtime.CompilerHelpers
@@ -69,7 +65,7 @@ namespace Internal.Runtime.CompilerHelpers
                     // We have lost the race so just wait until another thread finishes the initialization
                     while (Volatile.Read(ref callOnceGuard) != CallOnceState.HasRun)
                     {
-                        SpinWait.Yield();
+                        Thread.Yield();
                     }
                 }
             }

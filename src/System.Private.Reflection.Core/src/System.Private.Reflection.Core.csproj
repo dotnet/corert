@@ -1,57 +1,78 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(AssemblyName)' == ''">
     <AssemblyName>System.Private.Reflection.Core</AssemblyName>
+  </PropertyGroup>
+  <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <ProjectGuid>{999BB20D-A032-4836-A587-627D243C1668}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <DefineConstants>ENABLE_REFLECTION_TRACE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
+    <DefineConstants>ECMA_METADATA_SUPPORT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Diagnostics.Tracing.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Resources.ResourceManager.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Collections.Immutable.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Metadata.dll" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <!-- TODO: We should always include this -->
+    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+    </ProjectReference>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(EcmaMetadataSupport)' != 'true'">
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true' and '$(EcmaMetadataSupport)' == 'true'">
+    <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
+    <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.Experimental.csproj" />
+    <ReferencePath Include="$(AotPackageReferencePath)\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
   <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
+    <Compile Include="System\Reflection\Runtime\CustomAttributes\EcmaFormat\EcmaFormatCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Runtime\EventInfos\EcmaFormat\EcmaFormatRuntimeEventInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\FieldInfos\EcmaFormat\EcmaFormatRuntimeFieldInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\EcmaFormat\EcmaFormatMethodCommon.cs" />
+    <Compile Include="System\Reflection\Runtime\Modules\EcmaFormat\EcmaFormatRuntimeModule.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\EcmaFormat\EcmaFormatMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\PropertyInfos\EcmaFormat\EcmaFormatRuntimePropertyInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfoForMethods.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfoForMethods.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfoForTypes.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeGenericParameterTypeInfoForTypes.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeNamedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeNamedTypeInfo.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\EcmaFormat\EcmaFormatRuntimeNamedTypeInfo.CoreGetDeclared.cs" />
+    <Compile Include="System\Reflection\Runtime\General\EcmaFormat\EcmaMetadataHelpers.cs" />
+    <Compile Include="System\Reflection\Runtime\General\EcmaFormat\ReflectionTypeProvider.cs" />
+    <Compile Include="System\Reflection\Runtime\General\EcmaFormat\DefaultValueProcessing.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Helpers.Ecma.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\CorElementType.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeResolver.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeUnifier.Ecma.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.Ecma.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.Ecma.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\ActivatorImplementation.cs" />
     <Compile Include="System\DBNull.cs" />
-    <Compile Include="System\Empty.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
     <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssembly.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\ConstructorPolicies.cs" />
-    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.CanConvert.cs" />
-    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\DefaultBinder.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\EventPolicies.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\FieldPolicies.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberPolicies.cs" />
@@ -82,8 +103,6 @@
     <Compile Include="System\Reflection\Runtime\EventInfos\RuntimeEventInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\NativeFormat\NativeFormatRuntimeFieldInfo.cs" />
     <Compile Include="System\Reflection\Runtime\FieldInfos\RuntimeFieldInfo.cs" />
-    <Compile Include="System\Reflection\Runtime\FieldInfos\LiteralFieldAccessor.cs" />
-    <Compile Include="System\Reflection\Runtime\General\ApiToDoList.cs" />
     <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
     <Compile Include="System\Reflection\Runtime\General\BlockedRuntimeTypeNameGenerator.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />
@@ -91,22 +110,34 @@
     <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
     <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
     <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
+    <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
     <Compile Include="System\Reflection\Runtime\General\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\ListBuilder.cs" />
     <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
+    <Compile Include="System\Reflection\Runtime\General\NativeFormat\DefaultValueParser.cs" />
     <Compile Include="System\Reflection\Runtime\General\NonOverriddenApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\RuntimeNamespaceInfo.cs" />
     <Compile Include="System\Reflection\Runtime\General\RuntimeTypeHandleKey.cs" />
     <Compile Include="System\Reflection\Runtime\General\ThunkedApis.cs" />
     <Compile Include="System\Reflection\Runtime\General\ToStringUtils.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeForwardInfo.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeResolver.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeResolver.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.cs" />
     <Compile Include="System\Reflection\Runtime\General\TypeUnifier.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.NativeFormat.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\NativeFormat\NativeFormatMethodCommon.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodInvoker.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodInvokerAction.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodMapper.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodMapper.Nullable.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodMapper.String.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\InvokerOptions.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\OpenMethodInvoker.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeClsIdNullaryConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructedGenericMethodInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructorInfo.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeDummyMethodInfo.cs" />
@@ -120,7 +151,9 @@
     <Compile Include="System\Reflection\Runtime\MethodInfos\SyntheticMethodId.cs" />
     <Compile Include="System\Reflection\Runtime\MethodInfos\VirtualRuntimeParameterInfoArray.cs" />
     <Compile Include="System\Reflection\Runtime\Modules\RuntimeModule.cs" />
+    <Compile Include="System\Reflection\Runtime\Modules\NativeFormat\NativeFormatRuntimeModule.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\NativeFormat\NativeFormatMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeFatMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeMethodParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeParameterInfo.cs" />
     <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimePropertyIndexParameterInfo.cs" />
@@ -135,6 +168,8 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeTypeInfo.CoreGetDeclared.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeArrayTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeByRefTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeGenericParameterTypeInfo.cs" />
@@ -148,6 +183,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeNoMetadataNamedTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimePointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeBlockedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeDefinitionTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.GetMember.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.BindingFlags.cs" />
@@ -168,7 +204,6 @@
     <Compile Include="Internal\Reflection\Core\Execution\FieldAccessor.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\MethodInvoker.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ReflectionCoreExecution.cs" />
-    <Compile Include="Internal\Reflection\Core\Execution\InvokerOptions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsProjectNLibrary)' == 'true'">
     <Compile Include="Internal\Reflection\Tracing\ReflectionTrace.Public.cs" />
@@ -224,9 +259,12 @@
     <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\DeveloperExperienceState.cs">
       <Link>System\Runtime\CompilerServices\DeveloperExperienceState.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+    <EmbeddedResource Include="Resources\System.Private.Reflection.Core.rd.xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />

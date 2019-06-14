@@ -104,17 +104,29 @@ namespace System.Reflection.Runtime.EventInfos.NativeFormat
                     ReflectionTrace.EventInfo_CustomAttributes(this);
 #endif
 
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.CustomAttributes))
-                    yield return cad;
-                foreach (CustomAttributeData cad in ReflectionCoreExecution.ExecutionEnvironment.GetPseudoCustomAttributes(_reader, _eventHandle, _definingTypeInfo.TypeDefinitionHandle))
-                    yield return cad;
+                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _event.CustomAttributes);
             }
+        }
+
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            if (!(other is NativeFormatRuntimeEventInfo otherEvent))
+                return false;
+            if (!(_reader == otherEvent._reader))
+                return false;
+            if (!(_eventHandle.Equals(otherEvent._eventHandle)))
+                return false;
+            if (!(_definingTypeInfo.Equals(otherEvent._definingTypeInfo)))
+                return false;
+            return true;
         }
 
         public sealed override bool Equals(Object obj)
         {
-            NativeFormatRuntimeEventInfo other = obj as NativeFormatRuntimeEventInfo;
-            if (other == null)
+            if (!(obj is NativeFormatRuntimeEventInfo other))
                 return false;
             if (!(_reader == other._reader))
                 return false;

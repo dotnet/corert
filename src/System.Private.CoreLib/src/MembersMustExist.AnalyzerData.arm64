@@ -10,3 +10,4 @@
 # System.Buffer
 internal static void System.Buffer.Memmove(byte* dest, byte* src, ulong len)
 internal static extern void System.Runtime.RuntimeImports.memmove(byte* dmem, byte* smem, ulong size)
+internal static extern void System.Runtime.RuntimeImports.RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, ulong size)

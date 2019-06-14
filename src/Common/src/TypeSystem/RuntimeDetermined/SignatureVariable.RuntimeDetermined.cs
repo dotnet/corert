@@ -12,9 +12,15 @@ namespace Internal.TypeSystem
         {
             get
             {
-                Debug.Assert(false, "IsRuntimeDeterminedSubtype of an indefinite type");
+                Debug.Fail("IsRuntimeDeterminedSubtype of an indefinite type");
                 return false;
             }
+        }
+
+        public override TypeDesc GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            Debug.Assert(false);
+            return this;
         }
     }
 }

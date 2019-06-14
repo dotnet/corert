@@ -166,7 +166,7 @@ GcInfoDecoder::GcInfoDecoder(
     if (hasGSCookie)
     {
         // Note that normalization as a code offset can be different than 
-        //  normalization as code legnth
+        //  normalization as code length
         UINT32 normCodeLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
 
         // Decode prolog/epilog information
@@ -283,7 +283,7 @@ GcInfoDecoder::GcInfoDecoder(
 
     if (hasReversePInvokeFrame)
     {
-        m_ReversePInvokeFrameStackSlot = (INT32)m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE);
+        m_ReversePInvokeFrameStackSlot = (INT32)DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE));
     }
     else
     {
@@ -330,7 +330,7 @@ GcInfoDecoder::GcInfoDecoder(
     else if(flags & DECODE_FOR_RANGES_CALLBACK)
     {
         // Note that normalization as a code offset can be different than 
-        //  normalization as code legnth
+        //  normalization as code length
         UINT32 normCodeLength = NORMALIZE_CODE_OFFSET(m_CodeLength);
 
         UINT32 numBitsPerOffset = CeilOfLog2(normCodeLength);
@@ -453,7 +453,7 @@ void GcInfoDecoder::EnumerateInterruptibleRanges (
             EnumerateInterruptibleRangesCallback *pCallback,
             void *                                hCallback)
 {
-    // If no info is found for the call site, we default to fully-interruptbile
+    // If no info is found for the call site, we default to fully-interruptible
     LOG((LF_GCROOTS, LL_INFO1000000, "No GC info found for call site at offset %x. Defaulting to fully-interruptible information.\n", (int) m_InstructionOffset));
 
     UINT32 lastInterruptibleRangeStopOffsetNormalized = 0;
@@ -793,7 +793,7 @@ bool GcInfoDecoder::EnumerateLiveSlots(
         _ASSERTE(m_NumInterruptibleRanges);
         _ASSERTE(numInterruptibleLength);
         
-        // If no info is found for the call site, we default to fully-interruptbile
+        // If no info is found for the call site, we default to fully-interruptible
         LOG((LF_GCROOTS, LL_INFO1000000, "No GC info found for call site at offset %x. Defaulting to fully-interruptible information.\n", (int) m_InstructionOffset));
 
         UINT32 numChunks = (numInterruptibleLength + NUM_NORM_CODE_OFFSETS_PER_CHUNK - 1) / NUM_NORM_CODE_OFFSETS_PER_CHUNK;
@@ -1476,26 +1476,31 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 14);
     _ASSERTE(regNum != 13);  // sp
 
+#ifdef FEATURE_REDHAWK
+    PTR_UIntNative *ppReg = &pRD->pR0;
+    if (regNum > 12) regNum--; // rsp is skipped in Redhawk RegDisplay
+    return (OBJECTREF*)*(ppReg + regNum);
+#else
     DWORD **ppReg;
 
     if(regNum <= 3)
     {
-        ppReg = &pRD->volatileCurrContextPointers.R0;
+        ppReg = &pRD->pR0;
         return (OBJECTREF*)*(ppReg + regNum);
     }
     else if(regNum == 12)
     {
-        return (OBJECTREF*) pRD->volatileCurrContextPointers.R12;
+        return (OBJECTREF*) pRD->pR12;
     }
     else if(regNum == 14)
     {
-        return (OBJECTREF*) pRD->pCurrentContextPointers->Lr;
+        return (OBJECTREF*) pRD->pLR;
     }
 
-    ppReg = &pRD->pCurrentContextPointers->R4;
+    ppReg = &pRD->pR4;
 	
     return (OBJECTREF*)*(ppReg + regNum-4);
-
+#endif
 }
 
 #ifdef FEATURE_PAL
@@ -1675,7 +1680,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     PREGDISPLAY     pRD
     )
 {
-    _ASSERTE(regNum >= 0 && regNum <= 28);
+    _ASSERTE(regNum >= 0 && regNum < GEN_REG_COUNT);
 
     // The fields of CONTEXT are in the same order as
     // the processor encoding numbers.

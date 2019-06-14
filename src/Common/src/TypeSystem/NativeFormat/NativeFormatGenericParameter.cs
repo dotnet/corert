@@ -121,12 +121,5 @@ namespace Internal.TypeSystem.NativeFormat
                 return constraintTypes;
             }
         }
-
-        public override string ToString()
-        {
-            MetadataReader reader = MetadataReader;
-            GenericParameter parameter = reader.GetGenericParameter(_handle);
-            return parameter.Name.GetConstantStringValue(reader).Value;
-        }
     }
 }

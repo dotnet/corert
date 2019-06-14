@@ -26,24 +26,26 @@
 using global::System;
 using global::System.Collections.Generic;
 using global::System.Reflection;
-using global::System.Runtime.CompilerServices;
+using global::System.Reflection.Runtime.General;
 
 using global::Internal.Runtime.Augments;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
+using global::Internal.Metadata.NativeFormat;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Reflection.Execution
 {
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.ReflectionExecution)]
     public static class ReflectionExecution
     {
         /// <summary>
-        /// This eager constructor initializes runtime reflection support. As part of ExecutionEnvironmentImplementation
+        /// Eager initialization of runtime reflection support. As part of ExecutionEnvironmentImplementation
         /// initialization it enumerates the modules and registers the ones containing EmbeddedMetadata reflection blobs
         /// in its _moduleToMetadataReader map.
         /// </summary>
-        static ReflectionExecution()
+        internal static void Initialize()
         {
             // Initialize Reflection.Core's one and only ExecutionDomain.
             ExecutionEnvironmentImplementation executionEnvironment = new ExecutionEnvironmentImplementation();
@@ -85,7 +87,34 @@ namespace Internal.Reflection.Execution
             return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
         }
 
-        internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; }
+        public static bool TryGetMethodMetadataFromStartAddress(IntPtr methodStartAddress, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
+        {
+            reader = null;
+            typeHandle = default(TypeDefinitionHandle);
+            methodHandle = default(MethodHandle);
+
+            RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
+            if (!ExecutionEnvironment.TryGetMethodForStartAddress(methodStartAddress,
+                ref declaringTypeHandle, out QMethodDefinition qMethodDefinition))
+                return false;
+
+            if (!qMethodDefinition.IsNativeFormatMetadataBased)
+                return false;
+
+            if (!ExecutionEnvironment.TryGetMetadataForNamedType(declaringTypeHandle, out QTypeDefinition qTypeDefinition))
+                return false;
+
+            Debug.Assert(qTypeDefinition.IsNativeFormatMetadataBased);
+            Debug.Assert(qTypeDefinition.NativeFormatReader == qMethodDefinition.NativeFormatReader);
+
+            reader = qTypeDefinition.NativeFormatReader;
+            typeHandle = qTypeDefinition.NativeFormatHandle;
+            methodHandle = qMethodDefinition.NativeFormatHandle;
+
+            return true;
+        }
+
+        internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }
 
         internal static IList<string> DefaultAssemblyNamesForGetType;
     }

@@ -3,13 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using global::System;
-using global::System.Reflection;
-using global::System.Collections.Generic;
 
 using global::Internal.Metadata.NativeFormat;
-
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -66,6 +61,15 @@ namespace Internal.Reflection.Execution
             {
                 Debug.Assert((HandleType)((uint)i >> 24) == HandleType.Field);
                 return *(FieldHandle*)&i;
+            }
+        }
+
+        public static TypeDefinitionHandle AsTypeDefinitionHandle(this int i)
+        {
+            unsafe
+            {
+                Debug.Assert((HandleType)((uint)i >> 24) == HandleType.TypeDefinition);
+                return *(TypeDefinitionHandle*)&i;
             }
         }
 

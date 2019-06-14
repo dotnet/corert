@@ -20,10 +20,6 @@
 #include "objecthandle.h"
 #include "handletablepriv.h"
 
-#ifndef FEATURE_REDHAWK
-#include "nativeoverlapped.h"
-#endif // FEATURE_REDHAWK
-
 
 /****************************************************************************
  *
@@ -46,7 +42,7 @@ MaskDWORD is also non-zero.
 2. AgeEphemeral. When Ephemeral GC happens, ages for handles which belong to the GC condemned generation should be 
 incremented by 1. The operation is done by calculating a new uint32_t using the old uint32_t value:
     NewGenerationDWORD = COMPUTE_AGED_CLUMPS(OldGenerationDWORD, BuildAgeMask(condemnedGeneration, MaxGen))
-so that if a byte in OldGenerationDWORD is smaller than or equals to condemnedGeneration. the coresponding byte in 
+so that if a byte in OldGenerationDWORD is smaller than or equals to condemnedGeneration. the corresponding byte in 
 NewGenerationDWORD is 1 bigger than the old value, otherwise it remains unchanged.
 
 3. Age. Similar as AgeEphemeral, but we use a special mask if condemned generation is max gen (2):
@@ -118,7 +114,7 @@ If you change any of those algorithm, please verify it by this program:
                     assert (mask == 0);
                     return;
             }
-            //any generaion bigger than 2 is actually 2
+            //any generation bigger than 2 is actually 2
             if (gen > 2)
                 gen = 2;
 
@@ -716,10 +712,10 @@ void CALLBACK BlockScanBlocksEphemeral(PTR_TableSegment pSegment, uint32_t uBloc
     uint32_t *pdwGen     = (uint32_t *)pSegment->rgGeneration + uBlock;
     uint32_t *pdwGenLast =             pdwGen                 + uCount;
 
-    // loop over all the blocks, checking for elligible clumps as we go
+    // loop over all the blocks, checking for eligible clumps as we go
     do
     {
-        // determine if any clumps in this block are elligible
+        // determine if any clumps in this block are eligible
         uint32_t dwClumpMask = COMPUTE_CLUMP_MASK(*pdwGen, dwAgeMask);
 
         // if there are any clumps to scan then scan them now
@@ -791,7 +787,6 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     // fetch the table segment we are working in
@@ -822,33 +817,17 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
                     if (minAge > thisAge)
                         minAge = thisAge;
 
-#ifndef FEATURE_REDHAWK
-                    if ((*pValue)->GetGCSafeMethodTable() == g_pOverlappedDataClass)
-                    {
-                        // reporting the pinned user objects
-                        OverlappedDataObject *pOverlapped = (OverlappedDataObject *)(*pValue);
-                        if (pOverlapped->m_userObject != NULL)
+                    GCToEEInterface::WalkAsyncPinned(*pValue, &minAge,
+                        [](Object*, Object* to, void* ctx)
                         {
-                            Object * pUserObject = OBJECTREFToObject(pOverlapped->m_userObject);
-                            thisAge = g_theGCHeap->WhichGeneration(pUserObject);
-                            if (minAge > thisAge)
-                                minAge = thisAge;
-                            if (pOverlapped->m_isArray)
+                            int* minAge = reinterpret_cast<int*>(ctx);
+                            int generation = g_theGCHeap->WhichGeneration(to);
+                            if (*minAge > generation)
                             {
-                                ArrayBase* pUserArrayObject = (ArrayBase*)pUserObject;
-                                Object **pObj = (Object**)pUserArrayObject->GetDataPtr(TRUE);
-                                size_t num = pUserArrayObject->GetNumComponents();
-                                for (size_t i = 0; i < num; i ++)
-                                {
-                                     thisAge = g_theGCHeap->WhichGeneration(pObj[i]);
-                                     if (minAge > thisAge)
-                                         minAge = thisAge;
-                                 }                                    
-                            }                            
-                        }
-                    }
-#endif // !FEATURE_REDHAWK                    
-                }
+                                *minAge = generation;
+                            }
+                        });
+               }
             }
             _ASSERTE(FitsInU1(minAge));
             ((uint8_t *)pSegment->rgGeneration)[uClump] = static_cast<uint8_t>(minAge);
@@ -911,7 +890,7 @@ void CALLBACK BlockResetAgeMapForBlocks(TableSegment *pSegment, uint32_t uBlock,
 
 static void VerifyObject(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj)
 {
-#ifdef FEATURE_REDHAWK
+#if defined(FEATURE_REDHAWK) || defined(BUILD_AS_STANDALONE)
     UNREFERENCED_PARAMETER(from);
     MethodTable* pMT = (MethodTable*)(obj->GetGCSafeMethodTable());
     pMT->SanityCheck();
@@ -920,9 +899,8 @@ static void VerifyObject(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj)
 #endif // FEATURE_REDHAWK
 }
 
-static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF *pValue, _UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj, uint8_t minAge)
+static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj, uint8_t minAge)
 {
-    UNREFERENCED_PARAMETER(pValue);
     VerifyObject(from, obj);
 
     int thisAge = g_theGCHeap->WhichGeneration(obj);
@@ -949,7 +927,7 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF *pValue, _UNCHECKED_OBJECTRE
     if (minAge >= GEN_MAX_AGE || (minAge > thisAge && thisAge < static_cast<int>(g_theGCHeap->GetMaxGeneration())))
     {
         _ASSERTE(!"Fatal Error in HandleTable.");
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        GCToEEInterface::HandleFatalError(COR_E_EXECUTIONENGINE);
     }
 }
 
@@ -989,29 +967,13 @@ void BlockVerifyAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sc
             {
                 if (!HndIsNullOrDestroyedHandle(*pValue))
                 {
-                    VerifyObjectAndAge(pValue, (*pValue), (*pValue), minAge);
-#ifndef FEATURE_REDHAWK
-                    if ((*pValue)->GetGCSafeMethodTable() == g_pOverlappedDataClass)
-                    {
-                        // reporting the pinned user objects
-                        OverlappedDataObject *pOverlapped = (OverlappedDataObject *)(*pValue);
-                        if (pOverlapped->m_userObject != NULL)
+                    VerifyObjectAndAge((*pValue), (*pValue), minAge);
+                    GCToEEInterface::WalkAsyncPinned(*pValue, &minAge,
+                        [](Object* from, Object* object, void* age)
                         {
-                            Object * pUserObject = OBJECTREFToObject(pOverlapped->m_userObject);
-                            VerifyObjectAndAge(pValue, (*pValue), pUserObject, minAge);
-                            if (pOverlapped->m_isArray)
-                            {
-                                ArrayBase* pUserArrayObject = (ArrayBase*)pUserObject;
-                                Object **pObj = (Object**)pUserArrayObject->GetDataPtr(TRUE);
-                                size_t num = pUserArrayObject->GetNumComponents();
-                                for (size_t i = 0; i < num; i ++)
-                                {
-                                     VerifyObjectAndAge(pValue, pUserObject, pObj[i], minAge);
-                                }                                    
-                            }                            
-                        }
-                    }
-#endif // !FEATURE_REDHAWK
+                            uint8_t* minAge = reinterpret_cast<uint8_t*>(age);
+                            VerifyObjectAndAge(from, object, *minAge);
+                        });
 
                     if (uType == HNDTYPE_DEPENDENT)
                     {
@@ -1360,7 +1322,7 @@ void xxxTableScanQueuedBlocksAsync(PTR_HandleTable pTable, PTR_TableSegment pSeg
 
 #ifndef DACCESS_COMPILE
     // loop through, unlock all the blocks we had locked, and reset the queue nodes
-    ProcessScanQueue(pAsyncInfo, UnlockAndForgetQueuedBlocks, NULL, FALSE);
+    ProcessScanQueue(pAsyncInfo, UnlockAndForgetQueuedBlocks, (uintptr_t)NULL, FALSE);
 #endif
 
     // we are done processing this segment
@@ -1423,7 +1385,7 @@ PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_Ta
 {
     CONTRACTL
     {
-        WRAPPER(THROWS);
+        WRAPPER(NOTHROW);
         WRAPPER(GC_TRIGGERS);
         FORBID_FAULT;
         SUPPORTS_DAC;
@@ -1434,7 +1396,7 @@ PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_Ta
     PTR_TableSegment pNextSegment = QuickSegmentIterator(pTable, pPrevSegment);
 
 #ifndef DACCESS_COMPILE
-    // re-sort the block chains if neccessary
+    // re-sort the block chains if necessary
     if (pNextSegment && pNextSegment->fResortChains)
         SegmentResortChains(pNextSegment);
 #endif
@@ -1630,7 +1592,7 @@ void SegmentScanByTypeChain(PTR_TableSegment pSegment, uint32_t uType, BLOCKSCAN
 
             } while ((uNext == uLast) && (uNext != uHead));
 
-            // call the calback for this group of blocks
+            // call the callback for this group of blocks
             pfnBlockHandler(pSegment, uBlock, (uLast - uBlock), pInfo);
 
             // advance to the next block
@@ -1694,7 +1656,7 @@ void SegmentScanByTypeMap(PTR_TableSegment pSegment, const BOOL *rgTypeInclusion
                 break;
         }
 
-        // call the calback for the group of blocks we found
+        // call the callback for the group of blocks we found
         pfnBlockHandler(pSegment, uFirst, (uBlock - uFirst), pInfo);
 
         // look for another range starting with the next block
@@ -1836,7 +1798,7 @@ void CALLBACK xxxTableScanHandlesAsync(PTR_HandleTable pTable,
         asyncInfo.pScanQueue = initialNode.pNext;
 
         // loop through and free all the queue nodes
-        ProcessScanQueue(&asyncInfo, FreeScanQNode, NULL, TRUE);
+        ProcessScanQueue(&asyncInfo, FreeScanQNode, (uintptr_t)NULL, TRUE);
     }
 
     // unlink our async scanning info from the table

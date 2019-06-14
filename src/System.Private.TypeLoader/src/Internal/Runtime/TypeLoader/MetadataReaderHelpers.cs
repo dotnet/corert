@@ -5,8 +5,6 @@
 
 using global::System;
 using global::System.Reflection;
-using System.Reflection.Runtime.Assemblies;
-using global::System.Collections.Generic;
 using global::Internal.Metadata.NativeFormat;
 
 using Debug = System.Diagnostics.Debug;
@@ -206,19 +204,9 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        private static byte[] ConvertByteCollectionToArray(ByteCollection collection)
-        {
-            byte[] array = new byte[collection.Count];
-            int i = 0;
-            foreach (byte b in collection)
-                array[i] = b;
-
-            return array;
-        }
-
         private static byte[] ConvertByteCollectionOfPublicKeyToByteArrayOfPublicKeyToken(ByteCollection publicKeyCollection)
         {
-            byte[] publicKey = ConvertByteCollectionToArray(publicKeyCollection);
+            byte[] publicKey = Internal.TypeSystem.NativeFormat.MetadataExtensions.ConvertByteCollectionToArray(publicKeyCollection);
             return AssemblyNameHelpers.ComputePublicKeyToken(publicKey);
         }
 
@@ -227,7 +215,7 @@ namespace Internal.Runtime.TypeLoader
             if (isKey)
                 return ConvertByteCollectionOfPublicKeyToByteArrayOfPublicKeyToken(publicKeyOrToken);
             else
-                return ConvertByteCollectionToArray(publicKeyOrToken);
+                return Internal.TypeSystem.NativeFormat.MetadataExtensions.ConvertByteCollectionToArray(publicKeyOrToken);
         }
     }
 }

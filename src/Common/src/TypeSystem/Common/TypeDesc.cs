@@ -115,6 +115,8 @@ namespace Internal.TypeSystem
                 case WellKnownType.RuntimeTypeHandle:
                 case WellKnownType.RuntimeMethodHandle:
                 case WellKnownType.RuntimeFieldHandle:
+                case WellKnownType.TypedReference:
+                case WellKnownType.ByReferenceOfT:
                     flags = TypeFlags.ValueType;
                     break;
 
@@ -266,6 +268,18 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value indicating whether this is a generic definition, or
+        /// an instance of System.ByReference`1.
+        /// </summary>
+        public bool IsByReferenceOfT
+        {
+            get
+            {
+                return this.GetTypeDefinition().IsWellKnownType(WellKnownType.ByReferenceOfT);
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is an array type (<see cref="ArrayType"/>).
         /// Note this will return true for both multidimensional array types and vector types.
         /// Use <see cref="IsSzArray"/> to check for vector types.
@@ -274,7 +288,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.GetType() == typeof(ArrayType);
+                return this is ArrayType;
             }
         }
 
@@ -309,7 +323,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.GetType() == typeof(ByRefType);
+                return this is ByRefType;
             }
         }
 
@@ -320,7 +334,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.GetType() == typeof(PointerType);
+                return this is PointerType;
             }
         }
 
@@ -331,7 +345,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.GetType() == typeof(FunctionPointerType);
+                return this is FunctionPointerType;
             }
         }
 
@@ -342,7 +356,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return this.GetType() == typeof(SignatureTypeVariable) || this.GetType() == typeof(SignatureMethodVariable);
+                return this is SignatureTypeVariable || this is SignatureMethodVariable;
             }
         }
 
@@ -399,14 +413,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public bool ContainsGenericVariables
-        {
-            get
-            {
-                return (GetTypeFlags(TypeFlags.ContainsGenericVariables | TypeFlags.ContainsGenericVariablesComputed) & TypeFlags.ContainsGenericVariables) != 0;
-            }
-        }
-
         /// <summary>
         /// Gets the type from which this type derives from, or null if there's no such type.
         /// </summary>
@@ -447,7 +453,8 @@ namespace Internal.TypeSystem
                         return field.FieldType;
                 }
 
-                throw new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadGeneral, this);
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, this);
+                return null; // Unreachable
             }
         }
 
@@ -497,6 +504,15 @@ namespace Internal.TypeSystem
         /// </summary>
         /// <returns></returns>
         public virtual MethodDesc GetStaticConstructor()
+        {
+            return null;
+        }
+
+        /// <summary>
+        /// Retrieves the public parameterless constructor method of the type, or null if there isn't one
+        /// or the type is abstract.
+        /// </summary>
+        public virtual MethodDesc GetDefaultConstructor()
         {
             return null;
         }
@@ -562,11 +578,11 @@ namespace Internal.TypeSystem
         /// Gets a value indicating whether this type has a finalizer method.
         /// Use <see cref="GetFinalizer"/> to retrieve the method.
         /// </summary>
-        public virtual bool HasFinalizer
+        public bool HasFinalizer
         {
             get
             {
-                return false;
+                return (GetTypeFlags(TypeFlags.HasFinalizer | TypeFlags.HasFinalizerComputed) & TypeFlags.HasFinalizer) != 0;
             }
         }
 
@@ -599,6 +615,18 @@ namespace Internal.TypeSystem
             get
             {
                 return HasInstantiation && IsTypeDefinition;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a byref-like type
+        /// (a <code>TypedReference</code>, <code>Span&lt;T&gt;</code>, etc.).
+        /// </summary>
+        public bool IsByRefLike
+        {
+            get
+            {
+                return (GetTypeFlags(TypeFlags.IsByRefLike | TypeFlags.AttributeCacheComputed) & TypeFlags.IsByRefLike) != 0;
             }
         }
     }

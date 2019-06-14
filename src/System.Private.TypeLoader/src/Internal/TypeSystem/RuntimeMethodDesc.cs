@@ -75,7 +75,7 @@ namespace Internal.TypeSystem.NoMetadata
         {
             get
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
         }
 

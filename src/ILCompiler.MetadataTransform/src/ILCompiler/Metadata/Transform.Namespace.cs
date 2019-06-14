@@ -72,6 +72,10 @@ namespace ILCompiler.Metadata
 
         private NamespaceReference HandleNamespaceReference(Cts.ModuleDesc parentScope, string namespaceString)
         {
+            // The format represents root namespace as a namespace with null name, in contrast with ECMA-335
+            if (namespaceString.Length == 0)
+                namespaceString = null;
+
             NamespaceReference result;
             NamespaceKey key = new NamespaceKey(parentScope, namespaceString);
             if (_namespaceRefs.TryGetValue(key, out result))
@@ -91,6 +95,9 @@ namespace ILCompiler.Metadata
                 };
                 _namespaceRefs.Add(key, rootNamespace);
             }
+
+            if (namespaceString == null)
+                return rootNamespace;
 
             NamespaceReference currentNamespace = rootNamespace;
             string currentNamespaceName = String.Empty;

@@ -13,7 +13,7 @@ Module Name:
 #ifndef __gc_record_h__
 #define __gc_record_h__
 
-#define max_generation 2
+//#define max_generation 2
 
 // We pack the dynamic tuning for deciding which gen to condemn in a uint32_t.
 // We assume that 2 bits are enough to represent the generation. 
@@ -270,7 +270,7 @@ static BOOL gc_expand_mechanism_mandatory_p[] =
 static char* str_heap_compact_reasons[] = 
 {
     "low on ephemeral space",
-    "high fragmetation",
+    "high fragmentation",
     "couldn't allocate gaps",
     "user specfied compact LOH",
     "last GC before OOM",
@@ -311,7 +311,9 @@ static gc_mechanism_descr gc_mechanisms_descr[max_mechanism_per_heap] =
 };
 #endif //DT_LOG
 
-int index_of_set_bit (size_t power2);
+// Get the 0-based index of the most-significant bit in the value.
+// Returns -1 if the input value is zero (i.e. has no set bits).
+int index_of_highest_set_bit (size_t value);
 
 #define mechanism_mask (1 << (sizeof (uint32_t) * 8 - 1))
 // interesting per heap data we want to record for each GC.
@@ -372,7 +374,7 @@ public:
 
         if (mechanism & mechanism_mask)
         {
-            int index = index_of_set_bit ((size_t)(mechanism & (~mechanism_mask)));
+            int index = index_of_highest_set_bit ((size_t)(mechanism & (~mechanism_mask)));
             assert (index != -1);
             return index;
         }
@@ -407,16 +409,16 @@ struct gc_history_global
     gc_reason reason;
     int pause_mode;
     uint32_t mem_pressure;
-    uint32_t global_mechanims_p;
+    uint32_t global_mechanisms_p;
 
     void set_mechanism_p (gc_global_mechanism_p mechanism)
     {
-        global_mechanims_p |= (1 << mechanism);
+        global_mechanisms_p |= (1 << mechanism);
     }
 
     BOOL get_mechanism_p (gc_global_mechanism_p mechanism)
     {
-        return (global_mechanims_p & (1 << mechanism));
+        return (global_mechanisms_p & (1 << mechanism));
     }
 
     void print();

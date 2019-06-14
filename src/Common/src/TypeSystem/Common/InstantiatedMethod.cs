@@ -125,6 +125,14 @@ namespace Internal.TypeSystem
             return _methodDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
+        public override bool IsDefaultConstructor
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public override MethodDesc GetMethodDefinition()
         {
             return _methodDef;
@@ -141,15 +149,6 @@ namespace Internal.TypeSystem
             {
                 return _methodDef.Name;
             }
-        }
-
-        public override string ToString()
-        {
-            var sb = new StringBuilder(_methodDef.ToString());
-            sb.Append('<');
-            sb.Append(_instantiation.ToString());
-            sb.Append('>');
-            return sb.ToString();
         }
     }
 }

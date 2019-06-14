@@ -7,6 +7,8 @@
 #define _GCINFO_H_
 /*****************************************************************************/
 
+// Keep definitions in this file in sync with Nutc\UTC\gcinfo.h
+
 #ifdef _TARGET_ARM_
 
 #define NUM_PRESERVED_REGS 9
@@ -112,6 +114,192 @@ enum ScratchRegMask
     SR_MASK_LR   = 0x20,
 };
 
+#elif defined(_TARGET_ARM64_)
+
+enum RegMask
+{
+    RBM_NONE = 0,
+
+    RBM_X0 = 0x00000001,
+    RBM_X1 = 0x00000002,
+    RBM_X2 = 0x00000004,
+    RBM_X3 = 0x00000008,
+    RBM_X4 = 0x00000010,
+    RBM_X5 = 0x00000020,
+    RBM_X6 = 0x00000040,
+    RBM_X7 = 0x00000080,
+    RBM_X8 = 0x00000100, // ARM64 ABI: indirect result register
+    RBM_X9 = 0x00000200,
+    RBM_X10 = 0x00000400,
+    RBM_X11 = 0x00000800,
+    RBM_X12 = 0x00001000,
+    RBM_X13 = 0x00002000,
+    RBM_X14 = 0x00004000,
+    RBM_X15 = 0x00008000,
+
+    RBM_XIP0 = 0x00010000, // This one is occasionally used as a scratch register (but can be destroyed by branching or a call)
+    RBM_XIP1 = 0x00020000, // This one may be also used as a scratch register (but can be destroyed by branching or a call)
+    RBM_XPR = 0x00040000,
+
+    RBM_X19 = 0x00080000, // RA_CALLEESAVE
+    RBM_X20 = 0x00100000, // RA_CALLEESAVE
+    RBM_X21 = 0x00200000, // RA_CALLEESAVE
+    RBM_X22 = 0x00400000, // RA_CALLEESAVE
+    RBM_X23 = 0x00800000, // RA_CALLEESAVE
+    RBM_X24 = 0x01000000, // RA_CALLEESAVE
+    RBM_X25 = 0x02000000, // RA_CALLEESAVE
+    RBM_X26 = 0x04000000, // RA_CALLEESAVE
+    RBM_X27 = 0x08000000, // RA_CALLEESAVE
+    RBM_X28 = 0x10000000, // RA_CALLEESAVE
+
+    RBM_FP = 0x20000000,
+    RBM_LR = 0x40000000,
+    RBM_SP = 0x80000000,
+
+    RBM_RETVAL = RBM_X8,
+    // Note: Callee saved regs: X19-X28; FP and LR are treated as callee-saved in unwinding code
+    RBM_CALLEE_SAVED_REG_COUNT = 12,
+
+    // Scratch regs: X0-X15, XIP0, XIP1, LR
+    RBM_SCRATCH_REG_COUNT = 19,
+};
+
+#define NUM_PRESERVED_REGS RBM_CALLEE_SAVED_REG_COUNT
+
+// Number of the callee-saved registers stored in the fixed header
+#define NUM_PRESERVED_REGS_LOW 9
+#define MASK_PRESERVED_REGS_LOW ((1 << NUM_PRESERVED_REGS_LOW) - 1)
+
+enum RegNumber
+{
+    RN_X0 = 0,
+    RN_X1 = 1,
+    RN_X2 = 2,
+    RN_X3 = 3,
+    RN_X4 = 4,
+    RN_X5 = 5,
+    RN_X6 = 6,
+    RN_X7 = 7,
+    RN_X8 = 8, // indirect result register
+    RN_X9 = 9,
+    RN_X10 = 10,
+    RN_X11 = 11,
+    RN_X12 = 12,
+    RN_X13 = 13,
+    RN_X14 = 14,
+    RN_X15 = 15,
+
+    RN_XIP0 = 16,
+    RN_XIP1 = 17,
+    RN_XPR = 18,
+
+    RN_X19 = 19, // RA_CALLEESAVE
+    RN_X20 = 20, // RA_CALLEESAVE
+    RN_X21 = 21, // RA_CALLEESAVE
+    RN_X22 = 22, // RA_CALLEESAVE
+    RN_X23 = 23, // RA_CALLEESAVE
+    RN_X24 = 24, // RA_CALLEESAVE
+    RN_X25 = 25, // RA_CALLEESAVE
+    RN_X26 = 26, // RA_CALLEESAVE
+    RN_X27 = 27, // RA_CALLEESAVE
+    RN_X28 = 28, // RA_CALLEESAVE
+
+    RN_FP = 29,
+    RN_LR = 30,
+    RN_SP = 31,
+
+    RN_NONE = 32,
+};
+
+enum CalleeSavedRegNum
+{
+    // NOTE: LR is omitted because it may not be live except as a 'scratch' reg
+    CSR_NUM_X19 = 1,
+    CSR_NUM_X20 = 2,
+    CSR_NUM_X21 = 3,
+    CSR_NUM_X22 = 4,
+    CSR_NUM_X23 = 5,
+    CSR_NUM_X24 = 6,
+    CSR_NUM_X25 = 7,
+    CSR_NUM_X26 = 8,
+    CSR_NUM_X27 = 9,
+    CSR_NUM_X28 = 10,
+    CSR_NUM_FP = 11,
+    CSR_NUM_NONE = 12,
+};
+
+enum CalleeSavedRegMask
+{
+    CSR_MASK_NONE = 0x00,
+    // LR is placed here to reduce the frequency of the long encoding
+    CSR_MASK_LR = 0x001,
+    CSR_MASK_X19 = 0x002,
+    CSR_MASK_X20 = 0x004,
+    CSR_MASK_X21 = 0x008,
+    CSR_MASK_X22 = 0x010,
+    CSR_MASK_X23 = 0x020,
+    CSR_MASK_X24 = 0x040,
+    CSR_MASK_X25 = 0x080,
+    CSR_MASK_X26 = 0x100,
+    CSR_MASK_X27 = 0x200,
+    CSR_MASK_X28 = 0x400,
+    CSR_MASK_FP = 0x800,
+
+    CSR_MASK_ALL = 0xfff,
+    CSR_MASK_HIGHEST = 0x800,
+};
+
+enum ScratchRegNum
+{
+    SR_NUM_X0 = 0,
+    SR_NUM_X1 = 1,
+    SR_NUM_X2 = 2,
+    SR_NUM_X3 = 3,
+    SR_NUM_X4 = 4,
+    SR_NUM_X5 = 5,
+    SR_NUM_X6 = 6,
+    SR_NUM_X7 = 7,
+    SR_NUM_X8 = 8,
+    SR_NUM_X9 = 9,
+    SR_NUM_X10 = 10,
+    SR_NUM_X11 = 11,
+    SR_NUM_X12 = 12,
+    SR_NUM_X13 = 13,
+    SR_NUM_X14 = 14,
+    SR_NUM_X15 = 15,
+
+    SR_NUM_XIP0 = 16,
+    SR_NUM_XIP1 = 17,
+    SR_NUM_LR = 18,
+
+    SR_NUM_NONE = 19,
+};
+
+enum ScratchRegMask
+{
+    SR_MASK_NONE = 0x00,
+    SR_MASK_X0 = 0x01,
+    SR_MASK_X1 = 0x02,
+    SR_MASK_X2 = 0x04,
+    SR_MASK_X3 = 0x08,
+    SR_MASK_X4 = 0x10,
+    SR_MASK_X5 = 0x20,
+    SR_MASK_X6 = 0x40,
+    SR_MASK_X7 = 0x80,
+    SR_MASK_X8 = 0x100,
+    SR_MASK_X9 = 0x200,
+    SR_MASK_X10 = 0x400,
+    SR_MASK_X11 = 0x800,
+    SR_MASK_X12 = 0x1000,
+    SR_MASK_X13 = 0x2000,
+    SR_MASK_X14 = 0x4000,
+    SR_MASK_X15 = 0x8000,
+
+    SR_MASK_XIP0 = 0x10000,
+    SR_MASK_XIP1 = 0x20000,
+    SR_MASK_LR = 0x40000,
+};
+
 #else // _TARGET_ARM_
 
 #ifdef _TARGET_AMD64_
@@ -183,10 +371,12 @@ enum CalleeSavedRegNum
     CSR_NUM_RSI = 0x01,
     CSR_NUM_RDI = 0x02,
     CSR_NUM_RBP = 0x03,
+#ifdef _TARGET_AMD64_
     CSR_NUM_R12 = 0x04,
     CSR_NUM_R13 = 0x05,
     CSR_NUM_R14 = 0x06,
     CSR_NUM_R15 = 0x07,
+#endif // _TARGET_AMD64_
 };
 
 enum CalleeSavedRegMask
@@ -215,10 +405,12 @@ enum ScratchRegNum
     SR_NUM_RAX = 0x00,
     SR_NUM_RCX = 0x01,
     SR_NUM_RDX = 0x02,
+#ifdef _TARGET_AMD64_
     SR_NUM_R8  = 0x03,
     SR_NUM_R9  = 0x04,
     SR_NUM_R10 = 0x05,
     SR_NUM_R11 = 0x06,
+#endif // _TARGET_AMD64_
 };
 
 enum ScratchRegMask
@@ -242,16 +434,24 @@ private:
     UInt16  hasFunclets              : 1; // 0 [6]
     UInt16  fixedEpilogSize          : 6; // 0 [7] + 1 [0:4]  '0' encoding implies that epilog size varies and is encoded for each epilog
     UInt16  epilogCountSmall         : 2; // 1 [5:6] '3' encoding implies the number of epilogs is encoded separately
-    UInt16  hasExtraData             : 1; // 1 [7]   1: frame uses dynamic alignment or/and GS cookie
+    UInt16  hasExtraData             : 1; // 1 [7]  1: more data follows (dynamic alignment, GS cookie, common vars, etc.)
 
 #ifdef _TARGET_ARM_
     UInt16  returnKind              : 2; // 2 [0:1] one of: MethodReturnKind enum
     UInt16  ebpFrame                : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on ARM R7
     UInt16  epilogAtEnd             : 1; // 2 [3]
-    UInt16  hasFrameSize            : 1; // 2 [4]    1: frame size is encoded below, 0: frame size is 0
+    UInt16  hasFrameSize            : 1; // 2 [4]   1: frame size is encoded below, 0: frame size is 0
     UInt16 calleeSavedRegMask       : NUM_PRESERVED_REGS;   // 2 [5:7]    3 [0:5]
-    UInt16 arm_areParmOrVfpRegsPushed:1; // 1: pushed parm register set from R0-R3 and pushed fp reg start and count is encoded below, 0: no pushed parm or fp registers
-#else // _TARGET_ARM_
+    UInt16 arm_areParmOrVfpRegsPushed:1; // 3 [6]   1: pushed param reg set (R0-R3) and pushed fp reg start and count are encoded below, 0: no pushed param or fp registers
+#elif defined (_TARGET_ARM64_)
+    UInt16  returnKind              : 2; // 2 [0:1] one of: MethodReturnKind enum
+    UInt16  ebpFrame                : 1; // 2 [2]   1: has frame pointer and it is FP
+    UInt16  epilogAtEnd             : 1; // 2 [3]
+    UInt16  hasFrameSize            : 1; // 2 [4]   1: frame size is encoded below, 0: frame size is 0
+    UInt16  arm64_longCsrMask            : 1; // 2 [5]  1: high bits of calleeSavedRegMask are encoded below
+    UInt16  arm64_areParmOrVfpRegsPushed : 1; // 2 [6]  1: pushed param reg count (X0-X7) and pushed fp reg set (D8-D15) are encoded below, 0: no pushed param or fp registers
+    UInt16  arm64_calleeSavedRegMaskLow  : NUM_PRESERVED_REGS_LOW;  // 2 [7]    3 [0:7]
+#else
     UInt8  returnKind               : 2; // 2 [0:1] one of: MethodReturnKind enum
     UInt8  ebpFrame                 : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on ARM R7
     UInt8  epilogAtEnd              : 1; // 2 [3]
@@ -274,7 +474,7 @@ private:
                                          //          which describes them
     UInt8  hasFrameSize             : 1; // 3 [7]    1: frame size is encoded below, 0: frame size is 0
 #endif
-#endif // _TARGET_ARM_
+#endif
 
     //
     // OPTIONAL FIELDS FOLLOW
@@ -282,9 +482,9 @@ private:
     // The following values are encoded with variable-length integers on disk, but are decoded into these 
     // fields in memory.
     //
+
+    // For ARM and ARM64 this field stores the offset of the callee-saved area relative to FP/SP
     UInt32  frameSize;                   // expressed in pointer-sized units, only encoded if hasFrameSize==1
-
-
     // OPTIONAL: only encoded if returnKind = MRK_ReturnsToNative
     UInt32  reversePinvokeFrameOffset;   // expressed in pointer-sized units away from the frame pointer
 
@@ -315,22 +515,40 @@ private:
     // that can be expressed by a 'ret NNNN' instruction.  Therefore, with 6 in the 'low' field and 8 in the
     // 'high' field, we are not losing any range here.  (Although the need for that full range is debatable.)
     UInt8   x86_argCountHigh; 
+#elif defined(_TARGET_ARM_)
+    // OPTIONAL: only encoded if arm_areParmOrVfpRegsPushed = 1
+    UInt8   arm_parmRegsPushedSet;
+    UInt8   arm_vfpRegFirstPushed;
+    UInt8   arm_vfpRegPushedCount;
+#elif defined(_TARGET_ARM64_)
+    // OPTIONAL: high bits of calleeSavedRegMask are encoded only if arm64_longCsrMask = 1; low bits equal to arm64_calleeSavedRegMaskLow
+    UInt16  calleeSavedRegMask;
+
+    // OPTIONAL: only encoded if arm64_areParmOrVfpRegsPushed = 1
+    UInt8   arm64_parmRegsPushedCount;  // how many of X0-X7 registers are saved
+    UInt8   arm64_vfpRegsPushedMask;    // which of D8-D15 registers are saved
 #endif
 
-#ifdef _TARGET_ARM_
-    UInt8       arm_parmRegsPushedSet;
-    UInt8       arm_vfpRegFirstPushed;
-    UInt8       arm_vfpRegPushedCount;
-#endif
     //
     // OPTIONAL: only encoded if hasExtraData = 1
     union
     {
         struct
         {
+#if defined(_TARGET_ARM64_)
+            UInt8 FPLRAreOnTop      : 1;    // [0]      1: FP and LR are saved on top of locals, not at the bottom (see MdmSaveFPAndLRAtTopOfLocalsArea)
+            UInt8 reg1ReturnKind    : 2;    // [1:2]    One of MRK_Returns{Scalar|Object|Byref} constants describing value returned in x1 if any
+            UInt8 hasGSCookie       : 1;    // [3]      1: frame uses GS cookie
+            UInt8 hasCommonVars     : 1;    // [4]      1: method has a list of "common vars"
+                                            //          as an optimization for methods with many call sites and variables
+            UInt8                   : 3;    // [5:7]    unused bits
+#else
             UInt8 logStackAlignment : 4;    // [0:3]    binary logarithm of frame alignment (3..15) or 0
             UInt8 hasGSCookie       : 1;    // [4]      1: frame uses GS cookie
-            UInt8 extraDataUnused   : 3;    // [5:7]    unused bits
+            UInt8 hasCommonVars     : 1;    // [5]      1: method has a list of "common vars"
+                                            //          as an optimization for methods with many call sites and variables
+            UInt8                   : 2;    // [6:7]    unused bits
+#endif
 #pragma warning(suppress:4201) // nameless struct
         };
         UInt8 extraDataHeader;
@@ -394,7 +612,28 @@ public:
         MRK_ReturnsObject   = 1,
         MRK_ReturnsByref    = 2,
         MRK_ReturnsToNative = 3,
+
+#if defined(_TARGET_ARM64_)
+        // Cases for structs returned in two registers.
+        // Naming scheme: MRK_reg0Kind_reg1Kind.
+        // Encoding scheme: <two bits for reg1Kind> <two bits for reg0Kind>.
+        // We do not distinguish returning a scalar in reg1 and no return value in reg1,
+        // which means we can use MRK_ReturnsObject for MRK_Obj_Scalar, etc.
+        MRK_Scalar_Obj      = (MRK_ReturnsObject << 2) | MRK_ReturnsScalar,
+        MRK_Obj_Obj         = (MRK_ReturnsObject << 2) | MRK_ReturnsObject,
+        MRK_Byref_Obj       = (MRK_ReturnsObject << 2) | MRK_ReturnsByref,
+        MRK_Scalar_Byref    = (MRK_ReturnsByref  << 2) | MRK_ReturnsScalar,
+        MRK_Obj_Byref       = (MRK_ReturnsByref  << 2) | MRK_ReturnsObject,
+        MRK_Byref_Byref     = (MRK_ReturnsByref  << 2) | MRK_ReturnsByref,
+
+        MRK_LastValid       = MRK_Byref_Byref,
+        // Illegal or uninitialized value. Never written to the image.
+        MRK_Unknown         = 0xff,
+#else
+        MRK_LastValid       = MRK_ReturnsToNative,
+        // Illegal or uninitialized value. Never written to the image.
         MRK_Unknown         = 4,
+#endif
     };
 
     enum EncodingConstants
@@ -422,13 +661,33 @@ public:
 
     void SetPrologSize(UInt32 sizeInBytes)
     {
+#if defined (_TARGET_ARM64_)
+        // For arm64 we encode multiples of 4, rather than raw bytes, since instructions are all same size.
+        ASSERT((sizeInBytes & 3) == 0);
+        prologSize = sizeInBytes >> 2;
+        ASSERT(prologSize == sizeInBytes >> 2);
+#else
         prologSize = sizeInBytes;
         ASSERT(prologSize == sizeInBytes);
+#endif
     }
 
     void SetHasFunclets(bool fHasFunclets)
     {
         hasFunclets = fHasFunclets ? 1 : 0;
+    }
+
+    void PokeFixedEpilogSize(UInt32 sizeInBytes)
+    {
+#if defined (_TARGET_ARM64_)
+        // For arm64 we encode multiples of 4, rather than raw bytes, since instructions are all same size.
+        ASSERT((sizeInBytes & 3) == 0);
+        fixedEpilogSize = sizeInBytes >> 2;
+        ASSERT(fixedEpilogSize == sizeInBytes >> 2);
+#else
+        fixedEpilogSize = sizeInBytes;
+        ASSERT(fixedEpilogSize == sizeInBytes);
+#endif
     }
 
     void SetFixedEpilogSize(UInt32 sizeInBytes, bool varyingSizes)
@@ -438,8 +697,15 @@ public:
         else
         {
             ASSERT(sizeInBytes != 0);
+#if defined (_TARGET_ARM64_)
+            // For arm64 we encode multiples of 4, rather than raw bytes, since instructions are all same size.
+            ASSERT((sizeInBytes & 3) == 0);
+            fixedEpilogSize = sizeInBytes >> 2;
+            ASSERT(fixedEpilogSize == sizeInBytes >> 2);
+#else
             fixedEpilogSize = sizeInBytes;
             ASSERT(fixedEpilogSize == sizeInBytes);
+#endif
         }
     }
 
@@ -453,9 +719,10 @@ public:
         epilogCountSmall = count < EC_MaxEpilogCountSmall ? count : EC_MaxEpilogCountSmall;
     }
 
+#if !defined(_TARGET_ARM64_)
     void SetReturnKind(MethodReturnKind kind)
     {
-        ASSERT(kind < MRK_Unknown); // not enough bits to encode 'unknown'
+        ASSERT(kind <= MRK_ReturnsToNative); // not enough bits to encode 'unknown'
         returnKind = kind;
     }
 
@@ -472,6 +739,15 @@ public:
         ASSERT(logStackAlignment == logByteAlignment);
         paramPointerReg = RN_NONE;
     }
+#endif // !defined(_TARGET_ARM64_)
+
+#if defined(_TARGET_ARM64_)
+    void SetFPLROnTop(void)
+    {
+        hasExtraData = 1;
+        FPLRAreOnTop = 1;
+    }
+#endif
 
     void SetGSCookieOffset(UInt32 offsetInBytes)
     {
@@ -480,6 +756,12 @@ public:
         hasExtraData = 1;
         hasGSCookie = 1;
         gsCookieOffset = offsetInBytes / POINTER_SIZE;
+    }
+
+    void SetHasCommonVars()
+    {
+        hasExtraData = 1;
+        hasCommonVars = 1;
     }
 
     void SetParamPointer(RegNumber regNum, UInt32 offsetInBytes, bool isOffsetFromSP = false)
@@ -505,8 +787,12 @@ public:
         {
 #ifdef _TARGET_ARM_
             ASSERT(regNum == RN_R7);
-#else
+#elif defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
             ASSERT(regNum == RN_EBP);
+#elif defined(_TARGET_ARM64_)
+            ASSERT(regNum == RN_FP);
+#else
+            ASSERT(!"NYI");
 #endif
             ebpFrame = 1;
         }
@@ -546,7 +832,7 @@ public:
 
     void SetSavedRegs(CalleeSavedRegMask regMask)
     {
-        calleeSavedRegMask = regMask;
+        calleeSavedRegMask = (UInt16)regMask;
     }
 
     void SetRegSaved(CalleeSavedRegMask regMask)
@@ -560,19 +846,21 @@ public:
         ASSERT((offsetInBytes % POINTER_SIZE) == 0);
         ASSERT(GetReturnKind() == MRK_ReturnsToNative);
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         // The offset can be either positive or negative on ARM and x64.
         bool isNeg = (offsetInBytes < 0);
         UInt32 uOffsetInBytes = isNeg ? -offsetInBytes : offsetInBytes;
         UInt32 uEncodedVal = ((uOffsetInBytes / POINTER_SIZE) << 1) | (isNeg ? 1 : 0);
         reversePinvokeFrameOffset = uEncodedVal;
         ASSERT(reversePinvokeFrameOffset == uEncodedVal);
-#else
+#elif defined (_TARGET_X86_)
         // Use a positive number because it encodes better and 
         // the offset is always negative on x86.
         ASSERT(offsetInBytes < 0);
         reversePinvokeFrameOffset = (-offsetInBytes / POINTER_SIZE);
         ASSERT(reversePinvokeFrameOffset == (UInt32)(-offsetInBytes / POINTER_SIZE));
+#else
+        ASSERT(!"NYI");
 #endif
     }
 
@@ -615,9 +903,21 @@ public:
         arm_vfpRegPushedCount = vfpRegPushedCount;
         arm_areParmOrVfpRegsPushed = arm_parmRegsPushedSet != 0 || vfpRegPushedCount != 0;
     }
-#endif
+#elif defined(_TARGET_ARM64_)
+    void SetParmRegsPushedCount(UInt8 parmRegsPushedCount)
+    {
+        // pushed parameter registers are a subset of {R0-R7}
+        ASSERT(parmRegsPushedCount <= 8);
+        arm64_parmRegsPushedCount = parmRegsPushedCount;
+        arm64_areParmOrVfpRegsPushed = (arm64_parmRegsPushedCount != 0) || (arm64_vfpRegsPushedMask != 0);
+    }
 
-#ifdef _TARGET_AMD64_
+    void SetVfpRegsPushed(UInt8 vfpRegsPushedMask)
+    {
+        arm64_vfpRegsPushedMask = vfpRegsPushedMask;
+        arm64_areParmOrVfpRegsPushed = (arm64_parmRegsPushedCount != 0) || (arm64_vfpRegsPushedMask != 0);
+    }
+#elif defined(_TARGET_AMD64_)
     void SetSavedXmmRegs(UInt32 savedXmmRegMask)
     {
         // any subset of xmm6-xmm15 may be saved, but no registers in xmm0-xmm5 should be present
@@ -625,14 +925,23 @@ public:
         x64_hasSavedXmmRegs = savedXmmRegMask != 0;
         x64_savedXmmRegMask = (UInt16)savedXmmRegMask;
     }
-#endif // _TARGET_AMD64_
+#endif
+
+    void SetFuncletOffset(UInt32 offset)
+    {
+        funcletOffset = offset;
+    }
 
     //
     // GETTERS
     //
     UInt32 GetPrologSize()
     {
+#if defined (_TARGET_ARM64_)
+        return prologSize << 2;
+#else
         return prologSize;
+#endif
     }
 
     bool HasFunclets()
@@ -645,10 +954,23 @@ public:
         return fixedEpilogSize == 0;
     }
 
+    UInt32 PeekFixedEpilogSize()
+    {
+#if defined (_TARGET_ARM64_)
+        return fixedEpilogSize << 2;
+#else
+        return fixedEpilogSize;
+#endif
+    }
+
     UInt32 GetFixedEpilogSize()
     {
         ASSERT(!HasVaryingEpilogSizes());
+#if defined (_TARGET_ARM64_)
+        return fixedEpilogSize << 2;
+#else
         return fixedEpilogSize;
+#endif
     }
 
     UInt32 GetEpilogCount()
@@ -663,7 +985,11 @@ public:
 
     MethodReturnKind GetReturnKind()
     {
+#if defined(_TARGET_ARM64_)
+        return (MethodReturnKind)((reg1ReturnKind << 2) | returnKind);
+#else
         return (MethodReturnKind)returnKind;
+#endif
     }
 
     bool ReturnsToNative()
@@ -671,7 +997,7 @@ public:
         return (GetReturnKind() == MRK_ReturnsToNative);
     }
 
-    bool HasFramePointer()
+    bool HasFramePointer() const
     {
         return !!ebpFrame;
     }
@@ -706,12 +1032,21 @@ public:
 
     bool HasDynamicAlignment()
     {
+#if defined(_TARGET_ARM64_)
+        return false;
+#else
         return !!logStackAlignment;
+#endif
     }
 
     UInt32 GetDynamicAlignment()
     {
+#if defined(_TARGET_ARM64_)
+        ASSERT(!"Not supported");
+        return 1;
+#else
         return 1 << logStackAlignment;
+#endif
     }
 
     bool HasGSCookie()
@@ -719,10 +1054,22 @@ public:
         return hasGSCookie;
     }
 
+#if defined(_TARGET_ARM64_)
+    bool AreFPLROnTop() const
+    {
+        return FPLRAreOnTop;
+    }
+#endif
+
     UInt32 GetGSCookieOffset()
     {
         ASSERT(hasGSCookie);
         return gsCookieOffset * POINTER_SIZE;
+    }
+
+    bool HasCommonVars() const
+    {
+        return hasCommonVars;
     }
 
 #if defined(RHDUMP) && !defined(_TARGET_AMD64_)
@@ -733,7 +1080,7 @@ public:
 #ifdef _TARGET_AMD64_
     static const UInt32 SKEW_FOR_OFFSET_FROM_SP = 0x10;
 
-    int GetFramePointerOffset() // returned in bytes
+    int GetFramePointerOffset() const // returned in bytes
     {
         // traditional frames where FP points to the pushed FP have fp offset == 0
         if (x64_framePtrOffset == 0)
@@ -753,12 +1100,12 @@ public:
         return offsetFromSP - preservedRegsSaveSize - GetFrameSize();
     }
 
-    bool IsFramePointerOffsetFromSP()
+    bool IsFramePointerOffsetFromSP() const
     {
         return x64_framePtrOffset != 0;
     }
 
-    int GetFramePointerOffsetFromSP()
+    int GetFramePointerOffsetFromSP() const
     {
         ASSERT(IsFramePointerOffsetFromSP());
         int offsetFromSP;
@@ -800,7 +1147,7 @@ public:
     }
 #endif
 
-    int GetFrameSize()
+    int GetFrameSize() const
     {
         return frameSize * POINTER_SIZE;
     }
@@ -808,7 +1155,7 @@ public:
 
     int GetReversePinvokeFrameOffset()
     {
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
         // The offset can be either positive or negative on ARM.
         Int32 offsetInBytes;
         UInt32 uEncodedVal = reversePinvokeFrameOffset;
@@ -816,11 +1163,13 @@ public:
         offsetInBytes = (uEncodedVal >> 1) * POINTER_SIZE;
         offsetInBytes = isNeg ? -offsetInBytes : offsetInBytes;
         return offsetInBytes;
-#else
+#elif defined(_TARGET_X86_)
         // it's always at "EBP - something", so we encode it as a positive 
         // number and then apply the negative here.
         int unsignedOffset = reversePinvokeFrameOffset * POINTER_SIZE;
         return -unsignedOffset;
+#else
+        ASSERT(!"NYI");
 #endif
     }
 
@@ -829,7 +1178,7 @@ public:
         return (CalleeSavedRegMask) calleeSavedRegMask;
     }
 
-    bool IsRegSaved(CalleeSavedRegMask reg)
+    bool IsRegSaved(CalleeSavedRegMask reg) const
     {
         return (0 != (calleeSavedRegMask & reg));
     }
@@ -861,6 +1210,16 @@ public:
     {
         return arm_vfpRegPushedCount;
     }
+#elif defined(_TARGET_ARM64_)
+    UInt8 ParmRegsPushedCount()
+    {
+        return arm64_parmRegsPushedCount;
+    }
+
+    UInt8 GetVfpRegsPushedMask()
+    {
+        return arm64_vfpRegsPushedMask;
+    }
 #endif
 
     //
@@ -872,6 +1231,16 @@ public:
 #ifdef _DEBUG
         UInt8 * pStart = pDest;
 #endif // _DEBUG
+
+#if defined(_TARGET_ARM64_)
+        UInt8 calleeSavedRegMaskHigh = calleeSavedRegMask >> NUM_PRESERVED_REGS_LOW;
+        arm64_calleeSavedRegMaskLow = calleeSavedRegMask & MASK_PRESERVED_REGS_LOW;
+        if (calleeSavedRegMaskHigh)
+        {
+            arm64_longCsrMask = 1;
+        }
+#endif
+
         size_t size = EC_SizeOfFixedHeader;
         if (pDest)
         {
@@ -888,6 +1257,7 @@ public:
 #ifdef _TARGET_AMD64_
         if (x64_framePtrOffsetSmall == 0x3)
             size += WriteUnsigned(pDest, x64_framePtrOffset);
+
         if (x64_hasSavedXmmRegs)
         {
             ASSERT((x64_savedXmmRegMask & 0x3f) == 0);
@@ -899,14 +1269,10 @@ public:
         {
             size += 1;
             if (pDest)
-            {
-                *pDest = x86_argCountHigh;
-                pDest++;
-            }
+                *pDest++ = x86_argCountHigh;
         }
-#endif
-
-#ifdef _TARGET_ARM_
+        ASSERT(!x86_hasStackChanges || !"NYI -- stack changes for ESP frames");
+#elif defined(_TARGET_ARM_)
         if (arm_areParmOrVfpRegsPushed)
         {
             // we encode a bit field where the low 4 bits represent the pushed parameter register
@@ -917,6 +1283,21 @@ public:
             // usually, the first pushed floating point register is d8
             if (arm_vfpRegFirstPushed != 8)
                 encodedValue |= (arm_vfpRegFirstPushed+1) << (8+4);
+
+            size += WriteUnsigned(pDest, encodedValue);
+        }
+#elif defined(_TARGET_ARM64_)
+        if (calleeSavedRegMaskHigh)
+        {
+            size += 1;
+            if (pDest)
+                *pDest++ = calleeSavedRegMaskHigh;
+        }
+
+        if (arm64_areParmOrVfpRegsPushed)
+        {
+            // At present arm64_parmRegsPushedCount is non-zero only for variadic functions, so place this field higher
+            UInt32 encodedValue = arm64_vfpRegsPushedMask | (arm64_parmRegsPushedCount << 8);
             size += WriteUnsigned(pDest, encodedValue);
         }
 #endif
@@ -1087,6 +1468,22 @@ public:
             else
                 arm_vfpRegFirstPushed = (UInt8)(vfpRegFirstPushed - 1);
         }
+#elif defined(_TARGET_ARM64_)
+        calleeSavedRegMask = arm64_calleeSavedRegMaskLow;
+        if (arm64_longCsrMask)
+        {
+            calleeSavedRegMask |= (*pbDecode++ << NUM_PRESERVED_REGS_LOW);
+        }
+
+        arm64_parmRegsPushedCount = 0;
+        arm64_vfpRegsPushedMask = 0;
+        if (arm64_areParmOrVfpRegsPushed)
+        {
+            UInt32 encodedValue = VarInt::ReadUnsigned(pbDecode);
+            arm64_vfpRegsPushedMask = (UInt8)encodedValue;
+            arm64_parmRegsPushedCount = (UInt8)(encodedValue >> 8);
+            ASSERT(arm64_parmRegsPushedCount <= 8);
+        }
 #endif
 
         extraDataHeader = hasExtraData ? ToUInt8(VarInt::ReadUnsigned(pbDecode)) : 0;
@@ -1104,7 +1501,8 @@ public:
             //             the per-method epilog table, so at least we're consistent with what is encoded.
             UInt8  mainEpilogAtEnd      = epilogAtEnd;
             UInt16 mainEpilogCount      = epilogCount;
-            UInt16 mainFixedEpilogSize  = fixedEpilogSize;
+            UInt16 mainFixedEpilogSize  = fixedEpilogSize;  // Either in bytes or in instructions
+            UInt8  mainHasCommonVars    = hasCommonVars;
             // -------
 
             int nFunclets = (int)VarInt::ReadUnsigned(pbDecode);
@@ -1155,7 +1553,8 @@ public:
             // WORKAROUND: see above
             this->epilogAtEnd      = mainEpilogAtEnd;
             this->epilogCount      = mainEpilogCount;
-            this->fixedEpilogSize  = mainFixedEpilogSize;
+            this->PokeFixedEpilogSize(mainFixedEpilogSize);
+            this->hasCommonVars    = mainHasCommonVars;
 
             // -------
         }
@@ -1213,6 +1612,9 @@ public:
         }
 #elif defined(_TARGET_ARM_)
         if (arm_areParmOrVfpRegsPushed) { VarInt::SkipUnsigned(pbDecode); }
+#elif defined(_TARGET_ARM64_)
+        if (arm64_longCsrMask) { pbDecode++; }
+        if (arm64_areParmOrVfpRegsPushed) { VarInt::SkipUnsigned(pbDecode); }
 #endif
 
         *pnFuncletsOut = VarInt::ReadUnsigned(pbDecode);
@@ -1232,43 +1634,38 @@ public:
     bool IsValidEpilogOffset(UInt32 epilogOffset, UInt32 epilogSize)
     {
         if (!this->HasVaryingEpilogSizes())
-            return (epilogOffset < this->fixedEpilogSize);
+            return (epilogOffset < this->GetFixedEpilogSize());
         else
             return (epilogOffset < epilogSize);
     }
 
 #ifdef RHDUMP
     char const * GetBoolStr(bool val) { return val ? " true" : "false"; }
-    char const * GetRetKindStr(int k)
+
+    char const * GetRetKindStr(MethodReturnKind kind)
     {
-        switch (k)
+        switch (kind)
         {
         case MRK_ReturnsScalar:     return "scalar";
         case MRK_ReturnsObject:     return "object";
-        case MRK_ReturnsByref:      return " byref";
+        case MRK_ReturnsByref:      return "byref";
         case MRK_ReturnsToNative:   return "native";
-        default:                    return "unknwn";
+#if defined(_TARGET_ARM64_)
+        case MRK_Scalar_Obj:        return "{scalar, object}";
+        case MRK_Scalar_Byref:      return "{scalar, byref}";
+        case MRK_Obj_Obj:           return "{object, object}";
+        case MRK_Obj_Byref:         return "{object, byref}";
+        case MRK_Byref_Obj:         return "{byref, object}";
+        case MRK_Byref_Byref:       return "{byref, byref}";
+#endif // defined(_TARGET_ARM64_)
+        default:                    return "unknown";
         }
     }
+
 #define PRINT_CALLEE_SAVE(name, mask, val) {if ((val) & (mask)) { printf(name); }}
+
     void PrintCalleeSavedRegs(UInt32 calleeSavedRegMask)
     {
-#ifdef _TARGET_AMD64_
-        PRINT_CALLEE_SAVE(" rbx", CSR_MASK_RBX, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" rsi", CSR_MASK_RSI, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" rdi", CSR_MASK_RDI, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" rbp", CSR_MASK_RBP, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r12", CSR_MASK_R12, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r13", CSR_MASK_R13, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r14", CSR_MASK_R14, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r15", CSR_MASK_R15, calleeSavedRegMask);
-#endif // _TARGET_AMD64_
-#ifdef _TARGET_X86_
-        PRINT_CALLEE_SAVE(" ebx", CSR_MASK_RBX, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" esi", CSR_MASK_RSI, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" edi", CSR_MASK_RDI, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" ebp", CSR_MASK_RBP, calleeSavedRegMask);
-#endif // _TARGET_X86_
 #ifdef _TARGET_ARM_
         PRINT_CALLEE_SAVE(" r4" , CSR_MASK_R4 , calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" r5" , CSR_MASK_R5 , calleeSavedRegMask);
@@ -1279,7 +1676,36 @@ public:
         PRINT_CALLEE_SAVE(" r10", CSR_MASK_R10, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" r11", CSR_MASK_R11, calleeSavedRegMask);
         PRINT_CALLEE_SAVE(" lr" , CSR_MASK_LR , calleeSavedRegMask);
-#endif // _TARGET_ARM_
+#elif defined(_TARGET_ARM64_)
+        PRINT_CALLEE_SAVE(" lr" , CSR_MASK_LR , calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" x19", CSR_MASK_X19, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" x20", CSR_MASK_X20, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" x21", CSR_MASK_X21, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" x22", CSR_MASK_X22, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" x23", CSR_MASK_X23, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" x24", CSR_MASK_X24, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" x25", CSR_MASK_X25, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" x26", CSR_MASK_X26, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" x27", CSR_MASK_X27, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" x28", CSR_MASK_X28, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" fp" , CSR_MASK_FP , calleeSavedRegMask);
+#elif defined(_TARGET_X86_)
+        PRINT_CALLEE_SAVE(" ebx", CSR_MASK_RBX, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" esi", CSR_MASK_RSI, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" edi", CSR_MASK_RDI, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" ebp", CSR_MASK_RBP, calleeSavedRegMask);
+#elif defined(_TARGET_AMD64_)
+        PRINT_CALLEE_SAVE(" rbx", CSR_MASK_RBX, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" rsi", CSR_MASK_RSI, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" rdi", CSR_MASK_RDI, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" rbp", CSR_MASK_RBP, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" r12", CSR_MASK_R12, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" r13", CSR_MASK_R13, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" r14", CSR_MASK_R14, calleeSavedRegMask);
+        PRINT_CALLEE_SAVE(" r15", CSR_MASK_R15, calleeSavedRegMask);
+#else
+#error unknown architecture
+#endif
     }
 
     void PrintRegNumber(UInt8 regNumber)
@@ -1304,6 +1730,42 @@ public:
         case RN_SP:     printf(" sp"); break;
         case RN_LR:     printf(" lr"); break;
         case RN_PC:     printf(" pc"); break;
+#elif defined(_TARGET_ARM64_)
+        case RN_X0:     printf(" x0"); break;
+        case RN_X1:     printf(" x1"); break;
+        case RN_X2:     printf(" x2"); break;
+        case RN_X3:     printf(" x3"); break;
+        case RN_X4:     printf(" x4"); break;
+        case RN_X5:     printf(" x5"); break;
+        case RN_X6:     printf(" x6"); break;
+        case RN_X7:     printf(" x7"); break;
+        case RN_X8:     printf(" x8"); break;
+        case RN_X9:     printf(" x9"); break;
+        case RN_X10:    printf("x10"); break;
+        case RN_X11:    printf("x11"); break;
+        case RN_X12:    printf("x12"); break;
+        case RN_X13:    printf("x13"); break;
+        case RN_X14:    printf("x14"); break;
+        case RN_X15:    printf("x15"); break;
+
+        case RN_XIP0:   printf("xip0"); break;
+        case RN_XIP1:   printf("xip1"); break;
+        case RN_XPR:    printf("xpr"); break;
+
+        case RN_X19:    printf("x19"); break;
+        case RN_X20:    printf("x20"); break;
+        case RN_X21:    printf("x21"); break;
+        case RN_X22:    printf("x22"); break;
+        case RN_X23:    printf("x23"); break;
+        case RN_X24:    printf("x24"); break;
+        case RN_X25:    printf("x25"); break;
+        case RN_X26:    printf("x26"); break;
+        case RN_X27:    printf("x27"); break;
+        case RN_X28:    printf("x28"); break;
+
+        case RN_FP:     printf(" fp"); break;
+        case RN_LR:     printf(" lr"); break;
+        case RN_SP:     printf(" sp"); break;
 #elif defined(_TARGET_X86_)
         case RN_EAX:    printf("eax"); break;
         case RN_ECX:    printf("ecx"); break;
@@ -1338,10 +1800,10 @@ public:
 
     void Dump()
     {
-        printf("  | prologSize:   %02X""  | epilogSize:    %02X""  | epilogCount:    %02X""  | epilogAtEnd:  %s\n", 
-            prologSize, fixedEpilogSize, epilogCount, GetBoolStr(epilogAtEnd));
-        printf("  | frameSize:  %04X""  | ebpFrame:   %s""  | hasFunclets: %s""  | returnKind:  %s\n", 
-            GetFrameSize(), GetBoolStr(ebpFrame), GetBoolStr(hasFunclets), GetRetKindStr(returnKind));
+        printf("  | prologSize:   %02X""  | epilogSize:    %02X""  | epilogCount:    %02X""  | epilogAtEnd:  %s\n",
+            GetPrologSize(), HasVaryingEpilogSizes() ? 0 : GetFixedEpilogSize(), epilogCount, GetBoolStr(epilogAtEnd));
+        printf("  | frameSize:  %04X""  | ebpFrame:   %s""  | hasFunclets: %s""  | returnKind:  %s\n",
+            GetFrameSize(), GetBoolStr(ebpFrame), GetBoolStr(hasFunclets), GetRetKindStr(GetReturnKind()));
         printf("  | regMask:    %04X"  "  {", calleeSavedRegMask);
         PrintCalleeSavedRegs(calleeSavedRegMask);
         printf(" }\n");
@@ -1373,6 +1835,24 @@ public:
                 printf(" d%d", arm_vfpRegFirstPushed);
                 if (arm_vfpRegPushedCount > 1)
                     printf("-d%d", arm_vfpRegFirstPushed + arm_vfpRegPushedCount - 1);
+                printf(" }\n");
+            }
+        }
+#elif defined(_TARGET_ARM64_)
+        if (arm64_areParmOrVfpRegsPushed)
+        {
+            if (arm64_parmRegsPushedCount != 0)
+            {
+                printf("  | parmRegsCount: %d\n", arm64_parmRegsPushedCount);
+            }
+            if (arm64_vfpRegsPushedMask != 0)
+            {
+                printf("  | vfpRegs:      %02X  {", arm64_vfpRegsPushedMask);
+                for (int reg = 0; reg < 8; reg++)
+                {
+                    if (arm64_vfpRegsPushedMask & (1 << reg))
+                        printf(" d%d", reg + 8);
+                }
                 printf(" }\n");
             }
         }

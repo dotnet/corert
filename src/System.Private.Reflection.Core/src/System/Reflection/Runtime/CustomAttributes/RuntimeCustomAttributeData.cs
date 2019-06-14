@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -12,7 +13,7 @@ namespace System.Reflection.Runtime.CustomAttributes
     //
     // Common base class for the Runtime's implementation of CustomAttributeData.
     //
-    internal abstract partial class RuntimeCustomAttributeData : RuntimeImplementedCustomAttributeData
+    internal abstract partial class RuntimeCustomAttributeData : CustomAttributeData
     {
         public abstract override Type AttributeType { get; }
 
@@ -164,6 +165,43 @@ namespace System.Reflection.Runtime.CustomAttributes
             {
                 // This emulates Object.ToString() for consistency with prior .Net Native implementations. 
                 return GetType().ToString();
+            }
+        }
+
+        //
+        // Wrap a custom attribute argument (or an element of an array-typed custom attribute argument) in a CustomAttributeTypeArgument structure
+        // for insertion into a CustomAttributeData value.
+        //
+        protected CustomAttributeTypedArgument WrapInCustomAttributeTypedArgument(Object value, Type argumentType)
+        {
+            if (argumentType.Equals(CommonRuntimeTypes.Object))
+            {
+                // If the declared attribute type is System.Object, we must report the type based on the runtime value.
+                if (value == null)
+                    argumentType = CommonRuntimeTypes.String;  // Why is null reported as System.String? Because that's what the desktop CLR does.
+                else if (value is Type)
+                    argumentType = CommonRuntimeTypes.Type;    // value.GetType() will not actually be System.Type - rather it will be some internal implementation type. We only want to report it as System.Type.
+                else
+                    argumentType = value.GetType();
+            }
+
+            // Handle the array case
+            if (value is IEnumerable enumerableValue && !(value is string))
+            {
+                if (!argumentType.IsArray)
+                    throw new BadImageFormatException();
+                Type reportedElementType = argumentType.GetElementType();
+                LowLevelListWithIList<CustomAttributeTypedArgument> elementTypedArguments = new LowLevelListWithIList<CustomAttributeTypedArgument>();
+                foreach (Object elementValue in enumerableValue)
+                {
+                    CustomAttributeTypedArgument elementTypedArgument = WrapInCustomAttributeTypedArgument(elementValue, reportedElementType);
+                    elementTypedArguments.Add(elementTypedArgument);
+                }
+                return new CustomAttributeTypedArgument(argumentType, new ReadOnlyCollection<CustomAttributeTypedArgument>(elementTypedArguments));
+            }
+            else
+            {
+                return new CustomAttributeTypedArgument(argumentType, value);
             }
         }
     }

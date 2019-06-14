@@ -42,8 +42,6 @@ GPTR_IMPL(StressLog, g_pStressLog /*, &StressLog::theLog*/);
 
 #ifndef DACCESS_COMPILE
 
-HANDLE StressLogChunk::s_LogChunkHeap = NULL;
-
 /*********************************************************************************/
 #if defined(_X86_)
 
@@ -73,7 +71,7 @@ unsigned __int64 getTimeStamp() {
 #endif // _X86_ else
 
 /*********************************************************************************/
-/* Get the the frequency cooresponding to 'getTimeStamp'.  For non-x86 
+/* Get the the frequency corresponding to 'getTimeStamp'.  For non-x86 
    architectures, this is just the performance counter frequency.
 */
 unsigned __int64 getTickFrequency()
@@ -96,7 +94,6 @@ const static unsigned __int64 RECYCLE_AGE = 0x40000000L;        // after a billi
 void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxBytesPerThread, 
             unsigned maxBytesTotal, HANDLE hMod) 
 {
-#if !defined(CORERT) // @TODO: CORERT: disabled because of assumption that hMod is a module base address in stress log code
     if (theLog.MaxSizePerThread != 0)
     {
         // guard ourself against multiple initialization. First init wins.
@@ -129,16 +126,6 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
     theLog.startTimeStamp = getTimeStamp();
 
     theLog.moduleOffset = (size_t)hMod; // HMODULES are base addresses.
-
-#ifndef APP_LOCAL_RUNTIME
-    StressLogChunk::s_LogChunkHeap = PalHeapCreate (0, STRESSLOG_CHUNK_SIZE * 128, 0);
-    if (StressLogChunk::s_LogChunkHeap == NULL)
-#endif
-    {
-        StressLogChunk::s_LogChunkHeap = PalGetProcessHeap ();
-    }
-    _ASSERTE (StressLogChunk::s_LogChunkHeap);
-#endif // !defined(CORERT)
 }
 
 /*********************************************************************************/

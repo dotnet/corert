@@ -5,6 +5,13 @@
 
 using System;
 
+namespace System.Runtime.CompilerServices
+{
+    internal sealed class IntrinsicAttribute : Attribute
+    {
+    }
+}
+
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage((System.AttributeTargets.Method | System.AttributeTargets.Class))]

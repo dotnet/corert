@@ -3,10 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 
-using Interlocked = System.Threading.Interlocked;
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -15,41 +19,215 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class InteropHelpers
     {
-        internal static unsafe byte[] StringToAnsi(String str)
+        internal static unsafe byte* StringToAnsiString(string str, bool bestFit, bool throwOnUnmappableChar)
+        {
+            return PInvokeMarshal.StringToAnsiString(str, bestFit, throwOnUnmappableChar);
+        }
+
+        public static unsafe string AnsiStringToString(byte* buffer)
+        {
+            return PInvokeMarshal.AnsiStringToString(buffer);
+        }
+
+        internal static unsafe byte* StringToUTF8String(string str)
         {
             if (str == null)
                 return null;
 
-            // CORERT-TODO: Use same encoding as the rest of the interop
-            var encoding = Encoding.UTF8;
-
-            fixed (char* pStr = str)
+            fixed (char* charsPtr = str)
             {
-                int stringLength = str.Length;
-                int bufferLength = encoding.GetByteCount(pStr, stringLength);
-                var buffer = new byte[bufferLength + 1];
-                fixed (byte* pBuffer = buffer)
-                {
-                    encoding.GetBytes(pStr, stringLength, pBuffer, bufferLength);
-                    return buffer;
-                }
+                int length = Encoding.UTF8.GetByteCount(str) + 1;
+                byte* bytesPtr = (byte*)PInvokeMarshal.CoTaskMemAlloc((System.UIntPtr)length);
+                int bytes = Encoding.UTF8.GetBytes(charsPtr, str.Length, bytesPtr, length);
+                Debug.Assert(bytes + 1 == length);
+                bytesPtr[length - 1] = 0;
+                return bytesPtr;
             }
         }
 
-        internal static char[] GetEmptyStringBuilderBuffer(StringBuilder sb)
+        public static unsafe string UTF8StringToString(byte* buffer)
         {
-            // CORERT-TODO: Reuse buffer from string builder where possible?
-            return new char[sb.Capacity + 1];
+            if (buffer == null)
+                return null;
+
+            return Encoding.UTF8.GetString(buffer, string.strlen(buffer));
         }
 
-        internal static unsafe void ReplaceStringBuilderBuffer(StringBuilder sb, char[] buf)
+        internal static unsafe void StringToByValAnsiString(string str, byte* pNative, int charCount, bool bestFit, bool throwOnUnmappableChar)
         {
-            // CORERT-TODO: Reuse buffer from string builder where possible?
-            fixed (char* p = buf)
-                sb.ReplaceBuffer(p);
+            // In CoreRT charCount = Min(SizeConst, str.Length). So we don't need to truncate again.
+            PInvokeMarshal.StringToByValAnsiString(str, pNative, charCount, bestFit, throwOnUnmappableChar, truncate: false);
         }
 
-        internal unsafe static IntPtr ResolvePInvoke(MethodFixupCell* pCell)
+        public static unsafe string ByValAnsiStringToString(byte* buffer, int length)
+        {
+            return PInvokeMarshal.ByValAnsiStringToString(buffer, length);
+        }
+
+        internal static unsafe void StringToUnicodeFixedArray(string str, ushort* buffer, int length)
+        {
+            if (buffer == null)
+                return;
+
+            if (str == null)
+            {
+                buffer[0] = '\0';
+                return;
+            }
+
+            Debug.Assert(str.Length >= length);
+
+            fixed (char* pStr = str)
+            {
+                int size = length * sizeof(char);
+                Buffer.MemoryCopy(pStr, buffer, size, size);
+                *(buffer + length) = 0;
+            }
+        }
+
+        internal static unsafe string UnicodeToStringFixedArray(ushort* buffer, int length)
+        {
+            if (buffer == null)
+                return string.Empty;
+
+            string result = string.Empty;
+
+            if (length > 0)
+            {
+                result = new string(' ', length);
+
+                fixed (char* pTemp = result)
+                {
+                    int size = length * sizeof(char);
+                    Buffer.MemoryCopy(buffer, pTemp, size, size);
+                }
+            }
+            return result;
+        }
+
+        internal static unsafe char* StringToUnicodeBuffer(string str)
+        {
+            if (str == null)
+                return null;
+
+            int stringLength = str.Length;
+
+            char* buffer = (char*)PInvokeMarshal.CoTaskMemAlloc((UIntPtr)(sizeof(char) * (stringLength + 1))).ToPointer();
+
+            fixed (char* pStr = str)
+            {
+                int size = stringLength * sizeof(char);
+                Buffer.MemoryCopy(pStr, buffer, size, size);
+                *(buffer + stringLength) = '\0';
+            }
+            return buffer;
+        }
+
+        public static unsafe string UnicodeBufferToString(char* buffer)
+        {
+            return new string(buffer);
+        }
+
+        public static unsafe byte* AllocMemoryForAnsiStringBuilder(StringBuilder sb)
+        {
+            if (sb == null)
+            {
+                return null;
+            }
+            return (byte *)CoTaskMemAllocAndZeroMemory(new IntPtr(checked((sb.Capacity + 2) * PInvokeMarshal.GetSystemMaxDBCSCharSize())));
+        }
+
+        public static unsafe char* AllocMemoryForUnicodeStringBuilder(StringBuilder sb)
+        {
+            if (sb == null)
+            {
+                return null;
+            }
+            return (char *)CoTaskMemAllocAndZeroMemory(new IntPtr(checked((sb.Capacity + 2) * 2)));
+        }
+
+        public static unsafe byte* AllocMemoryForAnsiCharArray(char[] chArray)
+        {
+            if (chArray == null)
+            {
+                return null;
+            }
+            return (byte*)CoTaskMemAllocAndZeroMemory(new IntPtr(checked((chArray.Length + 2) * PInvokeMarshal.GetSystemMaxDBCSCharSize())));
+        }
+
+        public static unsafe void AnsiStringToStringBuilder(byte* newBuffer, System.Text.StringBuilder stringBuilder)
+        {
+            if (stringBuilder == null)
+                return;
+
+            PInvokeMarshal.AnsiStringToStringBuilder(newBuffer, stringBuilder);
+        }
+
+        public static unsafe void UnicodeStringToStringBuilder(ushort* newBuffer, System.Text.StringBuilder stringBuilder)
+        {
+            if (stringBuilder == null)
+                return;
+
+            PInvokeMarshal.UnicodeStringToStringBuilder(newBuffer, stringBuilder);
+        }
+
+        public static unsafe void StringBuilderToAnsiString(System.Text.StringBuilder stringBuilder, byte* pNative,
+            bool bestFit, bool throwOnUnmappableChar)
+        {
+            if (pNative == null)
+                return;
+
+            PInvokeMarshal.StringBuilderToAnsiString(stringBuilder, pNative, bestFit, throwOnUnmappableChar);
+        }
+
+        public static unsafe void StringBuilderToUnicodeString(System.Text.StringBuilder stringBuilder, ushort* destination)
+        {
+            if (destination == null)
+                return;
+
+            PInvokeMarshal.StringBuilderToUnicodeString(stringBuilder, destination);
+        }
+
+        public static unsafe void WideCharArrayToAnsiCharArray(char[] managedArray, byte* pNative, bool bestFit, bool throwOnUnmappableChar)
+        {
+            PInvokeMarshal.WideCharArrayToAnsiCharArray(managedArray, pNative, bestFit, throwOnUnmappableChar);
+        }
+
+        /// <summary>
+        /// Convert ANSI ByVal byte array to UNICODE wide char array, best fit
+        /// </summary>
+        /// <remarks>
+        /// * This version works with array instead to string, it means that the len must be provided and there will be NO NULL to
+        /// terminate the array.
+        /// * The buffer to the UNICODE wide char array must be allocated by the caller.
+        /// </remarks>
+        /// <param name="pNative">Pointer to the ANSI byte array. Could NOT be null.</param>
+        /// <param name="lenInBytes">Maximum buffer size.</param>
+        /// <param name="managedArray">Wide char array that has already been allocated.</param>
+        public static unsafe void AnsiCharArrayToWideCharArray(byte* pNative, char[] managedArray)
+        {
+            PInvokeMarshal.AnsiCharArrayToWideCharArray(pNative, managedArray);
+        }
+
+        /// <summary>
+        /// Convert a single UNICODE wide char to a single ANSI byte.
+        /// </summary>
+        /// <param name="managedArray">single UNICODE wide char value</param>
+        public static unsafe byte WideCharToAnsiChar(char managedValue, bool bestFit, bool throwOnUnmappableChar)
+        {
+            return PInvokeMarshal.WideCharToAnsiChar(managedValue, bestFit, throwOnUnmappableChar);
+        }
+
+        /// <summary>
+        /// Convert a single ANSI byte value to a single UNICODE wide char value, best fit.
+        /// </summary>
+        /// <param name="nativeValue">Single ANSI byte value.</param>
+        public static unsafe char AnsiCharToWideChar(byte nativeValue)
+        {
+            return PInvokeMarshal.AnsiCharToWideChar(nativeValue);
+        }
+
+        internal static unsafe IntPtr ResolvePInvoke(MethodFixupCell* pCell)
         {
             if (pCell->Target != IntPtr.Zero)
                 return pCell->Target;
@@ -57,7 +235,8 @@ namespace Internal.Runtime.CompilerHelpers
             return ResolvePInvokeSlow(pCell);
         }
 
-        internal unsafe static IntPtr ResolvePInvokeSlow(MethodFixupCell* pCell)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static unsafe IntPtr ResolvePInvokeSlow(MethodFixupCell* pCell)
         {
             ModuleFixupCell* pModuleCell = pCell->Module;
             IntPtr hModule = pModuleCell->Handle;
@@ -71,69 +250,150 @@ namespace Internal.Runtime.CompilerHelpers
             return pCell->Target;
         }
 
-        internal unsafe static void FixupModuleCell(ModuleFixupCell* pCell)
+        internal static unsafe void FreeLibrary(IntPtr hModule)
         {
 #if !PLATFORM_UNIX
-            char* moduleName = (char*)pCell->ModuleName;
-
-            IntPtr hModule = Interop.mincore.LoadLibraryEx(moduleName, IntPtr.Zero, 0);
-            if (hModule != IntPtr.Zero)
-            {
-                var oldValue = Interlocked.CompareExchange(ref pCell->Handle, hModule, IntPtr.Zero);
-                if (oldValue != IntPtr.Zero)
-                {
-                    // Some other thread won the race to fix it up.
-                    Interop.mincore.FreeLibrary(hModule);
-                }
-            }
-            else
-            {
-                // TODO: should be DllNotFoundException, but layering...
-                throw new TypeLoadException(new string(moduleName));
-            }
+            Interop.mincore.FreeLibrary(hModule);
 #else
-            byte* moduleName = (byte*)pCell->ModuleName;
-
-            IntPtr hModule = Interop.Sys.LoadLibrary(moduleName);
-            if (hModule != IntPtr.Zero)
-            {
-                var oldValue = Interlocked.CompareExchange(ref pCell->Handle, hModule, IntPtr.Zero);
-                if (oldValue != IntPtr.Zero)
-                {
-                    // Some other thread won the race to fix it up.
-                    Interop.Sys.FreeLibrary(hModule);
-                }
-            }
-            else
-            {
-                // TODO: should be DllNotFoundException, but layering...
-                throw new TypeLoadException(Encoding.UTF8.GetString(moduleName, strlen(moduleName)));
-            }
+            Interop.Sys.FreeLibrary(hModule);
 #endif
         }
 
-        internal unsafe static void FixupMethodCell(IntPtr hModule, MethodFixupCell* pCell)
+        private static unsafe string GetModuleName(ModuleFixupCell* pCell)
+        {
+            byte* pModuleName = (byte*)pCell->ModuleName;
+            return Encoding.UTF8.GetString(pModuleName, string.strlen(pModuleName));
+        }
+
+        internal static unsafe void FixupModuleCell(ModuleFixupCell* pCell)
+        {
+            string moduleName = GetModuleName(pCell);
+
+            uint dllImportSearchPath = 0;
+            bool hasDllImportSearchPath = (pCell->DllImportSearchPathAndCookie & InteropDataConstants.HasDllImportSearchPath) != 0;
+            if (hasDllImportSearchPath)
+            {
+                dllImportSearchPath = pCell->DllImportSearchPathAndCookie & ~InteropDataConstants.HasDllImportSearchPath;
+            }
+
+            Assembly callingAssembly = RuntimeAugments.Callbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
+
+            IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, callingAssembly, hasDllImportSearchPath, dllImportSearchPath);
+            if (hModule == IntPtr.Zero)
+            {
+                // TODO: this should not actually throw yet: AssemblyLoadContext.ResolvingUnmanagedDll is
+                // a last chance callback we should call before giving up.
+                hModule = NativeLibrary.LoadLibraryByName(
+                    moduleName,
+                    callingAssembly,
+                    hasDllImportSearchPath ? (DllImportSearchPath?)dllImportSearchPath : NativeLibrary.DefaultDllImportSearchPath,
+                    throwOnError: true);
+            }
+
+            Debug.Assert(hModule != IntPtr.Zero);
+            var oldValue = Interlocked.CompareExchange(ref pCell->Handle, hModule, IntPtr.Zero);
+            if (oldValue != IntPtr.Zero)
+            {
+                // Some other thread won the race to fix it up.
+                FreeLibrary(hModule);
+            }
+        }
+
+        internal static unsafe void FixupMethodCell(IntPtr hModule, MethodFixupCell* pCell)
         {
             byte* methodName = (byte*)pCell->MethodName;
 
-#if !PLATFORM_UNIX
-            pCell->Target = Interop.mincore.GetProcAddress(hModule, methodName);
+#if PLATFORM_WINDOWS
+            pCell->Target = GetProcAddress(hModule, methodName, pCell->CharSetMangling);
 #else
             pCell->Target = Interop.Sys.GetProcAddress(hModule, methodName);
 #endif
             if (pCell->Target == IntPtr.Zero)
             {
-                // TODO: Shoud be EntryPointNotFoundException, but layering...
-                throw new TypeLoadException(Encoding.UTF8.GetString(methodName, strlen(methodName)));
+                string entryPointName = Encoding.UTF8.GetString(methodName, string.strlen(methodName));
+                throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterized, entryPointName, GetModuleName(pCell->Module)));
             }
         }
 
-        internal unsafe static int strlen(byte* pString)
+#if PLATFORM_WINDOWS
+        private static unsafe IntPtr GetProcAddress(IntPtr hModule, byte* methodName, CharSet charSetMangling)
         {
-            int length = 0;
-            for (; *pString != 0; pString++)
-                length++;
-            return length;
+            // First look for the unmangled name.  If it is unicode function, we are going
+            // to need to check for the 'W' API because it takes precedence over the
+            // unmangled one (on NT some APIs have unmangled ANSI exports).
+            
+            var exactMatch = Interop.mincore.GetProcAddress(hModule, methodName);
+
+            if ((charSetMangling == CharSet.Ansi && exactMatch != IntPtr.Zero) || charSetMangling == 0)
+            {
+                return exactMatch;
+            }
+
+            int nameLength = string.strlen(methodName);
+
+            // We need to add an extra byte for the suffix, and an extra byte for the null terminator
+            byte* probedMethodName = stackalloc byte[nameLength + 2];
+
+            for (int i = 0; i < nameLength; i++)
+            {
+                probedMethodName[i] = methodName[i];
+            }
+
+            probedMethodName[nameLength + 1] = 0;
+
+            probedMethodName[nameLength] = (charSetMangling == CharSet.Ansi) ? (byte)'A' : (byte)'W';
+
+            IntPtr probedMethod = Interop.mincore.GetProcAddress(hModule, probedMethodName);
+            if (probedMethod != IntPtr.Zero)
+            {
+                return probedMethod;
+            }
+
+            return exactMatch;
+        }
+#endif
+
+        internal unsafe static void* CoTaskMemAllocAndZeroMemory(global::System.IntPtr size)
+        {
+            void* ptr;
+            ptr = PInvokeMarshal.CoTaskMemAlloc((UIntPtr)(void*)size).ToPointer();
+
+            // PInvokeMarshal.CoTaskMemAlloc will throw OOMException if out of memory
+            Debug.Assert(ptr != null);
+
+            Buffer.ZeroMemory((byte*)ptr, size.ToInt64());
+            return ptr;
+        }
+
+        internal unsafe static void CoTaskMemFree(void* p)
+        {
+            PInvokeMarshal.CoTaskMemFree((IntPtr)p);
+        }
+
+        public static IntPtr GetFunctionPointerForDelegate(Delegate del)
+        {
+            return PInvokeMarshal.GetFunctionPointerForDelegate(del);
+        }
+
+        public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, RuntimeTypeHandle delegateType)
+        {
+            return PInvokeMarshal.GetDelegateForFunctionPointer(ptr, delegateType);
+        }
+
+        /// <summary>
+        /// Retrieves the function pointer for the current open static delegate that is being called
+        /// </summary>
+        public static IntPtr GetCurrentCalleeOpenStaticDelegateFunctionPointer()
+        {
+            return PInvokeMarshal.GetCurrentCalleeOpenStaticDelegateFunctionPointer();
+        }
+
+        /// <summary>
+        /// Retrieves the current delegate that is being called
+        /// </summary>
+        public static T GetCurrentCalleeDelegate<T>() where T : class // constraint can't be System.Delegate
+        {
+            return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -141,6 +401,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             public IntPtr Handle;
             public IntPtr ModuleName;
+            public EETypePtr CallingAssemblyType;
+            public uint DllImportSearchPathAndCookie;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -149,6 +411,7 @@ namespace Internal.Runtime.CompilerHelpers
             public IntPtr Target;
             public IntPtr MethodName;
             public ModuleFixupCell* Module;
+            public CharSet CharSetMangling;
         }
     }
 }

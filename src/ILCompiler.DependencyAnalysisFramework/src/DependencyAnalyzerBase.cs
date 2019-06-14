@@ -40,11 +40,18 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         /// <summary>
         /// Return the marked node list. Do not modify this list, as it will cause unexpected behavior.
+        /// Call <see cref="ComputeMarkedNodes"/> to compute the list first.
         /// </summary>
         public abstract ImmutableArray<DependencyNodeCore<DependencyContextType>> MarkedNodeList
         {
             get;
         }
+
+        /// <summary>
+        /// Computes the list of marked nodes. This is a no-op if the marked nodes are already computed.
+        /// The list is available as <see cref="MarkedNodeList"/>.
+        /// </summary>
+        public abstract void ComputeMarkedNodes();
 
         /// <summary>
         /// This event is triggered when a node is added to the graph.
@@ -62,12 +69,12 @@ namespace ILCompiler.DependencyAnalysisFramework
         /// Used to walk all nodes that should be emitted to a log. Not intended for other purposes.
         /// </summary>
         /// <param name="logNodeVisitor"></param>
-        public abstract void VisitLogNodes(IDependencyAnalyzerLogNodeVisitor logNodeVisitor);
+        public abstract void VisitLogNodes(IDependencyAnalyzerLogNodeVisitor<DependencyContextType> logNodeVisitor);
 
         /// <summary>
         /// Used to walk the logical edges in the graph as part of log building.
         /// </summary>
         /// <param name="logEdgeVisitor"></param>
-        public abstract void VisitLogEdges(IDependencyAnalyzerLogEdgeVisitor logEdgeVisitor);
+        public abstract void VisitLogEdges(IDependencyAnalyzerLogEdgeVisitor<DependencyContextType> logEdgeVisitor);
     }
 }

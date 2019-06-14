@@ -38,6 +38,8 @@
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
+#elif WASM
+#define _TARGET_WASM_
 #else
 #error Unknown architecture!
 #endif
@@ -54,6 +56,7 @@ using Internal.NativeFormat;
 using Internal.TypeSystem;
 using Internal.Runtime.CallConverter;
 
+using ArgIterator = Internal.Runtime.CallConverter.ArgIterator;
 using CallingConvention = Internal.Runtime.CallConverter.CallingConvention;
 
 namespace Internal.Runtime.TypeLoader
@@ -62,17 +65,16 @@ namespace Internal.Runtime.TypeLoader
     {
         internal class GCHandleContainer
         {
-            internal GCHandle _thisPtrHandle;
-            internal GCHandle _dynamicInvokeArgHandle;
-            internal GCHandle _returnObjectHandle;
+            internal UnsafeGCHandle _thisPtrHandle;
+            internal UnsafeGCHandle _dynamicInvokeArgHandle;
+            internal UnsafeGCHandle _returnObjectHandle;
 
             internal GCHandleContainer()
             {
-                // Allocations of pinned gc handles done only once during the lifetime of a thread.
-                // An empty string is used as the initial pinned object reference.
-                _thisPtrHandle = GCHandle.Alloc("", GCHandleType.Pinned);
-                _dynamicInvokeArgHandle = GCHandle.Alloc("", GCHandleType.Pinned);
-                _returnObjectHandle = GCHandle.Alloc("", GCHandleType.Pinned);
+                // Allocations of pinned gc handles done only once during the lifetime of a thread
+                _thisPtrHandle = UnsafeGCHandle.Alloc(null, GCHandleType.Pinned);
+                _dynamicInvokeArgHandle = UnsafeGCHandle.Alloc(null, GCHandleType.Pinned);
+                _returnObjectHandle = UnsafeGCHandle.Alloc(null, GCHandleType.Pinned);
             }
 
             ~GCHandleContainer()
@@ -227,7 +229,6 @@ namespace Internal.Runtime.TypeLoader
                     if (conversionInfo.IsOpenInstanceDelegateThunk)
                     {
                         _delegateData._boxedFirstParameter = BoxedCallerFirstArgument;
-                        Debug.Assert(_delegateData._boxedFirstParameter != null);
                         _callerArgs.Reset();
 
                         IntPtr resolvedTargetFunctionPointer = OpenMethodResolver.ResolveMethod(_delegateData._extraFunctionPointerOrData, _delegateData._boxedFirstParameter);
@@ -307,11 +308,11 @@ namespace Internal.Runtime.TypeLoader
 
         internal void ResetPinnedObjects()
         {
-            // Reset all pinned gchandles to an empty string.
-            // Freeing of gchandles is done in the destructor of GCHandleContainer when the thread dies
-            s_pinnedGCHandles._thisPtrHandle.Target = "";
-            s_pinnedGCHandles._returnObjectHandle.Target = "";
-            s_pinnedGCHandles._dynamicInvokeArgHandle.Target = "";
+            // Reset all pinned gchandles to null.
+            // Freeing of gchandles is done in the destructor of GCHandleContainer when the thread dies.
+            s_pinnedGCHandles._thisPtrHandle.Target = null;
+            s_pinnedGCHandles._dynamicInvokeArgHandle.Target = null;
+            s_pinnedGCHandles._returnObjectHandle.Target = null;
         }
 
         private bool UpdateCalleeFunctionPointer(IntPtr newFunctionPointer)
@@ -379,18 +380,25 @@ namespace Internal.Runtime.TypeLoader
 
                 byte* pSrc = _callerTransitionBlock + ofsCaller;
 
-                TypeHandle thValueType;
-                _callerArgs.GetArgType(out thValueType);
+                TypeHandle thArgType;
+                _callerArgs.GetArgType(out thArgType);
+                Debug.Assert(!thArgType.IsNull());
 
-                if (thValueType.IsNull())
+                if (!thArgType.IsValueType())
                 {
                     Debug.Assert(_callerArgs.GetArgSize() == IntPtr.Size);
+
+                    // For Open non-virtual calls to instance methods on valuetypes, the first argument
+                    // is a byref parameter. In that case, pass null to the resolution function.
+                    if (_callerArgs.IsArgPassedByRef())
+                        return null;
+
                     Debug.Assert(!_callerArgs.IsArgPassedByRef());
                     return Unsafe.As<IntPtr, Object>(ref *(IntPtr*)pSrc);
                 }
                 else
                 {
-                    RuntimeTypeHandle argEEType = thValueType.GetRuntimeTypeHandle();
+                    RuntimeTypeHandle argEEType = thArgType.GetRuntimeTypeHandle();
 
                     if (_callerArgs.IsArgPassedByRef())
                     {
@@ -411,7 +419,7 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(_conversionInfo.IsClosedStaticDelegate && !_delegateData.Equals(default(DelegateData)));
                 Debug.Assert(_delegateData._helperObject != null);
                 s_pinnedGCHandles._thisPtrHandle.Target = _delegateData._helperObject;
-                return RuntimeAugments.GetRawAddrOfPinnedObject((IntPtr)s_pinnedGCHandles._thisPtrHandle);
+                return s_pinnedGCHandles._thisPtrHandle.GetRawTargetAddress();
             }
         }
 
@@ -442,7 +450,7 @@ namespace Internal.Runtime.TypeLoader
                         // Assert that we have extracted the delegate data
                         Debug.Assert(_conversionInfo.IsReflectionDynamicInvokerThunk || !_delegateData.Equals(default(DelegateData)));
 
-                        if (_conversionInfo.IsAnyDynamicInvokerThunk)
+                        if (_conversionInfo.IsAnyDynamicInvokerThunk || _conversionInfo.IsOpenInstanceDelegateThunk)
                         {
                             // Resilience to multiple or out of order calls
                             _callerArgs.Reset();
@@ -455,18 +463,6 @@ namespace Internal.Runtime.TypeLoader
                             // No need to pin since the thisPtr is one of the arguments on the caller TB
                             return *pSrc;
                         }
-                        if (_conversionInfo.IsOpenInstanceDelegateThunk)
-                        {
-                            // We should have already extracted and boxed the first parameter
-                            Debug.Assert(_delegateData._boxedFirstParameter != null);
-                            s_pinnedGCHandles._thisPtrHandle.Target = _delegateData._boxedFirstParameter;
-
-                            // Note: We should advance the caller's ArgIterator since the first parameter is used as a thisPointer,
-                            // not as an actual parameter passed to the callee.
-                            // We do not need to advance the callee's ArgIterator because we already initialized it with a
-                            // 'skipFirstArg' flag
-                            _callerArgs.GetNextOffset();
-                        }
                         else if (_conversionInfo.IsMulticastDelegate)
                         {
                             Debug.Assert(_delegateData._multicastThisPointer != null);
@@ -478,7 +474,7 @@ namespace Internal.Runtime.TypeLoader
                             s_pinnedGCHandles._thisPtrHandle.Target = _delegateData._helperObject;
                         }
 
-                        thisPointer = (void*)RuntimeAugments.GetRawAddrOfPinnedObject((IntPtr)s_pinnedGCHandles._thisPtrHandle);
+                        thisPointer = (void*)s_pinnedGCHandles._thisPtrHandle.GetRawTargetAddress();
                     }
                     else
                     {
@@ -513,7 +509,7 @@ namespace Internal.Runtime.TypeLoader
                     // We'll need to create a return buffer, or assign into the return buffer when the actual call completes.
                     if (_calleeArgs.HasRetBuffArg())
                     {
-                        TypeHandle thValueType;
+                        TypeHandle thRetType;
                         bool forceByRefUnused;
                         void* callerRetBuffer = null;
 
@@ -523,17 +519,18 @@ namespace Internal.Runtime.TypeLoader
                             // value, of the same type as the return value type handle in the callee's arguments.
                             Debug.Assert(!_callerArgs.HasRetBuffArg());
 
-                            CorElementType returnType = _calleeArgs.GetReturnType(out thValueType, out forceByRefUnused);
-                            RuntimeTypeHandle returnValueType = thValueType.IsNull() ? typeof(object).TypeHandle : thValueType.GetRuntimeTypeHandle();
+                            CorElementType returnType = _calleeArgs.GetReturnType(out thRetType, out forceByRefUnused);
+                            Debug.Assert(!thRetType.IsNull());
+                            RuntimeTypeHandle returnValueType = thRetType.IsValueType() ? thRetType.GetRuntimeTypeHandle() : typeof(object).TypeHandle;
                             s_pinnedGCHandles._returnObjectHandle.Target = RuntimeAugments.RawNewObject(returnValueType);
 
                             // The transition block has a space reserved for storing return buffer data. This is protected conservatively.
                             // Copy the address of the allocated object to the protected memory to be able to safely unpin it.
                             callerRetBuffer = _callerTransitionBlock + TransitionBlock.GetOffsetOfReturnValuesBlock();
-                            *((void**)callerRetBuffer) = (void*)RuntimeAugments.GetRawAddrOfPinnedObject((IntPtr)s_pinnedGCHandles._returnObjectHandle);
+                            *((void**)callerRetBuffer) = (void*)s_pinnedGCHandles._returnObjectHandle.GetRawTargetAddress();
 
                             // Unpin the allocated object (it's now protected in the caller's conservatively reported memory space)
-                            s_pinnedGCHandles._returnObjectHandle.Target = "";
+                            s_pinnedGCHandles._returnObjectHandle.Target = null;
 
                             // Point the callerRetBuffer to the begining of the actual object's data (skipping the EETypePtr slot)
                             callerRetBuffer = (void*)(new IntPtr(*((void**)callerRetBuffer)) + IntPtr.Size);
@@ -544,8 +541,8 @@ namespace Internal.Runtime.TypeLoader
                             callerRetBuffer = _callerTransitionBlock + TransitionBlock.GetOffsetOfReturnValuesBlock();
 
                             // Make sure buffer is nulled out, and setup the return buffer location.
-                            CorElementType returnType = _callerArgs.GetReturnType(out thValueType, out forceByRefUnused);
-                            int returnSize = TypeHandle.GetElemSize(returnType, thValueType);
+                            CorElementType returnType = _callerArgs.GetReturnType(out thRetType, out forceByRefUnused);
+                            int returnSize = TypeHandle.GetElemSize(returnType, thRetType);
                             CallConverterThunk.memzeroPointerAligned((byte*)callerRetBuffer, returnSize);
                         }
 
@@ -636,9 +633,31 @@ namespace Internal.Runtime.TypeLoader
             Func<object[], object> targetDelegate = _delegateData._helperObject as Func<object[], object>;
             Debug.Assert(targetDelegate != null);
 
-            s_pinnedGCHandles._returnObjectHandle.Target = targetDelegate(arguments ?? Array.Empty<object>());
+            object result = targetDelegate(arguments ?? Array.Empty<object>());
 
-            return RuntimeAugments.GetRawAddrOfPinnedObject((IntPtr)s_pinnedGCHandles._returnObjectHandle);
+            TypeHandle thArgType;
+            bool forceByRefUnused;
+            _calleeArgs.GetReturnType(out thArgType, out forceByRefUnused);
+            Debug.Assert(!thArgType.IsNull());
+
+            unsafe
+            {
+                if (thArgType.IsValueType() && thArgType.GetRuntimeTypeHandle().ToEETypePtr()->IsNullable)
+                {
+                    object nullableObj = RuntimeAugments.RawNewObject(thArgType.GetRuntimeTypeHandle());
+                    s_pinnedGCHandles._returnObjectHandle.Target = nullableObj;
+                    if (result != null)
+                    {
+                        RuntimeAugments.StoreValueTypeField(ref RuntimeAugments.GetRawData(nullableObj), result, thArgType.GetRuntimeTypeHandle());
+                    }
+                }
+                else
+                {
+                    s_pinnedGCHandles._returnObjectHandle.Target = result;
+                }
+            }
+
+            return s_pinnedGCHandles._returnObjectHandle.GetRawTargetAddress();
         }
 
         internal IntPtr GetArgSetupStateDataPointer()

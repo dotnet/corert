@@ -11,7 +11,7 @@ namespace Internal.TypeSystem
 {
     public abstract partial class FieldDesc : TypeSystemEntity
     {
-        public readonly static FieldDesc[] EmptyFields = new FieldDesc[0];
+        public static readonly FieldDesc[] EmptyFields = new FieldDesc[0];
 
         public override int GetHashCode()
         {
@@ -74,6 +74,14 @@ namespace Internal.TypeSystem
         public virtual FieldDesc GetTypicalFieldDefinition()
         {
             return this;
+        }
+
+        public bool IsTypicalFieldDefinition
+        {
+            get
+            {
+                return GetTypicalFieldDefinition() == this;
+            }
         }
 
         public virtual FieldDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)

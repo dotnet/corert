@@ -22,8 +22,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-using System.Diagnostics.Contracts;
-using Internal.NativeFormat;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -35,7 +33,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         internal static string GetRuntimeClassName(Object obj)
         {
-#if  ENABLE_WINRT
+#if  ENABLE_MIN_WINRT 
             System.IntPtr pWinRTItf = default(IntPtr);
 
             try
@@ -60,7 +58,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         internal static string GetRuntimeClassName(IntPtr pWinRTItf)
         {
-#if  ENABLE_WINRT
+#if  ENABLE_MIN_WINRT
             void* unsafe_hstring = null;
 
             try
@@ -93,7 +91,7 @@ namespace System.Runtime.InteropServices
             Interop.COM.__IStream* pStreamNativePtr = (Interop.COM.__IStream*)(void*)pStream;
             UInt64 newPosition;
 
-            int hr = CalliIntrinsics.StdCall<int>(
+            int hr = CalliIntrinsics.StdCall__int(
                 pStreamNativePtr->vtbl->pfnSeek,
                 pStreamNativePtr,
                 0UL,
@@ -110,7 +108,7 @@ namespace System.Runtime.InteropServices
             Interop.COM.__IStream* pStreamNativePtr = (Interop.COM.__IStream*)(void*)pStream;
             UInt64 newPosition;
 
-            int hr = CalliIntrinsics.StdCall<int>(
+            int hr = CalliIntrinsics.StdCall__int(
                 pStreamNativePtr->vtbl->pfnSetSize,
                 pStreamNativePtr,
                 lSize,
@@ -203,7 +201,7 @@ namespace System.Runtime.InteropServices
 #if !RHTESTCL
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
 #endif
-        static internal void* CachedAlloc(int size, ref IntPtr cache)
+        internal static void* CachedAlloc(int size, ref IntPtr cache)
         {
             // Read cache, clear it
             void* pBlock = (void*)Interlocked.Exchange(ref cache, default(IntPtr));
@@ -222,20 +220,12 @@ namespace System.Runtime.InteropServices
 #if !RHTESTCL
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
 #endif
-        static internal void CachedFree(void* block, ref IntPtr cache)
+        internal static void CachedFree(void* block, ref IntPtr cache)
         {
             if ((void*)Interlocked.CompareExchange(ref cache, new IntPtr(block), default(IntPtr)) != null)
             {
                 ExternalInterop.MemFree((IntPtr)block);
             }
-        }
-
-        /// <summary>
-        /// Return true if the object is a RCW. False otherwise
-        /// </summary>
-        internal static bool IsComObject(object obj)
-        {
-            return (obj is __ComObject);
         }
 
         /// <summary>
@@ -619,8 +609,8 @@ namespace System.Runtime.InteropServices
 
         internal static __ComGenericInterfaceDispatcher CreateGenericComDispatcher(RuntimeTypeHandle genericDispatcherDef, RuntimeTypeHandle[] genericArguments, __ComObject comThisPointer)
         {
-#if !RHTESTCL && !CORECLR && !CORERT
-            Debug.Assert(Internal.Runtime.Augments.RuntimeAugments.IsGenericTypeDefinition(genericDispatcherDef));
+#if !RHTESTCL && PROJECTN
+            Debug.Assert(genericDispatcherDef.IsGenericTypeDefinition());
             Debug.Assert(genericArguments != null && genericArguments.Length > 0);
 
             RuntimeTypeHandle instantiatedDispatcherType;
@@ -745,7 +735,7 @@ namespace System.Runtime.InteropServices
         }
 
 
-        internal unsafe static IntPtr ObjectToComInterfaceInternal(Object obj, RuntimeTypeHandle typeHnd)
+        internal static unsafe IntPtr ObjectToComInterfaceInternal(Object obj, RuntimeTypeHandle typeHnd)
         {
             if (obj == null)
                 return default(IntPtr);

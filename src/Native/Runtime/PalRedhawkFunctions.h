@@ -56,12 +56,6 @@ inline UInt32 PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, UInt3
     return EventWrite(arg1, arg2, arg3, arg4);
 }
 
-extern "C" void __stdcall ExitProcess(UInt32);
-inline void PalExitProcess(UInt32 arg1)
-{
-    ExitProcess(arg1);
-}
-
 extern "C" void __stdcall FlushProcessWriteBuffers();
 inline void PalFlushProcessWriteBuffers()
 {
@@ -100,35 +94,10 @@ inline UInt32 PalGetEnvironmentVariable(__in_z_opt LPCSTR arg1, __out_z_opt LPST
 }
 #endif
 
-extern "C" UInt32 __stdcall GetLastError();
-inline UInt32 PalGetLastError()
-{
-    return GetLastError();
-}
-
 extern "C" void * __stdcall GetProcAddress(HANDLE, const char *);
 inline void * PalGetProcAddress(HANDLE arg1, const char * arg2)
 {
     return GetProcAddress(arg1, arg2);
-}
-
-extern "C" HANDLE __stdcall GetProcessHeap();
-inline HANDLE PalGetProcessHeap()
-{
-    return GetProcessHeap();
-}
-
-
-extern "C" void* __stdcall HeapAlloc(HANDLE, UInt32, UIntNative);
-inline void* PalHeapAlloc(HANDLE arg1, UInt32 arg2, UIntNative arg3)
-{
-    return HeapAlloc(arg1, arg2, arg3);
-}
-
-extern "C" UInt32_BOOL __stdcall HeapFree(HANDLE, UInt32, void *);
-inline UInt32_BOOL PalHeapFree(HANDLE arg1, UInt32 arg2, void * arg3)
-{
-    return HeapFree(arg1, arg2, arg3);
 }
 
 extern "C" UInt32_BOOL __stdcall InitializeCriticalSectionEx(CRITICAL_SECTION *, UInt32, UInt32);
@@ -197,12 +166,6 @@ inline void PalTerminateProcess(HANDLE arg1, UInt32 arg2)
     TerminateProcess(arg1, arg2);
 }
 
-extern "C" UInt32 __stdcall WaitForMultipleObjectsEx(UInt32, HANDLE *, UInt32_BOOL, UInt32, UInt32_BOOL);
-inline UInt32 PalWaitForMultipleObjectsEx(UInt32 arg1, HANDLE * arg2, UInt32_BOOL arg3, UInt32 arg4, UInt32_BOOL arg5)
-{
-    return WaitForMultipleObjectsEx(arg1, arg2, arg3, arg4, arg5);
-}
-
 extern "C" UInt32 __stdcall WaitForSingleObjectEx(HANDLE, UInt32, UInt32_BOOL);
 inline UInt32 PalWaitForSingleObjectEx(HANDLE arg1, UInt32 arg2, UInt32_BOOL arg3)
 {
@@ -210,12 +173,6 @@ inline UInt32 PalWaitForSingleObjectEx(HANDLE arg1, UInt32 arg2, UInt32_BOOL arg
 }
 
 #ifdef PAL_REDHAWK_INCLUDED
-extern "C" void __stdcall GetNativeSystemInfo(SYSTEM_INFO *);
-inline void PalGetNativeSystemInfo(SYSTEM_INFO * arg1)
-{
-    GetNativeSystemInfo(arg1);
-}
-
 extern "C" void __stdcall GetSystemTimeAsFileTime(FILETIME *);
 inline void PalGetSystemTimeAsFileTime(FILETIME * arg1)
 {

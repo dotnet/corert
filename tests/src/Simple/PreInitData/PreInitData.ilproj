@@ -1,0 +1,14 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Compile Include="PreInitDataTest.il" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Platform)'=='x64' or '$(Platform)'=='arm64'">
+    <Compile Include="PreInitData64.il" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Platform)'=='x86' or '$(Platform)'=='arm'">
+    <Compile Include="PreInitData32.il" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
+</Project>

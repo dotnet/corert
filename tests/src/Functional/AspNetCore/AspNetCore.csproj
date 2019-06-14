@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <NativeCodeGen>readytorun</NativeCodeGen>
+  </PropertyGroup>
+
+  <!--
+    API to skip compilation for assemblies CPAOT cannot successfully compile yet
+  -->
+  <ItemGroup>
+    <ReadyToRunSkipAssembly Include="System.Private.CoreLib" />
+    <ReadyToRunSkipAssembly Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore" Version="2.1.0" /> 
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.1.0" /> 
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="2.1.0" /> 
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), FunctionalTest.targets))\FunctionalTest.targets" />
+
+</Project>

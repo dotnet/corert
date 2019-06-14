@@ -84,6 +84,13 @@ namespace Internal.TypeSystem
                 if (containingType.IsRuntimeDeterminedSubtype)
                     return true;
 
+                // Handles situation when shared code refers to uninstantiated generic
+                // method definitions (think: LDTOKEN).
+                // Walking the instantiation would make us assert. This is simply
+                // not a runtime determined method.
+                if (IsGenericMethodDefinition)
+                    return false;
+
                 foreach (TypeDesc typeArg in Instantiation)
                 {
                     if (typeArg.IsRuntimeDeterminedSubtype)
@@ -92,6 +99,43 @@ namespace Internal.TypeSystem
 
                 return false;
             }
+        }
+
+        public virtual MethodDesc GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation)
+        {
+            Instantiation instantiation = Instantiation;
+            TypeDesc[] clone = null;
+
+            for (int i = 0; i < instantiation.Length; i++)
+            {
+                TypeDesc uninst = instantiation[i];
+                TypeDesc inst = uninst.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
+                if (inst != uninst)
+                {
+                    if (clone == null)
+                    {
+                        clone = new TypeDesc[instantiation.Length];
+                        for (int j = 0; j < clone.Length; j++)
+                        {
+                            clone[j] = instantiation[j];
+                        }
+                    }
+                    clone[i] = inst;
+                }
+            }
+
+            MethodDesc method = this;
+
+            TypeDesc owningType = method.OwningType;
+            TypeDesc instantiatedOwningType = owningType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
+            if (owningType != instantiatedOwningType)
+            {
+                method = Context.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)instantiatedOwningType);
+                if (clone == null && instantiation.Length != 0)
+                    return Context.GetInstantiatedMethod(method, instantiation);
+            }
+
+            return (clone == null) ? method : Context.GetInstantiatedMethod(method.GetMethodDefinition(), new Instantiation(clone));
         }
     }
 }

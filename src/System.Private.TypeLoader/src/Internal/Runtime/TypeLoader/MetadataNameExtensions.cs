@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Text;
 using System.Reflection;
 using System.Collections.Generic;
 using Debug = System.Diagnostics.Debug;
@@ -41,6 +42,11 @@ namespace Internal.Runtime.TypeLoader
                     return handle.ToPointerSignatureHandle(reader).GetFullName(reader);
                 case HandleType.ByReferenceSignature:
                     return handle.ToByReferenceSignatureHandle(reader).GetFullName(reader);
+
+                case HandleType.ScopeDefinition:
+                    return handle.ToScopeDefinitionHandle(reader).GetFullName(reader);
+                case HandleType.ScopeReference:
+                    return handle.ToScopeReferenceHandle(reader).GetFullName(reader);
             }
             return null;
         }
@@ -108,15 +114,23 @@ namespace Internal.Runtime.TypeLoader
             return name + "<" + argsString + ">";
         }
 
-        public static string GetFullName(this TypeDefinitionHandle typeDefHandle, MetadataReader reader)
+        public static void GetFullName(this TypeDefinitionHandle typeDefHandle, MetadataReader reader, out string name, out string enclosing, out string nspace)
         {
             var typeDef = typeDefHandle.GetTypeDefinition(reader);
 
             Debug.Assert(!typeDef.Name.IsNull(reader));
 
-            var name = typeDef.Name.GetConstantStringValue(reader).Value;
-            var enclosing = typeDef.EnclosingType.IsNull(reader) ? null : typeDef.EnclosingType.GetFullName(reader);
-            var nspace = typeDef.NamespaceDefinition.IsNull(reader) ? null : typeDef.NamespaceDefinition.GetFullName(reader);
+            name = typeDef.Name.GetConstantStringValue(reader).Value;
+            enclosing = typeDef.EnclosingType.IsNull(reader) ? null : typeDef.EnclosingType.GetFullName(reader);
+            nspace = typeDef.NamespaceDefinition.IsNull(reader) ? null : typeDef.NamespaceDefinition.GetFullName(reader);
+        }
+
+        public static string GetFullName(this TypeDefinitionHandle typeDefHandle, MetadataReader reader)
+        {
+            string name;
+            string enclosing;
+            string nspace;
+            typeDefHandle.GetFullName(reader, out name, out enclosing, out nspace);
 
             if (enclosing != null && name != null)
                 return enclosing + "+" + name;
@@ -126,6 +140,36 @@ namespace Internal.Runtime.TypeLoader
             return name;
         }
 
+        public static string GetContainingModuleName(this TypeDefinitionHandle typeDefHandle, MetadataReader reader)
+        {
+            var typeDef = typeDefHandle.GetTypeDefinition(reader);
+
+            Handle currentHandle = !typeDef.EnclosingType.IsNull(reader) ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
+            Debug.Assert(!currentHandle.IsNull(reader));
+
+            while (!currentHandle.IsNull(reader))
+            {
+                switch (currentHandle.HandleType)
+                {
+                    case HandleType.TypeDefinition:
+                        typeDef = currentHandle.ToTypeDefinitionHandle(reader).GetTypeDefinition(reader);
+                        currentHandle = !typeDef.EnclosingType.IsNull(reader) ? (Handle)typeDef.EnclosingType : (Handle)typeDef.NamespaceDefinition;
+                        break;
+
+                    case HandleType.NamespaceDefinition:
+                        currentHandle = currentHandle.ToNamespaceDefinitionHandle(reader).GetNamespaceDefinition(reader).ParentScopeOrNamespace;
+                        break;
+
+                    case HandleType.ScopeDefinition:
+                        return currentHandle.GetFullName(reader);
+
+                    default:
+                        return "?";
+                }
+            }
+
+            return "?";
+        }
         public static string GetFullName(this NamespaceDefinitionHandle namespaceHandle, MetadataReader reader)
         {
             var nspace = namespaceHandle.GetNamespaceDefinition(reader);
@@ -142,15 +186,23 @@ namespace Internal.Runtime.TypeLoader
             return name;
         }
 
-        public static string GetFullName(this TypeReferenceHandle typeRefHandle, MetadataReader reader)
+        public static void GetFullName(this TypeReferenceHandle typeRefHandle, MetadataReader reader, out string name, out string enclosing, out string nspace)
         {
             var typeRef = typeRefHandle.GetTypeReference(reader);
 
             Debug.Assert(!typeRef.TypeName.IsNull(reader));
 
-            var name = typeRef.TypeName.GetConstantStringValue(reader).Value;
-            var enclosing = typeRef.ParentNamespaceOrType.HandleType == HandleType.TypeReference ? typeRef.ParentNamespaceOrType.GetFullName(reader) : null;
-            var nspace = typeRef.ParentNamespaceOrType.HandleType == HandleType.NamespaceReference ? typeRef.ParentNamespaceOrType.GetFullName(reader) : null;
+            name = typeRef.TypeName.GetConstantStringValue(reader).Value;
+            enclosing = typeRef.ParentNamespaceOrType.HandleType == HandleType.TypeReference ? typeRef.ParentNamespaceOrType.GetFullName(reader) : null;
+            nspace = typeRef.ParentNamespaceOrType.HandleType == HandleType.NamespaceReference ? typeRef.ParentNamespaceOrType.GetFullName(reader) : null;
+        }
+
+        public static string GetFullName(this TypeReferenceHandle typeRefHandle, MetadataReader reader)
+        {
+            string name;
+            string enclosing;
+            string nspace;
+            typeRefHandle.GetFullName(reader, out name, out enclosing, out nspace);
 
             if (enclosing != null && name != null)
                 return enclosing + "+" + name;
@@ -158,6 +210,33 @@ namespace Internal.Runtime.TypeLoader
                 return nspace + "." + name;
 
             return name;
+        }
+
+        public static string GetContainingModuleName(this TypeReferenceHandle typeRefHandle, MetadataReader reader)
+        {
+            var typeRef = typeRefHandle.GetTypeReference(reader);
+
+            Handle currentHandle = typeRef.ParentNamespaceOrType;
+            Debug.Assert(!currentHandle.IsNull(reader));
+
+            while (!currentHandle.IsNull(reader))
+            {
+                switch(currentHandle.HandleType)
+                {
+                    case HandleType.TypeReference:
+                    case HandleType.NamespaceReference:
+                        currentHandle = typeRef.ParentNamespaceOrType;
+                        break;
+
+                    case HandleType.ScopeReference:
+                        return currentHandle.GetFullName(reader);
+
+                    default:
+                        return "?";
+                }
+            }
+
+            return "?";
         }
 
         public static string GetFullName(this NamespaceReferenceHandle namespaceHandle, MetadataReader reader)
@@ -174,6 +253,64 @@ namespace Internal.Runtime.TypeLoader
                 return containingNamespace + "." + name;
 
             return name;
+        }
+
+        public static string GetFullName(this ScopeDefinitionHandle scopeDefHandle, MetadataReader reader)
+        {
+            var scopeDef = scopeDefHandle.GetScopeDefinition(reader);
+
+            Debug.Assert(!scopeDef.Name.IsNull(reader));
+
+            var assemblyName = new AssemblyName
+            {
+                Name = scopeDef.Name.GetConstantStringValue(reader).Value,
+                CultureName = scopeDef.Culture.IsNull(reader) ? null : scopeDef.Culture.GetConstantStringValue(reader).Value,
+                Version = new Version(scopeDef.MajorVersion, scopeDef.MinorVersion, scopeDef.BuildNumber, scopeDef.RevisionNumber)
+            };
+
+            if (scopeDef.PublicKey.Count > 0)
+            {
+                var pkt = new byte[scopeDef.PublicKey.Count];
+                int index = 0;
+                foreach (var b in scopeDef.PublicKey)
+                    pkt[index++] = b;
+                assemblyName.SetPublicKeyToken(pkt);
+            }
+            else
+            {
+                assemblyName.SetPublicKeyToken(Array.Empty<byte>());
+            }
+
+            return assemblyName.FullName;
+        }
+
+        public static string GetFullName(this ScopeReferenceHandle scopeRefHandle, MetadataReader reader)
+        {
+            var scopeRef = scopeRefHandle.GetScopeReference(reader);
+
+            Debug.Assert(!scopeRef.Name.IsNull(reader));
+
+            var assemblyName = new AssemblyName
+            {
+                Name = scopeRef.Name.GetConstantStringValue(reader).Value,
+                CultureName = scopeRef.Culture.IsNull(reader) ? null : scopeRef.Culture.GetConstantStringValue(reader).Value,
+                Version = new Version(scopeRef.MajorVersion, scopeRef.MinorVersion, scopeRef.BuildNumber, scopeRef.RevisionNumber)
+            };
+
+            if (scopeRef.PublicKeyOrToken.Count > 0)
+            {
+                var pkt = new byte[scopeRef.PublicKeyOrToken.Count];
+                int index = 0;
+                foreach (var b in scopeRef.PublicKeyOrToken)
+                    pkt[index++] = b;
+                assemblyName.SetPublicKeyToken(pkt);
+            }
+            else
+            {
+                assemblyName.SetPublicKeyToken(Array.Empty<byte>());
+            }
+
+            return assemblyName.FullName;
         }
     }
 }

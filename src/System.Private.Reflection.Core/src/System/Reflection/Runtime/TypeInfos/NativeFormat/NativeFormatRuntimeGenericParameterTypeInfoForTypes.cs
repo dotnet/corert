@@ -17,11 +17,14 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
 {
     internal sealed partial class NativeFormatRuntimeGenericParameterTypeInfoForTypes : NativeFormatRuntimeGenericParameterTypeInfo
     {
-        private NativeFormatRuntimeGenericParameterTypeInfoForTypes(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeTypeInfo declaringRuntimeNamedTypeInfo)
+        private NativeFormatRuntimeGenericParameterTypeInfoForTypes(MetadataReader reader, GenericParameterHandle genericParameterHandle, RuntimeTypeDefinitionTypeInfo declaringType)
            : base(reader, genericParameterHandle, genericParameterHandle.GetGenericParameter(reader))
         {
-            _declaringRuntimeNamedTypeInfo = declaringRuntimeNamedTypeInfo;
+            _declaringType = declaringType;
         }
+
+        public sealed override bool IsGenericTypeParameter => true;
+        public sealed override bool IsGenericMethodParameter => false;
 
         public sealed override MethodBase DeclaringMethod
         {
@@ -39,7 +42,7 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                return _declaringRuntimeNamedTypeInfo;
+                return _declaringType;
             }
         }
 
@@ -47,11 +50,11 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
         {
             get
             {
-                return _declaringRuntimeNamedTypeInfo.TypeContext;
+                return _declaringType.TypeContext;
             }
         }
 
-        private readonly RuntimeTypeInfo _declaringRuntimeNamedTypeInfo;
+        private readonly RuntimeTypeDefinitionTypeInfo _declaringType;
     }
 }
 

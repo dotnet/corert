@@ -24,8 +24,11 @@ using System.Globalization;
 
 using RhCorElementType = System.Runtime.RuntimeImports.RhCorElementType;
 
+using EnumInfo = Internal.Runtime.Augments.EnumInfo;
+
 namespace Internal.Reflection.Augments
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class ReflectionAugments
     {
         //
@@ -34,7 +37,7 @@ namespace Internal.Reflection.Augments
         //
         public static void Initialize(ReflectionCoreCallbacks reflectionCoreCallbacks)
         {
-            _reflectionCoreCallbacks = reflectionCoreCallbacks;
+            s_reflectionCoreCallbacks = reflectionCoreCallbacks;
         }
 
         public static CustomAttributeNamedArgument CreateCustomAttributeNamedArgument(Type attributeType, string memberName, bool isField, CustomAttributeTypedArgument typedValue)
@@ -93,27 +96,39 @@ namespace Internal.Reflection.Augments
             return TypeCode.Object;
         }
 
+        public static Type MakeGenericSignatureType(Type genericTypeDefinition, Type[] genericTypeArguments)
+        {
+            return new SignatureConstructedGenericType(genericTypeDefinition, genericTypeArguments);
+        }
+
+        public static TypeLoadException CreateTypeLoadException(string message, string typeName)
+        {
+            return new TypeLoadException(message, typeName);
+        }
+
         internal static ReflectionCoreCallbacks ReflectionCoreCallbacks
         {
             get
             {
-                ReflectionCoreCallbacks callbacks = _reflectionCoreCallbacks;
+                ReflectionCoreCallbacks callbacks = s_reflectionCoreCallbacks;
                 if (callbacks == null)
                     throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
                 return callbacks;
             }
         }
 
-        private static ReflectionCoreCallbacks _reflectionCoreCallbacks;
+        private static ReflectionCoreCallbacks s_reflectionCoreCallbacks;
     }
 
     //
     // This class is implemented by Internal.Reflection.Core.dll and provides the actual implementation
     // of Type.GetTypeInfo() and (on Project N) (Assembly.Load()).
     //
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionCoreCallbacks
     {
-        public abstract Assembly Load(AssemblyName refName);
+        public abstract Assembly Load(AssemblyName refName, bool throwOnFileNotFound);
+        public abstract Assembly Load(byte[] rawAssembly, byte[] pdbSymbolStore);
 
         public abstract MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle);
         public abstract MethodBase GetMethodFromHandle(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);
@@ -124,9 +139,31 @@ namespace Internal.Reflection.Augments
         public abstract MethodInfo GetImplicitlyOverriddenBaseClassMethod(MethodInfo m);
         public abstract PropertyInfo GetImplicitlyOverriddenBaseClassProperty(PropertyInfo p);
 
-        public abstract Binder CreateDefaultBinder();
-
         public abstract object ActivatorCreateInstance(Type type, bool nonPublic);
         public abstract object ActivatorCreateInstance(Type type, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes);
+
+        // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed. 
+        public abstract Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure);
+
+        // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
+        public abstract Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure);
+
+        // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
+        public abstract Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure);
+
+        // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
+        public abstract Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure);
+
+        public abstract Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError);
+
+        public abstract IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle);
+
+        public abstract void RunModuleConstructor(Module module);
+
+        public abstract void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset);
+
+        public abstract Assembly[] GetLoadedAssemblies();
+
+        public abstract EnumInfo GetEnumInfo(Type type);
     }
 }

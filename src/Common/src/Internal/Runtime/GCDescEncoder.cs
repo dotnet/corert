@@ -76,7 +76,7 @@ namespace Internal.Runtime
                 if (type.IsMdArray)
                 {
                     // Multi-dim arrays include upper and lower bounds for each rank
-                    baseSize += 2 * type.Context.GetWellKnownType(WellKnownType.Int32).GetElementSize() * ((ArrayType)type).Rank;
+                    baseSize += 2 * sizeof(int) * ((ArrayType)type).Rank;
                 }
 
                 if (elementType.IsGCPointer)
@@ -109,7 +109,7 @@ namespace Internal.Runtime
                     int offs = defType.IsValueType ? builder.TargetPointerSize : 0;
 
                     // Include syncblock
-                    int objectSize = defType.InstanceByteCount + offs + builder.TargetPointerSize;
+                    int objectSize = defType.InstanceByteCount.AsInt + offs + builder.TargetPointerSize;
 
                     EncodeStandardGCDesc(ref builder, GCPointerMap.FromInstanceLayout(defType), objectSize, offs);
                 }
@@ -154,9 +154,14 @@ namespace Internal.Runtime
         private static void EncodeAllGCPointersArrayGCDesc<T>(ref T builder, int baseSize)
             where T : struct, ITargetBinaryWriter
         {
-            builder.EmitNaturalInt(-3 * builder.TargetPointerSize);
-            builder.EmitNaturalInt(baseSize);
+            // Construct the gc info as if this array contains exactly one pointer
+            // - the encoding trick where the size of the series is measured as a difference from 
+            // total object size will make this work for arbitrary array lengths
 
+            // Series size
+            builder.EmitNaturalInt(-(baseSize + builder.TargetPointerSize));
+            // Series offset
+            builder.EmitNaturalInt(baseSize);
             // NumSeries
             builder.EmitNaturalInt(1);
         }

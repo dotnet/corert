@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// types. It only fills out enough pieces of the EEType structure so that the GC can operate on it. Runtime should
     /// never see these.
     /// </summary>
-    internal class GCStaticEETypeNode : ObjectNode, ISymbolNode
+    public class GCStaticEETypeNode : ObjectNode, ISymbolDefinitionNode
     {
         private GCPointerMap _gcMap;
         private TargetDetails _target;
@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
         }
 
-        protected override string GetName() => this.GetMangledName();
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectNodeSection Section
         {
@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append("__GCStaticEEType_").Append(_gcMap.ToString());
         }
 
-        public int Offset
+        int ISymbolDefinitionNode.Offset
         {
             get
             {
@@ -58,19 +58,19 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
+        int ISymbolNode.Offset => 0;
+
+        public override bool IsShareable => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory);
-            dataBuilder.Alignment = 16;
-            dataBuilder.DefinedSymbols.Add(this);
+            ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory, relocsOnly);
+            dataBuilder.RequireInitialPointerAlignment();
+            dataBuilder.AddSymbol(this);
 
-            // +2 for SyncBlock and EETypePtr field
-            int totalSize = (_gcMap.Size + 2) * _target.PointerSize;
+            // +1 for SyncBlock (in CoreRT static size already includes EEType)
+            Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT || factory.Target.Abi == TargetAbi.CppCodegen);
+            int totalSize = (_gcMap.Size + 1) * _target.PointerSize;
 
             // We only need to check for containsPointers because ThreadStatics are always allocated
             // on the GC heap (no matter what "HasGCStaticBase" says).
@@ -82,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                 GCDescEncoder.EncodeStandardGCDesc(ref dataBuilder, _gcMap, totalSize, 0);
             }
 
-            Debug.Assert(dataBuilder.CountBytes == Offset);
+            Debug.Assert(dataBuilder.CountBytes == ((ISymbolDefinitionNode)this).Offset);
 
             dataBuilder.EmitShort(0); // ComponentSize is always 0
 
@@ -95,10 +95,17 @@ namespace ILCompiler.DependencyAnalysis
             totalSize = Math.Max(totalSize, _target.PointerSize * 3); // minimum GC eetype size is 3 pointers
             dataBuilder.EmitInt(totalSize);
 
-            // This is just so that EEType::Validate doesn't blow up at runtime
-            dataBuilder.EmitPointerReloc(this); // Related type: itself
+            // Related type: System.Object. This allows storing an instance of this type in an array of objects.
+            dataBuilder.EmitPointerReloc(factory.NecessaryTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.Object)));
 
             return dataBuilder.ToObjectData();
+        }
+
+        public override int ClassCode => 1304929125;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return _gcMap.CompareTo(((GCStaticEETypeNode)other)._gcMap);
         }
     }
 }

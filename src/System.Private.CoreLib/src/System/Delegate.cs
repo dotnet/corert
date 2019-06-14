@@ -5,9 +5,11 @@
 using System.Text;
 using System.Runtime;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
@@ -19,23 +21,41 @@ namespace System
     // sequential layout directive so that Bartok matches it.
     [StructLayout(LayoutKind.Sequential)]
     [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
-    public abstract partial class Delegate : ICloneable
+    public abstract partial class Delegate : ICloneable, ISerializable
     {
-        // This ctor exists solely to prevent C# from generating a protected .ctor that violates the surface area. I really want this to be a
-        // "protected-and-internal" rather than "internal" but C# has no keyword for the former.
-        internal Delegate()
+#if PROJECTN
+        // Required by IL2IL transforms
+        internal Delegate() { }
+#endif
+
+        // V1 API: Create closed instance delegates. Method name matching is case sensitive.
+        protected Delegate(object target, string method)
         {
-            // ! Do NOT put any code here. Delegate constructers are not guaranteed to be executed.
+            // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
+            // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
+            // implementation of CreateDelegate below, and does not invoke this constructor.
+            // The constructor is just for API compatibility with the public contract of the Delegate class.
+            throw new PlatformNotSupportedException();
+        }
+
+        // V1 API: Create open static delegates. Method name matching is case insensitive.
+        protected Delegate(Type target, string method)
+        {
+            // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
+            // overload of the public static CreateDelegate method is used. This will eventually end up calling into the internal
+            // implementation of CreateDelegate below, and does not invoke this constructor.
+            // The constructor is just for API compatibility with the public contract of the Delegate class.
+            throw new PlatformNotSupportedException();
         }
 
         // New Delegate Implementation
 
-        internal protected object m_firstParameter;
-        internal protected object m_helperObject;
+        protected internal object m_firstParameter;
+        protected internal object m_helperObject;
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]
-        internal protected IntPtr m_extraFunctionPointerOrData;
+        protected internal IntPtr m_extraFunctionPointerOrData;
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]
-        internal protected IntPtr m_functionPointer;
+        protected internal IntPtr m_functionPointer;
 
         [ThreadStatic]
         protected static string s_DefaultValueString;
@@ -87,14 +107,24 @@ namespace System
         /// <param name="isOpenResolver"> 
         ///   This value indicates if the returned pointer is an open resolver structure.
         /// </param>
+        /// <param name="isInterpreterEntrypoint"> 
+        ///   Delegate points to an object array thunk (the delegate wraps a Func<object[], object> delegate). This
+        ///   is typically a delegate pointing to the LINQ expression interpreter.
+        /// </param>
         /// <returns></returns>
-        unsafe internal IntPtr GetFunctionPointer(out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver)
+        unsafe internal IntPtr GetFunctionPointer(out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver, out bool isInterpreterEntrypoint)
         {
             typeOfFirstParameterIfInstanceDelegate = default(RuntimeTypeHandle);
             isOpenResolver = false;
+            isInterpreterEntrypoint = false;
 
             if (GetThunk(MulticastThunk) == m_functionPointer)
             {
+                return IntPtr.Zero;
+            }
+            else if (GetThunk(ObjectArrayThunk) == m_functionPointer)
+            {
+                isInterpreterEntrypoint = true;
                 return IntPtr.Zero;
             }
             else if (m_extraFunctionPointerOrData != IntPtr.Zero)
@@ -120,13 +150,10 @@ namespace System
         // @todo: Not an api but some NativeThreadPool code still depends on it.
         internal IntPtr GetNativeFunctionPointer()
         {
-            // CORERT-TODO: PInvoke delegate marshalling
-#if !CORERT
             if (GetThunk(ReversePinvokeThunk) != m_functionPointer)
             {
                 throw new InvalidOperationException("GetNativeFunctionPointer may only be used on a reverse pinvoke delegate");
             }
-#endif
 
             return m_extraFunctionPointerOrData;
         }
@@ -162,7 +189,45 @@ namespace System
                 m_helperObject = firstParameter;
             }
         }
-        
+
+        // This function is known to the compiler.
+        protected void InitializeClosedInstanceWithGVMResolution(object firstParameter, RuntimeMethodHandle tokenOfGenericVirtualMethod)
+        {
+            if (firstParameter == null)
+                throw new ArgumentException(SR.Arg_DlgtNullInst);
+
+            IntPtr functionResolution = TypeLoaderExports.GVMLookupForSlot(firstParameter, tokenOfGenericVirtualMethod);
+
+            if (functionResolution == IntPtr.Zero)
+            {
+                // TODO! What to do when GVM resolution fails. Should never happen
+                throw new InvalidOperationException();
+            }
+            if (!FunctionPointerOps.IsGenericMethodPointer(functionResolution))
+            {
+                m_functionPointer = functionResolution;
+                m_firstParameter = firstParameter;
+            }
+            else
+            {
+                m_firstParameter = this;
+                m_functionPointer = GetThunk(ClosedInstanceThunkOverGenericMethod);
+                m_extraFunctionPointerOrData = functionResolution;
+                m_helperObject = firstParameter;
+            }
+
+            return;
+        }
+
+        private void InitializeClosedInstanceToInterface(object firstParameter, IntPtr dispatchCell)
+        {
+            if (firstParameter == null)
+                throw new ArgumentException(SR.Arg_DlgtNullInst);
+
+            m_functionPointer = RuntimeImports.RhpResolveInterfaceMethod(firstParameter, dispatchCell);
+            m_firstParameter = firstParameter;
+        }
+
         // This is used to implement MethodInfo.CreateDelegate() in a desktop-compatible way. Yes, the desktop really
         // let you use that api to invoke an instance method with a null 'this'.
         private void InitializeClosedInstanceWithoutNullCheck(object firstParameter, IntPtr functionPointer)
@@ -241,7 +306,7 @@ namespace System
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = functionPointerThunk;
-            OpenMethodResolver instanceMethodResolver = new OpenMethodResolver(default(RuntimeTypeHandle), functionPointer, 0);
+            OpenMethodResolver instanceMethodResolver = new OpenMethodResolver(default(RuntimeTypeHandle), functionPointer, default(GCHandle), 0);
             m_extraFunctionPointerOrData = instanceMethodResolver.ToIntPtr();
         }
 
@@ -251,7 +316,7 @@ namespace System
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = GetThunk(OpenInstanceThunk);
-            OpenMethodResolver instanceMethodResolver = new OpenMethodResolver(default(RuntimeTypeHandle), functionPointer, 0);
+            OpenMethodResolver instanceMethodResolver = new OpenMethodResolver(default(RuntimeTypeHandle), functionPointer, default(GCHandle), 0);
             m_extraFunctionPointerOrData = instanceMethodResolver.ToIntPtr();
         }
 
@@ -294,7 +359,7 @@ namespace System
         }
 
         [DebuggerGuidedStepThroughAttribute]
-        public object DynamicInvoke(params object[] args)
+        protected virtual object DynamicInvokeImpl(object[] args)
         {
             if (IsDynamicDelegate())
             {
@@ -306,63 +371,33 @@ namespace System
             else
             {
                 IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
-                object result = System.InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args);
+#if PROJECTN
+                object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args, binderBundle: null, wrapInTargetInvocationException: true);
+#else
+                IntPtr genericDictionary = IntPtr.Zero;
+                if (FunctionPointerOps.IsGenericMethodPointer(invokeThunk))
+                {
+                    unsafe
+                    {
+                        GenericMethodDescriptor* descriptor = FunctionPointerOps.ConvertToGenericDescriptor(invokeThunk);
+                        genericDictionary = descriptor->InstantiationArgument;
+                        invokeThunk = descriptor->MethodFunctionPointer;
+                    }
+                }
+
+                object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, null, invokeThunk, genericDictionary, this, args, binderBundle: null, wrapInTargetInvocationException: true, invokeMethodHelperIsThisCall: false);
+#endif
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }
         }
 
-        public unsafe static Delegate Combine(Delegate a, Delegate b)
+        [DebuggerGuidedStepThroughAttribute]
+        public object DynamicInvoke(params object[] args)
         {
-            if (a == null)
-                return b;
-            if (b == null)
-                return a;
-
-            return a.CombineImpl(b);
-        }
-
-        public static Delegate Remove(Delegate source, Delegate value)
-        {
-            if (source == null)
-                return null;
-
-            if (value == null)
-                return source;
-
-            if (!InternalEqualTypes(source, value))
-                throw new ArgumentException("The types of 'source' and 'value' should match.");
-
-            return source.RemoveImpl(value);
-        }
-
-        public static Delegate RemoveAll(Delegate source, Delegate value)
-        {
-            Delegate newDelegate = null;
-
-            do
-            {
-                newDelegate = source;
-                source = Remove(source, value);
-            }
-            while (newDelegate != source);
-
-            return newDelegate;
-        }
-
-        // Used to support the C# compiler in implementing the "+" operator for delegates
-        public static Delegate Combine(params Delegate[] delegates)
-        {
-            if ((delegates == null) || (delegates.Length == 0))
-                return null;
-
-            Delegate d = delegates[0];
-            for (int i = 1; i < delegates.Length; i++)
-            {
-                d = Combine(d, delegates[i]);
-            }
-
-            return d;
+            object result = DynamicInvokeImpl(args);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         private MulticastDelegate NewMulticastDelegate(Delegate[] invocationList, int invocationCount, bool thisIsMultiCastAlready)
@@ -404,8 +439,8 @@ namespace System
                 MulticastDelegate d = (MulticastDelegate)o;
                 MulticastDelegate dd = (MulticastDelegate)a[index];
 
-                if (Object.ReferenceEquals(dd.m_firstParameter, d.m_firstParameter) &&
-                    Object.ReferenceEquals(dd.m_helperObject, d.m_helperObject) &&
+                if (object.ReferenceEquals(dd.m_firstParameter, d.m_firstParameter) &&
+                    object.ReferenceEquals(dd.m_helperObject, d.m_helperObject) &&
                     dd.m_extraFunctionPointerOrData == d.m_extraFunctionPointerOrData &&
                     dd.m_functionPointer == d.m_functionPointer)
                 {
@@ -418,21 +453,21 @@ namespace System
 
         // This method will combine this delegate with the passed delegate
         //  to form a new delegate.
-        internal Delegate CombineImpl(Delegate follow)
+        protected virtual Delegate CombineImpl(Delegate d)
         {
-            if ((Object)follow == null) // cast to object for a more efficient test
+            if ((object)d == null) // cast to object for a more efficient test
                 return this;
 
             // Verify that the types are the same...
-            if (!InternalEqualTypes(this, follow))
+            if (!InternalEqualTypes(this, d))
                 throw new ArgumentException();
 
-            if (IsDynamicDelegate() && follow.IsDynamicDelegate())
+            if (IsDynamicDelegate() && d.IsDynamicDelegate())
             {
                 throw new InvalidOperationException();
             }
 
-            MulticastDelegate dFollow = (MulticastDelegate)follow;
+            MulticastDelegate dFollow = (MulticastDelegate)d;
             Delegate[] resultList;
             int followCount = 1;
             Delegate[] followList = dFollow.m_helperObject as Delegate[];
@@ -541,12 +576,12 @@ namespace System
         //  look at the invocation list.)  If this is found we remove it from
         //  this list and return a new delegate.  If its not found a copy of the
         //  current list is returned.
-        internal Delegate RemoveImpl(Delegate value)
+        protected virtual Delegate RemoveImpl(Delegate d)
         {
             // There is a special case were we are removing using a delegate as
             //    the value we need to check for this case
             //
-            MulticastDelegate v = value as MulticastDelegate;
+            MulticastDelegate v = d as MulticastDelegate;
 
             if (v == null)
                 return this;
@@ -556,7 +591,7 @@ namespace System
                 if (invocationList == null)
                 {
                     // they are both not real Multicast
-                    if (this.Equals(value))
+                    if (this.Equals(d))
                         return null;
                 }
                 else
@@ -564,7 +599,7 @@ namespace System
                     int invocationCount = (int)m_extraFunctionPointerOrData;
                     for (int i = invocationCount; --i >= 0;)
                     {
-                        if (value.Equals(invocationList[i]))
+                        if (d.Equals(invocationList[i]))
                         {
                             if (invocationCount == 2)
                             {
@@ -630,18 +665,10 @@ namespace System
                 int invocationCount = (int)m_extraFunctionPointerOrData;
                 del = new Delegate[invocationCount];
 
-                for (int i = 0; i < invocationCount; i++)
+                for (int i = 0; i < del.Length; i++)
                     del[i] = invocationList[i];
             }
             return del;
-        }
-
-        public MethodInfo Method
-        {
-            get
-            {
-                return GetMethodImpl();
-            }
         }
 
         protected virtual MethodInfo GetMethodImpl()
@@ -649,7 +676,7 @@ namespace System
             return RuntimeAugments.Callbacks.GetDelegateMethod(this);
         }
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             // It is expected that all real uses of the Equals method will hit the MulticastDelegate.Equals logic instead of this
             // therefore, instead of duplicating the desktop behavior where direct calls to this Equals function do not behave
@@ -657,23 +684,7 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
-        public static bool operator ==(Delegate d1, Delegate d2)
-        {
-            if ((Object)d1 == null)
-                return (Object)d2 == null;
-
-            return d1.Equals(d2);
-        }
-
-        public static bool operator !=(Delegate d1, Delegate d2)
-        {
-            if ((Object)d1 == null)
-                return (Object)d2 != null;
-
-            return !d1.Equals(d2);
-        }
-
-        public Object Target
+        public object Target
         {
             get
             {
@@ -692,7 +703,7 @@ namespace System
                     return m_helperObject;
 
                 // Other non-closed thunks can be identified as the m_firstParameter field points at this.
-                if (Object.ReferenceEquals(m_firstParameter, this))
+                if (object.ReferenceEquals(m_firstParameter, this))
                 {
                     return null;
                 }
@@ -702,10 +713,17 @@ namespace System
             }
         }
 
-        public virtual object Clone()
-        {
-            return MemberwiseClone();
-        }
+        // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed. 
+        public static Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
+
+        // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
+        public static Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, method, throwOnBindFailure);
+
+        // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
+        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
+
+        // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
+        public static Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.ReflectionCoreCallbacks.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
 
         internal bool IsOpenStatic
         {
@@ -755,7 +773,7 @@ namespace System
         // Note that delegates constructed the normal way do not come through here. The IL transformer generates the equivalent of
         // this code customized for each delegate type.
         //
-        internal static Delegate CreateDelegate(EETypePtr delegateEEType, IntPtr ldftnResult, Object thisObject, bool isStatic, bool isOpen)
+        internal static Delegate CreateDelegate(EETypePtr delegateEEType, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
         {
             Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
 
@@ -811,8 +829,7 @@ namespace System
             else
             {
                 RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
-                bool isOpenThunk;
-                IntPtr functionPointer = GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenThunk);
+                IntPtr functionPointer = GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
                 if (!FunctionPointerOps.IsGenericMethodPointer(functionPointer))
                 {
                     return DebuggerFunctionPointerFormattingHook(functionPointer, typeOfFirstParameterIfInstanceDelegate);

@@ -63,45 +63,13 @@ namespace Internal.TypeSystem
         {
             TypeFlags flags = TypeFlags.FunctionPointer;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                if (_signature.ReturnType.ContainsGenericVariables)
-                    flags |= TypeFlags.ContainsGenericVariables;
-                else
-                {
-                    for (int i = 0; i < _signature.Length; i++)
-                    {
-                        if (_signature[i].ContainsGenericVariables)
-                        {
-                            flags |= TypeFlags.ContainsGenericVariables;
-                            break;
-                        }
-                    }
-                }
-            }
-
             flags |= TypeFlags.HasGenericVarianceComputed;
 
+            flags |= TypeFlags.HasFinalizerComputed;
+
+            flags |= TypeFlags.AttributeCacheComputed;
+
             return flags;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(_signature.ReturnType);
-
-            sb.Append(" *(");
-            for (int i = 0; i < _signature.Length; i++)
-            {
-                if (i > 0)
-                    sb.Append(", ");
-                sb.Append(_signature[i]);
-            }
-            sb.Append(')');
-
-            return sb.ToString();
         }
     }
 }

@@ -9,42 +9,42 @@ namespace System.Collections.Generic
 {
     internal static class EqualOnlyComparerHelper
     {
-        public static bool Equals(SByte x, SByte y)
+        public static bool Equals(sbyte x, sbyte y)
         {
             return x == y;
         }
 
-        public static bool Equals(Byte x, Byte y)
+        public static bool Equals(byte x, byte y)
         {
             return x == y;
         }
 
-        public static bool Equals(Int16 x, Int16 y)
+        public static bool Equals(short x, short y)
         {
             return x == y;
         }
 
-        public static bool Equals(UInt16 x, UInt16 y)
+        public static bool Equals(ushort x, ushort y)
         {
             return x == y;
         }
 
-        public static bool Equals(Int32 x, Int32 y)
+        public static bool Equals(int x, int y)
         {
             return x == y;
         }
 
-        public static bool Equals(UInt32 x, UInt32 y)
+        public static bool Equals(uint x, uint y)
         {
             return x == y;
         }
 
-        public static bool Equals(Int64 x, Int64 y)
+        public static bool Equals(long x, long y)
         {
             return x == y;
         }
 
-        public static bool Equals(UInt64 x, UInt64 y)
+        public static bool Equals(ulong x, ulong y)
         {
             return x == y;
         }
@@ -59,22 +59,22 @@ namespace System.Collections.Generic
             return x == y;
         }
 
-        public static bool Equals(Single x, Single y)
+        public static bool Equals(float x, float y)
         {
             return x == y;
         }
 
-        public static bool Equals(Double x, Double y)
+        public static bool Equals(double x, double y)
         {
             return x == y;
         }
 
-        public static bool Equals(Decimal x, Decimal y)
+        public static bool Equals(decimal x, decimal y)
         {
             return x == y;
         }
 
-        public static bool Equals(String x, String y)
+        public static bool Equals(string x, string y)
         {
             return x == y;
         }
@@ -95,33 +95,33 @@ namespace System.Collections.Generic
         {
             // Specialized Comparers
             if (typeof(T) == typeof(System.SByte))
-                return EqualOnlyComparerHelper.Equals(((System.SByte)(Object)(x)), ((System.SByte)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.SByte)(object)(x)), ((System.SByte)(object)(y)));
             else if (typeof(T) == typeof(System.Byte))
-                return EqualOnlyComparerHelper.Equals(((System.Byte)(Object)(x)), ((System.Byte)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.Byte)(object)(x)), ((System.Byte)(object)(y)));
             else if (typeof(T) == typeof(System.Int16))
-                return EqualOnlyComparerHelper.Equals(((System.Int16)(Object)(x)), ((System.Int16)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.Int16)(object)(x)), ((System.Int16)(object)(y)));
             else if (typeof(T) == typeof(System.UInt16))
-                return EqualOnlyComparerHelper.Equals(((System.UInt16)(Object)(x)), ((System.UInt16)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.UInt16)(object)(x)), ((System.UInt16)(object)(y)));
             else if (typeof(T) == typeof(System.Int32))
-                return EqualOnlyComparerHelper.Equals(((System.Int32)(Object)(x)), ((System.Int32)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.Int32)(object)(x)), ((System.Int32)(object)(y)));
             else if (typeof(T) == typeof(System.UInt32))
-                return EqualOnlyComparerHelper.Equals(((System.UInt32)(Object)(x)), ((System.UInt32)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.UInt32)(object)(x)), ((System.UInt32)(object)(y)));
             else if (typeof(T) == typeof(System.Int64))
-                return EqualOnlyComparerHelper.Equals(((System.Int64)(Object)(x)), ((System.Int64)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.Int64)(object)(x)), ((System.Int64)(object)(y)));
             else if (typeof(T) == typeof(System.UInt64))
-                return EqualOnlyComparerHelper.Equals(((System.UInt64)(Object)(x)), ((System.UInt64)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.UInt64)(object)(x)), ((System.UInt64)(object)(y)));
             else if (typeof(T) == typeof(System.IntPtr))
-                return EqualOnlyComparerHelper.Equals(((System.IntPtr)(Object)(x)), ((System.IntPtr)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.IntPtr)(object)(x)), ((System.IntPtr)(object)(y)));
             else if (typeof(T) == typeof(System.UIntPtr))
-                return EqualOnlyComparerHelper.Equals(((System.UIntPtr)(Object)(x)), ((System.UIntPtr)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.UIntPtr)(object)(x)), ((System.UIntPtr)(object)(y)));
             else if (typeof(T) == typeof(System.Single))
-                return EqualOnlyComparerHelper.Equals(((System.Single)(Object)(x)), ((System.Single)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.Single)(object)(x)), ((System.Single)(object)(y)));
             else if (typeof(T) == typeof(System.Double))
-                return EqualOnlyComparerHelper.Equals(((System.Double)(Object)(x)), ((System.Double)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.Double)(object)(x)), ((System.Double)(object)(y)));
             else if (typeof(T) == typeof(System.Decimal))
-                return EqualOnlyComparerHelper.Equals(((System.Decimal)(Object)(x)), ((System.Decimal)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.Decimal)(object)(x)), ((System.Decimal)(object)(y)));
             else if (typeof(T) == typeof(System.String))
-                return EqualOnlyComparerHelper.Equals(((System.String)(Object)(x)), ((System.String)(Object)(y)));
+                return EqualOnlyComparerHelper.Equals(((System.String)(object)(x)), ((System.String)(object)(y)));
 
             // Default Comparer
 

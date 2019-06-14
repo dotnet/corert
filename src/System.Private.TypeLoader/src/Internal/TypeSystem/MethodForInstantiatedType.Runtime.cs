@@ -17,5 +17,12 @@ namespace Internal.TypeSystem
                 return _typicalMethodDef.NameAndSignature;
             }
         }
+
+#if DEBUG
+        public override string ToString()
+        {
+            return OwningType.ToString() + "." + Name; 
+        }
+#endif
     }
 }

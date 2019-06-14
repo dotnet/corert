@@ -29,6 +29,20 @@ namespace System.Reflection.Runtime.TypeInfos
             _key = key;
         }
 
+        public sealed override bool IsTypeDefinition => false;
+        public sealed override bool IsGenericTypeDefinition => false;
+        protected sealed override bool HasElementTypeImpl() => false;
+        protected sealed override bool IsArrayImpl() => false;
+        public sealed override bool IsSZArray => false;
+        public sealed override bool IsVariableBoundArray => false;
+        protected sealed override bool IsByRefImpl() => false;
+        protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsConstructedGenericType => true;
+        public sealed override bool IsGenericParameter => false;
+        public sealed override bool IsGenericTypeParameter => false;
+        public sealed override bool IsGenericMethodParameter => false;
+        public sealed override bool IsByRefLike => GenericTypeDefinitionTypeInfo.IsByRefLike;
+
         //
         // Implements IKeyedItem.PrepareKey.
         // 
@@ -136,12 +150,9 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        public sealed override bool IsConstructedGenericType
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            get
-            {
-                return true;
-            }
+            return GenericTypeDefinitionTypeInfo.HasSameMetadataDefinitionAs(other);
         }
 
         public sealed override string Namespace
@@ -161,6 +172,14 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 return GenericTypeDefinitionTypeInfo.StructLayoutAttribute;
+            }
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return GenericTypeDefinitionTypeInfo.MetadataToken;
             }
         }
 
@@ -228,8 +247,7 @@ namespace System.Reflection.Runtime.TypeInfos
             get
             {
                 RuntimeTypeInfo genericTypeDefinition = this.GenericTypeDefinitionTypeInfo;
-                RuntimeNamedTypeInfo genericTypeDefinitionNamedTypeInfo = genericTypeDefinition as RuntimeNamedTypeInfo;
-                if (genericTypeDefinitionNamedTypeInfo == null)
+                if (!(genericTypeDefinition is RuntimeNamedTypeInfo genericTypeDefinitionNamedTypeInfo))
                     throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(genericTypeDefinition);
                 return genericTypeDefinitionNamedTypeInfo;
             }
@@ -256,7 +274,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
+        public sealed override string InternalGetNameIfAvailable(ref Type rootCauseForFailure)
         {
             return GenericTypeDefinitionTypeInfo.InternalGetNameIfAvailable(ref rootCauseForFailure);
         }
