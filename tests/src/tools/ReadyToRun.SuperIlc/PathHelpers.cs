@@ -50,6 +50,9 @@ static class PathExtensions
         return str;
     }
 
+    // TODO: this assumes we're running tests from the CoreRT root
+    internal static string DotNetAppPath => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dotnet" : "Tools/dotnetcli/dotnet";
+
     internal static void RecreateDirectory(this string path)
     {
         if (Directory.Exists(path))

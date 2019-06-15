@@ -37,7 +37,7 @@ namespace ReadyToRun.SuperIlc
         public int ExecutionTimeoutMinutes { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
         public FileInfo[] IssuesPath { get; set; }
-
+        public FileInfo R2RDumpPath { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
 
         public IEnumerable<string> ReferencePaths()

@@ -105,6 +105,8 @@ namespace ReadyToRun.SuperIlc
             List<KeyValuePair<string, string>> failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
             int successfulCompileCount = 0;
 
+            List<ProcessInfo> r2rDumpExecutionsToRun = new List<ProcessInfo>();
+
             foreach (BuildFolder folder in FoldersToBuild)
             {
                 foreach (ProcessInfo[] compilation in folder.Compilations)
@@ -114,7 +116,19 @@ namespace ReadyToRun.SuperIlc
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
                         ProcessInfo runnerProcess = compilation[(int)runner.Index];
-                        if (runnerProcess != null && !runnerProcess.Succeeded)
+                        if (runnerProcess == null)
+                        {
+                            // No runner process
+                        }
+                        else if (runnerProcess.Succeeded)
+                        {
+                            if (_options.R2RDumpPath != null)
+                            {
+                                r2rDumpExecutionsToRun.Add(new ProcessInfo(new R2RDumpProcessConstructor(runner, runnerProcess.Parameters.OutputFileName, naked: false)));
+                                r2rDumpExecutionsToRun.Add(new ProcessInfo(new R2RDumpProcessConstructor(runner, runnerProcess.Parameters.OutputFileName, naked: true)));
+                            }
+                        }
+                        else // runner process failed
                         {
                             _compilationFailureBuckets.AddCompilation(runnerProcess);
                             try
@@ -145,6 +159,31 @@ namespace ReadyToRun.SuperIlc
                     {
                         successfulCompileCount++;
                     }
+                }
+            }
+
+            ParallelRunner.Run(r2rDumpExecutionsToRun, _options.DegreeOfParallelism);
+
+            foreach (ProcessInfo r2rDumpExecution in r2rDumpExecutionsToRun)
+            {
+                if (!r2rDumpExecution.Succeeded)
+                {
+                    string causeOfFailure;
+                    if (r2rDumpExecution.TimedOut)
+                    {
+                        causeOfFailure = "timed out";
+                    }
+                    else if (r2rDumpExecution.ExitCode != 0)
+                    {
+                        causeOfFailure = $"invalid exit code {r2rDumpExecution.ExitCode}";
+                    }
+                    else
+                    {
+                        causeOfFailure = "Unknown cause of failure";
+                    }
+
+                    Console.Error.WriteLine("Error running R2R dump on {0}: {1}", r2rDumpExecution.Parameters.InputFileName, causeOfFailure);
+                    success = false;
                 }
             }
 
