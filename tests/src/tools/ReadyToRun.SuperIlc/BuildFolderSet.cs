@@ -611,13 +611,14 @@ namespace ReadyToRun.SuperIlc
         private void WritePerFolderStatistics(StreamWriter logWriter)
         {
             string baseFolder = _options.InputDirectory.FullName;
+            int baseOffset = baseFolder.Length + (baseFolder.Length > 0 && baseFolder[baseFolder.Length - 1] == Path.DirectorySeparatorChar ? 0 : 1);
             HashSet<string> folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (BuildFolder folder in FoldersToBuild)
             {
                 string relativeFolder = "";
                 if (folder.InputFolder.Length > baseFolder.Length)
                 {
-                    relativeFolder = folder.InputFolder.Substring(baseFolder.Length + 1);
+                    relativeFolder = folder.InputFolder.Substring(baseOffset);
                 }
                 int endPos = relativeFolder.IndexOf(Path.DirectorySeparatorChar);
                 if (endPos < 0)
