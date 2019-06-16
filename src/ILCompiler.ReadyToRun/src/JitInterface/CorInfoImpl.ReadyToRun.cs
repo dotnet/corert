@@ -825,10 +825,13 @@ namespace Internal.JitInterface
             MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_CALL_INFO>());
 #endif
             pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
-            useInstantiatingStub = false;
 
             originalMethod = HandleToObject(pResolvedToken.hMethod);
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
+
+            // This formula roughly corresponds to CoreCLR CEEInfo::resolveToken when calling GetMethodDescFromMethodSpec
+            // (that always winds up by calling FindOrCreateAssociatedMethodDesc) around line 1140 in vm/jitinterface.cpp.
+            useInstantiatingStub = originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
 
             callerMethod = HandleToObject(callerHandle);
             if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod))
@@ -906,6 +909,11 @@ namespace Internal.JitInterface
                     //    1. no constraint resolution at compile time (!directMethod)
                     // OR 2. no code sharing lookup in call
                     // OR 3. we have have resolved to an instantiating stub
+
+                    // This check for introducing an instantiation stub comes from the logic at the very end of 
+                    // MethodTable::TryResolveConstraintMethodApprox under the conditional block
+                    // if (!pMD->GetMethodTable()->IsInterface()) around line 10050 in the file vm/methodtable.cpp.
+                    useInstantiatingStub = !directMethod.OwningType.IsInterface && directMethod.OwningType.IsValueType;
 
                     methodAfterConstraintResolution = directMethod;
                     Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
@@ -1057,6 +1065,7 @@ namespace Internal.JitInterface
                 {
                     if (allowInstParam)
                     {
+                        useInstantiatingStub = false;
                         methodToDescribe = canonMethod;
                     }
 
@@ -1239,6 +1248,7 @@ namespace Internal.JitInterface
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
                                 new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
+                                useInstantiatingStub,
                                 GetSignatureContext()));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
