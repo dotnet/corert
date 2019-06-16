@@ -5,6 +5,7 @@
 #nullable enable
 using System.IO;
 using System.Reflection;
+using System.Text;
 
 using LibraryNameVariation = System.Runtime.Loader.LibraryNameVariation;
 
@@ -175,12 +176,18 @@ namespace System.Runtime.InteropServices
 #endif
         }
 
-        private static IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError)
+        private static unsafe IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError)
         {
+            IntPtr ret;
 #if !PLATFORM_UNIX
-            IntPtr ret = Interop.mincore.GetProcAddress(handle, symbolName);
+            var symbolBytes = new byte[Encoding.UTF8.GetByteCount(symbolName) + 1];
+            Encoding.UTF8.GetBytes(symbolName, symbolBytes);
+            fixed (byte* pSymbolBytes = symbolBytes)
+            {
+                ret = Interop.mincore.GetProcAddress(handle, pSymbolBytes);
+            }
 #else
-            IntPtr ret = Interop.Sys.GetProcAddress(handle, symbolName);
+            ret = Interop.Sys.GetProcAddress(handle, symbolName);
 #endif
             if (throwOnError && ret == IntPtr.Zero)
                 throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterizedNoLibrary, symbolName));
