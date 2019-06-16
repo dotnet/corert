@@ -481,6 +481,21 @@ namespace ILCompiler
 
             return reader;
         }
+
+        private FieldDesc _hardwareIntrinsicSupportFlags;
+        public FieldDesc HardwareIntrinsicsSupportFlagsField
+        {
+            get
+            {
+                if (_hardwareIntrinsicSupportFlags == null)
+                {
+                    Interlocked.CompareExchange(ref _hardwareIntrinsicSupportFlags,
+                        new ExternSymbolMappedField(GetWellKnownType(WellKnownType.Int32), "g_cpuFeatures"),
+                        null);
+                }
+                return _hardwareIntrinsicSupportFlags;
+            }
+        }
     }
 
     /// <summary>
@@ -524,5 +539,5 @@ namespace ILCompiler
 
             MaxGenericDepthOfDebugRecord = 15;
         }
-    };
+    }
 }

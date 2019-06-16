@@ -143,6 +143,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
+    <Compile Include="Compiler\ExternSymbolMappedField.cs" />
     <Compile Include="Compiler\FrameworkStringResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.cs" />
@@ -417,6 +418,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\CalliIntrinsic.cs">
       <Link>IL\Stubs\CalliIntrinsic.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\HardwareIntrinsics.cs">
+      <Link>IL\Stubs\HardwareIntrinsics.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>
