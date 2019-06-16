@@ -316,22 +316,22 @@ namespace System.Runtime.InteropServices
 
         public static byte ReadByte(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadByte(nativeHome, offset));
+            return ReadValueSlow(ptr, ofs, bytesNeeded: 1, ReadByte);
         }
 
         public static short ReadInt16(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt16(nativeHome, offset));
+            return ReadValueSlow(ptr, ofs, bytesNeeded: 2, ReadInt16);
         }
 
         public static int ReadInt32(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt32(nativeHome, offset));
+            return ReadValueSlow(ptr, ofs, bytesNeeded: 4, ReadInt32);
         }
 
-        public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] object ptr, int ofs)
+        public static long ReadInt64(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt64(nativeHome, offset));
+            return ReadValueSlow(ptr, ofs, bytesNeeded: 8, ReadInt64);
         }
 
         //====================================================================
@@ -340,7 +340,7 @@ namespace System.Runtime.InteropServices
         // It's only there for backcompact
         // People should instead use the IntPtr overloads
         //====================================================================
-        private static unsafe T ReadValueSlow<T>(object ptr, int ofs, Func<IntPtr, int, T> readValueHelper)
+        private static unsafe T ReadValueSlow<T>(object ptr, int ofs, int bytesNeeded, Func<IntPtr, int, T> readValueHelper)
         {
             // Consumers of this method are documented to throw AccessViolationException on any AV
             if (ptr is null)
@@ -366,13 +366,16 @@ namespace System.Runtime.InteropServices
             
             int size = SizeOf(structType);
 
+            // Compat note: CLR wouldn't bother with a range check. If someone does this,
+            // they're likely taking dependency on some CLR implementation detail quirk.
+            if (checked(ofs + bytesNeeded) > size)
+                throw new ArgumentOutOfRangeException(nameof(ofs));
+
             IntPtr nativeBytes = AllocCoTaskMem(size);
 
             try
             {
                 StructureToPtr(ptr, nativeBytes, false);
-
-                // Yes, no range checks.
                 return readValueHelper(nativeBytes, ofs);
             }
             finally
