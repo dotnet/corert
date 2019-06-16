@@ -1442,5 +1442,24 @@ namespace Internal.JitInterface
                 return result;
             }
         }
+
+        private bool IsAlwaysSupportedIntrinsic(MethodDesc method)
+        {
+            if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64
+                || _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86)
+            {
+                // SSE and SSE2 are baseline required intrinsics for CoreRT
+                var owningType = (MetadataType)method.OwningType;
+                var containingType = owningType.ContainingType;
+                if (containingType != null)
+                    owningType = (MetadataType)containingType;
+
+                return owningType.Name == "Sse" || owningType.Name == "Sse2"
+                    || owningType.Name == "Bmi1" || owningType.Name == "Bmi2"
+                    || owningType.Name == "Avx" || owningType.Name == "Avx2";
+            }
+
+            return false;
+        }
     }
 }

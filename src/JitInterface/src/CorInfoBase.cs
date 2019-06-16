@@ -306,7 +306,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate uint __getClassDomainID(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate void* __getFieldAddress(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection);
+        delegate void* __getFieldAddress(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, void** ppIndirection);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getStaticFieldCurrentClass(IntPtr _this, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -2395,12 +2395,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static void* _getFieldAddress(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
+        static void* _getFieldAddress(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, void** ppIndirection)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getFieldAddress(field, ref ppIndirection);
+                return _this.getFieldAddress(field, ppIndirection);
             }
             catch (Exception ex)
             {

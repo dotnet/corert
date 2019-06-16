@@ -49,8 +49,9 @@ EXTERN_C bool g_fHasFastFxsave = false;
 CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
-#if _X86_ || _AMD64_
-EXTERN_C int g_cpuFeatures;
+#if defined(_X86_) || defined(_AMD64_)
+// This field is inspected from the generated code to determine what intrinsics are available.
+EXTERN_C int g_cpuFeatures = 0;
 #endif
 
 static bool InitDLL(HANDLE hPalInstance)
@@ -149,10 +150,22 @@ static void CheckForPalFallback()
 #endif // _DEBUG
 }
 
+enum XArchIntrinsicConstants
+{
+    XArchIntrinsicConstants_Aes = 0x0001,
+    XArchIntrinsicConstants_Pclmulqdq = 0x0002,
+    XArchIntrinsicConstants_Sse3 = 0x0004,
+    XArchIntrinsicConstants_Ssse3 = 0x0008,
+    XArchIntrinsicConstants_Sse41 = 0x0010,
+    XArchIntrinsicConstants_Sse42 = 0x0020,
+    XArchIntrinsicConstants_Popcnt = 0x0040,
+    XArchIntrinsicConstants_Lzcnt = 0x0080,
+};
+
 void DetectCPUFeatures()
 {
-#if _X86_ || _AMD64_
-
+#if defined(_X86_) || defined(_AMD64_)
+    
     CPU_INFO cpuInfo;
 
 #ifdef _X86_
@@ -181,44 +194,41 @@ void DetectCPUFeatures()
         // If SSE/SSE2 is not enabled, there is no point in checking the rest.
         //   SSE  is bit 25 of EDX
         //   SSE2 is bit 26 of EDX
-        if (cpuInfo.Edx & ((1 << 25) | (1 << 26)) == ((1 << 25) | (1 << 26)))
+        if ((cpuInfo.Edx & ((1 << 25) | (1 << 26))) == ((1 << 25) | (1 << 26)))
         {
             if (cpuInfo.Ecx & (1 << 25))                                   // AESNI
             {
+                g_cpuFeatures |= XArchIntrinsicConstants_Aes;
             }
 
             if (cpuInfo.Ecx & (1 << 1))                                    // PCLMULQDQ 
             {
+                g_cpuFeatures |= XArchIntrinsicConstants_Pclmulqdq;
             }
 
             if (cpuInfo.Ecx & (1 << 0))                                    // SSE3
             {
+                g_cpuFeatures |= XArchIntrinsicConstants_Sse3;
+
                 if (cpuInfo.Ecx & (1 << 9))                                // SSSE3
                 {
+                    g_cpuFeatures |= XArchIntrinsicConstants_Ssse3;
+
                     if (cpuInfo.Ecx & (1 << 19))                           // SSE4.1
                     {
+                        g_cpuFeatures |= XArchIntrinsicConstants_Sse41;
+
                         if (cpuInfo.Ecx & (1 << 20))                       // SSSE4.2
                         {
+                            g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
+
                             if (cpuInfo.Ecx & (1 << 23))                   // POPCNT
                             {
-
+                                g_cpuFeatures |= XArchIntrinsicConstants_Popcnt;
                             }
                         }
                     }
                 }
-            }
-        }
-
-        if (maxCpuId >= 0x07)
-        {
-            PalCpuIdEx(0x07, 0, &cpuInfo);
-
-            if (cpuInfo.Ebx & (1 << 3))            // BMI1
-            {
-            }
-
-            if (cpuInfo.Ebx & (1 << 8))            // BMI2
-            {
             }
         }
     }
@@ -229,6 +239,7 @@ void DetectCPUFeatures()
         PalCpuId(0x80000001, &cpuInfo);
         if (cpuInfo.Ecx & (1 << 5))                // LZCNT
         {
+            g_cpuFeatures |= XArchIntrinsicConstants_Lzcnt;
         }
     }
 

@@ -9,7 +9,7 @@ namespace ILCompiler
     /// <summary>
     /// Represents a field whose address is mapped to an external symbol.
     /// </summary>
-    internal class ExternSymbolMappedField : FieldDesc
+    public class ExternSymbolMappedField : FieldDesc
     {
         private readonly TypeDesc _fieldType;
         private readonly string _symbolName;

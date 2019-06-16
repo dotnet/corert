@@ -667,7 +667,17 @@ namespace Internal.JitInterface
 
             // Check for hardware intrinsics
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
-                result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
+            {
+#if !READYTORUN
+                // Do not report the get_IsSupported method as an intrinsic - RyuJIT would expand it to
+                // a constant depending on the code generation flags passed to it, but we would like to
+                // do a dynamic check instead.
+                if (!HardwareIntrinsicHelpers.IsIsSupportedMethod(method) || IsAlwaysSupportedIntrinsic(method))
+#endif
+                {
+                    result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
+                }
+            }
 
             result |= CorInfoFlag.CORINFO_FLG_NOSECURITYWRAP;
 
@@ -2666,20 +2676,21 @@ namespace Internal.JitInterface
         private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
         { throw new NotImplementedException("getClassDomainID"); }
 
-        private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, ref void* ppIndirection)
+        private void* getFieldAddress(CORINFO_FIELD_STRUCT_* field, void** ppIndirection)
         {
             FieldDesc fieldDesc = HandleToObject(field);
             Debug.Assert(fieldDesc.HasRva);
-            ObjectNode node = _compilation.GetFieldRvaData(fieldDesc);
+            ISymbolNode node = _compilation.GetFieldRvaData(fieldDesc);
             void *handle = (void *)ObjectToHandle(node);
             if (node.RepresentsIndirectionCell)
             {
-                ppIndirection = handle;
+                *ppIndirection = handle;
                 return null;
             }
             else
             {
-                ppIndirection = null;
+                if (ppIndirection != null)
+                    *ppIndirection = null;
                 return handle;
             }
         }
@@ -3040,6 +3051,21 @@ namespace Internal.JitInterface
             flags.Set(CorJitFlag.CORJIT_FLAG_RELOC);
             flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
+
+#if !READYTORUN
+            if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86
+                || _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_AES);
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_PCLMULQDQ);
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE3);
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSSE3);
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE41);
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE42);
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_POPCNT);
+                flags.Set(CorJitFlag.CORJIT_FLAG_USE_LZCNT);
+            }
+#endif
 
             if (this.MethodBeingCompiled.IsNativeCallable)
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);

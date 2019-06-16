@@ -1004,9 +1004,9 @@ namespace ILCompiler.DependencyAnalysis
             return node;
         }
 
-        Dictionary<int, ObjectNode> _rvaFieldSymbols = new Dictionary<int, ObjectNode>();
+        Dictionary<int, RVAFieldNode> _rvaFieldSymbols = new Dictionary<int, RVAFieldNode>();
 
-        public ObjectNode GetRvaFieldNode(FieldDesc fieldDesc)
+        public ISymbolNode GetRvaFieldNode(FieldDesc fieldDesc)
         {
             Debug.Assert(fieldDesc.HasRva);
             EcmaField ecmaField = (EcmaField)fieldDesc.GetTypicalFieldDefinition();
@@ -1023,7 +1023,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             int rva = ecmaField.MetadataReader.GetFieldDefinition(ecmaField.Handle).GetRelativeVirtualAddress();
-            ObjectNode rvaFieldNode;
+            RVAFieldNode rvaFieldNode;
             if (!_rvaFieldSymbols.TryGetValue(rva, out rvaFieldNode))
             {
                 PEReader ilReader = ecmaField.Module.PEReader;

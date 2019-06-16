@@ -49,7 +49,7 @@ namespace ILCompiler
             return true;
         }
 
-        public ObjectNode GetFieldRvaData(FieldDesc field)
+        public ISymbolNode GetFieldRvaData(FieldDesc field)
         {
             // Use the typical field definition in case this is an instantiated generic type
             field = field.GetTypicalFieldDefinition();

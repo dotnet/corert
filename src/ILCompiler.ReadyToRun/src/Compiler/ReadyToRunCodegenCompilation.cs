@@ -136,6 +136,6 @@ namespace ILCompiler
             }
         }
 
-        public override ObjectNode GetFieldRvaData(FieldDesc field) => SymbolNodeFactory.GetRvaFieldNode(field);
+        public override ISymbolNode GetFieldRvaData(FieldDesc field) => SymbolNodeFactory.GetRvaFieldNode(field);
     }
 }
