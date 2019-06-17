@@ -101,6 +101,7 @@ namespace ReadyToRun.SuperIlc
             {
                 builder.Append(" --naked");
             }
+
             string outputFileName = compiledExecutable + (naked ? ".naked.r2r" : ".raw.r2r");
             builder.Append($@" --out ""{outputFileName}""");
 
