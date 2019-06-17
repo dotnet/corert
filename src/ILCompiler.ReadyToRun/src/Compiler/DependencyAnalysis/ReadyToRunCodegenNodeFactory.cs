@@ -521,7 +521,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private Dictionary<MethodWithToken, ISymbolNode> _dynamicHelperCellCache = new Dictionary<MethodWithToken, ISymbolNode>();
 
-        public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, SignatureContext signatureContext)
+        public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, bool isInstantiatingStub, SignatureContext signatureContext)
         {
             ISymbolNode result;
             if (!_dynamicHelperCellCache.TryGetValue(methodWithToken, out result))
@@ -537,7 +537,7 @@ namespace ILCompiler.DependencyAnalysis
                         methodWithToken,
                         signatureContext: signatureContext,
                         isUnboxingStub: false,
-                        isInstantiatingStub: true),
+                        isInstantiatingStub: isInstantiatingStub),
                     signatureContext);
                 _dynamicHelperCellCache.Add(methodWithToken, result);
             }

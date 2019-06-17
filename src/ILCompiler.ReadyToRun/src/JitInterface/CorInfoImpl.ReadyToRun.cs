@@ -825,10 +825,17 @@ namespace Internal.JitInterface
             MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_CALL_INFO>());
 #endif
             pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
-            useInstantiatingStub = false;
 
             originalMethod = HandleToObject(pResolvedToken.hMethod);
             TypeDesc type = HandleToObject(pResolvedToken.hClass);
+
+            // This formula roughly corresponds to CoreCLR CEEInfo::resolveToken when calling GetMethodDescFromMethodSpec
+            // (that always winds up by calling FindOrCreateAssociatedMethodDesc) at
+            // https://github.com/dotnet/coreclr/blob/57a6eb69b3d6005962ad2ae48db18dff268aff56/src/vm/jitinterface.cpp#L1141
+            // Its basic meaning is that shared generic methods always need instantiating
+            // stubs as the shared generic code needs the method dictionary parameter that cannot
+            // be provided by other means.
+            useInstantiatingStub = originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
 
             callerMethod = HandleToObject(callerHandle);
             if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod))
@@ -906,6 +913,14 @@ namespace Internal.JitInterface
                     //    1. no constraint resolution at compile time (!directMethod)
                     // OR 2. no code sharing lookup in call
                     // OR 3. we have have resolved to an instantiating stub
+
+                    // This check for introducing an instantiation stub comes from the logic in
+                    // MethodTable::TryResolveConstraintMethodApprox at
+                    // https://github.com/dotnet/coreclr/blob/57a6eb69b3d6005962ad2ae48db18dff268aff56/src/vm/methodtable.cpp#L10062
+                    // Its meaning is that, for direct method calls on value types, instantiating
+                    // stubs are always needed in the presence of generic arguments as the generic
+                    // dictionary cannot be passed through "this->method table".
+                    useInstantiatingStub = directMethod.OwningType.IsValueType;
 
                     methodAfterConstraintResolution = directMethod;
                     Debug.Assert(!methodAfterConstraintResolution.OwningType.IsInterface);
@@ -1057,6 +1072,7 @@ namespace Internal.JitInterface
                 {
                     if (allowInstParam)
                     {
+                        useInstantiatingStub = false;
                         methodToDescribe = canonMethod;
                     }
 
@@ -1239,6 +1255,7 @@ namespace Internal.JitInterface
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
                                 new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
+                                useInstantiatingStub,
                                 GetSignatureContext()));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
