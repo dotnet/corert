@@ -50,7 +50,9 @@ namespace Internal.IL.Stubs
             // TODO: function pointer types are odd: https://github.com/dotnet/corert/issues/1929
             // ----------------------------------------------------------------
 
-            if (UnwrapByRef(signature.ReturnType).IsFunctionPointer)
+            TypeDesc unwrappedReturnType = UnwrapByRef(signature.ReturnType);
+
+            if (unwrappedReturnType.IsFunctionPointer)
                 return false;
 
             for (int i = 0; i < signature.Length; i++)
@@ -61,7 +63,7 @@ namespace Internal.IL.Stubs
             // Methods that return ByRef-like types or take them by reference can't be reflection invoked
             // ----------------------------------------------------------------
 
-            if (!signature.ReturnType.IsSignatureVariable && UnwrapByRef(signature.ReturnType).IsByRefLike)
+            if (!unwrappedReturnType.IsSignatureVariable && unwrappedReturnType.IsByRefLike)
                 return false;
 
             for (int i = 0; i < signature.Length; i++)
