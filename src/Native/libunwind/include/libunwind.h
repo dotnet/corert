@@ -542,7 +542,6 @@ enum {
   UNW_ARM64_LR  = 30,
   UNW_ARM64_X31 = 31,
   UNW_ARM64_SP  = 31,
-  UNW_ARM64_PC,
   // reserved block
   UNW_ARM64_RA_SIGN_STATE = 34,
   // reserved block
