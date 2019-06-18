@@ -354,9 +354,9 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __reportFatalError(IntPtr _this, IntPtr* ppException, CorJitResult result);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate HRESULT __allocBBProfileBuffer(IntPtr _this, IntPtr* ppException, uint count, ref ProfileBuffer* profileBuffer);
+        delegate HRESULT __allocMethodBlockCounts(IntPtr _this, IntPtr* ppException, uint count, ref BlockCounts* pBlockCounts);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate HRESULT __getBBProfileData(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, ref uint count, ref ProfileBuffer* profileBuffer, ref uint numRuns);
+        delegate HRESULT __getMethodBlockCounts(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __recordCallSite(IntPtr _this, IntPtr* ppException, uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -2721,12 +2721,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static HRESULT _allocBBProfileBuffer(IntPtr thisHandle, IntPtr* ppException, uint count, ref ProfileBuffer* profileBuffer)
+        static HRESULT _allocMethodBlockCounts(IntPtr thisHandle, IntPtr* ppException, uint count, ref BlockCounts* pBlockCounts)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.allocBBProfileBuffer(count, ref profileBuffer);
+                return _this.allocMethodBlockCounts(count, ref pBlockCounts);
             }
             catch (Exception ex)
             {
@@ -2735,12 +2735,12 @@ namespace Internal.JitInterface
             }
         }
 
-        static HRESULT _getBBProfileData(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, ref uint count, ref ProfileBuffer* profileBuffer, ref uint numRuns)
+        static HRESULT _getMethodBlockCounts(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getBBProfileData(ftnHnd, ref count, ref profileBuffer, ref numRuns);
+                return _this.getMethodBlockCounts(ftnHnd, ref pCount, ref pBlockCounts, ref pNumRuns);
             }
             catch (Exception ex)
             {
@@ -3349,10 +3349,10 @@ namespace Internal.JitInterface
             var d170 = new __reportFatalError(_reportFatalError);
             callbacks[170] = Marshal.GetFunctionPointerForDelegate(d170);
             delegates[170] = d170;
-            var d171 = new __allocBBProfileBuffer(_allocBBProfileBuffer);
+            var d171 = new __allocMethodBlockCounts(_allocMethodBlockCounts);
             callbacks[171] = Marshal.GetFunctionPointerForDelegate(d171);
             delegates[171] = d171;
-            var d172 = new __getBBProfileData(_getBBProfileData);
+            var d172 = new __getMethodBlockCounts(_getMethodBlockCounts);
             callbacks[172] = Marshal.GetFunctionPointerForDelegate(d172);
             delegates[172] = d172;
             var d173 = new __recordCallSite(_recordCallSite);

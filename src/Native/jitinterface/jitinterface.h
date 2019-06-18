@@ -181,8 +181,8 @@ struct JitInterfaceCallbacks
     int (* logMsg)(void * thisHandle, CorInfoException** ppException, unsigned level, const char* fmt, va_list args);
     int (* doAssert)(void * thisHandle, CorInfoException** ppException, const char* szFile, int iLine, const char* szExpr);
     void (* reportFatalError)(void * thisHandle, CorInfoException** ppException, int result);
-    int (* allocBBProfileBuffer)(void * thisHandle, CorInfoException** ppException, unsigned int count, void** profileBuffer);
-    int (* getBBProfileData)(void * thisHandle, CorInfoException** ppException, void* ftnHnd, unsigned long* count, void** profileBuffer, unsigned long* numRuns);
+    int (* allocMethodBlockCounts)(void * thisHandle, CorInfoException** ppException, unsigned int count, void** pBlockCounts);
+    int (* getMethodBlockCounts)(void * thisHandle, CorInfoException** ppException, void* ftnHnd, unsigned int* pCount, void** pBlockCounts, unsigned int* pNumRuns);
     void (* recordCallSite)(void * thisHandle, CorInfoException** ppException, unsigned int instrOffset, void* callSig, void* methodHandle);
     void (* recordRelocation)(void * thisHandle, CorInfoException** ppException, void* location, void* target, unsigned short fRelocType, unsigned short slotNum, int addlDelta);
     unsigned short (* getRelocTypeHint)(void * thisHandle, CorInfoException** ppException, void* target);
@@ -1660,19 +1660,19 @@ public:
             throw pException;
     }
 
-    virtual int allocBBProfileBuffer(unsigned int count, void** profileBuffer)
+    virtual int allocMethodBlockCounts(unsigned int count, void** pBlockCounts)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _callbacks->allocBBProfileBuffer(_thisHandle, &pException, count, profileBuffer);
+        int _ret = _callbacks->allocMethodBlockCounts(_thisHandle, &pException, count, pBlockCounts);
         if (pException != nullptr)
             throw pException;
         return _ret;
     }
 
-    virtual int getBBProfileData(void* ftnHnd, unsigned long* count, void** profileBuffer, unsigned long* numRuns)
+    virtual int getMethodBlockCounts(void* ftnHnd, unsigned int* pCount, void** pBlockCounts, unsigned int* pNumRuns)
     {
         CorInfoException* pException = nullptr;
-        int _ret = _callbacks->getBBProfileData(_thisHandle, &pException, ftnHnd, count, profileBuffer, numRuns);
+        int _ret = _callbacks->getMethodBlockCounts(_thisHandle, &pException, ftnHnd, pCount, pBlockCounts, pNumRuns);
         if (pException != nullptr)
             throw pException;
         return _ret;

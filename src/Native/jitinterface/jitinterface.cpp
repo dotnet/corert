@@ -60,44 +60,8 @@ CORINFO_LOOKUP_KIND JitInterfaceWrapper::getLocationOfThisType(void* context)
     return _ret;
 }
 
-class EEMemoryManager
-{
-public:
-    EEMemoryManager()
-    {
-    }
-
-    virtual void STDMETHODCALLTYPE QueryInterface() { NotImplemented(); }
-    virtual void STDMETHODCALLTYPE AddRef() { NotImplemented(); }
-    virtual void STDMETHODCALLTYPE Release() { NotImplemented(); }
-
-    // JIT only ever uses IEEMemoryManager::ClrVirtualAlloc/IEEMemoryManager::ClrVirtualFree
-
-    virtual void * STDMETHODCALLTYPE ClrVirtualAlloc(void * lpAddress, size_t dwSize, uint32_t flAllocationType, uint32_t flProtect)
-    {
-        return malloc(dwSize);
-    }
-
-    virtual uint32_t STDMETHODCALLTYPE ClrVirtualFree(void * lpAddress, size_t dwSize, uint32_t dwFreeType)
-    {
-        free(lpAddress);
-        return 1;
-    }
-
-    virtual void STDMETHODCALLTYPE ClrVirtualQuery() { NotImplemented(); }
-    virtual void STDMETHODCALLTYPE ClrVirtualProtect() { NotImplemented(); }
-    virtual void STDMETHODCALLTYPE ClrGetProcessHeap() { NotImplemented(); }
-    virtual void STDMETHODCALLTYPE ClrHeapCreate() { NotImplemented(); }
-    virtual void STDMETHODCALLTYPE ClrHeapDestroy() { NotImplemented(); }
-    virtual void STDMETHODCALLTYPE ClrHeapAlloc() { NotImplemented(); }
-    virtual void STDMETHODCALLTYPE ClrHeapFree() { NotImplemented(); }
-    virtual void STDMETHODCALLTYPE ClrHeapValidate() { NotImplemented(); }
-    virtual void STDMETHODCALLTYPE ClrGetProcessExecutableHeap() { NotImplemented(); }
-};
-
-static EEMemoryManager eeMemoryManager;
-
 void* JitInterfaceWrapper::getMemoryManager()
 {
-    return &eeMemoryManager;
+    NotImplemented();
+    return nullptr;
 }
