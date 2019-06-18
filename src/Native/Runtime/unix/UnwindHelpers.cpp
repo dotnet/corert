@@ -705,47 +705,11 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     return true;
 }
 
-UnwindInfoSections LocateUnwindSections(uintptr_t pc)
-{
-    UnwindInfoSections uwInfoSections;
-
-#ifdef __APPLE__
-    // On macOS, we can use a dyld function from libSystem in order
-    // to find the unwind sections.
-
-    dyld_unwind_sections dyldInfo;
-
-    if (_dyld_find_unwind_sections((void *)pc, &dyldInfo))
-    {
-        uwInfoSections.dso_base                      = (uintptr_t)dyldInfo.mh;
-
-        uwInfoSections.dwarf_section                 = (uintptr_t)dyldInfo.dwarf_section;
-        uwInfoSections.dwarf_section_length          = dyldInfo.dwarf_section_length;
-
-        uwInfoSections.compact_unwind_section        = (uintptr_t)dyldInfo.compact_unwind_section;
-        uwInfoSections.compact_unwind_section_length = dyldInfo.compact_unwind_section_length;
-    }
-#else // __APPLE__
-
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-    _addressSpace.findUnwindSections(pc, uwInfoSections);
-//    dl_iterate_cb_data cb_data = {&uwInfoSections, pc };
-//    dl_iterate_phdr(LocateSectionsCallback, &cb_data);
-#else
-    PORTABILITY_ASSERT("LocateUnwindSections");
-#endif
-
-#endif
-
-    return uwInfoSections;
-}
-
 bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
 {
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     uintptr_t pc = regs->GetIP();
-    UnwindInfoSections uwInfoSections = LocateUnwindSections(pc);
-    if (uwInfoSections.dwarf_section == NULL)
+    if (!_addressSpace.findUnwindSections(pc, uwInfoSections))
     {
         return false;
     }
