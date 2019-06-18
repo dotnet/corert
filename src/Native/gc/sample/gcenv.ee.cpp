@@ -13,8 +13,6 @@ MethodTable * g_pFreeObjectMethodTable;
 
 EEConfig * g_pConfig;
 
-gc_alloc_context g_global_alloc_context;
-
 bool CLREventStatic::CreateManualEventNoThrow(bool bInitialState)
 {
     m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL);
@@ -100,7 +98,11 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
     return result;
 }
 
+#ifndef __GNUC__
 __declspec(thread) Thread * pCurrentThread;
+#else // !__GNUC__
+thread_local Thread * pCurrentThread;
+#endif // !__GNUC__
 
 Thread * GetThread()
 {
@@ -251,7 +253,7 @@ void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
 {
 }
 
-void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 {
 }
 
@@ -276,16 +278,6 @@ void GCToEEInterface::EnableFinalization(bool foundFinalizers)
 void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 {
     abort();
-}
-
-bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj)
-{
-    return true;
-}
-
-bool GCToEEInterface::ForceFullGCToBeBlocking()
-{
-    return false;
 }
 
 bool GCToEEInterface::EagerFinalized(Object* obj)
@@ -324,9 +316,16 @@ bool GCToEEInterface::WasCurrentThreadCreatedByGC()
     return false;
 }
 
+static MethodTable freeObjectMT;
+
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
-    return g_pFreeObjectMethodTable;
+    // 
+    // Initialize free object methodtable. The GC uses a special array-like methodtable as placeholder
+    // for collected free space.
+    //
+    freeObjectMT.InitializeFreeObject();
+    return &freeObjectMT;
 }
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
@@ -340,4 +339,19 @@ void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* s
 
 void GCToEEInterface::WalkAsyncPinned(Object* object, void* context, void (*callback)(Object*, Object*, void*))
 {
+}
+
+uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
+{
+    return -1;
+}
+
+inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
+{
+    return false;
+}
+
+inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+{
+    
 }

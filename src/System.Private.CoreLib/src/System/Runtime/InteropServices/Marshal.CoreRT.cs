@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 
 using Internal.Runtime.Augments;
 
@@ -238,12 +239,6 @@ namespace System.Runtime.InteropServices
             // the P/Invoke, but everything is pre-generated in CoreRT.
         }
 
-        public static long ReadInt64(object ptr, int ofs)
-        {
-            // Obsolete
-            throw new PlatformNotSupportedException("ReadInt64");
-        }
-
         internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
         {
             return PInvokeMarshal.GetDelegateForFunctionPointer(ptr, t.TypeHandle);
@@ -321,20 +316,73 @@ namespace System.Runtime.InteropServices
 
         public static byte ReadByte(object ptr, int ofs)
         {
-            // Obsolete
-            throw new PlatformNotSupportedException("ReadByte");
+            return ReadValueSlow(ptr, ofs, bytesNeeded: 1, ReadByte);
         }
 
         public static short ReadInt16(object ptr, int ofs)
         {
-            // Obsolete
-            throw new PlatformNotSupportedException("ReadInt16");
+            return ReadValueSlow(ptr, ofs, bytesNeeded: 2, ReadInt16);
         }
 
         public static int ReadInt32(object ptr, int ofs)
         {
-            // Obsolete
-            throw new PlatformNotSupportedException("ReadInt32");
+            return ReadValueSlow(ptr, ofs, bytesNeeded: 4, ReadInt32);
+        }
+
+        public static long ReadInt64(object ptr, int ofs)
+        {
+            return ReadValueSlow(ptr, ofs, bytesNeeded: 8, ReadInt64);
+        }
+
+        //====================================================================
+        // Read value from marshaled object (marshaled using AsAny)
+        // It's quite slow and can return back dangling pointers
+        // It's only there for backcompact
+        // People should instead use the IntPtr overloads
+        //====================================================================
+        private static unsafe T ReadValueSlow<T>(object ptr, int ofs, int bytesNeeded, Func<IntPtr, int, T> readValueHelper)
+        {
+            // Consumers of this method are documented to throw AccessViolationException on any AV
+            if (ptr is null)
+            {
+                throw new AccessViolationException();
+            }
+
+            if (ptr.EETypePtr.IsArray ||
+                ptr is string ||
+                ptr is StringBuilder)
+            {
+                // We could implement these if really needed.
+                throw new PlatformNotSupportedException();
+            }
+
+            // We are going to assume this is a Sequential or Explicit layout type because
+            // we don't want to touch reflection metadata for this.
+            // If we're wrong, this will throw the exception we get for missing interop data
+            // instead of an ArgumentException.
+            // That's quite acceptable for an obsoleted API.
+
+            Type structType = ptr.GetType();
+            
+            int size = SizeOf(structType);
+
+            // Compat note: CLR wouldn't bother with a range check. If someone does this,
+            // they're likely taking dependency on some CLR implementation detail quirk.
+            if (checked(ofs + bytesNeeded) > size)
+                throw new ArgumentOutOfRangeException(nameof(ofs));
+
+            IntPtr nativeBytes = AllocCoTaskMem(size);
+
+            try
+            {
+                StructureToPtr(ptr, nativeBytes, false);
+                return readValueHelper(nativeBytes, ofs);
+            }
+            finally
+            {
+                DestroyStructure(nativeBytes, structType);
+                FreeCoTaskMem(nativeBytes);
+            }
         }
 
         public static IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)

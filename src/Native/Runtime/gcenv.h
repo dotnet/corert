@@ -11,11 +11,17 @@
 #pragma warning( disable: 4127 )  // conditional expression is constant -- common in GC
 #endif
 
+#include <stdlib.h>
+#include <stdint.h>
+#include <assert.h>
+#include <cstddef>
+#include <string.h>
+
 #include "sal.h"
 #include "gcenv.structs.h"
-#include "gcenv.os.h"
 #include "gcenv.interlocked.h"
 #include "gcenv.base.h"
+#include "gcenv.os.h"
 
 #include "Crst.h"
 #include "event.h"
@@ -39,11 +45,7 @@
 #include "eetype.inl"
 #include "Volatile.h"
 
-#ifdef PLATFORM_UNIX
-#include "gcenv.unix.inl"
-#else
-#include "gcenv.windows.inl"
-#endif
+#include "gcenv.inl"
 
 #include "stressLog.h"
 #ifdef FEATURE_ETW
@@ -148,12 +150,6 @@ public:
         HEAPVERIFY_DEEP_ON_COMPACT  = 0x80    // Performs deep object verfication only on compacting GCs.
     };
 
-    typedef enum {
-        CONFIG_SYSTEM,
-        CONFIG_APPLICATION,
-        CONFIG_SYSTEMONLY
-    } ConfigSearch;
-
     enum  GCStressFlags {
         GCSTRESS_NONE               = 0,
         GCSTRESS_ALLOC              = 1,    // GC on all allocs and 'easy' places
@@ -171,37 +167,8 @@ public:
         m_gcStressMode = GCSTRESS_NONE;
     }
 
-    uint32_t ShouldInjectFault(uint32_t faultType) const { UNREFERENCED_PARAMETER(faultType); return FALSE; }
-   
-    int     GetHeapVerifyLevel();
-    bool    IsHeapVerifyEnabled()                 { return GetHeapVerifyLevel() != 0; }
-
     GCStressFlags GetGCStressLevel()        const { return (GCStressFlags) m_gcStressMode; }
     void    SetGCStressLevel(int val)             { m_gcStressMode = (UInt8) val;}
-    bool    IsGCStressMix()                 const { return false; }
-
-    int     GetGCtraceStart()               const { return 0; }
-    int     GetGCtraceEnd  ()               const { return 1000000000; }
-    int     GetGCtraceFac  ()               const { return 0; }
-    int     GetGCprnLvl    ()               const { return 0; }
-    bool    IsGCBreakOnOOMEnabled()         const { return false; }
-#ifdef USE_PORTABLE_HELPERS
-    // CORERT-TODO: remove this
-    //              https://github.com/dotnet/corert/issues/2033
-    int     GetGCgen0size  ()               const { return 100 * 1024 * 1024; }
-#else
-    int     GetGCgen0size  ()               const { return 0; }
-#endif
-    void    SetGCgen0size  (int iSize)            { UNREFERENCED_PARAMETER(iSize); }
-    int     GetSegmentSize ()               const { return 0; }
-    void    SetSegmentSize (int iSize)            { UNREFERENCED_PARAMETER(iSize); }
-    int     GetGCconcurrent();
-    void    SetGCconcurrent(int val)              { UNREFERENCED_PARAMETER(val); }
-    int     GetGCLatencyMode()              const { return 1; }
-    int     GetGCForceCompact()             const { return 0; }
-    int     GetGCRetainVM ()                const { return 0; }
-    int     GetGCTrimCommit()               const { return 0; }
-    int     GetGCLOHCompactionMode()        const { return 0; }
 
     bool    GetGCAllowVeryLargeObjects ()   const { return true; }
 
@@ -210,25 +177,8 @@ public:
     // conservatively report an interior reference inside a GC free object or in the non-valid tail of the
     // heap).
     bool    GetGCConservative()             const { return true; }
-
-    bool    GetGCNoAffinitize()             const { return false; }
-    int     GetGCHeapCount()                const { return 0; }
 };
 extern EEConfig* g_pConfig;
-
-#ifdef VERIFY_HEAP
-class SyncBlockCache;
-
-extern SyncBlockCache g_sSyncBlockCache;
-
-class SyncBlockCache
-{
-public:
-    static SyncBlockCache *GetSyncBlockCache() { return &g_sSyncBlockCache; }
-    void VerifySyncTableEntry() {}
-};
-
-#endif // VERIFY_HEAP
 
 EXTERN_C UInt32 _tls_index;
 inline UInt16 GetClrInstanceId()

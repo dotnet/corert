@@ -97,7 +97,11 @@ namespace ILCompiler.DependencyAnalysis
                     GetMetadataDependencies(ref dependencies, nodeFactory, ((ParameterizedType)type).ParameterType, reason);
                     break;
                 case TypeFlags.FunctionPointer:
-                    throw new NotImplementedException();
+                    var pointerType = (FunctionPointerType)type;
+                    GetMetadataDependencies(ref dependencies, nodeFactory, pointerType.Signature.ReturnType, reason);
+                    foreach (TypeDesc paramType in pointerType.Signature)
+                        GetMetadataDependencies(ref dependencies, nodeFactory, paramType, reason);
+                    break;
 
                 case TypeFlags.SignatureMethodVariable:
                 case TypeFlags.SignatureTypeVariable:

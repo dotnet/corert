@@ -63,7 +63,7 @@ public:
     static void DiagUpdateGenerationBounds();
     static void DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent);
     static void DiagWalkFReachableObjects(void* gcContext);
-    static void DiagWalkSurvivors(void* gcContext);
+    static void DiagWalkSurvivors(void* gcContext, bool fCompacting);
     static void DiagWalkLOHSurvivors(void* gcContext);
     static void DiagWalkBGCSurvivors(void* gcContext);
     static void StompWriteBarrier(WriteBarrierParameters* args);
@@ -71,8 +71,6 @@ public:
     static void EnableFinalization(bool foundFinalizers);
 
     static void HandleFatalError(unsigned int exitCode);
-    static bool ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj);
-    static bool ForceFullGCToBeBlocking();
     static bool EagerFinalized(Object* obj);
     static MethodTable* GetFreeObjectMethodTable();
     static bool GetBooleanConfigValue(const char* key, bool* value);
@@ -85,6 +83,14 @@ public:
     static void WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback);
     static void WalkAsyncPinned(Object* object, void* context, void(*callback)(Object*, Object*, void*));
     static IGCToCLREventSink* EventSink();
+
+    static uint32_t GetTotalNumSizedRefHandles();
+
+    static bool AnalyzeSurvivorsRequested(int condemnedGeneration);
+    static void AnalyzeSurvivorsFinished(int condemnedGeneration);
+
+    static void VerifySyncTableEntry();
+    static void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLevel, int privateKeywords);
 };
 
 #endif // __GCENV_EE_H__

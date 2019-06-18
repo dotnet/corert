@@ -663,10 +663,14 @@ EventDataDescCreate(_Out_ EVENT_DATA_DESCRIPTOR * EventDataDescriptor, _In_opt_ 
 
 extern GCSystemInfo g_SystemInfo;
 
-#ifndef __GCENV_BASE_INCLUDED__
+#ifdef PLATFORM_UNIX
+#define REDHAWK_PALIMPORT extern "C"
+#define REDHAWK_PALEXPORT extern "C"
+#define REDHAWK_PALAPI
+#else
 #define REDHAWK_PALIMPORT EXTERN_C
 #define REDHAWK_PALAPI __stdcall
-#endif // __GCENV_BASE_INCLUDED__
+#endif // PLATFORM_UNIX
 
 bool InitializeSystemInfo();
 

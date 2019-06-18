@@ -107,6 +107,9 @@ public:
     void FirePinObjectAtGCTime(void* object, uint8_t** ppObject) = 0;
 
     virtual
+    void FirePinPlugAtGCTime(uint8_t* plug_start, uint8_t* plug_end, uint8_t* gapBeforeSize) = 0;
+
+    virtual
     void FireGCPerHeapHistory_V3(void *freeListAllocated,
                                  void *freeListRejected,
                                  void *endOfSegAllocated,
@@ -130,6 +133,8 @@ public:
     virtual
     void FireBGC1stConEnd() = 0;
     virtual
+    void FireBGC1stSweepEnd(uint32_t genNumber) = 0;
+    virtual
     void FireBGC2ndNonConBegin() = 0;
     virtual
     void FireBGC2ndNonConEnd() = 0;
@@ -150,9 +155,9 @@ public:
     virtual
     void FireGCFullNotify_V1(uint32_t genNumber, uint32_t isAlloc) = 0;
     virtual
-    void FireSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation, uint64_t appDomainID) = 0;
+    void FireSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation) = 0;
     virtual
-    void FirePrvSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation, uint64_t appDomainID) = 0;
+    void FirePrvSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation) = 0;
     virtual
     void FireDestroyGCHandle(void *handleID) = 0;
     virtual
@@ -292,7 +297,7 @@ public:
     // gives the diagnostics code a chance to run. This includes LOH if we are 
     // compacting LOH.
     virtual
-    void DiagWalkSurvivors(void* gcContext) = 0;
+    void DiagWalkSurvivors(void* gcContext, bool fCompacting) = 0;
 
     // During a full GC after we discover what objects to survive on LOH,
     // gives the diagnostics code a chance to run.
@@ -317,11 +322,6 @@ public:
     virtual
     void HandleFatalError(unsigned int exitCode) = 0;
 
-    // Asks the EE if it wants a particular object to be finalized when unloading
-    // an app domain.
-    virtual
-    bool ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj) = 0;
-
     // Offers the EE the option to finalize the given object eagerly, i.e.
     // not on the finalizer thread but on the current thread. The
     // EE returns true if it finalized the object eagerly and the GC does not
@@ -329,12 +329,6 @@ public:
     // and it's up to the GC to finalize it later.
     virtual
     bool EagerFinalized(Object* obj) = 0;
-
-    // Asks the EE if it wishes for the current GC to be a blocking GC. The GC will
-    // only invoke this callback when it intends to do a full GC, so at this point
-    // the EE can opt to elevate that collection to be a blocking GC and not a background one.
-    virtual
-    bool ForceFullGCToBeBlocking() = 0;
 
     // Retrieves the method table for the free object, a special kind of object used by the GC
     // to keep the heap traversable. Conceptually, the free object is similar to a managed array
@@ -410,6 +404,21 @@ public:
     // Returns an IGCToCLREventSink instance that can be used to fire events.
     virtual
     IGCToCLREventSink* EventSink() = 0;
+
+    virtual
+    uint32_t GetTotalNumSizedRefHandles() = 0;
+
+    virtual
+    bool AnalyzeSurvivorsRequested(int condemnedGeneration) = 0;
+
+    virtual
+    void AnalyzeSurvivorsFinished(int condemnedGeneration) = 0;
+
+    virtual 
+    void VerifySyncTableEntry() = 0;
+
+    virtual
+    void UpdateGCEventStatus(int publicLevel, int publicKeywords, int privateLEvel, int privateKeywords) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_

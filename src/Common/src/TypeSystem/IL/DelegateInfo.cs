@@ -157,12 +157,12 @@ namespace Internal.IL
                     break;
                 }
             }
-            TypeDesc normalizedReturnType = delegateSignature.ReturnType;
-            if (normalizedReturnType.IsByRef)
-                normalizedReturnType = ((ByRefType)normalizedReturnType).ParameterType;
-            if (!normalizedReturnType.IsSignatureVariable && normalizedReturnType.IsByRefLike)
+            TypeDesc returnType = delegateSignature.ReturnType;
+            if (returnType.IsByRef)
                 generateObjectArrayThunk = false;
-            if (normalizedReturnType.IsPointer || normalizedReturnType.IsFunctionPointer)
+            if (!returnType.IsSignatureVariable && returnType.IsByRefLike)
+                generateObjectArrayThunk = false;
+            if (returnType.IsPointer || returnType.IsFunctionPointer)
                 generateObjectArrayThunk = false;
 
             if ((owningDelegate.SupportedFeatures & DelegateFeature.ObjectArrayThunk) != 0 && generateObjectArrayThunk)

@@ -15,15 +15,15 @@ then
 fi
 
 # Set up the environment to be used for building with clang.
-if command -v "clang-$2.$3" > /dev/null 2>&1
+if command -v "clang-$2.$3" > /dev/null 2>&1 && command -v "clang++-$2.$3" > /dev/null 2>&1
     then
         export CC="$(command -v clang-$2.$3)"
         export CXX="$(command -v clang++-$2.$3)"
-elif command -v "clang$2$3" > /dev/null 2>&1
+elif command -v "clang$2$3" > /dev/null 2>&1 && command -v "clang++$2$3" > /dev/null 2>&1
     then
         export CC="$(command -v clang$2$3)"
         export CXX="$(command -v clang++$2$3)"
-elif command -v clang > /dev/null 2>&1
+elif command -v clang > /dev/null 2>&1 && command -v clang++ > /dev/null 2>&1
     then
         export CC="$(command -v clang)"
         export CXX="$(command -v clang++)"

@@ -9,15 +9,11 @@
 #include <stdio.h>
 #include <errno.h>
 #include <cwchar>
-#include "CommonTypes.h"
-#include "PalRedhawkCommon.h"
-#include "CommonMacros.h"
 #include <sal.h>
 #include "config.h"
 #include "UnixHandle.h"
 #include <pthread.h>
-#include "gcenv.structs.h"
-#include "gcenv.os.h"
+#include "gcenv.h"
 #include "holder.h"
 #include "HardwareExceptions.h"
 
@@ -79,11 +75,6 @@ static mach_timebase_info_data_t s_TimebaseInfo;
 
 using std::nullptr_t;
 
-#include "gcenv.structs.h"
-
-#define REDHAWK_PALEXPORT extern "C"
-#define REDHAWK_PALAPI
-
 #ifndef __APPLE__
 #if HAVE_SYSCONF && HAVE__SC_AVPHYS_PAGES
 #define SYSCONF_PAGES _SC_AVPHYS_PAGES
@@ -115,29 +106,6 @@ using std::nullptr_t;
     } \
     while(0)
 
-typedef union _LARGE_INTEGER {
-    struct {
-#if BIGENDIAN
-        int32_t HighPart;
-        uint32_t LowPart;
-#else
-        uint32_t LowPart;
-        int32_t HighPart;
-#endif
-    } u;
-    int64_t QuadPart;
-} LARGE_INTEGER, *PLARGE_INTEGER;
-
-struct FILETIME
-{
-    uint32_t dwLowDateTime;
-    uint32_t dwHighDateTime;
-};
-
-typedef void * LPSECURITY_ATTRIBUTES;
-typedef void* PCONTEXT;
-typedef void* PEXCEPTION_RECORD;
-
 #define INVALID_HANDLE_VALUE    ((HANDLE)(IntNative)-1)
 
 #define PAGE_NOACCESS           0x01
@@ -160,12 +128,14 @@ static const int tccMilliSecondsToMicroSeconds = 1000;
 static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
 
-static const uint32_t INFINITE = 0xFFFFFFFF;
-
 static uint32_t g_dwPALCapabilities;
 static UInt32 g_cLogicalCpus = 0;
 static size_t g_cbLargestOnDieCache = 0;
 static size_t g_cbLargestOnDieCacheAdjusted = 0;
+
+// HACK: the gcenv.h declares OS_PAGE_SIZE as a call instead of a constant, but we need a constant
+#undef OS_PAGE_SIZE
+#define OS_PAGE_SIZE 0x1000
 
 // Helper memory page used by the FlushProcessWriteBuffers
 static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)));
@@ -1406,6 +1376,8 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
 #endif
 }
 
+static AffinitySet g_processAffinitySet;
+
 static LARGE_INTEGER g_performanceFrequency;
 
 // Initialize the interface implementation
@@ -1416,6 +1388,11 @@ bool GCToOSInterface::Initialize()
     if (!::QueryPerformanceFrequency(&g_performanceFrequency))
     {
         return false;
+    }
+
+    for (size_t i = 0; i < g_cLogicalCpus; i++)
+    {
+        g_processAffinitySet.Add(i);
     }
 
     return true;
@@ -1441,14 +1418,16 @@ uint32_t GCToOSInterface::GetCurrentProcessId()
     return ::GetCurrentProcessId();
 }
 
-// Set ideal affinity for the current thread
+// Set ideal processor for the current thread
 // Parameters:
-//  affinity - ideal processor affinity for the thread
+//  srcProcNo - processor number the thread currently runs on
+//  dstProcNo - processor number the thread should be migrated to
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
+bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t dstProcNo)
 {
-    return false;
+    // There is no way to set a thread ideal processor on Unix, so do nothing.
+    return true;
 }
 
 // Get the number of the current processor
@@ -1498,7 +1477,7 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 //  flags     - flags to control special settings like write watching
 // Return:
 //  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
+static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag = 0)
 {
     ASSERT_MSG(!(flags & VirtualReserveFlags::WriteWatch), "WriteWatch not supported on Unix");
 
@@ -1509,7 +1488,7 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
 
-    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    void* pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE | hugePagesFlag, -1, 0);
 
     if (pRetVal != NULL)
     {
@@ -1534,6 +1513,18 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
     return pRetVal;
 }
 
+// Reserve virtual memory range.
+// Parameters:
+//  size      - size of the virtual memory range
+//  alignment - requested memory alignment, 0 means no specific alignment requested
+//  flags     - flags to control special settings like write watching
+// Return:
+//  Starting virtual address of the reserved range
+void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
+{
+    return VirtualReserveInner(size, alignment, flags);
+}
+
 // Release virtual memory range previously reserved using VirtualReserve
 // Parameters:
 //  address - starting virtual address
@@ -1547,14 +1538,37 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
     return (ret == 0);
 }
 
+// Commit virtual memory range.
+// Parameters:
+//  size      - size of the virtual memory range
+// Return:
+//  Starting virtual address of the committed range
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+{
+#if HAVE_MAP_HUGETLB
+    uint32_t largePagesFlag = MAP_HUGETLB;
+#else
+    uint32_t largePagesFlag = 0;
+#endif
+
+    void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag);
+    if (VirtualCommit(pRetVal, size, NUMA_NODE_UNDEFINED))
+    {
+        return pRetVal;
+    }
+
+    return nullptr;
+}
+
 // Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
 // Parameters:
 //  address - starting virtual address
 //  size    - size of the virtual memory range
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size)
+bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 {
+    UNREFERENCED_PARAMETER(node); // TODO: Numa support
     return mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
 }
 
@@ -1630,13 +1644,11 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 }
 
 // Sets the calling thread's affinity to only run on the processor specified
-// in the GCThreadAffinity structure.
 // Parameters:
-//  affinity - The requested affinity for the calling thread. At most one processor
-//             can be provided.
+//  procNo - The requested processor for the calling thread.
 // Return:
 //  true if setting the affinity was successful, false otherwise.
-bool GCToOSInterface::SetThreadAffinity(GCThreadAffinity* affinity)
+bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
     // UNIXTODO: implement this
     return false;
@@ -1654,22 +1666,27 @@ bool GCToOSInterface::BoostThreadPriority()
     return false;
 }
 
-// Get affinity mask of the current process
+// Set the set of processors enabled for GC threads for the current process based on config specified affinity mask and set
 // Parameters:
-//  processMask - affinity mask for the specified process
-//  systemMask  - affinity mask for the system
+//  configAffinityMask - mask specified by the GCHeapAffinitizeMask config
+//  configAffinitySet  - affinity set specified by the GCHeapAffinitizeRanges config
 // Return:
-//  true if it has succeeded, false if it has failed
-// Remarks:
-//  A process affinity mask is a bit vector in which each bit represents the processors that
-//  a process is allowed to run on. A system affinity mask is a bit vector in which each bit
-//  represents the processors that are configured into a system.
-//  A process affinity mask is a subset of the system affinity mask. A process is only allowed
-//  to run on the processors configured into a system. Therefore, the process affinity mask cannot
-//  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
-bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uintptr_t* systemMask)
+//  set of enabled processors
+const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffinityMask, const AffinitySet* configAffinitySet)
 {
-    return false;
+    if (!configAffinitySet->IsEmpty())
+    {
+        // Update the process affinity set using the configured set
+        for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
+        {
+            if (g_processAffinitySet.Contains(i) && !configAffinitySet->Contains(i))
+            {
+                g_processAffinitySet.Remove(i);
+            }
+        }
+    }
+
+    return &g_processAffinitySet;
 }
 
 // Get number of processors assigned to the current process
@@ -1703,8 +1720,12 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 // Remarks:
 //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit 
 //  specified, it returns amount of actual physical memory.
-uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
+uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
 {
+    // TODO: implement is_restricted
+    if (is_restricted)
+        * is_restricted = false;
+
     int64_t physical_memory = 0;
 
     // Get the physical memory size
@@ -1838,7 +1859,39 @@ static void* GCThreadStub(void* param)
 
 uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
+    // TODO: CPUGroupInfo support
     return g_SystemInfo.dwNumberOfProcessors;
+}
+
+// TODO: Numa support
+bool GCToOSInterface::CanEnableGCNumaAware()
+{
+    return false;
+}
+
+// Get processor number and optionally its NUMA node number for the specified heap number
+// Parameters:
+//  heap_number - heap number to get the result for
+//  proc_no     - set to the selected processor number
+//  node_no     - set to the NUMA node of the selected processor or to NUMA_NODE_UNDEFINED
+// Return:
+//  true if it succeeded
+bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_no, uint16_t* node_no)
+{
+    // TODO
+    return false;
+}
+
+// Parse the config string describing affinitization ranges and update the passed in affinitySet accordingly
+// Parameters:
+//  config_string - string describing the affinitization range, platform specific
+//  start_index  - the range start index extracted from the config_string
+//  end_index    - the range end index extracted from the config_string, equal to the start_index if only an index and not a range was passed in
+// Return:
+//  true if the configString was successfully parsed, false if it was not correct
+bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_string, size_t* start_index, size_t* end_index)
+{
+    return ParseIndexOrRange(config_string, start_index, end_index);
 }
 
 // Initialize the critical section

@@ -45,18 +45,7 @@ using libunwind::UnwindInfoSections;
 
 LocalAddressSpace _addressSpace;
 
-#ifdef __APPLE__
-
-struct dyld_unwind_sections
-{
-    const struct mach_header*   mh;
-    const void*                 dwarf_section;
-    uintptr_t                   dwarf_section_length;
-    const void*                 compact_unwind_section;
-    uintptr_t                   compact_unwind_section_length;
-};
-
-#else // __APPLE__
+#ifndef __APPLE__
 
 #if defined(_TARGET_AMD64_)
 // Passed to the callback function called by dl_iterate_phdr
@@ -134,6 +123,8 @@ static int LocateSectionsCallback(struct dl_phdr_info *info, size_t size, void *
 // Shim that implements methods required by libunwind over REGDISPLAY
 struct Registers_REGDISPLAY : REGDISPLAY
 {
+    static int  getArch() { return libunwind::REGISTERS_X86_64; }
+
     inline uint64_t getRegister(int regNum) const
     {
         switch (regNum)
@@ -715,9 +706,9 @@ UnwindInfoSections LocateUnwindSections(uintptr_t pc)
     // On macOS, we can use a dyld function from libSystem in order
     // to find the unwind sections.
 
-    libunwind::dyld_unwind_sections dyldInfo;
+    dyld_unwind_sections dyldInfo;
 
-  if (libunwind::_dyld_find_unwind_sections((void *)pc, &dyldInfo))
+    if (_dyld_find_unwind_sections((void *)pc, &dyldInfo))
     {
         uwInfoSections.dso_base                      = (uintptr_t)dyldInfo.mh;
 
