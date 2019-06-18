@@ -729,7 +729,7 @@ UnwindInfoSections LocateUnwindSections(uintptr_t pc)
     }
 #else // __APPLE__
 
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND && !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
+#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     dl_iterate_cb_data cb_data = {&uwInfoSections, pc };
     dl_iterate_phdr(LocateSectionsCallback, &cb_data);
 #else
