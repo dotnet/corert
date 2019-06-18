@@ -432,16 +432,19 @@ void Registers_arm_rt::setRegister(int num, uint32_t value, uint32_t location)
 class Registers_arm64_rt: public libunwind::Registers_arm64 {
 public:
     Registers_arm64_rt() { abort(); };
-    Registers_arm64_rt(void *registers) { regs = (REGDISPLAY *)registers; };
-    uint64_t    getRegister(int num);
+    Registers_arm64_rt(const void *registers);
+
+    bool        validRegister(int num) {abort();};
+    uint64_t    getRegister(int num) const;
     void        setRegister(int num, uint64_t value, uint64_t location);
-    uint64_t    getRegisterLocation(int regNum) const { abort();}
-    unw_fpreg_t getFloatRegister(int num) { abort();}
-    void        setFloatRegister(int num, unw_fpreg_t value) {abort();}
-    bool        validVectorRegister(int num) const { abort();}
+    bool        validFloatRegister(int num) {abort();};
+    double      getFloatRegister(int num) {abort();}
+    void        setFloatRegister(int num, double value) {abort();}
+    bool        validVectorRegister(int num) const {abort();}
     libunwind::v128    getVectorRegister(int num) const {abort();};
     void        setVectorRegister(int num, libunwind::v128 value) {abort();};
     void        jumpto() { abort();};
+
     uint64_t    getSP() const         { return regs->SP;}
     void        setSP(uint64_t value, uint64_t location) { regs->SP = value;}
     uint64_t    getIP() const         { return regs->IP;}
@@ -452,7 +455,11 @@ private:
     REGDISPLAY *regs;
 };
 
-inline uint64_t Registers_arm64_rt::getRegister(int regNum) {
+inline Registers_arm64_rt::Registers_arm64_rt(const void *registers) {
+    regs = (REGDISPLAY *)registers;
+}
+
+inline uint64_t Registers_arm64_rt::getRegister(int regNum) const {
     if (regNum == UNW_REG_SP || regNum == UNW_ARM64_SP)
         return regs->SP;
 
@@ -654,7 +661,7 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 #elif defined(_TARGET_ARM_)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_arm_rt> uc(_addressSpace, regs);
 #elif defined(_TARGET_ARM64_)
-    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64> uc(_addressSpace, regs);
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64_rt> uc(_addressSpace, regs);
 #else
     #error "Unwinding is not implemented for this architecture yet."
 #endif
@@ -670,11 +677,11 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     uc.getInfo(&procInfo);
 
 #if defined(_TARGET_ARM64_)
-    DwarfInstructions<LocalAddressSpace, Registers_arm64> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm64*)regs);
+    DwarfInstructions<LocalAddressSpace, Registers_arm64_rt> dwarfInst;
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm64_rt*)regs);
 #elif defined(_TARGET_ARM_)
-    DwarfInstructions<LocalAddressSpace, Registers_arm> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm*)regs);
+    DwarfInstructions<LocalAddressSpace, Registers_arm_rt> dwarfInst;
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm_rt*)regs);
 #else
     DwarfInstructions<LocalAddressSpace, Registers_REGDISPLAY> dwarfInst;
     int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_REGDISPLAY*)regs);
@@ -721,8 +728,9 @@ UnwindInfoSections LocateUnwindSections(uintptr_t pc)
 #else // __APPLE__
 
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-    dl_iterate_cb_data cb_data = {&uwInfoSections, pc };
-    dl_iterate_phdr(LocateSectionsCallback, &cb_data);
+    _addressSpace.findUnwindSections(pc, uwInfoSections);
+//    dl_iterate_cb_data cb_data = {&uwInfoSections, pc };
+//    dl_iterate_phdr(LocateSectionsCallback, &cb_data);
 #else
     PORTABILITY_ASSERT("LocateUnwindSections");
 #endif

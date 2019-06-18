@@ -1911,24 +1911,25 @@ public:
 
   bool        validRegister(int num) const;
   uint64_t    getRegister(int num) const;
-  void        setRegister(int num, uint64_t value);
+  void        setRegister(int num, uint64_t value, uint64_t location);
   bool        validFloatRegister(int num) const;
   double      getFloatRegister(int num) const;
   void        setFloatRegister(int num, double value);
   bool        validVectorRegister(int num) const;
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
+  uint64_t    getRegisterLocation(int regNum) const;
   static const char *getRegisterName(int num);
   void        jumpto();
   static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_ARM64; }
   static int  getArch() { return REGISTERS_ARM64; }
 
   uint64_t  getSP() const         { return _registers.__sp; }
-  void      setSP(uint64_t value) { _registers.__sp = value; }
+  void      setSP(uint64_t value, uint64_t location) { _registers.__sp = value; }
   uint64_t  getIP() const         { return _registers.__pc; }
-  void      setIP(uint64_t value) { _registers.__pc = value; }
+  void      setIP(uint64_t value, uint64_t location) { _registers.__pc = value; }
   uint64_t  getFP() const         { return _registers.__fp; }
-  void      setFP(uint64_t value) { _registers.__fp = value; }
+  void      setFP(uint64_t value, uint64_t location) { _registers.__fp = value; }
 
 private:
   struct GPRs {
@@ -1962,7 +1963,7 @@ inline Registers_arm64::Registers_arm64(const void *registers) {
   static_assert((check_fit<Registers_arm64, unw_context_t>::does_fit),
                 "arm64 registers do not fit into unw_context_t");
   memcpy(&_registers, registers, sizeof(_registers));
-  memset(&_registerLocations, 0, sizeof(_registerLocations))
+  memset(&_registerLocations, 0, sizeof(_registerLocations));
   static_assert(
       sizeof(GPRs) == 0x110,
                 "expected VFP registers to be at offset 272");
