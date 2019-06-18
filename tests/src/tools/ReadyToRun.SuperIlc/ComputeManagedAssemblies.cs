@@ -64,10 +64,7 @@ class ComputeManagedAssemblies
             isManaged = false;
         }
 
-        lock (_isManagedCache)
-        {
-            _isManagedCache[file] = isManaged;
-        }
+        _isManagedCache[file] = isManaged;
 
         return isManaged;
     }
