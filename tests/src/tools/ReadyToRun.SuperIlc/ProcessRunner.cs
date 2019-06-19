@@ -9,11 +9,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Session;
-
-public class ProcessInfo
+public class ProcessParameters
 {
     /// <summary>
     /// 2 minutes should be plenty for a CPAOT / Crossgen compilation.
@@ -42,6 +38,17 @@ public class ProcessInfo
     public bool CollectJittedMethods;
     public IEnumerable<string> MonitorModules;
     public IEnumerable<string> MonitorFolders;
+}
+
+public abstract class ProcessConstructor
+{
+    public abstract ProcessParameters Construct();
+}
+
+public class ProcessInfo
+{
+    public ProcessConstructor Constructor;
+    public ProcessParameters Parameters;
 
     public bool Finished;
     public bool Succeeded;
@@ -49,6 +56,17 @@ public class ProcessInfo
     public int DurationMilliseconds;
     public int ExitCode;
     public Dictionary<string, HashSet<string>> JittedMethods;
+
+    public ProcessInfo(ProcessConstructor constructor)
+    {
+        Constructor = constructor;
+    }
+
+    public void Construct()
+    {
+        Parameters = Constructor.Construct();
+        Constructor = null;
+    }
 }
 
 public class ProcessRunner : IDisposable
@@ -96,30 +114,30 @@ public class ProcessRunner : IDisposable
         _stopwatch.Start();
         _state = StateIdle;
 
-        _logWriter = new StreamWriter(_processInfo.LogPath);
+        _logWriter = new StreamWriter(_processInfo.Parameters.LogPath);
 
-        if (_processInfo.ProcessPath.Contains(' '))
+        if (_processInfo.Parameters.ProcessPath.Contains(' '))
         {
-            _logWriter.Write($"\"{_processInfo.ProcessPath}\"");
+            _logWriter.Write($"\"{_processInfo.Parameters.ProcessPath}\"");
         }
         else
         {
-            _logWriter.Write(_processInfo.ProcessPath);
+            _logWriter.Write(_processInfo.Parameters.ProcessPath);
         }
         _logWriter.Write(' ');
-        _logWriter.WriteLine(_processInfo.Arguments);
+        _logWriter.WriteLine(_processInfo.Parameters.Arguments);
         _logWriter.WriteLine("<<<<");
 
         ProcessStartInfo psi = new ProcessStartInfo()
         {
-            FileName = _processInfo.ProcessPath,
-            Arguments = _processInfo.Arguments,
+            FileName = _processInfo.Parameters.ProcessPath,
+            Arguments = _processInfo.Parameters.Arguments,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
 
-        foreach (KeyValuePair<string, string> environmentOverride in _processInfo.EnvironmentOverrides)
+        foreach (KeyValuePair<string, string> environmentOverride in _processInfo.Parameters.EnvironmentOverrides)
         {
             psi.EnvironmentVariables[environmentOverride.Key] = environmentOverride.Value;
         }
@@ -132,7 +150,7 @@ public class ProcessRunner : IDisposable
         Interlocked.Exchange(ref _state, StateRunning);
 
         _process.Start();
-        if (_processInfo.CollectJittedMethods)
+        if (_processInfo.Parameters.CollectJittedMethods)
         {
             _jittedMethods.AddProcessMapping(_processInfo, _process);
         }
@@ -159,7 +177,7 @@ public class ProcessRunner : IDisposable
             CancellationTokenSource source = _cancellationTokenSource;
             if (source != null)
             {
-                Task.Delay(_processInfo.TimeoutMilliseconds, source.Token).Wait();
+                Task.Delay(_processInfo.Parameters.TimeoutMilliseconds, source.Token).Wait();
                 StopProcessAtomic();
             }
         }
@@ -181,7 +199,7 @@ public class ProcessRunner : IDisposable
         // as we need to keep the process alive for the entire lifetime of the trace event
         // session, otherwise PID's may get recycled and we couldn't reliably back-translate
         // them into the logical process executions.
-        if (_process != null && !_processInfo.CollectJittedMethods)
+        if (_process != null && !_processInfo.Parameters.CollectJittedMethods)
         {
             _process.Dispose();
             _process = null;
@@ -239,13 +257,13 @@ public class ProcessRunner : IDisposable
         }
 
         string processSpec;
-        if (!string.IsNullOrEmpty(_processInfo.Arguments))
+        if (!string.IsNullOrEmpty(_processInfo.Parameters.Arguments))
         {
-            processSpec = Path.GetFileName(_processInfo.ProcessPath) + " " + _processInfo.Arguments;
+            processSpec = Path.GetFileName(_processInfo.Parameters.ProcessPath) + " " + _processInfo.Parameters.Arguments;
         }
         else
         {
-            processSpec = _processInfo.ProcessPath;
+            processSpec = _processInfo.Parameters.ProcessPath;
         }
 
         string linePrefix = $"{_processIndex} / {_processCount} ({(++progressIndex * 100 / _processCount)}%): ";
@@ -257,7 +275,7 @@ public class ProcessRunner : IDisposable
         }
         _process.WaitForExit();
         _processInfo.ExitCode = (_processInfo.TimedOut ? TimeoutExitCode : _process.ExitCode);
-        _processInfo.Succeeded = (!_processInfo.TimedOut && _processInfo.ExitCode == _processInfo.ExpectedExitCode);
+        _processInfo.Succeeded = (!_processInfo.TimedOut && _processInfo.ExitCode == _processInfo.Parameters.ExpectedExitCode);
         _logWriter.WriteLine(">>>>");
 
         if (_processInfo.Succeeded)
@@ -282,7 +300,7 @@ public class ProcessRunner : IDisposable
                 {
                     failureMessage += $" = 0x{_processInfo.ExitCode:X8}";
                 }
-                failureMessage += $", expected {_processInfo.ExpectedExitCode}";
+                failureMessage += $", expected {_processInfo.Parameters.ExpectedExitCode}";
             }
             _logWriter.WriteLine(failureMessage);
             Console.Error.WriteLine(failureMessage + $": {processSpec}");

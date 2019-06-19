@@ -34,7 +34,7 @@ namespace ReadyToRun.SuperIlc
             IEnumerable<string> referencePaths = options.ReferencePaths();
             IEnumerable<CompilerRunner> runners = options.CompilerRunners(false);
 
-            PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
+            PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
 
             string nugetOutputFolder = Path.Combine(options.OutputDirectory.FullName, "nuget.out");
             Directory.CreateDirectory(nugetOutputFolder);
@@ -88,7 +88,7 @@ namespace ReadyToRun.SuperIlc
 
                 if (!options.NoCleanup)
                 {
-                    PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, recursive: false);
+                    PathExtensions.DeleteOutputFolders(options.OutputDirectory.FullName, options.CoreRootDirectory.FullName, recursive: false);
                 }
 
                 return success ? 0 : 1;

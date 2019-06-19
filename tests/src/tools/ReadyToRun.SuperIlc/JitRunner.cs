@@ -25,17 +25,17 @@ namespace ReadyToRun.SuperIlc
         /// JIT runner has no compilation process as it doesn't transform the source IL code in any manner.
         /// </summary>
         /// <returns></returns>
-        public override ProcessInfo CompilationProcess(string outputRoot, string assemblyFileName)
+        public override ProcessParameters CompilationProcess(string outputRoot, string assemblyFileName)
         {
             File.Copy(assemblyFileName, GetOutputFileName(outputRoot, assemblyFileName), overwrite: true);
             return null;
         }
 
-        protected override ProcessInfo ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
+        protected override ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
         {
-            ProcessInfo processInfo = base.ExecutionProcess(modules, folders, noEtw);
-            processInfo.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "0";
-            return processInfo;
+            ProcessParameters processParameters = base.ExecutionProcess(modules, folders, noEtw);
+            processParameters.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "0";
+            return processParameters;
         }
 
         protected override IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName)

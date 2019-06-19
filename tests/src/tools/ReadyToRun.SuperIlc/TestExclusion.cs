@@ -5,10 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
-using System.Xml.XPath;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
@@ -166,7 +164,8 @@ namespace ReadyToRun.SuperIlc
                 Project project = new Project();
                 project.SetGlobalProperty("XunitTestBinBase", "*");
                 project.SetGlobalProperty("BuildArch", "amd64");
-                project.SetGlobalProperty("TargetsWindows", "true");
+                // TODO: cross-OS CPAOT
+                project.SetGlobalProperty("TargetsWindows", (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "true" : "false"));
                 project.SetGlobalProperty("AltJitArch", "amd64");
                 project.SetGlobalProperty("RunTestViaIlLink", "false");
 

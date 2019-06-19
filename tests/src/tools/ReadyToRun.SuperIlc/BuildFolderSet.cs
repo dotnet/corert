@@ -99,9 +99,7 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            compilationsToRun.Sort((a, b) => b.CompilationCostHeuristic.CompareTo(a.CompilationCostHeuristic));
-
-            ParallelRunner.Run(compilationsToRun);
+            ParallelRunner.Run(compilationsToRun, _options.DegreeOfParallelism);
             
             bool success = true;
             List<KeyValuePair<string, string>> failedCompilationsPerBuilder = new List<KeyValuePair<string, string>>();
@@ -121,15 +119,15 @@ namespace ReadyToRun.SuperIlc
                             _compilationFailureBuckets.AddCompilation(runnerProcess);
                             try
                             {
-                                File.Copy(runnerProcess.InputFileName, runnerProcess.OutputFileName);
+                                File.Copy(runnerProcess.Parameters.InputFileName, runnerProcess.Parameters.OutputFileName);
                             }
                             catch (Exception ex)
                             {
-                                Console.Error.WriteLine("Error copying {0} to {1}: {2}", runnerProcess.InputFileName, runnerProcess.OutputFileName, ex.Message);
+                                Console.Error.WriteLine("Error copying {0} to {1}: {2}", runnerProcess.Parameters.InputFileName, runnerProcess.Parameters.OutputFileName, ex.Message);
                             }
                             if (file == null)
                             {
-                                file = runnerProcess.InputFileName;
+                                file = runnerProcess.Parameters.InputFileName;
                                 failedBuilders = runner.CompilerName;
                             }
                             else
@@ -186,13 +184,13 @@ namespace ReadyToRun.SuperIlc
                 compilationsPerRunner.Add(new KeyValuePair<string, ProcessInfo[]>(frameworkDll, processes));
                 foreach (CompilerRunner runner in frameworkRunners)
                 {
-                    ProcessInfo compilationProcess = runner.CompilationProcess(_options.CoreRootDirectory.FullName, frameworkDll);
+                    ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _options.CoreRootDirectory.FullName, frameworkDll));
                     compilationsToRun.Add(compilationProcess);
                     processes[(int)runner.Index] = compilationProcess;
                 }
             }
 
-            ParallelRunner.Run(compilationsToRun);
+            ParallelRunner.Run(compilationsToRun, _options.DegreeOfParallelism);
 
             HashSet<string> skipCopying = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             int[] failedCompilationsPerBuilder = new int[(int)CompilerIndex.Count];
@@ -206,7 +204,7 @@ namespace ReadyToRun.SuperIlc
                     ProcessInfo compilationProcess = kvp.Value[(int)runner.Index];
                     if (compilationProcess.Succeeded)
                     {
-                        skipCopying.Add(compilationProcess.InputFileName);
+                        skipCopying.Add(compilationProcess.Parameters.InputFileName);
                     }
                     else
                     {
@@ -254,7 +252,7 @@ namespace ReadyToRun.SuperIlc
                 AddBuildFolderExecutions(executionsToRun, folder, stopwatch);
             }
 
-            ParallelRunner.Run(executionsToRun, degreeOfParallelism: _options.Sequential ? 1 : Environment.ProcessorCount);
+            ParallelRunner.Run(executionsToRun, degreeOfParallelism: _options.Sequential ? 1 : 0);
 
             List<KeyValuePair<string, string>> failedExecutionsPerBuilder = new List<KeyValuePair<string, string>>();
 
@@ -276,7 +274,7 @@ namespace ReadyToRun.SuperIlc
 
                             if (file == null)
                             {
-                                file = runnerProcess.InputFileName;
+                                file = runnerProcess.Parameters.InputFileName;
                                 failedBuilders = runner.CompilerName;
                             }
                             else
@@ -346,6 +344,11 @@ namespace ReadyToRun.SuperIlc
                         {
                             executionsToRun.Add(executionProcess);
                         }
+                        else
+                        {
+                            // Forget the execution process when compilation failed
+                            execution[(int)runner.Index] = null;
+                        }
                     }
                 }
             }
@@ -371,7 +374,7 @@ namespace ReadyToRun.SuperIlc
 
             foreach (ProcessInfo processInfo in selection)
             {
-                logWriter.WriteLine($"{processInfo.DurationMilliseconds,10} | {processInfo.InputFileName}");
+                logWriter.WriteLine($"{processInfo.DurationMilliseconds,10} | {processInfo.Parameters.InputFileName}");
             }
         }
 
@@ -716,7 +719,7 @@ namespace ReadyToRun.SuperIlc
                             ProcessInfo compilationProcess = compilation[(int)runner.Index];
                             if (compilationProcess != null)
                             {
-                                string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.InputFileName}\n" + File.ReadAllText(compilationProcess.LogPath);
+                                string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.Parameters.InputFileName}\n" + File.ReadAllText(compilationProcess.Parameters.LogPath);
                                 perRunnerLog[(int)runner.Index].Write(log);
                                 combinedLog.Write(log);
                                 if (!compilationProcess.Succeeded)
@@ -735,10 +738,10 @@ namespace ReadyToRun.SuperIlc
                                 ProcessInfo executionProcess = execution[(int)runner.Index];
                                 if (executionProcess != null)
                                 {
-                                    string log = $"\nEXECUTE {runner.CompilerName}:{executionProcess.InputFileName}\n";
+                                    string log = $"\nEXECUTE {runner.CompilerName}:{executionProcess.Parameters.InputFileName}\n";
                                     try
                                     {
-                                        log += File.ReadAllText(executionProcess.LogPath);
+                                        log += File.ReadAllText(executionProcess.Parameters.LogPath);
                                     }
                                     catch (Exception ex)
                                     {

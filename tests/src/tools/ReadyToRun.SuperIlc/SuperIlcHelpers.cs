@@ -27,11 +27,14 @@ namespace ReadyToRun.SuperIlc
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
         public FileInfo PackageList { get; set; }
+        public int DegreeOfParallelism { get; set; }
         public bool Sequential { get; set; }
         public bool Framework { get; set; }
         public bool UseFramework { get; set; }
         public bool Release { get; set; }
         public bool LargeBubble { get; set; }
+        public int CompilationTimeoutMinutes { get; set; }
+        public int ExecutionTimeoutMinutes { get; set; }
         public DirectoryInfo[] ReferencePath { get; set; }
         public FileInfo[] IssuesPath { get; set; }
 
@@ -102,10 +105,12 @@ namespace ReadyToRun.SuperIlc
 
         public string CoreRunPath(CompilerIndex index, bool isFramework)
         {
-            string coreRunPath = Path.Combine(CoreRootOutputPath(index, isFramework), "CoreRun.exe");
+            string coreRunDir = CoreRootOutputPath(index, isFramework);
+            string coreRunExe = "corerun".OSExeSuffix();
+            string coreRunPath = Path.Combine(coreRunDir, coreRunExe);
             if (!File.Exists(coreRunPath))
             {
-                Console.Error.WriteLine("CoreRun.exe not found in CORE_ROOT, explicit exe launches won't work");
+                Console.Error.WriteLine($@"{coreRunExe} not found in {coreRunDir}, explicit exe launches won't work");
             }
             return coreRunPath;
         }
