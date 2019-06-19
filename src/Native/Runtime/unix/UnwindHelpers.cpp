@@ -45,79 +45,6 @@ using libunwind::UnwindInfoSections;
 
 LocalAddressSpace _addressSpace;
 
-#ifndef __APPLE__
-
-#if defined(_TARGET_AMD64_)
-// Passed to the callback function called by dl_iterate_phdr
-struct dl_iterate_cb_data
-{
-    UnwindInfoSections *sects;
-    uintptr_t targetAddr;
-};
-
-// Callback called by dl_iterate_phdr. Locates unwind info sections for the target
-// address.
-static int LocateSectionsCallback(struct dl_phdr_info *info, size_t size, void *data)
-{
-    // info is a pointer to a structure containing information about the shared object
-    dl_iterate_cb_data* cbdata = static_cast<dl_iterate_cb_data*>(data);
-    uintptr_t addrOfInterest = (uintptr_t)cbdata->targetAddr;
-
-    size_t object_length;
-    bool found_obj = false;
-    bool found_hdr = false;
-
-    // If the base address of the SO is past the address we care about, move on.
-    if (info->dlpi_addr > addrOfInterest)
-    {
-        return 0;
-    }
-
-    // Iterate through the program headers for this SO
-    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
-    {
-        const ElfW(Phdr) *phdr = &info->dlpi_phdr[i];
-
-        if (phdr->p_type == PT_LOAD)
-        {
-            // This is a loadable entry. Loader loads all segments of this type.
-
-            uintptr_t begin = info->dlpi_addr + phdr->p_vaddr;
-            uintptr_t end = begin + phdr->p_memsz;
-
-            if (addrOfInterest >= begin && addrOfInterest < end)
-            {
-                cbdata->sects->dso_base = begin;
-                object_length = phdr->p_memsz;
-                found_obj = true;
-            }
-        }
-        else if (phdr->p_type == PT_GNU_EH_FRAME)
-        {
-            // This element specifies the location and size of the exception handling 
-            // information as defined by the .eh_frame_hdr section.
-
-            EHHeaderParser<LocalAddressSpace>::EHHeaderInfo hdrInfo;
-
-            uintptr_t eh_frame_hdr_start = info->dlpi_addr + phdr->p_vaddr;
-            cbdata->sects->dwarf_index_section = eh_frame_hdr_start;
-            cbdata->sects->dwarf_index_section_length = phdr->p_memsz;
-
-            EHHeaderParser<LocalAddressSpace> ehp;
-            ehp.decodeEHHdr(_addressSpace, eh_frame_hdr_start, phdr->p_memsz, hdrInfo);
-
-            cbdata->sects->dwarf_section = hdrInfo.eh_frame_ptr;
-            found_hdr = true;
-        }
-    }
-
-    bool found = found_obj && found_hdr;
-    return static_cast<int>(found);
-}
-#endif
-
-#endif // __APPLE__
-
 #ifdef _TARGET_AMD64_
 
 // Shim that implements methods required by libunwind over REGDISPLAY
@@ -707,6 +634,7 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 
 bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
 {
+    UnwindInfoSections uwInfoSections;
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     uintptr_t pc = regs->GetIP();
     if (!_addressSpace.findUnwindSections(pc, uwInfoSections))
@@ -717,7 +645,6 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
 #elif defined(_LIBUNWIND_ARM_EHABI)
     // unwind section is located later for ARM
     // pc will be taked from regs parameter
-    UnwindInfoSections uwInfoSections;
     return DoTheStep(0, uwInfoSections, regs);
 #else
     PORTABILITY_ASSERT("StepFrame");
