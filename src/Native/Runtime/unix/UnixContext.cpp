@@ -257,6 +257,19 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
     ASSIGN_REG_PTR(UNW_ARM_R10, R10)
     ASSIGN_REG_PTR(UNW_ARM_R11, R11)
     ASSIGN_REG_PTR(UNW_ARM_R14, LR)
+#elif _ARM64_
+    ASSIGN_REG(UNW_ARM64_SP, SP)
+    ASSIGN_REG_PTR(UNW_ARM64_FP, FP)
+    ASSIGN_REG_PTR(UNW_ARM64_X19, X19)
+    ASSIGN_REG_PTR(UNW_ARM64_X20, X20)
+    ASSIGN_REG_PTR(UNW_ARM64_X21, X21)
+    ASSIGN_REG_PTR(UNW_ARM64_X22, X22)
+    ASSIGN_REG_PTR(UNW_ARM64_X23, X23)
+    ASSIGN_REG_PTR(UNW_ARM64_X24, X24)
+    ASSIGN_REG_PTR(UNW_ARM64_X25, X25)
+    ASSIGN_REG_PTR(UNW_ARM64_X26, X26)
+    ASSIGN_REG_PTR(UNW_ARM64_X27, X27)
+    ASSIGN_REG_PTR(UNW_ARM64_X28, X28)
 #endif
 
 #undef ASSIGN_REG
@@ -284,6 +297,8 @@ bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
     unwContext.data[16] = ip;
 #elif _ARM_
     ((uint32_t*)(unwContext.data))[15] = ip;
+#elif _ARM64_
+    ((uint32_t*)(unwContext.data))[32] = ip;
 #elif _WASM_
     ASSERT(false);
 #else
@@ -325,6 +340,8 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
     unwContext->data[16] = regDisplay->IP;
 #elif _ARM_
     ((uint32_t*)(unwContext->data))[15] = regDisplay->IP;
+#elif _ARM64_
+    ((uint32_t*)(unwContext->data))[32] = regDisplay->IP;
 #else
     #error "InitializeUnwindContextAndCursor is not supported on this arch yet."
 #endif
@@ -375,16 +392,17 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
     GET_CONTEXT_POINTER(UNW_ARM_R11, R11)
 #elif defined(_ARM64_)
 #define GET_CONTEXT_POINTERS                    \
-    GET_CONTEXT_POINTER(UNW_AARCH64_X19, 19)	\
-    GET_CONTEXT_POINTER(UNW_AARCH64_X20, 20)	\
-    GET_CONTEXT_POINTER(UNW_AARCH64_X21, 21)	\
-    GET_CONTEXT_POINTER(UNW_AARCH64_X22, 22)	\
-    GET_CONTEXT_POINTER(UNW_AARCH64_X23, 23)	\
-    GET_CONTEXT_POINTER(UNW_AARCH64_X24, 24)	\
-    GET_CONTEXT_POINTER(UNW_AARCH64_X25, 25)	\
-    GET_CONTEXT_POINTER(UNW_AARCH64_X26, 26)	\
-    GET_CONTEXT_POINTER(UNW_AARCH64_X27, 27)	\
-    GET_CONTEXT_POINTER(UNW_AARCH64_X28, 28)
+    GET_CONTEXT_POINTER(UNW_ARM64_X19, X19)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_X20, X20)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_X21, X21)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_X22, X22)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_X23, X23)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_X24, X24)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_X25, X25)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_X26, X26)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_X27, X27)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_X28, X28)	\
+    GET_CONTEXT_POINTER(UNW_ARM64_FP, FP)
 #elif defined(_X86_)
 #define GET_CONTEXT_POINTERS                    \
     GET_CONTEXT_POINTER(UNW_X86_EBP, Rbp)       \
@@ -467,27 +485,29 @@ void UnwindCursorToRegDisplay(unw_cursor_t *cursor, unw_context_t *unwContext, R
     MCREG_R1(nativeContext->uc_mcontext) = arg1Reg;
 
 #elif defined(_ARM64_)
+
 #define ASSIGN_CONTROL_REGS  \
-    ASSIGN_REG(Pc, IP)
-    // ASSIGN_REG(Sp, SP)    \
-    // ASSIGN_REG(Fp, FP)    \
-    // ASSIGN_REG(Lr, LR)    \
+    ASSIGN_REG(Pc, IP)    \
+    ASSIGN_REG(Sp, SP)    \
+    ASSIGN_REG(Fp, FP)    \
+    ASSIGN_REG(Lr, LR)
 
-#define ASSIGN_INTEGER_REGS
-    // ASSIGN_REG(X19, X19)   \
-    // ASSIGN_REG(X20, X20)   \
-    // ASSIGN_REG(X21, X21)   \
-    // ASSIGN_REG(X22, X22)   \
-    // ASSIGN_REG(X23, X23)   \
-    // ASSIGN_REG(X24, X24)   \
-    // ASSIGN_REG(X25, X25)   \
-    // ASSIGN_REG(X26, X26)   \
-    // ASSIGN_REG(X27, X27)   \
-    // ASSIGN_REG(X28, X28)
+#define ASSIGN_INTEGER_REGS  \
+    ASSIGN_REG(X19, X19)   \
+    ASSIGN_REG(X20, X20)   \
+    ASSIGN_REG(X21, X21)   \
+    ASSIGN_REG(X22, X22)   \
+    ASSIGN_REG(X23, X23)   \
+    ASSIGN_REG(X24, X24)   \
+    ASSIGN_REG(X25, X25)   \
+    ASSIGN_REG(X26, X26)   \
+    ASSIGN_REG(X27, X27)   \
+    ASSIGN_REG(X28, X28)
 
-#define ASSIGN_TWO_ARGUMENT_REGS
-    // MCREG_X0(nativeContext->uc_mcontext) = arg0Reg;       \
-    // MCREG_X1(nativeContext->uc_mcontext) = arg1Reg;
+#define ASSIGN_TWO_ARGUMENT_REGS \
+    MCREG_X0(nativeContext->uc_mcontext) = arg0Reg;       \
+    MCREG_X1(nativeContext->uc_mcontext) = arg1Reg;
+
 #elif defined(_WASM_)
     // TODO: determine how unwinding will work on WebAssembly
 #define ASSIGN_CONTROL_REGS
@@ -591,7 +611,7 @@ bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* ls
 
     assert((procInfo.start_ip <= controlPC) && (controlPC < procInfo.end_ip));
 
-#if defined(_ARM_)
+#if defined(_ARM_) || defined(_ARM64_)
     // libunwind fills by reference not by value for ARM
     *lsda = *((UIntNative *)procInfo.lsda);
 #else

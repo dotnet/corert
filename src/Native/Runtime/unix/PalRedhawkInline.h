@@ -50,7 +50,7 @@ FORCEINLINE Int64 PalInterlockedCompareExchange64(_Inout_ _Interlocked_operand_ 
 #endif // _WASM_
 }
 
-#if defined(_AMD64_)
+#if defined(_AMD64_) || defined(_ARM64_)
 FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValueHigh, Int64 iValueLow, Int64 *pComparandAndResult)
 {
     __int128_t iComparand = ((__int128_t)pComparandAndResult[1] << 64) + (UInt64)pComparandAndResult[0];

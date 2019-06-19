@@ -27,6 +27,19 @@
 #define VOLATILE_MEMORY_BARRIER()
 #endif
 
+template<typename T>
+struct RemoveVolatile
+{
+    typedef T type;
+};
+
+template<typename T>
+struct RemoveVolatile<volatile T>
+{
+    typedef T type;
+};
+
+
 //
 // VolatileLoad loads a T from a pointer to T.  It is guaranteed that this load will not be optimized
 // away by the compiler, and that any operation that occurs after this load, in program order, will
@@ -44,7 +57,7 @@ T VolatileLoad(T const * pt)
     static const unsigned lockFreeAtomicSizeMask = (1 << 1) | (1 << 2) | (1 << 4) | (1 << 8);
     if ((1 << sizeof(T)) & lockFreeAtomicSizeMask)
     {
-        __atomic_load((T volatile const*)pt, &val, __ATOMIC_ACQUIRE);
+        __atomic_load((T const *)pt, const_cast<typename RemoveVolatile<T>::type *>(&val), __ATOMIC_ACQUIRE);
     }
     else
     {
