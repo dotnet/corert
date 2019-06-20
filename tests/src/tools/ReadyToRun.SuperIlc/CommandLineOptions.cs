@@ -44,6 +44,7 @@ namespace ReadyToRun.SuperIlc
                         IssuesPath(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
+                        R2RDumpPath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
 
@@ -70,6 +71,7 @@ namespace ReadyToRun.SuperIlc
                         IssuesPath(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
+                        R2RDumpPath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
 
@@ -86,6 +88,7 @@ namespace ReadyToRun.SuperIlc
                         DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
+                        R2RDumpPath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileNugetCommand.CompileNuget));
 
@@ -147,6 +150,9 @@ namespace ReadyToRun.SuperIlc
 
             Option ExecutionTimeoutMinutes() =>
                 new Option(new[] { "--execution-timeout-minutes", "-et" }, "Execution timeout (minutes)", new Argument<int>());
+
+            Option R2RDumpPath() =>
+                new Option(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll", new Argument<FileInfo>().ExistingOnly());
 
             //
             // compile-nuget specific options

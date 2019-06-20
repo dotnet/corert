@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ReadyToRun.SuperIlc
 {
@@ -21,6 +22,11 @@ namespace ReadyToRun.SuperIlc
 
     public abstract class CompilerRunner
     {
+        /// <summary>
+        /// Timeout for running R2R Dump to disassemble compilation outputs.
+        /// </summary>
+        public const int R2RDumpTimeoutMilliseconds = 60 * 1000;
+
         protected readonly BuildOptions _options;
         protected readonly string _compilerPath;
         protected readonly IEnumerable<string> _referenceFolders;
@@ -67,6 +73,48 @@ namespace ReadyToRun.SuperIlc
             processParameters.CompilationCostHeuristic = new FileInfo(assemblyFileName).Length;
 
             return processParameters;
+        }
+
+        public ProcessParameters CompilationR2RDumpProcess(string compiledExecutable, bool naked)
+        {
+            if (_options.R2RDumpPath == null)
+            {
+                return null;
+            }
+
+            StringBuilder commonBuilder = new StringBuilder();
+
+            commonBuilder.Append($@"""{_options.R2RDumpPath.FullName}""");
+
+            commonBuilder.Append(" --normalize");
+            commonBuilder.Append(" --sc");
+            commonBuilder.Append(" --disasm");
+
+            foreach (string referencePath in _options.ReferencePaths())
+            {
+                commonBuilder.Append($@" --rp ""{referencePath}""");
+            }
+            commonBuilder.Append($@" --in ""{compiledExecutable}""");
+
+            StringBuilder builder = new StringBuilder(commonBuilder.ToString());
+            if (naked)
+            {
+                builder.Append(" --naked");
+            }
+
+            string outputFileName = compiledExecutable + (naked ? ".naked.r2r" : ".raw.r2r");
+            builder.Append($@" --out ""{outputFileName}""");
+
+            ProcessParameters param = new ProcessParameters();
+            param.ProcessPath = "dotnet";
+            param.Arguments = builder.ToString();
+            param.TimeoutMilliseconds = R2RDumpTimeoutMilliseconds;
+            param.LogPath = compiledExecutable + (naked ? ".naked.r2r.log" : ".raw.r2r.log");
+            param.InputFileName = compiledExecutable;
+            param.OutputFileName = outputFileName;
+            param.CompilationCostHeuristic = new FileInfo(compiledExecutable).Length;
+
+            return param;
         }
 
         protected virtual ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
@@ -189,6 +237,24 @@ namespace ReadyToRun.SuperIlc
         public override ProcessParameters Construct()
         {
             return _runner.CompilationProcess(_outputRoot, _assemblyFileName);
+        }
+    }
+
+    public class R2RDumpProcessConstructor : CompilerRunnerProcessConstructor
+    {
+        private readonly string _compiledExecutable;
+        private readonly bool _naked;
+
+        public R2RDumpProcessConstructor(CompilerRunner runner, string compiledExecutable, bool naked)
+            : base(runner)
+        {
+            _compiledExecutable = compiledExecutable;
+            _naked = naked;
+        }
+
+        public override ProcessParameters Construct()
+        {
+            return _runner.CompilationR2RDumpProcess(_compiledExecutable, _naked);
         }
     }
 
