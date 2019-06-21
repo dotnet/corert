@@ -159,9 +159,6 @@ CrstStatic g_SuspendEELock;
 #endif // _MSC_VER
 EEType g_FreeObjectEEType;
 
-MethodTable* g_pFreeObjectMethodTable;
-int32_t g_TrapReturningThreads;
-
 // static 
 bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 {
@@ -186,10 +183,6 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 
     // Initialize the special EEType used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
-
-    // Place the pointer to this type in a global cell (typed as the structurally equivalent MethodTable
-    // that the GC understands).
-    g_pFreeObjectMethodTable = (MethodTable *)&g_FreeObjectEEType;
     g_pFreeObjectEEType = &g_FreeObjectEEType;
 
     if (!g_SuspendEELock.InitNoThrow(CrstSuspendEE))
@@ -909,7 +902,6 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
     g_SuspendEELock.Enter();
 
-    g_TrapReturningThreads = TRUE;
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(TRUE);
 
     GetThreadStore()->SuspendAllThreads(true);
@@ -930,8 +922,6 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 
     GetThreadStore()->ResumeAllThreads(true);
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(FALSE);
-
-    g_TrapReturningThreads = FALSE;
 
     g_SuspendEELock.Leave();
 
@@ -1283,7 +1273,9 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
     // CoreRT doesn't patch the write barrier like CoreCLR does, but it
     // still needs to record the changes in the GC heap.
-    assert(args != nullptr);
+
+    bool is_runtime_suspended = args->is_runtime_suspended;
+
     switch (args->operation)
     {
     case WriteBarrierOp::StompResize:
@@ -1293,23 +1285,46 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->lowest_address != nullptr);
         assert(args->highest_address != nullptr);
 
-        g_card_table = args->card_table;
+        // We are sensitive to the order of writes here(more comments on this further in the method)
+        // In particular g_card_table must be written before writing the heap bounds.
+        // For platforms with weak memory ordering we will issue fences, for x64/x86 we are ok
+        // as long as compiler does not reorder these writes.
+        // That is unlikely since we have method calls in between.
+        // Just to be robust agains possible refactoring/inlining we will do a compiler-fenced store here.
+        VolatileStore(&g_card_table, args->card_table);
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         assert(args->card_bundle_table != nullptr);
         g_card_bundle_table = args->card_bundle_table;
 #endif
 
-        // We need to make sure that other threads executing checked write barriers
-        // will see the g_card_table update before g_lowest/highest_address updates.
-        // Otherwise, the checked write barrier may AV accessing the old card table
-        // with address that it does not cover. Write barriers access card table
-        // without memory barriers for performance reasons, so we need to flush
-        // the store buffers here.
-        FlushProcessWriteBuffers();
+        // IMPORTANT: managed heap segments may surround unmanaged/stack segments. In such cases adding another managed 
+        //     heap segment may put a stack/unmanaged write inside the new heap range. However the old card table would 
+        //     not cover it. Therefore we must ensure that the write barriers see the new table before seeing the new bounds.
+        //
+        //     On architectures with strong ordering, we only need to prevent compiler reordering.
+        //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
+
+#if defined(_ARM64_) || defined(_ARM_)
+        if (!is_runtime_suspended)
+        {
+            // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
+            // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
+            FlushProcessWriteBuffers();
+        }
+    }
+#endif
 
         g_lowest_address = args->lowest_address;
-        VolatileStore(&g_highest_address, args->highest_address);
+        g_highest_address = args->highest_address;
+
+#if defined(_ARM64_) || defined(_ARM_)
+        if (!is_runtime_suspended)
+        {
+            // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
+            FlushProcessWriteBuffers();
+        }
+#endif
         return;
     case WriteBarrierOp::StompEphemeral:
         // StompEphemeral requires a new ephemeral low and a new ephemeral high
@@ -1496,8 +1511,8 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
 
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
-    assert(g_pFreeObjectMethodTable != nullptr);
-    return g_pFreeObjectMethodTable;
+    assert(g_pFreeObjectEEType != nullptr);
+    return (MethodTable*)g_pFreeObjectEEType;
 }
 
 bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
