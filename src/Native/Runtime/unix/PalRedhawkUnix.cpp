@@ -770,11 +770,6 @@ bool QueryCacheSize()
 #ifdef __linux__
 
     g_cbLargestOnDieCache = GetLogicalProcessorCacheSizeFromOS();
-#ifndef _ARM_
-    // TODO Some systems on arm does not give the info about cache sizes by this method so we need to find another way
-    if (g_cbLargestOnDieCache == 0)
-        success = false;
-#endif
 
 #elif HAVE_SYSCTL
 
