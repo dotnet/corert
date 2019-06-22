@@ -13,6 +13,9 @@ namespace ILCompiler
 {
     public static class HardwareIntrinsicHelpers
     {
+        /// <summary>
+        /// Gets a value indicating whether this is a hardware intrinsic on the platform that we're compiling for.
+        /// </summary>
         public static bool IsHardwareIntrinsic(MethodDesc method)
         {
             TypeDesc owningType = method.OwningType;
@@ -44,6 +47,8 @@ namespace ILCompiler
 
         public static MethodIL GetUnsupportedImplementationIL(MethodDesc method)
         {
+            // The implementation of IsSupported for codegen backends that don't support hardware intrinsics
+            // at all is to return 0.
             if (IsIsSupportedMethod(method))
             {
                 return new ILStubMethodIL(method,
@@ -54,6 +59,7 @@ namespace ILCompiler
                     Array.Empty<LocalVariableDefinition>(), null);
             }
 
+            // Other methods throw PlatformNotSupportedException
             MethodDesc throwPnse = method.Context.GetHelperEntryPoint("ThrowHelpers", "ThrowPlatformNotSupportedException");
 
             return new ILStubMethodIL(method,
@@ -65,6 +71,11 @@ namespace ILCompiler
                     new object[] { throwPnse });
         }
 
+        /// <summary>
+        /// Generates IL for the IsSupported property that reads this information from a field initialized by the runtime
+        /// at startup. Returns null for hardware intrinsics whose support level is known at compile time
+        /// (i.e. they're known to be always supported or always unsupported).
+        /// </summary>
         public static MethodIL EmitIsSupportedIL(MethodDesc method, FieldDesc isSupportedField)
         {
             Debug.Assert(IsIsSupportedMethod(method));
@@ -73,14 +84,15 @@ namespace ILCompiler
             TargetDetails target = method.Context.Target;
             MetadataType owningType = (MetadataType)method.OwningType;
 
-            // Check for case of nested "X64" types on x86
-            if (target.Architecture == TargetArchitecture.X86 && owningType.Name == "X64")
-                return null;
+            // Check for case of nested "X64" types
+            if (owningType.Name == "X64")
+            {
+                if (target.Architecture != TargetArchitecture.X64)
+                    return null;
 
-            // Un-nest the type
-            MetadataType containingType = (MetadataType)owningType.ContainingType;
-            if (containingType != null)
-                owningType = containingType;
+                // Un-nest the type so that we can do a name match
+                owningType = (MetadataType)owningType.ContainingType;
+            }
 
             int flag;
             if ((target.Architecture == TargetArchitecture.X64 || target.Architecture == TargetArchitecture.X86)
@@ -112,6 +124,8 @@ namespace ILCompiler
                     case "Lzcnt":
                         flag = XArchIntrinsicConstants.Lzcnt;
                         break;
+                    // NOTE: this switch is complemented by IsKnownSupportedIntrinsicAtCompileTime
+                    // in the method below.
                     default:
                         return null;
                 }
@@ -134,6 +148,34 @@ namespace ILCompiler
             return emit.Link(method);
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the support for a given intrinsic is known at compile time.
+        /// </summary>
+        public static bool IsKnownSupportedIntrinsicAtCompileTime(MethodDesc method)
+        {
+            TargetDetails target = method.Context.Target;
+
+            if (target.Architecture == TargetArchitecture.X64
+                || target.Architecture == TargetArchitecture.X86)
+            {
+                var owningType = (MetadataType)method.OwningType;
+                var containingType = owningType.ContainingType;
+                if (containingType != null)
+                    owningType = (MetadataType)containingType;
+
+                // Sse and Sse2 are baseline required intrinsics
+                // Avx/Avx2/Bmi1/Bmi2 require VEX encoding and RyuJIT currently can't enable them
+                // without enabling VEX encoding everywhere.
+                // This list complements EmitIsSupportedIL above.
+                return owningType.Name == "Sse" || owningType.Name == "Sse2"
+                    || owningType.Name == "Bmi1" || owningType.Name == "Bmi2"
+                    || owningType.Name == "Avx" || owningType.Name == "Avx2";
+            }
+
+            return false;
+        }
+
+        // Keep this enumeration in sync with startup.cpp in the native runtime.
         private static class XArchIntrinsicConstants
         {
             public const int Aes = 0x0001;

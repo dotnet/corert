@@ -150,6 +150,7 @@ static void CheckForPalFallback()
 #endif // _DEBUG
 }
 
+// Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
 enum XArchIntrinsicConstants
 {
     XArchIntrinsicConstants_Aes = 0x0001,
