@@ -1,0 +1,11 @@
+{
+	"name": "corert",
+	"dockerFile": "Dockerfile",
+	"extensions": [
+	],
+	"runArgs": [
+		"--cap-add=SYS_PTRACE",
+		"--security-opt",
+		"seccomp=unconfined"
+	]
+}
