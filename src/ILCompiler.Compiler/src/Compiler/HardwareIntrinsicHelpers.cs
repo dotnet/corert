@@ -159,13 +159,19 @@ namespace ILCompiler
                 || target.Architecture == TargetArchitecture.X86)
             {
                 var owningType = (MetadataType)method.OwningType;
-                var containingType = owningType.ContainingType;
-                if (containingType != null)
-                    owningType = (MetadataType)containingType;
+                if (owningType.Name == "X64")
+                {
+                    if (target.Architecture != TargetArchitecture.X64)
+                        return true;
+                    owningType = (MetadataType)owningType.ContainingType;
+                }
 
-                // Sse and Sse2 are baseline required intrinsics
+                if (owningType.Namespace != "System.Runtime.Intrinsics.X86")
+                    return true;
+
+                // Sse and Sse2 are baseline required intrinsics.
                 // Avx/Avx2/Bmi1/Bmi2 require VEX encoding and RyuJIT currently can't enable them
-                // without enabling VEX encoding everywhere.
+                // without enabling VEX encoding everywhere. We don't support them.
                 // This list complements EmitIsSupportedIL above.
                 return owningType.Name == "Sse" || owningType.Name == "Sse2"
                     || owningType.Name == "Bmi1" || owningType.Name == "Bmi2"
