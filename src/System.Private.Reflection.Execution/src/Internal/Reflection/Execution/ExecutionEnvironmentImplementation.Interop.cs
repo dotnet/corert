@@ -16,7 +16,11 @@ namespace Internal.Reflection.Execution
     {
         public sealed override bool IsCOMObject(Type type)
         {
+#if PROJECTN
             return McgMarshal.IsComObject(type);
+#else
+            return false;
+#endif
         }
     }
 }

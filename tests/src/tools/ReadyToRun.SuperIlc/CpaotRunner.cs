@@ -17,17 +17,19 @@ namespace ReadyToRun.SuperIlc
     {
         public override CompilerIndex Index => CompilerIndex.CPAOT;
 
-        protected override string CompilerFileName => "ilc.exe";
+        protected override string CompilerFileName => "ilc".OSExeSuffix();
+
+        private List<string> _resolvedReferences;
 
         public CpaotRunner(BuildOptions options, IEnumerable<string> referencePaths)
             : base(options, options.CpaotDirectory.FullName, referencePaths)
         { }
 
-        protected override ProcessInfo ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
+        protected override ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
         {
-            ProcessInfo processInfo = base.ExecutionProcess(modules, folders, noEtw);
-            processInfo.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "1";
-            return processInfo;
+            ProcessParameters processParameters = base.ExecutionProcess(modules, folders, noEtw);
+            processParameters.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "1";
+            return processParameters;
         }
 
         protected override IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName)
@@ -62,13 +64,28 @@ namespace ReadyToRun.SuperIlc
                 yield return $"-r:{reference}";
             }
 
+            if (_resolvedReferences == null)
+            {
+                _resolvedReferences = ResolveReferences();
+            }
+
+            foreach (string asmRef in _resolvedReferences)
+            {
+                yield return asmRef;
+            }
+        }
+
+        private List<string> ResolveReferences()
+        {
+            List<string> references = new List<string>();
             foreach (var referenceFolder in _referenceFolders)
             {
                 foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(referenceFolder))
                 {
-                    yield return $"-r:{reference}";
+                    references.Add($"-r:{reference}");
                 }
             }
+            return references;
         }
     }
 }

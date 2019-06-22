@@ -92,16 +92,6 @@ void RhEnableFinalization();
 static EEConfig s_sDummyConfig;
 EEConfig* g_pConfig = &s_sDummyConfig;
 
-int EEConfig::GetHeapVerifyLevel()
-{
-    return g_pRhConfig->GetHeapVerify();
-}
-
-int EEConfig::GetGCconcurrent()
-{
-    return !g_pRhConfig->GetDisableBGC();
-}
-
 // A few settings are now backed by the cut-down version of Redhawk configuration values.
 static RhConfig g_sRhConfig;
 RhConfig * g_pRhConfig = &g_sRhConfig;
@@ -169,9 +159,6 @@ CrstStatic g_SuspendEELock;
 #endif // _MSC_VER
 EEType g_FreeObjectEEType;
 
-MethodTable* g_pFreeObjectMethodTable;
-int32_t g_TrapReturningThreads;
-
 // static 
 bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 {
@@ -196,10 +183,6 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 
     // Initialize the special EEType used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
-
-    // Place the pointer to this type in a global cell (typed as the structurally equivalent MethodTable
-    // that the GC understands).
-    g_pFreeObjectMethodTable = (MethodTable *)&g_FreeObjectEEType;
     g_pFreeObjectEEType = &g_FreeObjectEEType;
 
     if (!g_SuspendEELock.InitNoThrow(CrstSuspendEE))
@@ -207,7 +190,7 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
 
     // Set the GC heap type.
     bool fUseServerGC = (gcType == GCType_Server);
-    g_heap_type = fUseServerGC ? GC_HEAP_SVR : GC_HEAP_WKS;
+    g_heap_type = (fUseServerGC && PalGetLogicalCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
 
     HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
     if (FAILED(hr))
@@ -333,7 +316,7 @@ void RedhawkGCInterface::InitAllocContext(gc_alloc_context * pAllocContext)
 // static
 void RedhawkGCInterface::ReleaseAllocContext(gc_alloc_context * pAllocContext)
 {
-    GCHeapUtilities::GetGCHeap()->FixAllocContext(pAllocContext, FALSE, NULL, NULL);
+    GCHeapUtilities::GetGCHeap()->FixAllocContext(pAllocContext, NULL, NULL);
 }
 
 // static 
@@ -341,32 +324,6 @@ void RedhawkGCInterface::WaitForGCCompletion()
 {
     GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 }
-
-#endif // !DACCESS_COMPILE
-
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// AppDomain emulation. The we don't have these in Redhawk so instead we emulate the bare minimum of the API
-// touched by the GC/HandleTable and pretend we have precisely one (default) appdomain.
-//
-
-// Used by DAC, but since this just exposes [System|App]Domain::GetIndex we can just keep a local copy.
-
-SystemDomain g_sSystemDomain;
-AppDomain g_sDefaultDomain;
-
-#ifndef DACCESS_COMPILE
-
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// Trivial sync block cache. Will no doubt be replaced with a real implementation soon.
-//
-
-#ifdef VERIFY_HEAP
-SyncBlockCache g_sSyncBlockCache;
-#endif // VERIFY_HEAP
 
 //-------------------------------------------------------------------------------------------------
 // Used only by GC initialization, this initializes the EEType used to mark free entries in the GC heap. It
@@ -945,7 +902,6 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
     g_SuspendEELock.Enter();
 
-    g_TrapReturningThreads = TRUE;
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(TRUE);
 
     GetThreadStore()->SuspendAllThreads(true);
@@ -966,8 +922,6 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 
     GetThreadStore()->ResumeAllThreads(true);
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(FALSE);
-
-    g_TrapReturningThreads = FALSE;
 
     g_SuspendEELock.Leave();
 
@@ -1260,7 +1214,8 @@ void WalkMovedReferences(uint8_t* begin, uint8_t* end,
 //
 
 #ifdef FEATURE_EVENT_TRACE
-inline BOOL ShouldTrackMovementForProfilerOrEtw()
+// Tracks all surviving objects (moved or otherwise).
+inline bool ShouldTrackSurvivorsForProfilerOrEtw()
 {
     if (ETW::GCLog::ShouldTrackMovementForEtw())
         return true;
@@ -1269,10 +1224,10 @@ inline BOOL ShouldTrackMovementForProfilerOrEtw()
 }
 #endif // FEATURE_EVENT_TRACE
 
-void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 {
 #ifdef FEATURE_EVENT_TRACE
-    if (ShouldTrackMovementForProfilerOrEtw())
+    if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
@@ -1287,7 +1242,7 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
 void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
 {
 #ifdef FEATURE_EVENT_TRACE
-    if (ShouldTrackMovementForProfilerOrEtw())
+    if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
@@ -1302,7 +1257,7 @@ void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
 void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 {
 #ifdef FEATURE_EVENT_TRACE
-    if (ShouldTrackMovementForProfilerOrEtw())
+    if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
@@ -1318,7 +1273,9 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
     // CoreRT doesn't patch the write barrier like CoreCLR does, but it
     // still needs to record the changes in the GC heap.
-    assert(args != nullptr);
+
+    bool is_runtime_suspended = args->is_runtime_suspended;
+
     switch (args->operation)
     {
     case WriteBarrierOp::StompResize:
@@ -1328,23 +1285,46 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->lowest_address != nullptr);
         assert(args->highest_address != nullptr);
 
-        g_card_table = args->card_table;
+        // We are sensitive to the order of writes here(more comments on this further in the method)
+        // In particular g_card_table must be written before writing the heap bounds.
+        // For platforms with weak memory ordering we will issue fences, for x64/x86 we are ok
+        // as long as compiler does not reorder these writes.
+        // That is unlikely since we have method calls in between.
+        // Just to be robust agains possible refactoring/inlining we will do a compiler-fenced store here.
+        VolatileStore(&g_card_table, args->card_table);
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         assert(args->card_bundle_table != nullptr);
         g_card_bundle_table = args->card_bundle_table;
 #endif
 
-        // We need to make sure that other threads executing checked write barriers
-        // will see the g_card_table update before g_lowest/highest_address updates.
-        // Otherwise, the checked write barrier may AV accessing the old card table
-        // with address that it does not cover. Write barriers access card table
-        // without memory barriers for performance reasons, so we need to flush
-        // the store buffers here.
-        FlushProcessWriteBuffers();
+        // IMPORTANT: managed heap segments may surround unmanaged/stack segments. In such cases adding another managed 
+        //     heap segment may put a stack/unmanaged write inside the new heap range. However the old card table would 
+        //     not cover it. Therefore we must ensure that the write barriers see the new table before seeing the new bounds.
+        //
+        //     On architectures with strong ordering, we only need to prevent compiler reordering.
+        //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
+
+#if defined(_ARM64_) || defined(_ARM_)
+        if (!is_runtime_suspended)
+        {
+            // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
+            // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
+            FlushProcessWriteBuffers();
+        }
+    }
+#endif
 
         g_lowest_address = args->lowest_address;
-        VolatileStore(&g_highest_address, args->highest_address);
+        g_highest_address = args->highest_address;
+
+#if defined(_ARM64_) || defined(_ARM_)
+        if (!is_runtime_suspended)
+        {
+            // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
+            FlushProcessWriteBuffers();
+        }
+#endif
         return;
     case WriteBarrierOp::StompEphemeral:
         // StompEphemeral requires a new ephemeral low and a new ephemeral high
@@ -1397,22 +1377,6 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 {
     UNREFERENCED_PARAMETER(exitCode);
     EEPOLICY_HANDLE_FATAL_ERROR(exitCode);
-}
-
-bool GCToEEInterface::ShouldFinalizeObjectForUnload(AppDomain* pDomain, Object* obj)
-{
-    // CoreCLR does not have appdomains, so this code path is dead. Other runtimes may
-    // choose to inspect the object being finalized here.
-    // [DESKTOP TODO] Desktop looks for "agile and finalizable" objects and may choose
-    // to move them to a new app domain instead of finalizing them here.
-    UNREFERENCED_PARAMETER(pDomain);
-    UNREFERENCED_PARAMETER(obj);
-    return true;
-}
-
-bool GCToEEInterface::ForceFullGCToBeBlocking()
-{
-    return false;
 }
 
 bool GCToEEInterface::EagerFinalized(Object* obj)
@@ -1518,10 +1482,37 @@ IGCToCLREventSink* GCToEEInterface::EventSink()
     return &g_gcToClrEventSink;
 }
 
+uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
+{
+    return -1;
+}
+
+bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
+{
+    return false;
+}
+
+void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+{
+}
+
+void GCToEEInterface::VerifySyncTableEntry()
+{
+}
+
+void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPublicKeywords, int currentPrivateLevel, int currentPrivateKeywords)
+{
+    UNREFERENCED_PARAMETER(currentPublicLevel);
+    UNREFERENCED_PARAMETER(currentPublicKeywords);
+    UNREFERENCED_PARAMETER(currentPrivateLevel);
+    UNREFERENCED_PARAMETER(currentPrivateKeywords);
+    // TODO: Linux LTTng
+}
+
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
-    assert(g_pFreeObjectMethodTable != nullptr);
-    return g_pFreeObjectMethodTable;
+    assert(g_pFreeObjectEEType != nullptr);
+    return (MethodTable*)g_pFreeObjectEEType;
 }
 
 bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
@@ -1535,43 +1526,13 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
 
     if (strcmp(key, "gcConcurrent") == 0)
     {
-        *value = g_pConfig->GetGCconcurrent() != 0;
-        return true;
-    }
-
-    if (strcmp(key, "GCRetainVM") == 0)
-    {
-        *value = !!g_pConfig->GetGCRetainVM();
+        *value = !g_pRhConfig->GetDisableBGC();
         return true;
     }
 
     if (strcmp(key, "gcConservative") == 0)
     {
         *value = g_pConfig->GetGCConservative();
-        return true;
-    }
-
-    if (strcmp(key, "gcForceCompact") == 0)
-    {
-        *value = g_pConfig->GetGCForceCompact() != 0;
-        return true;
-    }
-
-    if (strcmp(key, "GCStressMix") == 0)
-    {
-        *value = g_pConfig->IsGCStressMix();
-        return true;
-    }
-
-    if (strcmp(key, "GCBreakOnOOM") == 0)
-    {
-        *value = g_pConfig->IsGCBreakOnOOMEnabled();
-        return true;
-    }
-
-    if (strcmp(key, "GCNoAffinitize") == 0)
-    {
-        *value = g_pConfig->GetGCNoAffinitize();
         return true;
     }
 
@@ -1582,31 +1543,19 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
 {
     if (strcmp(key, "HeapVerify") == 0)
     {
-        *value = g_pConfig->GetHeapVerifyLevel();
-        return true;
-    }
-
-    if (strcmp(key, "GCLOHCompact") == 0)
-    {
-        *value = g_pConfig->GetGCLOHCompactionMode();
-        return true;
-    }
-
-    if (strcmp(key, "GCHeapCount") == 0)
-    {
-        *value = g_pConfig->GetGCHeapCount();
+        *value = g_pRhConfig->GetHeapVerify();
         return true;
     }
 
     if (strcmp(key, "GCgen0size") == 0)
     {
-        *value = g_pConfig->GetGCgen0size();
-        return true;
-    }
-
-    if (strcmp(key, "GCLatencyMode") == 0)
-    {
-        *value = g_pConfig->GetGCLatencyMode();
+#ifdef USE_PORTABLE_HELPERS
+        // CORERT-TODO: remove this
+        //              https://github.com/dotnet/corert/issues/2033
+        *value = 100 * 1024 * 1024;
+#else
+        *value = 0;
+#endif
         return true;
     }
 

@@ -2884,9 +2884,9 @@ namespace Internal.JitInterface
             // CompileMethod is going to fail with this CorJitResult anyway.
         }
 
-        private HRESULT allocBBProfileBuffer(uint count, ref ProfileBuffer* profileBuffer)
+        private HRESULT allocMethodBlockCounts(uint count, ref BlockCounts* pBlockCounts)
         { throw new NotImplementedException("allocBBProfileBuffer"); }
-        private HRESULT getBBProfileData(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint count, ref ProfileBuffer* profileBuffer, ref uint numRuns)
+        private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
         { throw new NotImplementedException("getBBProfileData"); }
 
         private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)

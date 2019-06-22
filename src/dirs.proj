@@ -14,7 +14,7 @@
     <Project Include="Framework\Framework-native.depproj" Condition="$(TargetsUnix) and '$(Platform)' != 'wasm'" />
 
     <Project Include="ILCompiler\RyuJIT\RyuJIT.depproj" />
-    <Project Include="ILCompiler\ObjectWriter\ObjectWriter.depproj" />
+    <Project Include="ILCompiler\ObjectWriter\ObjectWriter.depproj" Condition="'$(ObjWriterBuild)' != 'true'" />
     <Project Include="ILCompiler.WebAssembly\src\libLLVMdep.depproj" />
 
     <Project Include="*\src\*.csproj" Exclude="@(ExcludeProjects)" />

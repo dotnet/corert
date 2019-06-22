@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Text;
@@ -61,9 +62,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                     signatureBuilder.EmitMethodSignature(
-                        method.Method, 
-                        constrainedType: null,
-                        moduleToken,
+                        new MethodWithToken(method.Method, moduleToken, constrainedType: null),
                         enforceDefEncoding: true,
                         method.SignatureContext,
                         isUnboxingStub: false, 

@@ -221,7 +221,7 @@ namespace ILCompiler
 
             TypeDesc owningType = method.OwningType;
             MetadataType metadataType = owningType as MetadataType;
-            if (metadataType != null && metadataType.Module == _interopModule)
+            if (metadataType != null && metadataType.Module == factory.TypeSystemContext.SystemModule)
             {
                 if (metadataType.Name == "Marshal" && metadataType.Namespace == "System.Runtime.InteropServices")
                 {

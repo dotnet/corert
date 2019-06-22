@@ -17,16 +17,16 @@ namespace ReadyToRun.SuperIlc
     {
         public override CompilerIndex Index => CompilerIndex.Crossgen;
 
-        protected override string CompilerFileName => "crossgen.exe";
+        protected override string CompilerFileName => "crossgen".OSExeSuffix();
 
         public CrossgenRunner(BuildOptions options, IEnumerable<string> referencePaths)
             : base(options, options.CoreRootDirectory.FullName, referencePaths) { }
 
-        protected override ProcessInfo ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
+        protected override ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
         {
-            ProcessInfo processInfo = base.ExecutionProcess(modules, folders, noEtw);
-            processInfo.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "1";
-            return processInfo;
+            ProcessParameters processParameters = base.ExecutionProcess(modules, folders, noEtw);
+            processParameters.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "1";
+            return processParameters;
         }
 
         protected override IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName)

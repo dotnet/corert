@@ -27,7 +27,6 @@ using System.Threading;
 using System.Text;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using Internal.NativeFormat;
 
 #if !CORECLR
 using Internal.Runtime.Augments;

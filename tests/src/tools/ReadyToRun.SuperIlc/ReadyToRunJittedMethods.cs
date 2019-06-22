@@ -32,19 +32,20 @@ public class ReadyToRunJittedMethods : IDisposable
     private Dictionary<long, string> _testModuleIdToName = new Dictionary<long, string>();
     private Dictionary<string, HashSet<string>> _methodsJitted = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
-    public ReadyToRunJittedMethods(TraceEventSession session, IEnumerable<ProcessInfo> processes)
+    public ReadyToRunJittedMethods(TraceEventSession session, List<ProcessInfo> processList, int startIndex, int endIndex)
     {
         _etwProcesses = new List<Process>();
         _pidToProcess = new Dictionary<int, ProcessInfo>();
         _testModuleNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         _testFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (ProcessInfo process in processes)
+        for (int index = startIndex; index < endIndex; index++)
         {
-            if (process.CollectJittedMethods)
+            ProcessInfo process = processList[index];
+            if (process.Parameters.CollectJittedMethods)
             {
-                _testFolderNames.UnionWith(process.MonitorFolders);
-                _testModuleNames.UnionWith(process.MonitorModules);
+                _testFolderNames.UnionWith(process.Parameters.MonitorFolders);
+                _testModuleNames.UnionWith(process.Parameters.MonitorModules);
             }
         }
 

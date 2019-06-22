@@ -79,6 +79,44 @@ set(PORTABLE_RUNTIME_SOURCES
 
 include_directories(inc)
 
+if (WIN32)
+  set(GC_HEADERS
+    ../gc/env/common.h
+    ../gc/env/etmdummy.h
+    ../gc/env/gcenv.base.h
+    ../gc/env/gcenv.ee.h
+    ../gc/env/gcenv.h
+    ../gc/env/gcenv.interlocked.h
+    ../gc/env/gcenv.interlocked.inl
+    ../gc/env/gcenv.object.h
+    ../gc/env/gcenv.os.h
+    ../gc/env/gcenv.structs.h
+    ../gc/env/gcenv.sync.h
+    ../gc/env/gcenv.windows.inl
+    ../gc/env/volatile.h
+    ../gc/gc.h
+    ../gc/gcconfig.h
+    ../gc/gcdesc.h
+    ../gc/gcenv.ee.standalone.inl
+    ../gc/gcenv.inl
+    ../gc/gcevent_serializers.h
+    ../gc/gcevents.h
+    ../gc/gceventstatus.h
+    ../gc/gchandletableimpl.h
+    ../gc/gcimpl.h
+    ../gc/gcinterface.dac.h
+    ../gc/gcinterface.ee.h
+    ../gc/gcinterface.h
+    ../gc/gcpriv.h
+    ../gc/gcrecord.h
+    ../gc/gcscan.h
+    ../gc/handletable.h
+    ../gc/handletable.inl
+    ../gc/handletablepriv.h
+    ../gc/objecthandle.h
+    ../gc/softwarewritewatch.h)
+endif(WIN32)
+
 if(WIN32)
 
   include_directories(windows)
@@ -228,6 +266,8 @@ else()
 endif()
 
 set(RUNTIME_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+list(APPEND COMMON_RUNTIME_SOURCES ${GC_HEADERS})
 
 convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})
 

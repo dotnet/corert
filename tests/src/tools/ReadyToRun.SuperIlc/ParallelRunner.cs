@@ -67,7 +67,7 @@ public sealed class ParallelRunner
         public void Launch(ProcessInfo processInfo, ReadyToRunJittedMethods jittedMethods, int processIndex, int processCount, int progressIndex)
         {
             Debug.Assert(_processRunner == null);
-            Console.WriteLine($"{processIndex} / {processCount} ({(progressIndex * 100 / processCount)}%): launching: {processInfo.ProcessPath} {processInfo.Arguments}");
+            Console.WriteLine($"{processIndex} / {processCount} ({(progressIndex * 100 / processCount)}%): launching: {processInfo.Parameters.ProcessPath} {processInfo.Parameters.Arguments}");
 
             _processRunner = new ProcessRunner(processInfo, processIndex, processCount, jittedMethods, _processExitEvent);
         }
@@ -89,31 +89,35 @@ public sealed class ParallelRunner
     }
 
     /// <summary>
-    /// Execute a given set of mutually independent build commands with the default
-    /// degree of parallelism.
-    /// </summary>
-    /// <param name="processesToRun">Processes to execute in parallel</param>
-    public static void Run(IEnumerable<ProcessInfo> processesToRun)
-    {
-        Run(processesToRun, degreeOfParallelism: Environment.ProcessorCount);
-    }
-
-    /// <summary>
     /// Execute a given set of mutually independent build commands with given degree of
     /// parallelism.
     /// </summary>
     /// <param name="processesToRun">Processes to execute in parallel</param>
-    /// <param name="degreeOfParallelism">Maximum number of processes to execute in parallel</param>
-    public static void Run(IEnumerable<ProcessInfo> processesToRun, int degreeOfParallelism)
+    /// <param name="degreeOfParallelism">Maximum number of processes to execute in parallel, 0 = logical processor count</param>
+    public static void Run(IEnumerable<ProcessInfo> processesToRun, int degreeOfParallelism = 0)
     {
-        int processCount = processesToRun.Count();
+        if (degreeOfParallelism == 0)
+        {
+            degreeOfParallelism = Environment.ProcessorCount;
+        }
+
+        List<ProcessInfo> processList = new List<ProcessInfo>();
+        bool collectEtwTraces = false;
+        foreach (ProcessInfo process in processesToRun)
+        {
+            process.Construct();
+            processList.Add(process);
+            collectEtwTraces |= process.Parameters.CollectJittedMethods;
+        }
+
+        processList.Sort((a, b) => b.Parameters.CompilationCostHeuristic.CompareTo(a.Parameters.CompilationCostHeuristic));
+
+        int processCount = processList.Count;
         if (processCount < degreeOfParallelism)
         {
             // We never need a higher DOP than the number of process to execute
             degreeOfParallelism = processCount;
         }
-
-        bool collectEtwTraces = processesToRun.Any(processInfo => processInfo.CollectJittedMethods);
 
         if (collectEtwTraces)
         {
@@ -121,33 +125,34 @@ public sealed class ParallelRunner
             // the process objects alive for the entire duration of the parallel execution, otherwise PID's
             // may get recycled by the OS and we can no longer back-translate PIDs in events to the logical
             // process executions. Without parallelization, we simply run the processes one by one.
-            int etwCollectionBatching = (degreeOfParallelism == 1 ? 1 : 100);
+            int etwCollectionBatching = (degreeOfParallelism == 1 ? 1 : 10);
 
             for (int batchStartIndex = 0; batchStartIndex < processCount; batchStartIndex += etwCollectionBatching)
             {
                 BuildEtwProcesses(
                     startIndex: batchStartIndex,
-                    processCount: processCount,
-                    processesToRun.Skip(batchStartIndex).Take(etwCollectionBatching),
+                    endIndex: Math.Min(batchStartIndex + etwCollectionBatching, processCount),
+                    totalCount: processCount,
+                    processList,
                     degreeOfParallelism);
             }
         }
         else
         {
-            BuildProjects(startIndex: 0, processCount, processesToRun, null, degreeOfParallelism);
+            BuildProjects(startIndex: 0, endIndex: processCount, totalCount: processCount, processList, null, degreeOfParallelism);
         }
     }
 
-    private static void BuildEtwProcesses(int startIndex, int processCount, IEnumerable<ProcessInfo> processesToRun, int degreeOfParallelism)
+    private static void BuildEtwProcesses(int startIndex, int endIndex, int totalCount, List<ProcessInfo> processList, int degreeOfParallelism)
     {
         using (TraceEventSession traceEventSession = new TraceEventSession("ReadyToRunTestSession"))
         {
             traceEventSession.EnableProvider(ClrTraceEventParser.ProviderGuid, TraceEventLevel.Verbose, (ulong)(ClrTraceEventParser.Keywords.Jit | ClrTraceEventParser.Keywords.Loader));
-            using (ReadyToRunJittedMethods jittedMethods = new ReadyToRunJittedMethods(traceEventSession, processesToRun))
+            using (ReadyToRunJittedMethods jittedMethods = new ReadyToRunJittedMethods(traceEventSession, processList, startIndex, endIndex))
             {
                 Task.Run(() =>
                 {
-                    BuildProjects(startIndex, processCount, processesToRun, jittedMethods, degreeOfParallelism);
+                    BuildProjects(startIndex, endIndex, totalCount, processList, jittedMethods, degreeOfParallelism);
                     traceEventSession.Stop();
                 });
             }
@@ -155,11 +160,12 @@ public sealed class ParallelRunner
         }
 
         // Append jitted method info to the logs
-        foreach (ProcessInfo processInfo in processesToRun)
+        for (int index = startIndex; index < endIndex; index++)
         {
-            if (processInfo.CollectJittedMethods)
+            ProcessInfo processInfo = processList[index];
+            if (processInfo.Parameters.CollectJittedMethods)
             {
-                using (StreamWriter processLogWriter = new StreamWriter(processInfo.LogPath, append: true))
+                using (StreamWriter processLogWriter = new StreamWriter(processInfo.Parameters.LogPath, append: true))
                 {
                     if (processInfo.JittedMethods != null)
                     {
@@ -181,7 +187,7 @@ public sealed class ParallelRunner
         }
     }
 
-    private static void BuildProjects(int startIndex, int processCount, IEnumerable<ProcessInfo> processesToRun, ReadyToRunJittedMethods jittedMethods, int degreeOfParallelism)
+    private static void BuildProjects(int startIndex, int endIndex, int totalCount, List<ProcessInfo> processList, ReadyToRunJittedMethods jittedMethods, int degreeOfParallelism)
     {
         using (AutoResetEvent processExitEvent = new AutoResetEvent(initialState: false))
         {
@@ -192,8 +198,10 @@ public sealed class ParallelRunner
             }
 
             int progressIndex = startIndex;
-            foreach (ProcessInfo processInfo in processesToRun)
+            for (int index = startIndex; index < endIndex; index++)
             {
+                ProcessInfo processInfo = processList[index];
+
                 // Allocate a process slot, potentially waiting on the exit event
                 // when all slots are busy (running)
                 ProcessSlot freeSlot = null;
@@ -215,7 +223,7 @@ public sealed class ParallelRunner
                 }
                 while (freeSlot == null);
 
-                freeSlot.Launch(processInfo, jittedMethods, startIndex++, processCount, progressIndex);
+                freeSlot.Launch(processInfo, jittedMethods, index, totalCount, progressIndex);
             }
 
             // We have launched all the commands, now wait for all processes to finish

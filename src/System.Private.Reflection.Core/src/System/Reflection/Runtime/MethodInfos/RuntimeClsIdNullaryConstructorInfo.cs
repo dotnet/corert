@@ -53,6 +53,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
+#if PROJECTN
             if (parameters != null && parameters.Length != 0)
                 throw new TargetParameterCountException();
 
@@ -74,6 +75,9 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (pItf != IntPtr.Zero)
                     Marshal.Release(pItf);
             }
+#else
+            throw new PlatformNotSupportedException();
+#endif
         }
 
         public sealed override MethodBase MetadataDefinitionMethod { get { throw new NotSupportedException(); } }

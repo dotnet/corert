@@ -213,9 +213,7 @@ namespace ILCompiler.DependencyAnalysis
                 _codegenNodeFactory,
                 _codegenNodeFactory.MethodSignature(
                     ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
-                    method.Method,
-                    constrainedType: null,
-                    method.Token,
+                    method,
                     isUnboxingStub: false,
                     isInstantiatingStub: useInstantiatingStub,
                     signatureContext));
@@ -237,9 +235,8 @@ namespace ILCompiler.DependencyAnalysis
                 methodWithToken,
                 useInstantiatingStub: false,
                 _codegenNodeFactory.MethodSignature(
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, methodWithToken.Method,
-                    constrainedType: null, 
-                    methodWithToken.Token, 
+                    ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                    methodWithToken,
                     signatureContext: signatureContext, 
                     isUnboxingStub: false, 
                     isInstantiatingStub: false),
@@ -276,9 +273,7 @@ namespace ILCompiler.DependencyAnalysis
                 _codegenNodeFactory,
                 _codegenNodeFactory.MethodSignature(
                     ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary, 
-                    method.Method, 
-                    constrainedType: null, 
-                    methodToken: method.Token, 
+                    method, 
                     isUnboxingStub: false,
                     isInstantiatingStub: true,
                     signatureContext));
@@ -679,7 +674,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private readonly Dictionary<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new Dictionary<MethodAndCallSite, ISymbolNode>();
 
-        public ISymbolNode InterfaceDispatchCell(MethodDesc method, ModuleToken methodToken, SignatureContext signatureContext, bool isUnboxingStub, string callSite)
+        public ISymbolNode InterfaceDispatchCell(MethodWithToken method, SignatureContext signatureContext, bool isUnboxingStub, string callSite)
         {
             MethodAndCallSite cellKey = new MethodAndCallSite(method, callSite);
             if (!_interfaceDispatchCells.TryGetValue(cellKey, out ISymbolNode dispatchCell))
@@ -689,10 +684,11 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall |
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD,
-                    new MethodWithToken(method, methodToken),
+                    method,
                     useInstantiatingStub: false,
-                    _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry, method,
-                        null, methodToken, isUnboxingStub, isInstantiatingStub: false, signatureContext),
+                    _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
+                        method,
+                        isUnboxingStub, isInstantiatingStub: false, signatureContext),
                     signatureContext,
                     callSite);
 
@@ -704,28 +700,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, SignatureContext signatureContext)
         {
             return ReadyToRunHelper(helperId, entity, signatureContext);
-        }
-
-        private readonly Dictionary<MethodDesc, ISortableSymbolNode> _genericDictionaryCache = new Dictionary<MethodDesc, ISortableSymbolNode>();
-
-        public ISortableSymbolNode MethodGenericDictionary(MethodDesc method, ModuleToken methodToken, SignatureContext signatureContext)
-        {
-            if (!_genericDictionaryCache.TryGetValue(method, out ISortableSymbolNode genericDictionary))
-            {
-                genericDictionary = new PrecodeHelperMethodImport(
-                    _codegenNodeFactory,
-                    method,
-                    _codegenNodeFactory.MethodSignature(
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionary,
-                        method,
-                        constrainedType: null,
-                        methodToken: methodToken,
-                        signatureContext: signatureContext,
-                        isUnboxingStub: false,
-                        isInstantiatingStub: true));
-                _genericDictionaryCache.Add(method, genericDictionary);
-            }
-            return genericDictionary;
         }
 
         private readonly Dictionary<TypeDesc, ISymbolNode> _constructedTypeSymbols = new Dictionary<TypeDesc, ISymbolNode>();
@@ -744,16 +718,13 @@ namespace ILCompiler.DependencyAnalysis
 
         private readonly Dictionary<TypeAndMethod, ISymbolNode> _delegateCtors = new Dictionary<TypeAndMethod, ISymbolNode>();
 
-        public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodDesc targetMethod, ModuleToken methodToken, SignatureContext signatureContext)
+        public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodWithToken method, SignatureContext signatureContext)
         {
-            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, targetMethod, methodToken: methodToken, isUnboxingStub: false, isInstantiatingStub: false);
+            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, method, isUnboxingStub: false, isInstantiatingStub: false);
             if (!_delegateCtors.TryGetValue(ctorKey, out ISymbolNode ctorNode))
             {
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
-                    targetMethod,
-                    constrainedType: null, 
-                    originalMethod: null,
-                    methodToken: methodToken,
+                    method,
                     isUnboxingStub: false,
                     isInstantiatingStub: false,
                     signatureContext: signatureContext);
@@ -762,7 +733,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
-                    new DelegateCtorSignature(delegateType, targetMethodNode, methodToken, signatureContext));
+                    new DelegateCtorSignature(delegateType, targetMethodNode, method.Token, signatureContext));
                 _delegateCtors.Add(ctorKey, ctorNode);
             }
             return ctorNode;
@@ -770,10 +741,10 @@ namespace ILCompiler.DependencyAnalysis
 
         struct MethodAndCallSite : IEquatable<MethodAndCallSite>
         {
-            public readonly MethodDesc Method;
+            public readonly MethodWithToken Method;
             public readonly string CallSite;
 
-            public MethodAndCallSite(MethodDesc method, string callSite)
+            public MethodAndCallSite(MethodWithToken method, string callSite)
             {
                 CallSite = callSite;
                 Method = method;
@@ -781,7 +752,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public bool Equals(MethodAndCallSite other)
             {
-                return CallSite == other.CallSite && Method == other.Method;
+                return CallSite == other.CallSite && Method.Equals(other.Method);
             }
 
             public override bool Equals(object obj)
@@ -852,7 +823,6 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunHelperId helperId,
             object helperArgument,
-            TypeDesc constrainedType,
             GenericContext methodContext,
             SignatureContext signatureContext)
         {
@@ -871,7 +841,6 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
                         (MethodWithToken)helperArgument,
-                        constrainedType,
                         methodContext,
                         signatureContext);
 
@@ -880,7 +849,6 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
                         (MethodWithToken)helperArgument,
-                        constrainedType,
                         methodContext,
                         signatureContext);
 
@@ -889,7 +857,6 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle,
                         (MethodWithToken)helperArgument,
-                        constrainedType,
                         methodContext,
                         signatureContext);
 
@@ -906,7 +873,6 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
                         (MethodWithToken)helperArgument,
-                        constrainedType,
                         methodContext,
                         signatureContext);
 
@@ -983,7 +949,6 @@ namespace ILCompiler.DependencyAnalysis
             CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken methodArgument,
-            TypeDesc constrainedType,
             GenericContext methodContext,
             SignatureContext signatureContext)
         {
@@ -997,7 +962,7 @@ namespace ILCompiler.DependencyAnalysis
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                     methodArgument,
                     useInstantiatingStub: false,
-                    new GenericLookupSignature(runtimeLookupKind, fixupKind, constrainedType, methodArgument, fieldArgument: null, methodContext, signatureContext),
+                    new GenericLookupSignature(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, fieldArgument: null, methodContext, signatureContext),
                     signatureContext);
                 _genericLookupHelpers.Add(key, node);
             }

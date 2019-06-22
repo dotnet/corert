@@ -18,8 +18,6 @@ namespace ILCompiler
     {
         private readonly CompilationModuleGroup _compilationModuleGroup;
         private readonly CompilerTypeSystemContext _typeSystemContext;
-        protected ModuleDesc _interopModule;
-        private const string _interopModuleName = "System.Private.Interop";
 
         public InteropStateManager InteropStateManager
         {
@@ -31,9 +29,6 @@ namespace ILCompiler
             _compilationModuleGroup = compilationModuleGroup;
             _typeSystemContext = typeSystemContext;
             InteropStateManager = interopStateManager;
-
-            // Note: interopModule might be null if we're building with a class library that doesn't support rich interop
-            _interopModule = typeSystemContext.GetModuleForSimpleName(_interopModuleName, false);
         }
 
 
