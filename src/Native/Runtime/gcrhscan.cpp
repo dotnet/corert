@@ -7,11 +7,7 @@
 #include "gcheaputilities.h"
 #include "objecthandle.h"
 
-#ifdef FEATURE_STANDALONE_GC
 #include "gcenv.ee.h"
-#else
-#include "../gc/env/gcenv.ee.h"
-#endif // FEATURE_STANDALONE_GC
 
 #include "PalRedhawkCommon.h"
 

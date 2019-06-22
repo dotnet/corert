@@ -15,11 +15,7 @@
 #include "gchandleutilities.h"
 #include "profheapwalkhelper.h"
 
-#ifdef FEATURE_STANDALONE_GC
 #include "gcenv.ee.h"
-#else
-#include "../gc/env/gcenv.ee.h"
-#endif // FEATURE_STANDALONE_GC
 
 #include "RestrictedCallouts.h"
 
