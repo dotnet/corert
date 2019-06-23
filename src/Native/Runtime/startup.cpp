@@ -167,63 +167,59 @@ void DetectCPUFeatures()
 {
 #if defined(_X86_) || defined(_AMD64_)
     
-    CPU_INFO cpuInfo;
-
-#ifdef _X86_
-    // We depend on fxsave / fxrstor.  These were added to Pentium II and later, so they're pretty well guaranteed to be
-    // available, but we double-check anyway and fail fast if they are not supported.
-    PalCpuIdEx(1, 0, &cpuInfo);
-    if (!(cpuInfo.Edx & X86_FXSR))  
-        RhFailFast();
-#endif
+    unsigned char buffer[16];
 
 #ifdef _AMD64_
     // AMD has a "fast" mode for fxsave/fxrstor, which omits the saving of xmm registers.  The OS will enable this mode
     // if it is supported.  So if we continue to use fxsave/fxrstor, we must manually save/restore the xmm registers.
-    PalCpuIdEx(0x80000001, 0, &cpuInfo);
-    if (cpuInfo.Edx & AMD_FFXSR)
+    // fxsr_opt is bit 25 of EDX
+    getextcpuid(0, 0x80000001, buffer);
+    if ((buffer[15] & 0x02) != 0)
         g_fHasFastFxsave = true;
 #endif
 
-    PalCpuId(0, &cpuInfo);
-    uint32_t maxCpuId = cpuInfo.Eax;
+    uint32_t maxCpuId = getcpuid(0, buffer);
 
     if (maxCpuId >= 1)
     {
-        PalCpuId(1, &cpuInfo);
+        // getcpuid executes cpuid with eax set to its first argument, and ecx cleared.
+        // It returns the resulting eax in buffer[0-3], ebx in buffer[4-7], ecx in buffer[8-11],
+        // and edx in buffer[12-15].
+
+        (void)getcpuid(1, buffer);
 
         // If SSE/SSE2 is not enabled, there is no point in checking the rest.
-        //   SSE  is bit 25 of EDX
-        //   SSE2 is bit 26 of EDX
-        if ((cpuInfo.Edx & ((1 << 25) | (1 << 26))) == ((1 << 25) | (1 << 26)))
+        //   SSE  is bit 25 of EDX   (buffer[15] & 0x02)
+        //   SSE2 is bit 26 of EDX   (buffer[15] & 0x04)
+        if ((buffer[15] & 0x06) == 0x06)                                    // SSE & SSE2
         {
-            if (cpuInfo.Ecx & (1 << 25))                                   // AESNI
+            if ((buffer[11] & 0x02) != 0)                                   // AESNI
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Aes;
             }
 
-            if (cpuInfo.Ecx & (1 << 1))                                    // PCLMULQDQ 
+            if ((buffer[8] & 0x02) != 0)                                    // PCLMULQDQ
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Pclmulqdq;
             }
 
-            if (cpuInfo.Ecx & (1 << 0))                                    // SSE3
+            if ((buffer[8] & 0x01) != 0)                                    // SSE3
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Sse3;
 
-                if (cpuInfo.Ecx & (1 << 9))                                // SSSE3
+                if ((buffer[9] & 0x02) != 0)                                // SSSE3
                 {
                     g_cpuFeatures |= XArchIntrinsicConstants_Ssse3;
 
-                    if (cpuInfo.Ecx & (1 << 19))                           // SSE4.1
+                    if ((buffer[10] & 0x08) != 0)                           // SSE4.1
                     {
                         g_cpuFeatures |= XArchIntrinsicConstants_Sse41;
 
-                        if (cpuInfo.Ecx & (1 << 20))                       // SSSE4.2
+                        if ((buffer[10] & 0x10) != 0)                       // SSE4.2
                         {
                             g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
 
-                            if (cpuInfo.Ecx & (1 << 23))                   // POPCNT
+                            if ((buffer[10] & 0x80) != 0)                   // POPCNT
                             {
                                 g_cpuFeatures |= XArchIntrinsicConstants_Popcnt;
                             }
@@ -234,11 +230,17 @@ void DetectCPUFeatures()
         }
     }
 
-    PalCpuId(0x80000000, &cpuInfo);
-    if (cpuInfo.Eax >= 0x80000001)
+    uint32_t maxCpuIdEx = getcpuid(0x80000000, buffer);
+    
+    if (maxCpuIdEx >= 0x80000001)
     {
-        PalCpuId(0x80000001, &cpuInfo);
-        if (cpuInfo.Ecx & (1 << 5))                // LZCNT
+        // getcpuid executes cpuid with eax set to its first argument, and ecx cleared.
+        // It returns the resulting eax in buffer[0-3], ebx in buffer[4-7], ecx in buffer[8-11],
+        // and edx in buffer[12-15].
+
+        (void)getcpuid(0x80000001, buffer);
+
+        if ((buffer[8] & 0x20) != 0)            // LZCNT
         {
             g_cpuFeatures |= XArchIntrinsicConstants_Lzcnt;
         }

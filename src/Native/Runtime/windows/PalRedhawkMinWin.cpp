@@ -471,8 +471,6 @@ static size_t g_cbLargestOnDieCacheAdjusted = 0;
 
 
 #if (defined(_TARGET_AMD64_) || defined (_TARGET_X86_)) && !defined(USE_PORTABLE_HELPERS)
-EXTERN_C DWORD __fastcall getcpuid(DWORD arg, unsigned char result[16]);
-EXTERN_C DWORD __fastcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char result[16]);
 
 void QueryAMDCacheInfo(_Out_ UInt32* pcbCache, _Out_ UInt32* pcbCacheAdjusted)
 {
