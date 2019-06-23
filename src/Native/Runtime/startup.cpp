@@ -111,7 +111,9 @@ static bool InitDLL(HANDLE hPalInstance)
     }
 #endif // STRESS_LOG
 
+#ifndef USE_PORTABLE_HELPERS
     DetectCPUFeatures();
+#endif
 
     if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
         return false;
@@ -150,6 +152,7 @@ static void CheckForPalFallback()
 #endif // _DEBUG
 }
 
+#ifndef USE_PORTABLE_HELPERS
 // Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
 enum XArchIntrinsicConstants
 {
@@ -248,6 +251,7 @@ void DetectCPUFeatures()
 
 #endif // _X86_ || _AMD64_
 }
+#endif // !USE_PORTABLE_HELPERS
 
 #ifdef PROFILE_STARTUP
 #define STD_OUTPUT_HANDLE ((UInt32)-11)
