@@ -223,6 +223,10 @@ namespace System
                 bool isFirstFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_FRAME) != 0;
                 bool isFirstRethrowFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME) != 0;
 
+                // Clear the stacktrace if we're not rethrowing, in case we're throwing a previously thrown exception
+                if (!isFirstRethrowFrame && isFirstFrame)
+                    ex._idxFirstFreeStackTraceEntry = 0;
+
                 // If out of memory, avoid any calls that may allocate.  Otherwise, they may fail
                 // with another OutOfMemoryException, which may lead to infinite recursion.
                 bool fatalOutOfMemory = ex == PreallocatedOutOfMemoryException.Instance;
