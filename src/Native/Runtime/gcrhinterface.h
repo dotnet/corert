@@ -157,6 +157,8 @@ public:
     static EEType * GetLastAllocEEType();
     static void SetLastAllocEEType(EEType *pEEType);
 
+    static uint64_t GetDeadThreadsNonAllocBytes();
+
     // Used by debugger hook
     static void* CreateTypedHandle(void* object, int type);
     static void DestroyTypedHandle(void* handle);
@@ -166,6 +168,10 @@ private:
     // to emit allocation ETW events with type information.  We set this value unconditionally to avoid
     // race conditions where ETW is enabled after the value is set.
     DECLSPEC_THREAD static EEType * tls_pLastAllocationEEType;
+
+    // Tracks the amount of bytes that were reserved for threads in their gc_alloc_context and went unused when they died.
+    // Used for GC.GetTotalAllocatedBytes
+    static uint64_t m_DeadThreadsNonAllocBytes;
 };
 
 #endif // __GCRHINTERFACE_INCLUDED

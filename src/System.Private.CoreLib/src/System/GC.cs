@@ -634,8 +634,7 @@ namespace System
 
         public static long GetTotalAllocatedBytes(bool precise = false)
         {
-            // TODO: https://github.com/dotnet/corert/issues/5680
-            return default;
+            return precise ? RuntimeImports.RhGetTotalAllocatedBytesPrecise() : RuntimeImports.RhGetTotalAllocatedBytes();
         }
 
         public static GCMemoryInfo GetGCMemoryInfo()
