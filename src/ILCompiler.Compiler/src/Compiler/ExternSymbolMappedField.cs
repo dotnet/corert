@@ -20,6 +20,8 @@ namespace ILCompiler
             _symbolName = symbolName;
         }
 
+        public override string Name => _symbolName;
+
         public string SymbolName => _symbolName;
 
         public override DefType OwningType => _fieldType.Context.SystemModule.GetGlobalModuleType();
