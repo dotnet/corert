@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 
 if [ "$BUILDVARS_DONE" != 1 ]; then
@@ -13,8 +12,8 @@ __DOTNET_PATH=$__TOOLRUNTIME_DIR/dotnetcli
 __DOTNET_CMD=$__DOTNET_PATH/dotnet
 if [ -z "$__BUILDTOOLS_SOURCE" ]; then __BUILDTOOLS_SOURCE=https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json; fi
 export __BUILDTOOLS_USE_CSPROJ=true
-__BUILD_TOOLS_PACKAGE_VERSION=$(cat $__scriptpath/BuildToolsVersion.txt)
-__DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
+__BUILD_TOOLS_PACKAGE_VERSION=$(cat $__scriptpath/BuildToolsVersion.txt | tr -d '\r\n')
+__DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt | tr -d '\r\n')
 __BUILD_TOOLS_PATH=$__PACKAGES_DIR/microsoft.dotnet.buildtools/$__BUILD_TOOLS_PACKAGE_VERSION/lib
 __INIT_TOOLS_RESTORE_PROJECT=$__scriptpath/init-tools.msbuild
 __INIT_TOOLS_DONE_MARKER_DIR=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
