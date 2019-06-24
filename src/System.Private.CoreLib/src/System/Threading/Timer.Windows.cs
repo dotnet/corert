@@ -27,6 +27,7 @@ namespace System.Threading
             int id = (int)context;
             var wrapper = ThreadPoolCallbackWrapper.Enter();
             Instances[id].FireNextTimers();
+            ThreadPool.IncrementCompletedWorkItemCount();
             wrapper.Exit();
         }
 

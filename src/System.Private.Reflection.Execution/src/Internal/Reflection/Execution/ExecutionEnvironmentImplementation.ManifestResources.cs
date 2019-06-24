@@ -23,7 +23,15 @@ namespace Internal.Reflection.Execution
     {
         public sealed override ManifestResourceInfo GetManifestResourceInfo(Assembly assembly, String resourceName)
         {
-            throw new PlatformNotSupportedException();
+            LowLevelList<ResourceInfo> resourceInfos = GetExtractedResources(assembly);
+            for (int i = 0; i < resourceInfos.Count; i++)
+            {
+                if (resourceName == resourceInfos[i].Name)
+                {
+                    return new ManifestResourceInfo(assembly, resourceName, ResourceLocation.Embedded);
+                }
+            }
+            return null;
         }
 
         public sealed override String[] GetManifestResourceNames(Assembly assembly)

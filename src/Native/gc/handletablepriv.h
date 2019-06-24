@@ -56,9 +56,6 @@
 #define HANDLE_HANDLES_PER_BLOCK    (64)        // segment suballocation granularity
 #define HANDLE_OPTIMIZE_FOR_64_HANDLE_BLOCKS    // flag for certain optimizations
 
-// maximum number of internally supported handle types
-#define HANDLE_MAX_INTERNAL_TYPES   (12)                             // should be a multiple of 4
-
 // number of types allowed for public callers
 #define HANDLE_MAX_PUBLIC_TYPES     (HANDLE_MAX_INTERNAL_TYPES - 1) // reserve one internal type
 
@@ -341,7 +338,6 @@ struct HandleTypeCache
     int32_t lFreeIndex;
 };
 
-
 /*---------------------------------------------------------------------------*/
 
 
@@ -511,11 +507,6 @@ struct HandleTable
      * per-table user info
      */
     uint32_t uTableIndex;
-
-    /*
-     * per-table AppDomain info
-     */
-    ADIndex uADIndex;
 
     /*
      * one-level per-type 'quick' handle cache
@@ -752,22 +743,6 @@ TableSegment *SegmentAlloc(HandleTable *pTable);
  *
  */
 void SegmentFree(TableSegment *pSegment);
-
-/*
- * TableHandleAsyncPinHandles
- *
- * Mark ready for all non-pending OverlappedData that get moved to default domain.
- *
- */
-BOOL TableHandleAsyncPinHandles(HandleTable *pTable);
-
-/*
- * TableRelocateAsyncPinHandles
- *
- * Replaces async pin handles with ones in default domain.
- *
- */
-void TableRelocateAsyncPinHandles(HandleTable *pTable, HandleTable *pTargetTable);
 
 /*
  * Check if a handle is part of a HandleTable

@@ -13,6 +13,11 @@
     <!-- Force .dll extension even if output type is exe. -->
     <TargetExt>.dll</TargetExt>
   </PropertyGroup>
+  <PropertyGroup Condition="$(ObjWriterBuild) == 'true'">
+    <ObjWriterLibrary Condition="'$(OSGroup)' == 'Windows_NT'">objwriter.dll</ObjWriterLibrary>
+    <ObjWriterLibrary Condition="'$(OSGroup)' == 'Linux'">libobjwriter.so</ObjWriterLibrary>
+    <ObjWriterLibrary Condition="'$(OSGroup)' == 'OSX'">libobjwriter.dylib</ObjWriterLibrary>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
@@ -45,6 +50,16 @@
     </Compile>
     <Compile Include="RemovingILProvider.cs" />
   </ItemGroup>
+  <ItemGroup Condition="$(ObjWriterBuild) == 'true' and '$(OSGroup)' == 'Windows_NT'">
+    <Content Include="$(ObjDir)Native\$(OSPlatformConfig)\ObjWriter\llvmCap\LLVM-prefix\src\LLVM-build\bin\$(ConfigurationGroup)\$(ObjWriterLibrary)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup Condition="$(ObjWriterBuild) == 'true' and '$(OSGroup)' != 'Windows_NT'">
+    <Content Include="$(ObjDir)Native\$(OSPlatformConfig)\ObjWriter\llvmCap\LLVM-prefix\src\LLVM-build\lib\$(ObjWriterLibrary)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>  
   <ItemGroup>
     <Content Include="ilc.runtimeconfig.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

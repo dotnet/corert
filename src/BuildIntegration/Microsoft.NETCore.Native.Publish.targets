@@ -1,8 +1,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <IlcBuildTasksPath Condition="'$(IlcBuildTasksPath)' == ''">$(MSBuildThisFileDirectory)..\tools\netstandard\ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
-    
     <!--
       Prevent dotnet CLI from deploying the CoreCLR shim executable since we produce
       a native executable.
@@ -64,11 +62,12 @@
     pipeline we don't want to see in the output (native images, CoreCLR artifacts)
     until we get a proper AOT NetCore app package.
   -->
-  <UsingTask TaskName="ComputeManagedAssemblies" AssemblyFile="$(IlcBuildTasksPath)" />
+  <UsingTask TaskName="ComputeManagedAssembliesToCompileToNative" AssemblyFile="$(IlcBuildTasksPath)" />
   <Target Name="_ComputeAssembliesToCompileToNative" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <!-- Fail with descriptive error message for common mistake. -->
     <Error Condition="'$(RuntimeIdentifier)' == ''" Text="RuntimeIdentifier is required for native compilation. Try running dotnet publish with the -r option value specified." />
+    <Error Condition="'$(GeneratePackageOnBuild)' == 'true'" Text="GeneratePackageOnBuild is not supported for native compilation." />
 
     <!-- Fail with descriptive error message for common unsupported cases. -->
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))" Text="Cross-compilation is not supported yet. https://github.com/dotnet/corert/issues/5458" />
@@ -79,12 +78,12 @@
     <Error Condition="'@(PrivateSdkAssemblies)' == ''" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
     <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
 
-    <ComputeManagedAssemblies Assemblies="@(ResolvedAssembliesToPublish);@(_ResolvedCopyLocalPublishAssets)"
+    <ComputeManagedAssembliesToCompileToNative Assemblies="@(ResolvedAssembliesToPublish);@(_ResolvedCopyLocalPublishAssets)"
     DotNetAppHostExecutableName="$(_DotNetAppHostExecutableName)" DotNetHostFxrLibraryName="$(_DotNetHostFxrLibraryName)" DotNetHostPolicyLibraryName="$(_DotNetHostPolicyLibraryName)"
     SdkAssemblies="@(PrivateSdkAssemblies)" FrameworkAssemblies="@(FrameworkAssemblies)" CompilationMode="$(NativeCodeGen)">
       <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
       <Output TaskParameter="AssembliesToSkipPublish" ItemName="_AssembliesToSkipPublish" />
-    </ComputeManagedAssemblies>
+    </ComputeManagedAssembliesToCompileToNative>
     
     <ItemGroup>
       <ReadyToRunAssemblies Condition="'$(NativeCodeGen)' == 'readytorun'" Include="@(_ManagedResolvedAssembliesToPublish);@(IntermediateAssembly)" />

@@ -15,7 +15,7 @@ namespace System.Runtime
         {
             // Make sure that the finalizer thread is CoInitialized before any objects are finalized.  If this
             // fails, it will throw an exception and that will go unhandled, triggering a FailFast.
-            Thread.InitializeCom();
+            Thread.InitializeComForFinalizerThread();
         }
     }
 }

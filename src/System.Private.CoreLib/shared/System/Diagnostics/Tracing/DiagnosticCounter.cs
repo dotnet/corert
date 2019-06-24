@@ -30,7 +30,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="eventSource">The event source.</param>
-        public DiagnosticCounter(string name, EventSource eventSource)
+        internal DiagnosticCounter(string name, EventSource eventSource)
         {
             if (name == null)
             {
@@ -45,6 +45,7 @@ namespace System.Diagnostics.Tracing
             _group = CounterGroup.GetCounterGroup(eventSource);
             _group.Add(this);
             Name = name;
+            DisplayUnits = string.Empty;
             EventSource = eventSource;
         }
 
@@ -59,7 +60,7 @@ namespace System.Diagnostics.Tracing
             if (_group != null)
             {
                 _group.Remove(this);
-                _group = null;
+                _group = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
             }
         }
 
@@ -68,14 +69,36 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void AddMetadata(string key, string value)
         {
-            lock (MyLock)
+            lock (this)
             {
                 _metadata = _metadata ?? new Dictionary<string, string>();
                 _metadata.Add(key, value);
             }
         }
 
-        public string DisplayName { get; set; }
+        private string _displayName = "";
+        public string DisplayName
+        {
+            set
+            {
+                if (value == null)
+                    throw new ArgumentException("Cannot set null as DisplayName");
+                _displayName = value;
+            }
+            get { return _displayName; }
+        }
+
+        private string _displayUnits = "";
+        public string DisplayUnits
+        {
+            set
+            {
+                if (value == null)
+                    throw new ArgumentException("Cannot set null as DisplayUnits");
+                _displayUnits = value;
+            }
+            get { return _displayUnits; }
+        }
 
         public string Name { get; }
 
@@ -84,12 +107,9 @@ namespace System.Diagnostics.Tracing
         #region private implementation
 
         private CounterGroup _group;
-        private Dictionary<string, string> _metadata;
+        private Dictionary<string, string>? _metadata;
 
-        internal abstract void WritePayload(float intervalSec);
-
-        // arbitrarily we use name as the lock object.  
-        internal object MyLock { get { return Name; } }
+        internal abstract void WritePayload(float intervalSec, int pollingIntervalMillisec);
 
         internal void ReportOutOfBandMessage(string message)
         {
@@ -98,6 +118,8 @@ namespace System.Diagnostics.Tracing
 
         internal string GetMetadataString()
         {
+            Debug.Assert(Monitor.IsEntered(this));
+
             if (_metadata == null)
             {
                 return "";

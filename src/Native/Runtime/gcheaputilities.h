@@ -6,6 +6,7 @@
 #define _GCHEAPUTILITIES_H_
 
 #include "gcinterface.h"
+#include "daccess.h"
 
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
@@ -16,12 +17,33 @@ extern "C" {
 GPTR_DECL(uint8_t,g_lowest_address);
 GPTR_DECL(uint8_t,g_highest_address);
 GPTR_DECL(uint32_t,g_card_table);
+GVAL_DECL(GCHeapType, g_heap_type);
 #ifndef DACCESS_COMPILE
 }
 #endif // !DACCESS_COMPILE
 
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+extern "C" uint32_t* g_card_bundle_table;
+#endif // FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+
 extern "C" uint8_t* g_ephemeral_low;
 extern "C" uint8_t* g_ephemeral_high;
+
+// g_gc_dac_vars is a structure of pointers to GC globals that the
+// DAC uses. It is not exposed directly to the DAC.
+extern GcDacVars g_gc_dac_vars;
+
+// Instead of exposing g_gc_dac_vars to the DAC, a pointer to it
+// is exposed here (g_gcDacGlobals). The reason for this is to avoid
+// a problem in which a debugger attaches to a program while the program
+// is in the middle of initializing the GC DAC vars - if the "publishing"
+// of DAC vars isn't atomic, the debugger could see a partially initialized
+// GcDacVars structure.
+//
+// Instead, the debuggee "publishes" GcDacVars by assigning a pointer to g_gc_dac_vars
+// to this global, and the DAC will read this global.
+typedef DPTR(GcDacVars) PTR_GcDacVars;
+GPTR_DECL(GcDacVars, g_gcDacGlobals);
 
 // GCHeapUtilities provides a number of static methods
 // that operate on the global heap instance. It can't be
@@ -52,32 +74,19 @@ public:
     inline static bool IsServerHeap()
     {
         LIMITED_METHOD_CONTRACT;
+
 #ifdef FEATURE_SVR_GC
-        _ASSERTE(IGCHeap::gcHeapType != IGCHeap::GC_HEAP_INVALID);
-        return (IGCHeap::gcHeapType == IGCHeap::GC_HEAP_SVR);
-#else // FEATURE_SVR_GC
+        _ASSERTE(g_heap_type != GC_HEAP_INVALID);
+        return (g_heap_type == GC_HEAP_SVR);
+#else
         return false;
 #endif // FEATURE_SVR_GC
     }
 
-    // Gets the maximum generation number by reading the static field
-    // on IGCHeap. This should only be done by the DAC code paths - all other code
-    // should go through IGCHeap::GetMaxGeneration.
-    //
-    // The reason for this is that, while we are in the early stages of
-    // decoupling the GC, the GC and the DAC still remain tightly coupled
-    // and, in particular, the DAC needs to know how many generations the GC
-    // has. However, it is not permitted to invoke virtual methods on g_pGCHeap
-    // while on a DAC code path. Therefore, we need to determine the max generation
-    // non-virtually, while still in a manner consistent with the interface - 
-    // therefore, a static field is used.
-    //
-    // This is not without precedent - IGCHeap::gcHeapType is a static field used
-    // for a similar reason (the DAC needs to know what kind of heap it's looking at).
-    inline static unsigned GetMaxGeneration()
-    {
-        return IGCHeap::maxGeneration;
-    }
+#ifndef DACCESS_COMPILE
+    // Initializes a non-standalone GC.
+    static HRESULT InitializeDefaultGC();
+#endif // DACCESS_COMPILE
 
 private:
     // This class should never be instantiated.

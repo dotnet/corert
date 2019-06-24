@@ -5,6 +5,8 @@
 #ifndef __COMMONMACROS_H__
 #define __COMMONMACROS_H__
 
+#include "rhassert.h"
+
 #define EXTERN_C extern "C"
 #define FASTCALL __fastcall
 #define STDCALL __stdcall
@@ -47,6 +49,11 @@ char (*COUNTOF_helper(_CountofType (&_Array)[_SizeOfArray]))[_SizeOfArray];
 #endif
 #endif
 
+#ifndef __GCENV_BASE_INCLUDED__
+
+//
+// This macro returns val rounded up as necessary to be a multiple of alignment; alignment must be a power of 2
+//
 inline UIntNative ALIGN_UP(UIntNative val, UIntNative alignment);
 template <typename T>
 inline T* ALIGN_UP(T* val, UIntNative alignment);
@@ -55,33 +62,17 @@ inline UIntNative ALIGN_DOWN(UIntNative val, UIntNative alignment);
 template <typename T>
 inline T* ALIGN_DOWN(T* val, UIntNative alignment);
 
+#endif // !__GCENV_BASE_INCLUDED__
+
 inline bool IS_ALIGNED(UIntNative val, UIntNative alignment);
 template <typename T>
 inline bool IS_ALIGNED(T* val, UIntNative alignment);
 
 #ifndef DACCESS_COMPILE
-//
-// Basic memory copying/clearing functionality (rather than depend on the CRT). All our current compilers
-// actually provide these as intrinsics so use those for now (and provide non-CRT names for them as well).
-//
 
-EXTERN_C void * __cdecl memcpy(void *, const void *, size_t);
-#pragma intrinsic(memcpy)
-#ifndef CopyMemory
-#define CopyMemory(_dst, _src, _size) memcpy((_dst), (_src), (_size))
-#endif
-
-EXTERN_C void * __cdecl memset(void *, int, size_t);
-#pragma intrinsic(memset)
-#ifndef FillMemory
-#define FillMemory(_dst, _size, _fill) memset((_dst), (_fill), (_size))
-#endif
 #ifndef ZeroMemory
 #define ZeroMemory(_dst, _size) memset((_dst), 0, (_size))
 #endif
-
-EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
-#pragma intrinsic(memcmp)
 
 //-------------------------------------------------------------------------------------------------
 // min/max
@@ -127,7 +118,7 @@ EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
 #error Unsupported target architecture
 #endif
 
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 #if defined(_AMD64_)
 
 #define DATA_ALIGNMENT  8
@@ -164,7 +155,7 @@ EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
 #else
 #error Unsupported target architecture
 #endif
-#endif // GCENV_INCLUDED
+#endif // __GCENV_BASE_INCLUDED__
 
 #if defined(_TARGET_ARM_)
 #define THUMB_CODE 1
@@ -209,11 +200,6 @@ extern unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #define STARTUP_TIMELINE_EVENT(eventid)
 #endif // PROFILE_STARTUP
 
-bool inline FitsInI4(__int64 val)
-{
-    return val == (__int64)(__int32)val;
-}
-
 #ifndef C_ASSERT
 #define C_ASSERT(e) static_assert(e, #e)
 #endif // C_ASSERT
@@ -224,7 +210,7 @@ bool inline FitsInI4(__int64 val)
 #define DECLSPEC_THREAD __declspec(thread)
 #endif // !__llvm__
 
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 #if !defined(_INC_WINDOWS) && !defined(BINDER)
 #ifdef _WIN32
 // this must exactly match the typedef used by windows.h
@@ -238,6 +224,6 @@ typedef int32_t HRESULT;
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 #endif // !defined(_INC_WINDOWS) && !defined(BINDER)
-#endif // GCENV_INCLUDED
+#endif // __GCENV_BASE_INCLUDED__
 
 #endif // __COMMONMACROS_H__

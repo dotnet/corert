@@ -105,8 +105,7 @@ namespace System.Threading
     /// No allocation in typical cases of any operation except where necessary
     ///   - Since the maximum number of wait handles for a multi-wait operation is limited to
     ///     <see cref="WaitHandle.MaxWaitHandles"/>, arrays necessary for holding information about a multi-wait, and list nodes
-    ///     necessary for registering a wait, are precreated using <see cref="WaitHandleArray{T}"/> with a low initial capacity
-    ///     that covers most typical cases
+    ///     necessary for registering a wait, are precreated with a low initial capacity that covers most typical cases
     ///   - Threads track owned mutexes by linking the <see cref="WaitableObject.OwnershipInfo"/> instance into a linked list
     ///     <see cref="ThreadWaitInfo.LockedMutexesHead"/>. <see cref="WaitableObject.OwnershipInfo"/> is itself a list node,
     ///     and is created along with the mutex <see cref="WaitableObject"/>.
@@ -346,37 +345,6 @@ namespace System.Threading
                     timeoutMilliseconds,
                     interruptible: true,
                     prioritize: false);
-        }
-
-        public static int Wait(
-            Thread currentThread,
-            WaitableObject waitableObject0,
-            WaitableObject waitableObject1,
-            bool waitForAll,
-            int timeoutMilliseconds,
-            bool interruptible = true,
-            bool prioritize = false)
-        {
-            Debug.Assert(currentThread == Thread.CurrentThread);
-            Debug.Assert(waitableObject0 != null);
-            Debug.Assert(waitableObject1 != null);
-            Debug.Assert(waitableObject1 != waitableObject0);
-            Debug.Assert(timeoutMilliseconds >= -1);
-
-            ThreadWaitInfo waitInfo = currentThread.WaitInfo;
-            int count = 2;
-            WaitableObject[] waitableObjects = waitInfo.GetWaitedObjectArray(count);
-            waitableObjects[0] = waitableObject0;
-            waitableObjects[1] = waitableObject1;
-            return
-                WaitableObject.Wait(
-                    waitableObjects,
-                    count,
-                    waitForAll,
-                    waitInfo,
-                    timeoutMilliseconds,
-                    interruptible,
-                    prioritize);
         }
 
         public static int SignalAndWait(

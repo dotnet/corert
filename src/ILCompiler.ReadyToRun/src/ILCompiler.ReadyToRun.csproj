@@ -54,6 +54,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InstanceEntryPointTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\IReadyToRunMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\LocalMethodImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ManifestMetadataTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodEntryPointTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodGCInfoNode.cs" />
@@ -102,6 +103,7 @@
     <Compile Include="ObjectWriter\SectionBuilder.cs" />
     <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
     <Compile Include="ObjectWriter\RelocationHelper.cs" />
+    <Compile Include="ObjectWriter\TargetExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -134,6 +136,9 @@
     </Compile>
     <Compile Include="..\..\JitInterface\src\MemoryHelper.cs">
       <Link>JitInterface\MemoryHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\UnboxingMethodDesc.cs">
+      <Link>JitInterface\UnboxingMethodDesc.cs</Link>
     </Compile>
   </ItemGroup>
 

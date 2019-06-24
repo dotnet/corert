@@ -14,24 +14,20 @@ Module Name:
 #ifndef __GC_H
 #define __GC_H
 
-#ifdef Sleep
-// This is a funny workaround for the fact that "common.h" defines Sleep to be
-// Dont_Use_Sleep, with the hope of causing linker errors whenever someone tries to use sleep.
-//
-// However, GCToOSInterface defines a function called Sleep, which (due to this define) becomes
-// "Dont_Use_Sleep", which the GC in turn happily uses. The symbol that GCToOSInterface actually
-// exported was called "GCToOSInterface::Dont_Use_Sleep". While we progress in making the GC standalone,
-// we'll need to break the dependency on common.h (the VM header) and this problem will become moot.
-#undef Sleep
-#endif // Sleep
-
 #include "gcinterface.h"
 #include "env/gcenv.os.h"
-#include "env/gcenv.ee.h"
 
-#ifdef FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
 #include "gcenv.ee.standalone.inl"
-#endif // FEATURE_STANDALONE_GC
+
+// GCStress does not currently work with Standalone GC
+#ifdef STRESS_HEAP
+ #undef STRESS_HEAP
+#endif // STRESS_HEAP
+#else
+#include "env/gcenv.ee.h"
+#endif // BUILD_AS_STANDALONE
+#include "gcconfig.h"
 
 /*
  * Promotion Function Prototypes
@@ -40,21 +36,6 @@ typedef void enum_func (Object*);
 
 // callback functions for heap walkers
 typedef void object_callback_func(void * pvContext, void * pvDataLoc);
-
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-/* If you modify failure_get_memory and         */
-/* oom_reason be sure to make the corresponding */
-/* changes in toolbox\sos\strike\strike.cpp.    */
-/*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-enum failure_get_memory
-{
-    fgm_no_failure = 0,
-    fgm_reserve_segment = 1,
-    fgm_commit_segment_beg = 2,
-    fgm_commit_eph_segment = 3,
-    fgm_grow_table = 4,
-    fgm_commit_table = 5
-};
 
 struct fgm_history
 {
@@ -71,17 +52,7 @@ struct fgm_history
     }
 };
 
-enum oom_reason
-{
-    oom_no_failure = 0,
-    oom_budget = 1,
-    oom_cant_commit = 2,
-    oom_cant_reserve = 3,
-    oom_loh = 4,
-    oom_low_mem = 5,
-    oom_unproductive_full_gc = 6
-};
-
+// These values should be in sync with the GC_REASONs (in eventtrace.h) used for ETW.
 // TODO : it would be easier to make this an ORed value
 enum gc_reason
 {
@@ -97,20 +68,32 @@ enum gc_reason
     reason_lowmemory_blocking = 9,
     reason_induced_compacting = 10,
     reason_lowmemory_host = 11,
+    reason_pm_full_gc = 12, // provisional mode requested to trigger full GC
+    reason_lowmemory_host_blocking = 13,
     reason_max
 };
 
-struct oom_history
+// Types of GCs, emitted by the GCStart ETW event.
+enum gc_etw_type
 {
-    oom_reason reason;
-    size_t alloc_size;
-    uint8_t* reserved;
-    uint8_t* allocated;
-    size_t gc_index;
-    failure_get_memory fgm;
-    size_t size;
-    size_t available_pagefile_mb;
-    BOOL loh_p;
+   gc_etw_type_ngc = 0,
+   gc_etw_type_bgc = 1,
+   gc_etw_type_fgc = 2
+};
+
+// Types of segments, emitted by the GCCreateSegment ETW event.
+enum gc_etw_segment_type
+{
+    gc_etw_segment_small_object_heap = 0,
+    gc_etw_segment_large_object_heap = 1,
+    gc_etw_segment_read_only_heap = 2
+};
+
+// Types of allocations, emitted by the GCAllocationTick ETW event.
+enum gc_etw_alloc_kind
+{
+    gc_etw_alloc_soh = 0,
+    gc_etw_alloc_loh = 1
 };
 
 /* forward declerations */
@@ -121,10 +104,11 @@ class IGCHeapInternal;
 
 /* misc defines */
 #define LARGE_OBJECT_SIZE ((size_t)(85000))
+#define max_generation 2
 
 #ifdef GC_CONFIG_DRIVEN
 #define MAX_GLOBAL_GC_MECHANISMS_COUNT 6
-GARY_DECL(size_t, gc_global_mechanisms, MAX_GLOBAL_GC_MECHANISMS_COUNT);
+extern size_t gc_global_mechanisms[MAX_GLOBAL_GC_MECHANISMS_COUNT];
 #endif //GC_CONFIG_DRIVEN
 
 #ifdef DACCESS_COMPILE
@@ -137,10 +121,27 @@ class DacHeapWalker;
 
 #define MP_LOCKS
 
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+extern "C" uint32_t* g_gc_card_bundle_table;
+#endif
+
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+// Note this is not updated in a thread safe way so the value may not be accurate. We get
+// it accurately in full GCs if the handle count is requested.
+extern DWORD g_dwHandles;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+
 extern "C" uint32_t* g_gc_card_table;
 extern "C" uint8_t* g_gc_lowest_address;
 extern "C" uint8_t* g_gc_highest_address;
-extern "C" bool g_fFinalizerRunOnShutDown;
+extern "C" GCHeapType g_gc_heap_type;
+extern "C" uint32_t g_max_generation;
+extern "C" MethodTable* g_gc_pFreeObjectMethodTable;
+extern "C" uint32_t g_num_processors;
+
+extern VOLATILE(int32_t) g_fSuspensionPending;
+
+::IGCHandleManager*  CreateGCHandleManager();
 
 namespace WKS {
     ::IGCHeapInternal* CreateGCHeap();
@@ -230,11 +231,6 @@ struct alloc_context : gc_alloc_context
 };
 
 class IGCHeapInternal : public IGCHeap {
-    friend struct ::_DacGlobals;
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-#endif
-    
 public:
 
     virtual ~IGCHeapInternal() {}
@@ -248,38 +244,24 @@ public:
 
     unsigned GetMaxGeneration()
     {
-        return IGCHeap::maxGeneration;
+        return max_generation;
     }
 
-    BOOL IsValidSegmentSize(size_t cbSize)
+    bool IsValidSegmentSize(size_t cbSize)
     {
         //Must be aligned on a Mb and greater than 4Mb
         return (((cbSize & (1024*1024-1)) ==0) && (cbSize >> 22));
     }
 
-    BOOL IsValidGen0MaxSize(size_t cbSize)
+    bool IsValidGen0MaxSize(size_t cbSize)
     {
         return (cbSize >= 64*1024);
     }
 
     BOOL IsLargeObject(MethodTable *mt)
     {
-        WRAPPER_NO_CONTRACT;
-
         return mt->GetBaseSize() >= LARGE_OBJECT_SIZE;
     }
-
-    void SetFinalizeRunOnShutdown(bool value)
-    {
-        g_fFinalizerRunOnShutDown = value;
-    }
-
-protected: 
-public:
-#if defined(FEATURE_BASICFREEZE) && defined(VERIFY_HEAP)
-    // Return TRUE if object lives in frozen segment
-    virtual BOOL IsInFrozenSegment (Object * object) = 0;
-#endif // defined(FEATURE_BASICFREEZE) && defined(VERIFY_HEAP)
 };
 
 // Go through and touch (read) each page straddled by a memory block.
@@ -289,30 +271,26 @@ void TouchPages(void * pStart, size_t cb);
 void updateGCShadow(Object** ptr, Object* val);
 #endif
 
-// the method table for the WeakReference class
-extern MethodTable  *pWeakReferenceMT;
-// The canonical method table for WeakReference<T>
-extern MethodTable  *pWeakReferenceOfTCanonMT;
-extern void FinalizeWeakReference(Object * obj);
-
+#ifndef DACCESS_COMPILE
 // The single GC heap instance, shared with the VM.
 extern IGCHeapInternal* g_theGCHeap;
 
-#ifndef DACCESS_COMPILE
-inline BOOL IsGCInProgress(bool bConsiderGCStart = FALSE)
-{
-    WRAPPER_NO_CONTRACT;
+// The single GC handle manager instance, shared with the VM.
+extern IGCHandleManager* g_theGCHandleManager;
+#endif // DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
+inline bool IsGCInProgress(bool bConsiderGCStart = false)
+{
     return g_theGCHeap != nullptr ? g_theGCHeap->IsGCInProgressHelper(bConsiderGCStart) : false;
 }
 #endif // DACCESS_COMPILE
 
-inline BOOL IsServerHeap()
+inline bool IsServerHeap()
 {
-    LIMITED_METHOD_CONTRACT;
 #ifdef FEATURE_SVR_GC
-    _ASSERTE(IGCHeap::gcHeapType != IGCHeap::GC_HEAP_INVALID);
-    return (IGCHeap::gcHeapType == IGCHeap::GC_HEAP_SVR);
+    assert(g_gc_heap_type != GC_HEAP_INVALID);
+    return g_gc_heap_type == GC_HEAP_SVR;
 #else // FEATURE_SVR_GC
     return false;
 #endif // FEATURE_SVR_GC

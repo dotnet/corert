@@ -137,11 +137,16 @@ namespace System.Threading
         {
         }
 
-        internal static void InitializeCom()
+        internal static void InitializeComForFinalizerThread()
         {
         }
 
         public void DisableComObjectEagerCleanup() { }
+
+        private static void InitializeExistingThreadPoolThread()
+        {
+            ThreadPool.InitializeForThreadPoolThread();
+        }
 
         public void Interrupt() => WaitSubsystem.Interrupt(this);
         internal static void UninterruptibleSleep0() => WaitSubsystem.UninterruptibleSleep0();

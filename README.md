@@ -12,6 +12,8 @@ This is a work in progress. The current state of platform support:
    - [ASP.NET Core](samples/WebApi/) sample
    - [MonoGame](samples/MonoGame/) sample
    - [Avalonia](https://www.youtube.com/watch?v=iaC67CUmEXs) demo
+   - [ADO.NET](https://github.com/ifew/corert-db) sample
+   - [EntityFrameworkCore.Sqlite](https://github.com/rubin55/dot-hello) sample 
    - Unsupported features: [Dynamic loading](https://github.com/dotnet/corert/issues/6949) (e.g. `Assembly.LoadFile`), [dynamic code generation](https://github.com/dotnet/corert/issues/5011) (e.g. `System.Reflection.Emit`), [Windows-specific interop](https://github.com/dotnet/corert/issues/4219) (e.g. COM, WinRT)
 - Linux ARM w/ RyuJIT codegen: ElmSharp Hello Tizen application ([detailed status](https://github.com/dotnet/corert/issues/4856))
 - CppCodeGen (targets all platforms that support C++): Simple C# programs. The big missing features are [garbage collection](https://github.com/dotnet/corert/issues/2033) and [exception handling](https://github.com/dotnet/corert/issues/910).
@@ -46,4 +48,4 @@ This project has adopted the code of conduct defined by the [Contributor Covenan
 ## Related Projects
 There are many .NET related projects on GitHub.
 - The [.NET home repo](https://github.com/Microsoft/dotnet) links to 100s of .NET projects, from Microsoft and the community.
-- The [ASP.NET home repo](https://github.com/aspnet/home) is the best place to start learning about [ASP.NET Core](http://www.asp.net).
+- The [ASP.NET Core repo](https://github.com/aspnet/AspNetCore) is the best place to start learning about [ASP.NET Core](http://www.asp.net).

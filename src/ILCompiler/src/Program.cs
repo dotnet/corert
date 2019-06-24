@@ -402,16 +402,38 @@ namespace ILCompiler
                     foreach (var inputFile in typeSystemContext.InputFilePaths)
                     {
                         EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-
                         compilationRoots.Add(new ReadyToRunRootProvider(module));
                         inputModules.Add(module);
+
                         if (!_isInputVersionBubble)
                         {
                             break;
                         }
                     }
 
-                    compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(typeSystemContext, inputModules);
+
+                    List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>();
+                    if (_isInputVersionBubble)
+                    {
+                        // In large version bubble mode add reference paths to the compilation group
+                        foreach (string referenceFile in _referenceFilePaths.Values)
+                        {
+                            try
+                            {
+                                // Currently SimpleTest.targets has no easy way to filter out non-managed assemblies
+                                // from the reference list.
+                                EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
+                                versionBubbleModules.Add(module);
+                            }
+                            catch (TypeSystemException.BadImageFormatException ex)
+                            {
+                                Console.WriteLine("Warning: cannot open reference assembly '{0}': {1}", referenceFile, ex.Message);
+                            }
+                        }
+                    }
+
+                    compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
+                        typeSystemContext, inputModules, versionBubbleModules);
                 }
                 else if (_multiFile)
                 {

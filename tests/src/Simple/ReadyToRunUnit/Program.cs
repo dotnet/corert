@@ -23,7 +23,7 @@ internal class Program
     const int LineCountInitialValue = 0x12345678;
 
     [ThreadStatic]
-    private static string TextFileName = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319\clientexclusionlist.xml";
+    private static string TextFileName;
 
     [ThreadStatic]
     private static int LineCount = LineCountInitialValue;
@@ -1041,15 +1041,19 @@ internal class Program
         return success;
     }
 
+    private static string EmitTextFileForTesting()
+    {
+        string file = Path.GetTempFileName();
+        File.WriteAllText(file, "Input for a test\nA small cog in the machine\nTurning endlessly\n");
+        return file;
+    }
+
     public static int Main(string[] args)
     {
-        if (args.Length > 0)
-        {
-            TextFileName = args[0];
-        }
-
         _passedTests = new List<string>();
         _failedTests = new List<string>();
+
+        TextFileName = EmitTextFileForTesting();
 
         RunTest("NewString", NewString());
         RunTest("WriteLine", WriteLine());
@@ -1097,12 +1101,14 @@ internal class Program
         RunTest("GVMTest", GVMTest());
         RunTest("RuntimeMethodHandle", RuntimeMethodHandle());
 
+        File.Delete(TextFileName);
+
         Console.WriteLine($@"{_passedTests.Count} tests pass:");
         foreach (string testName in _passedTests)
         {
             Console.WriteLine($@"    {testName}");
         }
-
+        
         if (_failedTests.Count == 0)
         {
             Console.WriteLine($@"All {_passedTests.Count} tests pass!");

@@ -136,6 +136,9 @@ while [ "$1" != "" ]; do
         skiptests)
             export __SkipTests=true
             ;;
+        buildtests)
+            export __BuildTests=1
+            ;;
         x86|x64|arm|arm64|armel|wasm)
             __BuildArch=$lowerI
             ;;
@@ -225,6 +228,9 @@ export __ProductBinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType"
 if [ $__CrossBuild = 1 ]; then
     export __ProductHostBinDir="$__rootbinpath/$__BuildOS.$__HostArch.$__BuildType"
 fi
+
+export __LogsDir="$__rootbinpath/Logs"
+export __TestBuildLog="$__LogsDir/tests_$__BuildOS.$__BuildArch.$__BuildType.log"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
 # This is needed by CLI to function.

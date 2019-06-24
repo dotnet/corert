@@ -47,6 +47,9 @@ run_test_dir()
     if [ "${__mode}" = "Wasm" ]; then
         __extra_args="${__extra_args} /p:NativeCodeGen=wasm"
     fi
+    if [ "${__mode}" = "ReadyToRun" ]; then
+        __extra_args="${__extra_args} /p:NativeCodeGen=readytorun"
+    fi
     if [ -n "${__extra_cxxflags}" ]; then
         __extra_cxxflags="/p:AdditionalCppCompilerFlags=\"${__extra_cxxflags}\""
         __extra_flags+=("${__extra_cxxflags}")
@@ -173,21 +176,15 @@ download_and_unzip_corefx_tests_artifacts()
 restore_coreclr_tests()
 {
     CoreRT_Test_Download_Semaphore=${CoreRT_TestExtRepo}/init-tests.completed
-    CoreRT_NativeArtifact_Download_Semaphore=${CoreRT_TestExtRepo}/init-native-artifact.completed
 
-    if [ -e ${CoreRT_Test_Download_Semaphore} ] && [ -e ${CoreRT_NativeArtifact_Download_Semaphore} ]; then
+    if [ -e ${CoreRT_Test_Download_Semaphore} ]; then
         echo "Tests are already initialized."
         return 0
     fi
-    TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreCLRTestsURL.txt)
-    NATIVE_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreCLRTestsNativeArtifacts_${CoreRT_BuildOS}.txt)
-    CoreRT_NativeArtifactRepo=${CoreRT_TestExtRepo}/native
+    TESTS_REMOTE_URL=$(<${CoreRT_TestRoot}/CoreCLRTestsURL_${CoreRT_BuildOS}.txt)
 
     echo "Restoring tests (this may take a few minutes).."
     download_and_unzip_coreclr_tests_artifacts ${TESTS_REMOTE_URL}  ${CoreRT_TestExtRepo} ${CoreRT_Test_Download_Semaphore}
-
-    echo "Restoring native test artifacts..."
-    download_and_unzip_coreclr_tests_artifacts ${NATIVE_REMOTE_URL}  ${CoreRT_NativeArtifactRepo} ${CoreRT_NativeArtifact_Download_Semaphore}
 }
 
 run_coreclr_tests()
@@ -204,16 +201,19 @@ run_coreclr_tests()
     fi
 
     XunitTestBinBase=${CoreRT_TestExtRepo}
-    pushd ${CoreRT_TestRoot}/CoreCLR/runtest
+    CLRCustomTestLauncher=${CoreRT_TestRoot}/CoreCLR/build-and-run-test.sh
+
+    pushd ${CoreRT_TestRoot}/CoreCLR
 
     export CoreRT_TestRoot
     export CoreRT_EnableCoreDumps
+    export CLRCustomTestLauncher
 
     CoreRT_TestSelectionArg=
     if [ "$SelectedTests" = "top200" ]; then
-        CoreRT_TestSelectionArg="--playlist=${CoreRT_TestRoot}/Top200.unix.txt"
+        CoreRT_TestSelectionArg="-test_filter_path ${CoreRT_TestRoot}/Top200.CoreCLR.issues.targets"
     elif [ "$SelectedTests" = "interop" ]; then
-        CoreRT_TestSelectionArg="--playlist=${CoreRT_TestRoot}/Interop.unix.txt"
+        CoreRT_TestSelectionArg="-test_filter_path ${CoreRT_TestRoot}/Interop.CoreCLR.issues.targets"
     elif [ "$SelectedTests" = "knowngood" ]; then
         # Todo: Build the list of tests that pass
         CoreRT_TestSelectionArg=
@@ -221,8 +221,8 @@ run_coreclr_tests()
         CoreRT_TestSelectionArg=
     fi
 
-    echo ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir --disableEventLogging
-    ./runtest.sh --testRootDir=${CoreRT_TestExtRepo} --coreOverlayDir=${CoreRT_TestRoot}/CoreCLR ${CoreRT_TestSelectionArg} --logdir=$__LogDir --disableEventLogging
+    echo python runtest.py -test_native_bin_location ${CoreRT_TestExtRepo}/native/tests -test_location ${CoreRT_TestRoot}/CoreCLR -core_root ${CoreRT_TestExtRepo}/Tests/Core_Root -coreclr_repo_location ${CoreRT_TestRoot}/.. ${CoreRT_TestSelectionArg}    
+    python runtest.py -test_native_bin_location ${CoreRT_TestExtRepo}/native/tests -test_location ${CoreRT_TestRoot}/CoreCLR -core_root ${CoreRT_TestExtRepo}/Tests/Core_Root -coreclr_repo_location ${CoreRT_TestRoot}/.. ${CoreRT_TestSelectionArg}
 }
 
 run_corefx_tests()
@@ -445,6 +445,21 @@ fi
 
 source "$CoreRT_TestRoot/testenv.sh"
 
+CoreRT_CoreCLRRuntimeDir=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/CoreClrRuntime
+
+export CoreRT_CoreCLRRuntimeDir
+
+if [ ! -d ${CoreRT_CoreCLRRuntimeDir} ]; then
+    # The test build handles restoring external dependencies such as CoreCLR runtime and its test host
+    # Trigger the test build so it will build but not run tests before we run them here
+    ${CoreRT_TestRoot}/../buildscripts/build-tests.sh ${CoreRT_BuildArch} ${CoreRT_BuildType} buildtests
+    RestoreExitCode=$?
+    if [ ${RestoreExitCode} != 0 ]; then
+        echo Test build failed with code ${RestoreExitCode}
+        exit ${RestoreExitCode}
+    fi
+fi
+
 __BuildStr=${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}
 __CoreRTTestBinDir=${CoreRT_TestRoot}/../bin/tests
 __LogDir=${CoreRT_TestRoot}/../bin/Logs/${__BuildStr}/tests
@@ -484,6 +499,8 @@ __JitTotalTests=0
 __JitPassedTests=0
 __WasmTotalTests=0
 __WasmPassedTests=0
+__ReadyToRunTotalTests=0
+__ReadyToRunPassedTests=0
 
 if [ ! -d ${__CoreRTTestBinDir} ]; then
     mkdir -p ${__CoreRTTestBinDir}
@@ -507,6 +524,11 @@ do
             run_test_dir ${csproj} "Cpp" "$CoreRT_ExtraCXXFlags" "$CoreRT_ExtraLinkFlags"
         fi
     fi
+    if [ "${CoreRT_TestCompileMode}" = "readytorun" ] || [ "${CoreRT_TestCompileMode}" = "" ]; then
+        if [ -e `dirname ${csproj}`/readytorun ]; then
+            run_test_dir ${csproj} "ReadyToRun"
+        fi
+    fi
     if [ "${CoreRT_TestCompileMode}" = "wasm" ]; then
         if [ -e `dirname ${csproj}`/wasm ]; then
             run_test_dir ${csproj} "Wasm"
@@ -514,8 +536,8 @@ do
     fi
 done
 
-__TotalTests=$((${__JitTotalTests} + ${__CppTotalTests} + ${__WasmTotalTests}))
-__PassedTests=$((${__JitPassedTests} + ${__CppPassedTests} + ${__WasmPassedTests}))
+__TotalTests=$((${__JitTotalTests} + ${__CppTotalTests} + ${__WasmTotalTests} + ${__ReadyToRunTotalTests}))
+__PassedTests=$((${__JitPassedTests} + ${__CppPassedTests} + ${__WasmPassedTests} + ${__ReadyToRunPassedTests}))
 __FailedTests=$((${__TotalTests} - ${__PassedTests}))
 
 if [ "$CoreRT_MultiFileConfiguration" = "MultiModule" ]; then
@@ -539,6 +561,7 @@ echo "</assemblies>"  >> ${__TestResultsLog}
 echo "JIT - TOTAL: ${__JitTotalTests} PASSED: ${__JitPassedTests}"
 echo "CPP - TOTAL: ${__CppTotalTests} PASSED: ${__CppPassedTests}"
 echo "WASM - TOTAL: ${__WasmTotalTests} PASSED: ${__WasmPassedTests}"
+echo "R2R - TOTAL: ${__ReadyToRunTotalTests} PASSED: ${__ReadyToRunPassedTests}"
 
 if [ ${__JitTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" != "wasm" ]; then
     exit 1
@@ -546,18 +569,13 @@ fi
 if [ ${__CppTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" != "wasm" ]; then
     exit 1
 fi
-if [ ${__WasmTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" = "wasm" ]; then
+if [ ${__WasmTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" == "wasm" ]; then
     exit 1
 fi 
-
-if [ ${__JitTotalTests} -gt ${__JitPassedTests} ]; then
+if [ ${__ReadyToRunTotalTests} == 0 ] && [ "${CoreRT_TestCompileMode}" == "readytorun" ]; then
     exit 1
 fi
-if [ ${__CppTotalTests} -gt ${__CppPassedTests} ]; then
+if [ ${__FailedTests} -gt 0 ]; then
     exit 1
 fi
-if [ ${__WasmTotalTests} -gt ${__WasmPassedTests} ]; then
-    exit 1
-fi
-
 exit 0

@@ -990,6 +990,22 @@
                 {
                     "name": "System.Tests.AppDomainTests.ApplyPolicy",
                     "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.AppDomainTests.MonitoringSurvivedProcessMemorySize",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.AppDomainTests.MonitoringTotalProcessorTime",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.AppDomainTests.MonitoringTotalAllocatedMemorySize",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.AppDomainTests.MonitoringSurvivedMemorySize",
+                    "reason": "outdated"
                 }
             ]
         }
@@ -1000,6 +1016,34 @@
             "namespaces": null,
             "classes": null,
             "methods": [
+                {
+                    "name": "System.Text.Tests.StringBuilderTests.AppendFormat",
+                    "reason": "Outdated"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.FromMilliseconds",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.FromMilliseconds_Invalid",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.NamedMultiplication",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Multiplication",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Division",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.NamedDivision",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
                 {
                     "name": "System.Tests.VersionTests.Comparisons_NullArgument_ThrowsArgumentNullException",
                     "reason":  "Version was improved to no longer throw from comparison operators"
@@ -2187,6 +2231,22 @@
                 {
                     "name": "System.IO.Tests.DirectoryNotFoundExceptionInteropTests.From_HR",
                     "reason": "Xunit.Sdk.IsAssignableFromException"
+                },
+                {
+                    "name": "System.Tests.StringTests.CasingNegativeTest",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.StringTests.CompareNegativeTest",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.StringTests.ToLowerNullCulture",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.StringTests.ToUpperNullCulture",
+                    "reason": "outdated"
                 }
             ]
         }

@@ -106,6 +106,8 @@ namespace Internal.JitInterface
 
         private JitConfigProvider _jitConfig;
 
+        private readonly UnboxingMethodDescFactory _unboxingThunkFactory;
+
         public CorInfoImpl(JitConfigProvider jitConfig)
         {
             //
@@ -122,6 +124,8 @@ namespace Internal.JitInterface
             }
 
             _unmanagedCallbacks = GetUnmanagedCallbacks(out _keepAlive);
+
+            _unboxingThunkFactory = new UnboxingMethodDescFactory();
         }
 
         public TextWriter Log
@@ -767,14 +771,6 @@ namespace Internal.JitInterface
                 return null;
             }
 
-            if (implType.IsValueType)
-            {
-                // TODO: If we resolve to a method on a valuetype, we should return a MethodDesc for the unboxing stub
-                // so that RyuJIT won't try to inline it. We don't have MethodDescs for unboxing stubs in the
-                // type system though.
-                return null;
-            }
-
             MethodDesc decl = HandleToObject(baseMethod);
             Debug.Assert(!decl.HasInstantiation);
 
@@ -790,11 +786,38 @@ namespace Internal.JitInterface
 
             MethodDesc impl = _compilation.ResolveVirtualMethod(decl, implType);
 
-            return impl != null ? ObjectToHandle(impl) : null;
+            if (impl != null)
+            {
+                if (impl.OwningType.IsValueType)
+                {
+                    impl = _unboxingThunkFactory.GetUnboxingMethod(impl);
+                }
+
+                return ObjectToHandle(impl);
+            }
+
+            return null;
         }
 
         private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, byte* requiresInstMethodTableArg)
-        { throw new NotImplementedException(); }
+        {
+            MethodDesc result = null;
+            bool requiresInstMTArg = false;
+
+            MethodDesc method = HandleToObject(ftn);
+            if (method.IsUnboxingThunk())
+            {
+                result = method.GetUnboxedMethod();
+                requiresInstMTArg = method.RequiresInstMethodTableArg();
+            }
+
+            if (requiresInstMethodTableArg != null)
+            {
+                *requiresInstMethodTableArg = requiresInstMTArg ? (byte)1 : (byte)0;
+            }
+
+            return result != null ? ObjectToHandle(result) : null;
+        }
 
         private CORINFO_CLASS_STRUCT_* getDefaultEqualityComparerClass(CORINFO_CLASS_STRUCT_* elemType)
         {
@@ -984,7 +1007,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
             EcmaModule tokenContextToRecord = null;
-            if (_compilation.NodeFactory.CompilationModuleGroup.ContainsType(owningType) &&
+            if (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(owningType) &&
                 owningType is EcmaType owningEcmaType)
             {
                 tokenContextToRecord = owningEcmaType.EcmaModule;
@@ -2005,6 +2028,9 @@ namespace Internal.JitInterface
                                         (int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_INIT_ARRAY)) != 0);
 
             var field = HandleToObject(pResolvedToken.hField);
+#if READYTORUN
+            MethodDesc callerMethod = HandleToObject(callerHandle);
+#endif
 
             CORINFO_FIELD_ACCESSOR fieldAccessor;
             CORINFO_FIELD_FLAGS fieldFlags = (CORINFO_FIELD_FLAGS)0;
@@ -2140,11 +2166,14 @@ namespace Internal.JitInterface
                     }
 
 #if READYTORUN
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsType(field.OwningType))
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsType(field.OwningType) &&
+                        fieldAccessor == CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER)
                     {
+                        PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
+                        
                         // Static fields outside of the version bubble need to be accessed using the ENCODE_FIELD_ADDRESS
                         // helper in accordance with ZapInfo::getFieldInfo in CoreCLR.
-                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(field, _signatureContext));
+                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(field, GetSignatureContext()));
 
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
@@ -2158,7 +2187,7 @@ namespace Internal.JitInterface
                     {
                         pResult->fieldLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.SymbolNodeFactory.ReadyToRunHelper(helperId, field.OwningType, _signatureContext)
+                            _compilation.SymbolNodeFactory.ReadyToRunHelper(helperId, field.OwningType, GetSignatureContext())
 #else
                             _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType)
 #endif
@@ -2181,7 +2210,7 @@ namespace Internal.JitInterface
             pResult->offset = fieldOffset;
 
 #if READYTORUN
-            EncodeFieldBaseOffset(field, pResult);
+            EncodeFieldBaseOffset(field, pResult, callerMethod);
 #endif
 
             // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
@@ -2844,9 +2873,9 @@ namespace Internal.JitInterface
             // CompileMethod is going to fail with this CorJitResult anyway.
         }
 
-        private HRESULT allocBBProfileBuffer(uint count, ref ProfileBuffer* profileBuffer)
+        private HRESULT allocMethodBlockCounts(uint count, ref BlockCounts* pBlockCounts)
         { throw new NotImplementedException("allocBBProfileBuffer"); }
-        private HRESULT getBBProfileData(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint count, ref ProfileBuffer* profileBuffer, ref uint numRuns)
+        private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
         { throw new NotImplementedException("getBBProfileData"); }
 
         private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)

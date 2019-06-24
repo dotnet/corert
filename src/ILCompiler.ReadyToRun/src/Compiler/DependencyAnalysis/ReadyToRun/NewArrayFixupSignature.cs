@@ -6,6 +6,7 @@ using System;
 
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -28,8 +29,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
-            dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_NewArray);
-            dataBuilder.EmitTypeSignature(_arrayType, _signatureContext);
+            EcmaModule targetModule = _signatureContext.GetTargetModule(_arrayType);
+            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_NewArray, targetModule, _signatureContext);
+            dataBuilder.EmitTypeSignature(_arrayType, innerContext);
 
             return dataBuilder.ToObjectData();
         }
@@ -37,7 +39,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"NewArraySignature: {_arrayType.ToString()}");
+            sb.Append($@"NewArraySignature: ");
+            sb.Append(nameMangler.GetMangledTypeName(_arrayType));
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

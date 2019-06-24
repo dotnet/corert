@@ -16,13 +16,14 @@
 #include "gcenv.h"
 
 #include "gc.h"
+#include "gceventstatus.h"
 
 #include "objecthandle.h"
 #include "handletablepriv.h"
 
-#ifndef FEATURE_REDHAWK
-#include "nativeoverlapped.h"
-#endif
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+DWORD g_dwHandles = 0;
+#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 /****************************************************************************
  *
@@ -82,7 +83,7 @@ __inline PTR_HandleTable Table(HHANDLETABLE hTable)
  * Allocates and initializes a handle table.
  *
  */
-HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCount, ADIndex uADIndex)
+HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCount)
 {
     CONTRACTL
     {
@@ -140,7 +141,6 @@ HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCoun
 
     // Store user data
     pTable->uTableIndex = (uint32_t) -1;
-    pTable->uADIndex = uADIndex;
 
     // loop over various arrays an initialize them
     uint32_t u;
@@ -183,8 +183,10 @@ void HndDestroyHandleTable(HHANDLETABLE hTable)
     // fetch the handle table pointer
     HandleTable *pTable = Table(hTable);
 
+#ifdef ENABLE_PERF_COUNTERS
     // decrement handle count by number of handles in this table
-    COUNTER_ONLY(GetPerfCounters().m_GC.cHandles -= HndCountHandles(hTable));
+    GetPerfCounters().m_GC.cHandles -= HndCountHandles(hTable);
+#endif
 
     // We are going to free the memory for this HandleTable.
     // Let us reset the copy in g_pHandleTableArray to NULL.
@@ -243,37 +245,6 @@ uint32_t HndGetHandleTableIndex(HHANDLETABLE hTable)
     return pTable->uTableIndex;
 }
 
-/*
- * HndGetHandleTableIndex
- *
- * Retrieves the AppDomain index associated with a handle table at creation
- */
-ADIndex HndGetHandleTableADIndex(HHANDLETABLE hTable)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // fetch the handle table pointer
-    HandleTable *pTable = Table(hTable);
-
-    return pTable->uADIndex;
-}
-
-/*
- * HndGetHandleTableIndex
- *
- * Retrieves the AppDomain index associated with a handle table at creation
- */
-ADIndex HndGetHandleADIndex(OBJECTHANDLE handle)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    // fetch the handle table pointer
-    HandleTable *pTable = Table(HndGetHandleTable(handle));
-
-    return pTable->uADIndex;
-}
-
 #ifndef DACCESS_COMPILE
 /*
  * HndCreateHandle
@@ -285,12 +256,7 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
 {
     CONTRACTL
     {
-#ifdef FEATURE_REDHAWK
-        // Redhawk returns NULL on failure.
         NOTHROW;
-#else
-        THROWS;
-#endif
         GC_NOTRIGGER;
         if (object != NULL) 
         { 
@@ -300,18 +266,12 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
         {
             MODE_ANY;
         }
-        SO_INTOLERANT;
     }
     CONTRACTL_END;
 
-#if defined( _DEBUG) && !defined(FEATURE_REDHAWK)
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_HANDLETABLE))
-    {
-        FAULT_NOT_FATAL();
-        char *a = new char;
-        delete a;
-    }
-#endif // _DEBUG && !FEATURE_REDHAWK
+    // If we are creating a variable-strength handle, verify that the
+    // requested variable handle type is valid.
+    _ASSERTE(uType != HNDTYPE_VARIABLE || IS_VALID_VHT_VALUE(lExtraInfo));
 
     VALIDATEOBJECTREF(object);
 
@@ -327,11 +287,7 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
     // did the allocation succeed?
     if (!handle)
     {
-#ifdef FEATURE_REDHAWK
         return NULL;
-#else
-        ThrowOutOfMemory();
-#endif
     }
 
 #ifdef DEBUG_DestroyedHandleValue
@@ -350,21 +306,12 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
         HandleQuickSetUserData(handle, lExtraInfo);
     }
 
-    // store the reference
-    HndAssignHandle(handle, object);
-
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
     g_dwHandles++;
-#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+#endif // defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 
-#ifdef GC_PROFILING
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        g_profControlBlock.pProfInterface->HandleCreated((uintptr_t)handle, (ObjectID)OBJECTREF_TO_UNCHECKED_OBJECTREF(object));
-        END_PIN_PROFILER();
-    }
-#endif //GC_PROFILING
-
+    // store the reference
+    HndAssignHandle(handle, object);
     STRESS_LOG2(LF_GC, LL_INFO1000, "CreateHandle: %p, type=%d\n", handle, uType);
 
     // return the result
@@ -373,91 +320,28 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
 #endif // !DACCESS_COMPILE
 
 #ifdef _DEBUG
-void ValidateFetchObjrefForHandle(OBJECTREF objref, ADIndex appDomainIndex)
+void ValidateFetchObjrefForHandle(OBJECTREF objref)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_DEBUG_ONLY;
 
     BEGIN_DEBUG_ONLY_CODE;
     VALIDATEOBJECTREF (objref);
-
-    AppDomain *pDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
-
-    // Access to a handle in unloaded domain is not allowed
-    _ASSERTE(pDomain != NULL);
-    _ASSERTE(!pDomain->NoAccessToHandleTable());
-
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks() && objref != NULL)
-    {
-        if (appDomainIndex.m_dwIndex)
-            objref->TryAssignAppDomain(pDomain);
-        else
-            objref->TrySetAppDomainAgile();
-    }
-#endif
     END_DEBUG_ONLY_CODE;
 }
 
-void ValidateAssignObjrefForHandle(OBJECTREF objref, ADIndex appDomainIndex)
+void ValidateAssignObjrefForHandle(OBJECTREF objref)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_DEBUG_ONLY;
 
     BEGIN_DEBUG_ONLY_CODE;
-
     VALIDATEOBJECTREF (objref);
-
-    AppDomain *pDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
-
-    // Access to a handle in unloaded domain is not allowed
-    _ASSERTE(pDomain != NULL);
-    _ASSERTE(!pDomain->NoAccessToHandleTable());
-
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks() && objref != NULL)
-    {
-        if (appDomainIndex.m_dwIndex)
-            objref->TryAssignAppDomain(pDomain);
-        else
-            objref->TrySetAppDomainAgile();
-    }
-#endif
     END_DEBUG_ONLY_CODE;
-}
-
-void ValidateAppDomainForHandle(OBJECTHANDLE handle)
-{
-    STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_NOTHROW;
-
-#ifdef DEBUG_DestroyedHandleValue
-    // Verify that we are not trying to access freed handle.
-    _ASSERTE("Attempt to access destroyed handle." && *(_UNCHECKED_OBJECTREF *)handle != DEBUG_DestroyedHandleValue);
-#endif
-#ifdef DACCESS_COMPILE
-    UNREFERENCED_PARAMETER(handle);
-#else
-    BEGIN_DEBUG_ONLY_CODE;
-    ADIndex id = HndGetHandleADIndex(handle);
-    AppDomain *pUnloadingDomain = SystemDomain::AppDomainBeingUnloaded();
-    if (!pUnloadingDomain || pUnloadingDomain->GetIndex() != id)
-    {
-        return;
-    }
-    if (!pUnloadingDomain->NoAccessToHandleTable())
-    {
-        return;
-    }
-    _ASSERTE (!"Access to a handle in unloaded domain is not allowed");
-    END_DEBUG_ONLY_CODE;
-#endif // !DACCESS_COMPILE
 }
 #endif
 
@@ -476,37 +360,20 @@ void HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT; 
         CAN_TAKE_LOCK;     // because of TableFreeSingleHandleToCache
     }
     CONTRACTL_END;
 
     STRESS_LOG2(LF_GC, LL_INFO1000, "DestroyHandle: *%p->%p\n", handle, *(_UNCHECKED_OBJECTREF *)handle);
 
-    FireEtwDestroyGCHandle((void*) handle, GetClrInstanceId());
-    FireEtwPrvDestroyGCHandle((void*) handle, GetClrInstanceId());
+    FIRE_EVENT(DestroyGCHandle, (void *)handle);
+    FIRE_EVENT(PrvDestroyGCHandle, (void *)handle);
 
     // sanity check handle we are being asked to free
     _ASSERTE(handle);
 
-#ifdef _DEBUG
-    ValidateAppDomainForHandle(handle);
-#endif
-
     // fetch the handle table pointer
     HandleTable *pTable = Table(hTable);
-
-#ifdef GC_PROFILING
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        g_profControlBlock.pProfInterface->HandleDestroyed((uintptr_t)handle);
-        END_PIN_PROFILER();
-    }        
-#endif //GC_PROFILING
-
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-    g_dwHandles--;
-#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
     // sanity check the type index
     _ASSERTE(uType < pTable->uTypeCount);
@@ -515,6 +382,10 @@ void HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle)
 
     // return the handle to the table's cache
     TableFreeSingleHandleToCache(pTable, uType, handle);
+
+#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+    g_dwHandles--;
+#endif // defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 }
 
 
@@ -530,7 +401,6 @@ void HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -547,110 +417,6 @@ void HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle)
 
     // fetch the type and then free normally
     HndDestroyHandle(hTable, HandleFetchType(handle), handle);
-}
-
-
-/*
- * HndCreateHandles
- *
- * Entrypoint for allocating handles in bulk.
- *
- */
-uint32_t HndCreateHandles(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE *pHandles, uint32_t uCount)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // fetch the handle table pointer
-    HandleTable *pTable = Table(hTable);
-
-    // sanity check the type index
-    _ASSERTE(uType < pTable->uTypeCount);
-
-    // keep track of the number of handles we've allocated
-    uint32_t uSatisfied = 0;
-
-    // if this is a large number of handles then bypass the cache
-    if (uCount > SMALL_ALLOC_COUNT)
-    {
-        CrstHolder ch(&pTable->Lock);
-
-        // allocate handles in bulk from the main handle table
-        uSatisfied = TableAllocBulkHandles(pTable, uType, pHandles, uCount);
-    }
-
-    // do we still need to get some handles?
-    if (uSatisfied < uCount)
-    {
-        // get some handles from the cache
-        uSatisfied += TableAllocHandlesFromCache(pTable, uType, pHandles + uSatisfied, uCount - uSatisfied);
-    }
-
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-    g_dwHandles += uSatisfied;
-#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
-
-#ifdef GC_PROFILING
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        for (uint32_t i = 0; i < uSatisfied; i++)
-            g_profControlBlock.pProfInterface->HandleCreated((uintptr_t)pHandles[i], 0);
-        END_PIN_PROFILER();
-    }
-#endif //GC_PROFILING
-
-    // return the number of handles we allocated
-    return uSatisfied;
-}
-
-
-/*
- * HndDestroyHandles
- *
- * Entrypoint for freeing handles in bulk.
- *
- */
-void HndDestroyHandles(HHANDLETABLE hTable, uint32_t uType, const OBJECTHANDLE *pHandles, uint32_t uCount)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef _DEBUG
-    ValidateAppDomainForHandle(pHandles[0]);
-#endif
-    
-    // fetch the handle table pointer
-    HandleTable *pTable = Table(hTable);
-
-    // sanity check the type index
-    _ASSERTE(uType < pTable->uTypeCount);
-
-#ifdef GC_PROFILING
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        for (uint32_t i = 0; i < uCount; i++)
-            g_profControlBlock.pProfInterface->HandleDestroyed((uintptr_t)pHandles[i]);
-        END_PIN_PROFILER();
-    }
-#endif
-
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-    g_dwHandles -= uCount;
-#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
-
-    // is this a small number of handles?
-    if (uCount <= SMALL_ALLOC_COUNT)
-    {
-        // yes - free them via the handle cache
-        TableFreeHandlesToCache(pTable, uType, pHandles, uCount);
-        return;
-    }
-
-    // acquire the handle manager lock
-    {
-        CrstHolder ch(&pTable->Lock);
-    
-        // free the unsorted handles in bulk to the main handle table
-        TableFreeBulkUnpreparedHandles(pTable, uType, pHandles, uCount);
-    }
 }
 
 /*
@@ -695,7 +461,7 @@ uintptr_t HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType,
     }
 
     _ASSERTE(!"Shouldn't be trying to call HndCompareExchangeHandleExtraInfo on handle types without extra info");
-    return NULL;
+    return (uintptr_t)NULL;
 }
 #endif // !DACCESS_COMPILE
 
@@ -705,6 +471,7 @@ uintptr_t HndCompareExchangeHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType,
  * Retrieves owner data from handle.
  *
  */
+GC_DAC_VISIBLE
 uintptr_t HndGetHandleExtraInfo(OBJECTHANDLE handle)
 {
     WRAPPER_NO_CONTRACT;
@@ -745,48 +512,26 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, SetGCHandle) ||
-        ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, SetGCHandle))
+    if (EVENT_ENABLED(SetGCHandle) || EVENT_ENABLED(PrvSetGCHandle))
     {
         uint32_t hndType = HandleFetchType(handle);
-        ADIndex appDomainIndex = HndGetHandleADIndex(handle);   
-        AppDomain* pAppDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
         uint32_t generation = value != 0 ? g_theGCHeap->WhichGeneration(value) : 0;
-        FireEtwSetGCHandle((void*) handle, value, hndType, generation, (int64_t) pAppDomain, GetClrInstanceId());
-        FireEtwPrvSetGCHandle((void*) handle, value, hndType, generation, (int64_t) pAppDomain, GetClrInstanceId());
+        FIRE_EVENT(SetGCHandle, (void *)handle, (void *)value, hndType, generation);
+        FIRE_EVENT(PrvSetGCHandle, (void *) handle, (void *)value, hndType, generation);
 
-#ifndef FEATURE_REDHAWK
         // Also fire the things pinned by Async pinned handles
         if (hndType == HNDTYPE_ASYNCPINNED)
         {
-            if (value->GetMethodTable() == g_pOverlappedDataClass)
+            GCToEEInterface::WalkAsyncPinned(value, value, [](Object*, Object* to, void* ctx)
             {
-                OverlappedDataObject* overlapped = (OverlappedDataObject*) value;
-                if (overlapped->m_isArray)
-                {
-                    ArrayBase* pUserObject = (ArrayBase*)OBJECTREFToObject(overlapped->m_userObject);
-                    Object **ppObj = (Object**)pUserObject->GetDataPtr(TRUE);
-                    size_t num = pUserObject->GetNumComponents();
-                    for (size_t i = 0; i < num; i ++)
-                    {
-                        value = ppObj[i];
-                        uint32_t generation = value != 0 ? g_theGCHeap->WhichGeneration(value) : 0;
-                        FireEtwSetGCHandle(overlapped, value, HNDTYPE_PINNED, generation, (int64_t) pAppDomain, GetClrInstanceId());
-                    }
-                }
-                else
-                {
-                    value = OBJECTREF_TO_UNCHECKED_OBJECTREF(overlapped->m_userObject);
-                    uint32_t generation = value != 0 ? g_theGCHeap->WhichGeneration(value) : 0;
-                    FireEtwSetGCHandle(overlapped, value, HNDTYPE_PINNED, generation, (int64_t) pAppDomain, GetClrInstanceId());
-                }
-            }
+                Object* overlapped = reinterpret_cast<Object*>(ctx);
+                uint32_t generation = to != nullptr ? g_theGCHeap->WhichGeneration(to) : 0;
+                FIRE_EVENT(SetGCHandle, (void *)overlapped, (void *)to, HNDTYPE_PINNED, generation);
+            });
         }
-#endif // FEATURE_REDHAWK
     }
 #else
     UNREFERENCED_PARAMETER(handle);
@@ -794,6 +539,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
 #endif
 }
 
+#ifndef DACCESS_COMPILE
 /*
  * HndWriteBarrier
  *
@@ -804,7 +550,6 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     // unwrap the objectref we were given
@@ -841,14 +586,12 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
         int generation = g_theGCHeap->WhichGeneration(value);
         uint32_t uType = HandleFetchType(handle);
 
-#ifndef FEATURE_REDHAWK
         //OverlappedData need special treatment: because all user data pointed by it needs to be reported by this handle,
         //its age is consider to be min age of the user data, to be simple, we just make it 0
-        if (uType == HNDTYPE_ASYNCPINNED && objref->GetGCSafeMethodTable () == g_pOverlappedDataClass)
+        if (uType == HNDTYPE_ASYNCPINNED)
         {
             generation = 0;
         }
-#endif // !FEATURE_REDHAWK
         
         if (uType == HNDTYPE_DEPENDENT)
         {
@@ -868,6 +611,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
         }
     }
 }
+#endif // DACCESS_COMPILE
 
 /*
  * HndEnumHandles
@@ -878,6 +622,7 @@ void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
  * needs to enumerate all roots in the handle table.
  *
  */
+GC_DAC_VISIBLE_NO_MANGLE
 void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeCount,
                     HANDLESCANPROC pfnEnum, uintptr_t lParam1, uintptr_t lParam2, bool fAsync)
 {
@@ -938,6 +683,7 @@ void HndEnumHandles(HHANDLETABLE hTable, const uint32_t *puType, uint32_t uTypeC
  * as it scans.
  *
  */
+GC_DAC_VISIBLE_NO_MANGLE
 void HndScanHandlesForGC(HHANDLETABLE hTable, HANDLESCANPROC scanProc, uintptr_t param1, uintptr_t param2,
                          const uint32_t *types, uint32_t typeCount, uint32_t condemned, uint32_t maxgen, uint32_t flags)
 {
@@ -1292,66 +1038,6 @@ uint32_t HndCountAllHandles(BOOL fUseLocks)
     return uCount;
 }
 
-#ifndef FEATURE_REDHAWK
-BOOL  Ref_HandleAsyncPinHandles()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        if (GetThread()) {MODE_COOPERATIVE;} else {DISABLED(MODE_COOPERATIVE);}
-    }
-    CONTRACTL_END;
-
-    HandleTableBucket *pBucket = g_HandleTableMap.pBuckets[0];
-    BOOL result = FALSE;
-    int limit = getNumberOfSlots();
-    for (int n = 0; n < limit; n ++ )
-    {
-        if (TableHandleAsyncPinHandles(Table(pBucket->pTable[n])))
-        {
-            result = TRUE;
-        }
-    }
-
-    return result;
-}
-
-void  Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource, HandleTableBucket *pTarget)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    int limit = getNumberOfSlots();
-    for (int n = 0; n < limit; n ++ )
-    {
-        TableRelocateAsyncPinHandles(Table(pSource->pTable[n]), Table(pTarget->pTable[n]));
-    }
-}
-#endif // !FEATURE_REDHAWK
-
-BOOL Ref_ContainHandle(HandleTableBucket *pBucket, OBJECTHANDLE handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    int limit = getNumberOfSlots();
-    for (int n = 0; n < limit; n ++ )
-    {
-        if (TableContainHandle(Table(pBucket->pTable[n]), handle))
-            return TRUE;
-    }
-
-    return FALSE;
-}
 /*--------------------------------------------------------------------------*/
 
 

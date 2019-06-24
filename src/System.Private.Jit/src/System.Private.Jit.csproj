@@ -152,6 +152,7 @@
     <Compile Include="$(JitInterfaceBasePath)\JitConfigProvider.cs" />
     <Compile Include="$(JitInterfaceBasePath)\MemoryHelper.cs" />
     <Compile Include="$(JitInterfaceBasePath)\TypeString.cs" />
+    <Compile Include="$(JitInterfaceBasePath)\UnboxingMethodDesc.cs" />
     <Compile Include="$(TypeLoaderBasePath)\Internal\TypeSystem\PInvokeTargetNativeMethod.Runtime.cs" />
     <Compile Include="Internal\Runtime\JitSupport\RyuJitExecutionStrategy.cs" />
     <Compile Include="Internal\Runtime\JitSupport\VirtualMethodSlotHelper.cs" />

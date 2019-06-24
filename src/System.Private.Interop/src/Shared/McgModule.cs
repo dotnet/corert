@@ -25,7 +25,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
 using System.Runtime;
-using Internal.NativeFormat;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -175,17 +174,6 @@ namespace System.Runtime.InteropServices
             get
             {
                 return m_mcgDataModulePriority;
-            }
-        }
-
-        private NativeReader NewHashtableReader(byte[] dataArray)
-        {
-            if (dataArray == null)
-                return null;
-
-            fixed (byte* pData = dataArray) // WARNING: must be pre-initialized and, therefore, frozen in place
-            {
-                return new NativeReader(pData, (uint)dataArray.Length);
             }
         }
 

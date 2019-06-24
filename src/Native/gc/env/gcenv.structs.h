@@ -9,9 +9,9 @@
 
 struct GCSystemInfo
 {
-    uint32_t dwNumberOfProcessors;
-    uint32_t dwPageSize;
-    uint32_t dwAllocationGranularity;
+    uint32_t        dwNumberOfProcessors;
+    uint32_t        dwPageSize;
+    uint32_t        dwAllocationGranularity;
 };
 
 typedef void * HANDLE;
@@ -65,7 +65,7 @@ extern "C" uint32_t __stdcall GetCurrentThreadId();
 
 class EEThreadId
 {
-    uint32_t m_uiId;
+    uint64_t m_uiId;
 public:
 
     bool IsCurrentThread()

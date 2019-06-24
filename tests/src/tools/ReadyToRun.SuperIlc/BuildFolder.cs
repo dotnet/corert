@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace ReadyToRun.SuperIlc
 {
@@ -20,21 +20,27 @@ namespace ReadyToRun.SuperIlc
 
         private readonly List<ProcessInfo[]> _compilations;
 
+        private string _inputFolder;
+
         private string _outputFolder;
 
         private readonly List<ProcessInfo[]> _executions;
+
+        public string IssueID;
 
         public BuildFolder(
             List<string> compilationInputFiles, 
             List<string> mainExecutables,
             List<string> executionScripts,
             IEnumerable<CompilerRunner> compilerRunners,
+            string inputFolder,
             string outputFolder,
             BuildOptions options)
         {
             _compilationInputFiles = compilationInputFiles;
             _mainExecutables = mainExecutables;
             _executionScripts = executionScripts;
+            _inputFolder = inputFolder;
             _outputFolder = outputFolder;
 
             _compilations = new List<ProcessInfo[]>();
@@ -45,7 +51,7 @@ namespace ReadyToRun.SuperIlc
                 ProcessInfo[] fileCompilations = new ProcessInfo[(int)CompilerIndex.Count];
                 foreach (CompilerRunner runner in compilerRunners)
                 {
-                    ProcessInfo compilationProcess = runner.CompilationProcess(_outputFolder, file);
+                    ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _outputFolder, file));
                     fileCompilations[(int)runner.Index] = compilationProcess;
                 }
                 _compilations.Add(fileCompilations);
@@ -72,13 +78,12 @@ namespace ReadyToRun.SuperIlc
                         folders.Add(Path.GetDirectoryName(script));
                         folders.UnionWith(runner.ReferenceFolders);
 
-                        scriptExecutions[(int)runner.Index] = runner.ScriptExecutionProcess(_outputFolder, script, modules, folders, options.CoreRootDirectory.FullName, options.NoEtw);
+                        scriptExecutions[(int)runner.Index] = new ProcessInfo(new ScriptExecutionProcessConstructor(runner, _outputFolder, script, modules, folders));
                     }
                 }
 
                 if (options.CoreRootDirectory != null)
                 {
-                    string coreRunPath = options.CoreRunPath();
                     foreach (string mainExe in _mainExecutables ?? Enumerable.Empty<string>())
                     {
                         if (scriptedExecutables.Contains(mainExe))
@@ -101,7 +106,7 @@ namespace ReadyToRun.SuperIlc
                             folders.Add(Path.GetDirectoryName(mainExe));
                             folders.UnionWith(runner.ReferenceFolders);
 
-                            appExecutions[(int)runner.Index] = runner.AppExecutionProcess(_outputFolder, mainExe, modules, folders, coreRunPath, options.NoEtw);
+                            appExecutions[(int)runner.Index] = new ProcessInfo(new AppExecutionProcessConstructor(runner, _outputFolder, mainExe, modules, folders));
                         }
                     }
                 }
@@ -114,6 +119,8 @@ namespace ReadyToRun.SuperIlc
             List<string> passThroughFiles = new List<string>();
             List<string> mainExecutables = new List<string>();
             List<string> executionScripts = new List<string>();
+
+            string scriptExtension = (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".cmd" : ".sh");
 
             // Copy unmanaged files (runtime, native dependencies, resources, etc)
             foreach (string file in Directory.EnumerateFiles(inputDirectory))
@@ -132,7 +139,7 @@ namespace ReadyToRun.SuperIlc
                 {
                     mainExecutables.Add(file);
                 }
-                else if (ext.Equals(".cmd", StringComparison.OrdinalIgnoreCase))
+                else if (ext.Equals(scriptExtension, StringComparison.OrdinalIgnoreCase))
                 {
                     executionScripts.Add(file);
                 }
@@ -153,7 +160,7 @@ namespace ReadyToRun.SuperIlc
                 }
             }
 
-            return new BuildFolder(compilationInputFiles, mainExecutables, executionScripts, compilerRunners, outputRoot, options);
+            return new BuildFolder(compilationInputFiles, mainExecutables, executionScripts, compilerRunners, inputDirectory, outputRoot, options);
         }
 
         public void AddModuleToJittedMethodsMapping(Dictionary<string, HashSet<string>> moduleToJittedMethods, int executionIndex, CompilerIndex compilerIndex)
@@ -226,6 +233,10 @@ namespace ReadyToRun.SuperIlc
                 }
             }
         }
+
+        public bool IsBlockedWithIssue => IssueID != null;
+
+        public string InputFolder => _inputFolder;
 
         public string OutputFolder => _outputFolder;
 

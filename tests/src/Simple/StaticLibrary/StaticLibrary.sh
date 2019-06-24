@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-$1/$2
+$1/StaticLibraryTest
 if [ $? == 100 ]; then
     echo pass
     exit 0

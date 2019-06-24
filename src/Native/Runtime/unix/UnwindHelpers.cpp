@@ -26,10 +26,13 @@
 #endif
 #include <src/UnwindCursor.hpp>
 
+
 #if defined(_TARGET_AMD64_)
 using libunwind::Registers_x86_64;
 #elif defined(_TARGET_ARM_)
 using libunwind::Registers_arm;
+#elif defined(_TARGET_ARM64_)
+using libunwind::Registers_arm64;
 #else
 #error "Unwinding is not implemented for this architecture yet."
 #endif
@@ -42,95 +45,13 @@ using libunwind::UnwindInfoSections;
 
 LocalAddressSpace _addressSpace;
 
-#ifdef __APPLE__
-
-struct dyld_unwind_sections
-{
-    const struct mach_header*   mh;
-    const void*                 dwarf_section;
-    uintptr_t                   dwarf_section_length;
-    const void*                 compact_unwind_section;
-    uintptr_t                   compact_unwind_section_length;
-};
-
-#else // __APPLE__
-
-#if defined(_TARGET_AMD64_)
-// Passed to the callback function called by dl_iterate_phdr
-struct dl_iterate_cb_data
-{
-    UnwindInfoSections *sects;
-    uintptr_t targetAddr;
-};
-
-// Callback called by dl_iterate_phdr. Locates unwind info sections for the target
-// address.
-static int LocateSectionsCallback(struct dl_phdr_info *info, size_t size, void *data)
-{
-    // info is a pointer to a structure containing information about the shared object
-    dl_iterate_cb_data* cbdata = static_cast<dl_iterate_cb_data*>(data);
-    uintptr_t addrOfInterest = (uintptr_t)cbdata->targetAddr;
-
-    size_t object_length;
-    bool found_obj = false;
-    bool found_hdr = false;
-
-    // If the base address of the SO is past the address we care about, move on.
-    if (info->dlpi_addr > addrOfInterest)
-    {
-        return 0;
-    }
-
-    // Iterate through the program headers for this SO
-    for (ElfW(Half) i = 0; i < info->dlpi_phnum; i++)
-    {
-        const ElfW(Phdr) *phdr = &info->dlpi_phdr[i];
-
-        if (phdr->p_type == PT_LOAD)
-        {
-            // This is a loadable entry. Loader loads all segments of this type.
-
-            uintptr_t begin = info->dlpi_addr + phdr->p_vaddr;
-            uintptr_t end = begin + phdr->p_memsz;
-
-            if (addrOfInterest >= begin && addrOfInterest < end)
-            {
-                cbdata->sects->dso_base = begin;
-                object_length = phdr->p_memsz;
-                found_obj = true;
-            }
-        }
-        else if (phdr->p_type == PT_GNU_EH_FRAME)
-        {
-            // This element specifies the location and size of the exception handling 
-            // information as defined by the .eh_frame_hdr section.
-
-            EHHeaderParser<LocalAddressSpace>::EHHeaderInfo hdrInfo;
-
-            uintptr_t eh_frame_hdr_start = info->dlpi_addr + phdr->p_vaddr;
-            cbdata->sects->dwarf_index_section = eh_frame_hdr_start;
-            cbdata->sects->dwarf_index_section_length = phdr->p_memsz;
-
-            EHHeaderParser<LocalAddressSpace> ehp;
-            ehp.decodeEHHdr(_addressSpace, eh_frame_hdr_start, phdr->p_memsz, hdrInfo);
-
-            cbdata->sects->dwarf_section = hdrInfo.eh_frame_ptr;
-            found_hdr = true;
-        }
-    }
-
-    bool found = found_obj && found_hdr;
-    return static_cast<int>(found);
-}
-#endif
-
-#endif // __APPLE__
-
 #ifdef _TARGET_AMD64_
 
 // Shim that implements methods required by libunwind over REGDISPLAY
 struct Registers_REGDISPLAY : REGDISPLAY
 {
+    static int  getArch() { return libunwind::REGISTERS_X86_64; }
+
     inline uint64_t getRegister(int regNum) const
     {
         switch (regNum)
@@ -433,12 +354,241 @@ void Registers_arm_rt::setRegister(int num, uint32_t value, uint32_t location)
 
 #endif // _TARGET_ARM_
 
+#if defined(_TARGET_ARM64_)
+
+class Registers_arm64_rt: public libunwind::Registers_arm64 {
+public:
+    Registers_arm64_rt() { abort(); };
+    Registers_arm64_rt(const void *registers);
+
+    bool        validRegister(int num) {abort();};
+    uint64_t    getRegister(int num) const;
+    void        setRegister(int num, uint64_t value, uint64_t location);
+    bool        validFloatRegister(int num) {abort();};
+    double      getFloatRegister(int num) {abort();}
+    void        setFloatRegister(int num, double value) {abort();}
+    bool        validVectorRegister(int num) const {abort();}
+    libunwind::v128    getVectorRegister(int num) const {abort();};
+    void        setVectorRegister(int num, libunwind::v128 value) {abort();};
+    void        jumpto() { abort();};
+
+    uint64_t    getSP() const         { return regs->SP;}
+    void        setSP(uint64_t value, uint64_t location) { regs->SP = value;}
+    uint64_t    getIP() const         { return regs->IP;}
+    void        setIP(uint64_t value, uint64_t location)
+    { regs->IP = value; regs->pIP = (PTR_UIntNative)location; }
+    void saveVFPAsX() {abort();};
+private:
+    REGDISPLAY *regs;
+};
+
+inline Registers_arm64_rt::Registers_arm64_rt(const void *registers) {
+    regs = (REGDISPLAY *)registers;
+}
+
+inline uint64_t Registers_arm64_rt::getRegister(int regNum) const {
+    if (regNum == UNW_REG_SP || regNum == UNW_ARM64_SP)
+        return regs->SP;
+
+    if (regNum == UNW_ARM64_LR)
+        return *regs->pLR;
+
+    if (regNum == UNW_REG_IP)
+        return regs->IP;
+
+    switch (regNum)
+    {
+    case (UNW_ARM64_X0):
+        return *regs->pX0;
+    case (UNW_ARM64_X1):
+        return *regs->pX1;
+    case (UNW_ARM64_X2):
+        return *regs->pX2;
+    case (UNW_ARM64_X3):
+        return *regs->pX3;
+    case (UNW_ARM64_X4):
+        return *regs->pX4;
+    case (UNW_ARM64_X5):
+        return *regs->pX5;
+    case (UNW_ARM64_X6):
+        return *regs->pX6;
+    case (UNW_ARM64_X7):
+        return *regs->pX7;
+    case (UNW_ARM64_X8):
+        return *regs->pX8;
+    case (UNW_ARM64_X9):
+        return *regs->pX9;
+    case (UNW_ARM64_X10):
+        return *regs->pX10;
+    case (UNW_ARM64_X11):
+        return *regs->pX11;
+    case (UNW_ARM64_X12):
+        return *regs->pX12;
+    case (UNW_ARM64_X13):
+        return *regs->pX13;
+    case (UNW_ARM64_X14):
+        return *regs->pX14;
+    case (UNW_ARM64_X15):
+        return *regs->pX15;
+    case (UNW_ARM64_X16):
+        return *regs->pX16;
+    case (UNW_ARM64_X17):
+        return *regs->pX17;
+    case (UNW_ARM64_X18):
+        return *regs->pX18;
+    case (UNW_ARM64_X19):
+        return *regs->pX19;
+    case (UNW_ARM64_X20):
+        return *regs->pX20;
+    case (UNW_ARM64_X21):
+        return *regs->pX21;
+    case (UNW_ARM64_X22):
+        return *regs->pX22;
+    case (UNW_ARM64_X23):
+        return *regs->pX23;
+    case (UNW_ARM64_X24):
+        return *regs->pX24;
+    case (UNW_ARM64_X25):
+        return *regs->pX25;
+    case (UNW_ARM64_X26):
+        return *regs->pX26;
+    case (UNW_ARM64_X27):
+        return *regs->pX27;
+    case (UNW_ARM64_X28):
+        return *regs->pX28;
+    }
+
+    PORTABILITY_ASSERT("unsupported arm64 register");
+}
+
+void Registers_arm64_rt::setRegister(int num, uint64_t value, uint64_t location)
+{
+
+    if (num == UNW_REG_SP || num == UNW_ARM64_SP) {
+        regs->SP = (UIntNative )value;
+        return;
+    }
+
+    if (num == UNW_ARM64_LR) {
+        regs->pLR = (PTR_UIntNative)location;
+        return;
+    }
+
+    if (num == UNW_REG_IP) {
+        regs->IP = value;
+        /* the location could be NULL, we could try to recover
+           pointer to value in stack from pLR */
+        if ((!location) && (regs->pLR) && (*regs->pLR == value))
+            regs->pIP = regs->pLR;
+        else
+            regs->pIP = (PTR_UIntNative)location;
+        return;
+    }
+
+    switch (num)
+    {
+    case (UNW_ARM64_X0):
+        regs->pX0 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X1):
+        regs->pX1 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X2):
+        regs->pX2 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X3):
+        regs->pX3 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X4):
+        regs->pX4 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X5):
+        regs->pX5 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X6):
+        regs->pX6 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X7):
+        regs->pX7 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X8):
+        regs->pX8 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X9):
+        regs->pX9 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X10):
+        regs->pX10 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X11):
+        regs->pX11 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X12):
+        regs->pX12 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X13):
+        regs->pX13 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X14):
+        regs->pX14 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X15):
+        regs->pX15 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X16):
+        regs->pX16 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X17):
+        regs->pX17 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X18):
+        regs->pX18 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X19):
+        regs->pX19 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X20):
+        regs->pX20 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X21):
+        regs->pX21 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X22):
+        regs->pX22 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X23):
+        regs->pX23 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X24):
+        regs->pX24 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X25):
+        regs->pX25 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X26):
+        regs->pX26 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X27):
+        regs->pX27 = (PTR_UIntNative)location;
+        break;
+    case (UNW_ARM64_X28):
+        regs->pX28 = (PTR_UIntNative)location;
+        break;
+    default:
+        PORTABILITY_ASSERT("unsupported arm64 register");
+    }
+}
+
+#endif // _TARGET_ARM64_
+
 bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs)
 {
 #if defined(_TARGET_AMD64_)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace);
 #elif defined(_TARGET_ARM_)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_arm_rt> uc(_addressSpace, regs);
+#elif defined(_TARGET_ARM64_)
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64_rt> uc(_addressSpace, regs);
 #else
     #error "Unwinding is not implemented for this architecture yet."
 #endif
@@ -453,9 +603,17 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     unw_proc_info_t procInfo;
     uc.getInfo(&procInfo);
 
+#if defined(_TARGET_ARM64_)
+    DwarfInstructions<LocalAddressSpace, Registers_arm64_rt> dwarfInst;
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm64_rt*)regs);
+#elif defined(_TARGET_ARM_)
+    DwarfInstructions<LocalAddressSpace, Registers_arm_rt> dwarfInst;
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm_rt*)regs);
+#else
     DwarfInstructions<LocalAddressSpace, Registers_REGDISPLAY> dwarfInst;
-
     int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_REGDISPLAY*)regs);
+#endif
+
     if (stepRet != UNW_STEP_SUCCESS)
     {
         return false;
@@ -474,46 +632,12 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     return true;
 }
 
-UnwindInfoSections LocateUnwindSections(uintptr_t pc)
-{
-    UnwindInfoSections uwInfoSections;
-
-#ifdef __APPLE__
-    // On macOS, we can use a dyld function from libSystem in order
-    // to find the unwind sections.
-
-    libunwind::dyld_unwind_sections dyldInfo;
-
-  if (libunwind::_dyld_find_unwind_sections((void *)pc, &dyldInfo))
-    {
-        uwInfoSections.dso_base                      = (uintptr_t)dyldInfo.mh;
-
-        uwInfoSections.dwarf_section                 = (uintptr_t)dyldInfo.dwarf_section;
-        uwInfoSections.dwarf_section_length          = dyldInfo.dwarf_section_length;
-
-        uwInfoSections.compact_unwind_section        = (uintptr_t)dyldInfo.compact_unwind_section;
-        uwInfoSections.compact_unwind_section_length = dyldInfo.compact_unwind_section_length;
-    }
-#else // __APPLE__
-
-#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-    dl_iterate_cb_data cb_data = {&uwInfoSections, pc };
-    dl_iterate_phdr(LocateSectionsCallback, &cb_data);
-#else
-    PORTABILITY_ASSERT("LocateUnwindSections");
-#endif
-
-#endif
-
-    return uwInfoSections;
-}
-
 bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
 {
+    UnwindInfoSections uwInfoSections;
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
     uintptr_t pc = regs->GetIP();
-    UnwindInfoSections uwInfoSections = LocateUnwindSections(pc);
-    if (uwInfoSections.dwarf_section == NULL)
+    if (!_addressSpace.findUnwindSections(pc, uwInfoSections))
     {
         return false;
     }
@@ -521,7 +645,6 @@ bool UnwindHelpers::StepFrame(REGDISPLAY *regs)
 #elif defined(_LIBUNWIND_ARM_EHABI)
     // unwind section is located later for ARM
     // pc will be taked from regs parameter
-    UnwindInfoSections uwInfoSections;
     return DoTheStep(0, uwInfoSections, regs);
 #else
     PORTABILITY_ASSERT("StepFrame");

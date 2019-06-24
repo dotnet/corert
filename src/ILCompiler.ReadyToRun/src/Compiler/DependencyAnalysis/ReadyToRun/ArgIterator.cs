@@ -96,6 +96,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public bool IsValueType() { if (_isByRef) return false; return _type.IsValueType; }
         public bool IsPointerType() { if (_isByRef) return false; return _type.IsPointer; }
 
+        public bool HasIndeterminateSize() { return IsValueType() && ((DefType)_type).InstanceFieldSize.IsIndeterminate; }
+
         public int PointerSize => _type.Context.Target.PointerSize;
 
         public int GetSize()
@@ -538,6 +540,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool[] _forcedByRefParams;
         private bool _skipFirstArg;
         private bool _extraObjectFirstArg;
+        private bool _hasIndeterminateSize;
         private CallingConventions _interpreterCallingConvention;
 
         public bool HasThis => _hasThis;
@@ -644,6 +647,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             return (int)size;
+        }
+
+        /// <summary>
+        /// Returns true when the signature contains runtime-dependent constructs like Vector of T.
+        /// </summary>
+        /// <returns>true = signature depends on runtime processor extensions, false = can be evaluated at compile time</returns>
+        public bool HasIndeterminateSize()
+        {
+            if (!_SIZE_OF_ARG_STACK_COMPUTED)
+            {
+                ForceSigWalk();
+            }
+            return _hasIndeterminateSize;
         }
 
         //------------------------------------------------------------------------
@@ -922,7 +938,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _ITERATION_STARTED = true;
             }
 
-            if (_argNum >= NumFixedArgs)
+            if (_argNum >= NumFixedArgs || _hasIndeterminateSize)
                 return TransitionBlock.InvalidOffset;
 
             CorElementType argType = GetArgumentType(_argNum, out _argTypeHandle, out _argForceByRef);
@@ -930,6 +946,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _argTypeHandleOfByRefParam = (argType == CorElementType.ELEMENT_TYPE_BYREF ? _argData.GetByRefArgumentType(_argNum) : default(TypeHandle));
 
             _argNum++;
+
+            if (_argTypeHandle.HasIndeterminateSize())
+            {
+                _hasIndeterminateSize = true;
+                return TransitionBlock.InvalidOffset;
+            }
 
             int argSize = TypeHandle.GetElemSize(argType, _argTypeHandle);
 
@@ -1397,11 +1419,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     TypeHandle thArgType;
                     bool argForcedToBeByref;
                     CorElementType type = GetArgumentType(i, out thArgType, out argForcedToBeByref);
+                    if (thArgType.HasIndeterminateSize())
+                    {
+                        _hasIndeterminateSize = true;
+                        break;
+                    }
                     if (argForcedToBeByref)
                         type = CorElementType.ELEMENT_TYPE_BYREF;
 
                     if (!_transitionBlock.IsArgumentInRegister(ref numRegistersUsed, type, thArgType))
                     {
+                        if (thArgType.HasIndeterminateSize())
+                        {
+                            _hasIndeterminateSize = true;
+                            break;
+                        }
                         int structSize = TypeHandle.GetElemSize(type, thArgType);
 
                         nSizeOfArgStack += _transitionBlock.StackElemSize(structSize);

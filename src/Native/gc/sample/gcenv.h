@@ -1,12 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+#ifndef __GCENV_H__
+#define __GCENV_H__
 
 // The sample is to be kept simple, so building the sample
 // in tandem with a standalone GC is currently not supported.
-#ifdef FEATURE_STANDALONE_GC
-#undef FEATURE_STANDALONE_GC
-#endif // FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
+#undef BUILD_AS_STANDALONE
+#endif // BUILD_AS_STANDALONE
+
+#define FEATURE_REDHAWK
 
 #if defined(_DEBUG)
 #ifndef _DEBUG_IMPL
@@ -29,6 +33,13 @@
 #include "gcenv.object.h"
 #include "gcenv.sync.h"
 #include "gcenv.ee.h"
+#include "volatile.h"
+
+#ifdef PLATFORM_UNIX
+#include "gcenv.unix.inl"
+#else
+#include "gcenv.windows.inl"
+#endif
 
 #define MAX_LONGPATH 1024
 
@@ -115,13 +126,6 @@ public:
     void SetGCSpecial(bool fGCSpecial)
     {
     }
-
-    bool CatchAtSafePoint()
-    {
-        // This is only called by the GC on a background GC worker thread that's explicitly interested in letting
-        // a foreground GC proceed at that point. So it's always safe to return true.
-        return true;
-    }
 };
 
 Thread * GetThread();
@@ -165,31 +169,9 @@ public:
         GCSTRESS_INSTR_NGEN = 8,    // GC on every allowable NGEN instr
         GCSTRESS_UNIQUE = 16,   // GC only on a unique stack trace
     };
-
-    int     GetHeapVerifyLevel() { return 0; }
-    bool    IsHeapVerifyEnabled() { return GetHeapVerifyLevel() != 0; }
-
-    GCStressFlags GetGCStressLevel()        const { return GCSTRESS_NONE; }
-    bool    IsGCStressMix()                 const { return false; }
-
-    int     GetGCtraceStart()               const { return 0; }
-    int     GetGCtraceEnd()               const { return 0; }//1000000000; }
-    int     GetGCtraceFac()               const { return 0; }
-    int     GetGCprnLvl()               const { return 0; }
-    bool    IsGCBreakOnOOMEnabled()         const { return false; }
-    int     GetGCgen0size()               const { return 0; }
-    int     GetSegmentSize()               const { return 0; }
-    int     GetGCconcurrent()               const { return 1; }
-    int     GetGCLatencyMode()              const { return 1; }
-    int     GetGCForceCompact()             const { return 0; }
-    int     GetGCRetainVM()                const { return 0; }
-    int     GetGCTrimCommit()               const { return 0; }
-    int     GetGCLOHCompactionMode()        const { return 0; }
-
-    bool    GetGCConservative()             const { return true; }
 };
-
-extern EEConfig * g_pConfig;
 
 #include "etmdummy.h"
 #define ETW_EVENT_ENABLED(e,f) false
+
+#endif // __GCENV_H__

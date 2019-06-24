@@ -8,6 +8,7 @@
 
 #include "common.h"
 #include "gcenv.h"
+#include "gcenv.ee.h"
 #include "gcheaputilities.h"
 #include "RestrictedCallouts.h"
 
@@ -29,7 +30,7 @@ EXTERN_C REDHAWK_API void __cdecl RhpCollect(UInt32 uGeneration, UInt32 uMode)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
-    Thread * pCurThread = GetThread();
+    Thread * pCurThread = ThreadStore::GetCurrentThread();
 
     pCurThread->SetupHackPInvokeTunnel();
     pCurThread->DisablePreemptiveMode();
@@ -44,7 +45,7 @@ EXTERN_C REDHAWK_API Int64 __cdecl RhpGetGcTotalMemory()
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
-    Thread * pCurThread = GetThread();
+    Thread * pCurThread = ThreadStore::GetCurrentThread();
 
     pCurThread->SetupHackPInvokeTunnel();
     pCurThread->DisablePreemptiveMode();
@@ -58,7 +59,7 @@ EXTERN_C REDHAWK_API Int64 __cdecl RhpGetGcTotalMemory()
 
 EXTERN_C REDHAWK_API Int32 __cdecl RhpStartNoGCRegion(Int64 totalSize, Boolean hasLohSize, Int64 lohSize, Boolean disallowFullBlockingGC)
 {
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
 
     pCurThread->SetupHackPInvokeTunnel();
@@ -73,7 +74,7 @@ EXTERN_C REDHAWK_API Int32 __cdecl RhpStartNoGCRegion(Int64 totalSize, Boolean h
 
 EXTERN_C REDHAWK_API Int32 __cdecl RhpEndNoGCRegion()
 {
-    ASSERT(!GetThread()->IsCurrentThreadInCooperativeMode());
+    ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
     return GCHeapUtilities::GetGCHeap()->EndNoGCRegion();
 }
@@ -183,7 +184,7 @@ COOP_PINVOKE_HELPER(Boolean, RhCancelFullGCNotification, ())
 COOP_PINVOKE_HELPER(Int32, RhWaitForFullGCApproach, (Int32 millisecondsTimeout))
 {
     ASSERT(millisecondsTimeout >= -1);
-    ASSERT(GetThread()->IsCurrentThreadInCooperativeMode());
+    ASSERT(ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
     int timeout = millisecondsTimeout == -1 ? INFINITE : millisecondsTimeout;
     return GCHeapUtilities::GetGCHeap()->WaitForFullGCApproach(millisecondsTimeout);
@@ -192,7 +193,7 @@ COOP_PINVOKE_HELPER(Int32, RhWaitForFullGCApproach, (Int32 millisecondsTimeout))
 COOP_PINVOKE_HELPER(Int32, RhWaitForFullGCComplete, (Int32 millisecondsTimeout))
 {
     ASSERT(millisecondsTimeout >= -1);
-    ASSERT(GetThread()->IsCurrentThreadInCooperativeMode());
+    ASSERT(ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
     int timeout = millisecondsTimeout == -1 ? INFINITE : millisecondsTimeout;
     return GCHeapUtilities::GetGCHeap()->WaitForFullGCComplete(millisecondsTimeout);
@@ -208,8 +209,58 @@ COOP_PINVOKE_HELPER(Int64, RhGetGCSegmentSize, ())
 
 COOP_PINVOKE_HELPER(Int64, RhGetAllocatedBytesForCurrentThread, ())
 {
-    Thread *pThread = GetThread();
+    Thread *pThread = ThreadStore::GetCurrentThread();
     gc_alloc_context *ac = pThread->GetAllocContext();
     Int64 currentAllocated = ac->alloc_bytes + ac->alloc_bytes_loh - (ac->alloc_limit - ac->alloc_ptr);
     return currentAllocated;
+}
+
+COOP_PINVOKE_HELPER(void, RhGetMemoryInfo, (UInt32* highMemLoadThreshold, UInt64* totalPhysicalMem, UInt32* lastRecordedMemLoad, size_t* lastRecordedHeapSize, size_t* lastRecordedFragmentation))
+{
+    return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(highMemLoadThreshold, totalPhysicalMem,
+                                                       lastRecordedMemLoad,
+                                                       lastRecordedHeapSize, lastRecordedFragmentation);
+}
+
+COOP_PINVOKE_HELPER(Int64, RhGetTotalAllocatedBytes, ())
+{
+    uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - RedhawkGCInterface::GetDeadThreadsNonAllocBytes();
+
+    // highest reported allocated_bytes. We do not want to report a value less than that even if unused_bytes has increased.
+    static uint64_t high_watermark;
+
+    uint64_t current_high = high_watermark;
+    while (allocated_bytes > current_high)
+    {
+        uint64_t orig = PalInterlockedCompareExchange64((Int64*)&high_watermark, allocated_bytes, current_high);
+        if (orig == current_high)
+            return allocated_bytes;
+
+        current_high = orig;
+    }
+
+    return current_high;
+}
+
+EXTERN_C REDHAWK_API Int64 __cdecl RhGetTotalAllocatedBytesPrecise()
+{
+    Int64 allocated;
+
+    // We need to suspend/restart the EE to get each thread's
+    // non-allocated memory from their allocation contexts
+
+    GCToEEInterface::SuspendEE(SUSPEND_REASON::SUSPEND_FOR_GC);
+    
+    allocated = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - RedhawkGCInterface::GetDeadThreadsNonAllocBytes();
+
+    FOREACH_THREAD(pThread)
+    {
+        gc_alloc_context* ac = pThread->GetAllocContext();
+        allocated -= ac->alloc_limit - ac->alloc_ptr;
+    }
+    END_FOREACH_THREAD
+
+    GCToEEInterface::RestartEE(true);
+    
+    return allocated;
 }

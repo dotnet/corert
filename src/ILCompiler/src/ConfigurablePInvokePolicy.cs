@@ -41,6 +41,31 @@ namespace ILCompiler
                         return true;
                 }
 
+                if (importModule == "kernel32.dll")
+                {
+                    if (methodName == "WaitForMultipleObjectsEx" ||
+                        methodName == "WaitForSingleObject" ||
+                        methodName == "Sleep" ||
+                        methodName == "CloseHandle" ||
+                        methodName == "CreateEventW" ||
+                        methodName == "CreateEventExW" ||
+                        methodName == "SetEvent" ||
+                        methodName == "ResetEvent")
+                    {
+                        return true;
+                    }
+                }
+
+                if (importModule == "ole32.dll")
+                {
+                    if (methodName == "CoGetApartmentType" ||
+                        methodName == "CoInitializeEx" ||
+                        methodName == "CoUninitialize")
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             }
             else

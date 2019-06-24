@@ -26,7 +26,7 @@ private:
 
     void                    LockThreadStore();
     void                    UnlockThreadStore();
-    void                    SuspendAllThreads(CLREventStatic* pCompletionEvent, bool fireDebugEvent);
+    void                    SuspendAllThreads(bool waitForGCEvent, bool fireDebugEvent);
 
 public:
     class Iterator
@@ -58,8 +58,8 @@ public:
     Boolean                 GetExceptionsForCurrentThread(Array* pOutputArray, Int32* pWrittenCountOut);
 
     void        Destroy();
-    void        SuspendAllThreads(CLREventStatic* pCompletionEvent);
-    void        ResumeAllThreads(CLREventStatic* pCompletionEvent);
+    void        SuspendAllThreads(bool waitForGCEvent);
+    void        ResumeAllThreads(bool waitForGCEvent);
 
     static bool IsTrapThreadsRequested();
     void        WaitForSuspendComplete();

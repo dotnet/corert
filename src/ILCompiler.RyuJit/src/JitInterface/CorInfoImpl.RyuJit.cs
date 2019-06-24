@@ -959,6 +959,16 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC;
         }
 
+        private IMethodNode GetMethodEntrypoint(MethodDesc method)
+        {
+            bool isUnboxingThunk = method.IsUnboxingThunk();
+            if (isUnboxingThunk)
+            {
+                method = method.GetUnboxedMethod();
+            }
+            return _compilation.NodeFactory.MethodEntrypoint(method, isUnboxingThunk);
+        }
+
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
 #if DEBUG
@@ -1166,7 +1176,7 @@ namespace Internal.JitInterface
 
                     Debug.Assert(!forceUseRuntimeLookup);
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod)
+                        GetMethodEntrypoint(targetMethod)
                         );
                 }
                 else
@@ -1189,7 +1199,7 @@ namespace Internal.JitInterface
                     }
 
                     pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
-                        _compilation.NodeFactory.MethodEntrypoint(targetMethod)
+                        GetMethodEntrypoint(targetMethod)
                         );
                 }
 

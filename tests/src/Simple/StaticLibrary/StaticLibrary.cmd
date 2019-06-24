@@ -1,6 +1,6 @@
 @echo off
 setlocal
-"%1\%2"
+"%1\StaticLibraryTest"
 set ErrorCode=%ERRORLEVEL%
 IF "%ErrorCode%"=="100" (
     echo %~n0: pass

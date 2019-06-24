@@ -4,10 +4,13 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+
+using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -247,50 +250,6 @@ namespace Internal.Runtime.CompilerHelpers
             return pCell->Target;
         }
 
-        internal static unsafe IntPtr TryResolveModule(string moduleName)
-        {
-            IntPtr hModule = IntPtr.Zero;
-
-            // Try original name first
-            hModule = LoadLibrary(moduleName);
-            if (hModule != IntPtr.Zero) return hModule;
-
-#if PLATFORM_UNIX
-            const string PAL_SHLIB_PREFIX = "lib";
-#if PLATFORM_OSX
-            const string PAL_SHLIB_SUFFIX = ".dylib";
-#else
-            const string PAL_SHLIB_SUFFIX = ".so";
-#endif
-
-             // Try prefix+name+suffix
-            hModule = LoadLibrary(PAL_SHLIB_PREFIX + moduleName + PAL_SHLIB_SUFFIX);
-            if (hModule != IntPtr.Zero) return hModule;
-
-            // Try name+suffix
-            hModule = LoadLibrary(moduleName + PAL_SHLIB_SUFFIX);
-            if (hModule != IntPtr.Zero) return hModule;
-
-            // Try prefix+name
-            hModule = LoadLibrary(PAL_SHLIB_PREFIX + moduleName);
-            if (hModule != IntPtr.Zero) return hModule;
-#endif
-            return IntPtr.Zero;
-        }
-
-        internal static unsafe IntPtr LoadLibrary(string moduleName)
-        {
-            IntPtr hModule;
-
-#if !PLATFORM_UNIX
-            hModule = Interop.mincore.LoadLibraryEx(moduleName, IntPtr.Zero, 0);
-#else
-            hModule = Interop.Sys.LoadLibrary(moduleName);
-#endif
-
-            return hModule;
-        }
-
         internal static unsafe void FreeLibrary(IntPtr hModule)
         {
 #if !PLATFORM_UNIX
@@ -309,19 +268,34 @@ namespace Internal.Runtime.CompilerHelpers
         internal static unsafe void FixupModuleCell(ModuleFixupCell* pCell)
         {
             string moduleName = GetModuleName(pCell);
-            IntPtr hModule = TryResolveModule(moduleName);
-            if (hModule != IntPtr.Zero)
+
+            uint dllImportSearchPath = 0;
+            bool hasDllImportSearchPath = (pCell->DllImportSearchPathAndCookie & InteropDataConstants.HasDllImportSearchPath) != 0;
+            if (hasDllImportSearchPath)
             {
-                var oldValue = Interlocked.CompareExchange(ref pCell->Handle, hModule, IntPtr.Zero);
-                if (oldValue != IntPtr.Zero)
-                {
-                    // Some other thread won the race to fix it up.
-                    FreeLibrary(hModule);
-                }
+                dllImportSearchPath = pCell->DllImportSearchPathAndCookie & ~InteropDataConstants.HasDllImportSearchPath;
             }
-            else
+
+            Assembly callingAssembly = RuntimeAugments.Callbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
+
+            IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, callingAssembly, hasDllImportSearchPath, dllImportSearchPath);
+            if (hModule == IntPtr.Zero)
             {
-                throw new DllNotFoundException(SR.Format(SR.Arg_DllNotFoundExceptionParameterized, moduleName));
+                // TODO: this should not actually throw yet: AssemblyLoadContext.ResolvingUnmanagedDll is
+                // a last chance callback we should call before giving up.
+                hModule = NativeLibrary.LoadLibraryByName(
+                    moduleName,
+                    callingAssembly,
+                    hasDllImportSearchPath ? (DllImportSearchPath?)dllImportSearchPath : NativeLibrary.DefaultDllImportSearchPath,
+                    throwOnError: true);
+            }
+
+            Debug.Assert(hModule != IntPtr.Zero);
+            var oldValue = Interlocked.CompareExchange(ref pCell->Handle, hModule, IntPtr.Zero);
+            if (oldValue != IntPtr.Zero)
+            {
+                // Some other thread won the race to fix it up.
+                FreeLibrary(hModule);
             }
         }
 
@@ -427,6 +401,8 @@ namespace Internal.Runtime.CompilerHelpers
         {
             public IntPtr Handle;
             public IntPtr ModuleName;
+            public EETypePtr CallingAssemblyType;
+            public uint DllImportSearchPathAndCookie;
         }
 
         [StructLayout(LayoutKind.Sequential)]

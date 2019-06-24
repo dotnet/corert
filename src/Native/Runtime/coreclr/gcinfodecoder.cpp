@@ -1348,7 +1348,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     // The fields of KNONVOLATILE_CONTEXT_POINTERS are in the same order as
     // the processor encoding numbers.
 
-    ULONGLONG **ppRax = &pRD->pCurrentContextPointers->Rax;
+    TADDR **ppRax = &pRD->pCurrentContextPointers->Rax;
 #endif
 
     return (OBJECTREF*)*(ppRax + regNum);
@@ -1366,7 +1366,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     // The fields of CONTEXT are in the same order as
     // the processor encoding numbers.
 
-    ULONGLONG *pRax = &pRD->pCurrentContext->Rax;
+    TADDR *pRax = &pRD->pCurrentContext->Rax;
 
     return (OBJECTREF*)(pRax + regNum);
 }
@@ -1593,23 +1593,23 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 30);
     _ASSERTE(regNum != 18); // TEB
 
-    DWORD64 **ppReg;
+    SIZE_T **ppReg;
 
     if(regNum <= 17)
     {
-        ppReg = &pRD->volatileCurrContextPointers.X0;
+        ppReg = &pRD->pX0;
         return (OBJECTREF*)*(ppReg + regNum);
     }
     else if(regNum == 29)
     {
-        return (OBJECTREF*) pRD->pCurrentContextPointers->Fp;
+        return (OBJECTREF*) pRD->pFP;
     }
     else if(regNum == 30)
     {
-        return (OBJECTREF*) pRD->pCurrentContextPointers->Lr;
+        return (OBJECTREF*) pRD->pLR;
     }
 
-    ppReg = &pRD->pCurrentContextPointers->X19;
+    ppReg = &pRD->pX19;
 	
     return (OBJECTREF*)*(ppReg + regNum-19);
 }
@@ -1627,7 +1627,7 @@ bool GcInfoDecoder::IsScratchStackSlot(INT32 spOffset, GcStackSlotBase spBase, P
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     _ASSERTE( m_Flags & DECODE_GC_LIFETIMES );
 
-    ULONGLONG pSlot = (ULONGLONG) GetStackSlot(spOffset, spBase, pRD);
+    TADDR pSlot = (TADDR) GetStackSlot(spOffset, spBase, pRD);
     _ASSERTE(pSlot >= pRD->SP);
 
     return (pSlot < pRD->SP + m_SizeOfStackOutgoingAndScratchArea);
@@ -1685,7 +1685,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     // The fields of CONTEXT are in the same order as
     // the processor encoding numbers.
 
-    DWORD64 *pX0 = &pRD->pCurrentContext->X0;
+    SIZE_T *pX0 = &pRD->pCurrentContext->X0;
 
     return (OBJECTREF*)(pX0 + regNum);
 }

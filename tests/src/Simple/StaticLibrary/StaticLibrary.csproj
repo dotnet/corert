@@ -11,7 +11,7 @@
 
   <Target Name="NativeRunnerCompile" AfterTargets="LinkNative">
     <PropertyGroup>
-      <NativeRunnerBinary>$(NativeOutputPath)StaticLibrary</NativeRunnerBinary>
+      <NativeRunnerBinary>$(NativeOutputPath)StaticLibraryTest</NativeRunnerBinary>
     </PropertyGroup>
 
     <ItemGroup>

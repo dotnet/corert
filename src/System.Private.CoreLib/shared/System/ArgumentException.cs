@@ -11,7 +11,6 @@
 **
 =============================================================================*/
 
-#nullable enable
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -82,11 +81,10 @@ namespace System
                 string s = base.Message;
                 if (!string.IsNullOrEmpty(_paramName))
                 {
-                    string resourceString = SR.Format(SR.Arg_ParamName_Name, _paramName);
-                    return s + Environment.NewLine + resourceString;
+                    s += " " + SR.Format(SR.Arg_ParamName_Name, _paramName);
                 }
-                else
-                    return s;
+
+                return s;
             }
         }
 

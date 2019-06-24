@@ -22,6 +22,10 @@ namespace System.Runtime
         [NativeCallable(EntryPoint = "ProcessFinalizers", CallingConvention = CallingConvention.Cdecl)]
         public static void ProcessFinalizers()
         {
+#if INPLACE_RUNTIME
+            System.Runtime.FinalizerInitRunner.DoInitialize();
+#endif
+
             while (true)
             {
                 // Wait until there's some work to be done. If true is returned we should finalize objects,

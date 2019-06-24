@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-using ILCompiler.DependencyAnalysis;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -14,26 +14,25 @@ namespace ILCompiler
     public class ReadyToRunSingleAssemblyCompilationModuleGroup : CompilationModuleGroup
     {
         private HashSet<ModuleDesc> _compilationModuleSet;
+        private HashSet<ModuleDesc> _versionBubbleModuleSet;
 
-        public ReadyToRunSingleAssemblyCompilationModuleGroup(TypeSystemContext context, IEnumerable<ModuleDesc> compilationModuleSet)
+        public ReadyToRunSingleAssemblyCompilationModuleGroup(
+            TypeSystemContext context, 
+            IEnumerable<ModuleDesc> compilationModuleSet,
+            IEnumerable<ModuleDesc> versionBubbleModuleSet)
         {
             _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
 
             // The fake assembly that holds compiler generated types is part of the compilation.
             _compilationModuleSet.Add(context.GeneratedAssembly);
+
+            _versionBubbleModuleSet = new HashSet<ModuleDesc>(versionBubbleModuleSet);
+            _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
         }
 
         public sealed override bool ContainsType(TypeDesc type)
         {
-            if (type is EcmaType ecmaType)
-            {
-                return IsModuleInCompilationGroup(ecmaType.EcmaModule);
-            }
-            if (type is InstantiatedType instantiatedType)
-            {
-                return ContainsType(instantiatedType.GetTypeDefinition());
-            }
-            return true;
+            return type.GetTypeDefinition() is EcmaType ecmaType && IsModuleInCompilationGroup(ecmaType.EcmaModule);
         }
 
         public sealed override bool ContainsTypeDictionary(TypeDesc type)
@@ -204,6 +203,29 @@ namespace ILCompiler
             }
 
             return true;
+        }
+
+        public override bool VersionsWithType(TypeDesc typeDesc)
+        {
+            return typeDesc.GetTypeDefinition() is EcmaType ecmaType &&
+                _versionBubbleModuleSet.Contains(ecmaType.EcmaModule);
+        }
+
+        public override bool VersionsWithMethodBody(MethodDesc method)
+        {
+            return VersionsWithType(method.OwningType);
+        }
+
+        public override bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod)
+        {
+            // Allow inlining if the caller is within the current version bubble
+            // (because otherwise we may not be able to encode its tokens)
+            // and if the callee is either in the same version bubble or is marked as non-versionable.
+            bool canInline = VersionsWithMethodBody(callerMethod) &&
+                (VersionsWithMethodBody(calleeMethod) ||
+                    calleeMethod.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute"));
+
+            return canInline;
         }
     }
 }

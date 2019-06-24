@@ -6,18 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
-using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.PEWriter;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
-using Internal.Metadata.NativeFormat;
-using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -75,21 +71,8 @@ namespace ILCompiler.DependencyAnalysis
                 stopwatch.Start();
                 mapFile.WriteLine($@"R2R object emission started: {DateTime.Now}");
 
-                Machine targetMachine;
-                switch (_nodeFactory.Target.Architecture)
-                {
-                    case Internal.TypeSystem.TargetArchitecture.X64:
-                        targetMachine = Machine.Amd64;
-                        break;
-                    case Internal.TypeSystem.TargetArchitecture.X86:
-                        targetMachine = Machine.I386;
-                        break;
-                    default:
-                        throw new NotImplementedException(_nodeFactory.Target.Architecture.ToString());
-                }
-
                 R2RPEBuilder r2rPeBuilder = new R2RPEBuilder(
-                    targetMachine,
+                    _nodeFactory.Target,
                     _inputPeReader,
                     _nodeFactory.SectionStartNode,
                     GetRuntimeFunctionsTable);

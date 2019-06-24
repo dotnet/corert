@@ -14,7 +14,6 @@ inline void HndAssignHandle(OBJECTHANDLE handle, OBJECTREF objref)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -22,13 +21,6 @@ inline void HndAssignHandle(OBJECTHANDLE handle, OBJECTREF objref)
     // sanity
     _ASSERTE(handle);
 
-#ifdef _DEBUG_IMPL
-    // handle should not be in unloaded domain
-    ValidateAppDomainForHandle(handle);
-
-    // Make sure the objref is valid before it is assigned to a handle
-    ValidateAssignObjrefForHandle(objref, HndGetHandleTableADIndex(HndGetHandleTable(handle)));
-#endif
     // unwrap the objectref we were given
     _UNCHECKED_OBJECTREF value = OBJECTREF_TO_UNCHECKED_OBJECTREF(objref);
 
@@ -49,13 +41,6 @@ inline void* HndInterlockedCompareExchangeHandle(OBJECTHANDLE handle, OBJECTREF 
     // sanity
     _ASSERTE(handle);
 
-#ifdef _DEBUG_IMPL
-    // handle should not be in unloaded domain
-    ValidateAppDomainForHandle(handle);
-
-    // Make sure the objref is valid before it is assigned to a handle
-    ValidateAssignObjrefForHandle(objref, HndGetHandleTableADIndex(HndGetHandleTable(handle)));
-#endif
     // unwrap the objectref we were given
     _UNCHECKED_OBJECTREF value = OBJECTREF_TO_UNCHECKED_OBJECTREF(objref);
     _UNCHECKED_OBJECTREF oldValue = OBJECTREF_TO_UNCHECKED_OBJECTREF(oldObjref);
@@ -80,7 +65,6 @@ inline BOOL HndFirstAssignHandle(OBJECTHANDLE handle, OBJECTREF objref)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        SO_TOLERANT;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
@@ -88,13 +72,6 @@ inline BOOL HndFirstAssignHandle(OBJECTHANDLE handle, OBJECTREF objref)
     // sanity
     _ASSERTE(handle);
 
-#ifdef _DEBUG_IMPL
-    // handle should not be in unloaded domain
-    ValidateAppDomainForHandle(handle);
-
-    // Make sure the objref is valid before it is assigned to a handle
-    ValidateAssignObjrefForHandle(objref, HndGetHandleTableADIndex(HndGetHandleTable(handle)));
-#endif
     // unwrap the objectref we were given
     _UNCHECKED_OBJECTREF value = OBJECTREF_TO_UNCHECKED_OBJECTREF(objref);
     _UNCHECKED_OBJECTREF null = NULL;

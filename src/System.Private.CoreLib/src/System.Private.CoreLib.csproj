@@ -12,8 +12,8 @@
     <!-- Use MSFT assembly key for compatibility with uapaot targeting pack -->
     <AssemblyKey>MSFT</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
-    <!-- Disable nulability-related warnings -->
-    <NoWarn>$(NoWarn);CS8609;CS8611;CS8631;CS8632</NoWarn>
+    <!-- Disable nullability-related warnings -->
+    <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8606;CS8608;CS8609;CS8610;CS8611;CS8612;CS8614;CS8615;CS8617;CS8618;CS8620;CS8622;CS8625;CS8626;CS8631;CS8632;CS8634;CS8653</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'" />
@@ -59,6 +59,9 @@
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\InteropConstants.cs">
+      <Link>Internal\Runtime\InteropConstants.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>ExceptionStringID.cs</Link>
@@ -192,7 +195,6 @@
     <Compile Include="System\Collections\Generic\Comparer.CoreRT.cs" />
     <Compile Include="System\Collections\Generic\EqualityComparer.CoreRT.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
-    <Compile Include="System\DefaultBinder.CanConvert.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.cs" />
     <Compile Include="System\Globalization\GlobalizationMode.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
     <Compile Include="System\Globalization\GlobalizationMode.Unix.cs" Condition="'$(TargetsUnix)'=='true'" />
@@ -245,8 +247,12 @@
     <Compile Include="System\Runtime\InteropServices\GCHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeLibrary.CoreRT.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\NativeLibrary.ProjectN.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal.CoreRT.cs"  Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal.ProjectN.cs"  Condition="'$(IsProjectNLibrary)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(IsProjectNLibrary)' != 'true' and '$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
@@ -281,10 +287,11 @@
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\Thread.CoreRT.cs" />
+    <Compile Include="System\Threading\ThreadBooleanCounter.cs" />
+    <Compile Include="System\Threading\ThreadInt64PersistentCounter.cs" />
     <Compile Include="System\Threading\ThreadPool.CoreRT.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
     <Compile Include="System\Threading\WaitHandle.CoreRT.cs" />
-    <Compile Include="System\Threading\WaitHandleArray.cs" />
     <Compile Include="System\Type.CoreRT.cs" />
     <Compile Include="System\Type.Internal.cs" />
     <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'=='true'" Include="System\Type.WinRt.cs" />
@@ -302,8 +309,8 @@
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.NonPortable.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.CoreRT.cs" />
-    <Compile Include="System\WeakReference.cs" />
-    <Compile Include="System\WeakReferenceOfT.cs" />
+    <Compile Include="System\WeakReference.CoreRT.cs" />
+    <Compile Include="System\WeakReference.T.CoreRT.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ExitProcess.cs">

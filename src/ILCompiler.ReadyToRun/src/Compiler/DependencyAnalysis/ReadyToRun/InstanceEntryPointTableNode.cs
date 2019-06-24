@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.JitInterface;
 using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Text;
@@ -52,11 +53,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(method);
 
+                    ModuleToken moduleToken = method.SignatureContext.GetModuleTokenForMethod(method.Method.GetTypicalMethodDefinition());
+                    if (moduleToken.Module != r2rFactory.InputModuleContext.GlobalContext)
+                    {
+                        // TODO: encoding of instance methods relative to other modules within the version bubble
+                        continue;
+                    }
+
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                     signatureBuilder.EmitMethodSignature(
-                        method.Method, 
-                        constrainedType: null,
-                        default(ModuleToken),
+                        new MethodWithToken(method.Method, moduleToken, constrainedType: null),
                         enforceDefEncoding: true,
                         method.SignatureContext,
                         isUnboxingStub: false, 

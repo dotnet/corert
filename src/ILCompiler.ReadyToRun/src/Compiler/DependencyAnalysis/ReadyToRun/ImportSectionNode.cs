@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -11,6 +12,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ArrayOfEmbeddedDataNode<Import> _imports;
         // TODO: annoying - today there's no way to put signature RVA's into R/O data section
         private readonly ArrayOfEmbeddedPointersNode<Signature> _signatures;
+        // TODO: annoying - cannot enumerate the ArrayOfEmbeddedPointersNode so we must keep a copy.
+        private readonly List<Signature> _signatureList;
         private readonly GCRefMapNode _gcRefMap;
 
         private readonly CorCompileImportType _type;
@@ -19,6 +22,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly string _name;
         private readonly bool _emitPrecode;
         private readonly bool _emitGCRefMap;
+
+        private bool _materializedSignature;
 
         public ImportSectionNode(string name, CorCompileImportType importType, CorCompileImportFlags flags, byte entrySize, bool emitPrecode, bool emitGCRefMap)
         {
@@ -31,13 +36,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             _imports = new ArrayOfEmbeddedDataNode<Import>(_name + "_ImportBegin", _name + "_ImportEnd", null);
             _signatures = new ArrayOfEmbeddedPointersNode<Signature>(_name + "_SigBegin", _name + "_SigEnd", null);
+            _signatureList = new List<Signature>();
             _gcRefMap = (_emitGCRefMap ? new GCRefMapNode(this) : null);
+        }
+
+        public void MaterializeSignature(ReadyToRunCodegenNodeFactory r2rFactory)
+        {
+            if (!_materializedSignature)
+            {
+                foreach (Signature signature in _signatureList)
+                {
+                    signature.GetData(r2rFactory, relocsOnly: false);
+                }
+                _materializedSignature = true;
+            }
         }
 
         public void AddImport(NodeFactory factory, Import import)
         {
+            if (_materializedSignature)
+            {
+                throw new Exception("Cannot call AddImport after MaterializeSignature");
+            }
+
             _imports.AddEmbeddedObject(import);
             _signatures.AddEmbeddedObject(import.ImportSignature);
+            _signatureList.Add(import.ImportSignature.Target);
             if (_emitGCRefMap)
             {
                 _gcRefMap.AddImport(import);

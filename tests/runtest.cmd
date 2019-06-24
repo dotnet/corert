@@ -422,6 +422,9 @@ goto :eof
     set __SourceFolder=%~1
     set __SourceFileName=%2
 
+    if exist "!__SourceFolder!\bin" rmdir /s /q !__SourceFolder!\bin
+    if exist "!__SourceFolder!\obj" rmdir /s /q !__SourceFolder!\obj
+
     :: Compute publish RID
     if /i "%CoreRT_BuildArch%" == "x86" (
         set Publish_Rid=win-x86
@@ -553,7 +556,7 @@ goto :eof
 
 :TestExtRepoCoreCLR
     :: Omit the exclude parameter to CoreCLR's test harness if we're running all tests
-    set CoreCLRExcludeText=exclude
+    set CoreCLRExcludeText=-test_filter_path
     if "%CoreRT_CoreCLRTargetsFile%" == "" (
         set CoreCLRExcludeText=
     )
@@ -586,12 +589,7 @@ goto :eof
     set CLRCustomTestLauncher=%CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd
     set XunitTestBinBase=!CoreRT_TestExtRepo_CoreCLR!
 
-    pushd %CoreRT_TestRoot%\CoreCLR\runtest
-
-    "%CoreRT_CliDir%\dotnet.exe" msbuild /t:Restore /p:RepoLocalBuild=true /p:Configuration=%CoreRT_BuildType% /p:Platform=%CoreRT_BuildArch% src\TestWrappersConfig\XUnitTooling.depproj
-    if errorlevel 1 (
-        exit /b 1
-    )
+    pushd %CoreRT_TestRoot%\CoreCLR
 
     if not "%CoreRT_CoreCLRTest%" == "" (
         if not exist "%CoreRT_CoreCLRTest%" (
@@ -605,12 +603,13 @@ goto :eof
         )
         call %CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd !TestFolderName! !TestFileName!
     ) else (
-        set __RunTestCommand=runtest.cmd %CoreRT_BuildArch% %CoreRT_BuildType% %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile% LogsDir %__LogDir%
+        set __RunTestCommand=python runtest.py -arch %CoreRT_BuildArch% -build_type %CoreRT_BuildType% -test_native_bin_location !CoreRT_TestExtRepo_CoreCLR! -test_location %CoreRT_TestRoot%\CoreCLR -core_root !CoreRT_TestExtRepo_CoreCLR!\Tests\Core_Root -coreclr_repo_location %CoreRT_TestRoot%.. %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile%
         if not "%CoreRT_GCStressLevel%" == "" ( set __RunTestCommand=!__RunTestCommand! gcstresslevel !CoreRT_GCStressLevel! )
         echo !__RunTestCommand!
         call !__RunTestCommand!
     )
     
+
     set __SavedErrorLevel=%ErrorLevel%
     popd
     exit /b %__SavedErrorLevel%

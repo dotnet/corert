@@ -97,6 +97,11 @@ namespace System.Runtime
             RhWaitForPendingFinalizers(allowReentrantWait ? 1 : 0);
         }
 
+#if !PROJECTN
+        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        internal static extern void RhInitializeFinalizerThread();
+#endif
+
         // Get maximum GC generation number.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetMaxGcGeneration")]
@@ -190,6 +195,22 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetAllocatedBytesForCurrentThread")]
         internal static extern long RhGetAllocatedBytesForCurrentThread();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetTotalAllocatedBytes")]
+        internal static extern long RhGetTotalAllocatedBytes();
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern long RhGetTotalAllocatedBytesPrecise();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetMemoryInfo")]
+        internal static extern void RhGetMemoryInfo(out uint highMemLoadThreshold,
+                                                    out ulong totalPhysicalMem,
+                                                    out uint lastRecordedMemLoad,
+                                                    // The next two are size_t
+                                                    out UIntPtr lastRecordedHeapSize,
+                                                    out UIntPtr lastRecordedFragmentation);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]

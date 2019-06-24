@@ -71,7 +71,7 @@ void ScanRootsHelper(Object* pObj, Object** ppRoot, ScanContext * pSC, DWORD dwF
 //      Always returns TRUE to object walker so it walks the entire object
 //
 
-BOOL CountContainedObjectRef(Object * pBO, void * context)
+bool CountContainedObjectRef(Object * pBO, void * context)
 {
     LIMITED_METHOD_CONTRACT;
     UNREFERENCED_PARAMETER(pBO);
@@ -97,7 +97,7 @@ BOOL CountContainedObjectRef(Object * pBO, void * context)
 //      Always returns TRUE to object walker so it walks the entire object
 //
 
-BOOL SaveContainedObjectRef(Object * pBO, void * context)
+bool SaveContainedObjectRef(Object * pBO, void * context)
 {
     LIMITED_METHOD_CONTRACT;
     // Assign the value
@@ -130,7 +130,7 @@ BOOL SaveContainedObjectRef(Object * pBO, void * context)
 //      FALSE=stop
 //
 
-BOOL HeapWalkHelper(Object * pBO, void * pvContext)
+bool HeapWalkHelper(Object * pBO, void * pvContext)
 {
     OBJECTREF *   arrObjRef      = NULL;
     size_t        cNumRefs       = 0;

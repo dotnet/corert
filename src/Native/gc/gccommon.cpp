@@ -14,20 +14,15 @@
 #include "gcenv.h"
 #include "gc.h"
 
-#ifdef FEATURE_SVR_GC
-SVAL_IMPL_INIT(uint32_t,IGCHeap,gcHeapType,IGCHeap::GC_HEAP_INVALID);
-#endif // FEATURE_SVR_GC
-
-SVAL_IMPL_INIT(uint32_t,IGCHeap,maxGeneration,2);
-
 IGCHeapInternal* g_theGCHeap;
+IGCHandleManager* g_theGCHandleManager;
 
-#ifdef FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
 IGCToCLR* g_theGCToCLR;
-#endif // FEATURE_STANDALONE_GC
+#endif // BUILD_AS_STANDALONE
 
 #ifdef GC_CONFIG_DRIVEN
-GARY_IMPL(size_t, gc_global_mechanisms, MAX_GLOBAL_GC_MECHANISMS_COUNT);
+size_t gc_global_mechanisms[MAX_GLOBAL_GC_MECHANISMS_COUNT];
 #endif //GC_CONFIG_DRIVEN
 
 #ifndef DACCESS_COMPILE
@@ -39,20 +34,26 @@ uint8_t* g_shadow_lowest_address = NULL;
 #endif
 
 uint32_t* g_gc_card_table;
+
+VOLATILE(int32_t) g_fSuspensionPending = 0;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+uint32_t* g_gc_card_bundle_table;
+#endif
+
 uint8_t* g_gc_lowest_address  = 0;
 uint8_t* g_gc_highest_address = 0;
-bool g_fFinalizerRunOnShutDown = false;
-
-VOLATILE(int32_t) m_GCLock = -1;
+GCHeapType g_gc_heap_type = GC_HEAP_INVALID;
+uint32_t g_max_generation = max_generation;
+MethodTable* g_gc_pFreeObjectMethodTable = nullptr;
+uint32_t g_num_processors = 0;
 
 #ifdef GC_CONFIG_DRIVEN
 void record_global_mechanism (int mech_index)
 {
-	(gc_global_mechanisms[mech_index])++;
+    (gc_global_mechanisms[mech_index])++;
 }
 #endif //GC_CONFIG_DRIVEN
-
-int32_t g_bLowMemoryFromHost = 0;
 
 #ifdef WRITE_BARRIER_CHECK
 
@@ -111,51 +112,6 @@ void record_changed_seg (uint8_t* start, uint8_t* end,
     {
         saved_changed_segs_count = 0;
     }
-}
-
-// The runtime needs to know whether we're using workstation or server GC 
-// long before the GCHeap is created.
-void InitializeHeapType(bool bServerHeap)
-{
-    LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_SVR_GC
-    IGCHeap::gcHeapType = bServerHeap ? IGCHeap::GC_HEAP_SVR : IGCHeap::GC_HEAP_WKS;
-#ifdef WRITE_BARRIER_CHECK
-    if (IGCHeap::gcHeapType == IGCHeap::GC_HEAP_SVR)
-    {
-        g_GCShadow = 0;
-        g_GCShadowEnd = 0;
-    }
-#endif // WRITE_BARRIER_CHECK
-#else // FEATURE_SVR_GC
-    UNREFERENCED_PARAMETER(bServerHeap);
-    CONSISTENCY_CHECK(bServerHeap == false);
-#endif // FEATURE_SVR_GC
-}
-
-IGCHeap* InitializeGarbageCollector(IGCToCLR* clrToGC)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    IGCHeapInternal* heap;
-#ifdef FEATURE_SVR_GC
-    assert(IGCHeap::gcHeapType != IGCHeap::GC_HEAP_INVALID);
-    heap = IGCHeap::gcHeapType == IGCHeap::GC_HEAP_SVR ? SVR::CreateGCHeap() : WKS::CreateGCHeap();
-#else
-    heap = WKS::CreateGCHeap();
-#endif
-
-    g_theGCHeap = heap;
-
-#ifdef FEATURE_STANDALONE_GC
-    assert(clrToGC != nullptr);
-    g_theGCToCLR = clrToGC;
-#else
-    UNREFERENCED_PARAMETER(clrToGC);
-    assert(clrToGC == nullptr);
-#endif
-
-    return heap;
 }
 
 #endif // !DACCESS_COMPILE

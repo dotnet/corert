@@ -3504,7 +3504,18 @@ namespace Internal.IL
 
         private void ImportInitBlk()
         {
-            throw new NotImplementedException();
+            var size = _stack.Pop();
+            var value = _stack.Pop();
+            var addr = _stack.Pop();
+
+            Append("::memset((void*)");
+            Append(addr);
+            Append(",");
+            Append(value);
+            Append(",");
+            Append(size);
+            Append(")");
+            AppendSemicolon();
         }
 
         private void ImportRethrow()

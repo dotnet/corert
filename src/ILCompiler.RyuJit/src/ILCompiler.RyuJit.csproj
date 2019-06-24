@@ -70,6 +70,9 @@
     <Compile Include="..\..\JitInterface\src\MemoryHelper.cs">
       <Link>JitInterface\MemoryHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\JitInterface\src\UnboxingMethodDesc.cs">
+      <Link>JitInterface\UnboxingMethodDesc.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />

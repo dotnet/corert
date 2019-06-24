@@ -298,20 +298,36 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     else
                     {
+                        ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
+                        EmitModuleOverride(token.Module, context);
                         EmitElementType(CorElementType.ELEMENT_TYPE_CLASS);
-                        EmitTypeToken((EcmaType)typeDesc, context);
+                        EmitToken(token.Token);
                     }
                     return;
 
                 case TypeFlags.ValueType:
                 case TypeFlags.Nullable:
                 case TypeFlags.Enum:
-                    EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
-                    EmitTypeToken((EcmaType)typeDesc, context);
-                    return;
+                    {
+                        ModuleToken token = context.GetModuleTokenForType((EcmaType)typeDesc);
+                        EmitModuleOverride(token.Module, context);
+                        EmitElementType(CorElementType.ELEMENT_TYPE_VALUETYPE);
+                        EmitToken(token.Token);
+                        return;
+                    }
 
                 default:
                     throw new NotImplementedException();
+            }
+        }
+
+        private void EmitModuleOverride(EcmaModule module, SignatureContext context)
+        {
+            if (module != context.LocalContext)
+            {
+                EmitElementType(CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG);
+                uint moduleIndex = (uint)context.Resolver.GetModuleIndex(module);
+                EmitUInt(moduleIndex);
             }
         }
 
@@ -323,6 +339,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private void EmitInstantiatedTypeSignature(InstantiatedType type, SignatureContext context)
         {
+            EcmaModule targetModule = context.GetTargetModule(type);
+            EmitModuleOverride(targetModule, context);
+            context = context.InnerContext(targetModule);
             EmitElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
             EmitTypeSignature(type.GetTypeDefinition(), context);
             EmitUInt((uint)type.Instantiation.Length);
@@ -365,9 +384,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public void EmitMethodSignature(
-            MethodDesc method, 
-            TypeDesc constrainedType,
-            ModuleToken methodToken,
+            MethodWithToken method, 
             bool enforceDefEncoding,
             SignatureContext context,
             bool isUnboxingStub,
@@ -382,27 +399,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub;
             }
-            if (constrainedType != null)
+            if (method.ConstrainedType != null)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained;
             }
 
-            if ((method.HasInstantiation || method.OwningType.HasInstantiation) && !method.IsGenericMethodDefinition)
+            if ((method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation) && !method.Method.IsGenericMethodDefinition)
             {
-                EmitMethodSpecificationSignature(method, methodToken, flags, enforceDefEncoding, context);
+                EmitMethodSpecificationSignature(method, flags, enforceDefEncoding, context);
             }
             else
             {
-                if (methodToken.IsNull)
-                {
-                    methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
-                }
-                switch (methodToken.TokenType)
+                switch (method.Token.TokenType)
                 {
                     case CorTokenType.mdtMethodDef:
                         // TODO: module override for methoddefs with external module context
                         EmitUInt(flags);
-                        EmitMethodDefToken(methodToken);
+                        EmitMethodDefToken(method.Token);
                         break;
 
                     case CorTokenType.mdtMemberRef:
@@ -410,8 +423,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             // TODO: module override for methodrefs with external module context
                             flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
 
-                            MemberReference memberRef = methodToken.MetadataReader.GetMemberReference((MemberReferenceHandle)methodToken.Handle);
-                            if (methodToken.Module.GetObject(memberRef.Parent) != (object)method.OwningType)
+                            MemberReference memberRef = method.Token.MetadataReader.GetMemberReference((MemberReferenceHandle)method.Token.Handle);
+                            if (method.Token.Module.GetObject(memberRef.Parent) != (object)method.Method.OwningType)
                             {
                                 // We have a memberref token for a different type - encode owning type explicitly in the signature
                                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
@@ -420,9 +433,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             EmitUInt(flags);
                             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
                             {
-                                EmitTypeSignature(method.OwningType, context);
+                                EmitTypeSignature(method.Method.OwningType, context);
                             }
-                            EmitMethodRefToken(methodToken);
+                            EmitMethodRefToken(method.Token);
                         }
                         break;
 
@@ -431,9 +444,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            if (constrainedType != null)
+            if (method.ConstrainedType != null)
             {
-                EmitTypeSignature(constrainedType, context);
+                EmitTypeSignature(method.ConstrainedType, context);
             }
         }
 
@@ -449,37 +462,34 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(RidFromToken(memberRefToken.Token));
         }
 
-        private void EmitMethodSpecificationSignature(MethodDesc method, ModuleToken methodToken, 
+        private void EmitMethodSpecificationSignature(MethodWithToken method, 
             uint flags, bool enforceDefEncoding, SignatureContext context)
         {
-            if (method.HasInstantiation)
+            ModuleToken methodToken = method.Token;
+            if (method.Method.HasInstantiation)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation;
-                if (!methodToken.IsNull)
+                if (!method.Token.IsNull)
                 {
-                    if (methodToken.TokenType == CorTokenType.mdtMethodSpec)
+                    if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                     {
                         MethodSpecification methodSpecification = methodToken.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)methodToken.Handle);
                         methodToken = new ModuleToken(methodToken.Module, methodSpecification.Method);
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
                     }
                 }
             }
 
             if (methodToken.IsNull && !enforceDefEncoding)
             {
-                methodToken = context.GetModuleTokenForMethod(method.GetMethodDefinition(), throwIfNotFound: false);
+                methodToken = context.GetModuleTokenForMethod(method.Method, throwIfNotFound: false);
             }
             if (methodToken.IsNull)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
-                methodToken = context.GetModuleTokenForMethod(method.GetTypicalMethodDefinition());
+                methodToken = context.GetModuleTokenForMethod(method.Method);
             }
 
-            if (method.OwningType.HasInstantiation)
+            if (method.Method.OwningType.HasInstantiation)
             {
                 // resolveToken currently resolves the token in the context of a given scope;
                 // in such case, we receive a method on instantiated type along with the
@@ -503,12 +513,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             EmitUInt(flags);
             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
-                EmitTypeSignature(method.OwningType, context);
+                EmitTypeSignature(method.Method.OwningType, context);
             }
             EmitTokenRid(methodToken.Token);
             if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation) != 0)
             {
-                Instantiation instantiation = method.Instantiation;
+                Instantiation instantiation = method.Method.Instantiation;
                 EmitUInt((uint)instantiation.Length);
                 for (int typeParamIndex = 0; typeParamIndex < instantiation.Length; typeParamIndex++)
                 {
@@ -519,22 +529,40 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void EmitFieldSignature(FieldDesc field, SignatureContext context)
         {
+            uint fieldSigFlags = 0;
+            TypeDesc canonOwnerType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            TypeDesc ownerType = null;
+            if (canonOwnerType != field.OwningType)
+            {
+                // Convert field to canonical form as this is what the field - module token lookup stores
+                field = field.Context.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)canonOwnerType);
+            }
+            if (canonOwnerType.HasInstantiation)
+            {
+                ownerType = field.OwningType;
+                fieldSigFlags |= (uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_OwnerType;
+            }
+
             ModuleToken fieldToken = context.GetModuleTokenForField(field);
             switch (fieldToken.TokenType)
             {
                 case CorTokenType.mdtMemberRef:
-                    EmitUInt((uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_MemberRefToken);
-                    EmitTokenRid(fieldToken.Token);
+                    fieldSigFlags |= (uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_MemberRefToken;
                     break;
 
                 case CorTokenType.mdtFieldDef:
-                    EmitUInt((uint)0);
-                    EmitTokenRid(fieldToken.Token);
                     break;
 
                 default:
                     throw new NotImplementedException();
             }
+
+            EmitUInt(fieldSigFlags);
+            if (ownerType != null)
+            {
+                EmitTypeSignature(ownerType, context);
+            }
+            EmitTokenRid(fieldToken.Token);
         }
     }
 
@@ -565,6 +593,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public ObjectNode.ObjectData ToObjectData()
         {
             return _builder.ToObjectData();
+        }
+
+        public SignatureContext EmitFixup(ReadyToRunCodegenNodeFactory factory, ReadyToRunFixupKind fixupKind, EcmaModule targetModule, SignatureContext outerContext)
+        {
+            if (targetModule == outerContext.LocalContext)
+            {
+                EmitByte((byte)fixupKind);
+                return outerContext;
+            }
+            else
+            {
+                EmitByte((byte)(fixupKind | ReadyToRunFixupKind.READYTORUN_FIXUP_ModuleOverride));
+                EmitUInt((uint)factory.ManifestMetadataTable.ModuleToIndex(targetModule));
+                return outerContext.InnerContext(targetModule);
+            }
         }
     }
 

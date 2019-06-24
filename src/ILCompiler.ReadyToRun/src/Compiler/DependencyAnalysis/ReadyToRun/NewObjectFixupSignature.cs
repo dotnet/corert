@@ -33,8 +33,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                dataBuilder.EmitByte((byte)ReadyToRunFixupKind.READYTORUN_FIXUP_NewObject);
-                dataBuilder.EmitTypeSignature(_typeDesc, _signatureContext);
+                EcmaModule targetModule = _signatureContext.GetTargetModule(_typeDesc);
+                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.READYTORUN_FIXUP_NewObject, targetModule, _signatureContext);
+                dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
             }
 
             return dataBuilder.ToObjectData();
@@ -43,7 +44,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($@"NewObjectSignature: {_typeDesc.ToString()}");
+            sb.Append($@"NewObjectSignature: ");
+            sb.Append(nameMangler.GetMangledTypeName(_typeDesc));
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

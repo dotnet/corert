@@ -20,13 +20,6 @@ namespace ILCompiler
     public sealed class ReadyToRunCodegenCompilation : Compilation
     {
         /// <summary>
-        /// Map from method modules to the appropriate CorInfoImpl instantiations
-        /// used to propagate the module back to managed code as context for
-        /// reference token resolution.
-        /// </summary>
-        private readonly Dictionary<EcmaModule, CorInfoImpl> _corInfo;
-
-        /// <summary>
         /// JIT configuration provider.
         /// </summary>
         private readonly JitConfigProvider _jitConfigProvider;
@@ -35,6 +28,11 @@ namespace ILCompiler
         /// Name of the compilation input MSIL file.
         /// </summary>
         private readonly string _inputFilePath;
+
+        /// <summary>
+        /// JIT interface implementation.
+        /// </summary>
+        private readonly CorInfoImpl _corInfo;
 
         public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
 
@@ -55,10 +53,10 @@ namespace ILCompiler
         {
             NodeFactory = nodeFactory;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
-            _corInfo = new Dictionary<EcmaModule, CorInfoImpl>();
             _jitConfigProvider = configProvider;
 
             _inputFilePath = inputFilePath;
+            _corInfo = new CorInfoImpl(this, _jitConfigProvider);
         }
 
         private static IEnumerable<ICompilationRootProvider> GetCompilationRoots(IEnumerable<ICompilationRootProvider> existingRoots, NodeFactory factory)
@@ -124,16 +122,7 @@ namespace ILCompiler
 
                 try
                 {
-                    EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
-
-                    CorInfoImpl perModuleCorInfo;
-                    if (!_corInfo.TryGetValue(module, out perModuleCorInfo))
-                    {
-                        perModuleCorInfo = new CorInfoImpl(this, module, _jitConfigProvider);
-                        _corInfo.Add(module, perModuleCorInfo);
-                    }
-
-                    perModuleCorInfo.CompileMethod(methodCodeNodeNeedingCode);
+                    _corInfo.CompileMethod(methodCodeNodeNeedingCode);
                 }
                 catch (TypeSystemException ex)
                 {
@@ -145,13 +134,6 @@ namespace ILCompiler
                     Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
                 }
             }
-        }
-
-        public override bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod)
-        {
-            // Allow inlining if the target method is within the same version bubble
-            return NodeFactory.CompilationModuleGroup.ContainsMethodBody(calleeMethod, unboxingStub: false) ||
-                calleeMethod.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute");
         }
 
         public override ObjectNode GetFieldRvaData(FieldDesc field) => SymbolNodeFactory.GetRvaFieldNode(field);

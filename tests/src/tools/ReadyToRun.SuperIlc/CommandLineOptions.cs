@@ -16,7 +16,8 @@ namespace ReadyToRun.SuperIlc
         {
             var parser = new CommandLineBuilder()
                 .AddCommand(CompileFolder())
-                .AddCommand(CompileSubtree());
+                .AddCommand(CompileSubtree())
+                .AddCommand(CompileNugetPackages());
 
             return parser;
 
@@ -33,8 +34,17 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        DegreeOfParallelism(),
                         Sequential(),
-                        ReferencePath()
+                        Framework(),
+                        UseFramework(),
+                        Release(),
+                        LargeBubble(),
+                        ReferencePath(),
+                        IssuesPath(),
+                        CompilationTimeoutMinutes(),
+                        ExecutionTimeoutMinutes(),
+                        R2RDumpPath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileDirectoryCommand.CompileDirectory));
 
@@ -51,10 +61,36 @@ namespace ReadyToRun.SuperIlc
                         NoExe(),
                         NoEtw(),
                         NoCleanup(),
+                        DegreeOfParallelism(),
                         Sequential(),
-                        ReferencePath()
+                        Framework(),
+                        UseFramework(),
+                        Release(),
+                        LargeBubble(),
+                        ReferencePath(),
+                        IssuesPath(),
+                        CompilationTimeoutMinutes(),
+                        ExecutionTimeoutMinutes(),
+                        R2RDumpPath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileSubtreeCommand.CompileSubtree));
+
+            Command CompileNugetPackages() =>
+                new Command("compile-nuget", "Restore a list of Nuget packages into an empty console app, publish, and optimize with Crossgen / CPAOT",
+                    new Option[]
+                    {
+                        OutputDirectory(),
+                        PackageList(),
+                        CoreRootDirectory(),
+                        Crossgen(),
+                        CpaotDirectory(),
+                        NoCleanup(),
+                        DegreeOfParallelism(),
+                        CompilationTimeoutMinutes(),
+                        ExecutionTimeoutMinutes(),
+                        R2RDumpPath(),
+                    },
+                    handler: CommandHandler.Create<BuildOptions>(CompileNugetCommand.CompileNuget));
 
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
@@ -88,8 +124,41 @@ namespace ReadyToRun.SuperIlc
             Option NoCleanup() =>
                 new Option(new[] { "--nocleanup" }, "Don't clean up compilation artifacts after test runs", new Argument<bool>());
 
+            Option DegreeOfParallelism() =>
+                new Option(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)", new Argument<int>());
+
             Option Sequential() =>
                 new Option(new[] { "--sequential" }, "Run tests sequentially", new Argument<bool>());
+
+            Option Framework() =>
+                new Option(new[] { "--framework" }, "Precompile and use native framework", new Argument<bool>());
+
+            Option UseFramework() =>
+                new Option(new[] { "--use-framework" }, "Use native framework (don't precompile, assume previously compiled)", new Argument<bool>());
+
+            Option Release() =>
+                new Option(new[] { "--release" }, "Build the tests in release mode", new Argument<bool>());
+
+            Option LargeBubble() =>
+                new Option(new[] { "--large-bubble" }, "Assume all input files as part of one version bubble", new Argument<bool>());
+
+            Option IssuesPath() =>
+                new Option(new[] { "--issues-path", "-ip" }, "Path to issues.targets", new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore });
+
+            Option CompilationTimeoutMinutes() =>
+                new Option(new[] { "--compilation-timeout-minutes", "-ct" }, "Compilation timeout (minutes)", new Argument<int>());
+
+            Option ExecutionTimeoutMinutes() =>
+                new Option(new[] { "--execution-timeout-minutes", "-et" }, "Execution timeout (minutes)", new Argument<int>());
+
+            Option R2RDumpPath() =>
+                new Option(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll", new Argument<FileInfo>().ExistingOnly());
+
+            //
+            // compile-nuget specific options
+            //
+            Option PackageList() =>
+                new Option(new[] { "--package-list", "-pl" }, "Text file containing a package name on each line", new Argument<FileInfo>().ExistingOnly());
         }
     }
 }
