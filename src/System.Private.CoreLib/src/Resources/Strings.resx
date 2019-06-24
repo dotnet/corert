@@ -2422,6 +2422,9 @@
   <data name="NotSupported_GlobalMethodSerialization" xml:space="preserve">
     <value>Serialization of global methods (including implicit serialization via the use of asynchronous delegates) is not supported.</value>
   </data>
+  <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
+    <value>This operation is invalid on overlapping buffers.</value>
+  </data>
   <data name="NotSupported_DelegateSerHolderSerial" xml:space="preserve">
     <value>DelegateSerializationHolder objects are designed to represent a delegate during serialization and are not serializable themselves.</value>
   </data>
