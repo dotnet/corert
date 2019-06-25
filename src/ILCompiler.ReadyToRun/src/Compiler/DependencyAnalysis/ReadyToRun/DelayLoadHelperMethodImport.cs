@@ -32,17 +32,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ImportSectionNode importSectionNode, 
             ReadyToRunHelper helper, 
             MethodWithToken method,
-            bool useVSD,
+            bool useVirtualCall,
             bool useInstantiatingStub,
             Signature instanceSignature, 
             SignatureContext signatureContext,
             string callSite = null)
-            : base(factory, importSectionNode, helper, instanceSignature, useVSD, callSite)
+            : base(factory, importSectionNode, helper, instanceSignature, useVirtualCall, callSite)
         {
             _helper = helper;
             _method = method;
             _useInstantiatingStub = useInstantiatingStub;
-            _delayLoadHelper = new ImportThunk(helper, factory, this, useVSD);
+            _delayLoadHelper = new ImportThunk(helper, factory, this, useVirtualCall);
             _signatureContext = signatureContext;
         }
 

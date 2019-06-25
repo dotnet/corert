@@ -233,7 +233,7 @@ namespace ILCompiler.DependencyAnalysis
                 _codegenNodeFactory.DispatchImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
                 methodWithToken,
-                useVSD: false,
+                useVirtualCall: false,
                 useInstantiatingStub: false,
                 _codegenNodeFactory.MethodSignature(
                     ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
@@ -685,7 +685,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.DispatchImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall,
                     method,
-                    useVSD: true,
+                    useVirtualCall: true,
                     useInstantiatingStub: false,
                     _codegenNodeFactory.MethodSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
                         method,
@@ -962,7 +962,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory.HelperImports,
                     ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                     methodArgument,
-                    useVSD: false,
+                    useVirtualCall: false,
                     useInstantiatingStub: false,
                     new GenericLookupSignature(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument, fieldArgument: null, methodContext, signatureContext),
                     signatureContext);

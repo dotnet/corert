@@ -30,13 +30,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly Kind _thunkKind;
 
-        public ImportThunk(ReadyToRunHelper helperId, ReadyToRunCodegenNodeFactory factory, Import instanceCell, bool useVSD)
+        public ImportThunk(ReadyToRunHelper helperId, ReadyToRunCodegenNodeFactory factory, Import instanceCell, bool useVirtualCall)
         {
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
             _instanceCell = instanceCell;
             _moduleImport = factory.ModuleImport;
 
-            if (useVSD)
+            if (useVirtualCall)
             {
                 _thunkKind = Kind.VirtualStubDispatch;
             }
@@ -76,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class DelayLoadHelperThunk_Obj : ImportThunk
     {
         public DelayLoadHelperThunk_Obj(ReadyToRunCodegenNodeFactory nodeFactory, Import instanceCell)
-            : base(ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj, nodeFactory, instanceCell, useVSD: false)
+            : base(ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj, nodeFactory, instanceCell, useVirtualCall: false)
         {
         }
     }

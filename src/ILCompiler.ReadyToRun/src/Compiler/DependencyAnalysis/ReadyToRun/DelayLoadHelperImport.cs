@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly ReadyToRunHelper _helper;
 
-        private readonly bool _useVSD;
+        private readonly bool _useVirtualCall;
 
         private readonly ImportThunk _delayLoadHelper;
 
@@ -23,19 +23,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ImportSectionNode importSectionNode, 
             ReadyToRunHelper helper, 
             Signature instanceSignature, 
-            bool useVSD = false, 
+            bool useVirtualCall = false, 
             string callSite = null)
             : base(importSectionNode, instanceSignature, callSite)
         {
             _helper = helper;
-            _useVSD = useVSD;
-            _delayLoadHelper = new ImportThunk(helper, factory, this, useVSD);
+            _useVirtualCall = useVirtualCall;
+            _delayLoadHelper = new ImportThunk(helper, factory, this, useVirtualCall);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("DelayLoadHelperImport(");
-            if (_useVSD)
+            if (_useVirtualCall)
             {
                 sb.Append("[VSD] ");
             }
