@@ -14,18 +14,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly ReadyToRunHelper _helper;
 
+        private readonly bool _useVSD;
+
         private readonly ImportThunk _delayLoadHelper;
 
-        public DelayLoadHelperImport(ReadyToRunCodegenNodeFactory factory, ImportSectionNode importSectionNode, ReadyToRunHelper helper, Signature instanceSignature, string callSite = null)
+        public DelayLoadHelperImport(
+            ReadyToRunCodegenNodeFactory factory, 
+            ImportSectionNode importSectionNode, 
+            ReadyToRunHelper helper, 
+            Signature instanceSignature, 
+            bool useVSD = false, 
+            string callSite = null)
             : base(importSectionNode, instanceSignature, callSite)
         {
             _helper = helper;
-            _delayLoadHelper = new ImportThunk(helper, factory, this);
+            _useVSD = useVSD;
+            _delayLoadHelper = new ImportThunk(helper, factory, this, useVSD);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("DelayLoadHelperImport(");
+            if (_useVSD)
+            {
+                sb.Append("[VSD] ");
+            }
             sb.Append(_helper.ToString());
             sb.Append(") -> ");
             ImportSignature.AppendMangledName(nameMangler, sb);

@@ -32,31 +32,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ImportSectionNode importSectionNode, 
             ReadyToRunHelper helper, 
             MethodWithToken method,
+            bool useVSD,
             bool useInstantiatingStub,
             Signature instanceSignature, 
             SignatureContext signatureContext,
             string callSite = null)
-            : base(factory, importSectionNode, helper, instanceSignature, callSite)
+            : base(factory, importSectionNode, helper, instanceSignature, useVSD, callSite)
         {
             _helper = helper;
             _method = method;
             _useInstantiatingStub = useInstantiatingStub;
-            _delayLoadHelper = new ImportThunk(helper, factory, this);
+            _delayLoadHelper = new ImportThunk(helper, factory, this, useVSD);
             _signatureContext = signatureContext;
         }
 
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append("DelayLoadHelperMethodImport(");
-            sb.Append(_helper.ToString());
-            sb.Append(") -> ");
-            ImportSignature.AppendMangledName(nameMangler, sb);
-            if (CallSite != null)
-            {
-                sb.Append(" @ ");
-                sb.Append(CallSite);
-            }
-        }
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             foreach (DependencyListEntry baseEntry in base.GetStaticDependencies(factory))
