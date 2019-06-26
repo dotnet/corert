@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RyuJITVersion>3.0.0-preview7.19313.1</RyuJITVersion>
     <ObjectWriterVersion>1.0.0-alpha-27619-05</ObjectWriterVersion>
-    <CoreFxVersion>4.6.0-preview7.19311.1</CoreFxVersion>
+    <CoreFxVersion>4.6.0-preview7.19326.2</CoreFxVersion>
     <CoreFxUapVersion>4.7.0-preview6.19265.2</CoreFxUapVersion>
     <MicrosoftNETCoreNativeVersion>3.0.0-preview7.19313.1</MicrosoftNETCoreNativeVersion>
     <MicrosoftNETCoreAppPackageVersion>2.1.11</MicrosoftNETCoreAppPackageVersion>
