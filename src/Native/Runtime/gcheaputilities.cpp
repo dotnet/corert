@@ -7,6 +7,8 @@
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
 
+#include "gceventstatus.h"
+
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
 
@@ -45,9 +47,6 @@ extern "C" HRESULT GC_Initialize(
 // is similar to loading a standalone one, except that the GC_VersionInfo and
 // GC_Initialize symbols are linked to directory and thus don't need to be loaded.
 //
-// The major and minor versions are still checked in debug builds - it must be the case
-// that the GC and EE agree on a shared version number because they are built from
-// the same sources.
 HRESULT GCHeapUtilities::InitializeDefaultGC()
 {
     // we should only call this once on startup. Attempting to load a GC
@@ -70,6 +69,12 @@ HRESULT GCHeapUtilities::InitializeDefaultGC()
     }
 
     return initResult;
+}
+
+void GCHeapUtilities::RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
+{
+    // CoreRT does not support standalone GC. Call GCEventStatus directly to keep things simple.
+    GCEventStatus::Set(isPublicProvider ? GCEventProvider_Default : GCEventProvider_Private, keywords, level);
 }
 
 #endif // DACCESS_COMPILE

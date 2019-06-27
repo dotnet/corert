@@ -102,6 +102,10 @@ RhConfig * g_pRhConfig = &g_sRhConfig;
 
 UInt32 EtwCallback(UInt32 IsEnabled, RH_ETW_CONTEXT * pContext)
 {
+    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle),
+                                            static_cast<GCEventKeyword>(pContext->MatchAnyKeyword),
+                                            static_cast<GCEventLevel>(pContext->Level));
+
     if (IsEnabled &&
         (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PrivateHandle) &&
         GCHeapUtilities::IsGCHeapInitialized())
