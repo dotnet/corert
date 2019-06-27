@@ -42,7 +42,7 @@ jobs:
         name: Hosted MacOS
       ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
         name: NetCorePublic-Pool
-        queue: BuildPool.Windows.10.Amd64.VS2017.Open
+        queue: BuildPool.Windows.10.Amd64.VS2019.Open
 
     workspace:
       clean: all

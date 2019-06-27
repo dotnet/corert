@@ -65,7 +65,7 @@ jobs:
         - ${{ each job in parameters.jobs }}:
           - ${{ job.job }}
       pool:
-        vmImage: vs2017-win2016
+        vmImage: vs2019-win2016
       runAsPublic: ${{ parameters.runAsPublic }}
       enablePublishBuildArtifacts: ${{ parameters.enablePublishBuildArtifacts }}
 
