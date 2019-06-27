@@ -2219,6 +2219,7 @@ public:
   bool        validRegister(int num) const;
   uint32_t    getRegister(int num) const;
   void        setRegister(int num, uint32_t value, uint32_t location);
+  uint32_t    getRegisterLocation(int num) const;
   bool        validFloatRegister(int num) const;
   unw_fpreg_t getFloatRegister(int num);
   void        setFloatRegister(int num, unw_fpreg_t value);
