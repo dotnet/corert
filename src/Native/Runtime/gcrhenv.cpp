@@ -1326,7 +1326,6 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
             // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
             FlushProcessWriteBuffers();
         }
-    }
 #endif
 
         g_lowest_address = args->lowest_address;
