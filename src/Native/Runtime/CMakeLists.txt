@@ -40,6 +40,7 @@ set(COMMON_RUNTIME_SOURCES
     thread.cpp
     threadstore.cpp
     UniversalTransitionHelpers.cpp
+    yieldprocessornormalized.cpp
 
     # ProjectN only
     # gcdump.cpp

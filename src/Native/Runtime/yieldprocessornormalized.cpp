@@ -3,14 +3,31 @@
 // See the LICENSE file in the project root for more information.
 
 #include "common.h"
+#include "gcenv.h"
+#include "gcheaputilities.h"
+#include "CommonTypes.h"
+#include "CommonMacros.h"
+#include "daccess.h"
+#include "DebugMacrosExt.h"
+#include "PalRedhawkCommon.h"
+#include "PalRedhawk.h"
+#include "rhassert.h"
+#include "slist.h"
+#include "Volatile.h"
+#include "yieldprocessornormalized.h"
 
 static Volatile<bool> s_isYieldProcessorNormalizedInitialized = false;
 static CrstStatic s_initializeYieldProcessorNormalizedCrst;
 
+// Defaults are for when InitializeYieldProcessorNormalized has not yet been called or when no measurement is done, and are
+// tuned for Skylake processors
+unsigned int g_yieldsPerNormalizedYield = 1; // current value is for Skylake processors, this is expected to be ~8 for pre-Skylake
+unsigned int g_optimalMaxNormalizedYieldsPerSpinIteration = 7;
+
 void InitializeYieldProcessorNormalizedCrst()
 {
     WRAPPER_NO_CONTRACT;
-    s_initializeYieldProcessorNormalizedCrst.Init(CrstLeafLock);
+    s_initializeYieldProcessorNormalizedCrst.Init(CrstYieldProcessorNormalized);
 }
 
 static void InitializeYieldProcessorNormalized()
@@ -30,7 +47,7 @@ static void InitializeYieldProcessorNormalized()
     const int NsPerSecond = 1000 * 1000 * 1000;
 
     LARGE_INTEGER li;
-    if (!QueryPerformanceFrequency(&li) || (ULONGLONG)li.QuadPart < 1000 / MeasureDurationMs)
+    if (!PalQueryPerformanceFrequency(&li) || (ULONGLONG)li.QuadPart < 1000 / MeasureDurationMs)
     {
         // High precision clock not available or clock resolution is too low, resort to defaults
         s_isYieldProcessorNormalizedInitialized = true;
@@ -41,7 +58,7 @@ static void InitializeYieldProcessorNormalized()
     // Measure the nanosecond delay per yield
     ULONGLONG measureDurationTicks = ticksPerSecond / (1000 / MeasureDurationMs);
     unsigned int yieldCount = 0;
-    QueryPerformanceCounter(&li);
+    PalQueryPerformanceCounter(&li);
     ULONGLONG startTicks = li.QuadPart;
     ULONGLONG elapsedTicks;
     do
@@ -55,7 +72,7 @@ static void InitializeYieldProcessorNormalized()
         }
         yieldCount += 1000;
 
-        QueryPerformanceCounter(&li);
+        PalQueryPerformanceCounter(&li);
         ULONGLONG nowTicks = li.QuadPart;
         elapsedTicks = nowTicks - startTicks;
     } while (elapsedTicks < measureDurationTicks);

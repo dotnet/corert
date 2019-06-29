@@ -7,11 +7,17 @@
 // Undefine YieldProcessor to encourage using the normalized versions below instead. System_YieldProcessor() can be used where
 // the intention is to use the system-default implementation of YieldProcessor().
 #define HAS_SYSTEM_YIELDPROCESSOR
-FORCEINLINE void System_YieldProcessor() { YieldProcessor(); }
+FORCEINLINE void System_YieldProcessor() { PalYieldProcessor(); }
 #ifdef YieldProcessor
 #undef YieldProcessor
 #endif
 #define YieldProcessor Dont_Use_YieldProcessor
+#ifdef PalYieldProcessor
+#undef PalYieldProcessor
+#endif
+#define PalYieldProcessor Dont_Use_PalYieldProcessor
+
+#define SIZE_T UIntNative
 
 const unsigned int MinNsPerNormalizedYield = 37; // measured typically 37-46 on post-Skylake
 const unsigned int NsPerOptimalMaxSpinIterationDuration = 272; // approx. 900 cycles, measured 281 on pre-Skylake, 263 on post-Skylake
@@ -201,8 +207,8 @@ FORCEINLINE void YieldProcessorWithBackOffNormalized(
     _ASSERTE(normalizationInfo.optimalMaxNormalizedYieldsPerSpinIteration <= MaxOptimalMaxNormalizedYieldsPerSpinIteration);
 
     // This shift value should be adjusted based on the asserted condition below
-    const UINT8 MaxShift = 3;
-    static_assert_no_msg(((unsigned int)1 << (MaxShift + 1)) >= MaxOptimalMaxNormalizedYieldsPerSpinIteration);
+    const uint8_t MaxShift = 3;
+    static_assert(((unsigned int)1 << (MaxShift + 1)) >= MaxOptimalMaxNormalizedYieldsPerSpinIteration, "");
 
     unsigned int n;
     if (spinIteration <= MaxShift &&
