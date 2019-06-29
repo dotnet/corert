@@ -3063,8 +3063,6 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_PCLMULQDQ);
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE3);
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSSE3);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE41);
-                flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSE42);
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_POPCNT);
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_LZCNT);
             }
