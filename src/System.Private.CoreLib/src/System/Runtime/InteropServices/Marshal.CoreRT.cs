@@ -64,7 +64,7 @@ namespace System.Runtime.InteropServices
             PtrToStructureImpl(ptr, structure);
         }
 
-        private static unsafe void PtrToStructureImpl(IntPtr ptr, object structure)
+        internal static unsafe void PtrToStructureImpl(IntPtr ptr, object structure)
         {
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
 

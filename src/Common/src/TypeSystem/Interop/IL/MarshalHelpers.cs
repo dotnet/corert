@@ -37,7 +37,7 @@ namespace Internal.TypeSystem.Interop
             // or Explicit layout. For Auto layout the P/Invoke marshalling code
             // will throw appropriate error message.
             //
-            if (!type.IsSequentialLayout && !type.IsExplicitLayout)
+            if (!type.HasLayout())
                 return false;
 
             // If it is not blittable we will need struct marshalling
@@ -136,6 +136,7 @@ namespace Internal.TypeSystem.Interop
                     return type;
 
                 case MarshallerKind.Struct:
+                case MarshallerKind.LayoutClass:
                     return interopStateManager.GetStructMarshallingNativeType((MetadataType)type);
 
                 case MarshallerKind.BlittableStructPtr:
@@ -210,6 +211,11 @@ namespace Internal.TypeSystem.Interop
 
                         return interopStateManager.GetInlineArrayType(inlineArrayCandidate);
                     }
+
+                case MarshallerKind.LayoutClassPtr:
+                case MarshallerKind.AsAnyA:
+                case MarshallerKind.AsAnyW:
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
 
                 case MarshallerKind.Unknown:
                 default:
@@ -416,7 +422,7 @@ namespace Internal.TypeSystem.Interop
                     MetadataType metadataType = (MetadataType)type;
                     // the struct type need to be either sequential or explicit. If it is
                     // auto layout we will throw exception.
-                    if (!metadataType.IsSequentialLayout && !metadataType.IsExplicitLayout)
+                    if (!metadataType.HasLayout())
                     {
                         throw new InvalidProgramException("The specified structure " + metadataType.Name + " has invalid StructLayout information. It must be either Sequential or Explicit.");
                     }
@@ -538,13 +544,13 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.Invalid;
                 }
             }
-            // else if (type.IsObject)
-            // {
-            //    if (nativeType == NativeTypeKind.Invalid)
-            //        return MarshallerKind.Variant;
-            //    else
-            //        return MarshallerKind.Invalid;
-            // }
+            else if (type.IsObject)
+            {
+                if (nativeType == NativeTypeKind.AsAny)
+                    return isAnsi ? MarshallerKind.AsAnyA : MarshallerKind.AsAnyW;
+                else
+                    return MarshallerKind.Invalid;
+            }
             else if (InteropTypes.IsStringBuilder(context, type))
             {
                 switch (nativeType)
@@ -582,10 +588,17 @@ namespace Internal.TypeSystem.Interop
                 else
                     return MarshallerKind.Invalid;
             }
-            else
+            else if (type is MetadataType mdType && mdType.HasLayout())
             {
-                return MarshallerKind.Invalid;
+                if (!isField && nativeType == NativeTypeKind.Invalid || nativeType == NativeTypeKind.LPStruct)
+                    return MarshallerKind.LayoutClassPtr;
+                else if (isField && (nativeType == NativeTypeKind.Invalid || nativeType == NativeTypeKind.Struct))
+                    return MarshallerKind.LayoutClass;
+                else
+                    return MarshallerKind.Invalid;
             }
+            else
+                return MarshallerKind.Invalid;
         }
 
         private static MarshallerKind GetArrayElementMarshallerKind(

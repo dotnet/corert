@@ -396,6 +396,59 @@ namespace Internal.Runtime.CompilerHelpers
             return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
         }
 
+        internal static int AsAnyGetNativeSize(object o)
+        {
+            // Array, string and StringBuilder are not implemented.
+            if (o.EETypePtr.IsArray ||
+                o is string ||
+                o is StringBuilder)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            // Assume that this is a type with layout.
+            return Marshal.SizeOf(o.GetType());
+        }
+
+        internal static void AsAnyMarshalManagedToNative(object o, IntPtr address)
+        {
+            // Array, string and StringBuilder are not implemented.
+            if (o.EETypePtr.IsArray ||
+                o is string ||
+                o is StringBuilder)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            Marshal.StructureToPtr(o, address, fDeleteOld: false);
+        }
+
+        internal static void AsAnyMarshalNativeToManaged(IntPtr address, object o)
+        {
+            // Array, string and StringBuilder are not implemented.
+            if (o.EETypePtr.IsArray ||
+                o is string ||
+                o is StringBuilder)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            Marshal.PtrToStructureImpl(address, o);
+        }
+
+        internal static void AsAnyCleanupNative(IntPtr address, object o)
+        {
+            // Array, string and StringBuilder are not implemented.
+            if (o.EETypePtr.IsArray ||
+                o is string ||
+                o is StringBuilder)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            Marshal.DestroyStructure(address, o.GetType());
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         internal unsafe struct ModuleFixupCell
         {

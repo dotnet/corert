@@ -32,6 +32,7 @@ namespace Internal.TypeSystem
         Int = 0x1f,
         UInt = 0x20,
         Func = 0x26,
+        AsAny = 0x28,
         Array = 0x2a,
         LPStruct = 0x2b,    // This is not  defined in Ecma-335(II.23.4)
         LPUTF8Str = 0x30,
