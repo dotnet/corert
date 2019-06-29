@@ -171,7 +171,7 @@ private:
 
     // Tracks the amount of bytes that were reserved for threads in their gc_alloc_context and went unused when they died.
     // Used for GC.GetTotalAllocatedBytes
-    static uint64_t m_DeadThreadsNonAllocBytes;
+    static uint64_t s_DeadThreadsNonAllocBytes;
 };
 
 #endif // __GCRHINTERFACE_INCLUDED
