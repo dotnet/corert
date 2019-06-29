@@ -39,6 +39,7 @@
 #include "Volatile.h"
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
+#include "yieldprocessornormalized.h"
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
@@ -48,8 +49,8 @@ COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 // Busy spin for the given number of iterations.
 COOP_PINVOKE_HELPER(void, RhSpinWait, (Int32 iterations))
 {
-    for(int i = 0; i < iterations; i++)
-        PalYieldProcessor();
+    YieldProcessorNormalizationInfo normalizationInfo;
+    YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, iterations);
 }
 
 // Yield the cpu to another thread ready to process, if one is available.

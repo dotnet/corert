@@ -26,6 +26,7 @@
 #include "RhConfig.h"
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
+#include "yieldprocessornormalized.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -113,6 +114,8 @@ static bool InitDLL(HANDLE hPalInstance)
 
     if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstCastCache))
         return false;
+
+    InitializeYieldProcessorNormalizedCrst();
 
     return true;
 }

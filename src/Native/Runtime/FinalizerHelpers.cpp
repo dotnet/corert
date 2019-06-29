@@ -24,6 +24,8 @@
 #include "threadstore.inl"
 #include "thread.inl"
 
+#include "yieldprocessornormalized.h"
+
 GPTR_DECL(Thread, g_pFinalizerThread);
 
 CLREventStatic g_FinalizerEvent;
@@ -49,6 +51,9 @@ UInt32 WINAPI FinalizerStart(void* pContext)
     pThread->SetSuppressGcStress();
 
     g_pFinalizerThread = PTR_Thread(pThread);
+
+    // We have some time until the first finalization request - use the time to calibrate normalized waits.
+    EnsureYieldProcessorNormalizedInitialized();
 
     // Wait for a finalization request.
     UInt32 uResult = PalWaitForSingleObjectEx(hFinalizerEvent, INFINITE, FALSE);

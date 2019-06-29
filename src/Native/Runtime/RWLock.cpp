@@ -25,6 +25,7 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "RuntimeInstance.h"
+#include "yieldprocessornormalized.h"
 
 // Configurable constants used across our spin locks
 // Initialization here is necessary so that we have meaningful values before the runtime is started
@@ -179,23 +180,8 @@ void ReaderWriterLock::AcquireReadLockWorker()
                 break;
 
             // Delay by approximately 2*i clock cycles (Pentium III).
-            // This is brittle code - future processors may of course execute this
-            // faster or slower, and future code generators may eliminate the loop altogether.
-            // The precise value of the delay is not critical, however, and I can't think
-            // of a better way that isn't machine-dependent - petersol.
-            int sum = 0;
-            for (int delayCount = uDelay; --delayCount; ) 
-            {
-                sum += delayCount;
-                PalYieldProcessor();           // indicate to the processor that we are spining 
-            }
-            if (sum == 0)
-            {
-                // never executed, just to fool the compiler into thinking sum is live here,
-                // so that it won't optimize away the loop.
-                static char dummy;
-                dummy++;
-            }
+            YieldProcessorNormalizedForPreSkylakeCount(uDelay);
+
             // exponential backoff: wait a factor longer in the next iteration
             uDelay *= g_SpinConstants.uBackoffFactor;
         }
@@ -260,24 +246,10 @@ void ReaderWriterLock::AcquireWriteLock()
             {
                 break;
             }
+
             // Delay by approximately 2*i clock cycles (Pentium III).
-            // This is brittle code - future processors may of course execute this
-            // faster or slower, and future code generators may eliminate the loop altogether.
-            // The precise value of the delay is not critical, however, and I can't think
-            // of a better way that isn't machine-dependent - petersol.
-            int sum = 0;
-            for (int delayCount = uDelay; --delayCount; ) 
-            {
-                sum += delayCount;
-                PalYieldProcessor();           // indicate to the processor that we are spining 
-            }
-            if (sum == 0)
-            {
-                // never executed, just to fool the compiler into thinking sum is live here,
-                // so that it won't optimize away the loop.
-                static char dummy;
-                dummy++;
-            }
+            YieldProcessorNormalizedForPreSkylakeCount(uDelay);
+
             // exponential backoff: wait a factor longer in the next iteration
             uDelay *= g_SpinConstants.uBackoffFactor;
         }
