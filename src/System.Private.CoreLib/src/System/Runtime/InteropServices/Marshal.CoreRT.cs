@@ -360,6 +360,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(ofs));
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
+            Buffer.ZeroMemory((byte*)nativeBytes, (long)size);
 
             try
             {
@@ -455,6 +456,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(ofs));
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
+            Buffer.ZeroMemory((byte*)nativeBytes, (long)size);
 
             try
             {
