@@ -57,7 +57,7 @@ namespace Internal.Reflection.Augments
                 if (!type.IsEnum)
                     return TypeCode.Object;
                 Type underlyingType = Enum.GetUnderlyingType(type);
-                eeType = underlyingType.TypeHandle.EETypePtr;
+                eeType = underlyingType.TypeHandle.ToEETypePtr();
             }
 
             // Note: Type.GetTypeCode() is expected to return the underlying type's TypeCode for enums. EETypePtr.CorElementType does the same,
