@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Text;
 
 using Internal.Runtime.Augments;
-
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -221,18 +221,6 @@ namespace System.Runtime.InteropServices
             };
         }
 
-        public static void WriteInt16(object ptr, int ofs, short val)
-        {
-            // Obsolete
-            throw new PlatformNotSupportedException("WriteInt16");
-        }
-
-        public static void WriteInt64(object ptr, int ofs, long val)
-        {
-            // Obsolete
-            throw new PlatformNotSupportedException("WriteInt64");
-        }
-
         private static void PrelinkCore(MethodInfo m)
         {
             // Note: This method is effectively a no-op in ahead-of-time compilation scenarios. In CoreCLR and Desktop, this will pre-generate
@@ -316,22 +304,22 @@ namespace System.Runtime.InteropServices
 
         public static byte ReadByte(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, bytesNeeded: 1, ReadByte);
+            return ReadValueSlow(ptr, ofs, ReadByte);
         }
 
         public static short ReadInt16(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, bytesNeeded: 2, ReadInt16);
+            return ReadValueSlow(ptr, ofs, ReadInt16);
         }
 
         public static int ReadInt32(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, bytesNeeded: 4, ReadInt32);
+            return ReadValueSlow(ptr, ofs, ReadInt32);
         }
 
         public static long ReadInt64(object ptr, int ofs)
         {
-            return ReadValueSlow(ptr, ofs, bytesNeeded: 8, ReadInt64);
+            return ReadValueSlow(ptr, ofs, ReadInt64);
         }
 
         //====================================================================
@@ -340,7 +328,7 @@ namespace System.Runtime.InteropServices
         // It's only there for backcompact
         // People should instead use the IntPtr overloads
         //====================================================================
-        private static unsafe T ReadValueSlow<T>(object ptr, int ofs, int bytesNeeded, Func<IntPtr, int, T> readValueHelper)
+        private static unsafe T ReadValueSlow<T>(object ptr, int ofs, Func<IntPtr, int, T> readValueHelper)
         {
             // Consumers of this method are documented to throw AccessViolationException on any AV
             if (ptr is null)
@@ -368,7 +356,7 @@ namespace System.Runtime.InteropServices
 
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
-            if (checked(ofs + bytesNeeded) > size)
+            if (checked(ofs + Unsafe.SizeOf<T>()) > size)
                 throw new ArgumentOutOfRangeException(nameof(ofs));
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
@@ -417,14 +405,68 @@ namespace System.Runtime.InteropServices
 
         public static void WriteByte(object ptr, int ofs, byte val)
         {
-            // Obsolete
-            throw new PlatformNotSupportedException("WriteByte");
+            WriteValueSlow(ptr, ofs, val, (IntPtr nativeHome, int offset, byte value) => WriteByte(nativeHome, offset, value));
+        }
+
+        public static void WriteInt16(object ptr, int ofs, short val)
+        {
+            WriteValueSlow(ptr, ofs, val, WriteInt16);
         }
 
         public static void WriteInt32(object ptr, int ofs, int val)
         {
-            // Obsolete
-            throw new PlatformNotSupportedException("WriteInt32");
+            WriteValueSlow(ptr, ofs, val, WriteInt32);
+        }
+
+        public static void WriteInt64(object ptr, int ofs, long val)
+        {
+            WriteValueSlow(ptr, ofs, val, WriteInt64);
+        }
+
+        private static unsafe void WriteValueSlow<T>(object ptr, int ofs, T val, Action<IntPtr, int, T> writeValueHelper)
+        {
+            // Consumers of this method are documented to throw AccessViolationException on any AV
+            if (ptr is null)
+            {
+                throw new AccessViolationException();
+            }
+
+            if (ptr.EETypePtr.IsArray ||
+                ptr is string ||
+                ptr is StringBuilder)
+            {
+                // We could implement these if really needed.
+                throw new PlatformNotSupportedException();
+            }
+
+            // We are going to assume this is a Sequential or Explicit layout type because
+            // we don't want to touch reflection metadata for this.
+            // If we're wrong, this will throw the exception we get for missing interop data
+            // instead of an ArgumentException.
+            // That's quite acceptable for an obsoleted API.
+
+            Type structType = ptr.GetType();
+
+            int size = SizeOf(structType);
+
+            // Compat note: CLR wouldn't bother with a range check. If someone does this,
+            // they're likely taking dependency on some CLR implementation detail quirk.
+            if (checked(ofs + Unsafe.SizeOf<T>()) > size)
+                throw new ArgumentOutOfRangeException(nameof(ofs));
+
+            IntPtr nativeBytes = AllocCoTaskMem(size);
+
+            try
+            {
+                StructureToPtr(ptr, nativeBytes, false);
+                writeValueHelper(nativeBytes, ofs, val);
+                PtrToStructureImpl(nativeBytes, ptr);
+            }
+            finally
+            {
+                DestroyStructure(nativeBytes, structType);
+                FreeCoTaskMem(nativeBytes);
+            }
         }
 
         [McgIntrinsics]
