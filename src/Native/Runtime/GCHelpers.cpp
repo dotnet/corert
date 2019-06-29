@@ -8,6 +8,7 @@
 
 #include "common.h"
 #include "gcenv.h"
+#include "gcenv.ee.h"
 #include "gcheaputilities.h"
 #include "RestrictedCallouts.h"
 
@@ -219,4 +220,47 @@ COOP_PINVOKE_HELPER(void, RhGetMemoryInfo, (UInt32* highMemLoadThreshold, UInt64
     return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(highMemLoadThreshold, totalPhysicalMem,
                                                        lastRecordedMemLoad,
                                                        lastRecordedHeapSize, lastRecordedFragmentation);
+}
+
+COOP_PINVOKE_HELPER(Int64, RhGetTotalAllocatedBytes, ())
+{
+    uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - RedhawkGCInterface::GetDeadThreadsNonAllocBytes();
+
+    // highest reported allocated_bytes. We do not want to report a value less than that even if unused_bytes has increased.
+    static uint64_t high_watermark;
+
+    uint64_t current_high = high_watermark;
+    while (allocated_bytes > current_high)
+    {
+        uint64_t orig = PalInterlockedCompareExchange64((Int64*)&high_watermark, allocated_bytes, current_high);
+        if (orig == current_high)
+            return allocated_bytes;
+
+        current_high = orig;
+    }
+
+    return current_high;
+}
+
+EXTERN_C REDHAWK_API Int64 __cdecl RhGetTotalAllocatedBytesPrecise()
+{
+    Int64 allocated;
+
+    // We need to suspend/restart the EE to get each thread's
+    // non-allocated memory from their allocation contexts
+
+    GCToEEInterface::SuspendEE(SUSPEND_REASON::SUSPEND_FOR_GC);
+    
+    allocated = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - RedhawkGCInterface::GetDeadThreadsNonAllocBytes();
+
+    FOREACH_THREAD(pThread)
+    {
+        gc_alloc_context* ac = pThread->GetAllocContext();
+        allocated -= ac->alloc_limit - ac->alloc_ptr;
+    }
+    END_FOREACH_THREAD
+
+    GCToEEInterface::RestartEE(true);
+    
+    return allocated;
 }

@@ -62,6 +62,8 @@ See the LICENSE file in the project root for more information.
     <ItemGroup>
       <!-- Workaround for https://github.com/dotnet/corert/issues/7000 -->
       <IlcArg Include="--removefeature:CurlHandler" />
+      <!-- libicu loader in System.Globalization.Native is not compatible with static linking -->
+      <IlcArg Include="--removefeature:Globalization" Condition="'$(StaticallyLinked)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>
@@ -91,7 +93,8 @@ See the LICENSE file in the project root for more information.
       <LinkerArg Include="-ldl" />
       <LinkerArg Include="-lm" />
       <LinkerArg Include="-lz" />
-      <LinkerArg Include="-lgssapi_krb5" Condition="'$(TargetOS)' != 'OSX'" />
+      <LinkerArg Include="-static" Condition="'$(StaticallyLinked)' == 'true'" />
+      <LinkerArg Include="-lgssapi_krb5" Condition="'$(TargetOS)' != 'OSX' and '$(StaticallyLinked)' != 'true'" />
       <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
       <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />

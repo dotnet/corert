@@ -197,6 +197,13 @@ namespace System.Runtime
         internal static extern long RhGetAllocatedBytesForCurrentThread();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhGetTotalAllocatedBytes")]
+        internal static extern long RhGetTotalAllocatedBytes();
+
+        [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern long RhGetTotalAllocatedBytesPrecise();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetMemoryInfo")]
         internal static extern void RhGetMemoryInfo(out uint highMemLoadThreshold,
                                                     out ulong totalPhysicalMem,

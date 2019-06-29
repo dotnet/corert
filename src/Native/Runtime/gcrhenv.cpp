@@ -15,11 +15,7 @@
 #include "gchandleutilities.h"
 #include "profheapwalkhelper.h"
 
-#ifdef FEATURE_STANDALONE_GC
 #include "gcenv.ee.h"
-#else
-#include "../gc/env/gcenv.ee.h"
-#endif // FEATURE_STANDALONE_GC
 
 #include "RestrictedCallouts.h"
 
@@ -106,6 +102,10 @@ RhConfig * g_pRhConfig = &g_sRhConfig;
 
 UInt32 EtwCallback(UInt32 IsEnabled, RH_ETW_CONTEXT * pContext)
 {
+    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle),
+                                            static_cast<GCEventKeyword>(pContext->MatchAnyKeyword),
+                                            static_cast<GCEventLevel>(pContext->Level));
+
     if (IsEnabled &&
         (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PrivateHandle) &&
         GCHeapUtilities::IsGCHeapInitialized())
@@ -316,6 +316,7 @@ void RedhawkGCInterface::InitAllocContext(gc_alloc_context * pAllocContext)
 // static
 void RedhawkGCInterface::ReleaseAllocContext(gc_alloc_context * pAllocContext)
 {
+    m_DeadThreadsNonAllocBytes += pAllocContext->alloc_limit - pAllocContext->alloc_ptr;
     GCHeapUtilities::GetGCHeap()->FixAllocContext(pAllocContext, NULL, NULL);
 }
 
@@ -879,6 +880,19 @@ void RedhawkGCInterface::SetLastAllocEEType(EEType * pEEType)
     tls_pLastAllocationEEType = pEEType;
 }
 
+uint64_t RedhawkGCInterface::m_DeadThreadsNonAllocBytes = 0;
+
+uint64_t RedhawkGCInterface::GetDeadThreadsNonAllocBytes()
+{
+#ifdef BIT64
+    return m_DeadThreadsNonAllocBytes;
+#else
+    // As it could be noticed we read 64bit values that may be concurrently updated.
+    // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
+    return PalInterlockedCompareExchange64((Int64*)&m_DeadThreadsNonAllocBytes, 0, 0);
+#endif
+}
+
 void RedhawkGCInterface::DestroyTypedHandle(void * handle)
 {
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType((OBJECTHANDLE)handle);
@@ -1312,7 +1326,6 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
             // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
             FlushProcessWriteBuffers();
         }
-    }
 #endif
 
         g_lowest_address = args->lowest_address;

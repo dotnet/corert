@@ -267,9 +267,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         // JIT32 x86-specific exception handling
         READYTORUN_HELPER_EndCatch = 0x110,
-
-        // A flag to indicate that a helper call uses VSD
-        READYTORUN_HELPER_FLAG_VSD = 0x10000000,
     }
 
     public enum CorElementType : byte

@@ -223,6 +223,13 @@ namespace System
                 bool isFirstFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_FRAME) != 0;
                 bool isFirstRethrowFrame = (flags & (int)RhEHFrameType.RH_EH_FIRST_RETHROW_FRAME) != 0;
 
+                // When we're throwing an exception object, we first need to clear its stacktrace with two exceptions:
+                // 1. Don't clear if we're rethrowing with `throw;`.
+                // 2. Don't clear if we're throwing through ExceptionDispatchInfo.
+                //    This is done through invoking RestoreDispatchState which sets the last frame to EdiSeparator followed by throwing normally using `throw ex;`.
+                if (!isFirstRethrowFrame && isFirstFrame && ex._idxFirstFreeStackTraceEntry > 0 && ex._corDbgStackTrace[ex._idxFirstFreeStackTraceEntry - 1] != StackTraceHelper.SpecialIP.EdiSeparator)
+                    ex._idxFirstFreeStackTraceEntry = 0;
+
                 // If out of memory, avoid any calls that may allocate.  Otherwise, they may fail
                 // with another OutOfMemoryException, which may lead to infinite recursion.
                 bool fatalOutOfMemory = ex == PreallocatedOutOfMemoryException.Instance;

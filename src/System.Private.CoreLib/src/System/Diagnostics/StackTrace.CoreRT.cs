@@ -101,6 +101,9 @@ namespace System.Diagnostics
                 frame.AppendToStackTrace(builder);
             }
 
+            if (traceFormat == TraceFormat.Normal && builder.Length >= Environment.NewLine.Length)
+                builder.Length -= Environment.NewLine.Length;
+
             return builder.ToString();
         }
 
