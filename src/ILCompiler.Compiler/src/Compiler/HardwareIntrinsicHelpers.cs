@@ -112,9 +112,6 @@ namespace ILCompiler
                     case "Ssse3":
                         flag = XArchIntrinsicConstants.Ssse3;
                         break;
-                    case "Popcnt":
-                        flag = XArchIntrinsicConstants.Popcnt;
-                        break;
                     case "Lzcnt":
                         flag = XArchIntrinsicConstants.Lzcnt;
                         break;
@@ -165,11 +162,13 @@ namespace ILCompiler
 
                 // Sse and Sse2 are baseline required intrinsics.
                 // RyuJIT also uses Sse41/Sse42 with the general purpose Vector APIs.
+                // RyuJIT only respects Popcnt if Sse41/Sse42 is also enabled.
                 // Avx/Avx2/Bmi1/Bmi2 require VEX encoding and RyuJIT currently can't enable them
                 // without enabling VEX encoding everywhere. We don't support them.
                 // This list complements EmitIsSupportedIL above.
                 return owningType.Name == "Sse" || owningType.Name == "Sse2"
                     || owningType.Name == "Sse41" || owningType.Name == "Sse42"
+                    || owningType.Name == "Popcnt"
                     || owningType.Name == "Bmi1" || owningType.Name == "Bmi2"
                     || owningType.Name == "Avx" || owningType.Name == "Avx2";
             }
