@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
 
@@ -278,16 +279,32 @@ namespace Internal.Runtime.CompilerHelpers
 
             Assembly callingAssembly = RuntimeAugments.Callbacks.GetAssemblyForHandle(new RuntimeTypeHandle(pCell->CallingAssemblyType));
 
+            // First check if there's a NativeLibrary callback and call it to attempt the resolution
             IntPtr hModule = NativeLibrary.LoadLibraryCallbackStub(moduleName, callingAssembly, hasDllImportSearchPath, dllImportSearchPath);
             if (hModule == IntPtr.Zero)
             {
-                // TODO: this should not actually throw yet: AssemblyLoadContext.ResolvingUnmanagedDll is
-                // a last chance callback we should call before giving up.
-                hModule = NativeLibrary.LoadLibraryByName(
-                    moduleName,
+                // NativeLibrary callback didn't resolve the library. Use built-in rules.
+                NativeLibrary.LoadLibErrorTracker loadLibErrorTracker = default;
+
+                hModule = NativeLibrary.LoadLibraryModuleBySearch(
                     callingAssembly,
-                    hasDllImportSearchPath ? (DllImportSearchPath?)dllImportSearchPath : NativeLibrary.DefaultDllImportSearchPath,
-                    throwOnError: true);
+                    searchAssemblyDirectory: false,
+                    dllImportSearchPathFlags: 0,
+                    ref loadLibErrorTracker,
+                    moduleName);
+
+                if (hModule == IntPtr.Zero)
+                {
+                    // Built-in rules didn't resolve the library. Use AssemblyLoadContext as a last chance attempt.
+                    AssemblyLoadContext loadContext = AssemblyLoadContext.GetLoadContext(callingAssembly);
+                    hModule = loadContext.GetResolvedUnmanagedDll(callingAssembly, moduleName);
+                }
+
+                if (hModule == IntPtr.Zero)
+                {
+                    // If the module is still unresolved, this is an error.
+                    loadLibErrorTracker.Throw(moduleName);
+                }
             }
 
             Debug.Assert(hModule != IntPtr.Zero);
