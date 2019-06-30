@@ -100,30 +100,6 @@ FORCEINLINE void PalSetLastError(int error)
     SetLastError((unsigned long)error);
 }
 
-
-#if defined(_X86_) || defined(_AMD64_)	
-
-// fxsave/fxrstor instruction support, CpuIdEx Function: 1, EDX:24
-#define X86_FXSR    (1<<24)
-
-// fast fxsave/fxrstor flag, CpuIdEx Function: 0x80000001, EDX:25
-#define AMD_FFXSR   (1<<25)
-
-typedef struct _CPU_INFO {
-    uint32_t Eax;
-    uint32_t Ebx;
-    uint32_t Ecx;
-    uint32_t Edx;
-} CPU_INFO;
-
-EXTERN_C void __cpuidex(int CPUInfo[4], int Function, int SubLeaf);
-#pragma intrinsic(__cpuidex)
-inline void PalCpuIdEx(uint32_t Function, uint32_t SubLeaf, CPU_INFO* pCPUInfo)
-{
-    __cpuidex((int*)pCPUInfo, (int)Function, (int)SubLeaf);
-}
-#endif 
-
 #if defined(_X86_)
 
 EXTERN_C void _mm_pause();

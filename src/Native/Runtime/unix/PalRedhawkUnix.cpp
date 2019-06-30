@@ -1914,3 +1914,65 @@ void CLRCriticalSection::Leave()
 {
     pthread_mutex_unlock(&m_cs.mutex);
 }
+
+#if defined(_X86_) || defined(_AMD64_)
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI getcpuid(uint32_t arg, unsigned char result[16])
+{
+    DWORD eax;
+#if defined(_X86_)
+    __asm("  xor %%ecx, %%ecx\n" \
+          "  cpuid\n" \
+          "  mov %%eax, 0(%[result])\n" \
+          "  mov %%ebx, 4(%[result])\n" \
+          "  mov %%ecx, 8(%[result])\n" \
+          "  mov %%edx, 12(%[result])\n" \
+          : "=a"(eax) /*output in eax*/\
+          : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
+          : "ebx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+        );
+#endif // defined(_X86_)
+#if defined(_AMD64_)
+    __asm("  xor %%ecx, %%ecx\n" \
+          "  cpuid\n" \
+          "  mov %%eax, 0(%[result])\n" \
+          "  mov %%ebx, 4(%[result])\n" \
+          "  mov %%ecx, 8(%[result])\n" \
+          "  mov %%edx, 12(%[result])\n" \
+          : "=a"(eax) /*output in eax*/\
+          : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
+          : "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+        );
+#endif // defined(_AMD64_)
+    return eax;
+}
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI getextcpuid(uint32_t arg1, uint32_t arg2, unsigned char result[16])
+{
+    DWORD eax;
+#if defined(_X86_)
+    DWORD ecx;
+    __asm("  cpuid\n" \
+          "  mov %%eax, 0(%[result])\n" \
+          "  mov %%ebx, 4(%[result])\n" \
+          "  mov %%ecx, 8(%[result])\n" \
+          "  mov %%edx, 12(%[result])\n" \
+          : "=a"(eax), "=c"(ecx) /*output in eax, ecx is rewritten*/\
+          : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
+          : "ebx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+        );
+#endif // defined(_X86_)
+#if defined(_AMD64_)
+    __asm("  cpuid\n" \
+          "  mov %%eax, 0(%[result])\n" \
+          "  mov %%ebx, 4(%[result])\n" \
+          "  mov %%ecx, 8(%[result])\n" \
+          "  mov %%edx, 12(%[result])\n" \
+          : "=a"(eax) /*output in eax*/\
+          : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
+          : "rbx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+        );
+#endif // defined(_AMD64_)
+    return eax;
+}
+
+#endif // defined(_X86_) || defined(_AMD64_)

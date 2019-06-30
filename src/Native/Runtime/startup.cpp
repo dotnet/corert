@@ -49,6 +49,11 @@ EXTERN_C bool g_fHasFastFxsave = false;
 CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
+#if defined(_X86_) || defined(_AMD64_)
+// This field is inspected from the generated code to determine what intrinsics are available.
+EXTERN_C int g_cpuFeatures = 0;
+#endif
+
 static bool InitDLL(HANDLE hPalInstance)
 {
     CheckForPalFallback();
@@ -106,7 +111,9 @@ static bool InitDLL(HANDLE hPalInstance)
     }
 #endif // STRESS_LOG
 
+#ifndef USE_PORTABLE_HELPERS
     DetectCPUFeatures();
+#endif
 
     if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
         return false;
@@ -145,30 +152,106 @@ static void CheckForPalFallback()
 #endif // _DEBUG
 }
 
+#ifndef USE_PORTABLE_HELPERS
+// Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
+enum XArchIntrinsicConstants
+{
+    XArchIntrinsicConstants_Aes = 0x0001,
+    XArchIntrinsicConstants_Pclmulqdq = 0x0002,
+    XArchIntrinsicConstants_Sse3 = 0x0004,
+    XArchIntrinsicConstants_Ssse3 = 0x0008,
+    XArchIntrinsicConstants_Sse41 = 0x0010,
+    XArchIntrinsicConstants_Sse42 = 0x0020,
+    XArchIntrinsicConstants_Popcnt = 0x0040,
+    XArchIntrinsicConstants_Lzcnt = 0x0080,
+};
+
 void DetectCPUFeatures()
 {
-#ifdef PROJECTN // @TODO: CORERT: DetectCPUFeatures
-
-#ifdef _X86_
-    // We depend on fxsave / fxrstor.  These were added to Pentium II and later, so they're pretty well guaranteed to be
-    // available, but we double-check anyway and fail fast if they are not supported.
-    CPU_INFO cpuInfo;
-    PalCpuIdEx(1, 0, &cpuInfo);
-    if (!(cpuInfo.Edx & X86_FXSR))  
-        RhFailFast();
-#endif
+#if defined(_X86_) || defined(_AMD64_)
+    
+    unsigned char buffer[16];
 
 #ifdef _AMD64_
     // AMD has a "fast" mode for fxsave/fxrstor, which omits the saving of xmm registers.  The OS will enable this mode
     // if it is supported.  So if we continue to use fxsave/fxrstor, we must manually save/restore the xmm registers.
-    CPU_INFO cpuInfo;
-    PalCpuIdEx(0x80000001, 0, &cpuInfo);
-    if (cpuInfo.Edx & AMD_FFXSR)
+    // fxsr_opt is bit 25 of EDX
+    getextcpuid(0, 0x80000001, buffer);
+    if ((buffer[15] & 0x02) != 0)
         g_fHasFastFxsave = true;
 #endif
 
-#endif // PROJECTN
+    uint32_t maxCpuId = getcpuid(0, buffer);
+
+    if (maxCpuId >= 1)
+    {
+        // getcpuid executes cpuid with eax set to its first argument, and ecx cleared.
+        // It returns the resulting eax in buffer[0-3], ebx in buffer[4-7], ecx in buffer[8-11],
+        // and edx in buffer[12-15].
+
+        (void)getcpuid(1, buffer);
+
+        // If SSE/SSE2 is not enabled, there is no point in checking the rest.
+        //   SSE  is bit 25 of EDX   (buffer[15] & 0x02)
+        //   SSE2 is bit 26 of EDX   (buffer[15] & 0x04)
+        if ((buffer[15] & 0x06) == 0x06)                                    // SSE & SSE2
+        {
+            if ((buffer[11] & 0x02) != 0)                                   // AESNI
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Aes;
+            }
+
+            if ((buffer[8] & 0x02) != 0)                                    // PCLMULQDQ
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Pclmulqdq;
+            }
+
+            if ((buffer[8] & 0x01) != 0)                                    // SSE3
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Sse3;
+
+                if ((buffer[9] & 0x02) != 0)                                // SSSE3
+                {
+                    g_cpuFeatures |= XArchIntrinsicConstants_Ssse3;
+
+                    if ((buffer[10] & 0x08) != 0)                           // SSE4.1
+                    {
+                        g_cpuFeatures |= XArchIntrinsicConstants_Sse41;
+
+                        if ((buffer[10] & 0x10) != 0)                       // SSE4.2
+                        {
+                            g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
+
+                            if ((buffer[10] & 0x80) != 0)                   // POPCNT
+                            {
+                                g_cpuFeatures |= XArchIntrinsicConstants_Popcnt;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    uint32_t maxCpuIdEx = getcpuid(0x80000000, buffer);
+    
+    if (maxCpuIdEx >= 0x80000001)
+    {
+        // getcpuid executes cpuid with eax set to its first argument, and ecx cleared.
+        // It returns the resulting eax in buffer[0-3], ebx in buffer[4-7], ecx in buffer[8-11],
+        // and edx in buffer[12-15].
+
+        (void)getcpuid(0x80000001, buffer);
+
+        if ((buffer[8] & 0x20) != 0)            // LZCNT
+        {
+            g_cpuFeatures |= XArchIntrinsicConstants_Lzcnt;
+        }
+    }
+
+#endif // _X86_ || _AMD64_
 }
+#endif // !USE_PORTABLE_HELPERS
 
 #ifdef PROFILE_STARTUP
 #define STD_OUTPUT_HANDLE ((UInt32)-11)

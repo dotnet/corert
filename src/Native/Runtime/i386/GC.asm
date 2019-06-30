@@ -21,6 +21,7 @@ FASTCALL_FUNC getcpuid, 8
         push    esi
         mov     esi, edx
         mov     eax, ecx
+        xor     ecx, ecx
         cpuid
         mov     [esi+ 0], eax
         mov     [esi+ 4], ebx

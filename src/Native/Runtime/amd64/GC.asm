@@ -13,6 +13,7 @@ NESTED_ENTRY getcpuid, _TEXT
 
         mov     eax, ecx                ; first arg
         mov     rsi, rdx                ; second arg (result)
+        xor     ecx, ecx                ; clear ecx - needed for "Structured Extended Feature Flags"
         cpuid
         mov     [rsi+ 0], eax
         mov     [rsi+ 4], ebx
