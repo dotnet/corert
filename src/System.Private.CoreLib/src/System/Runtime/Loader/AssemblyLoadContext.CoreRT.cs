@@ -48,37 +48,6 @@ namespace System.Runtime.Loader
             return InteropServices.NativeLibrary.Load(unmanagedDllPath);
         }
 
-        private Assembly? GetFirstResolvedAssembly(AssemblyName assemblyName)
-        {
-            Assembly? resolvedAssembly = null;
-
-            Func<AssemblyLoadContext, AssemblyName, Assembly> assemblyResolveHandler = _resolving;
-
-            if (assemblyResolveHandler != null)
-            {
-                // Loop through the event subscribers and return the first non-null Assembly instance
-                foreach (Func<AssemblyLoadContext, AssemblyName, Assembly> handler in assemblyResolveHandler.GetInvocationList())
-                {
-                    resolvedAssembly = handler(this, assemblyName);
-                    if (resolvedAssembly != null)
-                    {
-                        return resolvedAssembly;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private Assembly? ResolveUsingEvent(AssemblyName assemblyName)
-        {
-            string? simpleName = assemblyName.Name;
-
-            // Invoke the AssemblyResolve event callbacks if wired up
-            Assembly? assembly = GetFirstResolvedAssembly(assemblyName);
-            return assembly;
-        }
-
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
         {
             IntPtr resolvedDll = IntPtr.Zero;
@@ -101,45 +70,15 @@ namespace System.Runtime.Loader
             return IntPtr.Zero;
         }
 
-        // This method is called by the VM.
-        private static void OnAssemblyLoad(Assembly assembly)
+        private void ReferenceUnreferencedEvents()
         {
-            AssemblyLoad?.Invoke(AppDomain.CurrentDomain, new AssemblyLoadEventArgs(assembly));
-        }
-
-        // This method is called by the VM.
-        private static Assembly? OnResourceResolve(Assembly assembly, string resourceName)
-        {
-            return InvokeResolveEvent(ResourceResolve, assembly, resourceName);
-        }
-
-        // This method is called by the VM
-        private static Assembly? OnTypeResolve(Assembly assembly, string typeName)
-        {
-            return InvokeResolveEvent(TypeResolve, assembly, typeName);
-        }
-
-        // This method is called by the VM.
-        private static Assembly? OnAssemblyResolve(Assembly assembly, string assemblyFullName)
-        {
-            return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
-        }
-
-        private static Assembly? InvokeResolveEvent(ResolveEventHandler eventHandler, Assembly assembly, string name)
-        {
-            if (eventHandler == null)
-                return null;
-
-            var args = new ResolveEventArgs(name, assembly);
-
-            foreach (ResolveEventHandler handler in eventHandler.GetInvocationList())
-            {
-                Assembly? asm = handler(AppDomain.CurrentDomain, args);
-                if (asm != null)
-                    return asm;
-            }
-
-            return null;
+            // Dummy method to avoid CS0067 "Event is never used" warning.
+            // These are defined in the shared partition and it's not worth the ifdeffing.
+            _ = AssemblyLoad;
+            _ = ResourceResolve;
+            _ = _resolving;
+            _ = TypeResolve;
+            _ = AssemblyResolve;
         }
     }
 }
