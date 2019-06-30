@@ -835,13 +835,21 @@ namespace PInvokeTests
             ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "LayoutClassPtr marshalling scenario1 failed.");
         }
 
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+        private static void Issue6063Workaround()
+        {
+            // https://github.com/dotnet/corert/issues/6063
+            // Ensure there's a standalone method body for these two - this method is marked is marked NoOptimization.
+            Marshal.SizeOf<SequentialClass>();
+            Marshal.SizeOf<SequentialStruct>();
+        }
+        
         private static void TestAsAny()
         {
             if (String.Empty.Length > 0)
             {
                 // Make sure we saw these types being used in marshalling
-                Marshal.SizeOf<SequentialClass>();
-                Marshal.SizeOf<SequentialStruct>();
+                Issue6063Workaround();
             }
 
             SequentialClass sc = new SequentialClass();
