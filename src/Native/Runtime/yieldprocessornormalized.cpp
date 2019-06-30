@@ -16,6 +16,8 @@
 #include "Volatile.h"
 #include "yieldprocessornormalized.h"
 
+#define ULONGLONG int64_t
+
 static Volatile<bool> s_isYieldProcessorNormalizedInitialized = false;
 static CrstStatic s_initializeYieldProcessorNormalizedCrst;
 

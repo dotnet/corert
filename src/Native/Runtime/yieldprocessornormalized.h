@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <limits.h>
+
 // Undefine YieldProcessor to encourage using the normalized versions below instead. System_YieldProcessor() can be used where
 // the intention is to use the system-default implementation of YieldProcessor().
 #define HAS_SYSTEM_YIELDPROCESSOR
