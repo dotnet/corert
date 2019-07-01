@@ -87,6 +87,8 @@ static bool InitDLL(HANDLE hPalInstance)
     if (!RuntimeInstance::Initialize(hPalInstance))
         return false;
 
+    InitializeYieldProcessorNormalizedCrst();
+
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
 
     RedhawkGCInterface::GCType gcType = g_pRhConfig->GetUseServerGC()
@@ -121,8 +123,6 @@ static bool InitDLL(HANDLE hPalInstance)
 
     if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstCastCache))
         return false;
-
-    InitializeYieldProcessorNormalizedCrst();
 
     return true;
 }
