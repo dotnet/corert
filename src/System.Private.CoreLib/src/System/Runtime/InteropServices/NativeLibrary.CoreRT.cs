@@ -60,7 +60,7 @@ namespace System.Runtime.InteropServices
             searchAssemblyDirectory = (searchPath & DllImportSearchPath.AssemblyDirectory) != 0;
         }
 
-        private static IntPtr LoadLibraryModuleBySearch(Assembly callingAssembly, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)
+        internal static IntPtr LoadLibraryModuleBySearch(Assembly callingAssembly, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)
         {
             IntPtr ret = IntPtr.Zero;
 
