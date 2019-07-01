@@ -23,6 +23,7 @@
 #include "threadstore.inl"
 #include "RuntimeInstance.h"
 #include "TargetPtrs.h"
+#include "yieldprocessornormalized.h"
 
 #include "slist.inl"
 #include "GCMemoryHelpers.h"
@@ -246,6 +247,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent, bool fireDebugEvent)
     PalFlushProcessWriteBuffers();
 
     bool keepWaiting;
+    YieldProcessorNormalizationInfo normalizationInfo;
     do
     {
         keepWaiting = false;
@@ -283,8 +285,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent, bool fireDebugEvent)
                 // too long (we probably don't need a 15ms wait here).  Instead, we'll just burn some
                 // cycles.
     	        // @TODO: need tuning for spin
-                for (int i = 0; i < 10000; i++)
-                    PalYieldProcessor();
+                YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, 10000);
             }
         }
 
