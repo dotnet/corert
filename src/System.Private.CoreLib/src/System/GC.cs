@@ -14,6 +14,14 @@ using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Security;
 using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
+using Internal.Runtime;
+
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
 
 namespace System
 {
@@ -657,9 +665,39 @@ namespace System
             return RuntimeImports.RhGetGCSegmentSize();
         }
 
-        internal static T[] AllocateUninitializedArray<T>(int length)
+        internal static unsafe T[] AllocateUninitializedArray<T>(int length)
         {
-            return new T[length];
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                return new T[length];
+            }
+
+            if (length < 0)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, 0, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+#if DEBUG
+            // in DEBUG arrays of any length can be created uninitialized
+#else
+            // otherwise small arrays are allocated using `new[]` as that is generally faster.
+            //
+            // The threshold was derived from various simulations. 
+            // As it turned out the threshold depends on overal pattern of all allocations and is typically in 200-300 byte range.
+            // The gradient around the number is shallow (there is no perf cliff) and the exact value of the threshold does not matter a lot.
+            // So it is 256 bytes including array header.
+            if (Unsafe.SizeOf<T>() * length < 256 - 3 * IntPtr.Size)
+            {
+                return new T[length];
+            }
+#endif
+
+            var pEEType = EETypePtr.EETypePtrOf<T[]>();
+
+            T[] array = null;
+            RuntimeImports.RhAllocateUninitializedArray(pEEType.RawValue, (uint)length, Unsafe.AsPointer(ref array));
+
+            if (array == null)
+                throw new OutOfMemoryException();
+
+            return array;
         }
     }
 }

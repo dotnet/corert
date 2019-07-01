@@ -212,6 +212,9 @@ namespace System.Runtime
                                                     out UIntPtr lastRecordedHeapSize,
                                                     out UIntPtr lastRecordedFragmentation);
 
+        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        internal static unsafe extern void RhAllocateUninitializedArray(IntPtr pArrayEEType, uint numElements, void* pResult);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]
         internal extern static bool RhCompareObjectContentsAndPadding(object obj1, object obj2);
