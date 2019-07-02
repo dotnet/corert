@@ -17,7 +17,8 @@ namespace ReadyToRun.SuperIlc
             var parser = new CommandLineBuilder()
                 .AddCommand(CompileFolder())
                 .AddCommand(CompileSubtree())
-                .AddCommand(CompileNugetPackages());
+                .AddCommand(CompileNugetPackages())
+                .AddCommand(CompileCrossgenRsp());
 
             return parser;
 
@@ -79,6 +80,8 @@ namespace ReadyToRun.SuperIlc
                 new Command("compile-nuget", "Restore a list of Nuget packages into an empty console app, publish, and optimize with Crossgen / CPAOT",
                     new Option[]
                     {
+                        R2RDumpPath(),
+                        InputDirectory(),
                         OutputDirectory(),
                         PackageList(),
                         CoreRootDirectory(),
@@ -88,9 +91,26 @@ namespace ReadyToRun.SuperIlc
                         DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
-                        R2RDumpPath(),
                     },
                     handler: CommandHandler.Create<BuildOptions>(CompileNugetCommand.CompileNuget));
+
+            Command CompileCrossgenRsp() =>
+                new Command("compile-crossgen-rsp", "Use existing Crossgen .rsp file(s) to build assmeblies, optionally rewriting base paths",
+                    new Option[]
+                    {
+                        InputDirectory(),
+                        CrossgenResponseFile(),
+                        OutputDirectory(),
+                        CoreRootDirectory(),
+                        Crossgen(),
+                        CpaotDirectory(),
+                        NoCleanup(),
+                        DegreeOfParallelism(),
+                        CompilationTimeoutMinutes(),
+                        RewriteOldPath(),
+                        RewriteNewPath(),
+                    },
+                    handler: CommandHandler.Create<BuildOptions>(CompileFromCrossgenRspCommand.CompileFromCrossgenRsp));
 
             // Todo: Input / Output directories should be required arguments to the command when they're made available to handlers
             // https://github.com/dotnet/command-line-api/issues/297
@@ -153,6 +173,15 @@ namespace ReadyToRun.SuperIlc
 
             Option R2RDumpPath() =>
                 new Option(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll", new Argument<FileInfo>().ExistingOnly());
+
+            Option CrossgenResponseFile() =>
+                new Option(new [] { "--crossgen-response-file", "-rsp" }, "Response file to transpose", new Argument<FileInfo>().ExistingOnly());
+
+            Option RewriteOldPath() =>
+                new Option(new [] { "--rewrite-old-path" }, "Path substring to replace", new Argument<DirectoryInfo[]>(){ Arity = ArgumentArity.ZeroOrMore });
+
+            Option RewriteNewPath() =>
+                new Option(new [] { "--rewrite-new-path" }, "Path substring to use instead", new Argument<DirectoryInfo[]>(){ Arity = ArgumentArity.ZeroOrMore });
 
             //
             // compile-nuget specific options
