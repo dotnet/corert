@@ -30,11 +30,12 @@
     and @(ResolvedAssembliesToPublish). We modify those two item groups
     to control what gets published after CoreRT optimizes the application.
 
-    For .NET Core 3.0, the property has been renamed to _ResolvedCopyLocalPublishAssets
-    in https://github.com/dotnet/sdk/pull/2646.
+    For .NET Core 3.0:
+    - The property has been renamed to _ResolvedCopyLocalPublishAssets in https://github.com/dotnet/sdk/pull/2646
+    - The target has been renamed to ComputeResolvedFilesToPublishList in https://github.com/dotnet/sdk/pull/3281
   -->
   <Target Name="ComputeLinkedFilesToPublish"
-          BeforeTargets="ComputeFilesToPublish"
+          BeforeTargets="ComputeFilesToPublish;ComputeResolvedFilesToPublishList"
           DependsOnTargets="_ComputeAssembliesToCompileToNative;$(ComputeLinkedFilesToPublishDependsOn)">
     
     <ItemGroup>
