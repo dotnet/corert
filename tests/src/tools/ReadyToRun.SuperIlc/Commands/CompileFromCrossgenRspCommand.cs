@@ -19,8 +19,6 @@ namespace ReadyToRun.SuperIlc
         /// This is currently useful for workloads like Bing which have a large complicated web of binaries in different folders
         /// with potentially different sets of reference paths used for different assemblies.
         /// </summary>
-        /// <param name="options"></param>
-        /// <returns></returns>
         public static int CompileFromCrossgenRsp(BuildOptions options)
         {
             if (options.CrossgenResponseFile == null && options.InputDirectory == null)
@@ -95,7 +93,7 @@ namespace ReadyToRun.SuperIlc
                                                          .ReplacePaths(pathReplacements);
 
                 Console.WriteLine($"{inputRsp} -> {crossgenArguments.InputFile}");
-                var compilerRunners = GetCompilerRunners(options, crossgenArguments.ReferencePaths);
+                var compilerRunners = options.CompilerRunners(false, crossgenArguments.ReferencePaths);
 
                 string responseFileOuputPath = Path.Combine(options.OutputDirectory.FullName, Path.GetFileNameWithoutExtension(inputRsp));
                 responseFileOuputPath.RecreateDirectory();
@@ -127,29 +125,6 @@ namespace ReadyToRun.SuperIlc
             Console.WriteLine($"Compilation failures: {compilationFailures}");
 
             return success ? 0 : 1;
-        }
-
-        private static IEnumerable<CompilerRunner> GetCompilerRunners(BuildOptions options, IEnumerable<string> referencePaths)
-        {
-            List<CompilerRunner> runners = new List<CompilerRunner>();
-
-            if (options.CpaotDirectory != null)
-            {
-                List<string> cpaotReferencePaths = new List<string>();
-                cpaotReferencePaths.Add(options.CoreRootOutputPath(CompilerIndex.CPAOT, false));
-                cpaotReferencePaths.AddRange(referencePaths);
-                runners.Add(new CpaotRunner(options, cpaotReferencePaths));
-            }
-
-            if (options.Crossgen)
-            {
-                List<string> crossgenReferencePaths = new List<string>();
-                crossgenReferencePaths.Add(options.CoreRootOutputPath(CompilerIndex.Crossgen, false));
-                crossgenReferencePaths.AddRange(referencePaths);
-                runners.Add(new CrossgenRunner(options, crossgenReferencePaths));
-            }
-
-            return runners;
         }
 
         private class CrossgenArguments
@@ -202,16 +177,16 @@ namespace ReadyToRun.SuperIlc
             {
                 foreach (var replacePath in replacementPaths)
                 {
-                    if (InputFile.StartsWith(replacePath.Key, Environment.OSVersion.Platform == PlatformID.Win32NT, CultureInfo.CurrentCulture))
+                    if (InputFile.StartsWith(replacePath.Key, ignoreCase: Environment.OSVersion.Platform == PlatformID.Win32NT, culture: null))
                     {
-                        InputFile = InputFile.Replace(replacePath.Key, replacePath.Value, Environment.OSVersion.Platform == PlatformID.Win32NT, CultureInfo.CurrentCulture);
+                        InputFile = InputFile.Replace(replacePath.Key, replacePath.Value, ignoreCase: Environment.OSVersion.Platform == PlatformID.Win32NT, culture: null);
                     }
 
                     for (int i = 0; i < ReferencePaths.Count; i++)
                     {
-                        if (ReferencePaths[i].StartsWith(replacePath.Key, Environment.OSVersion.Platform == PlatformID.Win32NT, CultureInfo.CurrentCulture))
+                        if (ReferencePaths[i].StartsWith(replacePath.Key, ignoreCase: Environment.OSVersion.Platform == PlatformID.Win32NT, culture: null))
                         {
-                            ReferencePaths[i] = ReferencePaths[i].Replace(replacePath.Key, replacePath.Value, Environment.OSVersion.Platform == PlatformID.Win32NT, CultureInfo.CurrentCulture);
+                            ReferencePaths[i] = ReferencePaths[i].Replace(replacePath.Key, replacePath.Value, ignoreCase: Environment.OSVersion.Platform == PlatformID.Win32NT, culture: null);
                         }
                     }
                 }

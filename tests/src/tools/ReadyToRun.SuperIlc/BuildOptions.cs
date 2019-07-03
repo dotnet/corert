@@ -67,7 +67,12 @@ namespace ReadyToRun.SuperIlc
             return outputPath;
         }
 
-        public IEnumerable<CompilerRunner> CompilerRunners(bool isFramework)
+        /// <summary>
+        /// Creates compiler runner instances for each supported compiler based on the populated BuildOptions.
+        /// </summary>
+        /// <param name="isFramework">True if compiling the CoreFX framework assemblies</param>
+        /// <param name="referencePaths">Optional set of reference paths to use instead of BuildOptions.ReferencePaths()</param>
+        public IEnumerable<CompilerRunner> CompilerRunners(bool isFramework, IEnumerable<string> overrideReferencePaths = null)
         {
             List<CompilerRunner> runners = new List<CompilerRunner>();
 
@@ -75,7 +80,7 @@ namespace ReadyToRun.SuperIlc
             {
                 List<string> referencePaths = new List<string>();
                 referencePaths.Add(CoreRootOutputPath(CompilerIndex.CPAOT, isFramework));
-                referencePaths.AddRange(ReferencePaths());
+                referencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
                 runners.Add(new CpaotRunner(this, referencePaths));
             }
 
@@ -87,7 +92,7 @@ namespace ReadyToRun.SuperIlc
                 }
                 List<string> referencePaths = new List<string>();
                 referencePaths.Add(CoreRootOutputPath(CompilerIndex.Crossgen, isFramework));
-                referencePaths.AddRange(ReferencePaths());
+                referencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
                 runners.Add(new CrossgenRunner(this, referencePaths));
             }
 
