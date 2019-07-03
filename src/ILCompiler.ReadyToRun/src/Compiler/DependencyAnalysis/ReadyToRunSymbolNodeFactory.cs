@@ -253,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
-                _codegenNodeFactory.DispatchImports,
+                _codegenNodeFactory.HelperImports,
                 ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_CctorTrigger, type, signatureContext));
         }

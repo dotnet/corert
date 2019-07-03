@@ -15,6 +15,7 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
+using ILCompiler.DependencyAnalysis;
 
 namespace ILCompiler
 {
@@ -688,6 +689,11 @@ namespace ILCompiler
 
         protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
         {
+            if (type.IsExplicitLayout)
+            {
+                return ComputeExplicitFieldLayout(type, numInstanceFields);
+            }
+            else
             if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || MarshalUtils.IsManagedSequentialType(type)))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);

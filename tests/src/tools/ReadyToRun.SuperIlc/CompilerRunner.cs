@@ -94,6 +94,12 @@ namespace ReadyToRun.SuperIlc
             {
                 commonBuilder.Append($@" --rp ""{referencePath}""");
             }
+
+            if (_options.CoreRootDirectory != null)
+            {
+                commonBuilder.Append($@" --rp ""{_options.CoreRootDirectory.FullName}""");
+            }
+
             commonBuilder.Append($@" --in ""{compiledExecutable}""");
 
             StringBuilder builder = new StringBuilder(commonBuilder.ToString());
