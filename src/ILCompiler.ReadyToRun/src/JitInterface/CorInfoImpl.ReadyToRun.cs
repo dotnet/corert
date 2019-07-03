@@ -1188,7 +1188,15 @@ namespace Internal.JitInterface
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
                 // READYTORUN: FUTURE: Optionally create boxing stub at runtime
-                throw new RequiresRuntimeJitException(pResult->thisTransform.ToString());
+                // We couldn't resolve the constrained call into a valuetype instance method and we're asking the JIT
+                // to box and do a virtual dispatch. If we were to allow the boxing to happen now, it could break future code
+                // when the user adds a method to the valuetype that makes it possible to avoid boxing (if there is state
+                // mutation in the method).
+
+                // We allow this at least for primitives and enums because we control them
+                // and we know there's no state mutation.
+                if (getTypeForPrimitiveValueClass(pConstrainedResolvedToken->hClass) == CorInfoType.CORINFO_TYPE_UNDEF)
+                    throw new RequiresRuntimeJitException(pResult->thisTransform.ToString());
             }
 
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
