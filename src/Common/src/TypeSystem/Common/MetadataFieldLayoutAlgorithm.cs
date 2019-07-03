@@ -315,7 +315,8 @@ namespace Internal.TypeSystem
 
             foreach (var fieldAndOffset in layoutMetadata.Offsets)
             {
-                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldAndOffset.Field.FieldType, packingSize);
+                TypeDesc fieldType = fieldAndOffset.Field.FieldType;
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(fieldType, packingSize);
 
                 largestAlignmentRequired = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequired);
 
@@ -324,12 +325,13 @@ namespace Internal.TypeSystem
 
                 LayoutInt computedOffset = fieldAndOffset.Offset + cumulativeInstanceFieldPos;
 
-                if (fieldAndOffset.Field.FieldType.IsGCPointer && !computedOffset.IsIndeterminate)
+                // GC pointers MUST be aligned.
+                // We treat byref-like structs as GC pointers too.
+                if (!computedOffset.IsIndeterminate && (fieldType.IsGCPointer || fieldType.IsByRefLike))
                 {
                     int offsetModulo = computedOffset.AsInt % type.Context.Target.PointerSize;
                     if (offsetModulo != 0)
                     {
-                        // GC pointers MUST be aligned.
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadExplicitLayout, type, fieldAndOffset.Offset.ToStringInvariant());
                     }
                 }

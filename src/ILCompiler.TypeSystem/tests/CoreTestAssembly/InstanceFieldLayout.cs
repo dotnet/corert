@@ -96,6 +96,24 @@ namespace Explicit
     public struct ExplicitEmptyStruct
     {
     }
+
+    [StructLayout(LayoutKind.Explicit)]
+    ref struct MisalignedPointer
+    {
+        [FieldOffset(2)]
+        public object O;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    ref struct MisalignedByRef
+    {
+        [FieldOffset(2)]
+        public ByRefStruct O;
+    }
+
+    ref struct ByRefStruct
+    {
+    }
 }
 
 namespace Sequential
