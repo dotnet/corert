@@ -561,7 +561,7 @@ void RedhawkGCInterface::BulkEnumGcObjRef(PTR_RtuObjectRef pRefs, UInt32 cRefs, 
 }
 
 // static 
-GcSegmentHandle RedhawkGCInterface::RegisterFrozenSection(void * pSection, UInt32 SizeSection)
+GcSegmentHandle RedhawkGCInterface::RegisterFrozenSection(void * pSection, size_t SizeSection)
 {
 #ifdef FEATURE_BASICFREEZE
     segment_info seginfo;

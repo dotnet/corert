@@ -162,21 +162,21 @@ namespace Internal.Runtime.CompilerHelpers
             }
 #endif
 
-            // Initialize frozen object segment with GC present
+            // Initialize frozen object segment for the module with GC present
             IntPtr frozenObjectSection = RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.FrozenObjectRegion, out length);
             if (frozenObjectSection != IntPtr.Zero)
             {
                 Debug.Assert(length % IntPtr.Size == 0);
-                InitializeFrozenObjectSegment(frozenObjectSection, length);
+                InitializeModuleFrozenObjectSegment(frozenObjectSection, length);
             }
         }
 
-        private static unsafe void InitializeFrozenObjectSegment(IntPtr segmentStart, int length)
+        private static unsafe void InitializeModuleFrozenObjectSegment(IntPtr segmentStart, int length)
         {
-            if (!RuntimeImports.RhpRegisterFrozenSegment(segmentStart, length))
+            if (RuntimeImports.RhpRegisterFrozenSegment(segmentStart, (IntPtr)length) == IntPtr.Zero)
             {
                 // This should only happen if we ran out of memory.
-                RuntimeExceptionHelpers.FailFast("Failed to register frozen object segment.");
+                RuntimeExceptionHelpers.FailFast("Failed to register frozen object segment for the module.");
             }
         }
 

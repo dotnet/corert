@@ -635,6 +635,16 @@ namespace System
             return size;
         }
 
+        private static IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize)
+        {
+            return RuntimeImports.RhpRegisterFrozenSegment(sectionAddress, sectionSize);
+        }
+
+        private static void _UnregisterFrozenSegment(IntPtr segmentHandle)
+        {
+            RuntimeImports.RhpUnregisterFrozenSegment(segmentHandle);
+        }
+
         public static long GetAllocatedBytesForCurrentThread()
         {
             return RuntimeImports.RhGetAllocatedBytesForCurrentThread();
