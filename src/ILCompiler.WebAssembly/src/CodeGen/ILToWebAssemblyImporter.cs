@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using Internal.TypeSystem;
@@ -1683,6 +1684,19 @@ namespace Internal.IL
 
         private LLVMValueRef GetOrCreateMethodSlot(MethodDesc method)
         {
+            //check here for shared generic and if so add dependencies and get the canonical? method
+            if (method.HasInstantiation)
+            {
+                _dependencies.Add(_compilation.NodeFactory.GVMDependencies(method));
+                var canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                var canonMethodSignature = canonMethod.Signature;
+
+                TypeDesc retType = method.Signature.ReturnType;
+
+                //retType = _writer.ConvertToCanonFormIfNecessary(retType, CanonicalFormKind.Specific);
+
+                return TrapFunction;
+            }
             var vtableSlotSymbol = _compilation.NodeFactory.VTableSlot(method);
             _dependencies.Add(vtableSlotSymbol);
             LLVMValueRef slot = LoadAddressOfSymbolNode(vtableSlotSymbol);
@@ -3289,6 +3303,10 @@ namespace Internal.IL
                     }
                     else
                     {
+                        if (field.Name == "Empty" && owningType.ToString() == "[S.P.CoreLib]System.Array`1+ArrayEnumerator<System.__Canon>")
+                        {
+
+                        }
                         if (field.HasGCStaticBase)
                         {
                             node = _compilation.NodeFactory.TypeGCStaticsSymbol(owningType);

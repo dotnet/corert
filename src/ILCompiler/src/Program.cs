@@ -309,7 +309,7 @@ namespace ILCompiler
             // Initialize type system context
             //
 
-            SharedGenericsMode genericsMode = _useSharedGenerics || !_isWasmCodegen ?
+            SharedGenericsMode genericsMode = _useSharedGenerics ?
                 SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
 
             // TODO: compiler switch for SIMD support?

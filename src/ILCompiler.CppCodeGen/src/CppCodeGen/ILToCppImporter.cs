@@ -2657,6 +2657,10 @@ namespace Internal.IL
             TypeDesc runtimeDeterminedOwningType = runtimeDeterminedField.OwningType;
 
             TypeDesc owningType = _writer.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
+            if (field.Name == "Empty" && owningType.ToString() == "[S.P.CoreLib]System.Array`1+ArrayEnumerator<System.__Canon>")
+            {
+
+            }
             TypeDesc fieldType = _writer.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             // TODO: Is this valid combination?
@@ -3666,6 +3670,10 @@ namespace Internal.IL
 
             if (field.IsStatic)
             {
+                if (field.Name == "Empty" && owningType.ToString() == "[S.P.CoreLib]System.Array`1+ArrayEnumerator<System.__Canon>")
+                {
+
+                }
                 var metadataType = owningType as MetadataType;
 
                 Object node;
