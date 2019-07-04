@@ -181,7 +181,7 @@ public class ProcessRunner : IDisposable
                 StopProcessAtomic();
             }
         }
-        catch (TaskCanceledException)
+        catch (AggregateException ae) when (ae.InnerException is TaskCanceledException)
         {
             // Ignore cancellation
         }
