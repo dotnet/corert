@@ -344,7 +344,10 @@ namespace System.Runtime.InteropServices
         {
             try
             {
-                GC.Collect(2, GCCollectionMode.Optimized, /* blocking = */ true);
+                if (flags & 1/*GC_FOR_APPX_SUSPEND*/ != 0)
+                    GC.Collect(2, GCCollectionMode.Optimized, blocking: true);
+                else
+                    GC.Collect();
 
                 if (InteropEventProvider.IsEnabled())
                     InteropEventProvider.Log.TaskJupiterGarbageCollect();
