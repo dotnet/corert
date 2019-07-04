@@ -264,3 +264,103 @@ EXTERN_C REDHAWK_API Int64 __cdecl RhGetTotalAllocatedBytesPrecise()
     
     return allocated;
 }
+
+static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEEType, UInt32 numElements)
+{
+    size_t size;
+#ifndef BIT64
+    // if the element count is <= 0x10000, no overflow is possible because the component size is
+    // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
+    if (numElements > 0x10000)
+    {
+        // Perform the size computation using 64-bit integeres to detect overflow
+        uint64_t size64 = (uint64_t)pArrayEEType->get_BaseSize() + ((uint64_t)numElements * (uint64_t)pArrayEEType->get_ComponentSize());
+        size64 = (size64 + (sizeof(UIntNative) - 1)) & ~(sizeof(UIntNative) - 1);
+
+        size = (size_t)size64;
+        if (size != size64)
+        {
+            return NULL;
+        }
+    }
+    else
+#endif // !BIT64
+    {
+        size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
+        size = ALIGN_UP(size, sizeof(UIntNative));
+    }
+
+    size_t max_object_size;
+#ifdef BIT64
+    if (g_pConfig->GetGCAllowVeryLargeObjects())
+    {
+        max_object_size = (INT64_MAX - 7 - min_obj_size);
+    }
+    else
+#endif // BIT64
+    {
+        max_object_size = (INT32_MAX - 7 - min_obj_size);
+    }
+
+    if (size >= max_object_size)
+    {
+        return NULL;
+    }
+
+    const int MaxArrayLength = 0x7FEFFFFF;
+    const int MaxByteArrayLength = 0x7FFFFFC7;
+
+    // Impose limits on maximum array length in each dimension to allow efficient
+    // implementation of advanced range check elimination in future. We have to allow
+    // higher limit for array of bytes (or one byte structs) for backward compatibility.
+    // Keep in sync with Array.MaxArrayLength in BCL.
+    if (size > MaxByteArrayLength /* note: comparing allocation size with element count */)
+    {
+        // Ensure the above if check covers the minimal interesting size
+        static_assert(MaxByteArrayLength < (uint64_t)MaxArrayLength * 2, "");
+
+        if (pArrayEEType->get_ComponentSize() != 1)
+        {
+            size_t elementCount = (size - pArrayEEType->get_BaseSize()) / pArrayEEType->get_ComponentSize();
+            if (elementCount > MaxArrayLength)
+                return NULL;
+        }
+        else
+        {
+            size_t elementCount = size - pArrayEEType->get_BaseSize();
+            if (elementCount > MaxByteArrayLength)
+                return NULL;
+        }
+    }
+
+    // Save the EEType for instrumentation purposes.
+    RedhawkGCInterface::SetLastAllocEEType(pArrayEEType);
+
+    Array* pArray = (Array*)GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), size, GC_ALLOC_ZEROING_OPTIONAL);
+    if (pArray == NULL)
+    {
+        return NULL;
+    }
+
+    pArray->set_EEType(pArrayEEType);
+    pArray->InitArrayLength(numElements);
+
+    if (size >= RH_LARGE_OBJECT_SIZE)
+        GCHeapUtilities::GetGCHeap()->PublishObject((uint8_t*)pArray);
+
+    return pArray;
+}
+
+EXTERN_C REDHAWK_API void RhAllocateUninitializedArray(EEType* pArrayEEType, UInt32 numElements, Array** pResult)
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+
+    pThread->SetupHackPInvokeTunnel();
+    pThread->DisablePreemptiveMode();
+
+    ASSERT(!pThread->IsDoNotTriggerGcSet());
+
+    *pResult = AllocateUninitializedArrayImpl(pThread, pArrayEEType, numElements);
+
+    pThread->EnablePreemptiveMode();
+}

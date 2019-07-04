@@ -40,7 +40,6 @@ void* Array::GetArrayData()
 #ifndef DACCESS_COMPILE
 void Array::InitArrayLength(UInt32 length)
 {
-    ASSERT(NULL == m_Length);
     m_Length = length;
 }
 

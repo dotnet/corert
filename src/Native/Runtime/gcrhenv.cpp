@@ -316,7 +316,7 @@ void RedhawkGCInterface::InitAllocContext(gc_alloc_context * pAllocContext)
 // static
 void RedhawkGCInterface::ReleaseAllocContext(gc_alloc_context * pAllocContext)
 {
-    m_DeadThreadsNonAllocBytes += pAllocContext->alloc_limit - pAllocContext->alloc_ptr;
+    s_DeadThreadsNonAllocBytes += pAllocContext->alloc_limit - pAllocContext->alloc_ptr;
     GCHeapUtilities::GetGCHeap()->FixAllocContext(pAllocContext, NULL, NULL);
 }
 
@@ -880,16 +880,16 @@ void RedhawkGCInterface::SetLastAllocEEType(EEType * pEEType)
     tls_pLastAllocationEEType = pEEType;
 }
 
-uint64_t RedhawkGCInterface::m_DeadThreadsNonAllocBytes = 0;
+uint64_t RedhawkGCInterface::s_DeadThreadsNonAllocBytes = 0;
 
 uint64_t RedhawkGCInterface::GetDeadThreadsNonAllocBytes()
 {
 #ifdef BIT64
-    return m_DeadThreadsNonAllocBytes;
+    return s_DeadThreadsNonAllocBytes;
 #else
     // As it could be noticed we read 64bit values that may be concurrently updated.
     // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
-    return PalInterlockedCompareExchange64((Int64*)&m_DeadThreadsNonAllocBytes, 0, 0);
+    return PalInterlockedCompareExchange64((Int64*)&s_DeadThreadsNonAllocBytes, 0, 0);
 #endif
 }
 
