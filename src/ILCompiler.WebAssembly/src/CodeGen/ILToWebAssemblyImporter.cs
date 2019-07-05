@@ -3292,13 +3292,8 @@ namespace Internal.IL
                         if (field.HasGCStaticBase)
                         {
                             node = _compilation.NodeFactory.TypeGCStaticsSymbol(owningType);
-
-                            // We can't use GCStatics in the data section until we can successfully call
-                            // InitializeModules on startup, so stick with globals for now
-                            //LLVMValueRef basePtrPtr = LoadAddressOfSymbolNode(node);
-                            //staticBase = LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, LLVM.BuildPointerCast(_builder, basePtrPtr, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVM.Int8Type(), 0), 0), 0), "castBasePtrPtr"), "basePtr"), "base");
-                            staticBase = WebAssemblyObjectWriter.EmitGlobal(Module, field, _compilation.NameMangler);
-                            fieldOffset = 0;
+                            LLVMValueRef basePtrPtr = LoadAddressOfSymbolNode(node);
+                            staticBase = LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, LLVM.BuildPointerCast(_builder, basePtrPtr, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVM.Int8Type(), 0), 0), 0), "castBasePtrPtr"), "basePtr"), "base");
                         }
                         else
                         {
