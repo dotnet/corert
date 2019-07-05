@@ -158,7 +158,11 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpRegisterFrozenSegment")]
-        internal static extern bool RhpRegisterFrozenSegment(IntPtr pSegmentStart, int length);
+        internal static extern IntPtr RhpRegisterFrozenSegment(IntPtr pSegmentStart, IntPtr length);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpUnregisterFrozenSegment")]
+        internal static extern void RhpUnregisterFrozenSegment(IntPtr pSegmentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhRegisterForFullGCNotification")]

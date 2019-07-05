@@ -136,8 +136,8 @@ public:
                                                  void * pfnEnumCallback,
                                                  void * pvCallbackData);
 
-    static GcSegmentHandle RegisterFrozenSection(void * pSection, UInt32 SizeSection);
-    static void UnregisterFrozenSection(GcSegmentHandle segment);
+    static GcSegmentHandle RegisterFrozenSegment(void * pSection, size_t SizeSection);
+    static void UnregisterFrozenSegment(GcSegmentHandle segment);
 
 #ifdef FEATURE_GC_STRESS
     static void StressGc();

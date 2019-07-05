@@ -73,7 +73,7 @@ Module * Module::Create(ModuleHeader *pModuleHeader)
     if (pModuleHeader->RraFrozenObjects != ModuleHeader::NULL_RRA)
     {
         ASSERT(pModuleHeader->SizeFrozenObjects != 0);
-        pNewModule->m_FrozenSegment = RedhawkGCInterface::RegisterFrozenSection(
+        pNewModule->m_FrozenSegment = RedhawkGCInterface::RegisterFrozenSegment(
                                         pModuleHeader->GetFrozenObjects(), pModuleHeader->SizeFrozenObjects);
         if (pNewModule->m_FrozenSegment == NULL)
             return NULL;
@@ -866,9 +866,9 @@ bool Module::IsContainedBy(HANDLE hOsHandle)
     return m_hOsModuleHandle == hOsHandle;
 }
 
-void Module::UnregisterFrozenSection()
+void Module::UnregisterFrozenSegment()
 {
-    RedhawkGCInterface::UnregisterFrozenSection(m_FrozenSegment);
+    RedhawkGCInterface::UnregisterFrozenSegment(m_FrozenSegment);
 }
 
 //
