@@ -255,7 +255,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(IsProjectNLibrary)' != 'true' and '$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
-    <Compile Include="System\Runtime\Loader\AssemblyLoadContext.cs" />
+    <Compile Include="System\Runtime\Loader\AssemblyLoadContext.CoreRT.cs" />
     <Compile Include="System\String.CoreRT.cs" />
     <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\Array.CoreRT.cs" />

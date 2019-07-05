@@ -20,6 +20,7 @@ namespace ILCompiler
         private CorInfoImpl _corInfo;
         private JitConfigProvider _jitConfigProvider;
         internal readonly RyuJitCompilationOptions _compilationOptions;
+        private readonly ExternSymbolMappedField _hardwareIntrinsicFlags;
 
         internal RyuJitCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -36,6 +37,7 @@ namespace ILCompiler
         {
             _jitConfigProvider = configProvider;
             _compilationOptions = options;
+            _hardwareIntrinsicFlags = new ExternSymbolMappedField(nodeFactory.TypeSystemContext.GetWellKnownType(WellKnownType.Int32), "g_cpuFeatures");
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
@@ -92,6 +94,19 @@ namespace ILCompiler
                     Logger.Writer.WriteLine($"Warning: Method `{method}` will always throw because: {ex.Message}");
                 }
             }
+        }
+
+        public override MethodIL GetMethodIL(MethodDesc method)
+        {
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method)
+                && HardwareIntrinsicHelpers.IsIsSupportedMethod(method))
+            {
+                MethodIL methodIL = HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags);
+                if (methodIL != null)
+                    return methodIL;
+            }
+
+            return base.GetMethodIL(method);
         }
     }
 

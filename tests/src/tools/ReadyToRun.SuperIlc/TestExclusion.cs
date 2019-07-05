@@ -163,10 +163,10 @@ namespace ReadyToRun.SuperIlc
 
                 Project project = new Project();
                 project.SetGlobalProperty("XunitTestBinBase", "*");
-                project.SetGlobalProperty("BuildArch", "amd64");
+                project.SetGlobalProperty("BuildArch", "x64");
                 // TODO: cross-OS CPAOT
                 project.SetGlobalProperty("TargetsWindows", (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "true" : "false"));
-                project.SetGlobalProperty("AltJitArch", "amd64");
+                project.SetGlobalProperty("AltJitArch", "x64");
                 project.SetGlobalProperty("RunTestViaIlLink", "false");
 
                 ProjectRootElement root = project.Xml;

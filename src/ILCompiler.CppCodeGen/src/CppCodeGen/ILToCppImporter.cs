@@ -1059,7 +1059,7 @@ namespace Internal.IL
                         var arraySlot = _stack.Pop();
 
                         var fieldDesc = fieldSlot.LdToken;
-                        var dataBlob = _compilation.GetFieldRvaData(fieldDesc).GetData(_compilation.NodeFactory, false);
+                        var dataBlob = ((ObjectNode)_compilation.GetFieldRvaData(fieldDesc)).GetData(_compilation.NodeFactory, false);
                         Debug.Assert(dataBlob.Relocs.Length == 0);
                         var memBlock = dataBlob.Data;
 

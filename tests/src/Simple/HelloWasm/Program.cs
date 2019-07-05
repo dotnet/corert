@@ -292,6 +292,16 @@ internal static class Program
 
         TestInitObjDouble();
 
+        StartTest("Non/GCStatics field access test");
+        if (new FieldStatics().TestGetSet())
+        {
+            PassTest();
+        }
+        else
+        {
+            FailTest();
+        }
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -1315,6 +1325,26 @@ class DisposableTest : IDisposable
     public void Dispose()
     {
         Disposed = true;
+    }
+}
+
+class FieldStatics
+{
+    static int X;
+    static int Y;
+    static string S1;
+    static string S2;
+
+    public bool TestGetSet()
+    {
+        if (!(X == 0 && Y == 0 && S1 == null && S2 == null)) return false;
+
+        X = 17;
+        Y = 347;
+        S1 = "first string";
+        S2 = "a different string";
+
+        return X == 17 && Y == 347 && S1 == "first string" && S2 == "a different string";
     }
 }
 

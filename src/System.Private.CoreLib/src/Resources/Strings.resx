@@ -348,6 +348,9 @@
   <data name="Arg_MustBePrimArray" xml:space="preserve">
     <value>Object must be an array of primitives.</value>
   </data>
+  <data name="Arg_MustBeRuntimeAssembly" xml:space="preserve">
+    <value>Object must be of type RuntimeAssembly.</value>
+  </data>
   <data name="Arg_MustBeSByte" xml:space="preserve">
     <value>Object must be of type SByte.</value>
   </data>
@@ -1088,6 +1091,15 @@
   </data>
   <data name="ArrayTypeMismatch_CantAssignType" xml:space="preserve">
     <value>Source array type cannot be assigned to destination array type.</value>
+  </data>
+  <data name="AssemblyLoadContext_Unload_CannotUnloadIfNotCollectible" xml:space="preserve">
+    <value>Cannot unload non-collectible AssemblyLoadContext.</value>
+  </data>
+  <data name="AssemblyLoadContext_Unload_AlreadyUnloaded" xml:space="preserve">
+    <value>Unload called on AssemblyLoadContext that is unloading or that was already unloaded.</value>
+  </data>
+  <data name="AssemblyLoadContext_Verify_NotUnloading" xml:space="preserve">
+    <value>AssemblyLoadContext is unloading or was already unloaded.</value>
   </data>
   <data name="BadImageFormatException_CouldNotLoadFileOrAssembly" xml:space="preserve">
     <value>Could not load file or assembly '{0}'. An attempt was made to load a program with an incorrect format.</value>
@@ -2422,6 +2434,9 @@
   <data name="NotSupported_GlobalMethodSerialization" xml:space="preserve">
     <value>Serialization of global methods (including implicit serialization via the use of asynchronous delegates) is not supported.</value>
   </data>
+  <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
+    <value>This operation is invalid on overlapping buffers.</value>
+  </data>
   <data name="NotSupported_DelegateSerHolderSerial" xml:space="preserve">
     <value>DelegateSerializationHolder objects are designed to represent a delegate during serialization and are not serializable themselves.</value>
   </data>
@@ -2490,9 +2505,6 @@
   </data>
   <data name="PlatformNotSupported_ResourceManager_ResWFileUnsupportedProperty" xml:space="preserve">
     <value>ResourceManager property '{0}' is not supported when reading from .resw resource files.</value>
-  </data>
-  <data name="Serialization_NonSerType" xml:space="preserve">
-    <value>Type '{0}' in Assembly '{1}' is not marked as serializable.</value>
   </data>
   <data name="InvalidCast_DBNull" xml:space="preserve">
     <value>Object cannot be cast to DBNull.</value>

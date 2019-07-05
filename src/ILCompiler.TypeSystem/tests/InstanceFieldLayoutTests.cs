@@ -113,6 +113,20 @@ namespace TypeSystemTests
         }
 
         [Fact]
+        public void TestInvalidExplicitTypeLayout()
+        {
+            {
+                DefType type = _testModule.GetType("Explicit", "MisalignedPointer");
+                Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
+            }
+
+            {
+                DefType type = _testModule.GetType("Explicit", "MisalignedByRef");
+                Assert.Throws<TypeSystemException.TypeLoadException>(() => type.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields));
+            }
+        }
+
+        [Fact]
         public void TestSequentialTypeLayout()
         {
             MetadataType class1Type = _testModule.GetType("Sequential", "Class1");

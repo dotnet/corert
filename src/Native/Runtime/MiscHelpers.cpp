@@ -39,6 +39,7 @@
 #include "Volatile.h"
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
+#include "yieldprocessornormalized.h"
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
@@ -48,8 +49,8 @@ COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 // Busy spin for the given number of iterations.
 COOP_PINVOKE_HELPER(void, RhSpinWait, (Int32 iterations))
 {
-    for(int i = 0; i < iterations; i++)
-        PalYieldProcessor();
+    YieldProcessorNormalizationInfo normalizationInfo;
+    YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, iterations);
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
@@ -777,9 +778,14 @@ EXTERN_C REDHAWK_API Int32 __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBu
     return RhpCalculateStackTraceWorker(pOutputBuffer, outputBufferLength);
 }
 
-COOP_PINVOKE_HELPER(Boolean, RhpRegisterFrozenSegment, (void* pSegmentStart, UInt32 length))
+COOP_PINVOKE_HELPER(void*, RhpRegisterFrozenSegment, (void* pSegmentStart, size_t length))
 {
-    return RedhawkGCInterface::RegisterFrozenSection(pSegmentStart, length) != NULL;
+    return RedhawkGCInterface::RegisterFrozenSegment(pSegmentStart, length);
+}
+
+COOP_PINVOKE_HELPER(void, RhpUnregisterFrozenSegment, (void* pSegmentHandle))
+{
+    RedhawkGCInterface::UnregisterFrozenSegment((GcSegmentHandle)pSegmentHandle);
 }
 
 COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManagerHandle *pModule, Int32 headerId, Int32* length))

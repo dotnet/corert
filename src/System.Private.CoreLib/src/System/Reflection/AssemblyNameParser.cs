@@ -176,7 +176,7 @@ namespace System.Reflection
             }
             else
             {
-                CultureInfo culture = new CultureInfo(attributeValue); // Force a CultureNotFoundException if not a valid culture.
+                CultureInfo culture = CultureInfo.GetCultureInfo(attributeValue); // Force a CultureNotFoundException if not a valid culture.
                 return culture.Name;
             }
         }

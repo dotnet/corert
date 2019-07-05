@@ -77,7 +77,7 @@ namespace ILCompiler
 
         private ILCache _methodILCache;
 
-        public MethodIL GetMethodIL(MethodDesc method)
+        public virtual MethodIL GetMethodIL(MethodDesc method)
         {
             // Flush the cache when it grows too big
             if (_methodILCache.Count > 1000)
@@ -109,7 +109,7 @@ namespace ILCompiler
         /// <summary>
         /// Gets an object representing the static data for RVA mapped fields from the PE image.
         /// </summary>
-        public virtual ObjectNode GetFieldRvaData(FieldDesc field)
+        public virtual ISymbolNode GetFieldRvaData(FieldDesc field)
         {
             if (field.GetType() == typeof(PInvokeLazyFixupField))
             {
@@ -136,6 +136,10 @@ namespace ILCompiler
 
                 PInvokeModuleData moduleData = new PInvokeModuleData(metadata.Module, dllImportSearchPath, callingModule);
                 return NodeFactory.PInvokeMethodFixup(moduleData, metadata.Name, metadata.Flags);
+            }
+            else if (field is ExternSymbolMappedField externField)
+            {
+                return NodeFactory.ExternSymbol(externField.SymbolName);
             }
             else
             {

@@ -17,7 +17,7 @@ __DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt | tr -d '\r\n')
 __BUILD_TOOLS_PATH=$__PACKAGES_DIR/microsoft.dotnet.buildtools/$__BUILD_TOOLS_PACKAGE_VERSION/lib
 __INIT_TOOLS_RESTORE_PROJECT=$__scriptpath/init-tools.msbuild
 __INIT_TOOLS_DONE_MARKER_DIR=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
-__INIT_TOOLS_DONE_MARKER=$__INIT_TOOLS_DONE_MARKER_DIR/done_7
+__INIT_TOOLS_DONE_MARKER=$__INIT_TOOLS_DONE_MARKER_DIR/done_8
 
 if [ -z "$__DOTNET_PKG" ]; then
     OSName=$(uname -s)
@@ -142,7 +142,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
         # Restore a custom RoslynToolset since we can't trivially update the BuildTools dependency in CoreRT
         echo "Configuring RoslynToolset..."
         # Also update __INIT_TOOLS_DONE_MARKER, init-tools.cmd, and dir.props
-        __ROSLYNCOMPILER_VERSION=3.2.0-beta3-19310-04
+        __ROSLYNCOMPILER_VERSION=3.3.0-beta1-19327-03
         __DEFAULT_RESTORE_ARGS="--no-cache --packages \"${__PACKAGES_DIR}\""
         __INIT_TOOLS_RESTORE_ARGS="${__DEFAULT_RESTORE_ARGS} --source https://dotnet.myget.org/F/roslyn/api/v3/index.json --source https://api.nuget.org/v3/index.json ${__INIT_TOOLS_RESTORE_ARGS:-}"
         __PORTABLETARGETS_PROJECT_CONTENT="

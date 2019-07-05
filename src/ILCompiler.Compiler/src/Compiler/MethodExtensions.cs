@@ -21,12 +21,6 @@ namespace ILCompiler
             if (decodedValue.FixedArguments.Length != 0)
                 return (string)decodedValue.FixedArguments[decodedValue.FixedArguments.Length - 1].Value;
 
-            foreach (var argument in decodedValue.NamedArguments)
-            {
-                if (argument.Name == "EntryPoint")
-                    return (string)argument.Value;
-            }
-
             return null;
         }
 
@@ -40,12 +34,6 @@ namespace ILCompiler
 
             if (decodedValue.FixedArguments.Length == 2)
                 return (string)decodedValue.FixedArguments[0].Value;
-
-            foreach (var argument in decodedValue.NamedArguments)
-            {
-                if (argument.Name == "DllName")
-                    return (string)argument.Value;
-            }
 
             return null;
         }

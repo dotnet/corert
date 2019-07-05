@@ -63,7 +63,7 @@ public:
     // Returns true if this module is part of the OS module specified by hOsHandle.
     bool IsContainedBy(HANDLE hOsHandle);
 
-    void UnregisterFrozenSection();
+    void UnregisterFrozenSegment();
 
     PTR_UInt8 FindMethodStartAddress(PTR_VOID ControlPC);
 

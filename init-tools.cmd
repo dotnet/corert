@@ -11,7 +11,7 @@ set /P BUILDTOOLS_VERSION=< "%~dp0BuildToolsVersion.txt"
 set BUILD_TOOLS_PATH=%PACKAGES_DIR%\Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSION%\lib
 set INIT_TOOLS_RESTORE_PROJECT=%~dp0init-tools.msbuild
 set BUILD_TOOLS_SEMAPHORE_DIR=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
-set BUILD_TOOLS_SEMAPHORE=%BUILD_TOOLS_SEMAPHORE_DIR%\init-tools.completed_7
+set BUILD_TOOLS_SEMAPHORE=%BUILD_TOOLS_SEMAPHORE_DIR%\init-tools.completed_8
 
 :: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
 if [%1]==[force] (
@@ -84,7 +84,7 @@ if not [%INIT_TOOLS_ERRORLEVEL%]==[0] (
 :: Restore a custom RoslynToolset since we can't trivially update the BuildTools dependency in CoreRT
 echo Configurating RoslynToolset...
 :: Also update BUILD_TOOLS_SEMAPHORE, init-tools.sh, and dir.props
-set ROSLYNCOMPILERS_VERSION=3.2.0-beta3-19310-04
+set ROSLYNCOMPILERS_VERSION=3.3.0-beta1-19327-03
 set DEFAULT_RESTORE_ARGS=--no-cache --packages "%PACKAGES_DIR%"
 set INIT_TOOLS_RESTORE_ARGS=%DEFAULT_RESTORE_ARGS% --source https://dotnet.myget.org/F/roslyn/api/v3/index.json --source https://api.nuget.org/v3/index.json %INIT_TOOLS_RESTORE_ARGS%
 set MSBUILD_PROJECT_CONTENT= ^

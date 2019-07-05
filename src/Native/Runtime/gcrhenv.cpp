@@ -102,6 +102,10 @@ RhConfig * g_pRhConfig = &g_sRhConfig;
 
 UInt32 EtwCallback(UInt32 IsEnabled, RH_ETW_CONTEXT * pContext)
 {
+    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle),
+                                            static_cast<GCEventKeyword>(pContext->MatchAnyKeyword),
+                                            static_cast<GCEventLevel>(pContext->Level));
+
     if (IsEnabled &&
         (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PrivateHandle) &&
         GCHeapUtilities::IsGCHeapInitialized())
@@ -312,7 +316,7 @@ void RedhawkGCInterface::InitAllocContext(gc_alloc_context * pAllocContext)
 // static
 void RedhawkGCInterface::ReleaseAllocContext(gc_alloc_context * pAllocContext)
 {
-    m_DeadThreadsNonAllocBytes += pAllocContext->alloc_limit - pAllocContext->alloc_ptr;
+    s_DeadThreadsNonAllocBytes += pAllocContext->alloc_limit - pAllocContext->alloc_ptr;
     GCHeapUtilities::GetGCHeap()->FixAllocContext(pAllocContext, NULL, NULL);
 }
 
@@ -557,7 +561,7 @@ void RedhawkGCInterface::BulkEnumGcObjRef(PTR_RtuObjectRef pRefs, UInt32 cRefs, 
 }
 
 // static 
-GcSegmentHandle RedhawkGCInterface::RegisterFrozenSection(void * pSection, UInt32 SizeSection)
+GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_t SizeSection)
 {
 #ifdef FEATURE_BASICFREEZE
     segment_info seginfo;
@@ -575,7 +579,7 @@ GcSegmentHandle RedhawkGCInterface::RegisterFrozenSection(void * pSection, UInt3
 }
 
 // static 
-void RedhawkGCInterface::UnregisterFrozenSection(GcSegmentHandle segment)
+void RedhawkGCInterface::UnregisterFrozenSegment(GcSegmentHandle segment)
 {
     GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)segment);
 }
@@ -876,16 +880,16 @@ void RedhawkGCInterface::SetLastAllocEEType(EEType * pEEType)
     tls_pLastAllocationEEType = pEEType;
 }
 
-uint64_t RedhawkGCInterface::m_DeadThreadsNonAllocBytes = 0;
+uint64_t RedhawkGCInterface::s_DeadThreadsNonAllocBytes = 0;
 
 uint64_t RedhawkGCInterface::GetDeadThreadsNonAllocBytes()
 {
 #ifdef BIT64
-    return m_DeadThreadsNonAllocBytes;
+    return s_DeadThreadsNonAllocBytes;
 #else
     // As it could be noticed we read 64bit values that may be concurrently updated.
     // Such reads are not guaranteed to be atomic on 32bit so extra care should be taken.
-    return PalInterlockedCompareExchange64((Int64*)&m_DeadThreadsNonAllocBytes, 0, 0);
+    return PalInterlockedCompareExchange64((Int64*)&s_DeadThreadsNonAllocBytes, 0, 0);
 #endif
 }
 
@@ -1322,7 +1326,6 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
             // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
             FlushProcessWriteBuffers();
         }
-    }
 #endif
 
         g_lowest_address = args->lowest_address;

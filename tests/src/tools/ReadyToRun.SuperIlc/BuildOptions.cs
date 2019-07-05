@@ -5,13 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Xml.Linq;
-using System.Xml.XPath;
-
-using Microsoft.Build.Construction;
-using Microsoft.Build.Evaluation;
 
 namespace ReadyToRun.SuperIlc
 {
@@ -38,6 +31,9 @@ namespace ReadyToRun.SuperIlc
         public DirectoryInfo[] ReferencePath { get; set; }
         public FileInfo[] IssuesPath { get; set; }
         public FileInfo R2RDumpPath { get; set; }
+        public FileInfo CrossgenResponseFile { get; set; }
+        public DirectoryInfo[] RewriteOldPath { get;set; }
+        public DirectoryInfo[] RewriteNewPath { get;set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
 
         public IEnumerable<string> ReferencePaths()
@@ -71,7 +67,12 @@ namespace ReadyToRun.SuperIlc
             return outputPath;
         }
 
-        public IEnumerable<CompilerRunner> CompilerRunners(bool isFramework)
+        /// <summary>
+        /// Creates compiler runner instances for each supported compiler based on the populated BuildOptions.
+        /// </summary>
+        /// <param name="isFramework">True if compiling the CoreFX framework assemblies</param>
+        /// <param name="referencePaths">Optional set of reference paths to use instead of BuildOptions.ReferencePaths()</param>
+        public IEnumerable<CompilerRunner> CompilerRunners(bool isFramework, IEnumerable<string> overrideReferencePaths = null)
         {
             List<CompilerRunner> runners = new List<CompilerRunner>();
 
@@ -79,7 +80,7 @@ namespace ReadyToRun.SuperIlc
             {
                 List<string> referencePaths = new List<string>();
                 referencePaths.Add(CoreRootOutputPath(CompilerIndex.CPAOT, isFramework));
-                referencePaths.AddRange(ReferencePaths());
+                referencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
                 runners.Add(new CpaotRunner(this, referencePaths));
             }
 
@@ -91,7 +92,7 @@ namespace ReadyToRun.SuperIlc
                 }
                 List<string> referencePaths = new List<string>();
                 referencePaths.Add(CoreRootOutputPath(CompilerIndex.Crossgen, isFramework));
-                referencePaths.AddRange(ReferencePaths());
+                referencePaths.AddRange(overrideReferencePaths != null ? overrideReferencePaths : ReferencePaths());
                 runners.Add(new CrossgenRunner(this, referencePaths));
             }
 

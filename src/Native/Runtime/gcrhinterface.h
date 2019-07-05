@@ -136,8 +136,8 @@ public:
                                                  void * pfnEnumCallback,
                                                  void * pvCallbackData);
 
-    static GcSegmentHandle RegisterFrozenSection(void * pSection, UInt32 SizeSection);
-    static void UnregisterFrozenSection(GcSegmentHandle segment);
+    static GcSegmentHandle RegisterFrozenSegment(void * pSection, size_t SizeSection);
+    static void UnregisterFrozenSegment(GcSegmentHandle segment);
 
 #ifdef FEATURE_GC_STRESS
     static void StressGc();
@@ -171,7 +171,7 @@ private:
 
     // Tracks the amount of bytes that were reserved for threads in their gc_alloc_context and went unused when they died.
     // Used for GC.GetTotalAllocatedBytes
-    static uint64_t m_DeadThreadsNonAllocBytes;
+    static uint64_t s_DeadThreadsNonAllocBytes;
 };
 
 #endif // __GCRHINTERFACE_INCLUDED

@@ -86,6 +86,10 @@ public:
 #ifndef DACCESS_COMPILE
     // Initializes a non-standalone GC.
     static HRESULT InitializeDefaultGC();
+
+    // Records a change in eventing state. This ultimately will inform the GC that it needs to be aware
+    // of new events being enabled.
+    static void RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level);
 #endif // DACCESS_COMPILE
 
 private:

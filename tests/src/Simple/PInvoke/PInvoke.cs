@@ -161,6 +161,12 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern void StructTest_ByRef(ref SequentialStruct ss);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, EntryPoint = "StructTest_ByRef")]
+        static extern bool ClassTest([In, Out] SequentialClass ss);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, EntryPoint = "StructTest_ByRef")]
+        static extern bool AsAnyTest([In, Out, MarshalAs(40 /* UnmanagedType.AsAny */)] object o);
+
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern void StructTest_ByOut(out SequentialStruct ss);
 
@@ -169,6 +175,9 @@ namespace PInvokeTests
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool StructTest_Nested(NestedStruct ns);
+
+        [DllImport("*", CallingConvention = CallingConvention.StdCall, EntryPoint = "StructTest_Nested")]
+        static extern bool StructTest_NestedClass(NestedClass nc);
 
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool StructTest_Array(SequentialStruct []ns, int length);
@@ -265,6 +274,9 @@ namespace PInvokeTests
 #if !CODEGEN_CPP
             TestDelegate();
             TestStruct();
+            TestLayoutClassPtr();
+            TestLayoutClass();
+            TestAsAny();
             TestMarshalStructAPIs();
 #endif            
             return 100;
@@ -597,6 +609,18 @@ namespace PInvokeTests
         [StructLayout(LayoutKind.Sequential)]
         public struct SequentialStruct
         {
+            // NOTE: Same members as SequentialClass below
+            public short f0;
+            public int f1;
+            public float f2;
+            [MarshalAs(UnmanagedType.LPStr)]
+            public String f3;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public class SequentialClass
+        {
+            // NOTE: Same members as SequentialStruct above
             public short f0;
             public int f1;
             public float f2;
@@ -619,6 +643,22 @@ namespace PInvokeTests
         [StructLayout(LayoutKind.Explicit)]
         public struct ExplicitStruct
         {
+            // NOTE: Same layout as ExplicitClass
+            [FieldOffset(0)]
+            public int f1;
+
+            [FieldOffset(12)]
+            public float f2;
+
+            [FieldOffset(24)]
+            [MarshalAs(UnmanagedType.LPStr)]
+            public String f3;
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        public class ExplicitClass
+        {
+            // NOTE: Same layout as ExplicitStruct
             [FieldOffset(0)]
             public int f1;
 
@@ -636,6 +676,14 @@ namespace PInvokeTests
             public int f1;
 
             public ExplicitStruct f2;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct NestedClass
+        {
+            public int f1;
+
+            public ExplicitClass f2;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -773,6 +821,69 @@ namespace PInvokeTests
             callbacks.callback1 = new Callback1(callbackFunc1);
             callbacks.callback2 = new Callback2(callbackFunc2);
             ThrowIfNotEquals(true,  RegisterCallbacks(ref callbacks), "Scenario 7: Struct with delegate marshalling failed");
+        }
+
+        private static void TestLayoutClassPtr()
+        {
+            SequentialClass ss = new SequentialClass();
+            ss.f0 = 100;
+            ss.f1 = 1;
+            ss.f2 = 10.0f;
+            ss.f3 = "Hello";
+
+            ClassTest(ss);
+            ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "LayoutClassPtr marshalling scenario1 failed.");
+        }
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        private static void Issue6063Workaround()
+        {
+            // https://github.com/dotnet/corert/issues/6063
+            // Ensure there's a standalone method body for these two - this method is marked NoOptimization+NoInlining.
+            Marshal.SizeOf<SequentialClass>();
+            Marshal.SizeOf<SequentialStruct>();
+        }
+        
+        private static void TestAsAny()
+        {
+            if (String.Empty.Length > 0)
+            {
+                // Make sure we saw these types being used in marshalling
+                Issue6063Workaround();
+            }
+
+            SequentialClass sc = new SequentialClass();
+            sc.f0 = 100;
+            sc.f1 = 1;
+            sc.f2 = 10.0f;
+            sc.f3 = "Hello";
+
+            AsAnyTest(sc);
+            ThrowIfNotEquals(true, sc.f1 == 2 && sc.f2 == 11.0 && sc.f3.Equals("Ifmmp"), "AsAny marshalling scenario1 failed.");
+
+            SequentialStruct ss = new SequentialStruct();
+            ss.f0 = 100;
+            ss.f1 = 1;
+            ss.f2 = 10.0f;
+            ss.f3 = "Hello";
+
+            object o = ss;
+            AsAnyTest(o);
+            ss = (SequentialStruct)o;
+            ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "AsAny marshalling scenario2 failed.");
+        }
+
+        private static void TestLayoutClass()
+        {
+            ExplicitClass es = new ExplicitClass();
+            es.f1 = 100;
+            es.f2 = 100.0f;
+            es.f3 = "Hello";
+
+            NestedClass ns = new NestedClass();
+            ns.f1 = 100;
+            ns.f2 = es;
+            ThrowIfNotEquals(true, StructTest_NestedClass(ns), "LayoutClass marshalling scenario1 failed.");
         }
 
         private static void TestMarshalStructAPIs()
