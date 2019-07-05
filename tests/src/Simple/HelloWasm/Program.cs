@@ -1335,6 +1335,8 @@ class FieldStatics
 
     public bool TestGetSet()
     {
+        if (!(X == 0 && Y == 0 && S1 == null && S2 == null)) return false;
+
         X = 17;
         Y = 347;
         S1 = "first string";
