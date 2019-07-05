@@ -255,8 +255,8 @@ private:
         // This EEType represents a type which requires finalization
         HasFinalizerFlag        = 0x0010,
 
-        // This type contain gc pointers
-        HasPointersFlag         = 0x0020,
+        // This type has optional fields present.
+        OptionalFieldsFlag      = 0x0020,
 
         // Type implements ICastable to allow dynamic resolution of interface casts.
         ICastableTypeFlag       = 0x0040,
@@ -265,8 +265,8 @@ private:
         // applies to interface and delegate types.
         GenericVarianceFlag     = 0x0080,
 
-        // This type has optional fields present.
-        OptionalFieldsFlag      = 0x0100,
+        // This type contain gc pointers
+        HasPointersFlag         = 0x0100,
 
         // This EEType represents an interface.
         IsInterfaceFlag         = 0x0200,

@@ -38,9 +38,9 @@ namespace Internal.Runtime
         HasFinalizerFlag = 0x0010,
 
         /// <summary>
-        /// This type contain GC pointers.
+        /// This type has optional fields present.
         /// </summary>
-        HasPointersFlag = 0x0020,
+        OptionalFieldsFlag = 0x0020,
 
         /// <summary>
         /// Type implements ICastable to allow dynamic resolution of interface casts.
@@ -54,9 +54,9 @@ namespace Internal.Runtime
         GenericVarianceFlag = 0x0080,
 
         /// <summary>
-        /// This type has optional fields present.
+        /// This type contain GC pointers.
         /// </summary>
-        OptionalFieldsFlag = 0x0100,
+        HasPointersFlag = 0x0100,
 
         /// <summary>
         /// This EEType represents an interface.
