@@ -287,7 +287,7 @@ namespace Internal.IL.Stubs
             catch (NotSupportedException)
             {
                 string message = "Struct '" + ((MetadataType)ManagedType).Name +
-                    "' requires non-trivial marshalling that is not yet supported by this compiler.";
+                    "' requires marshalling that is not yet supported by this compiler.";
                 return MarshalHelpers.EmitExceptionBody(message, this);
             }
             catch (InvalidProgramException ex)
