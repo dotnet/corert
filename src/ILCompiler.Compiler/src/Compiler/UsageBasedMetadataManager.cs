@@ -601,6 +601,6 @@ namespace ILCompiler
         /// Specifies that all types and methods in user assemblies should be considered dynamically
         /// used.
         /// </summary>
-        FullUserAssemblyRooting,
+        FullUserAssemblyRooting = 8,
     }
 }
