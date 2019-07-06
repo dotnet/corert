@@ -4,5 +4,6 @@
         <Assembly Name="System" />
         <Assembly Name="mscorlib" />
         <Assembly Name="System.Core" />
+        <Assembly Name="xunit.execution.dotnet" Dynamic="Required All" />
     </Application>
 </Directives>
