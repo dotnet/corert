@@ -73,9 +73,6 @@
     <Compile Include="..\src\RemovingILProvider.cs">
       <Link>RemovingILProvider.cs</Link>
     </Compile>
-    <Compile Include="..\src\ApplicationAssemblyRootProvider.cs">
-      <Link>ApplicationAssemblyRootProvider.cs</Link>
-    </Compile>
     <Compile Include="..\src\ConfigurablePInvokePolicy.cs">
       <Link>ConfigurablePInvokePolicy.cs</Link>
     </Compile>
