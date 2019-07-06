@@ -355,7 +355,7 @@ namespace Internal.IL.Stubs
             catch (NotSupportedException)
             {
                 string message = "Method '" + method.ToString() +
-                    "' requires non-trivial marshalling that is not yet supported by this compiler.";
+                    "' requires marshalling that is not yet supported by this compiler.";
                 return MarshalHelpers.EmitExceptionBody(message, method);
             }
             catch (InvalidProgramException ex)
