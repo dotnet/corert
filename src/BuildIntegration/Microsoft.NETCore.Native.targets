@@ -100,7 +100,7 @@ See the LICENSE file in the project root for more information.
   </ItemGroup>
 
   <ItemGroup Condition="'$(ExperimentalDynamicCodeSupport)' != 'true'">
-    <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" />
+    <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" Condition="$(IlcDisableReflection) != 'true' or $(IlcGenerateStackTraceData) == 'true'"/>
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
     <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" Condition="$(IlcDisableReflection) != 'true'" />
     <AutoInitializedAssemblies Include="System.Private.DisabledReflection" Condition="$(IlcDisableReflection) == 'true'" />
