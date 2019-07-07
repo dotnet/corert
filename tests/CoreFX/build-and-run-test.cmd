@@ -34,6 +34,10 @@ if not exist %TestFolder%\%TestExecutable%.exe (
     exit /b 0
 )
 
+:: Workaround until we have a better reflection engine
+:: Add name of currently executing test to rd.xml
+powershell -Command "(Get-Content %TestFolder%\default.rd.xml).replace('*Application*', '%TestFileName%') | Set-Content  %TestFolder%\default.rd.xml"
+
 ::
 :: Force environment to 64-bit if we're doing an x64 test run
 ::
