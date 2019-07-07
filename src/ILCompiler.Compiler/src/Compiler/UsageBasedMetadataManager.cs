@@ -35,6 +35,8 @@ namespace ILCompiler
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
         private readonly List<MetadataType> _typesWithMetadata = new List<MetadataType>();
 
+        private readonly HashSet<ModuleDesc> _rootAllAssembliesExaminedModules = new HashSet<ModuleDesc>();
+
         private readonly MetadataType _serializationInfoType;
 
         public UsageBasedMetadataManager(
@@ -186,6 +188,27 @@ namespace ILCompiler
                         {
                             dependencies = dependencies ?? new DependencyList();
                             dependencies.Add(factory.CanonicalEntrypoint(method), "Anonymous type accessor");
+                        }
+                    }
+                }
+            }
+
+            // If the option was specified to root types and methods in all user assemblies, do that.
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.FullUserAssemblyRooting) != 0)
+            {
+                if (type is MetadataType metadataType &&
+                    !_rootAllAssembliesExaminedModules.Contains(metadataType.Module))
+                {
+                    _rootAllAssembliesExaminedModules.Add(metadataType.Module);
+
+                    if (metadataType.Module is Internal.TypeSystem.Ecma.EcmaModule ecmaModule &&
+                        !FrameworkStringResourceBlockingPolicy.IsFrameworkAssembly(ecmaModule))
+                    {
+                        dependencies = dependencies ?? new DependencyList();
+                        var rootProvider = new RootingServiceProvider(factory, dependencies.Add);
+                        foreach (TypeDesc t in ecmaModule.GetAllTypes())
+                        {
+                            RootingHelpers.TryRootType(rootProvider, t, "RD.XML root");
                         }
                     }
                 }
@@ -573,5 +596,11 @@ namespace ILCompiler
         /// Scan IL for common reflection patterns to find additional compilation roots.
         /// </summary>
         ILScanning = 4,
+
+        /// <summary>
+        /// Specifies that all types and methods in user assemblies should be considered dynamically
+        /// used.
+        /// </summary>
+        FullUserAssemblyRooting = 8,
     }
 }

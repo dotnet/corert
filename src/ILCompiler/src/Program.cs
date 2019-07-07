@@ -461,9 +461,6 @@ namespace ILCompiler
                     if (!systemModuleIsInputModule)
                         compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
-
-                    if (_rootAllApplicationAssemblies)
-                        compilationRoots.Add(new ApplicationAssemblyRootProvider(typeSystemContext));
                 }
 
                 if (_nativeLib)
@@ -545,6 +542,8 @@ namespace ILCompiler
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
             if (_scanReflection)
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ILScanning;
+            if (_rootAllApplicationAssemblies)
+                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.FullUserAssemblyRooting;
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
