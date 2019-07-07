@@ -15,7 +15,7 @@ namespace Internal.TypeSystem.Interop
         {
             type = type.UnderlyingType;
 
-            if (type.IsValueType && !type.IsNullable)
+            if (type.IsValueType)
             {
                 if (type.IsPrimitive)
                 {
@@ -59,9 +59,18 @@ namespace Internal.TypeSystem.Interop
         public static bool IsManagedSequentialType(TypeDesc type)
         {
             type = type.UnderlyingType;
-            if (type is MetadataType metadataType && metadataType.IsExplicitLayout)
+            if (type is MetadataType metadataType)
             {
-                return false;
+                if (!metadataType.IsSequentialLayout)
+                {
+                    return false;
+                }
+                if (metadataType.HasBaseType &&
+                    !metadataType.BaseType.IsWellKnownType(WellKnownType.ValueType) &&
+                    !IsManagedSequentialType(metadataType.BaseType))
+                {
+                    return false;
+                }
             }
             if (type.IsPrimitive || type.Category == TypeFlags.Pointer)
             {
