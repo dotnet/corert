@@ -118,7 +118,7 @@ namespace Internal.Runtime.TypeLoader
         [ThreadStatic]
         private static bool t_isReentrant;
 
-        public static TypeLoaderEnvironment Instance { get; private set; }
+        public static TypeLoaderEnvironment Instance { get; } = new TypeLoaderEnvironment();
 
         /// <summary>
         /// List of loaded binary modules is typically used to locate / process various metadata blobs
@@ -136,9 +136,7 @@ namespace Internal.Runtime.TypeLoader
         // Eager initialization called from LibraryInitializer for the assembly.
         internal static void Initialize()
         {
-            Instance = new TypeLoaderEnvironment();
             RuntimeAugments.InitializeLookups(new Callbacks());
-            NoStaticsData = (IntPtr)1;
         }
 
         public TypeLoaderEnvironment()
