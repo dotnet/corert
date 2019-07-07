@@ -305,6 +305,8 @@ namespace ILCompiler
             if (_isWasmCodegen)
                 _targetArchitecture = TargetArchitecture.Wasm32;
 
+            bool supportsReflection = !_disableReflection && !_isReadyToRunCodeGen && _systemModuleName == DefaultSystemModule;
+
             //
             // Initialize type system context
             //
@@ -318,7 +320,7 @@ namespace ILCompiler
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext = (_isReadyToRunCodeGen
                 ? new ReadyToRunCompilerContext(targetDetails, genericsMode)
-                : new CompilerTypeSystemContext(targetDetails, genericsMode));
+                : new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0));
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
@@ -547,8 +549,6 @@ namespace ILCompiler
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ILScanning;
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
-
-            bool supportsReflection = !_disableReflection && !_isReadyToRunCodeGen && _systemModuleName == DefaultSystemModule;
 
             MetadataManager metadataManager;
             if (_isReadyToRunCodeGen)
