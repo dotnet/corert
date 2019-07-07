@@ -185,7 +185,6 @@
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComEventsHelper.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.CoreRT.cs" />
     <Compile Include="System\__Canon.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Activator.CoreRT.cs" />
@@ -245,6 +244,7 @@
     <Compile Include="System\Runtime\GCSettings.CoreRT.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComEventsHelper.CoreRT.cs" Condition="'$(IsProjectNLibrary)' != 'true' and '$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
