@@ -33,6 +33,14 @@ namespace System.Runtime.Loader
             return Default;
         }
 
+        public void SetProfileOptimizationRoot(string directoryPath)
+        {
+        }
+
+        public void StartProfileOptimization(string profile)
+        {
+        }
+
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             throw new PlatformNotSupportedException();

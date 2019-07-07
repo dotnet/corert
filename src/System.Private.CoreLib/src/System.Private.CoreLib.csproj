@@ -185,6 +185,7 @@
     <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
     <Compile Include="System\Reflection\LegacyCustomAttributeApis.cs" />
     <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComEventsHelper.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.CoreRT.cs" />
     <Compile Include="System\__Canon.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="System\Activator.CoreRT.cs" />
