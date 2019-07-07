@@ -20,7 +20,7 @@ namespace ILCompiler
         VectorIntrinsicFieldLayoutAlgorithm _vectorIntrinsicFieldLayoutAlgorithm;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
-            : base(details, genericsMode)
+            : base(details, genericsMode, delegateFeatures: 0)
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);

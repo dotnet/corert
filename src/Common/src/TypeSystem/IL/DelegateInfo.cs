@@ -26,11 +26,6 @@ namespace Internal.IL
         private MethodDesc _getThunkMethod;
         private DelegateThunkCollection _thunks;
 
-        public static bool SupportsDynamicInvoke(TypeSystemContext context)
-        {
-            return DynamicInvokeMethodThunk.SupportsDynamicInvoke(context);
-        }
-
         /// <summary>
         /// Gets the synthetic methods that support this delegate type.
         /// </summary>
@@ -179,7 +174,7 @@ namespace Internal.IL
             // Check whether we have an open instance thunk
             //
 
-            if (delegateSignature.Length > 0)
+            if ((owningDelegate.SupportedFeatures & DelegateFeature.OpenInstanceThunk) != 0 && delegateSignature.Length > 0)
             {
                 TypeDesc firstParam = delegateSignature[0];
 
@@ -310,5 +305,8 @@ namespace Internal.IL
     {
         DynamicInvoke = 0x1,
         ObjectArrayThunk = 0x2,
+        OpenInstanceThunk = 0x4,
+
+        All = 0x7,
     }
 }

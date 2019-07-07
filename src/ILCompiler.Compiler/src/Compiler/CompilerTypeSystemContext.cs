@@ -20,13 +20,13 @@ namespace ILCompiler
 {
     public partial class CompilerTypeSystemContext : MetadataTypeSystemContext, IMetadataStringDecoderProvider
     {
-        private MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
-        private RuntimeDeterminedFieldLayoutAlgorithm _runtimeDeterminedFieldLayoutAlgorithm = new RuntimeDeterminedFieldLayoutAlgorithm();
-        private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
-        private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
-        private MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
+        private readonly MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
+        private readonly RuntimeDeterminedFieldLayoutAlgorithm _runtimeDeterminedFieldLayoutAlgorithm = new RuntimeDeterminedFieldLayoutAlgorithm();
+        private readonly VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
+        private readonly VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
+        private readonly MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
-        private MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
+        private readonly MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
 
         protected SimdHelper _simdHelper;
 
@@ -67,7 +67,7 @@ namespace ILCompiler
                 return null;
             }
         }
-        private ModuleHashtable _moduleHashtable = new ModuleHashtable();
+        private readonly ModuleHashtable _moduleHashtable = new ModuleHashtable();
 
         private class SimpleNameHashtable : LockFreeReaderHashtable<string, ModuleData>
         {
@@ -95,17 +95,21 @@ namespace ILCompiler
                 return null;
             }
         }
-        private SimpleNameHashtable _simpleNameHashtable = new SimpleNameHashtable();
+        private readonly SimpleNameHashtable _simpleNameHashtable = new SimpleNameHashtable();
 
-        private SharedGenericsMode _genericsMode;
+        private readonly SharedGenericsMode _genericsMode;
+
+        private readonly DelegateFeature _delegateFeatures;
         
-        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
+        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures)
             : base(details)
         {
             _genericsMode = genericsMode;
 
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
+
+            _delegateFeatures = delegateFeatures;
 
             GenericsConfig = new SharedGenericsConfiguration();
         }
@@ -480,6 +484,11 @@ namespace ILCompiler
             }
 
             return reader;
+        }
+
+        protected override DelegateInfo CreateDelegateInfo(TypeDesc delegateType)
+        {
+            return new DelegateInfo(delegateType, _delegateFeatures);
         }
     }
 
