@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.Reflection;
+using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerHelpers
@@ -12,6 +13,7 @@ namespace Internal.Runtime.CompilerHelpers
         public static void InitializeLibrary()
         {
             RuntimeAugments.Initialize(new ReflectionExecutionDomainCallbacksImplementation());
+            ReflectionAugments.Initialize(new ReflectionCoreCallbacksImplementation());
         }
     }
 }
