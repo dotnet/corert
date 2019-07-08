@@ -103,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int GetSize()
         {
             if (IsValueType())
-                return _type.GetElementSize().AsInt;
+                return ((DefType)_type).InstanceFieldSize.AsInt;
             else
                 return PointerSize;
         }
@@ -1729,7 +1729,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!_RETURN_HAS_RET_BUFFER)
             {
-                _transitionBlock.ComputeReturnValueTreatment(type, thRetType, IsVarArg, out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
+                if (!_transitionBlock.ComputeReturnValueTreatment(type, thRetType, IsVarArg, out _RETURN_HAS_RET_BUFFER, out _fpReturnSize))
+                {
+                    _hasIndeterminateSize = true;
+                }
             }
 
             _RETURN_FLAGS_COMPUTED = true;
