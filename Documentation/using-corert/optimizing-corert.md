@@ -13,7 +13,7 @@ To specify a switch, add a new property to your project file with one or more of
 under the `<Project>` node of your project file.
 
 ## Options related to globalization
-* `<IlcInvariantGlobalization>true</IlcInvariantGlobalization>`: enables the [globalization invariant mode](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/globalization-invariant-mode.md) that removes code and data that supports non-english cultures.
+* `<IlcInvariantGlobalization>true</IlcInvariantGlobalization>`: enables the [globalization invariant mode](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/globalization-invariant-mode.md) that removes code and data that supports non-english cultures. Removing code and data makes your app smaller.
 
 ## Options related to reflection
 
@@ -27,4 +27,4 @@ By default, the compiler tries to maximize compatibility with existing .NET code
 ## Options related to code generation
 * `<IlcOptimizationPreference>Speed</IlcOptimizationPreference>`: when generating optimized code, favor code execution speed.
 * `<IlcOptimizationPreference>Size</IlcOptimizationPreference>`: when generating optimized code, favor smaller code size.
-* `<IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>`: folds method bodies with identical bytes (method body deduplication). With this option, stack traces might sometimes look nonsensical (unexpected methods might show up in the stack trace because the expected method had the same bytes as the unexpected method). Note: the current implementation of deduplication doesn't attempt to make the folding unobservable to managed code: delegates pointing to two logically different methods that ended up being folded together will compare equal.
+* `<IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>`: folds method bodies with identical bytes (method body deduplication). This makes your app smaller, but the stack traces might sometimes look nonsensical (unexpected methods might show up in the stack trace because the expected method had the same bytes as the unexpected method). Note: the current implementation of deduplication doesn't attempt to make the folding unobservable to managed code: delegates pointing to two logically different methods that ended up being folded together will compare equal.
