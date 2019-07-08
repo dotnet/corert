@@ -661,7 +661,7 @@ EventDataDescCreate(_Out_ EVENT_DATA_DESCRIPTOR * EventDataDescriptor, _In_opt_ 
 }
 #endif // _EVNTPROV_H_
 
-extern GCSystemInfo g_SystemInfo;
+extern GCSystemInfo g_RhSystemInfo;
 
 #ifdef PLATFORM_UNIX
 #define REDHAWK_PALIMPORT extern "C"
