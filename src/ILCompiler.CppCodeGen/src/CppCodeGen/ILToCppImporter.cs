@@ -1022,8 +1022,16 @@ namespace Internal.IL
             Append("(");
             Append(value);
             Append(", ");
+            if (_method.ToString() == "[S.P.CoreLib]System.Collections.Generic.Dictionary`2<string,object>..ctor(int32,IEqualityComparer`1<string>)")
+            {
+
+            }
             if (runtimeDeterminedType.IsRuntimeDeterminedSubtype)
             {
+                if (_method.IsConstructor)
+                {
+
+                }
                 Append("(MethodTable *)");
                 Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedType));
                 Append("(");
@@ -1262,6 +1270,10 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
+            if (_method.ToString().Contains("SerializeExceptionsForDump"))
+            {
+
+            }
             if (method.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(method, runtimeDeterminedMethod))
@@ -1398,6 +1410,13 @@ namespace Internal.IL
                         delegateInvoke = true;
                     }
                 }
+            }
+
+            if (_method.ToString().Contains("ConditionalWeakTable")
+                && _method.ToString().Contains("IEnumerable<System.Collections.Generic.KeyValuePair<TKey,TValue>>.GetEnumerator")
+                && method.ToString().Contains("GetEnumerator"))
+            {
+
             }
 
             bool exactContextNeedsRuntimeLookup;
@@ -2657,7 +2676,7 @@ namespace Internal.IL
             TypeDesc runtimeDeterminedOwningType = runtimeDeterminedField.OwningType;
 
             TypeDesc owningType = _writer.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
-            if (field.Name == "Empty" && owningType.ToString() == "[S.P.CoreLib]System.Array`1+ArrayEnumerator<System.__Canon>")
+            if (owningType.ToString().Contains("[S.P.CoreLib]System.Array`") && owningType.ToString().Contains("ArrayEnumerator<")) 
             {
 
             }

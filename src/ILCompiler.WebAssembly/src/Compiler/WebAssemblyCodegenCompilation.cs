@@ -75,5 +75,27 @@ namespace ILCompiler
                 ILImporter.CompileMethod(this, methodCodeNodeNeedingCode);
             }
         }
+
+        public TypeDesc ConvertToCanonFormIfNecessary(TypeDesc type, CanonicalFormKind policy)
+        {
+            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                return type;
+
+            if (type.IsPointer || type.IsByRef)
+            {
+                ParameterizedType parameterizedType = (ParameterizedType)type;
+                TypeDesc paramTypeConverted = ConvertToCanonFormIfNecessary(parameterizedType.ParameterType, policy);
+                if (paramTypeConverted == parameterizedType.ParameterType)
+                    return type;
+
+                if (type.IsPointer)
+                    return TypeSystemContext.GetPointerType(paramTypeConverted);
+
+                if (type.IsByRef)
+                    return TypeSystemContext.GetByRefType(paramTypeConverted);
+            }
+
+            return type.ConvertToCanonForm(policy);
+        }
     }
 }

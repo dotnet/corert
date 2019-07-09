@@ -58,5 +58,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             throw new NotSupportedException();
         }
+
+        protected override ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey)
+        {
+            return new WebAssemblyReadyToRunGenericLookupFromTypeNode(this, helperKey.HelperId, helperKey.Target, helperKey.DictionaryOwner);
+        }
     }
 }

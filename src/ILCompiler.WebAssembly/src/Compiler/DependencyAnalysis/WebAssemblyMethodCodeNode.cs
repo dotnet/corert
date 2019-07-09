@@ -21,6 +21,10 @@ namespace ILCompiler.DependencyAnalysis
         protected WebAssemblyMethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
+            if (method.IsConstructor && method.ToString() == "[S.P.CoreLib]System.Collections.Generic.Dictionary`2<string,object>..ctor(int32,IEqualityComparer`1<string>)")
+            {
+
+            }
             _method = method;
         }
 
@@ -83,33 +87,6 @@ namespace ILCompiler.DependencyAnalysis
         int ISortableNode.CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             return comparer.Compare(_method, ((WebAssemblyMethodBodyNode)other)._method);
-        }
-    }
-
-    internal class WebAssemblyUnboxingThunkNode : WebAssemblyMethodCodeNode, IMethodNode
-    {
-        public WebAssemblyUnboxingThunkNode(MethodDesc method)
-            : base(method)
-        {
-        }
-
-        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
-        {
-            var dependencies = new DependencyList();
-
-            foreach (Object node in _dependencies)
-                dependencies.Add(node, "Wasm code ");
-
-            return dependencies;
-        }
-
-        int ISortableNode.ClassCode => -18942467;
-
-        int ISortableNode.CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            return comparer.Compare(_method, ((WebAssemblyUnboxingThunkNode)other)._method);
         }
     }
 }
