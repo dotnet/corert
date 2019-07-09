@@ -88,15 +88,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (methodNode == null || methodNode.IsEmpty)
                 {
                     // Flush an empty GC ref map block to prevent
-                    // the indexed records to fall out of sync with methods
+                    // the indexed records from falling out of sync with methods
                     builder.Flush();
                 }
                 else
                 {
-                    if (!builder.GetCallRefMap(methodNode.Method))
-                    {
-                        throw new InternalCompilerErrorException("GCRefMap / " + methodNode.Method.ToString());
-                    }
+                    builder.GetCallRefMap(methodNode.Method);
                 }
             }
             Debug.Assert(nextOffsetIndex == offsets.Length);
