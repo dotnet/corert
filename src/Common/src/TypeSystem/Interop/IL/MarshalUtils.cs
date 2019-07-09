@@ -59,19 +59,6 @@ namespace Internal.TypeSystem.Interop
         public static bool IsManagedSequentialType(TypeDesc type)
         {
             type = type.UnderlyingType;
-            if (type is MetadataType metadataType)
-            {
-                if (!metadataType.IsSequentialLayout)
-                {
-                    return false;
-                }
-                if (metadataType.HasBaseType &&
-                    !metadataType.BaseType.IsWellKnownType(WellKnownType.ValueType) &&
-                    !IsManagedSequentialType(metadataType.BaseType))
-                {
-                    return false;
-                }
-            }
             if (type.IsPrimitive || type.Category == TypeFlags.Pointer)
             {
                 return true;
