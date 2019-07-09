@@ -96,11 +96,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 skipFirstArg,
                 extraObjectFirstArg);
 
-            if (argit.HasIndeterminateSize())
-            {
-                throw new InternalCompilerErrorException("GCRefMapBuilder->" + method.ToString());
-            }
-
             int nStackBytes = argit.SizeOfFrameArgumentArray();
 
             // Allocate a fake stack

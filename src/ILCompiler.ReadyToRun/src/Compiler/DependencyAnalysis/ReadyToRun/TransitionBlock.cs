@@ -247,7 +247,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return size > EnregisteredParamTypeMaxSize;
         }
 
-        public bool ComputeReturnValueTreatment(CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
+        public void ComputeReturnValueTreatment(CorElementType type, TypeHandle thRetType, bool isVarArgMethod, out bool usesRetBuffer, out uint fpReturnSize)
         {
             usesRetBuffer = false;
             fpReturnSize = 0;
@@ -294,11 +294,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             break;
                         }
 
-                        if (thRetType.HasIndeterminateSize())
-                        {
-                            return false;
-                        }
-
                         uint size = (uint)thRetType.GetSize();
 
                         if (IsX86 || IsX64)
@@ -322,8 +317,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 default:
                     break;
             }
-
-            return true;
         }
 
         public const int InvalidOffset = -1;
