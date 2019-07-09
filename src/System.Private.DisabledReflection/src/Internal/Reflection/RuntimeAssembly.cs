@@ -5,9 +5,11 @@
 using System;
 using System.Reflection;
 
+using Internal.Reflection.Core.NonPortable;
+
 namespace Internal.Reflection
 {
-    internal sealed class RuntimeAssembly : Assembly
+    internal sealed class RuntimeAssembly : Assembly, IRuntimeImplemented
     {
         private readonly RuntimeTypeHandle _moduleType;
 
