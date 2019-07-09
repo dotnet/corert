@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _transitionBlock = TransitionBlock.FromTarget(factory.Target);
         }
 
-        public void GetCallRefMap(MethodDesc method)
+        public bool GetCallRefMap(MethodDesc method)
         {
             TransitionBlock transitionBlock = TransitionBlock.FromTarget(method.Context.Target);
 
@@ -100,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // Flush an empty GC ref map block so that the list of methods remains in sync with the list of GC ref map records
                 Flush();
-                return;
+                return false;
             }
 
             int nStackBytes = argit.SizeOfFrameArgumentArray();
@@ -149,6 +149,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             Flush();
+            return true;
         }
 
         /// <summary>
