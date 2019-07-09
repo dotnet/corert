@@ -19,15 +19,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public const int GCREFMAP_LOOKUP_STRIDE = 1024;
 
         private readonly ImportSectionNode _importSection;
-        private readonly List<IMethodNode> _methods;
-
-        private int _index;
+        private readonly List<MethodWithGCInfo> _methods;
 
         public GCRefMapNode(ImportSectionNode importSection)
         {
             _importSection = importSection;
-            _methods = new List<IMethodNode>();
-            _index = 0;
+            _methods = new List<MethodWithGCInfo>();
         }
 
         public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
@@ -42,15 +39,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void AddImport(Import import)
         {
-            if (import is IMethodNode methodNode)
-            {
-                while (_methods.Count <= _index)
-                {
-                    _methods.Add(null);
-                }
-                _methods[_index] = methodNode;
-            }
-            _index++;
+            _methods.Add(import as IMethodNode as MethodWithGCInfo);
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -95,11 +84,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     nextOffsetIndex++;
                     nextMethodIndex += GCREFMAP_LOOKUP_STRIDE;
                 }
-                IMethodNode methodNode = _methods[methodIndex];
-                if (methodNode == null)
+                MethodWithGCInfo methodNode = _methods[methodIndex];
+                if (methodNode == null || methodNode.IsEmpty)
                 {
                     // Flush an empty GC ref map block to prevent
-                    // the indexed records to fall out of sync with methods
+                    // the indexed records from falling out of sync with methods
                     builder.Flush();
                 }
                 else
