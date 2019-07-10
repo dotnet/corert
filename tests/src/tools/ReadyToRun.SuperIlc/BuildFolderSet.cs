@@ -578,6 +578,8 @@ namespace ReadyToRun.SuperIlc
 
                 WritePerFolderStatistics(logWriter);
 
+                WriteExecutableSizeStatistics(logWriter);
+
                 WriteJittedMethodSummary(logWriter);
 
                 WriteTopRankingProcesses(logWriter, "compilations by duration", EnumerateCompilations());
@@ -691,6 +693,163 @@ namespace ReadyToRun.SuperIlc
                     }
                 }
                 logWriter.WriteLine($"{ilcCount,4} | {(ilcCount - ilcFail),4} | {ilcFail,4} | {exeCount,4} | {(exeCount - exeFail),4} | {exeFail,4} | {relativeFolder}");
+            }
+        }
+
+        class ExeSizeInfo
+        {
+            public readonly string CpaotPath;
+            public readonly long CpaotSize;
+            public readonly string CrossgenPath;
+            public readonly long CrossgenSize;
+
+            public ExeSizeInfo(string cpaotPath, long cpaotSize, string crossgenPath, long crossgenSize)
+            {
+                CpaotPath = cpaotPath;
+                CpaotSize = cpaotSize;
+                CrossgenPath = crossgenPath;
+                CrossgenSize = crossgenSize;
+            }
+        }
+
+        private void WriteExecutableSizeStatistics(StreamWriter logWriter)
+        {
+            List<ExeSizeInfo> sizeStats = new List<ExeSizeInfo>();
+            HashSet<string> libraryHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (BuildFolder folder in FoldersToBuild)
+            {
+                foreach (ProcessInfo[] compilation in folder.Compilations)
+                {
+                    ProcessInfo crossgenCompilation = compilation[(int)CompilerIndex.Crossgen];
+                    ProcessInfo cpaotCompilation = compilation[(int)CompilerIndex.CPAOT];
+                    if ((crossgenCompilation?.Succeeded ?? false) &&
+                        (cpaotCompilation?.Succeeded ?? false))
+                    {
+                        long cpaotSize = new FileInfo(cpaotCompilation.Parameters.OutputFileName).Length;
+                        long crossgenSize = new FileInfo(crossgenCompilation.Parameters.OutputFileName).Length;
+
+                        string ext = Path.GetExtension(cpaotCompilation.Parameters.OutputFileName).ToLower();
+                        if (ext == ".dll" || ext == ".so")
+                        {
+                            string hash = $"{Path.GetFileName(cpaotCompilation.Parameters.OutputFileName)}#{cpaotSize}#{crossgenSize}";
+                            if (!libraryHashes.Add(hash))
+                            {
+                                // We ignore libraries with the same "simple name" if it has the same compiled size as many tests
+                                // use support libraries that get separately compiled into their respective folders but semantically
+                                // are "the same thing" so it doesn't make too much sense to report them multiple times.
+                                continue;
+                            }
+                        }
+
+                        sizeStats.Add(new ExeSizeInfo(
+                            cpaotPath: cpaotCompilation.Parameters.OutputFileName,
+                            cpaotSize: cpaotSize,
+                            crossgenPath: crossgenCompilation.Parameters.OutputFileName,
+                            crossgenSize: crossgenSize));
+
+                    }
+                }
+            }
+
+            if (sizeStats.Count == 0)
+            {
+                return;
+            }
+
+            long totalCpaotSize = sizeStats.Sum((stat) => stat.CpaotSize);
+            long totalCrossgenSize = sizeStats.Sum((stat) => stat.CrossgenSize);
+
+            const double MegaByte = 1024 * 1024;
+            double KiloCount = 1024 * sizeStats.Count;
+
+            logWriter.WriteLine();
+            logWriter.WriteLine("Executable size statistics:");
+            logWriter.WriteLine("Total CPAOT size:    {0:F3} MB ({1:F3} KB per app on average)", totalCpaotSize / MegaByte, totalCpaotSize / KiloCount);
+            logWriter.WriteLine("Total Crossgen size: {0:F3} MB ({1:F3} KB per app on average)", totalCrossgenSize / MegaByte, totalCrossgenSize / KiloCount);
+
+            long deltaSize = totalCpaotSize - totalCrossgenSize;
+            logWriter.WriteLine("CPAOT - Crossgen:    {0:F3} MB ({1:F3} KB per app on average)", deltaSize / MegaByte, deltaSize / KiloCount);
+
+            double percentageSizeRatio = totalCpaotSize * 100.0 / Math.Max(totalCrossgenSize, 1);
+            logWriter.WriteLine("CPAOT / Crossgen:    {0:F3}%", percentageSizeRatio);
+
+            sizeStats.Sort((a, b) => (b.CpaotSize - b.CrossgenSize).CompareTo(a.CpaotSize - a.CrossgenSize));
+
+            const int TopExeCount = 10;
+
+            int topCount;
+            int bottomCount;
+            
+            if (sizeStats.Count <= 2 * TopExeCount)
+            {
+                topCount = sizeStats.Count;
+                bottomCount = 0;
+            }
+            else
+            {
+                topCount = TopExeCount;
+                bottomCount = TopExeCount;
+            }
+
+            logWriter.WriteLine();
+            logWriter.WriteLine("CPAOT size |   Crossgen | CPAOT - CG | Highest exe size deltas");
+            logWriter.WriteLine("--------------------------------------------------------------");
+            foreach (ExeSizeInfo exeSize in sizeStats.Take(topCount))
+            {
+                logWriter.WriteLine(
+                    "{0,10} | {1,10} | {2,10} | {3}",
+                    exeSize.CpaotSize,
+                    exeSize.CrossgenSize,
+                    exeSize.CpaotSize - exeSize.CrossgenSize,
+                    exeSize.CpaotPath);
+            }
+
+            if (bottomCount > 0)
+            {
+                logWriter.WriteLine();
+                logWriter.WriteLine("CPAOT size |   Crossgen | CPAOT - CG | Lowest exe size deltas");
+                logWriter.WriteLine("-------------------------------------------------------------");
+                foreach (ExeSizeInfo exeSize in sizeStats.TakeLast(bottomCount))
+                {
+                    logWriter.WriteLine(
+                        "{0,10} | {1,10} | {2,10} | {3}",
+                        exeSize.CpaotSize,
+                        exeSize.CrossgenSize,
+                        exeSize.CpaotSize - exeSize.CrossgenSize,
+                        exeSize.CpaotPath);
+                }
+            }
+
+            sizeStats.Sort((a, b) => (b.CpaotSize * a.CrossgenSize).CompareTo(a.CpaotSize * b.CrossgenSize));
+
+            logWriter.WriteLine();
+            logWriter.WriteLine("CPAOT size |   Crossgen | CPAOT/CG % | Highest exe size ratios");
+            logWriter.WriteLine("--------------------------------------------------------------");
+            foreach (ExeSizeInfo exeSize in sizeStats.Take(topCount))
+            {
+                logWriter.WriteLine(
+                    "{0,10} | {1,10} | {2,10:F3} | {3}",
+                    exeSize.CpaotSize,
+                    exeSize.CrossgenSize,
+                    exeSize.CpaotSize * 100.0 / exeSize.CrossgenSize,
+                    exeSize.CpaotPath);
+            }
+
+            if (bottomCount > 0)
+            {
+                logWriter.WriteLine();
+                logWriter.WriteLine("CPAOT size |   Crossgen | CPAOT/CG % | Lowest exe size ratios");
+                logWriter.WriteLine("-------------------------------------------------------------");
+                foreach (ExeSizeInfo exeSize in sizeStats.TakeLast(bottomCount))
+                {
+                    logWriter.WriteLine(
+                        "{0,10} | {1,10} | {2,10:F6} | {3}",
+                        exeSize.CpaotSize,
+                        exeSize.CrossgenSize,
+                        exeSize.CpaotSize * 100.0 / exeSize.CrossgenSize,
+                        exeSize.CpaotPath);
+                }
             }
         }
 
