@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 internal class ClassWithStatic
@@ -136,7 +137,104 @@ internal class Program
         }
         return success;
     }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private struct ExplicitFieldOffsetStruct
+    {
+        [FieldOffset(0)]
+        public int Field00;
+        [FieldOffset(0x0f)]
+        public int Field15;
+    }
+
+    private static ExplicitFieldOffsetStruct HelperCreateExplicitLayoutStruct()
+    {
+        ExplicitFieldOffsetStruct epl = new ExplicitFieldOffsetStruct();
+        epl.Field00 = 40;
+        epl.Field15 = 15;
+        return epl;
+    }
+
+    private static bool HelperCompare(ExplicitFieldOffsetStruct val, ExplicitFieldOffsetStruct val1)
+    {
+        bool match = true;
+        if (val.Field00 != val1.Field00)
+        {
+            match = false;
+            Console.WriteLine("ExplicitLayout: val.Field00 = {0}, val1.Field00 = {1}", val.Field00, val1.Field00);
+        }
+        if (val.Field15 != val1.Field15)
+        {
+            match = false;
+            Console.WriteLine("ExplicitLayout: val.Field15 = {0}, val1.Field15 = {1}", val.Field15, val1.Field15);
+        }
+        return match;
+    }
+
+    private static bool HelperCompare(ExplicitFieldOffsetStruct? val, ExplicitFieldOffsetStruct val1)
+    {
+        return val == null ? false : HelperCompare(val.Value, val1);
+    }
+
+    private static bool BoxUnboxToQ2(ExplicitFieldOffsetStruct? val)
+    {
+        return HelperCompare(val, HelperCreateExplicitLayoutStruct());
+    }
+
+    private static bool BoxUnboxToQ1(ValueType vt)
+    {
+        return BoxUnboxToQ2((ExplicitFieldOffsetStruct?)vt);
+    }
+
+    private static bool BoxUnboxToQ(object o)
+    {
+        return BoxUnboxToQ1((ValueType)o);
+    }
+
+    private static bool NullableWithExplicitLayoutTest()
+    {
+        ExplicitFieldOffsetStruct? s = HelperCreateExplicitLayoutStruct();
+        return BoxUnboxToQ(s);
+    }
+
+    private static char HelperCreateChar()
+    {
+        return 'c';
+    }
+
+    private static bool HelperCompare(char val, char val1)
+    {
+        if (val == val1)
+        {
+            return true;
+        }
+        Console.Error.WriteLine("val = {0} = 0x{1:x2}, val1 = {2} = 0x{3:x2}", val, (int)val, val1, (int)val1);
+        return false;
+    }
+
+    private static bool BoxUnboxToNQ2(char c)
+    {
+        return HelperCompare(c, HelperCreateChar());
+    }
+
+    private static bool BoxUnboxToNQ1(ValueType vt)
+    {
+        Console.WriteLine("BoxUnboxToNQ1: {0}", vt);
+        return BoxUnboxToNQ2((char)vt);
+    }
+
+    private static bool BoxUnboxToNQ(object o)
+    {
+        Console.WriteLine("BoxUnboxToNQ: {0}", o);
+        return BoxUnboxToNQ1((ValueType)o);
+    }
     
+    private static bool CastClassWithCharTest()
+    {
+        char? s = HelperCreateChar();
+        return BoxUnboxToNQ(s);
+    }
+
     private static bool TypeHandle()
     {
         Console.WriteLine(TextFileName.GetType().ToString());
@@ -1063,6 +1161,10 @@ internal class Program
         RunTest("ChkCast", ChkCast());
         RunTest("ChkCastValueType", ChkCastValueType());
         RunTest("BoxUnbox", BoxUnbox());
+        // TODO: enabling this test requires fixes to IsManagedSequential I'm going to send out
+        // in a subsequent PR together with removal of this temporary clause [trylek]
+        // RunTest("NullableWithExplicitLayoutTest", NullableWithExplicitLayoutTest());
+        RunTest("CastClassWithCharTest", CastClassWithCharTest());
         RunTest("TypeHandle", TypeHandle());
         RunTest("RuntimeTypeHandle", RuntimeTypeHandle());
         RunTest("ReadAllText", ReadAllText());

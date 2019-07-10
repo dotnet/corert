@@ -341,9 +341,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             EcmaModule targetModule = context.GetTargetModule(type);
             EmitModuleOverride(targetModule, context);
-            context = context.InnerContext(targetModule);
             EmitElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
-            EmitTypeSignature(type.GetTypeDefinition(), context);
+            EmitTypeSignature(type.GetTypeDefinition(), context.InnerContext(targetModule));
             EmitUInt((uint)type.Instantiation.Length);
             for (int paramIndex = 0; paramIndex < type.Instantiation.Length; paramIndex++)
             {

@@ -2177,7 +2177,7 @@ namespace Internal.JitInterface
                     }
 
 #if READYTORUN
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.ContainsType(field.OwningType) &&
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) &&
                         fieldAccessor == CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER)
                     {
                         PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);

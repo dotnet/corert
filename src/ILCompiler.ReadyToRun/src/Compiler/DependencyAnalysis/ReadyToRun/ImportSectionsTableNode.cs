@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int index = 0;
             foreach (ImportSectionNode node in NodesList)
             {
-                if (!relocsOnly && !node.ShouldSkipEmittingTable(factory))
+                if (!relocsOnly)
                 {
                     node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
                     node.InitializeIndexFromBeginningOfArray(index++);

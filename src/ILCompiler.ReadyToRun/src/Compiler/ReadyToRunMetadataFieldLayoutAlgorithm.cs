@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -688,6 +687,11 @@ namespace ILCompiler
 
         protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
         {
+            if (type.IsExplicitLayout)
+            {
+                return ComputeExplicitFieldLayout(type, numInstanceFields);
+            }
+            else
             if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || MarshalUtils.IsManagedSequentialType(type)))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
