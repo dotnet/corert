@@ -61,6 +61,8 @@ namespace Internal.IL
         private MethodDebugInformation _debugInformation;
         private LLVMMetadataRef _debugFunction;
         private TypeDesc _constrainedType = null;
+        private TypeDesc _canonThisType;
+
         List<LLVMValueRef> _exceptionFunclets;
 
         /// <summary>
@@ -137,7 +139,7 @@ namespace Internal.IL
             _argSlots = new LLVMValueRef[method.Signature.Length];
             _signature = method.Signature;
             _thisType = method.OwningType;
-
+            _canonThisType = method.GetCanonMethodTarget(CanonicalFormKind.Specific).OwningType;
             var ilExceptionRegions = methodIL.GetExceptionRegions();
             _exceptionRegions = new ExceptionRegion[ilExceptionRegions.Length];
             _exceptionFunclets = new List<LLVMValueRef>(_exceptionRegions.Length);
@@ -1630,20 +1632,28 @@ namespace Internal.IL
                     }
                     else
                     {
-//                        TypeDesc typeToAlloc;
-//                        if (callee.OwningType.IsRuntimeDeterminedSubtype)
-//                        {
-//                            var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
-//                            var runtimeDeterminedRetType = runtimeDeterminedMethod.OwningType;
-//                            var method = (MethodDesc)_canonMethodIL.GetObject(token);
-//
-//                            typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
-//                        }
-//                        else
-//                        {
-//                            typeToAlloc = callee.OwningType;
-//                        }
-                        newObjResult = AllocateObject(callee.OwningType);
+                        TypeDesc typeToAlloc;
+                        var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
+                        var runtimeDeterminedRetType = runtimeDeterminedMethod.OwningType;
+
+                        if (runtimeDeterminedRetType.IsRuntimeDeterminedSubtype)
+                        {
+                            // TODO: refactore with AllocateObject?
+                            var method = (MethodDesc)_canonMethodIL.GetObject(token);
+                        
+                            typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
+                            LLVMValueRef helper;
+                            var node = GetGenericLookupHelperAndAddReference(typeToAlloc, out helper, ReadyToRunHelperId.TypeHandle);
+                            var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                            var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                            var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
+                            newObjResult = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments);
+                        }
+                        else
+                        {
+                            typeToAlloc = callee.OwningType;
+                            newObjResult = AllocateObject(typeToAlloc);
+                        }
 
                         //one for the real result and one to be consumed by ctor
                         _stack.InsertAt(newObjResult, _stack.Top - callee.Signature.Length);
@@ -1742,7 +1752,20 @@ namespace Internal.IL
 
         private LLVMValueRef GetOrCreateMethodSlot(MethodDesc canonMethod, MethodDesc callee)
         {
+            if (callee.ToString().Contains("TestSimpleGVMScenarios") && callee.ToString().Contains("IFace"))
+            {
+
+            }
+            bool exactContextNeedsRuntimeLookup;
             if (callee.HasInstantiation)
+            {
+                exactContextNeedsRuntimeLookup = callee.IsSharedByGenericInstantiations;
+            }
+            else
+            {
+                exactContextNeedsRuntimeLookup = callee.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any);
+            }
+            if (exactContextNeedsRuntimeLookup)
             {
                 _dependencies.Add(_compilation.NodeFactory.GVMDependencies(canonMethod));
                 var canonMethodSignature = canonMethod.Signature;
@@ -2479,7 +2502,28 @@ namespace Internal.IL
             }
             else
             {
-                AddMethodReference(method);
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any)))
+                {
+                    var exactContextNeedsRuntimeLookup = method.HasInstantiation 
+                        ? method.IsSharedByGenericInstantiations 
+                        : method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any);
+                    if (exactContextNeedsRuntimeLookup)
+                    {
+                        LLVMValueRef helper;
+                        var node = GetGenericLookupHelperAndAddReference(method, out helper, ReadyToRunHelperId.MethodEntry);
+                        targetLLVMFunction = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                    }
+                    else
+                    {
+                        // TODO:what is the equivalent here for, e.g. https://github.com/dotnet/corert/blob/1ead4eb2ce1538bd18e5390d00cc79bb4f2967fd/src/System.Private.CoreLib/shared/System/Runtime/CompilerServices/ConditionalWeakTable.cs#L223
+                        //                        Append("((intptr_t)");
+                        //                        AppendFatFunctionPointer(runtimeDeterminedMethod);
+                        //                        Append("()) + ");
+                        //                        Append(FatFunctionPointerConstants.Offset.ToString());
+                    }
+                }
+                else AddMethodReference(method);
             }
 
             if (targetLLVMFunction.Pointer.Equals(IntPtr.Zero))
@@ -3098,7 +3142,14 @@ namespace Internal.IL
         private void ImportUnbox(int token, ILOpcode opCode)
         {
             TypeDesc type = ResolveTypeToken(token);
-            LLVMValueRef eeType = GetEETypePointerForTypeDesc(type, true);
+            LLVMValueRef eeType;
+            if (type.IsRuntimeDeterminedSubtype)
+            {
+                LLVMValueRef helper;
+                var node = GetGenericLookupHelperAndAddReference(type, out helper, ReadyToRunHelperId.TypeHandle); // TODO GetThreadNonGcStaticBase?
+                eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+            }
+            else eeType = GetEETypePointerForTypeDesc(type, true);
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
             StackEntry boxedObject = _stack.Pop();
             if (opCode == ILOpcode.unbox)
@@ -3329,7 +3380,7 @@ namespace Internal.IL
                 if (!isStatic)
                     _stack.Pop();
 
-                ISymbolNode node;
+                ISymbolNode node = null;
                 MetadataType owningType = (MetadataType)_compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
                 LLVMValueRef staticBase;
                 int fieldOffset;
@@ -3355,10 +3406,20 @@ namespace Internal.IL
                     TypeDesc runtimeDeterminedOwningType = runtimeDeterminedField.OwningType;
                     if (field.IsThreadStatic)
                     {
-                        // TODO: We need the right thread static per thread
-                        ExpressionEntry returnExp;
-                        node = TriggerCctorWithThreadStaticStorage(owningType, needsCctorCheck, out returnExp);
-                        staticBase = returnExp.ValueAsType(returnExp.Type, _builder);
+                        if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
+                        {
+                            LLVMValueRef helper;
+                            node = GetGenericLookupHelperAndAddReference(runtimeDeterminedOwningType, out helper, ReadyToRunHelperId.GetThreadStaticBase); // TODO GetThreadNonGcStaticBase?
+                            staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                        }
+                        else
+                        {
+                            // TODO: We need the right thread static per thread
+                            ExpressionEntry returnExp;
+                            var c = runtimeDeterminedOwningType.IsCanonicalSubtype(CanonicalFormKind.Specific);
+                            node = TriggerCctorWithThreadStaticStorage((MetadataType)runtimeDeterminedOwningType, needsCctorCheck, out returnExp);
+                            staticBase = returnExp.ValueAsType(returnExp.Type, _builder);
+                        }
                     }
                     else
                     {
@@ -3386,8 +3447,19 @@ namespace Internal.IL
                         }
                         else
                         {
-                            node = _compilation.NodeFactory.TypeNonGCStaticsSymbol(owningType);
-                            staticBase = LoadAddressOfSymbolNode(node);
+                            if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
+                            {
+                                needsCctorCheck = false; // no cctor for canonical types
+                                DefType helperArg = owningType.ConvertToSharedRuntimeDeterminedForm();
+                                LLVMValueRef helper;
+                                node = GetGenericLookupHelperAndAddReference(helperArg, out helper, ReadyToRunHelperId.GetNonGCStaticBase);
+                                staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                            }
+                            else
+                            {
+                                node = _compilation.NodeFactory.TypeNonGCStaticsSymbol(owningType);
+                                staticBase = LoadAddressOfSymbolNode(node);
+                            }
                         }
                         // Run static constructor if necessary
                         if (needsCctorCheck)
@@ -3397,7 +3469,7 @@ namespace Internal.IL
                     }
                 }
 
-                _dependencies.Add(node);
+                if(node != null) _dependencies.Add(node);
 
                 LLVMValueRef castStaticBase = LLVM.BuildPointerCast(_builder, staticBase, LLVM.PointerType(LLVM.Int8Type(), 0), owningType.Name + "_statics");
                 LLVMValueRef fieldAddr = LLVM.BuildGEP(_builder, castStaticBase, new LLVMValueRef[] { BuildConstInt32(fieldOffset) }, field.Name + "_addr");
@@ -3416,7 +3488,7 @@ namespace Internal.IL
             ISymbolNode node;
             if (_method.RequiresInstMethodDescArg())
             {
-                node = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(readyToRunHelperId, helperArg, _method.OwningType);
+                node = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(readyToRunHelperId, helperArg, _method);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
                     LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), new LLVMTypeRef[0], false));
             }
@@ -3435,6 +3507,7 @@ namespace Internal.IL
         /// </summary>
         private void TriggerCctor(MetadataType type)
         {
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Specific)) return; // TODO - what to do here?
             ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
             _dependencies.Add(classConstructionContextSymbol);
             LLVMValueRef firstNonGcStatic = LoadAddressOfSymbolNode(classConstructionContextSymbol);
@@ -3553,8 +3626,17 @@ namespace Internal.IL
 
         private void ImportBox(int token)
         {
+            LLVMValueRef eeType;
             TypeDesc type = ResolveTypeToken(token);
-            LLVMValueRef eeType = GetEETypePointerForTypeDesc(type, true);
+            if (type.IsRuntimeDeterminedSubtype)
+            {
+                var runtimeDeterminedType = type;
+                type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                LLVMValueRef helper;
+                var typeRef = GetGenericLookupHelperAndAddReference(runtimeDeterminedType, out helper, ReadyToRunHelperId.TypeHandle);
+                eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+            }
+            else eeType = GetEETypePointerForTypeDesc(type, true);
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
             var valueAddress = TakeAddressOf(_stack.Pop());
             var eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
@@ -3605,7 +3687,7 @@ namespace Internal.IL
             if (runtimeDeterminedType.IsRuntimeDeterminedSubtype)
             {
                 LLVMValueRef helper;
-                var typeRef = GetGenericLookupHelperAndAddReference(runtimeDeterminedType, out helper, ReadyToRunHelperId.TypeHandle);
+                var typeRef = GetGenericLookupHelperAndAddReference(runtimeDeterminedArrayType, out helper, ReadyToRunHelperId.TypeHandle);
                 var lookedUpType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
                 arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", lookedUpType), sizeOfArray };
             }

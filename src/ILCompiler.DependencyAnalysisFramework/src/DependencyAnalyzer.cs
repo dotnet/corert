@@ -197,6 +197,10 @@ namespace ILCompiler.DependencyAnalysisFramework
                     // Pop the top node of the mark stack
                     DependencyNodeCore<DependencyContextType> currentNode = _markStack.Pop();
 
+                    if(currentNode.GetType().ToString().Contains("ReadyToRunGenericLookupFromDictionaryNode"))
+                    {
+
+                    }
                     Debug.Assert(currentNode.Marked);
 
                     // Only some marked objects are interesting for dynamic dependencies

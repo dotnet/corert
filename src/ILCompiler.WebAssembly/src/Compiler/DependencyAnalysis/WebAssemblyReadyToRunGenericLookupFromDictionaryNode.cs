@@ -2,9 +2,9 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class WebAssemblyReadyToRunGenericLookupFromTypeNode : ReadyToRunGenericLookupFromTypeNode
+    internal class WebAssemblyReadyToRunGenericLookupFromDictionaryNode : ReadyToRunGenericLookupFromDictionaryNode
     {
-        public WebAssemblyReadyToRunGenericLookupFromTypeNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
+        public WebAssemblyReadyToRunGenericLookupFromDictionaryNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
             : base(factory, helperId, target, dictionaryOwner)
         {
         }

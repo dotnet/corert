@@ -22,6 +22,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT || factory.Target.Abi == TargetAbi.CppCodegen);
             _type = type;
+            foreach (TypeDesc t in _type.Instantiation)
+            {
+                if (t is RuntimeDeterminedType)
+                {
+
+                }
+            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

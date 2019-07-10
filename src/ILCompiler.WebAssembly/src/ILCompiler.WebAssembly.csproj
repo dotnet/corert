@@ -48,6 +48,7 @@
     <Compile Include="Compiler\DependencyAnalysis\RawMainMethodRootProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyCodegenNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyMethodCodeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\WebAssemblyReadyToRunGenericLookupFromDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyUnboxingThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyReadyToRunGenericLookupFromTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyVTableSlotNode.cs" />

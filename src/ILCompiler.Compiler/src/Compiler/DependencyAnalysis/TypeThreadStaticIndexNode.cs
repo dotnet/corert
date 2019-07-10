@@ -17,6 +17,13 @@ namespace ILCompiler.DependencyAnalysis
         public TypeThreadStaticIndexNode(MetadataType type)
         {
             _type = type;
+            foreach (TypeDesc r in type.Instantiation)
+            {
+                if (r is RuntimeDeterminedType)
+                {
+
+                }
+            }
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

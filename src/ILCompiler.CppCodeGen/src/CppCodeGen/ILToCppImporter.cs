@@ -1270,7 +1270,7 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (_method.ToString().Contains("SerializeExceptionsForDump"))
+            if (method.ToString().Contains("TestSimpleGVMScenarios") && method.ToString().Contains("IFace"))
             {
 
             }
@@ -3186,6 +3186,10 @@ namespace Internal.IL
 
         private void ImportNewArray(int token)
         {
+            if (_methodIL.ToString().Contains("System.Array.Resize"))
+            {
+
+            }
             TypeDesc runtimeDeterminedType = (TypeDesc)_methodIL.GetObject(token);
             TypeDesc runtimeDeterminedArrayType = runtimeDeterminedType.MakeArrayType();
             TypeDesc type = (TypeDesc)_canonMethodIL.GetObject(token);

@@ -276,6 +276,15 @@ namespace ILCompiler.DependencyAnalysis
         public ReadyToRunGenericLookupFromDictionaryNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
             : base(factory, helperId, target, dictionaryOwner)
         {
+            if (dictionaryOwner.ToString().Contains("Array"))
+            {
+
+            }
+//            TypeDesc type = dictionaryOwner as TypeDesc;
+//            if (type != null)
+//            {
+//                Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
+//            }
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
