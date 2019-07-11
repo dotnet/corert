@@ -85,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     nextMethodIndex += GCREFMAP_LOOKUP_STRIDE;
                 }
                 MethodWithGCInfo methodNode = _methods[methodIndex];
-                if (methodNode == null || methodNode.IsEmpty)
+                if (methodNode == null)
                 {
                     // Flush an empty GC ref map block to prevent
                     // the indexed records from falling out of sync with methods
@@ -93,7 +93,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
-                    builder.GetCallRefMap(methodNode.Method);
+                    try
+                    {
+                        builder.GetCallRefMap(methodNode.Method);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        if (!methodNode.IsEmpty)
+                        {
+                            throw new InternalCompilerErrorException("GC ref map -> " + methodNode.Method.ToString());
+                        }
+                        builder.Flush();
+                    }
                 }
             }
             Debug.Assert(nextOffsetIndex == offsets.Length);

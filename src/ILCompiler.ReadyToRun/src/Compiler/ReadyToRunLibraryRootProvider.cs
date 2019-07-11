@@ -49,7 +49,7 @@ namespace ILCompiler
                 if (method.IsAbstract || method.HasInstantiation)
                     continue;
 
-                if (method.IsInternalCall)
+                if (method.IsInternalCall || HardwareIntrinsicHelpers.IsHardwareIntrinsicDependentMethod(method))
                     continue;
 
                 try

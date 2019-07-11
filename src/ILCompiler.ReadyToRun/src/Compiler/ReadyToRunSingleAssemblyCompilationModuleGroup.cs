@@ -218,6 +218,12 @@ namespace ILCompiler
 
         public override bool CanInline(MethodDesc callerMethod, MethodDesc calleeMethod)
         {
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsicDependentMethod(calleeMethod))
+            {
+                // Never inline calls to HW-dependent methods
+                return false;
+            }
+
             // Allow inlining if the caller is within the current version bubble
             // (because otherwise we may not be able to encode its tokens)
             // and if the callee is either in the same version bubble or is marked as non-versionable.

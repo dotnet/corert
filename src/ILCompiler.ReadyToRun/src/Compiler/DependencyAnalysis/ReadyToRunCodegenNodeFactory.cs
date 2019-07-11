@@ -110,6 +110,11 @@ namespace ILCompiler.DependencyAnalysis
             bool isInstantiatingStub,
             SignatureContext signatureContext)
         {
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsicDependentMethod(method.Method))
+            {
+                throw new RequiresRuntimeJitException(method.Method.ToString());
+            }
+
             IMethodNode methodImport;
             TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub);
             if (!_importMethods.TryGetValue(key, out methodImport))

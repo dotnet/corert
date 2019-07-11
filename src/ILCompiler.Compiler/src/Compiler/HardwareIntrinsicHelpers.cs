@@ -8,11 +8,37 @@ using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
 using System.Diagnostics;
+using Internal.Metadata.NativeFormat;
+using System.Collections.Generic;
 
 namespace ILCompiler
 {
     public static class HardwareIntrinsicHelpers
     {
+        /// <summary>
+        /// Gets a value indicating whether this type is an intrinsic from the namespace System.Runtime.Intrinsics
+        /// requiring special treatment per
+        /// 
+        /// https://github.com/dotnet/coreclr/blob/11137fbe46f524dfd6c2f7bb2a77035aa225524c/src/vm/methodtablebuilder.cpp#L9566
+        /// 
+        /// Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
+        /// ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
+        /// aggregate or union types. See https://github.com/dotnet/coreclr/issues/15943
+        ///
+        /// Once they are properly handled according to the ABI requirements, we can remove this check
+        /// and allow them to be used in crossgen/AOT scenarios.
+        ///
+        /// We can allow these to AOT compile in CoreLib since CoreLib versions with the runtime.
+        /// </summary>
+        /// <param name="type">Type to check</param>
+        public static bool IsHardwareIntrinsic(TypeDesc type)
+        {
+            return type.IsIntrinsic &&
+                type is MetadataType mdType &&
+                mdType.Module == type.Context.SystemModule &&
+                (mdType.ContainingType ?? mdType).Namespace == "System.Runtime.Intrinsics";
+        }
+
         /// <summary>
         /// Gets a value indicating whether this is a hardware intrinsic on the platform that we're compiling for.
         /// </summary>
@@ -34,6 +60,134 @@ namespace ILCompiler
                 {
                     if (mdType.Namespace == "System.Runtime.Intrinsics.Arm.Arm64")
                         return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Cache used to speed up resolution of types referring to HW-dependent types.
+        /// Please note this is not "just a cache", we also use it to break circles in the
+        /// recursive type graph (e.g. int implements several generic interfaces instantiated over int).
+        /// </summary>
+        private static Dictionary<TypeDesc, bool> _hardwareIntrinsicDependentTypeCache = new Dictionary<TypeDesc, bool>();
+
+        /// <summary>
+        /// Gets a value indicating whether a given type doesn't refer to any HW intrinsics and can be safely
+        /// pre-JITted. This requires a recursive scan roughly mimicking the CoreCLR MethodTableBuilder behavior;
+        /// in particular, we check the following aspects:
+        /// (*) The type itself;
+        /// (*) For DefTypes, we recursively check all fields on the type;
+        /// (*) For generic types, we recursively check all instantiation parameters;
+        /// (*) For parameterized types, we recursively check the parameter type.
+        /// </summary>
+        /// <param name="type">Type to analyze</param>
+        /// <returns>True when a given type is the owner type for a hardware intrinsic</returns>
+        public static bool IsHardwareIntrinsicDependentType(TypeDesc type)
+        {
+            if (_hardwareIntrinsicDependentTypeCache.TryGetValue(type, out bool result))
+            {
+                return result;
+            }
+
+            // Initially mark the type in the cache as HW-independent so that, if we hit it
+            // in the recursion scan, we don't cycle indefinitely. If such type gets identified
+            // as HW-dependent during the scan, we'll overwrite the cache once the scan has finished.
+            // _hardwareIntrinsicDependentTypeCache.Add(type, false);
+            _hardwareIntrinsicDependentTypeCache[type] = false;
+            if (IsHardwareIntrinsicDependentTypeInternal(type))
+            {
+                _hardwareIntrinsicDependentTypeCache[type] = true;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Uncached internal version of HW-dependent type detection logic. All recursive
+        /// calls must go through the public method to prevent stack overflow in the presence
+        /// of circles in the type definition graph.
+        /// </summary>
+        /// <param name="type">Type to check</param>
+        /// <returns>True if the type depends on HW intrinsics</returns>
+        private static bool IsHardwareIntrinsicDependentTypeInternal(TypeDesc type)
+        {
+            if (type.IsSignatureVariable)
+            {
+                return true;
+            }
+
+            if (IsHardwareIntrinsic(type))
+            {
+                return true;
+            }
+
+            if (type.HasBaseType && IsHardwareIntrinsicDependentType(type.BaseType))
+            {
+                return true;
+            }
+
+            foreach (DefType interfaceType in type.RuntimeInterfaces)
+            {
+                if (IsHardwareIntrinsicDependentType(interfaceType))
+                {
+                    return true;
+                }
+            }
+
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (IsHardwareIntrinsicDependentType(field.FieldType))
+                {
+                    return true;
+                }
+            }
+
+            if (type.HasInstantiation)
+            {
+                foreach (TypeDesc instantiationType in type.Instantiation)
+                {
+                    if (IsHardwareIntrinsicDependentType(instantiationType))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (type.IsParameterizedType)
+            {
+                return IsHardwareIntrinsicDependentType(((ParameterizedType)type).ParameterType);
+            }
+
+            return false;
+        }
+
+        public static bool IsHardwareIntrinsicDependentMethod(MethodDesc methodDesc)
+        {
+            if (IsHardwareIntrinsicDependentType(methodDesc.OwningType) ||
+                IsHardwareIntrinsicDependentType(methodDesc.Signature.ReturnType))
+            {
+                return true;
+            }
+
+            if (methodDesc.HasInstantiation)
+            {
+                foreach (TypeDesc instantiationTypeArg in methodDesc.Instantiation)
+                {
+                    if (IsHardwareIntrinsicDependentType(instantiationTypeArg))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            foreach (TypeDesc paramType in methodDesc.Signature)
+            {
+                if (IsHardwareIntrinsicDependentType(paramType))
+                {
+                    return true;
                 }
             }
 
