@@ -48,7 +48,7 @@
 #include "GCMemoryHelpers.h"
 
 #include "holder.h"
-#include "Volatile.h"
+#include "volatile.h"
 
 #ifdef FEATURE_ETW
     #ifndef _INC_WINDOWS

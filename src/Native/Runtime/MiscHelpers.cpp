@@ -36,7 +36,7 @@
 #include "slist.inl"
 #include "eetype.inl"
 #include "CommonMacros.inl"
-#include "Volatile.h"
+#include "volatile.h"
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
