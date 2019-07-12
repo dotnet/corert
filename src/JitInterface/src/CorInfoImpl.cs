@@ -1061,7 +1061,10 @@ namespace Internal.JitInterface
                     MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
                     result = ResolveTokenWithSubstitution(methodIL, pResolvedToken.token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
                     Debug.Assert(((TypeDesc)result).IsRuntimeDeterminedSubtype ||
-                        ((TypeDesc)methodIL.GetObject((int)pResolvedToken.token)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
+                        /* If the resolved type is not runtime determined there's a chance we went down this path
+                           because there was a literal typeof(__Canon) in the compiled IL - check for that
+                           by resolving the token in the definition. */
+                        ((TypeDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
                 }
 
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
