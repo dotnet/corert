@@ -755,23 +755,6 @@ namespace Internal.JitInterface
         private CORINFO_MODULE_STRUCT_* getMethodModule(CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("getMethodModule"); }
 
-        private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
-        {
-            MethodDesc methodDesc = HandleToObject(method);
-            int pointerSize = _compilation.TypeSystemContext.Target.PointerSize;
-            offsetOfIndirection = (uint)CORINFO_VIRTUALCALL_NO_CHUNK.Value;
-            isRelative = false;
-
-            // Normalize to the slot defining method. We don't have slot information for the overrides.
-            methodDesc = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDesc);
-            Debug.Assert(!methodDesc.CanMethodBeInSealedVTable());
-
-            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc, methodDesc.OwningType);
-            Debug.Assert(slot != -1);
-
-            offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
-        }
-
         private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* baseMethod, CORINFO_CLASS_STRUCT_* derivedClass, CORINFO_CONTEXT_STRUCT* ownerType)
         {
             TypeDesc implType = HandleToObject(derivedClass);
@@ -835,22 +818,6 @@ namespace Internal.JitInterface
             TypeDesc comparand = HandleToObject(elemType);
             TypeDesc comparer = IL.Stubs.ComparerIntrinsics.GetEqualityComparerForType(comparand);
             return comparer != null ? ObjectToHandle(comparer) : null;
-        }
-
-        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
-        {
-            // Resolved token as a potentially RuntimeDetermined object.
-            MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-
-            switch (method.Name)
-            {
-                case "EETypePtrOf":
-                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
-                    break;
-                case "DefaultConstructorOf":
-                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, ref pResult.lookup);
-                    break;
-            }
         }
 
         private SimdHelper _simdHelper;
@@ -2623,26 +2590,6 @@ namespace Internal.JitInterface
         private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult)
         { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
 
-        private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
-        {
-            MethodDesc method = HandleToObject(ftn);
-            TypeDesc type = method.OwningType;
-            ISymbolNode methodSync = _compilation.NodeFactory.NecessaryTypeSymbol(type);
-
-            void *result = (void*)ObjectToHandle(methodSync);
-
-            if (methodSync.RepresentsIndirectionCell)
-            {
-                ppIndirection = result;
-                return null;
-            }
-            else
-            {
-                ppIndirection = null;
-                return result;
-            }
-        }
-
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
         {
             // TODO: Lazy string literal helper
@@ -2670,20 +2617,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private CORINFO_RUNTIME_LOOKUP_KIND GetLookupKindFromContextSource(GenericContextSource contextSource)
-        {
-            switch (contextSource)
-            {
-                case GenericContextSource.MethodParameter:
-                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
-                case GenericContextSource.TypeParameter:
-                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
-                default:
-                    Debug.Assert(contextSource == GenericContextSource.ThisObject);
-                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
-            }
-        }
-
         private void getLocationOfThisType(out CORINFO_LOOKUP_KIND result, CORINFO_METHOD_STRUCT_* context)
         {
             result = new CORINFO_LOOKUP_KIND();
@@ -2706,17 +2639,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getPInvokeUnmanagedTarget"); }
         private void* getAddressOfPInvokeFixup(CORINFO_METHOD_STRUCT_* method, ref void* ppIndirection)
         { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
-
-        private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
-        {
-            MethodDesc md = HandleToObject(method);
-
-            string externName = md.GetPInvokeMethodMetadata().Name ?? md.Name;
-            Debug.Assert(externName != null);
-
-            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol(externName));
-        }
-
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
         { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
         private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
