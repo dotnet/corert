@@ -962,6 +962,68 @@ namespace Internal.JitInterface
             }
         }
 
+        private static object ResolveTokenWithSubstitution(MethodIL methodIL, mdToken token, Instantiation typeInst, Instantiation methodInst)
+        {
+            // Grab the generic definition of the method IL, resolve the token within the definition,
+            // and instantiate it with the given context.
+            object result = methodIL.GetMethodILDefinition().GetObject((int)token);
+
+            if (result is MethodDesc methodResult)
+            {
+                result = methodResult.InstantiateSignature(typeInst, methodInst);
+            }
+            else if (result is FieldDesc fieldResult)
+            {
+                result = fieldResult.InstantiateSignature(typeInst, methodInst);
+            }
+            else
+            {
+                result = ((TypeDesc)result).InstantiateSignature(typeInst, methodInst);
+            }
+
+            return result;
+        }
+
+        private static object ResolveTokenInScope(MethodIL methodIL, object typeOrMethodContext, mdToken token)
+        {
+            MethodDesc owningMethod = methodIL.OwningMethod;
+
+            // If token context differs from the scope, it means we're inlining.
+            // If we're inlining a shared method body, we might be able to un-share
+            // the referenced token and avoid runtime lookups.
+            // Resolve the token in the inlining context.
+
+            object result;
+            if (owningMethod != typeOrMethodContext &&
+                owningMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+            {
+                Instantiation typeInst = default;
+                Instantiation methodInst = default;
+
+                if (typeOrMethodContext is TypeDesc typeContext)
+                {
+                    Debug.Assert(typeContext.HasSameTypeDefinition(owningMethod.OwningType));
+                    typeInst = typeContext.Instantiation;
+                }
+                else
+                {
+                    var methodContext = (MethodDesc)typeOrMethodContext;
+                    Debug.Assert(methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition());
+                    typeInst = methodContext.OwningType.Instantiation;
+                    methodInst = methodContext.Instantiation;
+                }
+
+                result = ResolveTokenWithSubstitution(methodIL, token, typeInst, methodInst);
+            }
+            else
+            {
+                // Not inlining - just resolve the token within the methodIL
+                result = methodIL.GetObject((int)token);
+            }
+
+            return result;
+        }
+
         private object GetRuntimeDeterminedObjectForToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             // Since RyuJIT operates on canonical types (as opposed to runtime determined ones), but the
@@ -969,47 +1031,55 @@ namespace Internal.JitInterface
             // to the runtime determined form (e.g. Foo<__Canon> becomes Foo<T__Canon>). 
 
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+            var typeOrMethodContext = HandleToObject((IntPtr)pResolvedToken.tokenContext);
 
-            if (methodIL.OwningMethod.IsSharedByGenericInstantiations)
+            object result = ResolveTokenInScope(methodIL, typeOrMethodContext, pResolvedToken.token);
+
+            if (result is MethodDesc method)
             {
-                MethodIL methodILUninstantiated = methodIL.GetMethodILDefinition();
-                MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
-                Instantiation typeInstantiation = sharedMethod.OwningType.Instantiation;
-                Instantiation methodInstantiation = sharedMethod.Instantiation;
-
-                object resultUninstantiated = methodILUninstantiated.GetObject((int)pResolvedToken.token);
-
-                if (resultUninstantiated is MethodDesc)
+                if (method.IsSharedByGenericInstantiations)
                 {
-                    return ((MethodDesc)resultUninstantiated).InstantiateSignature(typeInstantiation, methodInstantiation);
+                    MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                    result = ResolveTokenWithSubstitution(methodIL, pResolvedToken.token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
+                    Debug.Assert(((MethodDesc)result).IsRuntimeDeterminedExactMethod);
                 }
-                else if (resultUninstantiated is FieldDesc)
+            }
+            else if (result is FieldDesc field)
+            {
+                if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
-                    return ((FieldDesc)resultUninstantiated).InstantiateSignature(typeInstantiation, methodInstantiation);
-                }
-                else
-                {
-                    TypeDesc result = ((TypeDesc)resultUninstantiated).InstantiateSignature(typeInstantiation, methodInstantiation);
-                    if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
-                        result = result.MakeArrayType();
-                    return result;
+                    MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                    result = ResolveTokenWithSubstitution(methodIL, pResolvedToken.token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
+                    Debug.Assert(((FieldDesc)result).OwningType.IsRuntimeDeterminedSubtype);
                 }
             }
             else
             {
-                object result = methodIL.GetObject((int)pResolvedToken.token);
-                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
-                    return ((TypeDesc)result).MakeArrayType();
+                TypeDesc type = (TypeDesc)result;
+                if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                    result = ResolveTokenWithSubstitution(methodIL, pResolvedToken.token, sharedMethod.OwningType.Instantiation, sharedMethod.Instantiation);
+                    Debug.Assert(((TypeDesc)result).IsRuntimeDeterminedSubtype ||
+                        /* If the resolved type is not runtime determined there's a chance we went down this path
+                           because there was a literal typeof(__Canon) in the compiled IL - check for that
+                           by resolving the token in the definition. */
+                        ((TypeDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token)).IsCanonicalDefinitionType(CanonicalFormKind.Any));
+                }
 
-                return result;
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
+                    result = ((TypeDesc)result).MakeArrayType();
             }
+
+            return result;
         }
 
         private void resolveToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+            var typeOrMethodContext = HandleToObject((IntPtr)pResolvedToken.tokenContext);
 
-            var result = methodIL.GetObject((int)pResolvedToken.token);
+            object result = ResolveTokenInScope(methodIL, typeOrMethodContext, pResolvedToken.token);
 
             pResolvedToken.hClass = null;
             pResolvedToken.hMethod = null;
