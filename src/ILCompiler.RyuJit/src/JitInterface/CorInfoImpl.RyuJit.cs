@@ -54,6 +54,20 @@ namespace Internal.JitInterface
             CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
         }
 
+        private CORINFO_RUNTIME_LOOKUP_KIND GetLookupKindFromContextSource(GenericContextSource contextSource)
+        {
+            switch (contextSource)
+            {
+                case GenericContextSource.MethodParameter:
+                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
+                case GenericContextSource.TypeParameter:
+                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
+                default:
+                    Debug.Assert(contextSource == GenericContextSource.ThisObject);
+                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
+            }
+        }
+
         private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
         {
             if (_compilation.NeedsRuntimeLookup(helperId, entity))
@@ -1441,6 +1455,69 @@ namespace Internal.JitInterface
                 ppIndirection = null;
                 return result;
             }
+        }
+
+        private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
+        {
+            MethodDesc methodDesc = HandleToObject(method);
+            int pointerSize = _compilation.TypeSystemContext.Target.PointerSize;
+            offsetOfIndirection = (uint)CORINFO_VIRTUALCALL_NO_CHUNK.Value;
+            isRelative = false;
+
+            // Normalize to the slot defining method. We don't have slot information for the overrides.
+            methodDesc = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDesc);
+            Debug.Assert(!methodDesc.CanMethodBeInSealedVTable());
+
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc, methodDesc.OwningType);
+            Debug.Assert(slot != -1);
+
+            offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
+        }
+
+        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        {
+            // Resolved token as a potentially RuntimeDetermined object.
+            MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+
+            switch (method.Name)
+            {
+                case "EETypePtrOf":
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
+                    break;
+                case "DefaultConstructorOf":
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, ref pResult.lookup);
+                    break;
+            }
+        }
+
+        private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            TypeDesc type = method.OwningType;
+            ISymbolNode methodSync = _compilation.NodeFactory.NecessaryTypeSymbol(type);
+
+            void* result = (void*)ObjectToHandle(methodSync);
+
+            if (methodSync.RepresentsIndirectionCell)
+            {
+                ppIndirection = result;
+                return null;
+            }
+            else
+            {
+                ppIndirection = null;
+                return result;
+            }
+        }
+
+        private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
+        {
+            MethodDesc md = HandleToObject(method);
+
+            string externName = md.GetPInvokeMethodMetadata().Name ?? md.Name;
+            Debug.Assert(externName != null);
+
+            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol(externName));
         }
     }
 }
