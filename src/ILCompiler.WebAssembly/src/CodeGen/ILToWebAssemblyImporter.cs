@@ -62,6 +62,11 @@ namespace Internal.IL
         private LLVMMetadataRef _debugFunction;
         private TypeDesc _constrainedType = null;
         private TypeDesc _canonThisType;
+        /// <summary>
+        /// Offset by which fat function pointers are shifted to distinguish them
+        /// from real function pointers.
+        /// </summary>
+        private const int FatFunctionPointerOffset = 2;
 
         List<LLVMValueRef> _exceptionFunclets;
 
@@ -1563,6 +1568,7 @@ namespace Internal.IL
 
         private void ImportCall(ILOpcode opcode, int token)
         {
+            MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             MethodDesc callee = (MethodDesc)_canonMethodIL.GetObject(token);
             if (callee.IsIntrinsic)
             {
@@ -1599,7 +1605,7 @@ namespace Internal.IL
                     };
                     MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", "ArrayHelpers");
                     MethodDesc helperMethod = helperType.GetKnownMethod("NewObjArray", null);
-                    PushNonNull(HandleCall(helperMethod, helperMethod.Signature, arguments, forcedReturnType: newType));
+                    PushNonNull(HandleCall(helperMethod, helperMethod.Signature, arguments, forcedReturnType: newType, runtimeDeterminedMethod: runtimeDeterminedMethod));
                     return;
                 }
                 else if (newType.IsString)
@@ -1633,7 +1639,6 @@ namespace Internal.IL
                     else
                     {
                         TypeDesc typeToAlloc;
-                        var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
                         var runtimeDeterminedRetType = runtimeDeterminedMethod.OwningType;
 
                         if (runtimeDeterminedRetType.IsRuntimeDeterminedSubtype)
@@ -1676,10 +1681,10 @@ namespace Internal.IL
 
             TypeDesc localConstrainedType = _constrainedType;
             _constrainedType = null;
-            HandleCall(callee, callee.Signature, opcode, localConstrainedType);
+            HandleCall(callee, callee.Signature, runtimeDeterminedMethod, opcode, localConstrainedType);
         }
 
-        private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt, TypeDesc constrainedType)
+        private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt, TypeDesc constrainedType, MethodDesc runtimeDeterminedMethod)
         {
             var canonMethod = callee.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
@@ -1740,7 +1745,9 @@ namespace Internal.IL
                     return GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(targetMethod).ToString(), canonMethod.Signature);
                 }
 
-                return GetCallableVirtualMethod(thisPointer, canonMethod, callee);
+                return isCallVirt && callee.HasInstantiation && callee.IsVirtual && !callee.IsFinal && !callee.OwningType.IsSealed() 
+                    ? GetCallableGenericVirtualMethod(thisPointer, canonMethod, callee, runtimeDeterminedMethod)
+                    : GetCallableVirtualMethod(thisPointer, canonMethod, callee);
 
             }
             else
@@ -1752,30 +1759,6 @@ namespace Internal.IL
 
         private LLVMValueRef GetOrCreateMethodSlot(MethodDesc canonMethod, MethodDesc callee)
         {
-            if (callee.ToString().Contains("TestSimpleGVMScenarios") && callee.ToString().Contains("IFace"))
-            {
-
-            }
-            bool exactContextNeedsRuntimeLookup;
-            if (callee.HasInstantiation)
-            {
-                exactContextNeedsRuntimeLookup = callee.IsSharedByGenericInstantiations;
-            }
-            else
-            {
-                exactContextNeedsRuntimeLookup = callee.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any);
-            }
-            if (exactContextNeedsRuntimeLookup)
-            {
-                _dependencies.Add(_compilation.NodeFactory.GVMDependencies(canonMethod));
-                var canonMethodSignature = canonMethod.Signature;
-
-                TypeDesc retType = canonMethod.Signature.ReturnType;
-
-                //retType = _writer.ConvertToCanonFormIfNecessary(retType, CanonicalFormKind.Specific);
-
-                return TrapFunction;
-            }
             var vtableSlotSymbol = _compilation.NodeFactory.VTableSlot(callee);
             _dependencies.Add(vtableSlotSymbol);
             LLVMValueRef slot = LoadAddressOfSymbolNode(vtableSlotSymbol);
@@ -1808,6 +1791,68 @@ namespace Internal.IL
             }
 
             return functionPtr;
+        }
+
+        private LLVMValueRef GetCallableGenericVirtualMethod(StackEntry objectPtr, MethodDesc method, MethodDesc callee, MethodDesc runtimeDeterminedMethod)
+        {
+            if (callee.ToString().Contains("TestSimpleGVMScenarios") && callee.ToString().Contains("IFace"))
+            {
+
+            }
+            _dependencies.Add(_compilation.NodeFactory.GVMDependencies(method));
+            bool exactContextNeedsRuntimeLookup;
+            if (method.HasInstantiation)
+            {
+                exactContextNeedsRuntimeLookup = method.IsSharedByGenericInstantiations;
+            }
+            else
+            {
+                exactContextNeedsRuntimeLookup = method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any);
+            }
+            var runtimeDeterminedRetType = runtimeDeterminedMethod.OwningType;
+
+            LLVMValueRef slotRef;
+            if (exactContextNeedsRuntimeLookup)
+            {
+                LLVMValueRef helper;
+                var node = GetGenericLookupHelperAndAddReference(runtimeDeterminedMethod, out helper, ReadyToRunHelperId.MethodHandle); 
+                _dependencies.Add(node);
+                slotRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+            }
+            else
+            {
+                slotRef = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(runtimeDeterminedMethod).ToString(), runtimeDeterminedMethod.Signature);
+            }
+            var runtimeMethodHandle = new LoadExpressionEntry(StackValueKind.Int32, "runtimeMethodHandle", slotRef);
+
+            var lookupSlotArgs = new StackEntry[] { objectPtr, runtimeMethodHandle };
+            var gvmPtr = CallRuntime(_compilation.TypeSystemContext, "TypeLoaderExports", "GVMLookupForSlot", lookupSlotArgs);
+
+            var gvmPtrRef = gvmPtr.ValueAsType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), _builder);
+
+            var thenBlock = LLVM.AppendBasicBlock(_curBasicBlock, "then");
+            var elseBlock = LLVM.AppendBasicBlock(_curBasicBlock, "else");
+            var endifBlock = LLVM.AppendBasicBlock(_curBasicBlock, "endif");
+            var functionPtrRef = LLVM.BuildAlloca(_builder, LLVMTypeRef.Int32Type(), "functionPtr");
+            // if
+            var andRef = LLVM.BuildAnd(_builder, gvmPtrRef, BuildConstInt32(FatFunctionPointerOffset), "andPtrOffset");
+            LLVM.BuildCondBr(_builder, andRef, thenBlock, elseBlock);
+            
+            // then
+            LLVM.PositionBuilderAtEnd(_builder, thenBlock);
+            var gep = LLVM.BuildGEP(_builder, gvmPtrRef, new LLVMValueRef[] { BuildConstInt32(-FatFunctionPointerOffset) }, "removeOffset");
+            LLVM.BuildStore(_builder, gep, functionPtrRef);
+            LLVM.BuildBr(_builder, endifBlock);
+            
+            // else
+            LLVM.PositionBuilderAtEnd(_builder, elseBlock);
+            LLVM.BuildStore(_builder, gvmPtrRef, functionPtrRef);
+            LLVM.BuildBr(_builder, endifBlock);
+
+            // end if
+            LLVM.PositionBuilderAtEnd(_builder, elseBlock);
+
+            return functionPtrRef;
         }
 
         private LLVMTypeRef GetLLVMSignatureForMethod(MethodSignature signature)
@@ -2008,7 +2053,7 @@ namespace Internal.IL
             return false;
         }
 
-        private void HandleCall(MethodDesc callee, MethodSignature signature, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef))
+        private void HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef))
         {
             var parameterCount = signature.Length + (signature.IsStatic ? 0 : 1);
             // The last argument is the top of the stack. We need to reverse them and store starting at the first argument
@@ -2041,10 +2086,10 @@ namespace Internal.IL
                 }
             }
 
-            PushNonNull(HandleCall(callee, signature, argumentValues, opcode, constrainedType, calliTarget));
+            PushNonNull(HandleCall(callee, signature, argumentValues, runtimeDeterminedMethod, opcode, constrainedType, calliTarget));
         }
 
-        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
+        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
         {
             LLVMValueRef fn;
             if (opcode == ILOpcode.calli)
@@ -2053,7 +2098,7 @@ namespace Internal.IL
             }
             else
             {
-                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType);
+                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod);
             }
 
             LLVMValueRef returnAddress;
@@ -2150,7 +2195,7 @@ namespace Internal.IL
 
         private LLVMValueRef HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues,
             ILOpcode opcode, TypeDesc constrainedType, LLVMValueRef calliTarget, int offset, LLVMValueRef baseShadowStack, LLVMBuilderRef builder, bool needsReturnSlot,
-            LLVMValueRef castReturnAddress)
+            LLVMValueRef castReturnAddress, MethodDesc runtimeDeterminedMethod)
         {
             LLVMValueRef fn;
             if (opcode == ILOpcode.calli)
@@ -2159,7 +2204,7 @@ namespace Internal.IL
             }
             else
             {
-                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType);
+                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod);
             }
 
             LLVMValueRef shadowStack = LLVM.BuildGEP(builder, baseShadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) }, String.Empty);
@@ -2481,7 +2526,7 @@ namespace Internal.IL
         private void ImportCalli(int token)
         {
             MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
-            HandleCall(null, methodSignature, ILOpcode.calli, calliTarget: ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature), 0), _builder));
+            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature), 0), _builder));
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
@@ -2493,7 +2538,7 @@ namespace Internal.IL
                 StackEntry thisPointer = _stack.Pop();
                 if (method.IsVirtual)
                 {
-                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null);
+                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null, method);
                 }
                 else
                 {
@@ -3200,7 +3245,7 @@ namespace Internal.IL
                 PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(ldtokenValue as TypeDesc, false), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"));
                 MethodDesc helper = _compilation.TypeSystemContext.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
                 AddMethodReference(helper);
-                HandleCall(helper, helper.Signature);
+                HandleCall(helper, helper.Signature, helper);
                 name = ldtokenValue.ToString();
             }
             else if (ldtokenValue is FieldDesc)
@@ -3319,13 +3364,13 @@ namespace Internal.IL
                 MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime", RuntimeExport);
                 MethodDesc helperMethod = helperType.GetKnownMethod("RhNewObject", null);
                 var resultAddress = LLVM.BuildIntCast(builder, LLVM.BuildAlloca(builder, LLVM.Int32Type(), "resultAddress"), LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), "castResultAddress");
-                HandleCall(helperMethod, helperMethod.Signature, arguments, ILOpcode.call, null, default(LLVMValueRef), 0, LLVM.GetParam(NullRefFunction, 0), builder, true, resultAddress);
+                HandleCall(helperMethod, helperMethod.Signature, arguments, ILOpcode.call, null, default(LLVMValueRef), 0, LLVM.GetParam(NullRefFunction, 0), builder, true, resultAddress, helperMethod);
 
                 var exceptionEntry = new ExpressionEntry(GetStackValueKind(nullRefType), "RhNewObject_return", resultAddress, nullRefType);
 
                 var ctorDef = nullRefType.GetDefaultConstructor();
 
-                var constructedExceptionObject = HandleCall(ctorDef, ctorDef.Signature, new StackEntry[] { exceptionEntry }, ILOpcode.call, null, default(LLVMValueRef), 0, LLVM.GetParam(NullRefFunction, 0), builder, false, default(LLVMValueRef));
+                var constructedExceptionObject = HandleCall(ctorDef, ctorDef.Signature, new StackEntry[] { exceptionEntry }, ILOpcode.call, null, default(LLVMValueRef), 0, LLVM.GetParam(NullRefFunction, 0), builder, false, default(LLVMValueRef), ctorDef);
 
                 EmitTrapCall(builder);
                 LLVM.PositionBuilderAtEnd(builder, retBlock);
@@ -3846,7 +3891,7 @@ namespace Internal.IL
             if ((helperMethod.IsInternalCall && helperMethod.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute")))
                 return ImportRawPInvoke(helperMethod, arguments, forcedReturnType: forcedReturnType);
             else
-                return HandleCall(helperMethod, helperMethod.Signature, arguments, forcedReturnType: forcedReturnType);
+                return HandleCall(helperMethod, helperMethod.Signature, arguments, helperMethod, forcedReturnType: forcedReturnType);
         }
 
         private void PushNonNull(StackEntry entry)
