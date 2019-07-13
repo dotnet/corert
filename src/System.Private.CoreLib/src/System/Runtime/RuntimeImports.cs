@@ -209,12 +209,13 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetMemoryInfo")]
-        internal static extern void RhGetMemoryInfo(out uint highMemLoadThreshold,
-                                                    out ulong totalPhysicalMem,
-                                                    out uint lastRecordedMemLoad,
+        internal static extern void RhGetMemoryInfo(out ulong highMemLoadThresholdBytes,
+                                                    out ulong totalAvailableMemoryBytes,
+                                                    out ulong lastRecordedMemLoadBytes,
+                                                    out uint lastRecordedMemLoadPct,
                                                     // The next two are size_t
-                                                    out UIntPtr lastRecordedHeapSize,
-                                                    out UIntPtr lastRecordedFragmentation);
+                                                    out UIntPtr lastRecordedHeapSizeBytes,
+                                                    out UIntPtr lastRecordedFragmentationBytes);
 
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
         internal static unsafe extern void RhAllocateUninitializedArray(IntPtr pArrayEEType, uint numElements, void* pResult);

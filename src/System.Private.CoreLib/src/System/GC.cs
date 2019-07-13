@@ -657,17 +657,18 @@ namespace System
 
         public static GCMemoryInfo GetGCMemoryInfo()
         {
-            RuntimeImports.RhGetMemoryInfo(out uint highMemLoadThreshold,
-                                           out ulong totalPhysicalMem,
-                                           out uint lastRecordedMemLoad,
-                                           out UIntPtr lastRecordedHeapSize,
-                                           out UIntPtr lastRecordedFragmentation);
+            RuntimeImports.RhGetMemoryInfo(out ulong highMemLoadThresholdBytes,
+                                           out ulong totalAvailableMemoryBytes,
+                                           out ulong lastRecordedMemLoadBytes,
+                                           out uint _,
+                                           out UIntPtr lastRecordedHeapSizeBytes,
+                                           out UIntPtr lastRecordedFragmentationBytes);
 
-            return new GCMemoryInfo((long)((double)highMemLoadThreshold / 100 * totalPhysicalMem),
-                                    (long)((double)lastRecordedMemLoad / 100 * totalPhysicalMem),
-                                    (long)totalPhysicalMem,
-                                    (long)(ulong)lastRecordedHeapSize,
-                                    (long)(ulong)lastRecordedFragmentation);
+            return new GCMemoryInfo(highMemoryLoadThresholdBytes: (long)highMemLoadThresholdBytes,
+                                    memoryLoadBytes: (long)lastRecordedMemLoadBytes,
+                                    totalAvailableMemoryBytes: (long)totalAvailableMemoryBytes,
+                                    heapSizeBytes: (long)(ulong)lastRecordedHeapSizeBytes,
+                                    fragmentedBytes: (long)(ulong)lastRecordedFragmentationBytes);
         }
 
         internal static ulong GetSegmentSize()
