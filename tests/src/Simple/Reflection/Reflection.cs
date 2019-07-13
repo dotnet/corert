@@ -1009,6 +1009,15 @@ internal class ReflectionTest
 
         enum Mine { One }
 
+        class PartialCanonTestType<T, U>
+        {
+            public int TestMethod() => 42;
+        }
+
+        static int TestPartialCanon<T>()
+        {
+            return (int)typeof(PartialCanonTestType<object, T>).GetMethod("TestMethod").Invoke(new PartialCanonTestType<object, T>(), Array.Empty<object>());
+        }
 
         public static void Run()
         {
@@ -1061,6 +1070,12 @@ internal class ReflectionTest
                     throw new Exception(nameof(MyGenericUnusedClass<object>.TheMethod));
 
                 mi.Invoke(null, Array.Empty<object>());
+            }
+
+            Console.WriteLine("Partial canonical types");
+            {
+                if (TestPartialCanon<string>() != 42)
+                    throw new Exception("PartialCanon");
             }
 
 #if !MULTIMODULE_BUILD
