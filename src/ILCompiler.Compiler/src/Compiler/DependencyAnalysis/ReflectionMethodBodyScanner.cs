@@ -37,6 +37,7 @@ namespace ILCompiler.DependencyAnalysis
             // * Enum.GetValues(typeof(Foo)) - this is very common and we need to make sure Foo[] is compiled.
             // * Type.GetType("Foo, Bar").GetMethod("Blah") - framework uses this to work around layering problems.
             // * typeof(Foo<>).MakeGenericType(arg).GetMethod("Blah") - used in e.g. LINQ expressions implementation
+            // * Marshal.SizeOf(typeof(Foo)) - very common and we need to make sure interop data is generated
 
             while (reader.HasNext)
             {
@@ -77,6 +78,9 @@ namespace ILCompiler.DependencyAnalysis
                         TypeDesc type = tracker.GetLastType();
                         if (type != null && type.IsEnum && !type.IsGenericDefinition /* generic enums! */)
                         {
+                            // Type could be something weird like MyEnum<object, __Canon> - normalize it
+                            type = type.NormalizeInstantiation();
+
                             list = list ?? new DependencyList();
                             list.Add(factory.ConstructedTypeSymbol(type.MakeArrayType()), "Enum.GetValues");
                         }
@@ -123,6 +127,11 @@ namespace ILCompiler.DependencyAnalysis
                                 type = ((MetadataType)type).MakeInstantiatedType(inst);
                                 list = list ?? new DependencyList();
                                 list.Add(factory.MaximallyConstructableType(type), "Type.GetMethod");
+                            }
+                            else
+                            {
+                                // Type could be something weird like SomeType<object, __Canon> - normalize it
+                                type = type.NormalizeInstantiation();
                             }
 
                             MethodDesc reflectedMethod = type.GetMethod(name, null);
