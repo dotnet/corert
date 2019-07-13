@@ -23,7 +23,8 @@ internal static class Program
         Success = true;
         PrintLine("Starting");
 
-        TestSimpleGVMScenarios.Run();
+        TestSimplestSharedGeneric();
+//        TestSimpleGVMScenarios.Run();
         
         Add(1, 2);
         PrintLine("Hello from C#!");
@@ -337,6 +338,27 @@ internal static class Program
         Success = false;
         PrintLine("Failed.");
         if (failMessage != null) PrintLine(failMessage + "-");
+    }
+
+    private static void TestSimplestSharedGeneric()
+    {
+        StartTest("Simple shared generic");
+
+        var gs = new Generic<string>();
+        gs.Frob("a string");
+
+        var go = new Generic<object>();
+        go.Frob(new object());
+
+        PassTest();
+    }
+
+    class Generic<T>
+    {
+        public void Frob(T x)
+        {
+            x.ToString();
+        }
     }
 
     private static int StaticDelegateTarget()

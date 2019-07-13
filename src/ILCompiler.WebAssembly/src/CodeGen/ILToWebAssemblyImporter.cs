@@ -1510,7 +1510,7 @@ namespace Internal.IL
 
                 }
                 LLVMValueRef helper;
-                var node = GetGenericLookupHelperAndAddReference(type, out helper, ReadyToRunHelperId.TypeHandle);
+                var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, type, out helper);
                 _dependencies.Add(node);
 
                 //TODO refactor call to helper
@@ -1570,6 +1570,12 @@ namespace Internal.IL
         {
             MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             MethodDesc callee = (MethodDesc)_canonMethodIL.GetObject(token);
+
+            if (callee.ToString().Contains("Frob") && callee.ToString().Contains("Generic"))
+            {
+
+            }
+
             if (callee.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(callee))
@@ -1648,7 +1654,7 @@ namespace Internal.IL
                         
                             typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
                             LLVMValueRef helper;
-                            var node = GetGenericLookupHelperAndAddReference(typeToAlloc, out helper, ReadyToRunHelperId.TypeHandle);
+                            var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeToAlloc, out helper);
                             var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
                             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
                             var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
@@ -1681,11 +1687,12 @@ namespace Internal.IL
 
             TypeDesc localConstrainedType = _constrainedType;
             _constrainedType = null;
-            HandleCall(callee, callee.Signature, runtimeDeterminedMethod, opcode, localConstrainedType);
+            HandleCall(canonMethod, canonMethod.Signature, runtimeDeterminedMethod, opcode, localConstrainedType);
         }
 
         private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt, TypeDesc constrainedType, MethodDesc runtimeDeterminedMethod)
         {
+            // todo: try to remove this as its already done higher up
             var canonMethod = callee.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             string canonCalleeName = _compilation.NameMangler.GetMangledMethodName(canonMethod).ToString();
@@ -1815,7 +1822,7 @@ namespace Internal.IL
             if (exactContextNeedsRuntimeLookup)
             {
                 LLVMValueRef helper;
-                var node = GetGenericLookupHelperAndAddReference(runtimeDeterminedMethod, out helper, ReadyToRunHelperId.MethodHandle); 
+                var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodHandle, runtimeDeterminedMethod, out helper); 
                 _dependencies.Add(node);
                 slotRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
             }
@@ -2556,7 +2563,7 @@ namespace Internal.IL
                     if (exactContextNeedsRuntimeLookup)
                     {
                         LLVMValueRef helper;
-                        var node = GetGenericLookupHelperAndAddReference(method, out helper, ReadyToRunHelperId.MethodEntry);
+                        var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodEntry, method, out helper);
                         targetLLVMFunction = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
                     }
                     else
@@ -3191,7 +3198,7 @@ namespace Internal.IL
             if (type.IsRuntimeDeterminedSubtype)
             {
                 LLVMValueRef helper;
-                var node = GetGenericLookupHelperAndAddReference(type, out helper, ReadyToRunHelperId.TypeHandle); // TODO GetThreadNonGcStaticBase?
+                var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, type, out helper); // TODO GetThreadNonGcStaticBase?
                 eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
             }
             else eeType = GetEETypePointerForTypeDesc(type, true);
@@ -3454,7 +3461,7 @@ namespace Internal.IL
                         if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
                         {
                             LLVMValueRef helper;
-                            node = GetGenericLookupHelperAndAddReference(runtimeDeterminedOwningType, out helper, ReadyToRunHelperId.GetThreadStaticBase); // TODO GetThreadNonGcStaticBase?
+                            node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetThreadStaticBase, runtimeDeterminedOwningType, out helper); // TODO GetThreadNonGcStaticBase?
                             staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
                         }
                         else
@@ -3480,7 +3487,7 @@ namespace Internal.IL
                                 needsCctorCheck = false; // no cctor for canonical types
                                 DefType helperArg = owningType.ConvertToSharedRuntimeDeterminedForm();
                                 LLVMValueRef helper;
-                                node = GetGenericLookupHelperAndAddReference(helperArg, out helper, ReadyToRunHelperId.GetGCStaticBase);
+                                node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetGCStaticBase, helperArg, out helper);
                                 staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
                             }
                             else
@@ -3497,7 +3504,7 @@ namespace Internal.IL
                                 needsCctorCheck = false; // no cctor for canonical types
                                 DefType helperArg = owningType.ConvertToSharedRuntimeDeterminedForm();
                                 LLVMValueRef helper;
-                                node = GetGenericLookupHelperAndAddReference(helperArg, out helper, ReadyToRunHelperId.GetNonGCStaticBase);
+                                node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetNonGCStaticBase, helperArg, out helper);
                                 staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
                             }
                             else
@@ -3528,19 +3535,19 @@ namespace Internal.IL
             }
         }
 
-        ISymbolNode GetGenericLookupHelperAndAddReference(object helperArg, out LLVMValueRef helper, ReadyToRunHelperId readyToRunHelperId)
+        ISymbolNode GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArg, out LLVMValueRef helper)
         {
             ISymbolNode node;
             if (_method.RequiresInstMethodDescArg())
             {
-                node = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(readyToRunHelperId, helperArg, _method);
+                node = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArg, _method);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
                     LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), new LLVMTypeRef[0], false));
             }
             else
             {
                 Debug.Assert(_method.RequiresInstMethodTableArg() || _method.AcquiresInstMethodTableFromThis());
-                node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(readyToRunHelperId, helperArg, _method.OwningType) as ReadyToRunGenericHelperNode;
+                node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArg, _method.OwningType) as ReadyToRunGenericHelperNode;
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
                     LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), new LLVMTypeRef[0], false));
             }
@@ -3678,7 +3685,7 @@ namespace Internal.IL
                 var runtimeDeterminedType = type;
                 type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
                 LLVMValueRef helper;
-                var typeRef = GetGenericLookupHelperAndAddReference(runtimeDeterminedType, out helper, ReadyToRunHelperId.TypeHandle);
+                var typeRef = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedType, out helper);
                 eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
             }
             else eeType = GetEETypePointerForTypeDesc(type, true);
@@ -3729,20 +3736,32 @@ namespace Internal.IL
             TypeDesc runtimeDeterminedArrayType = runtimeDeterminedType.MakeArrayType();
             var sizeOfArray = _stack.Pop();
             StackEntry[] arguments;
+            var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime", "EEType").MakePointerType();
             if (runtimeDeterminedType.IsRuntimeDeterminedSubtype)
             {
                 LLVMValueRef helper;
-                var typeRef = GetGenericLookupHelperAndAddReference(runtimeDeterminedArrayType, out helper, ReadyToRunHelperId.TypeHandle);
-                var lookedUpType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
-                arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", lookedUpType), sizeOfArray };
+                var typeRef = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedArrayType, out helper);
+                var genericContext = GetGenericContext();
+                var lookedUpType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { genericContext }, "getHelper");
+                arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", lookedUpType, eeTypeDesc), sizeOfArray };
             }
             else
             {
-                var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime", "EEType").MakePointerType();
                 arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(runtimeDeterminedArrayType, true), eeTypeDesc), sizeOfArray };
                 //TODO: call GetNewArrayHelperForType from JitHelper.cs (needs refactoring)
             }
             PushNonNull(CallRuntime(_compilation.TypeSystemContext, InternalCalls, "RhpNewArray", arguments, runtimeDeterminedArrayType));
+        }
+
+        LLVMValueRef GetGenericContext()
+        {
+            Debug.Assert(_method.IsSharedByGenericInstantiations);
+
+            if (_method.AcquiresInstMethodTableFromThis())
+            {
+                return _argSlots[0];
+            }
+            return _argSlots[_signature.IsStatic ? 0 : 1];
         }
 
         private LLVMValueRef ArrayBaseSize()

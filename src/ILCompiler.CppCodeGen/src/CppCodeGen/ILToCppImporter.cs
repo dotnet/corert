@@ -1270,7 +1270,7 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (method.ToString().Contains("TestSimpleGVMScenarios") && method.ToString().Contains("IFace"))
+            if (method.ToString().Contains("Frob") && method.ToString().Contains("Generic"))
             {
 
             }
