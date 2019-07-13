@@ -1091,6 +1091,7 @@ namespace Internal.Runtime.Augments
                 int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
                 // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
                 void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
+                Buffer.ZeroMemory((byte*)region, cbBufferAligned);
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T>(pfnTargetToInvoke, region, ref context);
@@ -1128,6 +1129,7 @@ namespace Internal.Runtime.Augments
                 int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
                 // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
                 void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
+                Buffer.ZeroMemory((byte*)region, cbBufferAligned);
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T, U>(pfnTargetToInvoke, region, ref context, ref context2);
