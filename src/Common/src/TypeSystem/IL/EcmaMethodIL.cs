@@ -12,30 +12,35 @@ using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
 {
-    public partial class EcmaMethodIL : MethodIL
+    public sealed partial class EcmaMethodIL : MethodIL
     {
-        private EcmaModule _module;
-        private EcmaMethod _method;
-        private MethodBodyBlock _methodBody;
+        private readonly EcmaModule _module;
+        private readonly EcmaMethod _method;
+        private readonly MethodBodyBlock _methodBody;
 
         // Cached values
         private byte[] _ilBytes;
         private LocalVariableDefinition[] _locals;
         private ILExceptionRegion[] _ilExceptionRegions;
 
-        public static EcmaMethodIL Create(EcmaMethod method)
+        // TODO: Remove: Workaround for missing ClearInitLocals transforms in CoreRT CoreLib
+        private readonly bool _clearInitLocals;
+
+        public static EcmaMethodIL Create(EcmaMethod method, bool clearInitLocals = false)
         {
             var rva = method.MetadataReader.GetMethodDefinition(method.Handle).RelativeVirtualAddress;
             if (rva == 0)
                 return null;
-            return new EcmaMethodIL(method, rva);
+            return new EcmaMethodIL(method, rva, clearInitLocals);
         }
 
-        private EcmaMethodIL(EcmaMethod method, int rva)
+        private EcmaMethodIL(EcmaMethod method, int rva, bool clearInitLocals)
         {
             _method = method;
             _module = method.Module;
             _methodBody = _module.PEReader.GetMethodBody(rva);
+
+            _clearInitLocals = clearInitLocals;
         }
 
         public override MethodDesc OwningMethod
@@ -59,7 +64,7 @@ namespace Internal.IL
         {
             get
             {
-                return _methodBody.LocalVariablesInitialized;
+                return !_clearInitLocals && _methodBody.LocalVariablesInitialized;
             }
         }
 

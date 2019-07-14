@@ -252,40 +252,43 @@ namespace Internal.IL
 
         public override MethodIL GetMethodIL(MethodDesc method)
         {
-            if (method is EcmaMethod)
+            if (method is EcmaMethod ecmaMethod)
             {
                 // TODO: Workaround: we should special case methods with Intrinsic attribute, but since
                 //       CoreLib source is still not in the repo, we have to work with what we have, which is
                 //       an MCG attribute on the type itself...
-                if (((MetadataType)method.OwningType).HasCustomAttribute("System.Runtime.InteropServices", "McgIntrinsicsAttribute"))
+                if (((MetadataType)ecmaMethod.OwningType).HasCustomAttribute("System.Runtime.InteropServices", "McgIntrinsicsAttribute"))
                 {
-                    var name = method.Name;
+                    var name = ecmaMethod.Name;
                     if (name == "Call" || name.StartsWith("StdCall"))
                     {
-                        return CalliIntrinsic.EmitIL(method);
+                        return CalliIntrinsic.EmitIL(ecmaMethod);
                     }
                     else
                     if (name == "AddrOf")
                     {
-                        return AddrOfIntrinsic.EmitIL(method);
+                        return AddrOfIntrinsic.EmitIL(ecmaMethod);
                     }
                 }
 
-                if (method.IsIntrinsic)
+                if (ecmaMethod.IsIntrinsic)
                 {
-                    MethodIL result = TryGetIntrinsicMethodIL(method);
+                    MethodIL result = TryGetIntrinsicMethodIL(ecmaMethod);
                     if (result != null)
                         return result;
                 }
 
-                if (method.IsRuntimeImplemented)
+                if (ecmaMethod.IsRuntimeImplemented)
                 {
-                    MethodIL result = TryGetRuntimeImplementedMethodIL(method);
+                    MethodIL result = TryGetRuntimeImplementedMethodIL(ecmaMethod);
                     if (result != null)
                         return result;
                 }
 
-                MethodIL methodIL = EcmaMethodIL.Create((EcmaMethod)method);
+                // TODO: Remove: Workaround for missing ClearInitLocals transforms in CoreRT CoreLib
+                bool clearInitLocals = ecmaMethod.Module == ecmaMethod.Context.SystemModule;
+
+                MethodIL methodIL = EcmaMethodIL.Create(ecmaMethod, clearInitLocals);
                 if (methodIL != null)
                     return methodIL;
 
