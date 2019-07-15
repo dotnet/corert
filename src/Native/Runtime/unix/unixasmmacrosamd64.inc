@@ -254,18 +254,18 @@ C_FUNC(\Name):
 #define GC_ALLOC_FINALIZE           1
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags
-#define PTFF_SAVE_RBX            00000001h
-#define PTFF_SAVE_R12            00000010h
-#define PTFF_SAVE_R13            00000020h
-#define PTFF_SAVE_R14            00000040h
-#define PTFF_SAVE_R15            00000080h
-#define PTFF_SAVE_ALL_PRESERVED  000000F1h   // NOTE: RBP is not included in this set!
-#define PTFF_SAVE_RSP            00008000h
-#define PTFF_SAVE_RAX            00000100h   // RAX is saved if it contains a GC ref and we're in hijack handler
-#define PTFF_SAVE_ALL_SCRATCH    00007F00h
-#define PTFF_RAX_IS_GCREF        00010000h   // iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
-#define PTFF_RAX_IS_BYREF        00020000h   // iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
-#define PTFF_THREAD_ABORT        00040000h   // indicates that ThreadAbortException should be thrown when returning from the transition
+#define PTFF_SAVE_RBX            0x00000001
+#define PTFF_SAVE_R12            0x00000010
+#define PTFF_SAVE_R13            0x00000020
+#define PTFF_SAVE_R14            0x00000040
+#define PTFF_SAVE_R15            0x00000080
+#define PTFF_SAVE_ALL_PRESERVED  0x000000F1   // NOTE: RBP is not included in this set!
+#define PTFF_SAVE_RSP            0x00008000
+#define PTFF_SAVE_RAX            0x00000100   // RAX is saved if it contains a GC ref and we're in hijack handler
+#define PTFF_SAVE_ALL_SCRATCH    0x00007F00
+#define PTFF_RAX_IS_GCREF        0x00010000   // iff PTFF_SAVE_RAX: set -> eax is Object, clear -> eax is scalar
+#define PTFF_RAX_IS_BYREF        0x00020000   // iff PTFF_SAVE_RAX: set -> eax is ByRef, clear -> eax is Object or scalar
+#define PTFF_THREAD_ABORT        0x00040000   // indicates that ThreadAbortException should be thrown when returning from the transition
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
@@ -312,7 +312,7 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
     push_nonvol_reg rbp                         // push RBP frame
     mov             rbp, rsp
-    lea             \trashReg, [rsp + 10h]
+    lea             \trashReg, [rsp + 0x10]
     push_register   \trashReg                   // save caller's RSP
     push_nonvol_reg r15                         // save preserved registers
     push_nonvol_reg r14                         //   ..

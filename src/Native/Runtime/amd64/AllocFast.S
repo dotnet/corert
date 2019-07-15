@@ -203,7 +203,7 @@ NESTED_END RhNewString, _TEXT
 //  ESI == element count
 NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         // we want to limit the element count to the non-negative 32-bit int range
-        cmp         rsi, 07fffffffh
+        cmp         rsi, 0x07fffffff
         ja          LOCAL_LABEL(ArraySizeOverflow)
 
         push_nonvol_reg rbx
