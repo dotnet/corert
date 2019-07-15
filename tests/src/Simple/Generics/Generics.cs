@@ -32,6 +32,7 @@ class Program
         TestReflectionInvoke.Run();
         TestFieldAccess.Run();
         TestDevirtualization.Run();
+        TestGenericInlining.Run();
 #if !CODEGEN_CPP
         TestNullableCasting.Run();
         TestMDArrayAddressMethod.Run();
@@ -2365,6 +2366,43 @@ class Program
             DoGenericDevirtBoxed();
             DoGenericDevirtShared<string>();
             DoGenericDevirtBoxedShared<string>();
+        }
+    }
+
+    class TestGenericInlining
+    {
+        class NeverSeenInstantiated<T> { }
+
+        class AnotherNeverSeenInstantiated<T> { }
+
+        class NeverAllocatedIndirection<T, U>
+        {
+            public string GetString() => new AnotherNeverSeenInstantiated<T>().ToString();
+        }
+
+        class NeverAllocated<T>
+        {
+            static NeverAllocatedIndirection<T, object> s_indirection = null;
+
+            public string GetString() => new NeverSeenInstantiated<T>().ToString();
+            public string GetStringIndirect() => s_indirection.GetString();
+        }
+
+        class Dummy { }
+
+        static NeverAllocated<Dummy> s_neverAllocated = null;
+
+        public static void Run()
+        {
+            // We're just making sure the compiler doesn't crash.
+            // Both of the calls below are expected to get inlined by an optimized codegen,
+            // triggering interesting behaviors in the dependency analysis of the scanner
+            // that runs before compilation.
+            if (s_neverAllocated != null)
+            {
+                Console.WriteLine(s_neverAllocated.GetString());
+                Console.WriteLine(s_neverAllocated.GetStringIndirect());
+            }
         }
     }
 }
