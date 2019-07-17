@@ -10,7 +10,7 @@ namespace ILCompiler
 {
     public class CodeGenerationFailedException : InternalCompilerErrorException
     {
-        private const string MessageText = "Code generation failed";
+        private const string MessageText = "Code generation failed for method '{0}'";
 
         public MethodDesc Method { get; }
 
@@ -20,7 +20,7 @@ namespace ILCompiler
         }
 
         public CodeGenerationFailedException(MethodDesc method, Exception inner)
-            : base(MessageText, inner)
+            : base(String.Format(MessageText, method), inner)
         {
             Method = method;
         }
