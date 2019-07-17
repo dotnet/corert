@@ -71,6 +71,7 @@ See the LICENSE file in the project root for more information.
       <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
       <LinkerArg Include="/INCREMENTAL:NO" />
       <LinkerArg Condition="'$(OutputType)' == 'WinExe'" Include="/SUBSYSTEM:WINDOWS /ENTRY:wmainCRTStartup" />
+      <LinkerArg Include="/NATVIS:&quot;$(MSBuildThisFileDirectory)CoreRTNatVis.natvis&quot;" />
     </ItemGroup>
 
     <ItemGroup>
