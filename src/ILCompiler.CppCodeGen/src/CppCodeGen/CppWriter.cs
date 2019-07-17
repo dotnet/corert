@@ -461,7 +461,7 @@ namespace ILCompiler.CppCodeGen
                 return sb.ToString().Replace("::", "_");
             }
 
-            return node.GetMangledName(factory.NameMangler).Replace("::", "_");;
+            return node.GetMangledName(factory.NameMangler).Replace("::", "_");
         }
 
         private string GetCppFatFunctionPointerNameForMethod(MethodDesc method,

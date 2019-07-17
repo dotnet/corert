@@ -153,7 +153,19 @@ namespace Internal.IL
             {
                 _exceptionRegions[curRegion++] = new ExceptionRegion() { ILRegion = region };
             }
-            _llvmFunction = GetOrCreateLLVMFunction(mangledName, method.Signature);
+
+            // TODO : maybe just do this once here, and store result in field
+            var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
+            var hasHiddenParam = false;
+            if (method != null)
+            {
+                if (isUnboxingStub)
+                    hasHiddenParam = method.IsSharedByGenericInstantiations &&
+                                     (method.HasInstantiation || method.Signature.IsStatic);
+                else
+                    hasHiddenParam = method.RequiresInstArg();
+            }
+            _llvmFunction = GetOrCreateLLVMFunction(mangledName, method.Signature, hasHiddenParam);
             _currentFunclet = _llvmFunction;
             _builder = LLVM.CreateBuilder();
             _pointerSize = compilation.NodeFactory.Target.PointerSize;
@@ -215,6 +227,11 @@ namespace Internal.IL
 
         private void GenerateProlog()
         {
+            Console.WriteLine(_method.ToString());
+            if (_method.ToString().Contains("Array.Resize<__Canon>(__Canon[]&,int32)"))
+            {
+
+            }
             LLVMBasicBlockRef prologBlock = LLVM.AppendBasicBlock(_llvmFunction, "Prolog");
             LLVM.PositionBuilderAtEnd(_builder, prologBlock);
 
@@ -229,6 +246,10 @@ namespace Internal.IL
             // Keep track of where we are in the llvm signature, starting after the
             // shadow stack pointer and return address
             int signatureIndex = 1;
+            if (_method.RequiresInstArg()) // hidden param after shadow stack pointer
+            {
+                signatureIndex++;
+            }
             if (NeedsReturnStackSlot(_signature))
             {
                 signatureIndex++;
@@ -267,7 +288,10 @@ namespace Internal.IL
                     {
                         storageAddr = CastIfNecessary(LoadVarAddress(argOffset, LocalVarKind.Argument, out _), LLVM.PointerType(LLVM.TypeOf(argValue), 0));
                     }
-
+                    Debug.Assert(argValue.Pointer != IntPtr.Zero);
+                    Debug.Assert(storageAddr.Pointer != IntPtr.Zero);
+                    var s = argValue.ToString();
+                    s = storageAddr.ToString();
                     LLVM.BuildStore(_builder, argValue, storageAddr);
                     signatureIndex++;
                 }
@@ -371,18 +395,23 @@ namespace Internal.IL
             LLVM.BuildBr(_builder, block0);
         }
 
-        private LLVMValueRef CreateLLVMFunction(string mangledName, MethodSignature signature)
+        private LLVMValueRef CreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParameter)
         {
-            return LLVM.AddFunction(Module, mangledName, GetLLVMSignatureForMethod(signature));
+            if (mangledName.ToString().Contains("Array") && mangledName.Contains("Resize"))
+            {
+
+            }
+
+            return LLVM.AddFunction(Module, mangledName, GetLLVMSignatureForMethod(signature, hasHiddenParameter));
         }
 
-        private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, MethodSignature signature)
+        private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParam)
         {
             LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
 
             if(llvmFunction.Pointer == IntPtr.Zero)
             {
-                return CreateLLVMFunction(mangledName, signature);
+                return CreateLLVMFunction(mangledName, signature, hasHiddenParam);
             }
             return llvmFunction;
         }
@@ -1325,6 +1354,21 @@ namespace Internal.IL
                 }
             }
 
+            var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
+            var hasHiddenParam = false; // TODO can this ever be true
+            if (_method != null)
+            {
+                if (isUnboxingStub)
+                    hasHiddenParam = _method.IsSharedByGenericInstantiations &&
+                                     (_method.HasInstantiation || _method.Signature.IsStatic);
+                else
+                    hasHiddenParam = _method.RequiresInstArg();
+            }
+            if (hasHiddenParam)
+            {
+                offset += _pointerSize; // TODO should we try to get a TypeDesc for the hidden param?
+            }
+
             return offset.AlignUp(_pointerSize);
         }
 
@@ -1575,7 +1619,14 @@ namespace Internal.IL
             {
 
             }
+            if (callee.ToString().Contains("Array") && callee.ToString().Contains("IndexOf"))
+            {
 
+            }
+            if (callee.ToString().Contains("Unsafe") && callee.ToString().Contains("As"))
+            {
+
+            }
             if (callee.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(callee))
@@ -1611,7 +1662,7 @@ namespace Internal.IL
                     };
                     MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", "ArrayHelpers");
                     MethodDesc helperMethod = helperType.GetKnownMethod("NewObjArray", null);
-                    PushNonNull(HandleCall(helperMethod, helperMethod.Signature, arguments, forcedReturnType: newType, runtimeDeterminedMethod: runtimeDeterminedMethod));
+                    PushNonNull(HandleCall(helperMethod, helperMethod.Signature, helperMethod, helperMethod.Signature, arguments, forcedReturnType: newType, runtimeDeterminedMethod: runtimeDeterminedMethod));
                     return;
                 }
                 else if (newType.IsString)
@@ -1680,18 +1731,22 @@ namespace Internal.IL
                 callee = delegateInfo.Constructor.Method;
                 if (callee.Signature.Length == 3)
                 {
-                    PushExpression(StackValueKind.NativeInt, "thunk", GetOrCreateLLVMFunction(_compilation.NodeFactory.NameMangler.GetMangledMethodName(delegateInfo.Thunk.Method).ToString(), delegateInfo.Thunk.Method.Signature));
+                    PushExpression(StackValueKind.NativeInt, "thunk", GetOrCreateLLVMFunction(_compilation.NodeFactory.NameMangler.GetMangledMethodName(delegateInfo.Thunk.Method).ToString(), delegateInfo.Thunk.Method.Signature, false /* TODO: need a test for this to see if it can ever be true */));
                 }
             }
-            var canonMethod = callee.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             TypeDesc localConstrainedType = _constrainedType;
             _constrainedType = null;
-            HandleCall(canonMethod, canonMethod.Signature, runtimeDeterminedMethod, opcode, localConstrainedType);
+            HandleCall(callee, callee.Signature, runtimeDeterminedMethod, opcode, localConstrainedType);
         }
 
-        private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt, TypeDesc constrainedType, MethodDesc runtimeDeterminedMethod)
+        private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt, TypeDesc constrainedType, MethodDesc runtimeDeterminedMethod, out bool hasHiddenParam)
         {
+            hasHiddenParam = false;
+            if (callee.ToString().Contains("Unsafe") && callee.ToString().Contains("As"))
+            {
+
+            }
             // todo: try to remove this as its already done higher up
             var canonMethod = callee.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
@@ -1700,8 +1755,17 @@ namespace Internal.IL
             // Sealed methods must not be called virtually due to sealed vTables, so call them directly
             if(canonMethod.IsFinal || canonMethod.OwningType.IsSealed())
             {
+                var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
+                if (canonMethod != null)
+                {
+                    if (isUnboxingStub)
+                        hasHiddenParam = canonMethod.IsSharedByGenericInstantiations &&
+                                         (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic);
+                    else
+                        hasHiddenParam = canonMethod.RequiresInstArg();
+                }
                 AddMethodReference(canonMethod);
-                return GetOrCreateLLVMFunction(canonCalleeName, canonMethod.Signature);
+                return GetOrCreateLLVMFunction(canonCalleeName, canonMethod.Signature, hasHiddenParam); 
             }
 
             if (thisPointer != null && canonMethod.IsVirtual && isCallVirt)
@@ -1746,22 +1810,49 @@ namespace Internal.IL
                     }
                 }
 
+                var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
+                if (callee != null)
+                {
+                    if (isUnboxingStub)
+                        hasHiddenParam = callee.IsSharedByGenericInstantiations &&
+                                         (callee.HasInstantiation || callee.Signature.IsStatic);
+                    else
+                        hasHiddenParam = callee.RequiresInstArg();
+                }
                 if (targetMethod != null)
                 {
                     AddMethodReference(targetMethod);
-                    return GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(targetMethod).ToString(), canonMethod.Signature);
+                    return GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(targetMethod).ToString(), canonMethod.Signature, hasHiddenParam);
                 }
 
                 return isCallVirt && callee.HasInstantiation && callee.IsVirtual && !callee.IsFinal && !callee.OwningType.IsSealed() 
-                    ? GetCallableGenericVirtualMethod(thisPointer, canonMethod, callee, runtimeDeterminedMethod)
-                    : GetCallableVirtualMethod(thisPointer, canonMethod, callee);
+                    ? GetCallableGenericVirtualMethod(thisPointer, canonMethod, callee, runtimeDeterminedMethod, hasHiddenParam)
+                    : GetCallableVirtualMethod(thisPointer, canonMethod, callee, hasHiddenParam);
 
             }
             else
             {
+                // TODO refactor with same logic above
+                var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
+                if (canonMethod != null)
+                {
+                    if (isUnboxingStub)
+                        hasHiddenParam = canonMethod.IsSharedByGenericInstantiations &&
+                                         (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic);
+                    else
+                        hasHiddenParam = canonMethod.RequiresInstArg();
+                }
                 AddMethodReference(canonMethod);
-                return GetOrCreateLLVMFunction(canonCalleeName, canonMethod.Signature);
+                return GetOrCreateLLVMFunction(canonCalleeName, canonMethod.Signature, hasHiddenParam);
             }
+        }
+
+        private ISymbolNode GetMethodGenericDictionaryNode(MethodDesc method)
+        {
+            ISymbolNode node = _compilation.NodeFactory.MethodGenericDictionary(method);
+            _dependencies.Add(node);
+
+            return node;
         }
 
         private LLVMValueRef GetOrCreateMethodSlot(MethodDesc canonMethod, MethodDesc callee)
@@ -1772,12 +1863,19 @@ namespace Internal.IL
             return LLVM.BuildLoad(_builder, slot, $"{callee.Name}_slot");
         }
 
-        private LLVMValueRef GetCallableVirtualMethod(StackEntry objectPtr, MethodDesc method, MethodDesc callee)
+        private LLVMValueRef GetCallableVirtualMethod(StackEntry objectPtr, MethodDesc method, MethodDesc callee, bool hasHiddenParam)
         {
             Debug.Assert(method.IsVirtual);
+            Debug.Assert(!hasHiddenParam);  // TODO delete if never happens
+
             LLVMValueRef slot = GetOrCreateMethodSlot(method, callee);
             var pointerSize = method.Context.Target.PointerSize;
-            LLVMTypeRef llvmSignature = GetLLVMSignatureForMethod(method.Signature);
+            if (method.ToString().Contains("Array.Resize<__Canon>(__Canon[]&,int32)"))
+            {
+
+            }
+
+            LLVMTypeRef llvmSignature = GetLLVMSignatureForMethod(method.Signature, hasHiddenParam);
             LLVMValueRef functionPtr;
             var thisPointer = objectPtr.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
             ThrowIfNull(thisPointer);
@@ -1800,8 +1898,10 @@ namespace Internal.IL
             return functionPtr;
         }
 
-        private LLVMValueRef GetCallableGenericVirtualMethod(StackEntry objectPtr, MethodDesc method, MethodDesc callee, MethodDesc runtimeDeterminedMethod)
+        private LLVMValueRef GetCallableGenericVirtualMethod(StackEntry objectPtr, MethodDesc method, MethodDesc callee, MethodDesc runtimeDeterminedMethod, bool hasHiddenParam)
         {
+            Debug.Assert(!hasHiddenParam);  // TODO delete if never happens
+
             if (callee.ToString().Contains("TestSimpleGVMScenarios") && callee.ToString().Contains("IFace"))
             {
 
@@ -1828,7 +1928,7 @@ namespace Internal.IL
             }
             else
             {
-                slotRef = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(runtimeDeterminedMethod).ToString(), runtimeDeterminedMethod.Signature);
+                slotRef = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(runtimeDeterminedMethod).ToString(), runtimeDeterminedMethod.Signature, hasHiddenParam);
             }
             var runtimeMethodHandle = new LoadExpressionEntry(StackValueKind.Int32, "runtimeMethodHandle", slotRef);
 
@@ -1862,7 +1962,7 @@ namespace Internal.IL
             return functionPtrRef;
         }
 
-        private LLVMTypeRef GetLLVMSignatureForMethod(MethodSignature signature)
+        private LLVMTypeRef GetLLVMSignatureForMethod(MethodSignature signature, bool hasHiddenParam)
         {
             TypeDesc returnType = signature.ReturnType;
             LLVMTypeRef llvmReturnType;
@@ -1879,6 +1979,11 @@ namespace Internal.IL
 
             List<LLVMTypeRef> signatureTypes = new List<LLVMTypeRef>();
             signatureTypes.Add(LLVM.PointerType(LLVM.Int8Type(), 0)); // Shadow stack pointer
+
+            if (hasHiddenParam)
+            {
+                signatureTypes.Add(LLVM.PointerType(LLVM.Int8Type(), 0)); // Shadow stack pointer
+            }
 
             if (!returnOnStack && returnType != GetWellKnownType(WellKnownType.Void))
             {
@@ -2062,6 +2167,9 @@ namespace Internal.IL
 
         private void HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef))
         {
+            var canonMethod = callee?.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            var canonMethodSignature = canonMethod?.Signature;
+
             var parameterCount = signature.Length + (signature.IsStatic ? 0 : 1);
             // The last argument is the top of the stack. We need to reverse them and store starting at the first argument
             StackEntry[] argumentValues = new StackEntry[parameterCount];
@@ -2092,20 +2200,22 @@ namespace Internal.IL
                     argumentValues[0] = new LoadExpressionEntry(StackValueKind.ObjRef, "thisPtr", thisByRef.ValueAsType(objectType, _builder), objectType);
                 }
             }
-
-            PushNonNull(HandleCall(callee, signature, argumentValues, runtimeDeterminedMethod, opcode, constrainedType, calliTarget));
+            //TODO: refactor generic logic out here
+            PushNonNull(HandleCall(callee, signature, canonMethod, canonMethodSignature, argumentValues, runtimeDeterminedMethod, opcode, constrainedType, calliTarget));
         }
 
-        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
+        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc canonMethod, MethodSignature canonSignature, StackEntry[] argumentValues, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
         {
+            //TODO: refactor so this is a simple call llvm method from the MethodDesc/Sig
             LLVMValueRef fn;
+            bool hasHiddenParam = false;
             if (opcode == ILOpcode.calli)
             {
                 fn = calliTarget;
             }
             else
             {
-                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod);
+                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam);
             }
 
             LLVMValueRef returnAddress;
@@ -2127,10 +2237,103 @@ namespace Internal.IL
             LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_currentFunclet),
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
                 String.Empty);
-            var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), "castshadowstack");
-
             List<LLVMValueRef> llvmArgs = new List<LLVMValueRef>();
+            var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), "castshadowstack");
             llvmArgs.Add(castShadowStack);
+
+            bool exactContextNeedsRuntimeLookup = false;
+            if (opcode != ILOpcode.calli)
+            {
+                if (callee.HasInstantiation)
+                {
+                    exactContextNeedsRuntimeLookup = callee.IsSharedByGenericInstantiations;
+                }
+                else
+                {
+                    exactContextNeedsRuntimeLookup = callee.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any);
+                }
+            }
+
+            LLVMValueRef hiddenParam = default;
+
+            if (hasHiddenParam)
+            {
+
+                if (exactContextNeedsRuntimeLookup)
+                {
+//                    if (!resolvedConstraint)
+//                    {
+                        if (callee.RequiresInstMethodDescArg()) 
+                        {
+                            LLVMValueRef helper;
+                            var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod, out helper);
+                            var genericContext = GetGenericContext();
+                            hiddenParam = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { genericContext }, "getHelper");
+                        //                            Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod));
+                    }
+                    else
+                        {
+//                            Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType));
+                        }
+
+//                        Append("(");
+//                        Append(GetGenericContext());
+//                        Append(")");
+//                    }
+//                    else
+//                    {
+//                        Debug.Assert(canonMethod.RequiresInstMethodTableArg());
+//
+//                        if (canonMethod.RequiresInstMethodTableArg())
+//                        {
+//                            if (_constrained.IsRuntimeDeterminedSubtype)
+//                            {
+//                                Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, _constrained));
+//
+//                                Append("(");
+//                                Append(GetGenericContext());
+//                                Append(")");
+//                            }
+//                            else
+//                            {
+//                                Append(_writer.GetCppTypeName(_constrained));
+//                                Append("::__getMethodTable()");
+//
+//                                AddTypeReference(_constrained, true);
+//                            }
+//                        }
+//                    }
+                }
+                else
+                {
+                    if (canonMethod.RequiresInstMethodDescArg())
+                    {
+                        hiddenParam = LoadAddressOfSymbolNode(GetMethodGenericDictionaryNode(callee));
+                    }
+                    else
+                    {
+//                        Append(_writer.GetCppTypeName(method.OwningType));
+//                        Append("::__getMethodTable()");
+//
+//                        AddTypeReference(method.OwningType, true);
+                    }
+                }
+                //                var method = (MethodDesc)_canonMethodIL.GetObject(token);
+                //
+                //                typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
+                //                LLVMValueRef helper;
+                //                var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeToAlloc, out helper);
+                //                var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                //                var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                //                var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
+                //                newObjResult = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments);
+            }
+            if (hiddenParam.Pointer != IntPtr.Zero)
+            {
+                llvmArgs.Add(hiddenParam);
+            }
+
+
             if (needsReturnSlot)
             {
                 llvmArgs.Add(castReturnAddress);
@@ -2204,6 +2407,7 @@ namespace Internal.IL
             ILOpcode opcode, TypeDesc constrainedType, LLVMValueRef calliTarget, int offset, LLVMValueRef baseShadowStack, LLVMBuilderRef builder, bool needsReturnSlot,
             LLVMValueRef castReturnAddress, MethodDesc runtimeDeterminedMethod)
         {
+            bool hasHiddenParam = false;
             LLVMValueRef fn;
             if (opcode == ILOpcode.calli)
             {
@@ -2211,7 +2415,7 @@ namespace Internal.IL
             }
             else
             {
-                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod);
+                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam);
             }
 
             LLVMValueRef shadowStack = LLVM.BuildGEP(builder, baseShadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) }, String.Empty);
@@ -2533,19 +2737,25 @@ namespace Internal.IL
         private void ImportCalli(int token)
         {
             MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
-            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature), 0), _builder));
+            if (_method.ToString().Contains("Array.Resize<__Canon>(__Canon[]&,int32)"))
+            {
+
+            }
+
+            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature, false /* TODO: should this be true sometimes */), 0), _builder));
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
             LLVMValueRef targetLLVMFunction = default(LLVMValueRef);
+            bool hasHiddenParam = false;
             if (opCode == ILOpcode.ldvirtftn)
             {
                 StackEntry thisPointer = _stack.Pop();
                 if (method.IsVirtual)
                 {
-                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null, method);
+                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null, method, out hasHiddenParam);
                 }
                 else
                 {
@@ -2599,7 +2809,14 @@ namespace Internal.IL
                 }
                 else
                 {
-                    targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString(), method.Signature);
+                    var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
+                    Debug.Assert(!hasHiddenParam); // remove this when we understand why there are 2 checks
+                    if (isUnboxingStub)
+                        hasHiddenParam = method.IsSharedByGenericInstantiations &&
+                                         (method.HasInstantiation || method.Signature.IsStatic);
+                    else
+                        hasHiddenParam = method.RequiresInstArg();
+                    targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString(), method.Signature, hasHiddenParam);
                 }
             }
 
@@ -3740,6 +3957,7 @@ namespace Internal.IL
             if (runtimeDeterminedType.IsRuntimeDeterminedSubtype)
             {
                 LLVMValueRef helper;
+                //TODO refactor this across the class
                 var typeRef = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedArrayType, out helper);
                 var genericContext = GetGenericContext();
                 var lookedUpType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { genericContext }, "getHelper");
@@ -3759,9 +3977,9 @@ namespace Internal.IL
 
             if (_method.AcquiresInstMethodTableFromThis())
             {
-                return _argSlots[0];
+                return LLVM.GetParam(_llvmFunction, 0);
             }
-            return _argSlots[_signature.IsStatic ? 0 : 1];
+            return LLVM.GetParam(_llvmFunction, (uint)(_signature.IsStatic ? 0 : 1));
         }
 
         private LLVMValueRef ArrayBaseSize()
@@ -3910,7 +4128,7 @@ namespace Internal.IL
             if ((helperMethod.IsInternalCall && helperMethod.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute")))
                 return ImportRawPInvoke(helperMethod, arguments, forcedReturnType: forcedReturnType);
             else
-                return HandleCall(helperMethod, helperMethod.Signature, arguments, helperMethod, forcedReturnType: forcedReturnType);
+                return HandleCall(helperMethod, helperMethod.Signature, helperMethod, helperMethod.Signature, arguments, helperMethod, forcedReturnType: forcedReturnType);
         }
 
         private void PushNonNull(StackEntry entry)

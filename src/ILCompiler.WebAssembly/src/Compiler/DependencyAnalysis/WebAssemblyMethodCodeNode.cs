@@ -25,6 +25,10 @@ namespace ILCompiler.DependencyAnalysis
             {
 
             }
+            if (method.ToString().Contains("Array") && method.ToString().Contains("IndexOf"))
+            {
+
+            }
             _method = method;
         }
 

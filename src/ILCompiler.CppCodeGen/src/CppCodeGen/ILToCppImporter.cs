@@ -1274,6 +1274,14 @@ namespace Internal.IL
             {
 
             }
+            if (method.ToString().Contains("Unsafe") && method.ToString().Contains("As"))
+            {
+
+            }
+            if (method.ToString().Contains("Array") && method.ToString().Contains("IndexOf"))
+            {
+
+            }
             if (method.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(method, runtimeDeterminedMethod))
@@ -3186,7 +3194,8 @@ namespace Internal.IL
 
         private void ImportNewArray(int token)
         {
-            if (_methodIL.ToString().Contains("System.Array.Resize"))
+            if (_methodIL.ToString().Contains("Generic.LowLevelList") &&
+                _methodIL.ToString().Contains("cctor"))
             {
 
             }
