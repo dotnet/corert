@@ -91,11 +91,7 @@ static bool InitDLL(HANDLE hPalInstance)
 
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
 
-    RedhawkGCInterface::GCType gcType = g_pRhConfig->GetUseServerGC()
-        ? RedhawkGCInterface::GCType_Server
-        : RedhawkGCInterface::GCType_Workstation;
-
-    if (!RedhawkGCInterface::InitializeSubsystems(gcType))
+    if (!RedhawkGCInterface::InitializeSubsystems())
         return false;
 
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);

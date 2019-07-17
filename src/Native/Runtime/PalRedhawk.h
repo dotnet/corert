@@ -822,9 +822,6 @@ REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ PalHijack
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor);
 #endif
 
-REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalGetLogicalCpuCount();
-REDHAWK_PALIMPORT size_t REDHAWK_PALAPI PalGetLargestOnDieCacheSize(UInt32_BOOL bTrueSize);
-
 REDHAWK_PALIMPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer);
 
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, UInt32 templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);

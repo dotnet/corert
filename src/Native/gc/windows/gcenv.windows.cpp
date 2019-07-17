@@ -892,21 +892,14 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
 //  Size of the cache
 size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 {
-    static size_t maxSize;
-    static size_t maxTrueSize;
+    static volatile size_t s_maxSize;
+    static volatile size_t s_maxTrueSize;
 
-    if (maxSize)
-    {
-        // maxSize and maxTrueSize cached
-        if (trueSize)
-        {
-            return maxTrueSize;
-        }
-        else
-        {
-            return maxSize;
-        }
-    }
+    size_t size = trueSize ? s_maxTrueSize : s_maxSize;
+    if (size != 0)
+        return size;
+
+    size_t maxSize, maxTrueSize;
 
 #ifdef _X86_
     int dwBuffer[4];
@@ -1013,11 +1006,11 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
     maxSize = maxTrueSize * 3;
 #endif
 
+    s_maxSize = maxSize;
+    s_maxTrueSize = maxTrueSize;
+
     //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
-    if (trueSize)
-        return maxTrueSize;
-    else
-        return maxSize;
+    return trueSize ? maxTrueSize : maxSize;
 }
 
 // Sets the calling thread's affinity to only run on the processor specified
