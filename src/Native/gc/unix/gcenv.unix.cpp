@@ -25,13 +25,18 @@
  #include <sys/time.h>
 #else
  #error "sys/time.h required by GC PAL for the time being"
-#endif // HAVE_SYS_TIME_
+#endif
 
 #if HAVE_SYS_MMAN_H
  #include <sys/mman.h>
 #else
  #error "sys/mman.h required by GC PAL"
-#endif // HAVE_SYS_MMAN_H
+#endif
+
+#if HAVE_SYSCTLBYNAME
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 
 #ifdef __linux__
 #include <sys/syscall.h> // __NR_membarrier
