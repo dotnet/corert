@@ -45,7 +45,7 @@ class GroupProcNo
 
 public:
 
-    static const uint16_t NoGroup = 0x3ff;
+    static const uint16_t NoGroup = 0;
 
     GroupProcNo(uint16_t groupProc) : m_groupProc(groupProc)
     {
@@ -625,6 +625,8 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
     GroupProcNo srcGroupProcNo(srcProcNo);
     GroupProcNo dstGroupProcNo(dstProcNo);
 
+    PROCESSOR_NUMBER proc;
+
     if (CanEnableGCCPUGroups())
     {
         if (srcGroupProcNo.GetGroup() != dstGroupProcNo.GetGroup())
@@ -633,15 +635,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
             //group. DO NOT MOVE THREADS ACROSS CPU GROUPS
             return true;
         }
-    }
 
-#if !defined(FEATURE_CORESYSTEM)
-    SetThreadIdealProcessor(GetCurrentThread(), (DWORD)dstGroupProcNo.GetProcIndex());
-#else
-    PROCESSOR_NUMBER proc;
-
-    if (dstGroupProcNo.GetGroup() != GroupProcNo::NoGroup)
-    {
         proc.Group = (WORD)dstGroupProcNo.GetGroup();
         proc.Number = (BYTE)dstGroupProcNo.GetProcIndex();
         proc.Reserved = 0;
@@ -656,7 +650,6 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
             success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, &proc);
         }
     }
-#endif
 
     return success;
 }
@@ -680,7 +673,12 @@ bool GCToOSInterface::GetCurrentThreadIdealProc(uint16_t* procNo)
 uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 {
     assert(GCToOSInterface::CanGetCurrentProcessorNumber());
-    return ::GetCurrentProcessorNumber();
+
+    PROCESSOR_NUMBER proc_no_cpu_group;
+    GetCurrentProcessorNumberEx(&proc_no_cpu_group);
+
+    GroupProcNo groupProcNo(proc_no_cpu_group.Group, proc_no_cpu_group.Number);
+    return groupProcNo.GetCombinedValue();
 }
 
 // Check if the OS supports getting current processor number
@@ -901,105 +899,7 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 
     size_t maxSize, maxTrueSize;
 
-#ifdef _X86_
-    int dwBuffer[4];
-
-    __cpuid(dwBuffer, 0);
-
-    int maxCpuId = dwBuffer[0];
-
-    if (dwBuffer[1] == 'uneG') 
-    {
-        if (dwBuffer[3] == 'Ieni') 
-        {
-            if (dwBuffer[2] == 'letn') 
-            {
-                maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); //use OS API for cache enumeration on LH and above
-#ifdef BIT64
-                if (maxCpuId >= 2)
-                {
-                    // If we're running on a Prescott or greater core, EM64T tests
-                    // show that starting with a gen0 larger than LLC improves performance.
-                    // Thus, start with a gen0 size that is larger than the cache.  The value of
-                    // 3 is a reasonable tradeoff between workingset and performance.
-                    maxSize = maxTrueSize * 3;
-                }
-                else
-#endif
-                {
-                    maxSize = maxTrueSize;
-                }
-            }
-        }
-    }
-
-    if (dwBuffer[1] == 'htuA') {
-        if (dwBuffer[3] == 'itne') {
-            if (dwBuffer[2] == 'DMAc') {
-                __cpuid(dwBuffer, 0x80000000);
-                if (dwBuffer[0] >= 0x80000006)
-                {
-                    __cpuid(dwBuffer, 0x80000006);
-
-                    DWORD dwL2CacheBits = dwBuffer[2];
-                    DWORD dwL3CacheBits = dwBuffer[3];
-
-                    maxTrueSize = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
-                            
-                    __cpuid(dwBuffer, 0x1);
-                    DWORD dwBaseFamily = (dwBuffer[0] & (0xF << 8)) >> 8;
-                    DWORD dwExtFamily  = (dwBuffer[0] & (0xFF << 20)) >> 20;
-                    DWORD dwFamily = dwBaseFamily >= 0xF ? dwBaseFamily + dwExtFamily : dwBaseFamily;
-
-                    if (dwFamily >= 0x10)
-                    {
-                        BOOL bSkipAMDL3 = FALSE;
-
-                        if (dwFamily == 0x10)   // are we running on a Barcelona (Family 10h) processor?
-                        {
-                            // check model
-                            DWORD dwBaseModel = (dwBuffer[0] & (0xF << 4)) >> 4 ;
-                            DWORD dwExtModel  = (dwBuffer[0] & (0xF << 16)) >> 16;
-                            DWORD dwModel = dwBaseFamily >= 0xF ? (dwExtModel << 4) | dwBaseModel : dwBaseModel;
-
-                            switch (dwModel)
-                            {
-                                case 0x2:
-                                    // 65nm parts do not benefit from larger Gen0
-                                    bSkipAMDL3 = TRUE;
-                                    break;
-
-                                case 0x4:
-                                default:
-                                    bSkipAMDL3 = FALSE;
-                            }
-                        }
-
-                        if (!bSkipAMDL3)
-                        {
-                            // 45nm Greyhound parts (and future parts based on newer northbridge) benefit
-                            // from increased gen0 size, taking L3 into account
-                            __cpuid(dwBuffer, 0x80000008);
-                            DWORD dwNumberOfCores = (dwBuffer[2] & (0xFF)) + 1;     // NC is in ECX bits 7-0
-
-                            DWORD dwL3CacheSize = (size_t)((dwL3CacheBits >> 18) * 512 * 1024);  // L3 size in EDX bits 31-18 * 512KB
-                            // L3 is shared between cores
-                            dwL3CacheSize = dwL3CacheSize / dwNumberOfCores;
-                            maxTrueSize += dwL3CacheSize;       // due to exclusive caches, add L3 size (possibly zero) to L2
-                                                                // L1 is too small to worry about, so ignore it
-                        }
-                    }
-
-
-                    maxSize = maxTrueSize;
-                }
-            }
-        }
-    }
-
-#else
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
-#endif
 
 #if defined(_ARM64_)
     // Bigger gen0 size helps arm64 targets
@@ -1022,7 +922,7 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
     GroupProcNo groupProcNo(procNo);
 
-    if (groupProcNo.GetGroup() != GroupProcNo::NoGroup)
+    if (CanEnableGCCPUGroups())
     {
         GROUP_AFFINITY ga;
         ga.Group = (WORD)groupProcNo.GetGroup();
