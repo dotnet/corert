@@ -756,7 +756,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
             || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
         if (success)
         {
-            _ASSERTE(cacheSizeFromSysctl > 0);
+            assert(cacheSizeFromSysctl > 0);
             cacheSize = ( size_t) cacheSizeFromSysctl;
         }
     }
