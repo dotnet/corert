@@ -129,9 +129,7 @@ static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
 
 static uint32_t g_dwPALCapabilities;
-static UInt32 g_cLogicalCpus = 0;
-static size_t g_cbLargestOnDieCache = 0;
-static size_t g_cbLargestOnDieCacheAdjusted = 0;
+static UInt32 g_cNumProcs = 0;
 
 // HACK: the gcenv.h declares OS_PAGE_SIZE as a call instead of a constant, but we need a constant
 #undef OS_PAGE_SIZE
@@ -143,7 +141,7 @@ static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)))
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
-extern bool PalQueryProcessorTopology();
+bool QueryLogicalProcessorCount();
 bool InitializeFlushProcessWriteBuffers();
 
 extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
@@ -419,7 +417,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 {
     g_dwPALCapabilities = GetCurrentProcessorNumberCapability;
 
-    if (!PalQueryProcessorTopology())
+    if (!QueryLogicalProcessorCount())
         return false;
 
 #if HAVE_MACH_ABSOLUTE_TIME
@@ -740,84 +738,20 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
     write(STDERR_FILENO, message, sizeof(message));
 }
 
-#ifdef __linux__
-size_t
-GetLogicalProcessorCacheSizeFromOS()
-{
-    size_t cacheSize = 0;
-
-#ifdef _SC_LEVEL1_DCACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_DCACHE_SIZE));
-#endif
-#ifdef _SC_LEVEL2_CACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL2_CACHE_SIZE));
-#endif
-#ifdef _SC_LEVEL3_CACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL3_CACHE_SIZE));
-#endif
-#ifdef _SC_LEVEL4_CACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL4_CACHE_SIZE));
-#endif
-    return cacheSize;
-}
-#endif
-
-bool QueryCacheSize()
-{
-    bool success = true;
-    g_cbLargestOnDieCache = 0;
-
-#ifdef __linux__
-
-    g_cbLargestOnDieCache = GetLogicalProcessorCacheSizeFromOS();
-
-#elif HAVE_SYSCTL
-
-    int64_t g_cbLargestOnDieCache;
-    size_t sz = sizeof(g_cbLargestOnDieCache);
-
-    if (sysctlbyname("hw.l3cachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
-    {
-        // No L3 cache, try the L2 one
-        if (sysctlbyname("hw.l2cachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
-        {
-            // No L2 cache, try the L1 one
-            if (sysctlbyname("hw.l1dcachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
-            {
-                ASSERT_UNCONDITIONALLY("sysctl failed to get cache size\n");
-                return false;
-            }
-        }
-    }
-
-#elif defined(_WASM_)
-    // Processor cache size not available on WebAssembly, but we can't start up without it, so pick the same default as the GC does
-    success = true;
-    g_cbLargestOnDieCache = 256 * 1024;
-#else
-#error Do not know how to get cache size on this platform
-#endif // __linux__
-
-    // TODO: implement adjusted cache size
-    g_cbLargestOnDieCacheAdjusted = g_cbLargestOnDieCache;
-
-    return success;
-}
-
 bool QueryLogicalProcessorCount()
 {
 #if HAVE_SYSCONF
-    g_cLogicalCpus = sysconf(SYSCONF_GET_NUMPROCS);
-    if (g_cLogicalCpus < 1)
+    g_cNumProcs = sysconf(SYSCONF_GET_NUMPROCS);
+    if (g_cNumProcs < 1)
     {
         ASSERT_UNCONDITIONALLY("sysconf failed for " SYSCONF_GET_NUMPROCS_NAME "\n");
         return false;
     }
 #elif HAVE_SYSCTL
-    size_t sz = sizeof(g_cLogicalCpus);
+    size_t sz = sizeof(g_cNumProcs);
 
     int st = 0;
-    if (sysctlbyname("hw.logicalcpu_max", &g_cLogicalCpus, &sz, NULL, 0) != 0)
+    if (sysctlbyname("hw.logicalcpu_max", &g_cNumProcs, &sz, NULL, 0) != 0)
     {
         ASSERT_UNCONDITIONALLY("sysctl failed for hw.logicalcpu_max\n");
         return false;
@@ -826,29 +760,6 @@ bool QueryLogicalProcessorCount()
 #endif // HAVE_SYSCONF
 
     return true;
-}
-
-// Method used to initialize the above values.
-bool PalQueryProcessorTopology()
-{
-    if (!QueryLogicalProcessorCount())
-    {
-        return false;
-    }
-
-    return QueryCacheSize();
-}
-
-// Functions called by the GC to obtain our cached values for number of logical processors and cache size.
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetLogicalCpuCount()
-{
-    return g_cLogicalCpus;
-}
-
-REDHAWK_PALEXPORT size_t REDHAWK_PALAPI PalGetLargestOnDieCacheSize(UInt32_BOOL bTrueSize)
-{
-    return bTrueSize ? g_cbLargestOnDieCache
-        : g_cbLargestOnDieCacheAdjusted;
 }
 
 static int W32toUnixAccessControl(uint32_t flProtect)
@@ -1126,9 +1037,7 @@ extern "C" Int32 _stricmp(const char *string1, const char *string2)
 
 REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 {
-    // The concept of process CPU affinity is going away and so CoreSystem obsoletes the APIs used to
-    // fetch this information. Instead we'll just return total cpu count.
-    return PalGetLogicalCpuCount();
+    return g_cNumProcs;
 }
 
 //Reads the entire contents of the file into the specified buffer, buff

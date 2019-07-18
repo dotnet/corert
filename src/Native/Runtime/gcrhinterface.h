@@ -103,17 +103,9 @@ typedef void * GcSegmentHandle;
 class RedhawkGCInterface
 {
 public:
-    enum GCType
-    {
-        GCType_Workstation,
-        GCType_Server,
-    };
-
     // Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in
-    // gcrhenv. The enum parameter is used to choose between workstation and server GC.
-    // Returns true on success or false if a subsystem failed to initialize.
-    // todo: figure out the final error reporting strategy
-    static bool InitializeSubsystems(GCType gcType);
+    // gcrhenv. Returns true on success or false if a subsystem failed to initialize.
+    static bool InitializeSubsystems();
 
     static void InitAllocContext(gc_alloc_context * pAllocContext);
     static void ReleaseAllocContext(gc_alloc_context * pAllocContext);

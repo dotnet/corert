@@ -160,7 +160,7 @@ CrstStatic g_SuspendEELock;
 EEType g_FreeObjectEEType;
 
 // static 
-bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
+bool RedhawkGCInterface::InitializeSubsystems()
 {
     g_pConfig->Construct();
 
@@ -188,9 +188,8 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     if (!g_SuspendEELock.InitNoThrow(CrstSuspendEE))
         return false;
 
-    // Set the GC heap type.
-    bool fUseServerGC = (gcType == GCType_Server);
-    g_heap_type = (fUseServerGC && PalGetLogicalCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
+    // TODO: This should use the logical CPU count adjusted for process affinity and cgroup limits
+    g_heap_type = (g_pRhConfig->GetUseServerGC() && PalGetProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
 
     HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
     if (FAILED(hr))
