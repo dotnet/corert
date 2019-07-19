@@ -2981,7 +2981,7 @@ namespace Internal.IL
                         }
 
                         if (c < 0x20)
-                            escaped.Append("\\X" + ((int)c).ToStringInvariant("X2"));
+                            escaped.Append("\\x" + ((int)c).ToStringInvariant("X2"));
                         else
                             escaped.Append(c);
                         break;
