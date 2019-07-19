@@ -699,6 +699,25 @@ namespace Internal.JitInterface
         {
             MethodDesc method = HandleToObject(ftn);
 
+            // There might be a more concrete parent type specified - this can happen when inlining.
+            if (memberParent != null)
+            {
+                TypeDesc type = HandleToObject(memberParent);
+
+                // Typically, the owning type of the method is a canonical type and the member parent
+                // supplied by RyuJIT is a concrete instantiation.
+                if (type != method.OwningType)
+                {
+                    Debug.Assert(type.HasSameTypeDefinition(method.OwningType));
+                    Instantiation methodInst = method.Instantiation;
+                    method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)type);
+                    if (methodInst.Length > 0)
+                    {
+                        method = method.MakeInstantiatedMethod(methodInst);
+                    }
+                }
+            }
+
             Get_CORINFO_SIG_INFO(method, sig);
         }
 

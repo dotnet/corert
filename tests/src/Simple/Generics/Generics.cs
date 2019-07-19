@@ -2392,6 +2392,27 @@ class Program
 
         static NeverAllocated<Dummy> s_neverAllocated = null;
 
+        class GenericInline<T>
+        {
+            public GenericInline()
+            {
+                _arr = (T)(object)new string[1] { "ohai" };
+            }
+            T _arr;
+            public T GetArr() => _arr;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object InnerTest(object o, object dummy) => o;
+
+        static object OtherTest() => null;
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static object Test(GenericInline<string[]> t)
+        {
+            return InnerTest(t.GetArr()[0], OtherTest());
+        }
+
         public static void Run()
         {
             // We're just making sure the compiler doesn't crash.
@@ -2403,6 +2424,10 @@ class Program
                 Console.WriteLine(s_neverAllocated.GetString());
                 Console.WriteLine(s_neverAllocated.GetStringIndirect());
             }
+
+            // Regression test for https://github.com/dotnet/corert/issues/7625
+            if ((string)Test(new GenericInline<string[]>()) != "ohai")
+                throw new Exception();
         }
     }
 }
