@@ -713,7 +713,7 @@ namespace Internal.JitInterface
                     method = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), (InstantiatedType)type);
                     if (methodInst.Length > 0)
                     {
-                        method.MakeInstantiatedMethod(methodInst);
+                        method = method.MakeInstantiatedMethod(methodInst);
                     }
                 }
             }
