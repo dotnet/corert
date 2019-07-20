@@ -50,6 +50,10 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(canonicalMethod.Method.IsSharedByGenericInstantiations);
             Debug.Assert(canonicalMethod.Method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
             Method = method;
+            if (this.Method.ToString().Contains("Unsafe.As"))
+            {
+
+            }
             CanonicalMethodNode = canonicalMethod;
         }
 
@@ -60,6 +64,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            if (this.Method.ToString().Contains("Unsafe.As"))
+            {
+
+            }
             DependencyList dependencies = new DependencyList();
 
             // Make sure the canonical body gets generated

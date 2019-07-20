@@ -111,7 +111,10 @@ namespace ILCompiler.DependencyAnalysis
                         // If the type has a lazy static constructor, we also need the non-GC static base
                         // because that's where the class constructor context is.
                         TypeDesc type = (TypeDesc)_target;
-
+//                        if (type.ToString().Contains("EmptyArray") && type.ToString().Contains("T_System.__Canon"))
+//                        {
+//
+//                        }
                         if (factory.TypeSystemContext.HasLazyStaticConstructor(type))
                         {
                             result.Add(

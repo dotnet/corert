@@ -21,7 +21,18 @@ namespace Internal.TypeSystem
 
             Debug.Assert(instantiation.Length > 0);
             _instantiation = instantiation;
-
+//            if (_instantiation[0] is RuntimeDeterminedType)
+//            {
+//                var r = (RuntimeDeterminedType)_instantiation[0];
+//                if (typeDef.ToString().Contains("Empty"))
+//                {
+//                    if (r.RuntimeDeterminedDetailsType.Kind == GenericParameterKind.Type)
+//                    {
+//
+//                    }
+//
+//                }
+//            }
             _baseType = this; // Not yet initialized flag
         }
 

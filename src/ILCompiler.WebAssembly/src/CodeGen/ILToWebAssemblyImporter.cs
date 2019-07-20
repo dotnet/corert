@@ -228,7 +228,7 @@ namespace Internal.IL
         private void GenerateProlog()
         {
             Console.WriteLine(_method.ToString());
-            if (_method.ToString().Contains("Array.Resize<__Canon>(__Canon[]&,int32)"))
+            if (_method.ToString().Contains("[S.P.CoreLib]System.Convert.ToDouble(Decimal)"))
             {
 
             }
@@ -3692,11 +3692,15 @@ namespace Internal.IL
                     }
                     else
                     {
-                        if (field.Name == "Empty" && owningType.ToString() == "[S.P.CoreLib]System.Array`1+ArrayEnumerator<System.__Canon>")
-                        {
-                            MetadataType owningType2 = (MetadataType)_compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
-
-                        }
+//                        if (field.Name == "Value" && owningType.ToString() == "[S.P.CoreLib]System.Array+EmptyArray`1<System.__Canon>")
+//                        {
+//                            MetadataType owningType2 = (MetadataType)_compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
+//
+//                        }
+//                        if (field.Name == "Empty" && owningType.ToString() == "[S.P.CoreLib]System.Array`1+ArrayEnumerator<System.__Canon>")
+//                        {
+//                            MetadataType owningType2 = (MetadataType)_compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
+//                        }
                         if (field.HasGCStaticBase)
                         {
                             if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
@@ -3704,7 +3708,7 @@ namespace Internal.IL
                                 needsCctorCheck = false; // no cctor for canonical types
                                 DefType helperArg = owningType.ConvertToSharedRuntimeDeterminedForm();
                                 LLVMValueRef helper;
-                                node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetGCStaticBase, helperArg, out helper);
+                                node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetGCStaticBase, runtimeDeterminedOwningType, out helper);
                                 staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
                             }
                             else

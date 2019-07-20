@@ -2688,6 +2688,9 @@ namespace Internal.IL
             {
 
             }
+            if (field.Name == "Empty" && owningType.ToString() == "[S.P.CoreLib]System.Array`1+ArrayEnumerator<System.__Canon>")
+            {
+            }
             TypeDesc fieldType = _writer.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             // TODO: Is this valid combination?
@@ -2700,7 +2703,10 @@ namespace Internal.IL
             StackValueKind kind = GetStackValueKind(fieldType);
             PushTemp(kind, fieldType);
             AppendCastIfNecessary(kind, fieldType);
+            if (field.Name == "Value" && owningType.ToString() == "[S.P.CoreLib]System.Array+EmptyArray`1<System.__Canon>")
+            {
 
+            }
             if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
             {
                 AddTypeReference(fieldType, false);

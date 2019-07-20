@@ -353,7 +353,12 @@ namespace Internal.TypeSystem
 
                 protected override InstantiatedType CreateValueFromKey(InstantiatedTypeKey key)
                 {
-                    return new InstantiatedType((MetadataType)key.TypeDef, key.Instantiation);
+                    var t = new InstantiatedType((MetadataType)key.TypeDef, key.Instantiation);
+//                    if (t.ToString().Contains("EmptyArray") && t.ToString().Contains("T_System.__Canon"))
+//                    {
+//
+//                    }
+                    return t;
                 }
             }
         }
