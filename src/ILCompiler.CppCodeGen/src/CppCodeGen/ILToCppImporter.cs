@@ -1272,7 +1272,7 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (method.ToString().Contains("Frob") && method.ToString().Contains("Generic"))
+            if (method.ToString().Contains("KeyValuePair") && method.ToString().Contains("get_Value"))
             {
 
             }

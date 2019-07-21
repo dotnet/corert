@@ -397,16 +397,15 @@ namespace Internal.IL
 
         private LLVMValueRef CreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParameter)
         {
-            if (mangledName.ToString().Contains("Array") && mangledName.Contains("Resize"))
-            {
-
-            }
-
             return LLVM.AddFunction(Module, mangledName, GetLLVMSignatureForMethod(signature, hasHiddenParameter));
         }
 
         private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParam)
         {
+            if (mangledName == "S_P_CoreLib_System_Collections_Generic_KeyValuePair_2<System___Canon__System___Canon>__get_Value")
+            {
+
+            }
             LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
 
             if(llvmFunction.Pointer == IntPtr.Zero)
@@ -1706,7 +1705,7 @@ namespace Internal.IL
                             typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
                             LLVMValueRef helper;
                             var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeToAlloc, out helper);
-                            var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                            var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
                             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
                             var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
                             newObjResult = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments);
@@ -2276,7 +2275,10 @@ namespace Internal.IL
                     }
                     else
                         {
-//                            Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType));
+                            LLVMValueRef helper;
+                            var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod, out helper);
+                            var genericContext = GetGenericContext();
+                            hiddenParam = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { genericContext }, "getHelper");
                         }
 
 //                        Append("(");
@@ -2315,10 +2317,7 @@ namespace Internal.IL
                     }
                     else
                     {
-//                        Append(_writer.GetCppTypeName(method.OwningType));
-//                        Append("::__getMethodTable()");
-//
-//                        AddTypeReference(method.OwningType, true);
+                        hiddenParam = LoadAddressOfSymbolNode(_compilation.NodeFactory.ConstructedTypeSymbol(callee.OwningType));
                     }
                 }
                 //                var method = (MethodDesc)_canonMethodIL.GetObject(token);
@@ -3762,18 +3761,26 @@ namespace Internal.IL
         ISymbolNode GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArg, out LLVMValueRef helper)
         {
             ISymbolNode node;
+            //in cpp the non DelegateCtor take a void * as arg
+            // TODO : the DelegateCtor variants
             if (_method.RequiresInstMethodDescArg())
             {
                 node = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArg, _method);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
-                    LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), new LLVMTypeRef[0], false));
+                    LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), new []
+                                                                                                  {
+                                                                                                      LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), 
+                                                                                                  }, false));
             }
             else
             {
                 Debug.Assert(_method.RequiresInstMethodTableArg() || _method.AcquiresInstMethodTableFromThis());
                 node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArg, _method.OwningType) as ReadyToRunGenericHelperNode;
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
-                    LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), new LLVMTypeRef[0], false));
+                    LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), new[]
+                                                                                                  {
+                                                                                                      LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0),
+                                                                                                  }, false));
             }
             return node;
         }
