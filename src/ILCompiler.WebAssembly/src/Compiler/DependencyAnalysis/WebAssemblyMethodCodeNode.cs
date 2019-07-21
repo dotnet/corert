@@ -70,12 +70,9 @@ namespace ILCompiler.DependencyAnalysis
         public WebAssemblyMethodBodyNode(MethodDesc method)
             : base(method)
         {
-            foreach (TypeDesc type in _method.OwningType.Instantiation)
+            if (method.ToString().Contains("System.IO.Error.GetReadNotSupported"))
             {
-                if (type is RuntimeDeterminedType)
-                {
 
-                }
             }
         }
 

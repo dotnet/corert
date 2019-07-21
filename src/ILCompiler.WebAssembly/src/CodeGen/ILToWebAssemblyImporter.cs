@@ -1850,7 +1850,7 @@ namespace Internal.IL
         private ISymbolNode GetMethodGenericDictionaryNode(MethodDesc method)
         {
             ISymbolNode node = _compilation.NodeFactory.MethodGenericDictionary(method);
-            _dependencies.Add(node);
+//            _dependencies.Add(node);
 
             return node;
         }
@@ -1906,7 +1906,7 @@ namespace Internal.IL
             {
 
             }
-            _dependencies.Add(_compilation.NodeFactory.GVMDependencies(method));
+//            _dependencies.Add(_compilation.NodeFactory.GVMDependencies(method));
             bool exactContextNeedsRuntimeLookup;
             if (method.HasInstantiation)
             {
@@ -1923,7 +1923,7 @@ namespace Internal.IL
             {
                 LLVMValueRef helper;
                 var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodHandle, runtimeDeterminedMethod, out helper); 
-                _dependencies.Add(node);
+//                _dependencies.Add(node);
                 slotRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
             }
             else
@@ -1982,7 +1982,7 @@ namespace Internal.IL
 
             if (hasHiddenParam)
             {
-                signatureTypes.Add(LLVM.PointerType(LLVM.Int8Type(), 0)); // Shadow stack pointer
+                signatureTypes.Add(LLVM.PointerType(LLVM.Int32Type(), 0)); // Shadow stack pointer
             }
 
             if (!returnOnStack && returnType != GetWellKnownType(WellKnownType.Void))
@@ -2258,7 +2258,10 @@ namespace Internal.IL
 
             if (hasHiddenParam)
             {
+                if (callee.ToString().Contains("Unsafe.As"))
+                {
 
+                }
                 if (exactContextNeedsRuntimeLookup)
                 {
 //                    if (!resolvedConstraint)

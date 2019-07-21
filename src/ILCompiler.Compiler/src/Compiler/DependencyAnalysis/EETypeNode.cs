@@ -217,7 +217,10 @@ namespace ILCompiler.DependencyAnalysis
                 yield break;
 
             DefType defType = _type.GetClosestDefType();
+            if (_type.ToString().Contains("Globalization.CompareInfo"))
+            {
 
+            }
             // If we're producing a full vtable, none of the dependencies are conditional.
             if (!factory.VTable(defType).HasFixedSlots)
             {

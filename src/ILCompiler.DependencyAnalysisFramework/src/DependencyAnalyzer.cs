@@ -184,6 +184,10 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
             else
             {
+                if (node.GetType().Name.Contains("ShadowConcreteMethodNode"))
+                {
+
+                }
                 _deferredStaticDependencies.Add(node);
             }
         }

@@ -758,6 +758,8 @@ namespace Internal.IL
 
         public void Compile(CppMethodCodeNode methodCodeNodeNeedingCode)
         {
+            Console.WriteLine(_method.ToString());
+
             FindBasicBlocks();
             for (int i = 0; i < methodCodeNodeNeedingCode.Method.Signature.Length; i++)
             {
