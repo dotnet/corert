@@ -4,10 +4,12 @@
 
 using System;
 
+using Internal.IL;
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 
 namespace ILCompiler
 {
@@ -16,26 +18,11 @@ namespace ILCompiler
     /// </summary>
     public abstract class InteropStubManager
     {
-        private readonly CompilationModuleGroup _compilationModuleGroup;
-        private readonly CompilerTypeSystemContext _typeSystemContext;
-
-        public InteropStateManager InteropStateManager
-        {
-            get;
-        }
-
-        public InteropStubManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, InteropStateManager interopStateManager)
-        {
-            _compilationModuleGroup = compilationModuleGroup;
-            _typeSystemContext = typeSystemContext;
-            InteropStateManager = interopStateManager;
-        }
-
-
         public abstract void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method);
         
         public abstract void AddInterestingInteropConstructedTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type);
-        
+
+        public abstract PInvokeILProvider CreatePInvokeILProvider();
 
         /// <summary>
         /// For Marshal generic APIs(eg. Marshal.StructureToPtr<T>, GetFunctionPointerForDelegate) we add
@@ -43,6 +30,13 @@ namespace ILCompiler
         /// </summary>
         public abstract void AddMarshalAPIsGenericDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method);
 
-        public abstract void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode);        
+        public virtual void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
+        {
+            var delegateMapNode = new DelegateMarshallingStubMapNode(commonFixupsTableNode);
+            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.DelegateMarshallingStubMap), delegateMapNode, delegateMapNode, delegateMapNode.EndSymbol);
+
+            var structMapNode = new StructMarshallingStubMapNode(commonFixupsTableNode);
+            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.StructMarshallingStubMap), structMapNode, structMapNode, structMapNode.EndSymbol);
+        }
     }
 }

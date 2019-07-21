@@ -28,12 +28,11 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
-            PInvokeILEmitterConfiguration pinvokePolicy,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
             JitConfigProvider configProvider,
             RyuJitCompilationOptions options)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, pinvokePolicy, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, logger)
         {
             _jitConfigProvider = configProvider;
             _compilationOptions = options;

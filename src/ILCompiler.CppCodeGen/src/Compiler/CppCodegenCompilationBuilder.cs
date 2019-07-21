@@ -44,11 +44,11 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
+            var interopStubManager = new CompilerGeneratedInteropStubManager(new InteropStateManager(_context.GeneratedAssembly), _pinvokePolicy);
             CppCodegenNodeFactory factory = new CppCodegenNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
-            return new CppCodegenCompilation(graph, factory, _compilationRoots, _ilProvider, _debugInformationProvider, _pinvokePolicy, _logger, _config);
+            return new CppCodegenCompilation(graph, factory, _compilationRoots, _ilProvider, _debugInformationProvider, _logger, _config);
         }
     }
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
@@ -12,7 +13,6 @@ using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
-using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 
 namespace ILCompiler
 {
@@ -21,12 +21,21 @@ namespace ILCompiler
     /// </summary>
     public sealed class CompilerGeneratedInteropStubManager : InteropStubManager
     {
-        internal HashSet<TypeDesc> _delegateMarshalingTypes = new HashSet<TypeDesc>();
-        private HashSet<TypeDesc> _structMarshallingTypes = new HashSet<TypeDesc>();
+        private readonly HashSet<TypeDesc> _delegateMarshalingTypes = new HashSet<TypeDesc>();
+        private readonly HashSet<TypeDesc> _structMarshallingTypes = new HashSet<TypeDesc>();
+        private readonly PInvokeILEmitterConfiguration _pInvokeILEmitterConfiguration;
 
-        public CompilerGeneratedInteropStubManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, InteropStateManager interopStateManager) : 
-            base(compilationModuleGroup, typeSystemContext, interopStateManager)
+        public InteropStateManager InteropStateManager { get; }
+
+        public CompilerGeneratedInteropStubManager(InteropStateManager interopStateManager, PInvokeILEmitterConfiguration pInvokeILEmitterConfiguration)
         {
+            InteropStateManager = interopStateManager;
+            _pInvokeILEmitterConfiguration = pInvokeILEmitterConfiguration;
+        }
+
+        public override PInvokeILProvider CreatePInvokeILProvider()
+        {
+            return new PInvokeILProvider(_pInvokeILEmitterConfiguration, InteropStateManager);
         }
 
         private MethodDesc GetOpenStaticDelegateMarshallingStub(TypeDesc delegateType)
@@ -272,15 +281,6 @@ namespace ILCompiler
             {
                 _structMarshallingTypes.Add(type);
             }
-        }
-
-        public override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
-        {
-            var delegateMapNode = new DelegateMarshallingStubMapNode(commonFixupsTableNode);
-            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.DelegateMarshallingStubMap), delegateMapNode, delegateMapNode, delegateMapNode.EndSymbol);
-
-            var structMapNode = new StructMarshallingStubMapNode(commonFixupsTableNode);
-            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.StructMarshallingStubMap), structMapNode, structMapNode, structMapNode.EndSymbol);
         }
     }
 }

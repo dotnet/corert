@@ -76,7 +76,7 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            var interopStubManager = new EmptyInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
+            var interopStubManager = new EmptyInteropStubManager();
 
             ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(_compilationGroup, _context);
             SignatureContext signatureContext = new SignatureContext(_inputModule, moduleTokenResolver);
@@ -123,7 +123,6 @@ namespace ILCompiler
                 _compilationRoots,
                 _ilProvider,
                 _debugInformationProvider,
-                _pinvokePolicy,
                 _logger,
                 _devirtualizationManager,
                 jitConfig,

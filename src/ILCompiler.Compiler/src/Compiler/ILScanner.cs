@@ -30,9 +30,8 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
-            PInvokeILEmitterConfiguration pinvokePolicy,
             Logger logger)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, null, pinvokePolicy, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, null, logger)
         {
         }
 

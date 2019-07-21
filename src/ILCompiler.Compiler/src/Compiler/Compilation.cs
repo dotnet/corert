@@ -45,7 +45,6 @@ namespace ILCompiler
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             DevirtualizationManager devirtualizationManager,
-            PInvokeILEmitterConfiguration pInvokeConfiguration,
             Logger logger)
         {
             _dependencyGraph = dependencyGraph;
@@ -66,9 +65,9 @@ namespace ILCompiler
             _assemblyGetExecutingAssemblyMethodThunks = new AssemblyGetExecutingAssemblyMethodThunkCache(globalModuleGeneratedType);
             _methodBaseGetCurrentMethodThunks = new MethodBaseGetCurrentMethodThunkCache();
 
-            if (!(nodeFactory.InteropStubManager is EmptyInteropStubManager))
+            PInvokeILProvider = _nodeFactory.InteropStubManager.CreatePInvokeILProvider();
+            if (PInvokeILProvider != null)
             {
-                PInvokeILProvider = new PInvokeILProvider(pInvokeConfiguration, nodeFactory.InteropStubManager.InteropStateManager);
                 ilProvider = new CombinedILProvider(ilProvider, PInvokeILProvider);
             }
 

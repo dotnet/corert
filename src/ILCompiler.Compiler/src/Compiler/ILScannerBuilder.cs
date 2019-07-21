@@ -58,11 +58,11 @@ namespace ILCompiler
 
         public IILScanner ToILScanner()
         {
-            var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
+            var interopStubManager = new CompilerGeneratedInteropStubManager(new InteropStateManager(_context.GeneratedAssembly), _pinvokePolicy);
             var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler);
             DependencyAnalyzerBase<NodeFactory> graph = _dependencyTrackingLevel.CreateDependencyGraph(nodeFactory);
 
-            return new ILScanner(graph, nodeFactory, _compilationRoots, _ilProvider, new NullDebugInformationProvider(), _pinvokePolicy, _logger);
+            return new ILScanner(graph, nodeFactory, _compilationRoots, _ilProvider, new NullDebugInformationProvider(), _logger);
         }
     }
 }
