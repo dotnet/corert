@@ -1106,7 +1106,7 @@ namespace ReadyToRun.SuperIlc
                 int matchCount = cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == kvp.Value);
                 int bothCount = cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key));
                 logWriter.WriteLine("Types queried by both:           {0}", bothCount);
-                logWriter.WriteLine("Matching results:                {0} ({1:F6}%)", matchCount, matchCount * 100.0 / Math.Max(bothCount, 1));
+                logWriter.WriteLine("Matching results:                {0} ({1:F3}%)", matchCount, matchCount * 100.0 / Math.Max(bothCount, 1));
                 logWriter.WriteLine("Mismatched results:              {0}",
                     cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] != kvp.Value));
                 logWriter.WriteLine("Types not queried by Crossgen:   {0}", cpaot.Count(kvp => !crossgen.ContainsKey(kvp.Key)));
