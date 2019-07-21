@@ -1207,6 +1207,9 @@ namespace Internal.JitInterface
         private uint getClassAttribs(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
+#if READYTORUN
+            ReadyToRunMetadataFieldLayoutAlgorithm.ProbeType(type);
+#endif
             return getClassAttribsInternal(type);
         }
 
@@ -1309,6 +1312,9 @@ namespace Internal.JitInterface
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
+#if READYTORUN
+            ReadyToRunMetadataFieldLayoutAlgorithm.ProbeType(type);
+#endif
             LayoutInt classSize = type.GetElementSize();
 #if READYTORUN
             if (classSize.IsIndeterminate)
@@ -1426,6 +1432,9 @@ namespace Internal.JitInterface
             uint result = 0;
 
             DefType type = (DefType)HandleToObject(cls);
+#if READYTORUN
+            ReadyToRunMetadataFieldLayoutAlgorithm.ProbeType(type);
+#endif
 
             int pointerSize = PointerSize;
 
