@@ -39,7 +39,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="methodAddress">Resolved method address</param>
         /// <param name="unboxingStubAddress">Resolved unboxing stub address</param>
         /// <returns>true when the resolution succeeded, false when not</returns>
-        internal static bool TryGetMethodAddressFromMethodDesc(
+        public static bool TryGetMethodAddressFromMethodDesc(
             MethodDesc method,
             out IntPtr methodAddress,
             out IntPtr unboxingStubAddress,

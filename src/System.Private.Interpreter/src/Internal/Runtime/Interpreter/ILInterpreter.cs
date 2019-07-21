@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
 using Internal.IL;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
 using Internal.Runtime.CompilerServices;
+using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 
 
@@ -165,7 +167,8 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.jmp:
                         throw new NotImplementedException();
                     case ILOpcode.call:
-                        throw new NotImplementedException();
+                        InterpretCall(reader.ReadILToken());
+                        break;
                     case ILOpcode.calli:
                         throw new NotImplementedException();
                     case ILOpcode.ret:
@@ -602,7 +605,7 @@ namespace Internal.Runtime.Interpreter
                 argument = _method.Signature[index];
             }
 
-        again:
+again:
             switch (argument.Category)
             {
                 case TypeFlags.Boolean:
@@ -657,7 +660,7 @@ namespace Internal.Runtime.Interpreter
         private void InterpretStoreArgument(int index)
         {
             Debug.Assert(index >= 0);
-            
+
             StackItem stackItem = PopWithValidation();
             switch (stackItem.Kind)
             {
@@ -696,7 +699,7 @@ namespace Internal.Runtime.Interpreter
 
             StackItem stackItem = PopWithValidation();
 
-        again:
+again:
             switch (returnType.Category)
             {
                 case TypeFlags.Boolean:
@@ -2241,7 +2244,7 @@ namespace Internal.Runtime.Interpreter
             TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
-        again:
+again:
             switch (elementType.Category)
             {
                 case TypeFlags.Boolean:
@@ -2389,7 +2392,7 @@ namespace Internal.Runtime.Interpreter
             TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
-        again:
+again:
             switch (elementType.Category)
             {
                 case TypeFlags.Boolean:
@@ -2441,6 +2444,206 @@ namespace Internal.Runtime.Interpreter
                     // TODO: Support more complex return types
                     throw new NotImplementedException();
             }
+        }
+
+        // Holds information about a method call
+        private struct MethodCallInfo
+        {
+            public int ArgCount;
+            public IntPtr MethodAddress;
+            public IntPtr UnboxingStubAddress;
+            public CallConverter.CallingConvention CallingConvention;
+            public TypeLoaderEnvironment.MethodAddressType MethodAddressType;
+            public MethodSignature Signature;
+            public LocalVariableType[] LocalVariableTypes;
+            public StackItem ReturnValue;
+        }
+
+        private void InterpretCallDelegate(ref MethodCallInfo callInfo, ref LocalVariableSet localVariableSet)
+        {
+            for (int i = callInfo.ArgCount; i > 0; i--)
+            {
+                StackItem stackItem = PopWithValidation();
+                TypeDesc argumentType = callInfo.Signature[i - 1];
+
+setvar:
+                switch (argumentType.Category)
+                {
+                    case TypeFlags.Boolean:
+                        localVariableSet.SetVar<bool>(i, stackItem.AsInt32() != 0);
+                        break;
+                    case TypeFlags.Char:
+                        localVariableSet.SetVar<char>(i, (char)stackItem.AsInt32());
+                        break;
+                    case TypeFlags.SByte:
+                    case TypeFlags.Byte:
+                        localVariableSet.SetVar<sbyte>(i, (sbyte)stackItem.AsInt32());
+                        break;
+                    case TypeFlags.Int16:
+                    case TypeFlags.UInt16:
+                        localVariableSet.SetVar<short>(i, (short)stackItem.AsInt32());
+                        break;
+                    case TypeFlags.Int32:
+                    case TypeFlags.UInt32:
+                        localVariableSet.SetVar<int>(i, stackItem.AsInt32());
+                        break;
+                    case TypeFlags.Int64:
+                    case TypeFlags.UInt64:
+                        localVariableSet.SetVar<long>(i, stackItem.AsInt64());
+                        break;
+                    case TypeFlags.IntPtr:
+                    case TypeFlags.UIntPtr:
+                        localVariableSet.SetVar<IntPtr>(i, stackItem.AsNativeInt());
+                        break;
+                    case TypeFlags.Single:
+                        localVariableSet.SetVar<float>(i, (float)stackItem.AsDouble());
+                        break;
+                    case TypeFlags.Double:
+                        localVariableSet.SetVar<double>(i, stackItem.AsDouble());
+                        break;
+                    case TypeFlags.ValueType:
+                    case TypeFlags.Nullable:
+                        throw new NotImplementedException();
+                    case TypeFlags.Enum:
+                        argumentType = argumentType.UnderlyingType;
+                        goto setvar;
+                    case TypeFlags.Class:
+                    case TypeFlags.Interface:
+                    case TypeFlags.Array:
+                    case TypeFlags.SzArray:
+                        localVariableSet.SetVar<object>(i, stackItem.AsObjectRef());
+                        break;
+                    default:
+                        // TODO: Support more complex return types
+                        throw new NotImplementedException();
+                }
+            }
+
+            if (callInfo.MethodAddress != IntPtr.Zero && callInfo.MethodAddressType == TypeLoaderEnvironment.MethodAddressType.Exact)
+            {
+                DynamicCallSignature dynamicCallSignature = new DynamicCallSignature(callInfo.CallingConvention, callInfo.LocalVariableTypes, callInfo.LocalVariableTypes.Length);
+                CallInterceptor.CallInterceptor.MakeDynamicCall(callInfo.MethodAddress, dynamicCallSignature, localVariableSet);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
+            TypeDesc returnType = callInfo.Signature.ReturnType;
+
+getvar:
+            switch (returnType.Category)
+            {
+                case TypeFlags.Void:
+                    // Do nothing!
+                    break;
+                case TypeFlags.Boolean:
+                    callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<int>(0));
+                    break;
+                case TypeFlags.Char:
+                    callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<char>(0));
+                    break;
+                case TypeFlags.SByte:
+                    callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<sbyte>(0));
+                    break;
+                case TypeFlags.Byte:
+                    callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<byte>(0));
+                    break;
+                case TypeFlags.Int16:
+                    callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<short>(0));
+                    break;
+                case TypeFlags.UInt16:
+                    callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<ushort>(0));
+                    break;
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<int>(0));
+                    break;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    callInfo.ReturnValue = StackItem.FromInt64(localVariableSet.GetVar<long>(0));
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    callInfo.ReturnValue = StackItem.FromNativeInt(localVariableSet.GetVar<IntPtr>(0));
+                    break;
+                case TypeFlags.Single:
+                    _stack.Push(StackItem.FromDouble(localVariableSet.GetVar<float>(0)));
+                    break;
+                case TypeFlags.Double:
+                    callInfo.ReturnValue = StackItem.FromDouble(localVariableSet.GetVar<double>(0));
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    callInfo.ReturnValue = StackItem.FromValueType(localVariableSet.GetVar<ValueType>(0));
+                    break;
+                case TypeFlags.Enum:
+                    returnType = returnType.UnderlyingType;
+                    goto getvar;
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    callInfo.ReturnValue = StackItem.FromObjectRef(localVariableSet.GetVar<object>(0));
+                    break;
+                default:
+                    // TODO: Support more complex return types
+                    throw new NotImplementedException();
+            }
+        }
+
+        private void InterpretCall(int token)
+        {
+            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
+            MethodSignature signature = method.Signature;
+
+            TypeDesc owningType = method.OwningType;
+            TypeDesc returnType = signature.ReturnType;
+
+            if (signature.Length > _stack.Count)
+                ThrowHelper.ThrowInvalidProgramException();
+
+            int delta = (signature.IsStatic ? 1 : 2);
+
+            LocalVariableType[] localVariableTypes = new LocalVariableType[signature.Length + delta];
+            if (returnType.IsByRef)
+            {
+                // TODO: Unwrap ref types
+                throw new NotImplementedException();
+            }
+
+            localVariableTypes[0] = new LocalVariableType(returnType.GetRuntimeTypeHandle(), false, returnType.IsByRef);
+
+            if (!signature.IsStatic)
+                localVariableTypes[1] = new LocalVariableType(owningType.GetRuntimeTypeHandle(), false, owningType.IsByRef);
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                var argument = signature[i];
+                if (argument.IsByRef)
+                {
+                    // TODO: Unwrap ref types
+                    throw new NotImplementedException();
+                }
+
+                localVariableTypes[i + delta] = new LocalVariableType(argument.GetRuntimeTypeHandle(), false, argument.IsByRef);
+            }
+
+            TypeLoaderEnvironment.TryGetMethodAddressFromMethodDesc(method, out IntPtr methodAddress, out IntPtr unboxingStubAddress, out TypeLoaderEnvironment.MethodAddressType foundAddressType);
+
+            var callInfo = new MethodCallInfo();
+            callInfo.ArgCount = signature.Length + (delta - 1);
+            callInfo.MethodAddress = methodAddress;
+            callInfo.MethodAddressType = foundAddressType;
+            callInfo.UnboxingStubAddress = unboxingStubAddress;
+            callInfo.CallingConvention = signature.IsStatic ? CallConverter.CallingConvention.ManagedStatic : CallConverter.CallingConvention.ManagedInstance;
+            callInfo.Signature = signature;
+            callInfo.LocalVariableTypes = localVariableTypes;
+
+            LocalVariableSet.SetupArbitraryLocalVariableSet(InterpretCallDelegate, ref callInfo, localVariableTypes);
+
+            if (!signature.ReturnType.IsVoid)
+                _stack.Push(callInfo.ReturnValue);
         }
     }
 }
