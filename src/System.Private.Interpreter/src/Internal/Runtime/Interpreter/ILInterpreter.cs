@@ -2470,7 +2470,7 @@ setvar:
                 switch (argumentType.Category)
                 {
                     case TypeFlags.Boolean:
-                        localVariableSet.SetVar<bool>(i, stackItem.AsInt32() > 0);
+                        localVariableSet.SetVar<bool>(i, stackItem.AsInt32() != 0);
                         break;
                     case TypeFlags.Char:
                         localVariableSet.SetVar<char>(i, (char)stackItem.AsInt32());
@@ -2544,12 +2544,16 @@ getvar:
                     callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<char>(0));
                     break;
                 case TypeFlags.SByte:
-                case TypeFlags.Byte:
                     callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<sbyte>(0));
                     break;
+                case TypeFlags.Byte:
+                    callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<byte>(0));
+                    break;
                 case TypeFlags.Int16:
-                case TypeFlags.UInt16:
                     callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<short>(0));
+                    break;
+                case TypeFlags.UInt16:
+                    callInfo.ReturnValue = StackItem.FromInt32(localVariableSet.GetVar<ushort>(0));
                     break;
                 case TypeFlags.Int32:
                 case TypeFlags.UInt32:
@@ -2602,6 +2606,12 @@ getvar:
             int delta = (signature.IsStatic ? 1 : 2);
 
             LocalVariableType[] localVariableTypes = new LocalVariableType[signature.Length + delta];
+            if (returnType.IsByRef)
+            {
+                // TODO: Unwrap ref types
+                throw new NotImplementedException();
+            }
+
             localVariableTypes[0] = new LocalVariableType(returnType.GetRuntimeTypeHandle(), false, returnType.IsByRef);
 
             if (!signature.IsStatic)
@@ -2610,6 +2620,12 @@ getvar:
             for (int i = 0; i < signature.Length; i++)
             {
                 var argument = signature[i];
+                if (argument.IsByRef)
+                {
+                    // TODO: Unwrap ref types
+                    throw new NotImplementedException();
+                }
+
                 localVariableTypes[i + delta] = new LocalVariableType(argument.GetRuntimeTypeHandle(), false, argument.IsByRef);
             }
 
