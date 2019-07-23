@@ -177,9 +177,9 @@ namespace ILCompiler
                         }
                     }
 
-                    if (nonGcBytes[StaticIndex.Regular] != 0 || 
+                    if (nonGcBytes[StaticIndex.Regular] != 0 ||
                         nonGcBytes[StaticIndex.ThreadLocal] != 0 ||
-                        gcBytes[StaticIndex.Regular] != 0 || 
+                        gcBytes[StaticIndex.Regular] != 0 ||
                         gcBytes[StaticIndex.ThreadLocal] != 0)
                     {
                         OffsetsForType offsetsForType = new OffsetsForType(LayoutInt.Indeterminate, LayoutInt.Indeterminate, LayoutInt.Indeterminate, LayoutInt.Indeterminate);
@@ -213,14 +213,14 @@ namespace ILCompiler
             }
 
             private void GetElementTypeInfo(
-                EcmaModule module, 
+                EcmaModule module,
                 FieldDesc fieldDesc,
-                EntityHandle valueTypeHandle, 
+                EntityHandle valueTypeHandle,
                 CorElementType elementType,
                 int pointerSize,
                 bool moduleLayout,
-                out int alignment, 
-                out int size, 
+                out int alignment,
+                out int size,
                 out bool isGcPointerField,
                 out bool isGcBoxedField)
             {
@@ -424,7 +424,7 @@ namespace ILCompiler
                     offsetsForType.GcOffsets[StaticIndex.ThreadLocal],
                 };
 
-                LayoutInt[] gcPointerFieldOffsets = new LayoutInt[StaticIndex.Count] 
+                LayoutInt[] gcPointerFieldOffsets = new LayoutInt[StaticIndex.Count]
                 {
                     offsetsForType.GcOffsets[StaticIndex.Regular] + new LayoutInt(gcBoxedCount[StaticIndex.Regular] * pointerSize),
                     offsetsForType.GcOffsets[StaticIndex.ThreadLocal] + new LayoutInt(gcBoxedCount[StaticIndex.ThreadLocal] * pointerSize)
@@ -647,21 +647,21 @@ namespace ILCompiler
 
             public StaticsBlock GcStatics { get; }
 
-            public StaticsBlock NonGcStatics { get;  }
+            public StaticsBlock NonGcStatics { get; }
 
-            public StaticsBlock ThreadGcStatics { get;  }
+            public StaticsBlock ThreadGcStatics { get; }
 
-            public StaticsBlock ThreadNonGcStatics { get;  }
+            public StaticsBlock ThreadNonGcStatics { get; }
 
             public IReadOnlyDictionary<TypeDefinitionHandle, OffsetsForType> TypeOffsets { get; }
 
             private Dictionary<DefType, FieldAndOffset[]> _genericTypeToFieldMap;
 
             public ModuleFieldLayout(
-                EcmaModule module, 
-                StaticsBlock gcStatics, 
-                StaticsBlock nonGcStatics, 
-                StaticsBlock threadGcStatics, 
+                EcmaModule module,
+                StaticsBlock gcStatics,
+                StaticsBlock nonGcStatics,
+                StaticsBlock threadGcStatics,
                 StaticsBlock threadNonGcStatics,
                 IReadOnlyDictionary<TypeDefinitionHandle, OffsetsForType> typeOffsets)
             {
@@ -735,26 +735,184 @@ namespace ILCompiler
 
         public static bool IsManagedSequentialType(TypeDesc type)
         {
-            type = type.UnderlyingType;
-            if (type.IsPrimitive || type.Category == TypeFlags.Pointer)
+            if (type.IsPointer)
             {
                 return true;
             }
-            if (type.IsValueType)
+
+            if (!type.IsValueType)
             {
+                return false;
+            }
+
+            MetadataType metadataType = (MetadataType)type;
+            if (metadataType.IsExplicitLayout || !metadataType.IsSequentialLayout)
+            {
+                return false;
+            }
+
+            if (type.IsPrimitive)
+            {
+                return true;
+            }
+
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (!field.IsStatic && !IsManagedSequentialType(field.FieldType.UnderlyingType))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static HashSet<TypeDesc> _reportedManagedSequential = new HashSet<TypeDesc>();
+
+        public static void ProbeType(TypeDesc type)
+        {
+            if (type != null && _reportedManagedSequential.Add(type))
+            {
+                ReportType(type);
+                ProbeType(type.BaseType);
+                foreach (TypeDesc intf in type.RuntimeInterfaces)
+                {
+                    ProbeType(intf);
+                }
+                foreach (TypeDesc inst in type.Instantiation)
+                {
+                    ProbeType(inst);
+                }
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    if (!field.IsStatic && !field.IsLiteral)
+                    ProbeType(field.FieldType);
+                }
+            }
+        }
+
+        private static void ReportType(TypeDesc type)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append("[[[IsManagedSequential{");
+            CoreCLRTypeNameFormatter.Instance.AppendName(builder, type);
+            builder.Append("}=");
+            builder.Append(IsManagedSequentialType(type));
+            builder.Append("]]]");
+            Console.WriteLine(builder.ToString());
+        }
+
+        private class CoreCLRTypeNameFormatter : TypeNameFormatter
+        {
+            public static CoreCLRTypeNameFormatter Instance = new CoreCLRTypeNameFormatter();
+
+            public override void AppendName(StringBuilder sb, ArrayType type)
+            {
+                AppendName(sb, type.ParameterType);
+                sb.Append('[');
+                if (type.Rank == 1)
+                {
+                    sb.Append('*');
+                }
+                else if (type.Rank > 1)
+                {
+                    sb.Append(',', type.Rank - 1);
+                }
+                sb.Append(']');
+            }
+
+            public override void AppendName(StringBuilder sb, ByRefType type)
+            {
+                AppendName(sb, type.ParameterType);
+                sb.Append('&');
+            }
+
+            public override void AppendName(StringBuilder sb, PointerType type)
+            {
+                AppendName(sb, type.ParameterType);
+                sb.Append('*');
+            }
+
+            public override void AppendName(StringBuilder sb, FunctionPointerType type)
+            {
+                MethodSignature signature = type.Signature;
+
+                AppendName(sb, type.Signature.ReturnType);
+                sb.Append("(*)");
+                if (type.Signature.GenericParameterCount > 0)
+                {
+                    sb.Append('<');
+                    for (int argIndex = 0; argIndex < type.Signature.GenericParameterCount; argIndex++)
                     {
-                        if (!IsManagedSequentialType(field.FieldType))
+                        if (argIndex > 0)
                         {
-                            return false;
+                            sb.Append(", ");
                         }
+                        sb.Append("!!");
+                        sb.Append(argIndex);
                     }
                 }
-                return true;
+                sb.Append('(');
+                for (int paramIndex = 0; paramIndex < type.Signature.Length; paramIndex++)
+                {
+                    if (paramIndex > 0)
+                    {
+                        sb.Append(", ");
+                    }
+                    AppendName(sb, type.Signature[paramIndex]);
+                }
+                sb.Append(')');
             }
-            return false;
+
+            public override void AppendName(StringBuilder sb, GenericParameterDesc type)
+            {
+                sb.Append(type.Name);
+            }
+
+            public override void AppendName(StringBuilder sb, SignatureMethodVariable type)
+            {
+                sb.Append(type.ToString());
+            }
+
+            public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
+            {
+                sb.Append(type.ToString());
+            }
+
+            protected override void AppendNameForInstantiatedType(StringBuilder sb, DefType type)
+            {
+                AppendName(sb, type.GetTypeDefinition());
+                sb.Append('<');
+                for (int argIndex = 0; argIndex < type.Instantiation.Length; argIndex++)
+                {
+                    if (argIndex > 0)
+                    {
+                        sb.Append(", ");
+                    }
+                    AppendName(sb, type.Instantiation[argIndex]);
+                }
+                sb.Append('>');
+            }
+
+            protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
+            {
+                MetadataType mdType = (MetadataType)type;
+                sb.Append('[');
+                sb.Append(mdType.Module.Assembly.GetName().Name);
+                sb.Append(']');
+                sb.Append(mdType.Namespace);
+                if (!string.IsNullOrEmpty(type.Namespace))
+                {
+                    sb.Append('.');
+                }
+                sb.Append(type.Name);
+            }
+
+            protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
+            {
+                AppendName(sb, containingType);
+                sb.Append('+');
+                sb.Append(nestedType.Name);
+            }
         }
     }
 }
