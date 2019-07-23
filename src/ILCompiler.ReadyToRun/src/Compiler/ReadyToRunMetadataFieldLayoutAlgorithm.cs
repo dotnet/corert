@@ -692,7 +692,7 @@ namespace ILCompiler
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
             else
-            if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || MarshalUtils.IsManagedSequentialType(type)))
+            if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || IsManagedSequentialType(type)))
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
@@ -729,5 +729,29 @@ namespace ILCompiler
             }
         }
 
+
+        public static bool IsManagedSequentialType(TypeDesc type)
+        {
+            type = type.UnderlyingType;
+            if (type.IsPrimitive || type.Category == TypeFlags.Pointer)
+            {
+                return true;
+            }
+            if (type.IsValueType)
+            {
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (!field.IsStatic && !field.IsLiteral)
+                    {
+                        if (!IsManagedSequentialType(field.FieldType))
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
     }
 }
