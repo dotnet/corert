@@ -1606,7 +1606,7 @@ namespace Internal.JitInterface
 
         private bool HasLayoutMetadata(TypeDesc type)
         {
-            if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || MarshalUtils.IsManagedSequentialType(type)))
+            if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || ReadyToRunMetadataFieldLayoutAlgorithm.IsManagedSequentialType(type)))
             {
                 // Sequential layout
                 return true;
