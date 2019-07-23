@@ -3,7 +3,7 @@
 usage()
 {
     echo "Usage: $0 [OS] [arch] [flavor] [-mode] [-runtest] [-coreclr <subset>]"
-    echo "    -mode         : Compilation mode. Specify cpp/ryujit. Default: ryujit"
+    echo "    -mode         : Compilation mode. Specify cpp/ryujit/readytorun. Default: ryujit"
     echo "    -test         : Run a single test by folder name (ie, BasicThreading)"
     echo "    -runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true."
     echo "    -corefx       : Download and run the CoreFX repo tests"
@@ -17,6 +17,7 @@ usage()
     echo "       top200     : Runs broad coverage / CI validation (~200 tests)."
     echo "       knowngood  : Runs tests known to pass on CoreRT (~6000 tests)."
     echo "       interop    : Runs only the interop tests (~43 tests)."
+    echo "       readytorun : Runs only the readytorun tests (~22 tests)."
     echo "       all        : Runs all tests. There will be many failures (~7000 tests)."
     exit 1
 }
@@ -214,6 +215,8 @@ run_coreclr_tests()
         CoreRT_TestSelectionArg="-test_filter_path ${CoreRT_TestRoot}/Top200.CoreCLR.issues.targets"
     elif [ "$SelectedTests" = "interop" ]; then
         CoreRT_TestSelectionArg="-test_filter_path ${CoreRT_TestRoot}/Interop.CoreCLR.issues.targets"
+    elif [ "$SelectedTests" = "readytorun" ]; then
+        CoreRT_TestSelectionArg="-test_filter_path ${CoreRT_TestRoot}/ReadyToRun.CoreCLR.issues.targets"
     elif [ "$SelectedTests" = "knowngood" ]; then
         # Todo: Build the list of tests that pass
         CoreRT_TestSelectionArg=
@@ -376,7 +379,7 @@ while [ "$1" != "" ]; do
 
             if [ -z ${SelectedTests} ]; then
                 SelectedTests=top200
-            elif [ "${SelectedTests}" != "all" ] && [ "${SelectedTests}" != "top200" ] && [ "${SelectedTests}" != "knowngood" ] && [ "${SelectedTests}" != "interop" ]; then
+            elif [ "${SelectedTests}" != "all" ] && [ "${SelectedTests}" != "top200" ] && [ "${SelectedTests}" != "knowngood" ] && [ "${SelectedTests}" != "interop" ] && [ "${SelectedTests}" != "readytorun" ]; then
                 echo "Error: Invalid CoreCLR test selection."
                 exit -1
             fi

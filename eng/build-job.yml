@@ -90,7 +90,7 @@ jobs:
         enabled: ${{ eq(parameters.osGroup, 'Windows_NT') }}
 
     - ${{ if contains(parameters.testScenarios, 'ReadyToRun') }}:
-      - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)coreclr Top200 $(testParameterPrefix)mode ReadyToRun
+      - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)coreclr ReadyToRun $(testParameterPrefix)mode ReadyToRun
         displayName: Run basic ReadyToRun tests
         enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
 
