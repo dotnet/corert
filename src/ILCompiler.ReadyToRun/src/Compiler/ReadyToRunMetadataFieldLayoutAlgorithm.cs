@@ -729,10 +729,12 @@ namespace ILCompiler
             }
         }
 
-
         public static bool IsManagedSequentialType(TypeDesc type)
         {
-            type = type.UnderlyingType;
+            if (type is MetadataType metadataType && (metadataType.IsExplicitLayout || !metadataType.IsSequentialLayout))
+            {
+                return false;
+            }
             if (type.IsPrimitive || type.Category == TypeFlags.Pointer)
             {
                 return true;
@@ -741,12 +743,12 @@ namespace ILCompiler
             {
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    if (!field.IsStatic && !field.IsLiteral)
+                    if (!field.IsStatic &&
+                        !field.IsLiteral &&
+                        !field.FieldType.IsEnum &&
+                        !IsManagedSequentialType(field.FieldType))
                     {
-                        if (!IsManagedSequentialType(field.FieldType))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                 }
                 return true;
