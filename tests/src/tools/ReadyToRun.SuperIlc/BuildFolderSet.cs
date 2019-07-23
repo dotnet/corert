@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 
 namespace ReadyToRun.SuperIlc
 {
@@ -32,6 +34,10 @@ namespace ReadyToRun.SuperIlc
 
         private long _buildMilliseconds;
 
+        private Dictionary<string, byte> _cpaotManagedSequentialResults;
+
+        private Dictionary<string, byte> _crossgenManagedSequentialResults;
+
         public BuildFolderSet(
             IEnumerable<BuildFolder> buildFolders,
             IEnumerable<CompilerRunner> compilerRunners,
@@ -44,6 +50,9 @@ namespace ReadyToRun.SuperIlc
             _frameworkCompilationFailureBuckets = new Buckets();
             _compilationFailureBuckets = new Buckets();
             _executionFailureBuckets = new Buckets();
+
+            _cpaotManagedSequentialResults = new Dictionary<string, byte>();
+            _crossgenManagedSequentialResults = new Dictionary<string, byte>();
         }
 
         private void WriteJittedMethodSummary(StreamWriter logWriter)
@@ -122,6 +131,7 @@ namespace ReadyToRun.SuperIlc
                         }
                         else if (runnerProcess.Succeeded)
                         {
+                            AnalyzeCompilationLog(runnerProcess, runner.Index);
                             if (_options.R2RDumpPath != null)
                             {
                                 r2rDumpExecutionsToRun.Add(new ProcessInfo(new R2RDumpProcessConstructor(runner, runnerProcess.Parameters.OutputFileName, naked: false)));
@@ -244,6 +254,7 @@ namespace ReadyToRun.SuperIlc
                     if (compilationProcess.Succeeded)
                     {
                         skipCopying.Add(compilationProcess.Parameters.InputFileName);
+                        AnalyzeCompilationLog(compilationProcess, runner.Index);
                     }
                     else
                     {
@@ -278,6 +289,74 @@ namespace ReadyToRun.SuperIlc
             _frameworkCompilationMilliseconds = stopwatch.ElapsedMilliseconds;
 
             return failedCompileCount == 0;
+        }
+
+        private void AnalyzeCompilationLog(ProcessInfo compilationProcess, CompilerIndex runnerIndex)
+        {
+            Dictionary<string, byte> managedSequentialTarget;
+
+            switch (runnerIndex)
+            {
+                case CompilerIndex.CPAOT:
+                    managedSequentialTarget = _cpaotManagedSequentialResults;
+                    break;
+
+                case CompilerIndex.Crossgen:
+                    managedSequentialTarget = _crossgenManagedSequentialResults;
+                    break;
+
+                default:
+                    return;
+            }
+
+            try
+            {
+                const string StartMarker = "[[[IsManagedSequential{";
+                const string FalseEndMarker = "}=False]]]";
+                const string TrueEndMarker = "}=True]]]";
+                const string MultiEndMarker = "}=Multi]]]";
+
+                foreach (string line in File.ReadAllLines(compilationProcess.Parameters.LogPath))
+                {
+                    int startIndex = line.IndexOf(StartMarker);
+                    if (startIndex >= 0)
+                    {
+                        startIndex += StartMarker.Length;
+                        int falseEndIndex = line.IndexOf(FalseEndMarker, startIndex);
+                        int trueEndIndex = falseEndIndex >= 0 ? falseEndIndex : line.IndexOf(TrueEndMarker, startIndex);
+                        int multiEndIndex = trueEndIndex >= 0 ? trueEndIndex : line.IndexOf(MultiEndMarker, startIndex);
+                        byte result;
+                        if (falseEndIndex >= 0)
+                        {
+                            result = 0;
+                        }
+                        else if (trueEndIndex >= 0)
+                        {
+                            result = 1;
+                        }
+                        else if (multiEndIndex >= 0)
+                        {
+                            result = 2;
+                        }
+                        else
+                        {
+                            throw new NotImplementedException();
+                        }
+                        string typeName = line.Substring(startIndex, multiEndIndex - startIndex);
+
+                        byte previousValue;
+                        if (managedSequentialTarget.TryGetValue(typeName, out previousValue) && previousValue != result)
+                        {
+                            result = 2;
+                        }
+                        managedSequentialTarget[typeName] = result;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("Error reading log file {0}: {1}", compilationProcess.Parameters.LogPath, ex.Message);
+            }
         }
 
         public bool Execute()
@@ -934,20 +1013,27 @@ namespace ReadyToRun.SuperIlc
                         {
                             if (!compilationErrorPerRunner[(int)runner.Index])
                             {
+                                StreamWriter runnerLog = perRunnerLog[(int)runner.Index];
                                 ProcessInfo executionProcess = execution[(int)runner.Index];
                                 if (executionProcess != null)
                                 {
-                                    string log = $"\nEXECUTE {runner.CompilerName}:{executionProcess.Parameters.InputFileName}\n";
+                                    string header = $"\nEXECUTE {runner.CompilerName}:{executionProcess.Parameters.InputFileName}";
+                                    combinedLog.WriteLine(header);
+                                    runnerLog.WriteLine(header);
                                     try
                                     {
-                                        log += File.ReadAllText(executionProcess.Parameters.LogPath);
+                                        using (Stream input = new FileStream(executionProcess.Parameters.LogPath, FileMode.Open, FileAccess.Read))
+                                        {
+                                            input.CopyTo(combinedLog.BaseStream);
+                                            input.Seek(0, SeekOrigin.Begin);
+                                            input.CopyTo(runnerLog.BaseStream);
+                                        }
                                     }
                                     catch (Exception ex)
                                     {
-                                        log += " -> " + ex.Message;
+                                        combinedLog.WriteLine(" -> " + ex.Message);
+                                        runnerLog.WriteLine(" -> " + ex.Message);
                                     }
-                                    perRunnerLog[(int)runner.Index].Write(log);
-                                    combinedLog.Write(log);
                                 }
                             }
                         }
@@ -997,6 +1083,95 @@ namespace ReadyToRun.SuperIlc
 
             string executionBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "execution-buckets-" + suffix);
             ExecutionFailureBuckets.WriteToFile(executionBucketsFile, detailed: true);
+
+            string cpaotManagedSequentialFile = Path.Combine(_options.OutputDirectory.FullName, "managed-sequential-cpaot-" + suffix);
+            WriteManagedSequentialLog(cpaotManagedSequentialFile, _cpaotManagedSequentialResults);
+
+            if (_options.Crossgen)
+            {
+                string crossgenManagedSequentialFile = Path.Combine(_options.OutputDirectory.FullName, "managed-sequential-crossgen-" + suffix);
+                WriteManagedSequentialLog(crossgenManagedSequentialFile, _crossgenManagedSequentialResults);
+
+                string managedSequentialDiffFile = Path.Combine(_options.OutputDirectory.FullName, "managed-sequential-diff-" + suffix);
+                WriteManagedSequentialDiff(managedSequentialDiffFile, _cpaotManagedSequentialResults, _crossgenManagedSequentialResults);
+            }
+        }
+
+        private static void WriteManagedSequentialLog(string fileName, Dictionary<string, byte> managedSequentialResults)
+        {
+            using (StreamWriter logWriter = new StreamWriter(fileName))
+            {
+                foreach (KeyValuePair<string, byte> kvp in managedSequentialResults.OrderBy((kvp) => kvp.Key))
+                {
+                    logWriter.WriteLine("{0}:{1}", kvp.Value, kvp.Key);
+                }
+            }
+        }
+
+        private static void WriteManagedSequentialDiff(string fileName, Dictionary<string, byte> cpaot, Dictionary<string, byte> crossgen)
+        {
+            using (StreamWriter logWriter = new StreamWriter(fileName))
+            {
+                int cpaotCount = cpaot.Count();
+                logWriter.WriteLine("Types queried by CPAOT:          {0}", cpaotCount);
+                logWriter.WriteLine("CPAOT conflicting results:       {0}", cpaot.Count(kvp => kvp.Value == 2));
+                int crossgenCount = crossgen.Count();
+                logWriter.WriteLine("Types queried by Crossgen:       {0}", crossgenCount);
+                logWriter.WriteLine("Crossgen conflicting results:    {0}", crossgen.Count(kvp => kvp.Value == 2));
+                int matchCount = cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == kvp.Value);
+                int bothCount = cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key));
+                logWriter.WriteLine("Types queried by both:           {0}", bothCount);
+                logWriter.WriteLine("Matching results:                {0} ({1:F3}%)", matchCount, matchCount * 100.0 / Math.Max(bothCount, 1));
+                logWriter.WriteLine("Mismatched results:              {0}",
+                    cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] != kvp.Value));
+                logWriter.WriteLine("Types not queried by Crossgen:   {0}", cpaot.Count(kvp => !crossgen.ContainsKey(kvp.Key)));
+                logWriter.WriteLine("Types not queried by CPAOT:      {0}", crossgen.Count(kvp => !cpaot.ContainsKey(kvp.Key)));
+                logWriter.WriteLine();
+
+                WriteManagedSequentialDiffSection(
+                    logWriter,
+                    "CPAOT = TRUE / CROSSGEN = FALSE",
+                    cpaot
+                        .Where(kvp => kvp.Value == 1 && crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == 0)
+                        .Select(kvp => kvp.Key));
+
+                WriteManagedSequentialDiffSection(
+                    logWriter,
+                    "CPAOT = FALSE / CROSSGEN = TRUE",
+                    cpaot
+                        .Where(kvp => kvp.Value == 0 && crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == 1)
+                        .Select(kvp => kvp.Key));
+
+                WriteManagedSequentialDiffSection(
+                    logWriter,
+                    "CROSSGEN - NO RESULT",
+                    cpaot
+                        .Where(kvp => !crossgen.ContainsKey(kvp.Key))
+                        .Select(kvp => (kvp.Value.ToString() + ":" + kvp.Key)));
+
+                WriteManagedSequentialDiffSection(
+                    logWriter,
+                    "CPAOT - NO RESULT",
+                    crossgen
+                        .Where(kvp => !cpaot.ContainsKey(kvp.Key))
+                        .Select(kvp => (kvp.Value.ToString() + ":" + kvp.Key)));
+            }
+        }
+
+        private static void WriteManagedSequentialDiffSection(StreamWriter logWriter, string title, IEnumerable<string> items)
+        {
+            bool first = true;
+            foreach (string item in items)
+            {
+                if (first)
+                {
+                    logWriter.WriteLine();
+                    logWriter.WriteLine(title);
+                    logWriter.WriteLine(new string('-', title.Length));
+                    first = false;
+                }
+                logWriter.WriteLine(item);
+            }
         }
 
         public IEnumerable<BuildFolder> FoldersToBuild => _buildFolders.Where(folder => !folder.IsBlockedWithIssue);

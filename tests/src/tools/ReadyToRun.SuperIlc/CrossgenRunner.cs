@@ -26,6 +26,7 @@ namespace ReadyToRun.SuperIlc
         {
             ProcessParameters processParameters = base.ExecutionProcess(modules, folders, noEtw);
             processParameters.EnvironmentOverrides["COMPLUS_ReadyToRun"] = "1";
+            processParameters.EnvironmentOverrides["COMPLUS_NoGuiOnAssert"] = "1";
             return processParameters;
         }
 
