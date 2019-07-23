@@ -34,9 +34,9 @@ namespace ReadyToRun.SuperIlc
 
         private long _buildMilliseconds;
 
-        private Dictionary<string, bool> _cpaotManagedSequentialResults;
+        private Dictionary<string, byte> _cpaotManagedSequentialResults;
 
-        private Dictionary<string, bool> _crossgenManagedSequentialResults;
+        private Dictionary<string, byte> _crossgenManagedSequentialResults;
 
         public BuildFolderSet(
             IEnumerable<BuildFolder> buildFolders,
@@ -51,8 +51,8 @@ namespace ReadyToRun.SuperIlc
             _compilationFailureBuckets = new Buckets();
             _executionFailureBuckets = new Buckets();
 
-            _cpaotManagedSequentialResults = new Dictionary<string, bool>();
-            _crossgenManagedSequentialResults = new Dictionary<string, bool>();
+            _cpaotManagedSequentialResults = new Dictionary<string, byte>();
+            _crossgenManagedSequentialResults = new Dictionary<string, byte>();
         }
 
         private void WriteJittedMethodSummary(StreamWriter logWriter)
@@ -293,7 +293,7 @@ namespace ReadyToRun.SuperIlc
 
         private void AnalyzeCompilationLog(ProcessInfo compilationProcess, CompilerIndex runnerIndex)
         {
-            Dictionary<string, bool> managedSequentialTarget;
+            Dictionary<string, byte> managedSequentialTarget;
 
             switch (runnerIndex)
             {
@@ -314,6 +314,7 @@ namespace ReadyToRun.SuperIlc
                 const string StartMarker = "[[[IsManagedSequential{";
                 const string FalseEndMarker = "}=False]]]";
                 const string TrueEndMarker = "}=True]]]";
+                const string MultiEndMarker = "}=Multi]]]";
 
                 foreach (string line in File.ReadAllLines(compilationProcess.Parameters.LogPath))
                 {
@@ -321,29 +322,34 @@ namespace ReadyToRun.SuperIlc
                     if (startIndex >= 0)
                     {
                         startIndex += StartMarker.Length;
-                        int trueEndIndex = line.IndexOf(TrueEndMarker, startIndex);
-                        bool result = (trueEndIndex >= 0);
-                        int endIndex = (result ? trueEndIndex : line.IndexOf(FalseEndMarker, startIndex));
-                        if (endIndex >= 0)
+                        int falseEndIndex = line.IndexOf(FalseEndMarker, startIndex);
+                        int trueEndIndex = falseEndIndex >= 0 ? falseEndIndex : line.IndexOf(TrueEndMarker, startIndex);
+                        int multiEndIndex = trueEndIndex >= 0 ? trueEndIndex : line.IndexOf(MultiEndMarker, startIndex);
+                        byte result;
+                        if (falseEndIndex >= 0)
                         {
-                            string typeName = line.Substring(startIndex, endIndex - startIndex);
-
-                            bool previousValue;
-                            if (managedSequentialTarget.TryGetValue(typeName, out previousValue))
-                            {
-                                if (previousValue != result)
-                                {
-                                    Console.Error.WriteLine(
-                                        "Conflicting IsManagedSequential results for type {0} found in {1}",
-                                        typeName,
-                                        compilationProcess.Parameters.LogPath);
-                                }
-                            }
-                            else
-                            {
-                                managedSequentialTarget.Add(typeName, result);
-                            }
+                            result = 0;
                         }
+                        else if (trueEndIndex >= 0)
+                        {
+                            result = 1;
+                        }
+                        else if (multiEndIndex >= 0)
+                        {
+                            result = 2;
+                        }
+                        else
+                        {
+                            throw new NotImplementedException();
+                        }
+                        string typeName = line.Substring(startIndex, multiEndIndex - startIndex);
+
+                        byte previousValue;
+                        if (managedSequentialTarget.TryGetValue(typeName, out previousValue) && previousValue != result)
+                        {
+                            result = 2;
+                        }
+                        managedSequentialTarget[typeName] = result;
                     }
                 }
             }
@@ -1007,20 +1013,27 @@ namespace ReadyToRun.SuperIlc
                         {
                             if (!compilationErrorPerRunner[(int)runner.Index])
                             {
+                                StreamWriter runnerLog = perRunnerLog[(int)runner.Index];
                                 ProcessInfo executionProcess = execution[(int)runner.Index];
                                 if (executionProcess != null)
                                 {
-                                    string log = $"\nEXECUTE {runner.CompilerName}:{executionProcess.Parameters.InputFileName}\n";
+                                    string header = $"\nEXECUTE {runner.CompilerName}:{executionProcess.Parameters.InputFileName}";
+                                    combinedLog.WriteLine(header);
+                                    runnerLog.WriteLine(header);
                                     try
                                     {
-                                        log += File.ReadAllText(executionProcess.Parameters.LogPath);
+                                        using (Stream input = new FileStream(executionProcess.Parameters.LogPath, FileMode.Open, FileAccess.Read))
+                                        {
+                                            input.CopyTo(combinedLog.BaseStream);
+                                            input.Seek(0, SeekOrigin.Begin);
+                                            input.CopyTo(runnerLog.BaseStream);
+                                        }
                                     }
                                     catch (Exception ex)
                                     {
-                                        log += " -> " + ex.Message;
+                                        combinedLog.WriteLine(" -> " + ex.Message);
+                                        runnerLog.WriteLine(" -> " + ex.Message);
                                     }
-                                    perRunnerLog[(int)runner.Index].Write(log);
-                                    combinedLog.Write(log);
                                 }
                             }
                         }
@@ -1084,25 +1097,27 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        private static void WriteManagedSequentialLog(string fileName, Dictionary<string, bool> managedSequentialResults)
+        private static void WriteManagedSequentialLog(string fileName, Dictionary<string, byte> managedSequentialResults)
         {
             using (StreamWriter logWriter = new StreamWriter(fileName))
             {
-                foreach (KeyValuePair<string, bool> kvp in managedSequentialResults.OrderBy((kvp) => kvp.Key))
+                foreach (KeyValuePair<string, byte> kvp in managedSequentialResults.OrderBy((kvp) => kvp.Key))
                 {
-                    logWriter.WriteLine("{0}:{1}", (kvp.Value ? 1 : 0), kvp.Key);
+                    logWriter.WriteLine("{0}:{1}", kvp.Value, kvp.Key);
                 }
             }
         }
 
-        private static void WriteManagedSequentialDiff(string fileName, Dictionary<string, bool> cpaot, Dictionary<string, bool> crossgen)
+        private static void WriteManagedSequentialDiff(string fileName, Dictionary<string, byte> cpaot, Dictionary<string, byte> crossgen)
         {
             using (StreamWriter logWriter = new StreamWriter(fileName))
             {
                 int cpaotCount = cpaot.Count();
                 logWriter.WriteLine("Types queried by CPAOT:          {0}", cpaotCount);
+                logWriter.WriteLine("CPAOT conflicting results:       {0}", cpaot.Count(kvp => kvp.Value == 2));
                 int crossgenCount = crossgen.Count();
                 logWriter.WriteLine("Types queried by Crossgen:       {0}", crossgenCount);
+                logWriter.WriteLine("Crossgen conflicting results:    {0}", crossgen.Count(kvp => kvp.Value == 2));
                 int matchCount = cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == kvp.Value);
                 int bothCount = cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key));
                 logWriter.WriteLine("Types queried by both:           {0}", bothCount);
@@ -1117,14 +1132,14 @@ namespace ReadyToRun.SuperIlc
                     logWriter,
                     "CPAOT = TRUE / CROSSGEN = FALSE",
                     cpaot
-                        .Where(kvp => kvp.Value == true && crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == false)
+                        .Where(kvp => kvp.Value == 1 && crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == 0)
                         .Select(kvp => kvp.Key));
 
                 WriteManagedSequentialDiffSection(
                     logWriter,
                     "CPAOT = FALSE / CROSSGEN = TRUE",
                     cpaot
-                        .Where(kvp => kvp.Value == false && crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == true)
+                        .Where(kvp => kvp.Value == 0 && crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == 1)
                         .Select(kvp => kvp.Key));
 
                 WriteManagedSequentialDiffSection(
@@ -1132,14 +1147,14 @@ namespace ReadyToRun.SuperIlc
                     "CROSSGEN - NO RESULT",
                     cpaot
                         .Where(kvp => !crossgen.ContainsKey(kvp.Key))
-                        .Select(kvp => (kvp.Value ? "1:" : "0:") + kvp.Key));
+                        .Select(kvp => (kvp.Value.ToString() + ":" + kvp.Key)));
 
                 WriteManagedSequentialDiffSection(
                     logWriter,
                     "CPAOT - NO RESULT",
                     crossgen
                         .Where(kvp => !cpaot.ContainsKey(kvp.Key))
-                        .Select(kvp => (kvp.Value ? "1:" : "0:") + kvp.Key));
+                        .Select(kvp => (kvp.Value.ToString() + ":" + kvp.Key)));
             }
         }
 
