@@ -59,12 +59,6 @@ namespace ILCompiler
             _corInfo = new CorInfoImpl(this, _jitConfigProvider);
         }
 
-        private static IEnumerable<ICompilationRootProvider> GetCompilationRoots(IEnumerable<ICompilationRootProvider> existingRoots, NodeFactory factory)
-        {
-            // Todo: Eventually this should return an interesting set of roots, such as the ready-to-run header
-            yield break;
-        }
-
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
         {
             using (FileStream inputFile = File.OpenRead(_inputFilePath))

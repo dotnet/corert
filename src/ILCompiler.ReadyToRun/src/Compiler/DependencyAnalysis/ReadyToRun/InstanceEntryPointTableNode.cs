@@ -99,18 +99,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
-        
-        private static BlobVertex[] PlaceBlobs(Section section, List<byte[]> blobs)
-        {
-            BlobVertex[] blobVertices = new BlobVertex[blobs.Count];
-            for (int blobIndex = 0; blobIndex < blobs.Count; blobIndex++)
-            {
-                BlobVertex blobVertex = new BlobVertex(blobs[blobIndex]);
-                section.Place(blobVertex);
-                blobVertices[blobIndex] = blobVertex;
-            }
-            return blobVertices;
-        }
 
         public override int ClassCode => -348722540;
     }
