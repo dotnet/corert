@@ -195,14 +195,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public byte[] GCInfo => _gcInfo;
         public ObjectData EHInfo => _ehInfo;
 
-        public ISymbolNode GetAssociatedDataNode(NodeFactory factory)
-        {
-            if (MethodAssociatedDataNode.MethodHasAssociatedData(factory, this))
-                return factory.MethodAssociatedData(this);
-
-            return null;
-        }
-
         public void InitializeFrameInfos(FrameInfo[] frameInfos)
         {
             Debug.Assert(_frameInfos == null);

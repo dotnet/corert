@@ -72,12 +72,4 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 433266948;
     }
-
-    public class DelayLoadHelperThunk_Obj : ImportThunk
-    {
-        public DelayLoadHelperThunk_Obj(ReadyToRunCodegenNodeFactory nodeFactory, Import instanceCell)
-            : base(ReadyToRunHelper.DelayLoad_Helper_Obj, nodeFactory, instanceCell, useVirtualCall: false)
-        {
-        }
-    }
 }

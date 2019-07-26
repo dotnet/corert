@@ -17,7 +17,6 @@ using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 using ReadyToRunHelper = ILCompiler.ReadyToRunHelper;
-using System.Collections.Generic;
 
 namespace Internal.JitInterface
 {
@@ -125,68 +124,6 @@ namespace Internal.JitInterface
             _methodCodeNode = methodCodeNodeNeedingCode;
 
             CompileMethodInternal(methodCodeNodeNeedingCode);
-        }
-
-        private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
-        {
-            if (_compilation.NeedsRuntimeLookup(helperId, entity))
-            {
-                lookup.lookupKind.needsRuntimeLookup = true;
-
-                lookup.runtimeLookup.signature = null;
-
-                MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-
-                // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-                // to abort the inlining attempt anyway.
-                if (contextMethod != _methodCodeNode.Method)
-                {
-                    return;
-                }
-
-                // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary available to store the lookup. 
-                // All callers of ComputeRuntimeLookupForSharedGenericToken have to filter out this case. We can't do much about it here.
-                Debug.Assert(contextMethod.IsSharedByGenericInstantiations);
-
-                if (contextMethod.RequiresInstMethodDescArg())
-                {
-                    lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
-                }
-                else
-                {
-                    if (contextMethod.RequiresInstMethodTableArg())
-                    {
-                        lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
-                    }
-                    else
-                    {
-                        lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
-                    }
-                }
-
-                // Unless we decide otherwise, just do the lookup via a helper function
-                lookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-
-                lookup.lookupKind.runtimeLookupFlags = (ushort)helperId;
-                lookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(entity);
-
-                lookup.runtimeLookup.indirectFirstOffset = false;
-                lookup.runtimeLookup.indirectSecondOffset = false;
-
-                // For R2R compilations, we don't generate the dictionary lookup signatures (dictionary lookups are done in a 
-                // different way that is more version resilient... plus we can't have pointers to existing MTs/MDs in the sigs)
-            }
-            else
-            {
-                object targetEntity = entity;
-                if (entity is MethodDesc methodDesc)
-                {
-                    targetEntity = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType: null);
-                }
-                lookup.lookupKind.needsRuntimeLookup = false;
-                ISymbolNode constLookup = _compilation.SymbolNodeFactory.ComputeConstantLookup(helperId, targetEntity, GetSignatureContext());
-                lookup.constLookup = CreateConstLookupToSymbol(constLookup);
-            }
         }
 
         private SignatureContext GetSignatureContext()
@@ -602,11 +539,6 @@ namespace Internal.JitInterface
                 new ModuleToken(HandleToModule(module), metaTok), GetSignatureContext());
             ppValue = (void*)ObjectToHandle(stringObject);
             return InfoAccessType.IAT_PPVALUE;
-        }
-
-        public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, SignatureContext signatureContext)
-        {
-            return _compilation.SymbolNodeFactory.ReadyToRunHelper(helperId, entity, signatureContext);
         }
 
         enum EHInfoFields
@@ -1101,13 +1033,6 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(methodToDescribe, &pResult->sig, useInstantiatingStub);
         }
 
-        private bool MethodInSystemVersionBubble(MethodDesc method)
-        {
-            return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method) &&
-                method.OwningType.GetTypeDefinition().GetClosestDefType() is MetadataType metadataType &&
-                metadataType.Module == _compilation.TypeSystemContext.SystemModule;
-        }
-
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
             MethodDesc methodToCall;
@@ -1445,12 +1370,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private bool ContextIsShared(CORINFO_CONTEXT_STRUCT *context)
-        {
-            MethodDesc contextMethod = methodFromContext(context);
-            return contextMethod != null && contextMethod.IsSharedByGenericInstantiations;
-        }
-
         private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
             ceeInfoEmbedGenericHandle(ref pResolvedToken, fEmbedParent, ref pResult);
@@ -1654,8 +1573,13 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getMethodVTableOffset"); }
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
         { throw new NotImplementedException("expandRawHandleIntrinsic"); }
+
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
-        { throw new NotImplementedException("getMethodSync"); }
+        {
+            // Used with CORINFO_HELP_MON_ENTER_STATIC/CORINFO_HELP_MON_EXIT_STATIC - we don't have this fixup in R2R.
+            throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(getMethodSync)}");
+        }
+
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         { throw new NotImplementedException("getAddressOfPInvokeTarget"); }
     }

@@ -350,25 +350,6 @@ namespace ILCompiler.DependencyAnalysis
             return dispatchCell;
         }
 
-        public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, SignatureContext signatureContext)
-        {
-            return ReadyToRunHelper(helperId, entity, signatureContext);
-        }
-
-        private readonly Dictionary<TypeDesc, ISymbolNode> _constructedTypeSymbols = new Dictionary<TypeDesc, ISymbolNode>();
-
-        public ISymbolNode ConstructedTypeSymbol(TypeDesc type, SignatureContext signatureContext)
-        {
-            if (!_constructedTypeSymbols.TryGetValue(type, out ISymbolNode symbol))
-            {
-                symbol = new PrecodeHelperImport(
-                    _codegenNodeFactory,
-                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary, type, signatureContext));
-                _constructedTypeSymbols.Add(type, symbol);
-            }
-            return symbol;
-        }
-
         private readonly Dictionary<TypeAndMethod, ISymbolNode> _delegateCtors = new Dictionary<TypeAndMethod, ISymbolNode>();
 
         public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodWithToken method, SignatureContext signatureContext)
