@@ -1706,8 +1706,13 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getMethodVTableOffset"); }
         private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
         { throw new NotImplementedException("expandRawHandleIntrinsic"); }
+
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
-        { throw new NotImplementedException("getMethodSync"); }
+        {
+            // Used with CORINFO_HELP_MON_ENTER_STATIC/CORINFO_HELP_MON_EXIT_STATIC - we don't have this fixup in R2R.
+            throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(getMethodSync)}");
+        }
+
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         { throw new NotImplementedException("getAddressOfPInvokeTarget"); }
     }
