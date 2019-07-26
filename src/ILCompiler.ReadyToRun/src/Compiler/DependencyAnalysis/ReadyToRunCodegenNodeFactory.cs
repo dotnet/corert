@@ -15,8 +15,6 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    using ReadyToRunHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper;
-
     public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
     {
         private Dictionary<TypeAndMethod, IMethodNode> _importMethods;
@@ -335,21 +333,21 @@ namespace ILCompiler.DependencyAnalysis
 
             // All ready-to-run images have a module import helper which gets patched by the runtime on image load
             ModuleImport = new Import(EagerImports, new ReadyToRunHelperSignature(
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Module));
+                ILCompiler.ReadyToRunHelper.Module));
             graph.AddRoot(ModuleImport, "Module import is required by the R2R format spec");
 
             if (Target.Architecture != TargetArchitecture.X86)
             {
                 Import personalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine));
+                    ILCompiler.ReadyToRunHelper.PersonalityRoutine));
                 PersonalityRoutine = new ImportThunk(
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutine, this, personalityRoutineImport, useVirtualCall: false);
+                    ILCompiler.ReadyToRunHelper.PersonalityRoutine, this, personalityRoutineImport, useVirtualCall: false);
                 graph.AddRoot(PersonalityRoutine, "Personality routine is faster to root early rather than referencing it from each unwind info");
 
                 Import filterFuncletPersonalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet));
+                    ILCompiler.ReadyToRunHelper.PersonalityRoutineFilterFunclet));
                 FilterFuncletPersonalityRoutine = new ImportThunk(
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_PersonalityRoutineFilterFunclet, this, filterFuncletPersonalityRoutineImport, useVirtualCall: false);
+                    ILCompiler.ReadyToRunHelper.PersonalityRoutineFilterFunclet, this, filterFuncletPersonalityRoutineImport, useVirtualCall: false);
                 graph.AddRoot(FilterFuncletPersonalityRoutine, "Filter funclet personality routine is faster to root early rather than referencing it from each unwind info");
             }
 
@@ -453,26 +451,26 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        private ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper GetGenericStaticHelper(ReadyToRunHelperId helperId)
+        private ReadyToRunHelper GetGenericStaticHelper(ReadyToRunHelperId helperId)
         {
-            ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper r2rHelper;
+            ReadyToRunHelper r2rHelper;
 
             switch (helperId)
             {
                 case ReadyToRunHelperId.GetGCStaticBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase;
+                    r2rHelper = ILCompiler.ReadyToRunHelper.GenericGcStaticBase;
                     break;
 
                 case ReadyToRunHelperId.GetNonGCStaticBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcStaticBase;
+                    r2rHelper = ILCompiler.ReadyToRunHelper.GenericNonGcStaticBase;
                     break;
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcTlsBase;
+                    r2rHelper = ILCompiler.ReadyToRunHelper.GenericGcTlsBase;
                     break;
 
                 case ReadyToRunHelperId.GetThreadNonGcStaticBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcTlsBase;
+                    r2rHelper = ILCompiler.ReadyToRunHelper.GenericNonGcTlsBase;
                     break;
 
                 default:
@@ -529,7 +527,7 @@ namespace ILCompiler.DependencyAnalysis
                 result = new DelayLoadHelperMethodImport(
                     this,
                     DispatchImports,
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
+                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper_Obj,
                     methodWithToken,
                     useVirtualCall: false,
                     useInstantiatingStub: true,

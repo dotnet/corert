@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             : base(
                   factory,
                   factory.MethodImports,
-                  ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall,
+                  ReadyToRunHelper.DelayLoad_MethodCall,
                   factory.MethodSignature(
                       fixupKind,
                       method,
