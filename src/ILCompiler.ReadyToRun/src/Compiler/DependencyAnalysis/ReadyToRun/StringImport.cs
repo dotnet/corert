@@ -12,8 +12,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly ModuleToken _token;
 
-        private int _definitionOffset;
-
         public StringImport(ImportSectionNode table, ModuleToken token, SignatureContext signatureContext)
             : base(table, new StringImportSignature(token, signatureContext))
         {
@@ -24,13 +22,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
-            _definitionOffset = dataBuilder.CountBytes;
             // This needs to be an empty target pointer since it will be filled in with the string pointer
             // when loaded by CoreCLR
             dataBuilder.EmitZeroPointer();
         }
-
-        int Offset => _definitionOffset;
 
         public override bool RepresentsIndirectionCell => true;
 

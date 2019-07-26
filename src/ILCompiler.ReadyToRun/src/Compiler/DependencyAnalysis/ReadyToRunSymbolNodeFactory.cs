@@ -14,8 +14,6 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    using ReadyToRunHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper;
-
     public sealed class ReadyToRunSymbolNodeFactory
     {
         private readonly ReadyToRunCodegenNodeFactory _codegenNodeFactory;
@@ -668,11 +666,6 @@ namespace ILCompiler.DependencyAnalysis
             return result;
         }
 
-        public ISymbolNode HelperMethodEntrypoint(ILCompiler.ReadyToRunHelper helperId, MethodDesc method)
-        {
-            return ExternSymbol(helperId);
-        }
-
         private readonly Dictionary<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new Dictionary<MethodAndCallSite, ISymbolNode>();
 
         public ISymbolNode InterfaceDispatchCell(MethodWithToken method, SignatureContext signatureContext, bool isUnboxingStub, string callSite)
@@ -696,25 +689,6 @@ namespace ILCompiler.DependencyAnalysis
                 _interfaceDispatchCells.Add(cellKey, dispatchCell);
             }
             return dispatchCell;
-        }
-
-        public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId helperId, object entity, SignatureContext signatureContext)
-        {
-            return ReadyToRunHelper(helperId, entity, signatureContext);
-        }
-
-        private readonly Dictionary<TypeDesc, ISymbolNode> _constructedTypeSymbols = new Dictionary<TypeDesc, ISymbolNode>();
-
-        public ISymbolNode ConstructedTypeSymbol(TypeDesc type, SignatureContext signatureContext)
-        {
-            if (!_constructedTypeSymbols.TryGetValue(type, out ISymbolNode symbol))
-            {
-                symbol = new PrecodeHelperImport(
-                    _codegenNodeFactory,
-                    _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionary, type, signatureContext));
-                _constructedTypeSymbols.Add(type, symbol);
-            }
-            return symbol;
         }
 
         private readonly Dictionary<TypeAndMethod, ISymbolNode> _delegateCtors = new Dictionary<TypeAndMethod, ISymbolNode>();

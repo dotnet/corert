@@ -16,10 +16,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     internal abstract class TransitionBlock
     {
-        public TransitionBlock()
-        {
-        }
-
         public static TransitionBlock FromTarget(TargetDetails target)
         {
             switch (target.Architecture)

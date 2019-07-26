@@ -186,58 +186,6 @@ namespace ILCompiler.DependencyAnalysis
             throw new NotImplementedException();
         }
 
-        private ModuleToken GetTypeToken(ModuleToken token)
-        {
-            if (token.IsNull)
-            {
-                return token;
-            }
-            MetadataReader mdReader = token.MetadataReader;
-            EntityHandle handle = (EntityHandle)MetadataTokens.Handle((int)token.Token);
-            ModuleToken typeToken;
-            switch (token.TokenType)
-            {
-                case CorTokenType.mdtTypeRef:
-                case CorTokenType.mdtTypeDef:
-                    typeToken = token;
-                    break;
-
-                case CorTokenType.mdtMemberRef:
-                    {
-                        MemberReferenceHandle memberRefHandle = (MemberReferenceHandle)handle;
-                        MemberReference memberRef = mdReader.GetMemberReference(memberRefHandle);
-                        typeToken = new ModuleToken(token.Module, (mdToken)MetadataTokens.GetToken(memberRef.Parent));
-                    }
-                    break;
-
-                case CorTokenType.mdtFieldDef:
-                    {
-                        FieldDefinitionHandle fieldDefHandle = (FieldDefinitionHandle)handle;
-                        FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldDefHandle);
-                        typeToken = new ModuleToken(token.Module, (mdToken)MetadataTokens.GetToken(fieldDef.GetDeclaringType()));
-                    }
-                    break;
-
-                case CorTokenType.mdtMethodDef:
-                    {
-                        MethodDefinitionHandle methodDefHandle = (MethodDefinitionHandle)handle;
-                        MethodDefinition methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-                        typeToken = new ModuleToken(token.Module, (mdToken)MetadataTokens.GetToken(methodDef.GetDeclaringType()));
-                    }
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
-            return typeToken;
-        }
-
-        public IMethodNode CreateUnboxingStubNode(MethodDesc method, mdToken token)
-        {
-            throw new NotImplementedException();
-        }
-
         private readonly Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>> _methodSignatures =
             new Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>>();
 
