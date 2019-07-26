@@ -1519,5 +1519,27 @@ namespace Internal.JitInterface
 
             pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol(externName));
         }
+
+        private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
+        {
+            // TODO: fully implement GS cookies
+
+            if (pCookieVal != null)
+            {
+                if (PointerSize == 4)
+                {
+                    *pCookieVal = (IntPtr)0x3F796857;
+                }
+                else
+                {
+                    *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                }
+                *ppCookieVal = null;
+            }
+            else
+            {
+                throw new NotImplementedException("getGSCookie");
+            }
+        }
     }
 }

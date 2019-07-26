@@ -926,28 +926,6 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* mapMethodDeclToMethodImpl(CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("mapMethodDeclToMethodImpl"); }
 
-        private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
-        {
-            // TODO: fully implement GS cookies
-
-            if (pCookieVal != null)
-            {
-                if (PointerSize == 4)
-                {
-                    *pCookieVal = (IntPtr)0x3F796857;
-                }
-                else
-                {
-                    *pCookieVal = (IntPtr)0x216D6F6D202C6948;
-                }
-                *ppCookieVal = null;
-            }
-            else
-            {
-                throw new NotImplementedException("getGSCookie");
-            }
-        }
-
         private static object ResolveTokenWithSubstitution(MethodIL methodIL, mdToken token, Instantiation typeInst, Instantiation methodInst)
         {
             // Grab the generic definition of the method IL, resolve the token within the definition,
