@@ -943,6 +943,10 @@ namespace Internal.IL
             LLVMValueRef typedToStore = source;
             if (toStoreKind == LLVMTypeKind.LLVMPointerTypeKind && valueTypeKind == LLVMTypeKind.LLVMPointerTypeKind)
             {
+                if (name != null && name.Contains("System.Collections.Generic.KeyValuePair`2<TKey_System.__Canon,TValue_System.__Canon>"))
+                {
+
+                }
                 typedToStore = LLVM.BuildPointerCast(builder, source, valueType, "CastPtr" + (name ?? ""));
             }
             else if (toStoreKind == LLVMTypeKind.LLVMPointerTypeKind && valueTypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
@@ -1548,17 +1552,13 @@ namespace Internal.IL
             StackEntry[] arguments;
             if (type.IsRuntimeDeterminedSubtype)
             {
-                if (_method.IsConstructor)
-                {
-
-                }
                 LLVMValueRef helper;
                 var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, type, out helper);
                 _dependencies.Add(node);
 
                 //TODO refactor call to helper
 
-                var typeHandle = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                var typeHandle = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext()}, "getHelper");
 
                 //todo refactor argument creation with else below
                 arguments = new StackEntry[]
@@ -1742,10 +1742,10 @@ namespace Internal.IL
         private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt, TypeDesc constrainedType, MethodDesc runtimeDeterminedMethod, out bool hasHiddenParam)
         {
             hasHiddenParam = false;
-            if (callee.ToString().Contains("Unsafe") && callee.ToString().Contains("As"))
-            {
-
-            }
+//            if (callee.ToString().Contains("Unsafe") && callee.ToString().Contains("As"))
+//            {
+//
+//            }
             // todo: try to remove this as its already done higher up
             var canonMethod = callee.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
@@ -1849,7 +1849,7 @@ namespace Internal.IL
         private ISymbolNode GetMethodGenericDictionaryNode(MethodDesc method)
         {
             ISymbolNode node = _compilation.NodeFactory.MethodGenericDictionary(method);
-//            _dependencies.Add(node);
+            _dependencies.Add(node);
 
             return node;
         }
@@ -1905,7 +1905,7 @@ namespace Internal.IL
             {
 
             }
-//            _dependencies.Add(_compilation.NodeFactory.GVMDependencies(method));
+            _dependencies.Add(_compilation.NodeFactory.GVMDependencies(method));
             bool exactContextNeedsRuntimeLookup;
             if (method.HasInstantiation)
             {
@@ -1922,8 +1922,8 @@ namespace Internal.IL
             {
                 LLVMValueRef helper;
                 var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodHandle, runtimeDeterminedMethod, out helper); 
-//                _dependencies.Add(node);
-                slotRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                _dependencies.Add(node);
+                slotRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
             }
             else
             {
@@ -2257,10 +2257,6 @@ namespace Internal.IL
 
             if (hasHiddenParam)
             {
-                if (callee.ToString().Contains("Unsafe.As"))
-                {
-
-                }
                 if (exactContextNeedsRuntimeLookup)
                 {
 //                    if (!resolvedConstraint)
@@ -2276,7 +2272,7 @@ namespace Internal.IL
                     else
                         {
                             LLVMValueRef helper;
-                            var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod, out helper);
+                            var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType, out helper);
                             var genericContext = GetGenericContext();
                             hiddenParam = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { genericContext }, "getHelper");
                         }
@@ -2317,7 +2313,9 @@ namespace Internal.IL
                     }
                     else
                     {
-                        hiddenParam = LoadAddressOfSymbolNode(_compilation.NodeFactory.ConstructedTypeSymbol(callee.OwningType));
+                        var owningTypeSymbol = _compilation.NodeFactory.ConstructedTypeSymbol(callee.OwningType);
+                        _dependencies.Add(owningTypeSymbol);
+                        hiddenParam = LoadAddressOfSymbolNode(owningTypeSymbol);
                     }
                 }
                 //                var method = (MethodDesc)_canonMethodIL.GetObject(token);
@@ -2776,7 +2774,7 @@ namespace Internal.IL
                     {
                         LLVMValueRef helper;
                         var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodEntry, method, out helper);
-                        targetLLVMFunction = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                        targetLLVMFunction = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
                     }
                     else
                     {
@@ -3418,7 +3416,7 @@ namespace Internal.IL
             {
                 LLVMValueRef helper;
                 var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, type, out helper); // TODO GetThreadNonGcStaticBase?
-                eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
             }
             else eeType = GetEETypePointerForTypeDesc(type, true);
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
@@ -3681,7 +3679,7 @@ namespace Internal.IL
                         {
                             LLVMValueRef helper;
                             node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetThreadStaticBase, runtimeDeterminedOwningType, out helper); // TODO GetThreadNonGcStaticBase?
-                            staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                            staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
                         }
                         else
                         {
@@ -3711,7 +3709,7 @@ namespace Internal.IL
                                 DefType helperArg = owningType.ConvertToSharedRuntimeDeterminedForm();
                                 LLVMValueRef helper;
                                 node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetGCStaticBase, runtimeDeterminedOwningType, out helper);
-                                staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                                staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
                             }
                             else
                             {
@@ -3728,7 +3726,7 @@ namespace Internal.IL
                                 DefType helperArg = owningType.ConvertToSharedRuntimeDeterminedForm();
                                 LLVMValueRef helper;
                                 node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetNonGCStaticBase, helperArg, out helper);
-                                staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                                staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext()}, "getHelper");
                             }
                             else
                             {
@@ -3775,7 +3773,7 @@ namespace Internal.IL
             else
             {
                 Debug.Assert(_method.RequiresInstMethodTableArg() || _method.AcquiresInstMethodTableFromThis());
-                node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArg, _method.OwningType) as ReadyToRunGenericHelperNode;
+                node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArg, _method.OwningType);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
                     LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), new[]
                                                                                                   {
@@ -3863,10 +3861,14 @@ namespace Internal.IL
 
         private void ImportStoreField(int token, bool isStatic)
         {
-            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
+            FieldDesc runtimeDeterminedField = (FieldDesc)_methodIL.GetObject(token);
+            FieldDesc field = (FieldDesc)_canonMethodIL.GetObject(token);
             StackEntry valueEntry = _stack.Pop();
-            LLVMValueRef fieldAddress = GetFieldAddress(field, (FieldDesc)_canonMethodIL.GetObject(token), isStatic);
-            CastingStore(fieldAddress, valueEntry, field.FieldType);
+            TypeDesc owningType = _compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
+            TypeDesc fieldType = _compilation.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
+
+            LLVMValueRef fieldAddress = GetFieldAddress(runtimeDeterminedField, field, isStatic);
+            CastingStore(fieldAddress, valueEntry, fieldType);
         }
 
         // Loads symbol address. Address is represented as a i32*
@@ -3917,7 +3919,7 @@ namespace Internal.IL
                 type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
                 LLVMValueRef helper;
                 var typeRef = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedType, out helper);
-                eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
             }
             else eeType = GetEETypePointerForTypeDesc(type, true);
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
@@ -3991,9 +3993,10 @@ namespace Internal.IL
 
             if (_method.AcquiresInstMethodTableFromThis())
             {
-                return LLVM.GetParam(_llvmFunction, 0);
+                var ptr = LLVM.BuildGEP(_builder, s_shadowStackTop, new[] {BuildConstInt32(0)}, "shadowGep");
+                return CastIfNecessary(_builder, ptr, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "ShdwSPArg");
             }
-            return LLVM.GetParam(_llvmFunction, (uint)(_signature.IsStatic ? 0 : 1));
+            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, (uint)(_signature.IsStatic ? 0 : 1)), LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "HiddenArg"); 
         }
 
         private LLVMValueRef ArrayBaseSize()

@@ -21,14 +21,14 @@ namespace ILCompiler.DependencyAnalysis
         protected WebAssemblyMethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
-            if (method.IsConstructor && method.ToString() == "[S.P.CoreLib]System.Collections.Generic.Dictionary`2<string,object>..ctor(int32,IEqualityComparer`1<string>)")
-            {
-
-            }
-            if (method.ToString().Contains("Array") && method.ToString().Contains("IndexOf"))
-            {
-
-            }
+//            if (method.IsConstructor && method.ToString() == "[S.P.CoreLib]System.Collections.Generic.Dictionary`2<string,object>..ctor(int32,IEqualityComparer`1<string>)")
+//            {
+//
+//            }
+//            if (method.ToString().Contains("Array") && method.ToString().Contains("IndexOf"))
+//            {
+//
+//            }
             _method = method;
         }
 
@@ -70,10 +70,10 @@ namespace ILCompiler.DependencyAnalysis
         public WebAssemblyMethodBodyNode(MethodDesc method)
             : base(method)
         {
-            if (method.ToString().Contains("System.IO.Error.GetReadNotSupported"))
-            {
-
-            }
+//            if (method.ToString().Contains("System.IO.Error.GetReadNotSupported"))
+//            {
+//
+//            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
