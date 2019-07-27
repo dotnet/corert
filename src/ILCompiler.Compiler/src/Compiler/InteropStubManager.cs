@@ -15,7 +15,7 @@ namespace ILCompiler
     /// <summary>
     /// This class is responsible for managing stub methods for interop
     /// </summary>
-    public abstract class InteropStubManager
+    public abstract class InteropStubManager : ICompilationRootProvider
     {
         public abstract void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method);
         
@@ -30,6 +30,10 @@ namespace ILCompiler
         public abstract void AddMarshalAPIsGenericDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method);
 
         public virtual void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
+        {
+        }
+
+        public virtual void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
         }
     }

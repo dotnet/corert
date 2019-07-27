@@ -22,7 +22,6 @@ using TypeSpecification = Internal.Metadata.NativeFormat.Writer.TypeSpecificatio
 using ConstantStringValue = Internal.Metadata.NativeFormat.Writer.ConstantStringValue;
 using TypeInstantiationSignature = Internal.Metadata.NativeFormat.Writer.TypeInstantiationSignature;
 using MethodInstantiation = Internal.Metadata.NativeFormat.Writer.MethodInstantiation;
-using System.Collections;
 
 namespace ILCompiler
 {
@@ -53,8 +52,8 @@ namespace ILCompiler
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private HashSet<IMethodBodyNode> _methodBodiesGenerated = new HashSet<IMethodBodyNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
-        private List<DefType> _typesWithDelegateMarshalling = new List<DefType>();
-        private List<DefType> _typesWithStructMarshalling = new List<DefType>();
+        private HashSet<DefType> _typesWithDelegateMarshalling = new HashSet<DefType>();
+        private HashSet<DefType> _typesWithStructMarshalling = new HashSet<DefType>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }

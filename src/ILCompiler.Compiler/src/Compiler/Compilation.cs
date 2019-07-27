@@ -480,7 +480,7 @@ namespace ILCompiler
     public class CompilationResults
     {
         private readonly DependencyAnalyzerBase<NodeFactory> _graph;
-        private readonly NodeFactory _factory;
+        protected readonly NodeFactory _factory;
 
         protected ImmutableArray<DependencyNodeCore<NodeFactory>> MarkedNodes
         {

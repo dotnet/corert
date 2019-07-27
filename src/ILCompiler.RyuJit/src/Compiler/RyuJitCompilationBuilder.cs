@@ -103,8 +103,7 @@ namespace ILCompiler
             if (_methodBodyFolding)
                 options |= RyuJitCompilationOptions.MethodBodyFolding;
 
-            var interopStubManager = new CompilerGeneratedInteropStubManager(new InteropStateManager(_context.GeneratedAssembly), _pinvokePolicy);
-            var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider);
+            var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider);
 
             var jitConfig = new JitConfigProvider(jitFlagBuilder.ToArray(), _ryujitOptions);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(new CompilerComparer()));

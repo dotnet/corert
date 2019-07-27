@@ -25,11 +25,11 @@ namespace ILCompiler
         protected IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         protected OptimizationMode _optimizationMode = OptimizationMode.None;
         protected MetadataManager _metadataManager;
+        protected InteropStubManager _interopStubManager = new EmptyInteropStubManager();
         protected VTableSliceProvider _vtableSliceProvider = new LazyVTableSliceProvider();
         protected DictionaryLayoutProvider _dictionaryLayoutProvider = new LazyDictionaryLayoutProvider();
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
-        protected PInvokeILEmitterConfiguration _pinvokePolicy = new DirectPInvokePolicy();
         protected bool _methodBodyFolding;
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
@@ -61,6 +61,12 @@ namespace ILCompiler
         public CompilationBuilder UseMetadataManager(MetadataManager metadataManager)
         {
             _metadataManager = metadataManager;
+            return this;
+        }
+
+        public CompilationBuilder UseInteropStubManager(InteropStubManager interopStubManager)
+        {
+            _interopStubManager = interopStubManager;
             return this;
         }
 
@@ -100,12 +106,6 @@ namespace ILCompiler
             return this;
         }
 
-        public CompilationBuilder UsePInvokePolicy(PInvokeILEmitterConfiguration policy)
-        {
-            _pinvokePolicy = policy;
-            return this;
-        }
-
         public CompilationBuilder UseMethodBodyFolding(bool enable)
         {
             _methodBodyFolding = enable;
@@ -125,7 +125,7 @@ namespace ILCompiler
 
         public ILScannerBuilder GetILScannerBuilder(CompilationModuleGroup compilationGroup = null)
         {
-            return new ILScannerBuilder(_context, compilationGroup ?? _compilationGroup, _nameMangler, GetILProvider(), _pinvokePolicy);
+            return new ILScannerBuilder(_context, compilationGroup ?? _compilationGroup, _nameMangler, GetILProvider());
         }
 
         public abstract ICompilation ToCompilation();

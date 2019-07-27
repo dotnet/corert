@@ -104,6 +104,13 @@ namespace ILCompiler
         {
         }
 
+        public AnalysisBasedInteropStubManager GetInteropStubManager(InteropStateManager stateManager, PInvokeILEmitterConfiguration pinvokePolicy)
+        {
+            return new AnalysisBasedInteropStubManager(stateManager, pinvokePolicy,
+                _factory.MetadataManager.GetTypesWithStructMarshalling(),
+                _factory.MetadataManager.GetTypesWithDelegateMarshalling());
+        }
+
         public VTableSliceProvider GetVTableLayoutInfo()
         {
             return new ScannedVTableProvider(MarkedNodes);

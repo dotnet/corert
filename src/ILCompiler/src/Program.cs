@@ -506,8 +506,11 @@ namespace ILCompiler
             string compilationUnitPrefix = _multiFile ? System.IO.Path.GetFileNameWithoutExtension(_outputFilePath) : "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
+            PInvokeILEmitterConfiguration pinvokePolicy;
             if (!_isCppCodegen && !_isWasmCodegen)
-                builder.UsePInvokePolicy(new ConfigurablePInvokePolicy(typeSystemContext.Target));
+                pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target);
+            else
+                pinvokePolicy = new DirectPInvokePolicy();
 
             RemovedFeature removedFeatures = 0;
             foreach (string feature in _removedFeatures)
@@ -572,6 +575,17 @@ namespace ILCompiler
                 metadataManager = new EmptyMetadataManager(typeSystemContext);
             }
 
+            InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
+            InteropStubManager interopStubManager;
+            if (_isReadyToRunCodeGen)
+            {
+                interopStubManager = new EmptyInteropStubManager();
+            }
+            else
+            {
+                interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy);
+            }
+
             // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
             // We don't do this for CppCodegen and Wasm, because those codegens are behind.
             // We also don't do this for multifile because scanner doesn't simulate inlining (this would be
@@ -589,7 +603,8 @@ namespace ILCompiler
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots)
-                    .UseMetadataManager(metadataManager);
+                    .UseMetadataManager(metadataManager)
+                    .UseInteropStubManager(interopStubManager);
 
                 if (_scanDgmlLogFileName != null)
                     scannerBuilder.UseDependencyTracking(_generateFullScanDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
@@ -600,6 +615,8 @@ namespace ILCompiler
 
                 if (metadataManager is UsageBasedMetadataManager usageBasedManager)
                     metadataManager = usageBasedManager.ToAnalysisBasedMetadataManager();
+
+                interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
             }
 
             var logger = new Logger(Console.Out, _isVerbose);
@@ -612,11 +629,13 @@ namespace ILCompiler
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
             compilationRoots.Add(metadataManager);
+            compilationRoots.Add(interopStubManager);
 
             builder
                 .UseBackendOptions(_codegenOptions)
                 .UseMethodBodyFolding(_methodBodyFolding)
                 .UseMetadataManager(metadataManager)
+                .UseInteropStubManager(interopStubManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)

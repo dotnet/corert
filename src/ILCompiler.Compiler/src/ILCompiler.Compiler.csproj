@@ -97,6 +97,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
       <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
     </Compile>
+    <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\CodeGenerationFailedException.cs" />
@@ -355,6 +356,7 @@
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
     <Compile Include="Compiler\CoreRTNameMangler.cs" />
+    <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
     <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />
     <Compile Include="Compiler\UniversalGenericsRootProvider.cs" />
