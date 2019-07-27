@@ -382,6 +382,13 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (CompilationModuleGroup.ContainsMethodDictionary(method))
                 {
+                    foreach (var instType in method.Instantiation)
+                    {
+                        if (TypeCannotHaveEEType(instType))
+                        {
+
+                        }
+                    }
                     return new MethodGenericDictionaryNode(method, this);
                 }
                 else

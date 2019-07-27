@@ -228,10 +228,6 @@ namespace Internal.IL
         private void GenerateProlog()
         {
             Console.WriteLine(_method.ToString());
-            if (_method.ToString().Contains("[S.P.CoreLib]System.Convert.ToDouble(Decimal)"))
-            {
-
-            }
             LLVMBasicBlockRef prologBlock = LLVM.AppendBasicBlock(_llvmFunction, "Prolog");
             LLVM.PositionBuilderAtEnd(_builder, prologBlock);
 
@@ -943,10 +939,6 @@ namespace Internal.IL
             LLVMValueRef typedToStore = source;
             if (toStoreKind == LLVMTypeKind.LLVMPointerTypeKind && valueTypeKind == LLVMTypeKind.LLVMPointerTypeKind)
             {
-                if (name != null && name.Contains("System.Collections.Generic.KeyValuePair`2<TKey_System.__Canon,TValue_System.__Canon>"))
-                {
-
-                }
                 typedToStore = LLVM.BuildPointerCast(builder, source, valueType, "CastPtr" + (name ?? ""));
             }
             else if (toStoreKind == LLVMTypeKind.LLVMPointerTypeKind && valueTypeKind == LLVMTypeKind.LLVMIntegerTypeKind)
@@ -1614,18 +1606,18 @@ namespace Internal.IL
             MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             MethodDesc callee = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (callee.ToString().Contains("Frob") && callee.ToString().Contains("Generic"))
-            {
-
-            }
-            if (callee.ToString().Contains("Array") && callee.ToString().Contains("IndexOf"))
-            {
-
-            }
-            if (callee.ToString().Contains("Unsafe") && callee.ToString().Contains("As"))
-            {
-
-            }
+//            if (callee.ToString().Contains("Frob") && callee.ToString().Contains("Generic"))
+//            {
+//
+//            }
+//            if (callee.ToString().Contains("Array") && callee.ToString().Contains("IndexOf"))
+//            {
+//
+//            }
+//            if (callee.ToString().Contains("Unsafe") && callee.ToString().Contains("As"))
+//            {
+//
+//            }
             if (callee.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(callee))
@@ -2747,25 +2739,27 @@ namespace Internal.IL
 
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
-            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
+            MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             LLVMValueRef targetLLVMFunction = default(LLVMValueRef);
             bool hasHiddenParam = false;
+
             if (opCode == ILOpcode.ldvirtftn)
             {
                 StackEntry thisPointer = _stack.Pop();
-                if (method.IsVirtual)
+                if (runtimeDeterminedMethod.IsVirtual)
                 {
-                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null, method, out hasHiddenParam);
+                    targetLLVMFunction = LLVMFunctionForMethod(runtimeDeterminedMethod, thisPointer, true, null, runtimeDeterminedMethod, out hasHiddenParam);
                 }
                 else
                 {
-                    AddMethodReference(method);
+                    AddMethodReference(runtimeDeterminedMethod);
                 }
             }
             else
             {
-                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any)))
+                MethodDesc method = ((MethodDesc)_canonMethodIL.GetObject(token));
+                MethodDesc canonMethod = runtimeDeterminedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic))
                 {
                     var exactContextNeedsRuntimeLookup = method.HasInstantiation 
                         ? method.IsSharedByGenericInstantiations 
@@ -2773,37 +2767,35 @@ namespace Internal.IL
                     if (exactContextNeedsRuntimeLookup)
                     {
                         LLVMValueRef helper;
-                        var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodEntry, method, out helper);
+                        var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodEntry, runtimeDeterminedMethod, out helper);
                         targetLLVMFunction = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
                     }
                     else
                     {
-                        // TODO:what is the equivalent here for, e.g. https://github.com/dotnet/corert/blob/1ead4eb2ce1538bd18e5390d00cc79bb4f2967fd/src/System.Private.CoreLib/shared/System/Runtime/CompilerServices/ConditionalWeakTable.cs#L223
-                        //                        Append("((intptr_t)");
-                        //                        AppendFatFunctionPointer(runtimeDeterminedMethod);
-                        //                        Append("()) + ");
-                        //                        Append(FatFunctionPointerConstants.Offset.ToString());
+                        var fatFunctionSymbol = GetAndAddFatFunctionPointer(runtimeDeterminedMethod);
+                        targetLLVMFunction = LLVM.BuildGEP(_builder, LoadAddressOfSymbolNode(fatFunctionSymbol), new[] {BuildConstInt32(2)},
+                            "fatGep");
                     }
                 }
-                else AddMethodReference(method);
+                else AddMethodReference(canonMethod);
             }
 
             if (targetLLVMFunction.Pointer.Equals(IntPtr.Zero))
             {
-                if (method.IsNativeCallable)
+                if (runtimeDeterminedMethod.IsNativeCallable)
                 {
-                    EcmaMethod ecmaMethod = ((EcmaMethod)method);
+                    EcmaMethod ecmaMethod = ((EcmaMethod)runtimeDeterminedMethod);
                     string mangledName = ecmaMethod.GetNativeCallableExportName();
                     if (mangledName == null)
                     {
                         mangledName = ecmaMethod.Name;
                     }
-                    LLVMTypeRef[] llvmParams = new LLVMTypeRef[method.Signature.Length];
+                    LLVMTypeRef[] llvmParams = new LLVMTypeRef[runtimeDeterminedMethod.Signature.Length];
                     for (int i = 0; i < llvmParams.Length; i++)
                     {
-                        llvmParams[i] = GetLLVMTypeForTypeDesc(method.Signature[i]);
+                        llvmParams[i] = GetLLVMTypeForTypeDesc(runtimeDeterminedMethod.Signature[i]);
                     }
-                    LLVMTypeRef thunkSig = LLVM.FunctionType(GetLLVMTypeForTypeDesc(method.Signature.ReturnType), llvmParams, false);
+                    LLVMTypeRef thunkSig = LLVM.FunctionType(GetLLVMTypeForTypeDesc(runtimeDeterminedMethod.Signature.ReturnType), llvmParams, false);
 
                     targetLLVMFunction = GetOrCreateLLVMFunction(mangledName, thunkSig);
                 }
@@ -2812,18 +2804,47 @@ namespace Internal.IL
                     var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
                     Debug.Assert(!hasHiddenParam); // remove this when we understand why there are 2 checks
                     if (isUnboxingStub)
-                        hasHiddenParam = method.IsSharedByGenericInstantiations &&
-                                         (method.HasInstantiation || method.Signature.IsStatic);
+                        hasHiddenParam = runtimeDeterminedMethod.IsSharedByGenericInstantiations &&
+                                         (runtimeDeterminedMethod.HasInstantiation || runtimeDeterminedMethod.Signature.IsStatic);
                     else
-                        hasHiddenParam = method.RequiresInstArg();
-                    targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(method).ToString(), method.Signature, hasHiddenParam);
+                        hasHiddenParam = runtimeDeterminedMethod.RequiresInstArg();
+                    targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(runtimeDeterminedMethod).ToString(), runtimeDeterminedMethod.Signature, hasHiddenParam);
                 }
             }
 
-            var entry = new FunctionPointerEntry("ldftn", method, targetLLVMFunction, GetWellKnownType(WellKnownType.IntPtr), opCode == ILOpcode.ldvirtftn);
+            var entry = new FunctionPointerEntry("ldftn", runtimeDeterminedMethod, targetLLVMFunction, GetWellKnownType(WellKnownType.IntPtr), opCode == ILOpcode.ldvirtftn);
             _stack.Push(entry);
         }
 
+        ISymbolNode GetAndAddFatFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
+        {
+            foreach (var instType in method.Instantiation)
+            {
+                if (TypeCannotHaveEEType(instType))
+                {
+
+                }
+            }
+            ISymbolNode node = _compilation.NodeFactory.FatFunctionPointer(method, isUnboxingStub);
+            _dependencies.Add(node);
+            return node;
+        }
+        private static bool TypeCannotHaveEEType(TypeDesc type)
+        {
+            if (type.GetTypeDefinition() is INonEmittableType)
+                return true;
+
+            if (type.IsRuntimeDeterminedSubtype)
+                return true;
+
+            if (type.IsSignatureVariable)
+                return true;
+
+            if (type.IsGenericParameter)
+                return true;
+
+            return false;
+        }
         private void ImportLoadInt(long value, StackValueKind kind)
         {
             switch (kind)
@@ -3864,7 +3885,7 @@ namespace Internal.IL
             FieldDesc runtimeDeterminedField = (FieldDesc)_methodIL.GetObject(token);
             FieldDesc field = (FieldDesc)_canonMethodIL.GetObject(token);
             StackEntry valueEntry = _stack.Pop();
-            TypeDesc owningType = _compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
+//            TypeDesc owningType = _compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
             TypeDesc fieldType = _compilation.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             LLVMValueRef fieldAddress = GetFieldAddress(runtimeDeterminedField, field, isStatic);
