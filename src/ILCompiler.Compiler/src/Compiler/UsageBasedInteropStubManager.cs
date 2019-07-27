@@ -10,6 +10,7 @@ using ILCompiler.DependencyAnalysis;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using System.Runtime.InteropServices;
 
 namespace ILCompiler
 {
@@ -58,7 +59,13 @@ namespace ILCompiler
 
             if (MarshalHelpers.IsStructMarshallingRequired(type))
             {
-                dependencies.Add(factory.StructMarshallingData((DefType)type), "Struct marshalling");
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (field.IsStatic)
+                        continue;
+
+                    AddParameterMarshallingDependencies(ref dependencies, factory, field.FieldType);
+                }
             }
         }
 

@@ -38,27 +38,6 @@ namespace ILCompiler.DependencyAnalysis
                 yield return new DependencyListEntry(factory.MethodEntrypoint(stateManager.GetStructMarshallingManagedToNativeThunk(_type)), "Struct Marshalling stub");
                 yield return new DependencyListEntry(factory.MethodEntrypoint(stateManager.GetStructMarshallingNativeToManagedThunk(_type)), "Struct Marshalling stub");
                 yield return new DependencyListEntry(factory.MethodEntrypoint(stateManager.GetStructMarshallingCleanupThunk(_type)), "Struct Marshalling stub");
-
-                // We might need marshalers for the individual fields
-
-                foreach (FieldDesc field in _type.GetFields())
-                {
-                    if (field.IsStatic)
-                    {
-                        continue;
-                    }
-
-                    TypeDesc fieldType = field.FieldType;
-
-                    if (fieldType.IsDelegate)
-                    {
-                        yield return new DependencyListEntry(factory.DelegateMarshallingData((DefType)fieldType), "Struct marshalling");
-                    }
-                    else if (MarshalHelpers.IsStructMarshallingRequired(fieldType))
-                    {
-                        yield return new DependencyListEntry(factory.StructMarshallingData((DefType)fieldType), "Struct marshalling");
-                    }
-                }
             }
         }
 
