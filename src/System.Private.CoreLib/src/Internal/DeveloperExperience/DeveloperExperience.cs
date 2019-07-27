@@ -50,12 +50,19 @@ namespace Internal.DeveloperExperience
                     IntPtr methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
                     if (methodStart != IntPtr.Zero)
                     {
-                        string methodName = stackTraceCallbacks.TryGetMethodNameFromStartAddress(methodStart);
-                        if (methodName != null)
+                        long offset = ip.ToInt64() - methodStart.ToInt64();
+                        if (stackTraceCallbacks.TryGetMethodNameFromStartAddress(methodStart, includeFileInfo ? (int)offset : -1, out string methodName, out string fileName, out int lineNumber))
                         {
-                            if (ip != methodStart)
+                            if (includeFileInfo)
                             {
-                                methodName += " + 0x" + (ip.ToInt64() - methodStart.ToInt64()).ToString("x");
+                                if (fileName != null && lineNumber > 0)
+                                {
+                                    methodName += " in " + fileName + ":line " + lineNumber;
+                                }
+                                else if (ip != methodStart)
+                                {
+                                    methodName += " + 0x" + offset.ToString("x");
+                                }
                             }
                             return methodName;
                         }
@@ -87,6 +94,17 @@ namespace Internal.DeveloperExperience
             fileName = null;
             lineNumber = 0;
             columnNumber = 0;
+
+            StackTraceMetadataCallbacks stackTraceCallbacks = RuntimeAugments.StackTraceCallbacksIfAvailable;
+            if (stackTraceCallbacks != null)
+            {
+                IntPtr methodStart = RuntimeImports.RhFindMethodStartAddress(ip);
+                if (methodStart != IntPtr.Zero)
+                {
+                    long offset = ip.ToInt64() - methodStart.ToInt64();
+                    stackTraceCallbacks.TryGetMethodNameFromStartAddress(methodStart, (int)offset, out _, out fileName, out lineNumber);
+                }
+            }
         }
 
         public virtual void TryGetILOffsetWithinMethod(IntPtr ip, out int ilOffset)

@@ -25,6 +25,6 @@ namespace Internal.Runtime.Augments
         /// </summary>
         /// <param name="methodStartAddress">Memory address representing the start of a method</param>
         /// <returns>Formatted method name or null if metadata for the method is not available</returns>
-        public abstract string TryGetMethodNameFromStartAddress(IntPtr methodStartAddress);
+        public abstract bool TryGetMethodNameFromStartAddress(IntPtr methodStartAddress, int offset, out string methodName, out string fileName, out int lineNumber);
     }
 }

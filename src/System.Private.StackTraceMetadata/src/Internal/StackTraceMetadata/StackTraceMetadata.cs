@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime;
+using System.Text;
+using System.IO;
 
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime;
@@ -50,17 +52,20 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Locate the containing module for a method and try to resolve its name based on start address.
         /// </summary>
-        public static string GetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress)
+        public static bool TryGetMethodNameFromStartAddressIfAvailable(IntPtr methodStartAddress, int offset, out string methodName, out string fileName, out int lineNumber)
         {
+            methodName = null;
+            fileName = null;
+            lineNumber = 0;
+
             IntPtr moduleStartAddress = RuntimeAugments.GetOSModuleFromPointer(methodStartAddress);
             int rva = (int)((nuint)methodStartAddress - (nuint)moduleStartAddress);
             foreach (TypeManagerHandle handle in ModuleList.Enumerate())
             {
                 if (handle.OsModuleBase == moduleStartAddress)
                 {
-                    string name = _perModuleMethodNameResolverHashtable.GetOrCreateValue(handle.GetIntPtrUNSAFE()).GetMethodNameFromRvaIfAvailable(rva);
-                    if (name != null)
-                        return name;
+                    if (_perModuleMethodNameResolverHashtable.GetOrCreateValue(handle.GetIntPtrUNSAFE()).TryGetMethodNameFromRvaIfAvailable(rva, offset, out methodName, out fileName, out lineNumber))
+                        return true;
                 }
             }
 
@@ -70,10 +75,10 @@ namespace Internal.StackTraceMetadata
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle))
             {
-                return MethodNameFormatter.FormatMethodName(reader, typeHandle, methodHandle);
+                methodName = MethodNameFormatter.FormatMethodName(reader, typeHandle, methodHandle);
             }
 
-            return null;
+            return methodName != null;
         }
 
         /// <summary>
@@ -132,9 +137,9 @@ namespace Internal.StackTraceMetadata
         /// </summary>
         private sealed class StackTraceMetadataCallbacksImpl : StackTraceMetadataCallbacks
         {
-            public override string TryGetMethodNameFromStartAddress(IntPtr methodStartAddress)
+            public override bool TryGetMethodNameFromStartAddress(IntPtr methodStartAddress, int offset, out string methodName, out string fileName, out int lineNumber)
             {
-                return GetMethodNameFromStartAddressIfAvailable(methodStartAddress);
+                return TryGetMethodNameFromStartAddressIfAvailable(methodStartAddress, offset, out methodName, out fileName, out lineNumber);
             }
         }
 
@@ -151,12 +156,22 @@ namespace Internal.StackTraceMetadata
             /// <summary>
             /// Dictionary mapping method RVA's to tokens within the metadata blob.
             /// </summary>
-            private readonly Dictionary<int, int> _methodRvaToTokenMap;
+            private readonly Dictionary<int, nuint> _methodRvaToTokenMap;
 
             /// <summary>
             /// Metadata reader for the stack trace metadata.
             /// </summary>
             private readonly MetadataReader _metadataReader;
+
+            /// <summary>
+            /// Pointer to the beginning of the sequence point table blob
+            /// </summary>
+            private readonly unsafe int* _sequencePointTable;
+
+            /// <summary>
+            /// Pointer to the beginning of the string heap containing the filenames
+            /// </summary>
+            private readonly unsafe int* _stringHeap;
 
             /// <summary>
             /// Publicly exposed module address property.
@@ -202,10 +217,16 @@ namespace Internal.StackTraceMetadata
                 {
                     _metadataReader = new MetadataReader(new IntPtr(metadataBlob), (int)metadataBlobSize);
 
-                    // RVA to token map consists of pairs of integers (method RVA - token)
-                    int rvaToTokenMapEntryCount = (int)(rvaToTokenMapBlobSize / (2 * sizeof(int)));
-                    _methodRvaToTokenMap = new Dictionary<int, int>(rvaToTokenMapEntryCount);
-                    PopulateRvaToTokenMap(handle, (int *)rvaToTokenMapBlob, rvaToTokenMapEntryCount);
+                    int* rvaToTokenMap = (int*)rvaToTokenMapBlob;
+                    int rvaToTokenMapEntryCount = rvaToTokenMap[0];
+                    int sequencePointOffset = rvaToTokenMap[1];
+                    int stringHeapOffset = rvaToTokenMap[2];
+
+                    _sequencePointTable = (int*)(rvaToTokenMapBlob + sequencePointOffset);
+                    _stringHeap = (int*)(rvaToTokenMapBlob + stringHeapOffset);
+
+                    _methodRvaToTokenMap = new Dictionary<int, nuint>(rvaToTokenMapEntryCount);
+                    PopulateRvaToTokenMap(handle, &rvaToTokenMap[3], rvaToTokenMapEntryCount);
                 }
             }
             
@@ -219,33 +240,82 @@ namespace Internal.StackTraceMetadata
             {
                 for (int entryIndex = 0; entryIndex < entryCount; entryIndex++)
                 {
-                    int* pRelPtr32 = &rvaToTokenMap[2 * entryIndex + 0];
+                    int* pRelPtr32 = rvaToTokenMap++;
                     IntPtr pointer = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
                     int methodRva = (int)((nuint)pointer - (nuint)handle.OsModuleBase);
-                    int token = rvaToTokenMap[2 * entryIndex + 1];
-                    _methodRvaToTokenMap[methodRva] = token;
+                    nuint tokenAddress = (nuint)rvaToTokenMap;
+                    rvaToTokenMap += 2; // skipping sequence point offset
+                    _methodRvaToTokenMap[methodRva] = tokenAddress;
                 }
             }
 
             /// <summary>
             /// Try to resolve method name based on its address using the stack trace metadata
             /// </summary>
-            public string GetMethodNameFromRvaIfAvailable(int rva)
+            public unsafe bool TryGetMethodNameFromRvaIfAvailable(int rva, int offset, out string methodName, out string fileName, out int lineNumber)
             {
+                methodName = null;
+                fileName = null;
+                lineNumber = 0;
+
                 if (_methodRvaToTokenMap == null)
                 {
                     // No stack trace metadata for this module
-                    return null;
-                }
-                
-                int rawToken;
-                if (!_methodRvaToTokenMap.TryGetValue(rva, out rawToken))
-                {
-                    // Method RVA not found in the map
-                    return null;
+                    return false;
                 }
 
-                return MethodNameFormatter.FormatMethodName(_metadataReader, Handle.FromIntToken(rawToken));
+                if (!_methodRvaToTokenMap.TryGetValue(rva, out nuint tokenAddress))
+                {
+                    // Method RVA not found in the map
+                    return false;
+                }
+
+                int* tokenPtr = (int*)tokenAddress;
+                int rawToken = tokenPtr[0];
+
+                methodName = MethodNameFormatter.FormatMethodName(_metadataReader, Handle.FromIntToken(rawToken));
+                if (offset == -1) // short circuit if we're not trying to get line numbers
+                {
+                    return true;
+                }
+
+                int sequencePointsOffset = tokenPtr[1];
+                if (sequencePointsOffset == -1) // no line numbers available
+                {
+                    return true;
+                }
+
+                int* sequencePointsPtr = (int*)((byte*)_sequencePointTable + sequencePointsOffset);
+                int sequencePointsBlockCount = *sequencePointsPtr++;
+
+                int fileNameOffset = -1;
+                for (int blockCount = 0; blockCount < sequencePointsBlockCount; blockCount++)
+                {
+                    int consecutiveSequencePoints = *sequencePointsPtr++;
+                    fileNameOffset = *sequencePointsPtr++;
+                    for (int i = 0; i < consecutiveSequencePoints; i++)
+                    {
+                        int nativeOffset = *sequencePointsPtr++;
+                        if (offset >= nativeOffset)
+                        {
+                            lineNumber = *sequencePointsPtr++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (fileNameOffset != -1)
+                {
+                    int* fileNamePtr = (int*)((byte*)_stringHeap + fileNameOffset);
+                    int fileNameLength = *fileNamePtr++;
+                    byte* fileNameData = (byte*)fileNamePtr;
+                    fileName = Encoding.UTF8.GetString(fileNameData, fileNameLength);
+                }
+
+                return true;
             }
         }
     }

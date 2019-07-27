@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -57,14 +59,108 @@ namespace ILCompiler.DependencyAnalysis
             RelocType reloc = factory.Target.Abi == TargetAbi.CoreRT ?
                 RelocType.IMAGE_REL_BASED_RELPTR32 : RelocType.IMAGE_REL_BASED_ADDR32NB;
 
-            foreach (var mappingEntry in factory.MetadataManager.GetStackTraceMapping(factory))
+            IEnumerable<MetadataMapping<MethodDesc>> mappingEntries = factory.MetadataManager.GetStackTraceMapping(factory);
+            var rvaTokenMapCount = objData.ReserveInt();
+            var reservedSequencePointsOffset = objData.ReserveInt();
+            var reservedStringOffset = objData.ReserveInt();
+
+            int mappingEntryCount = 0;
+            StringHeap fileNames = StringHeap.Create();
+            ObjectDataBuilder sequencePointsBuilder = new ObjectDataBuilder(factory, relocsOnly);
+            foreach (var mappingEntry in mappingEntries)
             {
-                objData.EmitReloc(factory.MethodEntrypoint(mappingEntry.Entity), reloc);
+                IMethodNode entryPoint = factory.MethodEntrypoint(mappingEntry.Entity);
+                objData.EmitReloc(entryPoint, reloc);
                 objData.EmitInt(mappingEntry.MetadataHandle);
+
+                mappingEntryCount++;
+
+                var debug = entryPoint as INodeWithDebugInfo;
+                int debugLocLength = debug?.DebugLocInfos?.Length ?? 0;
+                if (debugLocLength == 0)
+                {
+                    objData.EmitInt(-1); // no sequence points available
+                    continue;
+                }
+
+                objData.EmitInt(sequencePointsBuilder.CountBytes); // offset to sequence points
+
+                /* ------------------------- Sequence Points emit ------------------------- */
+
+                var fileName = debug.DebugLocInfos[0].FileName;
+
+                var blockCount = sequencePointsBuilder.ReserveInt(); // number of consecutive sequence points blocks
+                var consecutiveLength = sequencePointsBuilder.ReserveInt(); // length of current same-file consecutive debugLocs
+                sequencePointsBuilder.EmitInt(fileNames.GetStringId(fileName)); // offset to current fileName on string heap
+
+                int blockCounter = 1;
+                int consecutiveCounter = 0;
+                foreach (var loc in debug.DebugLocInfos)
+                {
+                    if (loc.FileName != fileName)
+                    {
+                        // record number of consecutive sequence points from the same file written and reset
+                        sequencePointsBuilder.EmitInt(consecutiveLength, consecutiveCounter);
+                        consecutiveCounter = 0;
+                        blockCounter++;
+                        fileName = loc.FileName;
+
+                        consecutiveLength = sequencePointsBuilder.ReserveInt(); // length of debugLocs in the same file
+                        sequencePointsBuilder.EmitInt(fileNames.GetStringId(fileName)); // offset to fileName on string heap
+                    }
+
+                    sequencePointsBuilder.EmitInt(loc.NativeOffset);
+                    sequencePointsBuilder.EmitInt(loc.LineNumber);
+                    consecutiveCounter++;
+                }
+
+                sequencePointsBuilder.EmitInt(blockCount, blockCounter);
+                sequencePointsBuilder.EmitInt(consecutiveLength, consecutiveCounter);
             }
+
+            objData.EmitInt(rvaTokenMapCount, mappingEntryCount);
+            objData.EmitInt(reservedSequencePointsOffset, objData.CountBytes);
+            objData.EmitBytes(sequencePointsBuilder.ToObjectData().Data);
+
+            objData.EmitInt(reservedStringOffset, objData.CountBytes);
+            fileNames.AppendBlob(objData);
 
             _endSymbol.SetSymbolOffset(objData.CountBytes);
             return objData.ToObjectData();
+        }
+
+        struct StringHeap
+        {
+            private int _byteCounter;
+            private Dictionary<string, int> _stringToOffset;
+
+            public static StringHeap Create()
+            {
+                return new StringHeap
+                {
+                    _stringToOffset = new Dictionary<string, int>()
+                };
+            }
+
+            public int GetStringId(string value)
+            {
+                if (!_stringToOffset.TryGetValue(value, out int offset))
+                {
+                    _stringToOffset.Add(value, offset = _byteCounter);
+                    _byteCounter += sizeof(int) + Encoding.UTF8.GetByteCount(value);
+                }
+                return offset;
+            }
+
+            public void AppendBlob(ObjectDataBuilder builder)
+            {
+                foreach (var kvp in _stringToOffset.OrderBy(x => x.Value))
+                {
+                    var bytes = Encoding.UTF8.GetBytes(kvp.Key);
+                    builder.EmitInt(bytes.Length);
+                    builder.EmitBytes(bytes);
+                }
+            }
         }
     }
 }
