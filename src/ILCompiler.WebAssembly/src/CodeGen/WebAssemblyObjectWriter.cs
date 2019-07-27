@@ -755,6 +755,12 @@ namespace ILCompiler.DependencyAnalysis
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
 
+                    if (node is ReadyToRunGenericHelperNode readyToRunGenericHelperNode)
+                    {
+                        objectWriter.GetCodeForReadyToRunGenericHelper(readyToRunGenericHelperNode, factory);
+                        continue;
+                    }
+
                     objectWriter.StartObjectNode(node);
                     ObjectData nodeContents = node.GetData(factory);
 
@@ -914,5 +920,289 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
         }
+
+        private void GetCodeForReadyToRunGenericHelper(ReadyToRunGenericHelperNode node, NodeFactory factory)
+        {
+            LLVMBuilderRef builder = LLVM.CreateBuilder();
+            //TODO, whats the signature?
+            LLVMTypeRef retType;
+            retType = LLVMTypeRef.VoidType();
+//            switch (node.Id)
+//            {
+//                case ReadyToRunHelperId.MethodHandle:
+//                    retType = LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0);
+//                    break;
+//                case ReadyToRunHelperId.DelegateCtor:
+//                    retType = LLVMTypeRef.VoidType();
+//                    break;
+//                default:
+//                    // was void *
+//                    retType = LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0);
+//                    break;
+//            }
+            var helperSignature = LLVM.FunctionType(LLVM.Int32Type(), new LLVMTypeRef[] { LLVM.Int32Type(), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+            var helperFunc = LLVM.AddFunction(Module, node.GetMangledName(factory.NameMangler), helperSignature);
+            var helperBlock = LLVM.AppendBasicBlock(helperFunc, "genericHelper");
+            LLVM.PositionBuilderAtEnd(builder, helperBlock);
+            LLVM.BuildRetVoid(builder);
+            //            string mangledName = GetCppReadyToRunGenericHelperNodeName(factory, node);
+            //            List<string> argNames = new List<string>(new string[] { "arg" });
+            //            string ctxVarName = "ctx";
+            //            string resVarName = "res";
+            //            string retVarName = "ret";
+            //
+            //            string retType;
+            //            switch (node.Id)
+            //            {
+            //                case ReadyToRunHelperId.MethodHandle:
+            //                    retType = "::System_Private_CoreLib::System::RuntimeMethodHandle";
+            //                    break;
+            //                case ReadyToRunHelperId.DelegateCtor:
+            //                    retType = "void";
+            //                    break;
+            //                default:
+            //                    retType = "void*";
+            //                    break;
+            //            }
+            //
+            //            sb.AppendLine();
+            //            sb.Append(retType);
+            //            sb.Append(" ");
+            //            sb.Append(mangledName);
+            //            sb.Append("(");
+            //            sb.Append("void *");
+            //            sb.Append(argNames[0]);
+            //
+            //            if (node.Id == ReadyToRunHelperId.DelegateCtor)
+            //            {
+            //                sb.Append(", ");
+            //
+            //                DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
+            //                MethodDesc constructor = target.Constructor.Method;
+            //
+            //                bool isStatic = constructor.Signature.IsStatic;
+            //
+            //                int argCount = constructor.Signature.Length;
+            //                if (!isStatic)
+            //                    argCount++;
+            //
+            //                int startIdx = argNames.Count;
+            //                for (int i = 0; i < argCount; i++)
+            //                {
+            //                    string argName = $"arg{i + startIdx}";
+            //                    argNames.Add(argName);
+            //
+            //                    TypeDesc argType;
+            //                    if (i == 0 && !isStatic)
+            //                    {
+            //                        argType = constructor.OwningType;
+            //                    }
+            //                    else
+            //                    {
+            //                        argType = constructor.Signature[i - (isStatic ? 0 : 1)];
+            //                    }
+            //
+            //                    sb.Append(GetCppSignatureTypeName(argType));
+            //                    sb.Append(" ");
+            //                    sb.Append(argName);
+            //
+            //                    if (i != argCount - 1)
+            //                        sb.Append(", ");
+            //                }
+            //            }
+            //
+            //            sb.Append(")");
+            //
+            //            sb.AppendLine();
+            //            sb.Append("{");
+            //            sb.Indent();
+            //            sb.AppendLine();
+            //
+            //            sb.Append("void *");
+            //            sb.Append(ctxVarName);
+            //            sb.Append(";");
+            //            sb.AppendLine();
+            //
+            //            sb.Append("void *");
+            //            sb.Append(resVarName);
+            //            sb.Append(";");
+            //            sb.AppendLine();
+            //
+            //            if (node is ReadyToRunGenericLookupFromTypeNode)
+            //            {
+            //                // Locate the VTable slot that points to the dictionary
+            //                int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(factory, (TypeDesc)node.DictionaryOwner);
+            //
+            //                int pointerSize = factory.Target.PointerSize;
+            //                int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
+            //
+            //                // Load the dictionary pointer from the VTable
+            //                sb.Append(ctxVarName);
+            //                sb.Append(" = *(void **)((intptr_t)");
+            //                sb.Append(argNames[0]);
+            //                sb.Append(" + ");
+            //                sb.Append(slotOffset.ToString());
+            //                sb.Append(");");
+            //                sb.AppendLine();
+            //            }
+            //            else
+            //            {
+            //                sb.Append(ctxVarName);
+            //                sb.Append(" = ");
+            //                sb.Append(argNames[0]);
+            //                sb.Append(";");
+            //                sb.AppendLine();
+            //            }
+            //
+            //            OutputCodeForDictionaryLookup(sb, factory, node, node.LookupSignature, ctxVarName, resVarName);
+            //
+            //            switch (node.Id)
+            //            {
+            //                case ReadyToRunHelperId.GetNonGCStaticBase:
+            //                    {
+            //                        MetadataType target = (MetadataType)node.Target;
+            //
+            //                        if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
+            //                        {
+            //                            OutputCodeForTriggerCctor(sb, factory, target, resVarName);
+            //
+            //                            sb.Append(resVarName);
+            //                            sb.Append(" = ");
+            //                            sb.Append("(char*)");
+            //                            sb.Append(resVarName);
+            //                            sb.Append(" - sizeof(StaticClassConstructionContext);");
+            //                            sb.AppendLine();
+            //                        }
+            //                    }
+            //                    break;
+            //
+            //                case ReadyToRunHelperId.GetGCStaticBase:
+            //                    {
+            //                        MetadataType target = (MetadataType)node.Target;
+            //
+            //                        sb.Append(resVarName);
+            //                        sb.Append(" = **(void ***)");
+            //                        sb.Append(resVarName);
+            //                        sb.Append(";");
+            //                        sb.AppendLine();
+            //
+            //                        if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
+            //                        {
+            //                            string nonGcStaticsBase = "nonGcBase";
+            //
+            //                            sb.Append("void *");
+            //                            sb.Append(nonGcStaticsBase);
+            //                            sb.Append(";");
+            //                            sb.AppendLine();
+            //
+            //                            GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
+            //
+            //                            OutputCodeForDictionaryLookup(sb, factory, node, nonGcRegionLookup, ctxVarName, nonGcStaticsBase);
+            //
+            //                            OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase);
+            //                        }
+            //                    }
+            //                    break;
+            //
+            //                case ReadyToRunHelperId.GetThreadStaticBase:
+            //                    {
+            //                        MetadataType target = (MetadataType)node.Target;
+            //
+            //                        if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
+            //                        {
+            //                            string nonGcStaticsBase = "nonGcBase";
+            //
+            //                            sb.Append("void *");
+            //                            sb.Append(nonGcStaticsBase);
+            //                            sb.Append(";");
+            //                            sb.AppendLine();
+            //
+            //                            GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
+            //
+            //                            OutputCodeForDictionaryLookup(sb, factory, node, nonGcRegionLookup, ctxVarName, nonGcStaticsBase);
+            //
+            //                            OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase);
+            //                        }
+            //                    }
+            //                    break;
+            //
+            //                case ReadyToRunHelperId.DelegateCtor:
+            //                    {
+            //                        DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
+            //                        MethodDesc constructor = target.Constructor.Method;
+            //
+            //                        sb.Append(argNames[3]);
+            //                        sb.Append(" = ((intptr_t)");
+            //                        sb.Append(resVarName);
+            //                        sb.Append(") + ");
+            //                        sb.Append(FatFunctionPointerConstants.Offset.ToString());
+            //                        sb.Append(";");
+            //                        sb.AppendLine();
+            //
+            //                        sb.Append("::");
+            //                        sb.Append(GetCppMethodDeclarationName(constructor.OwningType, GetCppMethodName(constructor)));
+            //                        sb.Append("(");
+            //
+            //                        for (int i = 1; i < argNames.Count; i++)
+            //                        {
+            //                            sb.Append(argNames[i]);
+            //
+            //                            if (i != argNames.Count - 1)
+            //                                sb.Append(", ");
+            //                        }
+            //
+            //                        sb.Append(");");
+            //                        sb.AppendLine();
+            //                    }
+            //                    break;
+            //
+            //                // These are all simple: just get the thing from the dictionary and we're done
+            //                case ReadyToRunHelperId.TypeHandle:
+            //                case ReadyToRunHelperId.MethodHandle:
+            //                case ReadyToRunHelperId.FieldHandle:
+            //                case ReadyToRunHelperId.MethodDictionary:
+            //                case ReadyToRunHelperId.MethodEntry:
+            //                case ReadyToRunHelperId.VirtualDispatchCell:
+            //                case ReadyToRunHelperId.DefaultConstructor:
+            //                    break;
+            //                default:
+            //                    throw new NotImplementedException();
+            //            }
+            //
+            //            if (node.Id != ReadyToRunHelperId.DelegateCtor)
+            //            {
+            //                sb.Append(retType);
+            //                sb.Append(" ");
+            //                sb.Append(retVarName);
+            //                sb.Append(" = ");
+            //
+            //                if (node.Id == ReadyToRunHelperId.MethodHandle)
+            //                {
+            //                    sb.Append("{");
+            //                    sb.Append("(intptr_t)");
+            //                    sb.Append(resVarName);
+            //                    sb.Append("};");
+            //                }
+            //                else
+            //                {
+            //                    sb.Append(resVarName);
+            //                    sb.Append(";");
+            //                }
+            //
+            //                sb.AppendLine();
+            //
+            //                sb.Append("return ");
+            //                sb.Append(retVarName);
+            //                sb.Append(";");
+            //            }
+            //
+            //            sb.Exdent();
+            //            sb.AppendLine();
+            //            sb.Append("}");
+            //            sb.AppendLine();
+            //
+            //            return sb.ToString();
+        }
+
     }
 }
