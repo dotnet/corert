@@ -38,66 +38,6 @@ namespace ILCompiler
             return new PInvokeILProvider(_pInvokeILEmitterConfiguration, InteropStateManager);
         }
 
-        private MethodDesc GetOpenStaticDelegateMarshallingStub(TypeDesc delegateType)
-        {
-            var stub = InteropStateManager.GetOpenStaticDelegateMarshallingThunk(delegateType);
-            Debug.Assert(stub != null);
-
-            _delegateMarshalingTypes.Add(delegateType);
-            return stub;
-        }
-
-        private MethodDesc GetClosedDelegateMarshallingStub(TypeDesc delegateType)
-        {
-            var stub = InteropStateManager.GetClosedDelegateMarshallingThunk(delegateType);
-            Debug.Assert(stub != null);
-
-            _delegateMarshalingTypes.Add(delegateType);
-            return stub;
-        }
-        private MethodDesc GetForwardDelegateCreationStub(TypeDesc delegateType)
-        {
-            var stub = InteropStateManager.GetForwardDelegateCreationThunk(delegateType);
-            Debug.Assert(stub != null);
-
-            _delegateMarshalingTypes.Add(delegateType);
-            return stub;
-        }
-
-        private MethodDesc GetStructMarshallingManagedToNativeStub(TypeDesc structType)
-        {
-            MethodDesc stub = InteropStateManager.GetStructMarshallingManagedToNativeThunk(structType);
-            Debug.Assert(stub != null);
-
-            _structMarshallingTypes.Add(structType);
-            return stub;
-        }
-
-        private MethodDesc GetStructMarshallingNativeToManagedStub(TypeDesc structType)
-        {
-            MethodDesc stub = InteropStateManager.GetStructMarshallingNativeToManagedThunk(structType);
-            Debug.Assert(stub != null);
-
-            _structMarshallingTypes.Add(structType);
-            return stub;
-        }
-
-        private MethodDesc GetStructMarshallingCleanupStub(TypeDesc structType)
-        {
-            MethodDesc stub = InteropStateManager.GetStructMarshallingCleanupThunk(structType);
-            Debug.Assert(stub != null);
-
-            _structMarshallingTypes.Add(structType);
-            return stub;
-        }
-
-        private TypeDesc GetInlineArrayType(InlineArrayCandidate candidate)
-        {
-            TypeDesc inlineArrayType = InteropStateManager.GetInlineArrayType(candidate);
-            Debug.Assert(inlineArrayType != null);
-            return inlineArrayType;
-        }
-
         internal struct DelegateMarshallingThunks
         {
             public TypeDesc DelegateType;
@@ -256,11 +196,13 @@ namespace ILCompiler
         {
             if (type.IsDelegate)
             {
+                _delegateMarshalingTypes.Add(type);
+
                 dependencies.Add(factory.NecessaryTypeSymbol(type), "Delegate Marshalling Stub");
 
-                dependencies.Add(factory.MethodEntrypoint(GetOpenStaticDelegateMarshallingStub(type)), "Delegate Marshalling Stub");
-                dependencies.Add(factory.MethodEntrypoint(GetClosedDelegateMarshallingStub(type)), "Delegate Marshalling Stub");
-                dependencies.Add(factory.MethodEntrypoint(GetForwardDelegateCreationStub(type)), "Delegate Marshalling Stub");
+                dependencies.Add(factory.MethodEntrypoint(InteropStateManager.GetOpenStaticDelegateMarshallingThunk(type)), "Delegate Marshalling Stub");
+                dependencies.Add(factory.MethodEntrypoint(InteropStateManager.GetClosedDelegateMarshallingThunk(type)), "Delegate Marshalling Stub");
+                dependencies.Add(factory.MethodEntrypoint(InteropStateManager.GetForwardDelegateCreationThunk(type)), "Delegate Marshalling Stub");
             }
         }
 
@@ -270,9 +212,11 @@ namespace ILCompiler
 
             if (MarshalHelpers.IsStructMarshallingRequired(type))
             {
-                dependencies.Add(factory.MethodEntrypoint(GetStructMarshallingManagedToNativeStub(type)), "Struct Marshalling stub");
-                dependencies.Add(factory.MethodEntrypoint(GetStructMarshallingNativeToManagedStub(type)), "Struct Marshalling stub");
-                dependencies.Add(factory.MethodEntrypoint(GetStructMarshallingCleanupStub(type)), "Struct Marshalling stub");
+                _structMarshallingTypes.Add(type);
+
+                dependencies.Add(factory.MethodEntrypoint(InteropStateManager.GetStructMarshallingManagedToNativeThunk(type)), "Struct Marshalling stub");
+                dependencies.Add(factory.MethodEntrypoint(InteropStateManager.GetStructMarshallingNativeToManagedThunk(type)), "Struct Marshalling stub");
+                dependencies.Add(factory.MethodEntrypoint(InteropStateManager.GetStructMarshallingCleanupThunk(type)), "Struct Marshalling stub");
 
                 AddDependenciesDueToPInvokeStructDelegateField(ref dependencies, factory, type);
             }
