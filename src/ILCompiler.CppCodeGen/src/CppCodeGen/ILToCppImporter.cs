@@ -2325,10 +2325,6 @@ namespace Internal.IL
                     }
 
                     PushTemp(entry);
-                    if (runtimeDeterminedMethod.ToString().Contains("InvokeRetVII"))
-                    {
-
-                    }
                     if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic))
                     {
                         if (exactContextNeedsRuntimeLookup)

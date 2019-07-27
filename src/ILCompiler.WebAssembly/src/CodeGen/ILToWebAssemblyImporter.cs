@@ -398,10 +398,10 @@ namespace Internal.IL
 
         private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParam)
         {
-            if (mangledName == "S_P_CoreLib_System_Collections_Generic_KeyValuePair_2<System___Canon__System___Canon>__get_Value")
-            {
-
-            }
+//            if (mangledName == "S_P_CoreLib_System_Collections_Generic_KeyValuePair_2<System___Canon__System___Canon>__get_Value")
+//            {
+//
+//            }
             LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
 
             if(llvmFunction.Pointer == IntPtr.Zero)
@@ -2729,20 +2729,22 @@ namespace Internal.IL
         private void ImportCalli(int token)
         {
             MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
-            if (_method.ToString().Contains("Array.Resize<__Canon>(__Canon[]&,int32)"))
-            {
-
-            }
-
             HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature, false /* TODO: should this be true sometimes */), 0), _builder));
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
             MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
+            MethodDesc canonMethod = runtimeDeterminedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
             LLVMValueRef targetLLVMFunction = default(LLVMValueRef);
             bool hasHiddenParam = false;
-
+//            if (runtimeDeterminedMethod.ToString()
+//                    .Contains("AsyncLocalValueChangedArgs")
+//                && runtimeDeterminedMethod.ToString()
+//                    .Contains("InvokeOpenStaticThunk"))
+//            {
+//
+//            }
             if (opCode == ILOpcode.ldvirtftn)
             {
                 StackEntry thisPointer = _stack.Pop();
@@ -2758,7 +2760,6 @@ namespace Internal.IL
             else
             {
                 MethodDesc method = ((MethodDesc)_canonMethodIL.GetObject(token));
-                MethodDesc canonMethod = runtimeDeterminedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic))
                 {
                     var exactContextNeedsRuntimeLookup = method.HasInstantiation 
@@ -2808,7 +2809,7 @@ namespace Internal.IL
                                          (runtimeDeterminedMethod.HasInstantiation || runtimeDeterminedMethod.Signature.IsStatic);
                     else
                         hasHiddenParam = runtimeDeterminedMethod.RequiresInstArg();
-                    targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(runtimeDeterminedMethod).ToString(), runtimeDeterminedMethod.Signature, hasHiddenParam);
+                    targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(canonMethod).ToString(), runtimeDeterminedMethod.Signature, hasHiddenParam);
                 }
             }
 
