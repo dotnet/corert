@@ -252,9 +252,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW:
                     id = ReadyToRunHelper.Rethrow;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_USER_BREAKPOINT:
-                    id = ReadyToRunHelper.DebugBreak;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_OVERFLOW:
                     id = ReadyToRunHelper.Overflow;
                     break;
@@ -269,18 +266,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_THROWDIVZERO:
                     id = ReadyToRunHelper.ThrowDivZero;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION:
-                    id = ReadyToRunHelper.ThrowArgumentOutOfRange;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
-                    id = ReadyToRunHelper.ThrowArgument;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED:
-                    id = ReadyToRunHelper.ThrowNotImplemented;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
-                    id = ReadyToRunHelper.ThrowPlatformNotSupported;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF:
@@ -325,15 +310,13 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.MemCpy;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
-                    id = ReadyToRunHelper.GetRuntimeType;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD:
                     id = ReadyToRunHelper.GetRuntimeMethodHandle;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD:
                     id = ReadyToRunHelper.GetRuntimeFieldHandle;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
                 case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
                     id = ReadyToRunHelper.GetRuntimeTypeHandle;
                     break;
@@ -456,20 +439,6 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.DblRound;
                     break;
 
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN:
-                    id = ReadyToRunHelper.PInvokeBegin;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_END:
-                    id = ReadyToRunHelper.PInvokeEnd;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
-                    id = ReadyToRunHelper.ReversePInvokeEnter;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
-                    id = ReadyToRunHelper.ReversePInvokeExit;
-                    break;
-
                 case CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY:
                     id = ReadyToRunHelper.CheckCastAny;
                     break;
@@ -482,27 +451,6 @@ namespace Internal.JitInterface
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT:
                     id = ReadyToRunHelper.MonitorExit;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_MON_ENTER_STATIC:
-                    id = ReadyToRunHelper.MonitorEnterStatic;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_MON_EXIT_STATIC:
-                    id = ReadyToRunHelper.MonitorExitStatic;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
-                    id = ReadyToRunHelper.GVMLookupForSlot;
-                    break;
-
-                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
-                    id = ReadyToRunHelper.TypeHandleToRuntimeType;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
-                    id = ReadyToRunHelper.GetRefAny;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
-                    id = ReadyToRunHelper.TypeHandleToRuntimeTypeHandle;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
@@ -555,7 +503,7 @@ namespace Internal.JitInterface
                     throw new NotImplementedException(ftnNum.ToString());
             }
 
-            return _compilation.SymbolNodeFactory.ExternSymbol(id);
+            return _compilation.NodeFactory.GetReadyToRunHelperCell(id);
         }
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
@@ -1618,7 +1566,7 @@ namespace Internal.JitInterface
         private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
         {
             *pCookieVal = IntPtr.Zero;
-            *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GSCookie));
+            *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
         }
 
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)

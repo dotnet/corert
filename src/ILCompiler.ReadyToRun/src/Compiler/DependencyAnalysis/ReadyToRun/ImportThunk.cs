@@ -40,14 +40,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 _thunkKind = Kind.VirtualStubDispatch;
             }
-            else if (helperId == ReadyToRunHelper.READYTORUN_HELPER_GetString)
+            else if (helperId == ReadyToRunHelper.GetString)
             {
                 _thunkKind = Kind.Lazy;
             }
-            else if (helperId == ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall ||
-                helperId == ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper ||
-                helperId == ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj ||
-                helperId == ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_ObjObj)
+            else if (helperId == ReadyToRunHelper.DelayLoad_MethodCall ||
+                helperId == ReadyToRunHelper.DelayLoad_Helper ||
+                helperId == ReadyToRunHelper.DelayLoad_Helper_Obj ||
+                helperId == ReadyToRunHelper.DelayLoad_Helper_ObjObj)
             {
                 _thunkKind = Kind.DelayLoadHelper;
             }

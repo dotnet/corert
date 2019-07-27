@@ -129,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                 new NewObjectFixupSignature(type, signatureContext));
         }
 
@@ -138,7 +138,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                 new NewArrayFixupSignature(type, signatureContext));
         }
 
@@ -147,7 +147,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseGC, type, signatureContext));
         }
 
@@ -156,7 +156,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_StaticBaseNonGC, type, signatureContext));
         }
 
@@ -165,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ThreadStaticBaseGC, type, signatureContext));
         }
 
@@ -174,7 +174,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ThreadStaticBaseNonGC, type, signatureContext));
         }
 
@@ -183,7 +183,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_IsInstanceOf, type, signatureContext));
         }
 
@@ -192,7 +192,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
+                ILCompiler.ReadyToRunHelper.DelayLoad_Helper_Obj,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_ChkCast, type, signatureContext));
         }
 
@@ -229,7 +229,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperMethodImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.DispatchImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper_Obj,
+                ILCompiler.ReadyToRunHelper.DelayLoad_Helper_Obj,
                 methodWithToken,
                 useVirtualCall: false,
                 useInstantiatingStub: false,
@@ -252,7 +252,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_CctorTrigger, type, signatureContext));
         }
 
@@ -288,7 +288,7 @@ namespace ILCompiler.DependencyAnalysis
                 result = new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                     new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldAddress, fieldDesc, signatureContext));
                 _fieldAddressCache.Add(fieldDesc, result);
             }
@@ -325,347 +325,6 @@ namespace ILCompiler.DependencyAnalysis
             return result;
         }
 
-        private readonly Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode> _helperCache = new Dictionary<ILCompiler.ReadyToRunHelper, ISymbolNode>();
-
-        public ISymbolNode ExternSymbol(ILCompiler.ReadyToRunHelper helper)
-        {
-            if (_helperCache.TryGetValue(helper, out ISymbolNode result))
-            {
-                return result;
-            }
-
-            ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper r2rHelper;
-            switch (helper)
-            {
-                // Exception handling helpers
-                case ILCompiler.ReadyToRunHelper.Throw:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Throw;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Rethrow:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Rethrow;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Overflow:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Overflow;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.RngChkFail:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_RngChkFail;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.FailFast:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FailFast;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.ThrowNullRef:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ThrowNullRef;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.ThrowDivZero:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ThrowDivZero;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.ThrowArgumentOutOfRange:
-                case ILCompiler.ReadyToRunHelper.ThrowArgument:
-                case ILCompiler.ReadyToRunHelper.ThrowPlatformNotSupported:
-                case ILCompiler.ReadyToRunHelper.ThrowNotImplemented:
-                    // TODO: what is the right thing to do here? Locating the exception objects in CoreLib would require emitting typerefs.
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FailFast;
-                    break;
-
-                // Write barriers
-                case ILCompiler.ReadyToRunHelper.WriteBarrier:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.ByRefWriteBarrier:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ByRefWriteBarrier;
-                    break;
-
-                // Array helpers
-                case ILCompiler.ReadyToRunHelper.Stelem_Ref:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Stelem_Ref;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Ldelema_Ref:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Ldelema_Ref;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.MemSet:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_MemSet;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.MemCpy:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_MemCpy;
-                    break;
-
-                // Get string handle lazily
-                case ILCompiler.ReadyToRunHelper.GetString:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetString;
-                    break;
-
-                // Reflection helpers
-                case ILCompiler.ReadyToRunHelper.GetRuntimeTypeHandle:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeTypeHandle;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.GetRuntimeMethodHandle:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeMethodHandle;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.GetRuntimeFieldHandle:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeFieldHandle;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Box:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Box;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Box_Nullable:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Box_Nullable;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Unbox:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Unbox;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Unbox_Nullable:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Unbox_Nullable;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.NewMultiDimArr:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.NewMultiDimArr_NonVarArg:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewMultiDimArr_NonVarArg;
-                    break;
-
-                // Helpers used with generic handle lookup cases
-                case ILCompiler.ReadyToRunHelper.NewObject:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewObject;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.NewArray:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_NewArray;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.CheckCastAny:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckCastAny;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.CheckInstanceAny:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckInstanceAny;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.GenericGcStaticBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcStaticBase;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.GenericNonGcStaticBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcStaticBase;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.GenericGcTlsBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericGcTlsBase;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.GenericNonGcTlsBase:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GenericNonGcTlsBase;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.VirtualFuncPtr:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_VirtualFuncPtr;
-                    break;
-
-                // Long mul/div/shift ops
-                case ILCompiler.ReadyToRunHelper.LMul:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LMul;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.LMulOfv:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LMulOfv;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.ULMulOvf:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ULMulOvf;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.LDiv:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LDiv;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.LMod:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LMod;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.ULDiv:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ULDiv;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.ULMod:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ULMod;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.LLsh:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LLsh;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.LRsh:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LRsh;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.LRsz:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_LRsz;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Lng2Dbl:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Lng2Dbl;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.ULng2Dbl:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_ULng2Dbl;
-                    break;
-
-                // 32-bit division helpers
-                case ILCompiler.ReadyToRunHelper.Div:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Div;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Mod:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Mod;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.UDiv:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_UDiv;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.UMod:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_UMod;
-                    break;
-
-                // Floating point conversions
-                case ILCompiler.ReadyToRunHelper.Dbl2Int:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2Int;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Dbl2IntOvf:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2IntOvf;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Dbl2Lng:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2Lng;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Dbl2LngOvf:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2LngOvf;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Dbl2UInt:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2UInt;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Dbl2UIntOvf:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2UIntOvf;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Dbl2ULng:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2ULng;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.Dbl2ULngOvf:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_Dbl2ULngOvf;
-                    break;
-
-                // Floating point ops
-                case ILCompiler.ReadyToRunHelper.DblRem:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DblRem;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.FltRem:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FltRem;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.DblRound:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DblRound;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.FltRound:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_FltRound;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.MonitorEnter:
-                case ILCompiler.ReadyToRunHelper.MonitorExit:
-                case ILCompiler.ReadyToRunHelper.MonitorEnterStatic:
-                case ILCompiler.ReadyToRunHelper.MonitorExitStatic:
-                case ILCompiler.ReadyToRunHelper.GetRefAny: // TODO-PERF: currently not implemented in Crossgen
-                    throw new RequiresRuntimeJitException(helper.ToString());
-
-                case ILCompiler.ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_GetRuntimeTypeHandle;
-                    break;
-
-                // JIT32 x86-specific write barriers
-                case ILCompiler.ReadyToRunHelper.WriteBarrier_EAX:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EAX;
-                    break;
-                case ILCompiler.ReadyToRunHelper.WriteBarrier_EBX:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EBX;
-                    break;
-                case ILCompiler.ReadyToRunHelper.WriteBarrier_ECX:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_ECX;
-                    break;
-                case ILCompiler.ReadyToRunHelper.WriteBarrier_ESI:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_ESI;
-                    break;
-                case ILCompiler.ReadyToRunHelper.WriteBarrier_EDI:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EDI;
-                    break;
-                case ILCompiler.ReadyToRunHelper.WriteBarrier_EBP:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_WriteBarrier_EBP;
-                    break;
-                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_EAX:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EAX;
-                    break;
-                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_EBX:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EBX;
-                    break;
-                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_ECX:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_ECX;
-                    break;
-                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_ESI:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_ESI;
-                    break;
-                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_EDI:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EDI;
-                    break;
-                case ILCompiler.ReadyToRunHelper.CheckedWriteBarrier_EBP:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_CheckedWriteBarrier_EBP;
-                    break;
-                case ILCompiler.ReadyToRunHelper.EndCatch:
-                    r2rHelper = ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_EndCatch;
-                    break;
-
-                case ILCompiler.ReadyToRunHelper.PInvokeBegin:
-                case ILCompiler.ReadyToRunHelper.PInvokeEnd:
-                case ILCompiler.ReadyToRunHelper.ReversePInvokeEnter:
-                case ILCompiler.ReadyToRunHelper.ReversePInvokeExit:
-                    throw new RequiresRuntimeJitException(helper.ToString());
-
-                default:
-                    throw new NotImplementedException(helper.ToString());
-            }
-
-            result = _codegenNodeFactory.GetReadyToRunHelperCell(r2rHelper);
-            _helperCache.Add(helper, result);
-            return result;
-        }
-
         private readonly Dictionary<MethodAndCallSite, ISymbolNode> _interfaceDispatchCells = new Dictionary<MethodAndCallSite, ISymbolNode>();
 
         public ISymbolNode InterfaceDispatchCell(MethodWithToken method, SignatureContext signatureContext, bool isUnboxingStub, string callSite)
@@ -676,7 +335,7 @@ namespace ILCompiler.DependencyAnalysis
                 dispatchCell = new DelayLoadHelperMethodImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.DispatchImports,
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_MethodCall,
+                    ILCompiler.ReadyToRunHelper.DelayLoad_MethodCall,
                     method,
                     useVirtualCall: true,
                     useInstantiatingStub: false,
@@ -707,7 +366,7 @@ namespace ILCompiler.DependencyAnalysis
                 ctorNode = new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                     new DelegateCtorSignature(delegateType, targetMethodNode, method.Token, signatureContext));
                 _delegateCtors.Add(ctorKey, ctorNode);
             }
@@ -892,7 +551,7 @@ namespace ILCompiler.DependencyAnalysis
                 node = new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                     new GenericLookupSignature(runtimeLookupKind, fixupKind, typeArgument, methodArgument: null, fieldArgument: null, methodContext, signatureContext));
                 _genericLookupHelpers.Add(key, node);
             }
@@ -913,7 +572,7 @@ namespace ILCompiler.DependencyAnalysis
                 node = new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                     new GenericLookupSignature(runtimeLookupKind, fixupKind, typeArgument: null, methodArgument: null, fieldArgument: fieldArgument, methodContext, signatureContext));
                 _genericLookupHelpers.Add(key, node);
             }
@@ -934,7 +593,7 @@ namespace ILCompiler.DependencyAnalysis
                 node = new DelayLoadHelperMethodImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelper.READYTORUN_HELPER_DelayLoad_Helper,
+                    ILCompiler.ReadyToRunHelper.DelayLoad_Helper,
                     methodArgument,
                     useVirtualCall: false,
                     useInstantiatingStub: false,
