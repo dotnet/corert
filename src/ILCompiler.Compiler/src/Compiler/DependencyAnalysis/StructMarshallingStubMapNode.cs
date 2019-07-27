@@ -17,13 +17,15 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal sealed class StructMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
-        private ExternalReferencesTableNode _externalReferences;
+        private readonly ObjectAndOffsetSymbolNode _endSymbol;
+        private readonly ExternalReferencesTableNode _externalReferences;
+        private readonly InteropStateManager _interopStateManager;
 
-        public StructMarshallingStubMapNode(ExternalReferencesTableNode externalReferences)
+        public StructMarshallingStubMapNode(ExternalReferencesTableNode externalReferences, InteropStateManager interopStateManager)
         {
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__struct_marshalling_stub_map_End", true);
             _externalReferences = externalReferences;
+            _interopStateManager = interopStateManager;
         }
 
         public ISymbolDefinitionNode EndSymbol => _endSymbol;
@@ -53,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var structEntry in ((CompilerGeneratedInteropStubManager)factory.InteropStubManager).GetStructMarshallingTypes())
+            foreach (var structType in factory.MetadataManager.GetTypesWithStructMarshalling())
             {
                 // the order of data written is as follows:
                 //  managed struct type
@@ -67,16 +69,15 @@ namespace ILCompiler.DependencyAnalysis
                 //     name
                 //     offset
 
-                var structType = structEntry.StructType;
-                var nativeType = structEntry.NativeStructType;
+                var nativeType = _interopStateManager.GetStructMarshallingNativeType(structType);
 
                 Vertex marshallingData = null;
                 if (MarshalHelpers.IsStructMarshallingRequired(structType))
                 {
                     Vertex thunks = writer.GetTuple(
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.MarshallingThunk))),
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.UnmarshallingThunk))),
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(structEntry.CleanupThunk))));
+                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetStructMarshallingManagedToNativeThunk(structType)))),
+                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetStructMarshallingNativeToManagedThunk(structType)))),
+                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetStructMarshallingCleanupThunk(structType)))));
 
                     uint size = (uint)nativeType.InstanceFieldSize.AsInt;
                     marshallingData = writer.GetTuple(writer.GetUnsignedConstant(size), thunks);

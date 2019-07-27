@@ -22,6 +22,7 @@ using TypeSpecification = Internal.Metadata.NativeFormat.Writer.TypeSpecificatio
 using ConstantStringValue = Internal.Metadata.NativeFormat.Writer.ConstantStringValue;
 using TypeInstantiationSignature = Internal.Metadata.NativeFormat.Writer.TypeInstantiationSignature;
 using MethodInstantiation = Internal.Metadata.NativeFormat.Writer.MethodInstantiation;
+using System.Collections;
 
 namespace ILCompiler
 {
@@ -52,6 +53,8 @@ namespace ILCompiler
         private HashSet<GenericDictionaryNode> _genericDictionariesGenerated = new HashSet<GenericDictionaryNode>();
         private HashSet<IMethodBodyNode> _methodBodiesGenerated = new HashSet<IMethodBodyNode>();
         private List<TypeGVMEntriesNode> _typeGVMEntries = new List<TypeGVMEntriesNode>();
+        private List<DefType> _typesWithDelegateMarshalling = new List<DefType>();
+        private List<DefType> _typesWithStructMarshalling = new List<DefType>();
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
@@ -208,6 +211,16 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
+            }
+
+            if (obj is StructMarshallingDataNode structMarshallingDataNode)
+            {
+                _typesWithStructMarshalling.Add(structMarshallingDataNode.Type);
+            }
+
+            if (obj is DelegateMarshallingDataNode delegateMarshallingDataNode)
+            {
+                _typesWithDelegateMarshalling.Add(delegateMarshallingDataNode.Type);
             }
         }
 
@@ -576,6 +589,16 @@ namespace ILCompiler
         internal IReadOnlyCollection<GenericDictionaryNode> GetCompiledGenericDictionaries()
         {
             return _genericDictionariesGenerated;
+        }
+
+        internal IEnumerable<DefType> GetTypesWithStructMarshalling()
+        {
+            return _typesWithStructMarshalling;
+        }
+
+        internal IEnumerable<DefType> GetTypesWithDelegateMarshalling()
+        {
+            return _typesWithDelegateMarshalling;
         }
 
         public IEnumerable<MethodDesc> GetCompiledMethods()
