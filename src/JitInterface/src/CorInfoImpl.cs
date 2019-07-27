@@ -630,10 +630,6 @@ namespace Internal.JitInterface
             if (method.IsPInvoke)
             {
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
-
-                // TODO: Enable PInvoke inlining
-                // https://github.com/dotnet/corert/issues/6063
-                result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE;
             }
 
             if (method.IsAggressiveOptimization)

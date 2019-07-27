@@ -170,21 +170,11 @@ namespace ILCompiler.DependencyAnalysis
                     && methodCalled.Signature.Length == 1 && methodCalled.Signature[0].IsSystemType():
                     {
                         TypeDesc type = tracker.GetLastType();
-                        if (type != null && !type.IsGenericDefinition && !type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        if (type != null && !type.IsGenericDefinition && !type.IsCanonicalSubtype(CanonicalFormKind.Any) && type is DefType defType)
                         {
                             list = list ?? new DependencyList();
 
-                            MethodDesc marshalSizeOfGeneric = methodCalled.OwningType.GetKnownMethod(
-                                "SizeOf", new MethodSignature(MethodSignatureFlags.Static, 1, methodCalled.Context.GetWellKnownType(WellKnownType.Int32), TypeDesc.EmptyTypes));
-                            marshalSizeOfGeneric = marshalSizeOfGeneric.MakeInstantiatedMethod(type);
-
-                            // InteropManager is looking for the following method bodies or dictionaries to decide marshalling info need.
-                            // We should ideally model these as separate entities in the dependency graph and add those entities instead.
-                            // Fixable after https://github.com/dotnet/corert/issues/6063 is fixed.
-                            if (marshalSizeOfGeneric.GetCanonMethodTarget(CanonicalFormKind.Specific) != marshalSizeOfGeneric)
-                                list.Add(factory.MethodGenericDictionary(marshalSizeOfGeneric), "Marshal.SizeOf");
-                            else
-                                list.Add(factory.MethodEntrypoint(marshalSizeOfGeneric), "Marshal.SizeOf");
+                            list.Add(factory.StructMarshallingData(defType), "Marshal.SizeOf");
                         }
                     }
                     break;
