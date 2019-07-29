@@ -119,5 +119,15 @@ namespace ILCompiler
             _rootAdder(blob, reason);
             _factory.NodeAliases.Add(blob, exportName);
         }
+
+        public void RootDelegateMarshallingData(DefType type, string reason)
+        {
+            _rootAdder(_factory.DelegateMarshallingData(type), reason);
+        }
+
+        public void RootStructMarshallingData(DefType type, string reason)
+        {
+            _rootAdder(_factory.StructMarshallingData(type), reason);
+        }
     }
 }

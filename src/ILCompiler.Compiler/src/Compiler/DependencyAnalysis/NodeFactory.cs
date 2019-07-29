@@ -370,6 +370,16 @@ namespace ILCompiler.DependencyAnalysis
                 return new NamedJumpStubNode(id.Item1, id.Item2);
             });
 
+            _delegateMarshalingDataNodes = new NodeCache<DefType, DelegateMarshallingDataNode>(type =>
+            {
+                return new DelegateMarshallingDataNode(type);
+            });
+
+            _structMarshalingDataNodes = new NodeCache<DefType, StructMarshallingDataNode>(type =>
+            {
+                return new StructMarshallingDataNode(type);
+            });
+
             _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
             {
                 if (CompilationModuleGroup.ShouldProduceFullVTable(type))
@@ -998,7 +1008,21 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _namedJumpStubNodes.GetOrAdd(new Tuple<string, ISymbolNode>(name, target));
         }
-        
+
+        private NodeCache<DefType, DelegateMarshallingDataNode> _delegateMarshalingDataNodes;
+
+        public DelegateMarshallingDataNode DelegateMarshallingData(DefType type)
+        {
+            return _delegateMarshalingDataNodes.GetOrAdd(type);
+        }
+
+        private NodeCache<DefType, StructMarshallingDataNode> _structMarshalingDataNodes;
+
+        public StructMarshallingDataNode StructMarshallingData(DefType type)
+        {
+            return _structMarshalingDataNodes.GetOrAdd(type);
+        }
+
         /// <summary>
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.

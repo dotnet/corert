@@ -30,9 +30,8 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
-            PInvokeILEmitterConfiguration pinvokePolicy,
             Logger logger)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, null, pinvokePolicy, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, null, logger)
         {
         }
 
@@ -103,6 +102,13 @@ namespace ILCompiler
         internal ILScanResults(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
             : base(graph, factory)
         {
+        }
+
+        public AnalysisBasedInteropStubManager GetInteropStubManager(InteropStateManager stateManager, PInvokeILEmitterConfiguration pinvokePolicy)
+        {
+            return new AnalysisBasedInteropStubManager(stateManager, pinvokePolicy,
+                _factory.MetadataManager.GetTypesWithStructMarshalling(),
+                _factory.MetadataManager.GetTypesWithDelegateMarshalling());
         }
 
         public VTableSliceProvider GetVTableLayoutInfo()

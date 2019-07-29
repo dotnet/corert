@@ -19,5 +19,7 @@ namespace ILCompiler
         void RootVirtualMethodForReflection(MethodDesc method, string reason);
         void RootModuleMetadata(ModuleDesc module, string reason);
         void RootReadOnlyDataBlob(byte[] data, int alignment, string reason, string exportName);
+        void RootDelegateMarshallingData(DefType type, string reason);
+        void RootStructMarshallingData(DefType type, string reason);
     }
 }

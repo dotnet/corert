@@ -92,12 +92,6 @@ namespace ILCompiler
             }
         }
 
-        private static InteropStubManager NewEmptyInteropStubManager(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup)
-        {
-            // On Project N, the compiler doesn't generate the interop code on the fly
-            return new EmptyInteropStubManager(compilationModuleGroup, context, null);
-        }
-
         public UtcNodeFactory(
             CompilerTypeSystemContext context, 
             CompilationModuleGroup compilationModuleGroup, 
@@ -115,7 +109,7 @@ namespace ILCompiler
             : base(context, 
                   compilationModuleGroup, 
                   PickMetadataManager(context, compilationModuleGroup, inputModules, inputMetadataOnlyAssemblies, metadataFile, emitStackTraceMetadata, disableExceptionMessages, allowInvokeThunks),
-                  NewEmptyInteropStubManager(context, compilationModuleGroup), 
+                  new EmptyInteropStubManager(),
                   nameMangler, 
                   new AttributeDrivenLazyGenericsPolicy(), 
                   null, 
