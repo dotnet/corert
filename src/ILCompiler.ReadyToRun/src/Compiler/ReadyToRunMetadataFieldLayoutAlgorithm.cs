@@ -717,7 +717,7 @@ namespace ILCompiler
             {
                 return;
             }
-            HashSet<DefType> recursionGuard = new HashSet<DefType>();
+
             if (!_compilationGroup.ContainsTypeLayout(baseType))
             {
                 LayoutInt alignment = new LayoutInt(type.Context.Target.PointerSize);
