@@ -327,7 +327,15 @@ namespace Internal.TypeSystem
 
                 // GC pointers MUST be aligned.
                 // We treat byref-like structs as GC pointers too.
-                if (!computedOffset.IsIndeterminate && (fieldType.IsGCPointer || fieldType.IsByRefLike))
+                bool needsToBeAligned =
+                    !computedOffset.IsIndeterminate
+                    &&
+                    (
+                        fieldType.IsGCPointer
+                        || fieldType.IsByRefLike
+                        || (fieldType.IsValueType && ((DefType)fieldType).ContainsGCPointers)
+                    );
+                if (needsToBeAligned)
                 {
                     int offsetModulo = computedOffset.AsInt % type.Context.Target.PointerSize;
                     if (offsetModulo != 0)
