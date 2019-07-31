@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
-
+using ILCompiler;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.Text;
@@ -15,6 +15,8 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 using LLVMSharp;
 using ILCompiler.CodeGen;
+using ILCompiler.DependencyAnalysis;
+using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -757,7 +759,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (node is ReadyToRunGenericHelperNode readyToRunGenericHelperNode)
                     {
-                        objectWriter.GetCodeForReadyToRunGenericHelper(readyToRunGenericHelperNode, factory);
+                        objectWriter.GetCodeForReadyToRunGenericHelper(compilation, readyToRunGenericHelperNode, factory);
                         continue;
                     }
 
@@ -921,288 +923,304 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void GetCodeForReadyToRunGenericHelper(ReadyToRunGenericHelperNode node, NodeFactory factory)
+        private void GetCodeForReadyToRunGenericHelper(WebAssemblyCodegenCompilation compilation, ReadyToRunGenericHelperNode node, NodeFactory factory)
         {
             LLVMBuilderRef builder = LLVM.CreateBuilder();
+            // cheat a bit as want to reuse some of the instance methods in ILImporter
             //TODO, whats the signature?
             LLVMTypeRef retType;
-            retType = LLVMTypeRef.VoidType();
-//            switch (node.Id)
-//            {
-//                case ReadyToRunHelperId.MethodHandle:
-//                    retType = LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0);
-//                    break;
-//                case ReadyToRunHelperId.DelegateCtor:
-//                    retType = LLVMTypeRef.VoidType();
-//                    break;
-//                default:
-//                    // was void *
-//                    retType = LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0);
-//                    break;
-//            }
-            var helperSignature = LLVM.FunctionType(LLVM.Int32Type(), new LLVMTypeRef[] { LLVM.Int32Type(), LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+            switch (node.Id)
+            {
+                case ReadyToRunHelperId.MethodHandle:
+                    retType = LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0);
+                    break;
+                case ReadyToRunHelperId.DelegateCtor:
+                    retType = LLVMTypeRef.VoidType();
+                    break;
+                default:
+                    // was void *
+                    retType = LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0);
+                    break;
+            }
+
+            var args = new List<LLVMTypeRef>();
+            args.Add(LLVM.PointerType(LLVM.Int32Type(), 0));
+            if (node.Id == ReadyToRunHelperId.DelegateCtor)
+            {
+                DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
+                MethodDesc constructor = target.Constructor.Method;
+                bool isStatic = constructor.Signature.IsStatic;
+                int argCount = constructor.Signature.Length;
+                if (!isStatic)
+                    argCount++;
+                int startIdx = args.Count;
+                for (int i = 0; i < argCount; i++)
+                {
+                    TypeDesc argType;
+                    if (i == 0 && !isStatic)
+                    {
+                        argType = constructor.OwningType;
+                    }
+                    else
+                    {
+                        argType = constructor.Signature[i - (isStatic ? 0 : 1)];
+                    }
+                    args.Add(ILImporter.GetLLVMTypeForTypeDesc(argType));
+                }
+            }
+
+
+            var helperSignature = LLVM.FunctionType(retType, args.ToArray(), false);
             var helperFunc = LLVM.AddFunction(Module, node.GetMangledName(factory.NameMangler), helperSignature);
             var helperBlock = LLVM.AppendBasicBlock(helperFunc, "genericHelper");
             LLVM.PositionBuilderAtEnd(builder, helperBlock);
-            LLVM.BuildRetVoid(builder);
+            var importer = new ILImporter(builder, compilation, Module, helperFunc);
             //            string mangledName = GetCppReadyToRunGenericHelperNodeName(factory, node);
             //            List<string> argNames = new List<string>(new string[] { "arg" });
-            //            string ctxVarName = "ctx";
-            //            string resVarName = "res";
             //            string retVarName = "ret";
             //
-            //            string retType;
-            //            switch (node.Id)
-            //            {
-            //                case ReadyToRunHelperId.MethodHandle:
-            //                    retType = "::System_Private_CoreLib::System::RuntimeMethodHandle";
-            //                    break;
-            //                case ReadyToRunHelperId.DelegateCtor:
-            //                    retType = "void";
-            //                    break;
-            //                default:
-            //                    retType = "void*";
-            //                    break;
-            //            }
+
+            LLVMValueRef ctx;
+            string gepName;
+            if (node is ReadyToRunGenericLookupFromTypeNode)
+            {
+                // Locate the VTable slot that points to the dictionary
+                int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(factory, (TypeDesc)node.DictionaryOwner);
+            
+                int pointerSize = factory.Target.PointerSize;
+                // Load the dictionary pointer from the VTable
+                int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
+                var ptrPtr = LLVM.BuildBitCast(builder, LLVM.GetParam(helperFunc, 0), LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), 0), "ptrPtr");
+                var slotGep = LLVM.BuildGEP(builder, ptrPtr, new[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)slotOffset, LLVMMisc.False)}, "slotGep");
+                ctx = LLVM.BuildLoad(builder, slotGep, "ctx");
+                gepName = "typeNodeGep";
+            }
+            else
+            {
+                ctx = LLVM.GetParam(helperFunc, 0);
+                gepName = "paramGep";
+
+            }
+
+            LLVMValueRef resVar = OutputCodeForDictionaryLookup(builder, factory, node, node.LookupSignature, ctx, gepName);
+            
+            switch (node.Id)
+            {
+                case ReadyToRunHelperId.GetNonGCStaticBase:
+                    {
+                        MetadataType target = (MetadataType)node.Target;
+            
+                        if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
+                        {
+                            importer.OutputCodeForTriggerCctor(target, resVar);
+
+                            resVar = LLVM.BuildGEP(builder, resVar,
+                                new LLVMValueRef[]
+                                {
+                                    LLVM.ConstInt(LLVM.Int32Type(), (ulong)0 /* TODO: what is this */,
+                                        LLVMMisc.False)
+                                }, "sizeofctx");
+//                            sb.Append(resVarName);
+//                            sb.Append(" = ");
+//                            sb.Append("(char*)");
+//                            sb.Append(resVarName);
+//                            sb.Append(" - sizeof(StaticClassConstructionContext);");
+//                            sb.AppendLine();
+                        }
+                    }
+                    break;
+            
+                case ReadyToRunHelperId.GetGCStaticBase:
+                    {
+                        MetadataType target = (MetadataType)node.Target;
+
+                        var ptrPtrPtr = LLVM.BuildBitCast(builder, resVar, LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), 0), 0), "ptrPtrPtr");
+
+                        resVar = LLVM.BuildLoad(builder, ptrPtrPtr, "ind1");
+                        resVar = LLVM.BuildLoad(builder, resVar, "ind2");
+            
+                        if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
+                        {
+                            GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
+
+                            resVar = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "lazyGep");
+
+                            //                            importer.OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase);
+                            importer.OutputCodeForTriggerCctor(target, resVar);
+                        }
+                    }
+                    break;
+            
+                case ReadyToRunHelperId.GetThreadStaticBase:
+                    {
+                        MetadataType target = (MetadataType)node.Target;
+            
+                        if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
+                        {
+                            GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
+
+                            resVar = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "tsGep");
+            
+                            importer.OutputCodeForTriggerCctor(target, resVar);
+                        }
+                    }
+                    break;
+            
+                case ReadyToRunHelperId.DelegateCtor:
+                    {
+                        DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
+                        MethodDesc constructor = target.Constructor.Method;
+            
+
+                        //TODO
+//                        sb.Append(argNames[3]);
+//                        sb.Append(" = ((intptr_t)");
+//                        sb.Append(resVarName);
+//                        sb.Append(") + ");
+//                        sb.Append(FatFunctionPointerConstants.Offset.ToString());
+//                        sb.Append(";");
+//                        sb.AppendLine();
+//            
+//                        sb.Append("::");
+//                        sb.Append(GetCppMethodDeclarationName(constructor.OwningType, GetCppMethodName(constructor)));
+//                        sb.Append("(");
+//            
+//                        for (int i = 1; i < argNames.Count; i++)
+//                        {
+//                            sb.Append(argNames[i]);
+//            
+//                            if (i != argNames.Count - 1)
+//                                sb.Append(", ");
+//                        }
+//            
+//                        sb.Append(");");
+//                        sb.AppendLine();
+                    }
+                    break;
+            
+                // These are all simple: just get the thing from the dictionary and we're done
+                case ReadyToRunHelperId.TypeHandle:
+                case ReadyToRunHelperId.MethodHandle:
+                case ReadyToRunHelperId.FieldHandle:
+                case ReadyToRunHelperId.MethodDictionary:
+                case ReadyToRunHelperId.MethodEntry:
+                case ReadyToRunHelperId.VirtualDispatchCell:
+                case ReadyToRunHelperId.DefaultConstructor:
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            if (node.Id != ReadyToRunHelperId.DelegateCtor)
+            {
+                //                sb.Append(retType);
+                //                sb.Append(" ");
+                //                sb.Append(retVarName);
+                //                sb.Append(" = ");
+                //
+                if (node.Id == ReadyToRunHelperId.MethodHandle)
+                {
+                    LLVM.BuildRet(builder, resVar);
+                    //                    sb.Append("{");
+                    //                    sb.Append("(intptr_t)");
+                    //                    sb.Append(resVarName);
+                    //                    sb.Append("};");
+                }
+                else
+                {
+                    //TODO: are these the same types for wasm
+                    LLVM.BuildRet(builder, resVar);
+                    //                    sb.Append(resVarName);
+                    //                    sb.Append(";");
+                }
+            }
+
             //
-            //            sb.AppendLine();
-            //            sb.Append(retType);
-            //            sb.Append(" ");
-            //            sb.Append(mangledName);
-            //            sb.Append("(");
-            //            sb.Append("void *");
-            //            sb.Append(argNames[0]);
-            //
-            //            if (node.Id == ReadyToRunHelperId.DelegateCtor)
-            //            {
-            //                sb.Append(", ");
-            //
-            //                DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
-            //                MethodDesc constructor = target.Constructor.Method;
-            //
-            //                bool isStatic = constructor.Signature.IsStatic;
-            //
-            //                int argCount = constructor.Signature.Length;
-            //                if (!isStatic)
-            //                    argCount++;
-            //
-            //                int startIdx = argNames.Count;
-            //                for (int i = 0; i < argCount; i++)
-            //                {
-            //                    string argName = $"arg{i + startIdx}";
-            //                    argNames.Add(argName);
-            //
-            //                    TypeDesc argType;
-            //                    if (i == 0 && !isStatic)
-            //                    {
-            //                        argType = constructor.OwningType;
-            //                    }
-            //                    else
-            //                    {
-            //                        argType = constructor.Signature[i - (isStatic ? 0 : 1)];
-            //                    }
-            //
-            //                    sb.Append(GetCppSignatureTypeName(argType));
-            //                    sb.Append(" ");
-            //                    sb.Append(argName);
-            //
-            //                    if (i != argCount - 1)
-            //                        sb.Append(", ");
-            //                }
-            //            }
-            //
-            //            sb.Append(")");
-            //
-            //            sb.AppendLine();
-            //            sb.Append("{");
-            //            sb.Indent();
-            //            sb.AppendLine();
-            //
-            //            sb.Append("void *");
-            //            sb.Append(ctxVarName);
-            //            sb.Append(";");
-            //            sb.AppendLine();
-            //
-            //            sb.Append("void *");
-            //            sb.Append(resVarName);
-            //            sb.Append(";");
-            //            sb.AppendLine();
-            //
-            //            if (node is ReadyToRunGenericLookupFromTypeNode)
-            //            {
-            //                // Locate the VTable slot that points to the dictionary
-            //                int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(factory, (TypeDesc)node.DictionaryOwner);
-            //
-            //                int pointerSize = factory.Target.PointerSize;
-            //                int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
-            //
-            //                // Load the dictionary pointer from the VTable
-            //                sb.Append(ctxVarName);
-            //                sb.Append(" = *(void **)((intptr_t)");
-            //                sb.Append(argNames[0]);
-            //                sb.Append(" + ");
-            //                sb.Append(slotOffset.ToString());
-            //                sb.Append(");");
-            //                sb.AppendLine();
-            //            }
-            //            else
-            //            {
-            //                sb.Append(ctxVarName);
-            //                sb.Append(" = ");
-            //                sb.Append(argNames[0]);
-            //                sb.Append(";");
-            //                sb.AppendLine();
-            //            }
-            //
-            //            OutputCodeForDictionaryLookup(sb, factory, node, node.LookupSignature, ctxVarName, resVarName);
-            //
-            //            switch (node.Id)
-            //            {
-            //                case ReadyToRunHelperId.GetNonGCStaticBase:
-            //                    {
-            //                        MetadataType target = (MetadataType)node.Target;
-            //
-            //                        if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
-            //                        {
-            //                            OutputCodeForTriggerCctor(sb, factory, target, resVarName);
-            //
-            //                            sb.Append(resVarName);
-            //                            sb.Append(" = ");
-            //                            sb.Append("(char*)");
-            //                            sb.Append(resVarName);
-            //                            sb.Append(" - sizeof(StaticClassConstructionContext);");
-            //                            sb.AppendLine();
-            //                        }
-            //                    }
-            //                    break;
-            //
-            //                case ReadyToRunHelperId.GetGCStaticBase:
-            //                    {
-            //                        MetadataType target = (MetadataType)node.Target;
-            //
-            //                        sb.Append(resVarName);
-            //                        sb.Append(" = **(void ***)");
-            //                        sb.Append(resVarName);
-            //                        sb.Append(";");
-            //                        sb.AppendLine();
-            //
-            //                        if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
-            //                        {
-            //                            string nonGcStaticsBase = "nonGcBase";
-            //
-            //                            sb.Append("void *");
-            //                            sb.Append(nonGcStaticsBase);
-            //                            sb.Append(";");
-            //                            sb.AppendLine();
-            //
-            //                            GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
-            //
-            //                            OutputCodeForDictionaryLookup(sb, factory, node, nonGcRegionLookup, ctxVarName, nonGcStaticsBase);
-            //
-            //                            OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase);
-            //                        }
-            //                    }
-            //                    break;
-            //
-            //                case ReadyToRunHelperId.GetThreadStaticBase:
-            //                    {
-            //                        MetadataType target = (MetadataType)node.Target;
-            //
-            //                        if (_compilation.TypeSystemContext.HasLazyStaticConstructor(target))
-            //                        {
-            //                            string nonGcStaticsBase = "nonGcBase";
-            //
-            //                            sb.Append("void *");
-            //                            sb.Append(nonGcStaticsBase);
-            //                            sb.Append(";");
-            //                            sb.AppendLine();
-            //
-            //                            GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
-            //
-            //                            OutputCodeForDictionaryLookup(sb, factory, node, nonGcRegionLookup, ctxVarName, nonGcStaticsBase);
-            //
-            //                            OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase);
-            //                        }
-            //                    }
-            //                    break;
-            //
-            //                case ReadyToRunHelperId.DelegateCtor:
-            //                    {
-            //                        DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
-            //                        MethodDesc constructor = target.Constructor.Method;
-            //
-            //                        sb.Append(argNames[3]);
-            //                        sb.Append(" = ((intptr_t)");
-            //                        sb.Append(resVarName);
-            //                        sb.Append(") + ");
-            //                        sb.Append(FatFunctionPointerConstants.Offset.ToString());
-            //                        sb.Append(";");
-            //                        sb.AppendLine();
-            //
-            //                        sb.Append("::");
-            //                        sb.Append(GetCppMethodDeclarationName(constructor.OwningType, GetCppMethodName(constructor)));
-            //                        sb.Append("(");
-            //
-            //                        for (int i = 1; i < argNames.Count; i++)
-            //                        {
-            //                            sb.Append(argNames[i]);
-            //
-            //                            if (i != argNames.Count - 1)
-            //                                sb.Append(", ");
-            //                        }
-            //
-            //                        sb.Append(");");
-            //                        sb.AppendLine();
-            //                    }
-            //                    break;
-            //
-            //                // These are all simple: just get the thing from the dictionary and we're done
-            //                case ReadyToRunHelperId.TypeHandle:
-            //                case ReadyToRunHelperId.MethodHandle:
-            //                case ReadyToRunHelperId.FieldHandle:
-            //                case ReadyToRunHelperId.MethodDictionary:
-            //                case ReadyToRunHelperId.MethodEntry:
-            //                case ReadyToRunHelperId.VirtualDispatchCell:
-            //                case ReadyToRunHelperId.DefaultConstructor:
-            //                    break;
-            //                default:
-            //                    throw new NotImplementedException();
-            //            }
-            //
-            //            if (node.Id != ReadyToRunHelperId.DelegateCtor)
-            //            {
-            //                sb.Append(retType);
-            //                sb.Append(" ");
-            //                sb.Append(retVarName);
-            //                sb.Append(" = ");
-            //
-            //                if (node.Id == ReadyToRunHelperId.MethodHandle)
-            //                {
-            //                    sb.Append("{");
-            //                    sb.Append("(intptr_t)");
-            //                    sb.Append(resVarName);
-            //                    sb.Append("};");
-            //                }
-            //                else
-            //                {
-            //                    sb.Append(resVarName);
-            //                    sb.Append(";");
-            //                }
-            //
-            //                sb.AppendLine();
-            //
-            //                sb.Append("return ");
-            //                sb.Append(retVarName);
-            //                sb.Append(";");
-            //            }
-            //
-            //            sb.Exdent();
-            //            sb.AppendLine();
-            //            sb.Append("}");
-            //            sb.AppendLine();
-            //
-            //            return sb.ToString();
+                //                sb.AppendLine();
+                //
+                //                sb.Append("return ");
+                //                sb.Append(retVarName);
+                //                sb.Append(";");
+                //            }
+                //
+                //            sb.Exdent();
+                //            sb.AppendLine();
+                //            sb.Append("}");
+                //            sb.AppendLine();
+                //
+                //            return sb.ToString();
+             else
+            {
+                LLVM.BuildRetVoid(builder);
+            }
         }
 
+
+        private LLVMValueRef OutputCodeForDictionaryLookup(LLVMBuilderRef builder, NodeFactory factory,
+            ReadyToRunGenericHelperNode node, GenericLookupResult lookup, LLVMValueRef ctx, string gepName /* remove this as its for debugging */)
+        {
+            // Find the generic dictionary slot
+            int dictionarySlot = factory.GenericDictionaryLayout(node.DictionaryOwner).GetSlotForEntry(lookup);
+
+            int offset = dictionarySlot * factory.Target.PointerSize;
+
+            // Load the generic dictionary cell
+            LLVMValueRef retRef = LLVM.BuildGEP(builder, ctx, new[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)offset, LLVMMisc.False)}, gepName);
+
+            switch (lookup.LookupResultReferenceType(factory))
+            {
+                case GenericLookupResultReferenceType.Indirect:
+                    var ptrPtr = LLVM.BuildBitCast(builder, retRef, LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), 0), "ptrPtr");
+                    retRef = LLVM.BuildLoad(builder, ptrPtr, "indLoad");
+                    break;
+
+                case GenericLookupResultReferenceType.ConditionalIndirect:
+                    throw new NotImplementedException();
+
+                default:
+                    break;
+            }
+
+            return retRef;
+        }
+
+    }
+}
+
+namespace Internal.IL
+{
+    partial class ILImporter
+    {
+        public ILImporter(LLVMBuilderRef builder, WebAssemblyCodegenCompilation compilation, LLVMModuleRef module, LLVMValueRef currentFunclet)
+        {
+            this._builder = builder;
+            this._compilation = compilation;
+            this.Module = module;
+            this._currentFunclet = currentFunclet;
+            _locals = new LocalVariableDefinition[0];
+            _signature = new MethodSignature(MethodSignatureFlags.None, 0, GetWellKnownType(WellKnownType.Void), new TypeDesc[0]);
+            _thisType = GetWellKnownType(WellKnownType.Void);
+            _pointerSize = compilation.NodeFactory.Target.PointerSize;
+        }
+
+        internal ExpressionEntry OutputCodeForTriggerCctor(TypeDesc type, LLVMValueRef staticBaseValueRef)
+        {
+            type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
+            MethodDesc cctor = type.GetStaticConstructor();
+            IMethodNode helperNode = (IMethodNode)_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
+
+            //TODO: remove the out param?
+            ExpressionEntry returnExp;
+            ExpressionEntry returnExp2 = TriggerCctorReturnStaticBase((MetadataType)helperNode.Method.OwningType, staticBaseValueRef, helperNode.Method.Name, out returnExp);
+//            sb.Append(GetCppMethodDeclarationName(helperNode.Method.OwningType, GetCppMethodName(helperNode.Method), false));
+//            sb.Append("((::System_Private_CoreLib::System::Runtime::CompilerServices::StaticClassConstructionContext*)((char*)");
+//            sb.Append(staticsBaseVarName);
+//            sb.Append(" - sizeof(StaticClassConstructionContext)), (intptr_t)");
+//            sb.Append(staticsBaseVarName);
+//            sb.Append(");");
+//
+//            sb.AppendLine();
+            return returnExp2;
+        }
     }
 }

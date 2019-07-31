@@ -284,10 +284,10 @@ namespace Internal.IL
                     {
                         storageAddr = CastIfNecessary(LoadVarAddress(argOffset, LocalVarKind.Argument, out _), LLVM.PointerType(LLVM.TypeOf(argValue), 0));
                     }
-                    Debug.Assert(argValue.Pointer != IntPtr.Zero);
-                    Debug.Assert(storageAddr.Pointer != IntPtr.Zero);
-                    var s = argValue.ToString();
-                    s = storageAddr.ToString();
+//                    Debug.Assert(argValue.Pointer != IntPtr.Zero);
+//                    Debug.Assert(storageAddr.Pointer != IntPtr.Zero);
+//                    var s = argValue.ToString();
+//                    s = storageAddr.ToString();
                     LLVM.BuildStore(_builder, argValue, storageAddr);
                     signatureIndex++;
                 }
@@ -3692,7 +3692,6 @@ namespace Internal.IL
                 }
                 else
                 {
-
                     fieldOffset = field.Offset.AsInt;
                     TypeDesc runtimeDeterminedOwningType = runtimeDeterminedField.OwningType;
                     if (field.IsThreadStatic)
@@ -3864,6 +3863,27 @@ namespace Internal.IL
                                                                                                                              });
                 return threadStaticIndexSymbol;
             }
+        }
+
+        private ExpressionEntry TriggerCctorReturnStaticBase(MetadataType type, LLVMValueRef staticBaseValueRef, string runnerMethodName, out ExpressionEntry returnExp)
+        {
+            ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
+            _dependencies.Add(classConstructionContextSymbol);
+            LLVMValueRef firstNonGcStatic = LoadAddressOfSymbolNode(classConstructionContextSymbol);
+
+            //TODO: is this gep necessary here
+            LLVMValueRef classConstructionContextPtr = LLVM.BuildGEP(_builder, firstNonGcStatic, new LLVMValueRef[] { BuildConstInt32(-2) }, "classConstructionContext");
+            StackEntry classConstructionContext = new AddressExpressionEntry(StackValueKind.NativeInt, "classConstructionContext", classConstructionContextPtr,
+                GetWellKnownType(WellKnownType.IntPtr));
+            StackEntry staticBaseEntry = new AddressExpressionEntry(StackValueKind.NativeInt, "staticBase", staticBaseValueRef,
+                GetWellKnownType(WellKnownType.IntPtr));
+
+            returnExp = CallRuntime("System.Runtime.CompilerServices", _compilation.TypeSystemContext, ClassConstructorRunner, runnerMethodName, new StackEntry[]
+                                                                         {
+                                                                             classConstructionContext,
+                                                                             staticBaseEntry
+                                                                         });
+            return returnExp;
         }
 
         private void ImportLoadField(int token, bool isStatic)
