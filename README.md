@@ -1,13 +1,15 @@
 # .NET Core Runtime (CoreRT)
+
+### This is an experimental project. We have no plans to productize it in its current form. More details in [CoreRT future plans](https://github.com/dotnet/corert/issues/7200).
+
 This repo contains the .NET Core runtime optimized for ahead of time compilation. The CoreRT compiler can compile a managed .NET Core application into a native (architecture specific) single-file executable that is easy to deploy. It can also produce standalone dynamic or static libraries that can be consumed by applications written in other programming languages. To learn more about CoreRT, see the [intro document](Documentation/intro-to-corert.md).
 
 ## Try Our Samples
 
 If you would like to give CoreRT a try, we publish daily snapshots of CoreRT to a NuGet feed. Using CoreRT is as simple as adding a new package reference to your .NET Core project and publishing it. Check out one of our samples: a "[Hello World](samples/HelloWorld)" console app, a simple [ASP.NET Core](samples/WebApi/) app, a [MonoGame](samples/MonoGame/) game or a [native library](samples/NativeLibrary). The `README.md` file in each sample's directory will guide you through the process step by step.
 
-## Platform Support
+## Platforms
 
-This is a work in progress. The current state of platform support:
 - Windows, MacOS and Linux x64 w/ RyuJIT codegen is able to compile many complex apps.
    - [ASP.NET Core](samples/WebApi/) sample
    - [MonoGame](samples/MonoGame/) sample
