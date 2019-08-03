@@ -32,6 +32,11 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
         }
 
+        public override bool Matched()
+        {
+            return _method.ToString().Contains("[S.P.CoreLib]System.EETypePtr.EETypePtrOf<DefType[]>()");
+        }
+
         public void SetDependencies(IEnumerable<Object> dependencies)
         {
             Debug.Assert(dependencies != null);

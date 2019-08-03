@@ -70,6 +70,13 @@ namespace ILCompiler.DependencyAnalysis
 
                 _typeNonGCStaticBaseSymbols = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
+                    if (type.ToString()
+                        .Contains(
+                            "[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<M_System.__Canon>")
+                    )
+                    {
+
+                    }
                     return new TypeNonGCStaticBaseGenericLookupResult(type);
                 });
 

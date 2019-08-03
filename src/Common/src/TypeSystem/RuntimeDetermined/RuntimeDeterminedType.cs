@@ -175,6 +175,10 @@ namespace Internal.TypeSystem
 
         public override TypeDesc GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
+            if (this.ToString().Contains("M_System.__Canon"))
+            {
+
+            }
             if (_runtimeDeterminedDetailsType.Kind == GenericParameterKind.Type)
             {
                 return typeInstantiation[_runtimeDeterminedDetailsType.Index];

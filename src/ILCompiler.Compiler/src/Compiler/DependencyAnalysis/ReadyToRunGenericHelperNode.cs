@@ -32,6 +32,24 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
 
             _lookupSignature = GetLookupSignature(factory, helperId, target);
+            if (_lookupSignature.ToString()
+                    .Contains(
+                        "[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<M_System.__Canon>")
+            )
+            {
+                if (_lookupSignature is TypeNonGCStaticBaseGenericLookupResult)
+                {
+                    if (this is ReadyToRunGenericLookupFromDictionaryNode)
+                    {
+                        if (((TypeNonGCStaticBaseGenericLookupResult)_lookupSignature).IsMatch())
+                        {
+
+                        }
+
+                    }
+
+                }
+            }
         }
 
         public static GenericLookupResult GetLookupSignature(NodeFactory factory, ReadyToRunHelperId id, object target)
@@ -144,7 +162,21 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
             }
+            if (_lookupSignature.ToString()
+                .Contains(
+                    "[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<M_System.__Canon>")
+            && lookupContext.TypeInstantiation.Length == 0
+            )
+            {
+                if (_lookupSignature is TypeNonGCStaticBaseGenericLookupResult)
+                {
+                    if (((TypeNonGCStaticBaseGenericLookupResult)_lookupSignature).IsMatch())
+                    {
 
+                    }
+
+                }
+            }
             // All generic lookups depend on the thing they point to
             result.Add(new DependencyListEntry(
                         _lookupSignature.GetTarget(factory, lookupContext),

@@ -971,7 +971,19 @@ namespace ILCompiler.DependencyAnalysis
 
 
             var helperSignature = LLVM.FunctionType(retType, args.ToArray(), false);
-            var helperFunc = LLVM.AddFunction(Module, node.GetMangledName(factory.NameMangler), helperSignature);
+            var mangledName = node.GetMangledName(factory.NameMangler); //TODO: inline
+            if (mangledName.Contains(
+                "GenericLookupFromDict_S_P_CoreLib_Internal_IntrinsicSupport_ComparerHelpers__GetUnknownComparer"))
+            {
+
+            }
+            LLVMValueRef helperFunc = LLVM.GetNamedFunction(Module, mangledName);
+
+            if (helperFunc.Pointer == IntPtr.Zero)
+            {
+                throw new Exception("if the function is requested here, it should have been created earlier");
+            }
+//            var helperFunc = LLVM.AddFunction(Module, mangledName, helperSignature);
             var helperBlock = LLVM.AppendBasicBlock(helperFunc, "genericHelper");
             LLVM.PositionBuilderAtEnd(builder, helperBlock);
             var importer = new ILImporter(builder, compilation, Module, helperFunc);

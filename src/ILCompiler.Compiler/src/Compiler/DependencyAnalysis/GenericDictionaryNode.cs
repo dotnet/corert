@@ -111,6 +111,12 @@ namespace ILCompiler.DependencyAnalysis
         public override ExportForm GetExportForm(NodeFactory factory) => factory.CompilationModuleGroup.GetExportTypeFormDictionary(OwningType);
         public TypeDesc OwningType => _owningType;
 
+        public override bool Matched()
+        {
+            return _owningType.ToString()
+                .Contains("[S.P.TypeLoader]System.Collections.Generic.ArrayBuilder`1<Internal.TypeSystem.DefType>");
+        }
+
         public override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)
         {
             return factory.GenericDictionaryLayout(_owningType.ConvertToCanonForm(CanonicalFormKind.Specific));
@@ -199,6 +205,15 @@ namespace ILCompiler.DependencyAnalysis
         public override TypeSystemEntity OwningEntity => _owningMethod;
         public override ExportForm GetExportForm(NodeFactory factory) => factory.CompilationModuleGroup.GetExportMethodDictionaryForm(OwningMethod);
         public MethodDesc OwningMethod => _owningMethod;
+
+        public override void MarkMarked()
+        {
+            if (_owningMethod.ToString().Contains("[S.P.CoreLib]System.EETypePtr.EETypePtrOf<DefType[]>()"))
+            {
+
+            }
+        }
+
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {

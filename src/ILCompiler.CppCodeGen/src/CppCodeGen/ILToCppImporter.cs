@@ -210,6 +210,10 @@ namespace Internal.IL
             else
             {
                 Debug.Assert(_method.RequiresInstMethodTableArg() || _method.AcquiresInstMethodTableFromThis());
+                if (_method.ToString().Contains("KeyValuePair") && _method.ToString().Contains("Unbox"))
+                {
+
+                }
                 return _nodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArgument, _method.OwningType);
             }
         }
@@ -547,6 +551,7 @@ namespace Internal.IL
         private string GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArgument)
         {
             ISymbolNode node = GetGenericLookupHelper(helperId, helperArgument);
+
             _dependencies.Add(node);
 
             return _writer.GetCppReadyToRunGenericHelperNodeName(_nodeFactory, node as ReadyToRunGenericHelperNode);
@@ -1272,7 +1277,7 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (method.ToString().Contains("KeyValuePair") && method.ToString().Contains("get_Value"))
+            if (method.ToString().Contains("Boxed_KeyValuePair"))
             {
 
             }
@@ -2685,12 +2690,15 @@ namespace Internal.IL
             TypeDesc runtimeDeterminedOwningType = runtimeDeterminedField.OwningType;
 
             TypeDesc owningType = _writer.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
-            if (owningType.ToString().Contains("[S.P.CoreLib]System.Array`") && owningType.ToString().Contains("ArrayEnumerator<")) 
+            if (_method.ToString()
+                .Contains(
+                    "[S.P.Reflection.Core]System.Reflection.Runtime.TypeInfos.RuntimeTypeInfo+TypeComponentsCache.GetQueriedMembers<__Canon>(string,bool)")
+            )
             {
+                if (field.ToString().Contains("[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<System.__Canon>.MemberTypeIndex"))
+                {
 
-            }
-            if (field.Name == "Empty" && owningType.ToString() == "[S.P.CoreLib]System.Array`1+ArrayEnumerator<System.__Canon>")
-            {
+                }
             }
             TypeDesc fieldType = _writer.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
@@ -2861,7 +2869,16 @@ namespace Internal.IL
 
             if (!runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
                 TriggerCctor(runtimeDeterminedField.OwningType);
+            if (_method.ToString()
+                .Contains(
+                    "[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<System.__Canon>..cctor()")
+            )
+            {
+                if (field.ToString().Contains("[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<System.__Canon>.MemberTypeIndex"))
+                {
 
+                }
+            }
             if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
             {
                 Append("*(");

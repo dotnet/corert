@@ -142,6 +142,10 @@ namespace ILCompiler.DependencyAnalysisFramework
         // Internal details
         private void GetStaticDependenciesImpl(DependencyNodeCore<DependencyContextType> node)
         {
+            if (node.Matched())
+            {
+
+            }
             IEnumerable<DependencyNodeCore<DependencyContextType>.DependencyListEntry> staticDependencies = node.GetStaticDependencies(_dependencyContext);
             if (staticDependencies != null)
             {
@@ -178,16 +182,16 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         private void GetStaticDependencies(DependencyNodeCore<DependencyContextType> node)
         {
+            if (node.Matched())
+            {
+
+            }
             if (node.StaticDependenciesAreComputed)
             {
                 GetStaticDependenciesImpl(node);
             }
             else
             {
-                if (node.GetType().Name.Contains("ShadowConcreteMethodNode"))
-                {
-
-                }
                 _deferredStaticDependencies.Add(node);
             }
         }
@@ -270,6 +274,10 @@ namespace ILCompiler.DependencyAnalysisFramework
                 ComputeDependencies(_deferredStaticDependencies);
                 foreach (DependencyNodeCore<DependencyContextType> node in _deferredStaticDependencies)
                 {
+                    if (node.Matched())
+                    {
+
+                    }
                     Debug.Assert(node.StaticDependenciesAreComputed);
                     GetStaticDependenciesImpl(node);
                 }
@@ -287,6 +295,10 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         private bool AddToMarkStack(DependencyNodeCore<DependencyContextType> node, string reason, DependencyNodeCore<DependencyContextType> reason1, DependencyNodeCore<DependencyContextType> reason2)
         {
+            if (node.Matched())
+            {
+
+            }
             if (_marker.MarkNode(node, reason1, reason2, reason))
             {
                 // Pop the top node of the mark stack

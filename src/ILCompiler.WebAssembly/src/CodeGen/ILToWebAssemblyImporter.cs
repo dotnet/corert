@@ -1728,6 +1728,10 @@ namespace Internal.IL
 
             TypeDesc localConstrainedType = _constrainedType;
             _constrainedType = null;
+            if (_method.ToString().Contains("KeyValuePair") && _method.ToString().Contains("Unbox"))
+            {
+
+            }
             HandleCall(callee, callee.Signature, runtimeDeterminedMethod, opcode, localConstrainedType);
         }
 
@@ -3722,6 +3726,16 @@ namespace Internal.IL
 //                        {
 //                            MetadataType owningType2 = (MetadataType)_compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
 //                        }
+                        if (_method.ToString()
+                            .Contains(
+                                "[S.P.Reflection.Core]System.Reflection.Runtime.TypeInfos.RuntimeTypeInfo+TypeComponentsCache.GetQueriedMembers<__Canon>(string,bool)")
+                        )
+                        {
+                            if (field.ToString().Contains("[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<System.__Canon>.MemberTypeIndex"))
+                            {
+
+                            }
+                        }
                         if (field.HasGCStaticBase)
                         {
                             if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
@@ -3744,9 +3758,9 @@ namespace Internal.IL
                             if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
                             {
                                 needsCctorCheck = false; // no cctor for canonical types
-                                DefType helperArg = owningType.ConvertToSharedRuntimeDeterminedForm();
+//                                DefType helperArg = runtimeDeterminedOwningType;
                                 LLVMValueRef helper;
-                                node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetNonGCStaticBase, helperArg, out helper);
+                                node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetNonGCStaticBase, runtimeDeterminedOwningType, out helper);
                                 staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext()}, "getHelper");
                             }
                             else
@@ -3777,6 +3791,7 @@ namespace Internal.IL
             }
         }
 
+        static int tl = 0;
         ISymbolNode GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArg, out LLVMValueRef helper)
         {
             ISymbolNode node;
@@ -3800,7 +3815,10 @@ namespace Internal.IL
                                                                                                   {
                                                                                                       LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0),
                                                                                                   }, false));
+//                if(tl < 2) _dependencies.Add(node); // second one is a problem
+                tl++;
             }
+            _dependencies.Add(node);
             return node;
         }
 

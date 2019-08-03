@@ -837,8 +837,33 @@ namespace ILCompiler.DependencyAnalysis
             _type = (MetadataType)type;
         }
 
+        public bool IsMatch()
+        {
+            return (_type.Instantiation.Length == 1 && _type.Instantiation[0].IsRuntimeDeterminedType &&
+                ((RuntimeDeterminedType)(_type.Instantiation[0])).RuntimeDeterminedDetailsType.Kind == GenericParameterKind.Type);
+        }
+
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
+            bool isMatch = false;
+            if (_type.Instantiation.Length == 1 && _type.Instantiation[0].IsRuntimeDeterminedType && 
+                ((RuntimeDeterminedType)(_type.Instantiation[0])).RuntimeDeterminedDetailsType.Kind == GenericParameterKind.Type
+                && dictionary.TypeInstantiation.Length == 0)
+            {
+                isMatch = true;
+            }
+
+            if (_type.ToString()
+                .Contains(
+                    "[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<M_System.__Canon>")
+            )
+            {
+
+            }
+            if (isMatch)
+            {
+
+            }
             var instantiatedType = (MetadataType)_type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             return factory.Indirection(factory.TypeNonGCStaticsSymbol(instantiatedType));
         }

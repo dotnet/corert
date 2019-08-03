@@ -9,18 +9,18 @@ namespace ILCompiler.DependencyAnalysis
         public WebAssemblyUnboxingThunkNode(MethodDesc method)
             : base(method)
         {
+            if (method.ToString().Contains("KeyValuePair") && method.ToString().Contains("Unbox"))
+            {
+
+            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            var dependencies = new DependencyList();
-
-            foreach (Object node in _dependencies)
-                dependencies.Add(node, "Wasm code ");
-
-            return dependencies;
+            return new DependencyListEntry[] {
+                new DependencyListEntry(factory.MethodEntrypoint(Method), "Target of unboxing") };
         }
 
         int ISortableNode.ClassCode => -18942467;

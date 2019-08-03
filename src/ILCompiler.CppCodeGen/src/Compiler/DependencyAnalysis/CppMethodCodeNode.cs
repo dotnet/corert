@@ -29,6 +29,13 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
         }
 
+        public override bool Matched()
+        {
+            return _method.ToString()
+                .Contains(
+                    "[S.P.TypeLoader]System.Collections.Generic.ArrayBuilder`1<System.__Canon>.__GetFieldHelper(int32,EETypePtr&)");
+        }
+
         public void SetCode(string methodCode, IEnumerable<Object> dependencies)
         {
             Debug.Assert(_methodCode == null);

@@ -20,6 +20,12 @@ namespace ILCompiler.DependencyAnalysisFramework
             Debug.Assert(mark != null);
             Debug.Assert(_mark == null);
             _mark = mark;
+            MarkMarked();
+        }
+
+        public virtual void MarkMarked()
+        {
+
         }
 
         internal object GetMark()

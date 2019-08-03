@@ -253,8 +253,9 @@ namespace ILCompiler.DependencyAnalysis
             if (_checkAllSymbolDependenciesMustBeMarked)
             {
                 var node = symbol as ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>;
+
                 if (node != null)
-                    Debug.Assert(node.Marked);
+                Debug.Assert(node.Marked);
             }
 #endif
 
