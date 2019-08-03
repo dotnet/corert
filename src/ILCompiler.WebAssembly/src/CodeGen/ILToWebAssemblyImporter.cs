@@ -4037,7 +4037,7 @@ namespace Internal.IL
                 var typeRef = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedArrayType, out helper);
                 var genericContext = GetGenericContext();
                 var lookedUpType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { genericContext }, "getHelper");
-                arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", lookedUpType, eeTypeDesc), sizeOfArray };
+                arguments = new StackEntry[] { new ExpressionEntry(StackValueKind.ValueType, "eeType", lookedUpType, eeTypeDesc), sizeOfArray };
             }
             else
             {
