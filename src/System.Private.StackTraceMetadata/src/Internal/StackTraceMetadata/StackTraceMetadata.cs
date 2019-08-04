@@ -222,29 +222,33 @@ namespace Internal.StackTraceMetadata
                     int sequencePointOffset = rvaToTokenMap[1];
                     int stringHeapOffset = rvaToTokenMap[2];
 
-                    _sequencePointTable = (int*)(rvaToTokenMapBlob + sequencePointOffset);
-                    _stringHeap = (int*)(rvaToTokenMapBlob + stringHeapOffset);
+                    if (sequencePointOffset != -1)
+                    {
+                        _sequencePointTable = (int*)(rvaToTokenMapBlob + sequencePointOffset);
+                        _stringHeap = (int*)(rvaToTokenMapBlob + stringHeapOffset);
+                    }
 
                     _methodRvaToTokenMap = new Dictionary<int, nuint>(rvaToTokenMapEntryCount);
-                    PopulateRvaToTokenMap(handle, &rvaToTokenMap[3], rvaToTokenMapEntryCount);
+                    PopulateRvaToTokenMap(handle, &rvaToTokenMap[3], rvaToTokenMapEntryCount, sequencePointOffset != -1);
                 }
             }
-            
+
             /// <summary>
             /// Construct the dictionary mapping method RVAs to stack trace metadata tokens
             /// within a single binary module.
             /// </summary>
             /// <param name="rvaToTokenMap">List of RVA - token pairs</param>
             /// <param name="entryCount">Number of the RVA - token pairs in the list</param>
-            private unsafe void PopulateRvaToTokenMap(TypeManagerHandle handle, int *rvaToTokenMap, int entryCount)
+            private unsafe void PopulateRvaToTokenMap(TypeManagerHandle handle, int* rvaToTokenMap, int entryCount, bool hasSequencePoints)
             {
+                int skippingOffset = hasSequencePoints ? 2 : 1; // do we just skip to the next element or do we skip over sequencePointsOffset
                 for (int entryIndex = 0; entryIndex < entryCount; entryIndex++)
                 {
                     int* pRelPtr32 = rvaToTokenMap++;
                     IntPtr pointer = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
                     int methodRva = (int)((nuint)pointer - (nuint)handle.OsModuleBase);
                     nuint tokenAddress = (nuint)rvaToTokenMap;
-                    rvaToTokenMap += 2; // skipping sequence point offset
+                    rvaToTokenMap += skippingOffset;
                     _methodRvaToTokenMap[methodRva] = tokenAddress;
                 }
             }
@@ -275,6 +279,11 @@ namespace Internal.StackTraceMetadata
 
                 methodName = MethodNameFormatter.FormatMethodName(_metadataReader, Handle.FromIntToken(rawToken));
                 if (offset == -1) // short circuit if we're not trying to get line numbers
+                {
+                    return true;
+                }
+
+                if (_sequencePointTable == default) // this module doesn't have sequence points
                 {
                     return true;
                 }

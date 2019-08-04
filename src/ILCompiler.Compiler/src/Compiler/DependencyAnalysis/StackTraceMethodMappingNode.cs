@@ -18,8 +18,11 @@ namespace ILCompiler.DependencyAnalysis
     {
         public StackTraceMethodMappingNode()
         {
+            _emitSequencePoints = true;
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "_stacktrace_methodRVA_to_token_mapping_End", true);
         }
+
+        private readonly bool _emitSequencePoints;
 
         private ObjectAndOffsetSymbolNode _endSymbol;
         public ISymbolDefinitionNode EndSymbol => _endSymbol;
@@ -75,6 +78,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 mappingEntryCount++;
 
+                if (!_emitSequencePoints)
+                {
+                    continue;
+                }
+
                 var debug = entryPoint as INodeWithDebugInfo;
                 int debugLocLength = debug?.DebugLocInfos?.Length ?? 0;
                 if (debugLocLength == 0)
@@ -119,11 +127,20 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             objData.EmitInt(rvaTokenMapCount, mappingEntryCount);
-            objData.EmitInt(reservedSequencePointsOffset, objData.CountBytes);
-            objData.EmitBytes(sequencePointsBuilder.ToObjectData().Data);
 
-            objData.EmitInt(reservedStringOffset, objData.CountBytes);
-            fileNames.AppendBlob(objData);
+            if (_emitSequencePoints)
+            {
+                objData.EmitInt(reservedSequencePointsOffset, objData.CountBytes);
+                objData.EmitBytes(sequencePointsBuilder.ToObjectData().Data);
+
+                objData.EmitInt(reservedStringOffset, objData.CountBytes);
+                fileNames.AppendBlob(objData);
+            }
+            else
+            {
+                objData.EmitInt(reservedSequencePointsOffset, -1);
+                objData.EmitInt(reservedStringOffset, -1);
+            }
 
             _endSymbol.SetSymbolOffset(objData.CountBytes);
             return objData.ToObjectData();
