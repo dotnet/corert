@@ -28,3 +28,9 @@ By default, the compiler tries to maximize compatibility with existing .NET code
 * `<IlcOptimizationPreference>Speed</IlcOptimizationPreference>`: when generating optimized code, favor code execution speed.
 * `<IlcOptimizationPreference>Size</IlcOptimizationPreference>`: when generating optimized code, favor smaller code size.
 * `<IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>`: folds method bodies with identical bytes (method body deduplication). This makes your app smaller, but the stack traces might sometimes look nonsensical (unexpected methods might show up in the stack trace because the expected method had the same bytes as the unexpected method). Note: the current implementation of deduplication doesn't attempt to make the folding unobservable to managed code: delegates pointing to two logically different methods that ended up being folded together will compare equal.
+
+## Special considerations for Linux/macOS
+
+Debugging symbols (data about your program required for debugging) is by default part of native executable files on Unix-like operating systems. To minimize the size of your CoreRT-compiled executable, you can run the `strip` tool to remove the debugging symbols.
+
+No action is needed on Windows since the platform convention is to generate debug information into a separate file (`*.pdb`).
