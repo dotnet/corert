@@ -3669,6 +3669,11 @@ namespace Internal.IL
 
         private LLVMValueRef GetFieldAddress(FieldDesc runtimeDeterminedField, FieldDesc field, bool isStatic)
         {
+//            if (_method.ToString().Contains("CoreLib") &&
+//                _method.ToString().Contains("SR..cctor"))
+//            {
+//
+//            }
             if (field.IsStatic)
             {
                 //pop unused value
@@ -3680,6 +3685,7 @@ namespace Internal.IL
                 LLVMValueRef staticBase;
                 int fieldOffset;
                 // If the type is non-BeforeFieldInit, this is handled before calling any methods on it
+                //TODO : this seems to call into the cctor if the cctor itself accesses static fields. e.g. SR.  Try a test with an ++ in the cctor
                 bool needsCctorCheck = (owningType.IsBeforeFieldInit || (!owningType.IsBeforeFieldInit && owningType != _thisType)) && _compilation.TypeSystemContext.HasLazyStaticConstructor(owningType);
 //                TypeDesc owningType = _writer.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
 
@@ -3818,7 +3824,10 @@ namespace Internal.IL
 //                if(tl < 2) _dependencies.Add(node); // second one is a problem
                 tl++;
             }
+            IMethodNode helperNode = (IMethodNode)_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
+
             _dependencies.Add(node);
+            _dependencies.Add(helperNode);
             return node;
         }
 

@@ -136,6 +136,11 @@ namespace Internal.IL
                 _methodIL = methodIL;
             }
 
+            if (_method.ToString().Contains("CheckStaticClassConstructionReturnNonGCStaticBase"))
+            {
+
+            }
+
             _ilBytes = methodIL.GetILBytes();
             _locals = methodIL.GetLocals();
 
@@ -1281,14 +1286,7 @@ namespace Internal.IL
             {
 
             }
-            if (method.ToString().Contains("Unsafe") && method.ToString().Contains("As"))
-            {
 
-            }
-            if (method.ToString().Contains("Array") && method.ToString().Contains("IndexOf"))
-            {
-
-            }
             if (method.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(method, runtimeDeterminedMethod))
@@ -1425,13 +1423,6 @@ namespace Internal.IL
                         delegateInvoke = true;
                     }
                 }
-            }
-
-            if (_method.ToString().Contains("ConditionalWeakTable")
-                && _method.ToString().Contains("IEnumerable<System.Collections.Generic.KeyValuePair<TKey,TValue>>.GetEnumerator")
-                && method.ToString().Contains("GetEnumerator"))
-            {
-
             }
 
             bool exactContextNeedsRuntimeLookup;

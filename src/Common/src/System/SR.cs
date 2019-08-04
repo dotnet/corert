@@ -7,12 +7,48 @@ using System.Diagnostics;
 using System.IO;
 using System.Resources;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System
 {
+
     internal partial class SR
     {
+        public struct TwoByteStr
+        {
+            public byte first;
+            public byte second;
+        }
+
+        [DllImport("*")]
+        private static unsafe extern int printf(byte* str, byte* unused);
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        private static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
+        static SR()
+        {
+            PrintLine("SR cctor");
+//            _lock = new object();
+        }
+
         private static ResourceManager s_resourceManager;
 
         private static ResourceManager ResourceManager
@@ -62,12 +98,13 @@ namespace System
             return resourceString;
         }
 
-        private static object _lock = new object();
+//        static object _lock;// = new object();
         private static List<string> _currentlyLoading;
         private static int _infinitelyRecursingCount;
 
         private static string InternalGetResourceString(string key)
         {
+            PrintLine("InternalGetResourceString");
             if (key == null || key.Length == 0)
             {
                 Debug.Fail("SR::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
@@ -96,7 +133,7 @@ namespace System
             bool lockTaken = false;
             try
             {
-                Monitor.Enter(_lock, ref lockTaken);
+//                Monitor.Enter(_lock, ref lockTaken);
 
                 // Are we recursively looking up the same resource?  Note - our backout code will set
                 // the ResourceHelper's currentlyLoading stack to null if an exception occurs.
@@ -135,7 +172,7 @@ namespace System
             {
                 if (lockTaken)
                 {
-                    Monitor.Exit(_lock);
+//                    Monitor.Exit(_lock);
                 }
             }
         }

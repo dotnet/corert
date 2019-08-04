@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         public CppMethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
-            if (method.ToString().Contains("System.IO.Error.GetReadNotSupported"))
+            if (method.ToString().Contains("CheckStaticClassConstructionReturnNonGCStaticBase"))
             {
 
             }
