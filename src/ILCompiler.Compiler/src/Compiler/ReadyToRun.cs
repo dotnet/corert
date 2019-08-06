@@ -54,6 +54,10 @@ namespace ILCompiler
         MemSet                      = 0x40,
         MemCpy                      = 0x41,
 
+        // P/Invoke support
+        PInvokeBegin                = 0x42,
+        PInvokeEnd                  = 0x43,
+
         // Get string handle lazily
         GetString                   = 0x50,
 
@@ -170,10 +174,6 @@ namespace ILCompiler
         CheckInstanceArray,
         CheckCastInterface,
         CheckInstanceInterface,
-
-        // P/Invoke support
-        PInvokeBegin,
-        PInvokeEnd,
 
         // P/Invoke support
         ReversePInvokeEnter,

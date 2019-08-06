@@ -495,8 +495,18 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.EndCatch;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN:
+                    id = ReadyToRunHelper.PInvokeBegin;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_END:
+                    id = ReadyToRunHelper.PInvokeEnd;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
+                case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
+                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
                     throw new RequiresRuntimeJitException(ftnNum.ToString());
 
                 default:
