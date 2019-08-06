@@ -2071,6 +2071,9 @@ namespace Internal.JitInterface
             var field = HandleToObject(pResolvedToken.hField);
 #if READYTORUN
             MethodDesc callerMethod = HandleToObject(callerHandle);
+
+            if (field.Offset.IsIndeterminate)
+                throw new RequiresRuntimeJitException(field);
 #endif
 
             CORINFO_FIELD_ACCESSOR fieldAccessor;
