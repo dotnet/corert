@@ -14,6 +14,8 @@ using Internal.TypeSystem.Ecma;
 
 using Internal.CommandLine;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     internal class Program
@@ -572,7 +574,7 @@ namespace ILCompiler
             }
             else
             {
-                metadataManager = new EmptyMetadataManager(typeSystemContext);
+                metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy);
             }
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
@@ -614,7 +616,15 @@ namespace ILCompiler
                 scanResults = scanner.Scan();
 
                 if (metadataManager is UsageBasedMetadataManager usageBasedManager)
+                {
                     metadataManager = usageBasedManager.ToAnalysisBasedMetadataManager();
+                }
+                else
+                {
+                    // MetadataManager collects a bunch of state (e.g. list of compiled method bodies) that we need to reset.
+                    Debug.Assert(metadataManager is EmptyMetadataManager);
+                    metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy);
+                }
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
             }
