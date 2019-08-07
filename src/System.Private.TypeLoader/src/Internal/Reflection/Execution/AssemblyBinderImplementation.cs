@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 
 using System.Reflection.Runtime.General;
-
+using System.Runtime.InteropServices;
 using Internal.Reflection.Core;
 using Internal.Runtime.TypeLoader;
 
@@ -280,8 +280,35 @@ namespace Internal.Reflection.Execution
             }
         }
 
+        [DllImport("*")]
+        private static unsafe extern int printf(byte* str, byte* unused);
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    SR.TwoByteStr curCharStr = new SR.TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        internal static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
         private void AddScopesFromReaderToGroups(LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> groups, MetadataReader reader)
         {
+            PrintLine("AddScopesFromReaderToGroups");
+            var ran = new RuntimeAssemblyName("something", new Version(1, 1), "en-GB", AssemblyNameFlags.None, null);
+            var x = ran.GetHashCode();
+            PrintLine("AddScopesFromReaderToGroups called  RuntimeAssemblyName GetHashCode");
+
             foreach (ScopeDefinitionHandle scopeDefinitionHandle in reader.ScopeDefinitions)
             {
                 RuntimeAssemblyName defName = scopeDefinitionHandle.ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();

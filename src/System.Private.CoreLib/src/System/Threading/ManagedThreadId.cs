@@ -11,11 +11,41 @@
 
 using Internal.Runtime.Augments;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
+    public struct TwoByteStr
+    {
+        public byte first;
+        public byte second;
+    }
+
     internal class ManagedThreadId
     {
+        [DllImport("*")]
+        private static unsafe extern int printf(byte* str, byte* unused);
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        internal static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
         //
         // Binary tree used to keep track of active thread ids. Each node of the tree keeps track of 32 consecutive ids.
         // Implemented as immutable collection to avoid locks. Each modification creates a new top level node.
@@ -26,7 +56,7 @@ namespace System.Threading
             private readonly ImmutableIdDispenser _right;
 
             private readonly int _used; // Number of ids tracked by this node and all its childs
-            private readonly int _size; // Maximum number of ids that can be tracked by this node and all its childs
+            internal readonly int _size; // Maximum number of ids that can be tracked by this node and all its childs
 
             private readonly uint _bitmap; // Bitmap of ids tracked by this node
 
@@ -37,10 +67,20 @@ namespace System.Threading
                 _left = left;
                 _right = right;
                 _used = used;
+                PrintLine("size set to");
                 _size = size;
+                PrintLine(_size.ToString());
                 _bitmap = bitmap;
 
                 CheckInvariants();
+//                if (_size == 0)
+//                {
+//                    PrintLine("_size at end of ctor is 0");
+//                }
+//                else
+//                {
+//                    PrintLine("_size at end of ctor is not  0");
+//                }
             }
 
             [Conditional("DEBUG")]
@@ -92,10 +132,35 @@ namespace System.Threading
 
             public ImmutableIdDispenser AllocateId(out int id)
             {
+//                PrintLine("_size is:");
+//
+//                if (_size == 0)
+//                {
+//                    PrintLine("_size is 0");
+//                }
+//                else
+//                {
+//                    PrintLine("_size not 0:");
+//                    PrintLine(_size.ToString());
+//                }
+
                 if (_used == _size)
                 {
                     id = _size;
-                    return new ImmutableIdDispenser(this, null, _size + 1, checked(2 * _size + BitsPerNode), 1);
+//                    PrintLine("id is _size:");
+//                    if (id == 0)
+//                    {
+//                        PrintLine("id is 0");
+//                    }
+//                    else
+//                    {
+//                        PrintLine("id not 0:");
+//                        PrintLine(id.ToString());
+//                    }
+                    var x = new ImmutableIdDispenser(this, null, _size + 1, checked(2 * _size + BitsPerNode), 1);
+                    PrintLine("id after ctor ImmutableIdDispenser");
+//                    PrintLine(id.ToString());
+                    return x;
                 }
 
                 var bitmap = _bitmap;
@@ -110,6 +175,8 @@ namespace System.Threading
                         bit++;
                     bitmap |= (uint)(1 << bit);
                     id = ChildSize + bit;
+                    PrintLine("id is ChildSize + bit");
+
                 }
                 else
                 {
@@ -118,12 +185,15 @@ namespace System.Threading
                     {
                         left = new ImmutableIdDispenser(null, null, 1, ChildSize, 1);
                         id = left.ChildSize;
+                        PrintLine("id is left.ChildSize");
+
                     }
                     else
                     if (right == null)
                     {
                         right = new ImmutableIdDispenser(null, null, 1, ChildSize, 1);
                         id = ChildSize + BitsPerNode + right.ChildSize;
+                        PrintLine("id is ChildSize + BitsPerNode + right.ChildSize");
                     }
                     else
                     {
@@ -131,15 +201,21 @@ namespace System.Threading
                         {
                             Debug.Assert(left._used < left._size);
                             left = left.AllocateId(out id);
+                            PrintLine("id is left.AllocateId");
                         }
                         else
                         {
                             Debug.Assert(right._used < right._size);
+                            PrintLine("id is right.AllocateId");
+
                             right = right.AllocateId(out id);
                             id += (ChildSize + BitsPerNode);
                         }
                     }
                 }
+//                PrintLine("id is ");
+//                PrintLine(id.ToString());
+
                 return new ImmutableIdDispenser(left, right, _used + 1, _size, bitmap);
             }
 
@@ -208,15 +284,51 @@ namespace System.Threading
 
         public static int AllocateId()
         {
-            if (s_idDispenser == null)
-                Interlocked.CompareExchange(ref s_idDispenser, ImmutableIdDispenser.Empty, null);
+            var e = ImmutableIdDispenser.Empty;
+//            PrintLine("empty size");
+            var si = e._size;
+//            if (si == 0)
+//            {
+//                PrintLine("empty size is 0");
+//            }
+//            else
+//            {
+//                PrintLine("empty size is not 0");
+//                PrintLine(si.ToString());
+//            }
 
+            if (s_idDispenser == null)
+            {
+                PrintLine("s_idDispenser is null, calling CompareExchange with 3rd param == null    ");
+                var o = Unsafe.As<ImmutableIdDispenser, object>(ref e);
+                var e2 = Unsafe.As<object, ImmutableIdDispenser>(ref o);
+                if (e2._size == 0)
+                {
+                    PrintLine("e2 _size is 0");
+                }
+                PrintLine("s_idDispenser is null, calling CompareExchange with 3rd param == null    ");
+
+                Interlocked.CompareExchange(ref s_idDispenser, e, null);
+            }
+
+            si = s_idDispenser._size;
+            if (si == 0)
+            {
+                PrintLine("s_idDispenser size is 0");
+            }
+            else
+            {
+                PrintLine("s_idDispenser size is not 0");
+//                PrintLine(si.ToString());
+            }
             int id;
 
             var priorIdDispenser = Volatile.Read(ref s_idDispenser);
             for (;;)
             {
                 var updatedIdDispenser = priorIdDispenser.AllocateId(out id);
+                PrintLine("id after AllocateId");
+//                PrintLine(id.ToString());
                 var interlockedResult = Interlocked.CompareExchange(ref s_idDispenser, updatedIdDispenser, priorIdDispenser);
                 if (object.ReferenceEquals(priorIdDispenser, interlockedResult))
                     break;

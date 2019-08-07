@@ -4,6 +4,9 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Threading;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -111,7 +114,15 @@ namespace System.Reflection
 
         public sealed override int GetHashCode()
         {
-            return this.Name.GetHashCode();
+            var name = this.Name;
+//            ManagedThreadId.PrintLine("got Name:");
+//            ManagedThreadId.PrintLine(name);
+//            var stringType = name.GetTypeHandle();
+//            ManagedThreadId.PrintLine(stringType.Value.ToString());
+
+            var hc = name.GetHashCode();
+            ManagedThreadId.PrintLine("returned from gethashcode");
+            return hc;
         }
 
         //

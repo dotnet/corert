@@ -289,9 +289,14 @@ namespace System.Runtime.CompilerServices
                 if (s_cctorArrays == null)
                 {
                     Interlocked.CompareExchange(ref s_cctorArrays, new Cctor[10][], null);
+s_cctorArraysCount = 0;
                 }
 #endif // WASM
 
+                if (pContext == null)
+                {
+                    ManagedThreadId.PrintLine("pContext is null");
+                }
                 using (LockHolder.Hold(s_cctorGlobalLock))
                 {
                     Cctor[] resultArray = null;
@@ -299,10 +304,26 @@ namespace System.Runtime.CompilerServices
 
                     if (s_count != 0)
                     {
+                        if (s_cctorArraysCount > 0)
+                        {
+                            ManagedThreadId.PrintLine("s_cctorArraysCount > 0");
+                        }
+                        else
+                        {
+                            ManagedThreadId.PrintLine("s_cctorArraysCount == 0");
+                        }
+
                         // Search for the cctor context in our existing arrays
                         for (int cctorIndex = 0; cctorIndex < s_cctorArraysCount; ++cctorIndex)
                         {
+//                            ManagedThreadId.PrintLine("Getcctor in for");
+
                             Cctor[] segment = s_cctorArrays[cctorIndex];
+                            if (segment == null)
+                            {
+                                ManagedThreadId.PrintLine("segment is null");
+                                throw new Exception();
+                            }
                             for (int i = 0; i < segment.Length; i++)
                             {
                                 if (segment[i]._pContext == pContext)
@@ -337,15 +358,41 @@ namespace System.Runtime.CompilerServices
                         if (resultArray == null)
                         {
                             // allocate a new array
+                            ManagedThreadId.PrintLine("new Cctor[Grow]");
+                            int ii = Grow;
+                            if (ii == 0)
+                            {
+                                ManagedThreadId.PrintLine("Grow is 0");
+                            }
                             resultArray = new Cctor[Grow];
                             if (s_cctorArraysCount == s_cctorArrays.Length)
                             {
                                 // grow the container
+                                ManagedThreadId.PrintLine("Array.Resize all segments full and not null:");
+                                for (int cctorIndex = 0; cctorIndex < s_cctorArraysCount; ++cctorIndex)
+                                {
+                                    Cctor[] segment = s_cctorArrays[cctorIndex];
+                                    for (int i = 0; i < segment.Length; i++)
+                                    {
+                                        if (segment[i]._pContext != default(StaticClassConstructionContext*))
+                                        {
+                                            ManagedThreadId.PrintLine("No!");
+                                        }
+                                    }
+                                }
+                                ManagedThreadId.PrintLine("Yes!");
+
                                 Array.Resize(ref s_cctorArrays, (s_cctorArrays.Length * 2) + 1);
                             }
                             // store the array in the container, this cctor gets index 0
                             s_cctorArrays[s_cctorArraysCount] = resultArray;
                             s_cctorArraysCount++;
+                            ManagedThreadId.PrintLine("s_cctorArraysCount++ and resultArry put in array");
+                            if (s_cctorArrays[s_cctorArraysCount - 1] == null)
+                            {
+                                ManagedThreadId.PrintLine("but is still null - why?");
+                            }
+
                             resultIndex = 0;
                         }
 
@@ -356,6 +403,8 @@ namespace System.Runtime.CompilerServices
                     }
 
                     Interlocked.Increment(ref resultArray[resultIndex]._refCount);
+                    ManagedThreadId.PrintLine("returning");
+
                     return new CctorHandle(resultArray, resultIndex);
                 }
             }
@@ -497,6 +546,9 @@ namespace System.Runtime.CompilerServices
         {
             s_cctorArrays = new Cctor[10][];
             s_cctorGlobalLock = new Lock();
+            s_cctorArraysCount = 0;
+            s_count = 0;
+            ManagedThreadId.PrintLine("Initialize ccr");
         }
 
         [Conditional("ENABLE_NOISY_CCTOR_LOG")]

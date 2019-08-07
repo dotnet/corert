@@ -177,6 +177,11 @@ namespace Internal.IL
 
         public void Import()
         {
+//            if (_method.ToString().Contains("Unsafe") &&
+//                _method.ToString().Contains("As"))
+//            {
+//
+//            }
             FindBasicBlocks();
 
             GenerateProlog();
@@ -789,6 +794,10 @@ namespace Internal.IL
                     varCountBase = 1;
                 }
 
+                if (_method.ToString().Contains("CompareExchange") && index == 2)
+                {
+
+                }
                 GetArgSizeAndOffsetAtIndex(index, out int argSize, out varOffset, out int realArgIndex);
 
                 if (!_signature.IsStatic && index == 0)
@@ -1349,21 +1358,22 @@ namespace Internal.IL
                 }
             }
 
-            var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
-            var hasHiddenParam = false; // TODO can this ever be true
-            if (_method != null)
-            {
-                if (isUnboxingStub)
-                    hasHiddenParam = _method.IsSharedByGenericInstantiations &&
-                                     (_method.HasInstantiation || _method.Signature.IsStatic);
-                else
-                    hasHiddenParam = _method.RequiresInstArg();
-            }
-            if (hasHiddenParam)
-            {
-                offset += _pointerSize; // TODO should we try to get a TypeDesc for the hidden param?
-            }
-
+            // hidden param not on shadow stack
+//            var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
+//            var hasHiddenParam = false; // TODO can this ever be true
+//            if (_method != null)
+//            {
+//                if (isUnboxingStub)
+//                    hasHiddenParam = _method.IsSharedByGenericInstantiations &&
+//                                     (_method.HasInstantiation || _method.Signature.IsStatic);
+//                else
+//                    hasHiddenParam = _method.RequiresInstArg();
+//            }
+//            if (hasHiddenParam)
+//            {
+//                offset += _pointerSize; // TODO should we try to get a TypeDesc for the hidden param?
+//            }
+//
             return offset.AlignUp(_pointerSize);
         }
 
@@ -1592,7 +1602,13 @@ namespace Internal.IL
 
             if (NeedsReturnStackSlot(_signature))
             {
-                ImportStoreHelper(castValue, valueType, LLVM.GetNextParam(LLVM.GetFirstParam(_llvmFunction)), 0);
+                var retParam = LLVM.GetNextParam(LLVM.GetFirstParam(_llvmFunction));
+                if (_method.RequiresInstArg())
+                {
+                    // skip over hidden param
+                    retParam = LLVM.GetNextParam(retParam);
+                }
+                ImportStoreHelper(castValue, valueType, retParam, 0);
                 LLVM.BuildRetVoid(_builder);
             }
             else
@@ -1606,18 +1622,24 @@ namespace Internal.IL
             MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             MethodDesc callee = (MethodDesc)_canonMethodIL.GetObject(token);
 
-//            if (callee.ToString().Contains("Frob") && callee.ToString().Contains("Generic"))
-//            {
-//
-//            }
-//            if (callee.ToString().Contains("Array") && callee.ToString().Contains("IndexOf"))
-//            {
-//
-//            }
-//            if (callee.ToString().Contains("Unsafe") && callee.ToString().Contains("As"))
-//            {
-//
-//            }
+            //            if (callee.ToString().Contains("Frob") && callee.ToString().Contains("Generic"))
+            //            {
+            //
+            //            }
+            //            if (callee.ToString().Contains("Array") && callee.ToString().Contains("IndexOf"))
+            //            {
+            //
+            //            }
+            //            if (callee.ToString().Contains("Unsafe") && callee.ToString().Contains("As") )
+            //            {
+            //
+            //            }
+            if (_method.ToString().Contains("LowLevelDictionary") &&
+                _method.ToString().Contains("GetBucket") &&
+                callee.ToString().Contains("GetHashCode"))
+            {
+
+            }
             if (callee.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(callee))
@@ -2305,7 +2327,12 @@ namespace Internal.IL
                 {
                     if (canonMethod.RequiresInstMethodDescArg())
                     {
-                        hiddenParam = LoadAddressOfSymbolNode(GetMethodGenericDictionaryNode(callee));
+                        var dictSymbol = LoadAddressOfSymbolNode(GetMethodGenericDictionaryNode(callee));
+                        hiddenParam = LLVM.BuildGEP(_builder, dictSymbol, new LLVMValueRef[]
+                        {
+                            BuildConstInt32(1)
+                        }, "dictGepToTypes");
+
                     }
                     else
                     {
@@ -2328,7 +2355,12 @@ namespace Internal.IL
             {
                 llvmArgs.Add(hiddenParam);
             }
-
+//            if (canonMethod != null && canonMethod.ToString().Contains("Interlocked")
+//                && canonMethod.ToString().Contains("CompareExchange")
+//                && canonMethod.ToString().Contains("Canon"))
+//            {
+//
+//            }
 
             if (needsReturnSlot)
             {
@@ -3824,6 +3856,8 @@ namespace Internal.IL
 //                if(tl < 2) _dependencies.Add(node); // second one is a problem
                 tl++;
             }
+            // cpp backend relies on a lazy static constructor to get this node added during the dependency generation. 
+            // If left to when the code is written that uses the helper then its too late.
             IMethodNode helperNode = (IMethodNode)_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
 
             _dependencies.Add(node);
@@ -3982,6 +4016,8 @@ namespace Internal.IL
         {
             LLVMValueRef eeType;
             TypeDesc type = ResolveTypeToken(token);
+            StackEntry eeTypeEntry;
+            var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
             if (type.IsRuntimeDeterminedSubtype)
             {
                 var runtimeDeterminedType = type;
@@ -3989,11 +4025,14 @@ namespace Internal.IL
                 LLVMValueRef helper;
                 var typeRef = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedType, out helper);
                 eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
+                eeTypeEntry = new ExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
             }
-            else eeType = GetEETypePointerForTypeDesc(type, true);
-            var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+            else
+            {
+                eeType = GetEETypePointerForTypeDesc(type, true);
+                eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
+            }
             var valueAddress = TakeAddressOf(_stack.Pop());
-            var eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
             if (type.IsValueType)
             {
                 var arguments = new StackEntry[] { eeTypeEntry, valueAddress };
@@ -4065,7 +4104,7 @@ namespace Internal.IL
                 var ptr = LLVM.BuildGEP(_builder, s_shadowStackTop, new[] {BuildConstInt32(0)}, "shadowGep");
                 return CastIfNecessary(_builder, ptr, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "ShdwSPArg");
             }
-            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, (uint)(_signature.IsStatic ? 0 : 1)), LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "HiddenArg"); 
+            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 /* hidden param after shadow stack */), LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "HiddenArg"); 
         }
 
         private LLVMValueRef ArrayBaseSize()

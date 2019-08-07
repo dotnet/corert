@@ -5,9 +5,17 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Collections.Generic
 {
+    internal class X
+    {
+        [DllImport("*")]
+        internal static unsafe extern int printf(byte* str, byte* unused);
+    }
     /*============================================================
     **
     ** Class:  LowLevelDictionary<TKey, TValue>
@@ -72,8 +80,37 @@ namespace System.Collections.Generic
             }
         }
 
+
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    SR.TwoByteStr curCharStr = new SR.TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    X.printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        internal static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
         public bool TryGetValue(TKey key, out TValue value)
         {
+            PrintLine("TryGetValue");
+            var ran = new RuntimeAssemblyName("something", new Version(1, 1), "en-GB", AssemblyNameFlags.None, null);
+            var x = ran.GetHashCode();
+            PrintLine("TryGetValue called  RuntimeAssemblyName GetHashCode");
+
+            int h = key.GetHashCode();
+            PrintLine("TryGetValue key.GetHashCode called ");
+
             value = default(TValue);
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -145,6 +182,13 @@ namespace System.Collections.Generic
 
         private Entry Find(TKey key)
         {
+            PrintLine("Find");
+            var ran = new RuntimeAssemblyName("something", new Version(1, 1), "en-GB", AssemblyNameFlags.None, null);
+            var x = ran.GetHashCode();
+            PrintLine("Find called  RuntimeAssemblyName GetHashCode");
+            int h = key.GetHashCode();
+            PrintLine("Find key.GetHashCode called ");
+
             int bucket = GetBucket(key);
             Entry entry = _buckets[bucket];
             while (entry != null)
@@ -204,7 +248,13 @@ namespace System.Collections.Generic
 
         private int GetBucket(TKey key, int numBuckets = 0)
         {
+//            PrintLine("GetBucket");
+//            var ran = new RuntimeAssemblyName("something", new Version(1, 1), "en-GB", AssemblyNameFlags.None, null);
+//            var x = ran.GetHashCode();
+//            PrintLine("GetBucket called  RuntimeAssemblyName GetHashCode");
             int h = key.GetHashCode();
+//            PrintLine("GetBucket key called  RuntimeAssemblyName GetHashCode");
+
             h &= 0x7fffffff;
             return (h % (numBuckets == 0 ? _buckets.Length : numBuckets));
         }

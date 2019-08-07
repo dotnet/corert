@@ -7,7 +7,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
+using System.Threading;
 using Internal.Runtime.CompilerServices;
 
 #if BIT64
@@ -738,6 +738,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
+            ManagedThreadId.PrintLine("string GetHashCode");
             ulong seed = Marvin.DefaultSeed;
 
             // Multiplication below will not overflow since going from positive Int32 to UInt32.

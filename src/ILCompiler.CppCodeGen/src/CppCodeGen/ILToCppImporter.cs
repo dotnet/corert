@@ -1282,7 +1282,9 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (method.ToString().Contains("Boxed_KeyValuePair"))
+            if (_method.ToString().Contains("LowLevelDictionary") &&
+                _method.ToString().Contains("GetBucket") &&
+                method.ToString().Contains("GetHashCode"))
             {
 
             }
