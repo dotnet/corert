@@ -365,20 +365,9 @@ namespace ILCompiler.DependencyAnalysis
                 return false;
 
             // CoreRT can generate method bodies for these no matter what (worst case
-            // they'll be throwing), but Project N has trouble with that.
-            //
-            // We don't want to take the "return false" code path on CoreRT because
+            // they'll be throwing). We don't want to take the "return false" code path on CoreRT because
             // delegate methods fall into the runtime implemented category on CoreRT, but we
-            // just treat them like regular method bodies. N doesn't have this problem
-            // because they get converted to regular methods in IL transforms.
-            TypeSystemContext context = method.Context;
-            if (context.Target.Abi == TargetAbi.ProjectN)
-            {
-                // InternalCall functions do not really have entrypoints that need to be handled here
-                if (method.IsInternalCall || method.IsRuntimeImplemented)
-                    return false;
-            }
-
+            // just treat them like regular method bodies.
             return true;
         }
 
@@ -1203,9 +1192,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void AddDependenciesForStaticsNode(NodeFactory factory, TypeDesc type, ref DependencyList dependencies)
         {
-            if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
-                return;
-
             // To ensure that the behvior of FieldInfo.GetValue/SetValue remains correct,
             // if a type may be reflectable, and it is generic, if a canonical instantiation of reflection
             // can exist which can refer to the associated type of this static base, ensure that type
@@ -1231,9 +1217,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (factory.TypeSystemContext.SupportsUniversalCanon)
             {
-                if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
-                    return;
-
                 foreach (MethodDesc method in type.GetMethods())
                 {
                     if (!method.IsVirtual || !method.HasInstantiation)

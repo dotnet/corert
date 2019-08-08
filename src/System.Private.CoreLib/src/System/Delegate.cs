@@ -23,11 +23,6 @@ namespace System
     [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
-#if PROJECTN
-        // Required by IL2IL transforms
-        internal Delegate() { }
-#endif
-
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
         protected Delegate(object target, string method)
         {
@@ -377,9 +372,7 @@ namespace System
             else
             {
                 IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
-#if PROJECTN
-                object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args, binderBundle: null, wrapInTargetInvocationException: true);
-#else
+
                 IntPtr genericDictionary = IntPtr.Zero;
                 if (FunctionPointerOps.IsGenericMethodPointer(invokeThunk))
                 {
@@ -392,7 +385,6 @@ namespace System
                 }
 
                 object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, null, invokeThunk, genericDictionary, this, args, binderBundle: null, wrapInTargetInvocationException: true, invokeMethodHelperIsThisCall: false);
-#endif
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }

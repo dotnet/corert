@@ -180,11 +180,7 @@ namespace Internal.Runtime
             [Intrinsic]
             get
             {
-#if PROJECTN
-                return true;
-#else
                 throw new NotImplementedException();
-#endif
             }
         }
 

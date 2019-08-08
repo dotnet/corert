@@ -192,11 +192,7 @@ namespace Internal.StackTraceMetadata
                 uint rvaToTokenMapBlobSize;
                 
                 if (nativeFormatModuleInfo.TryFindBlob(
-#if PROJECTN
-                        (int)ReflectionMapBlob.BlobIdStackTraceEmbeddedMetadata,
-#else
                         (int)ReflectionMapBlob.EmbeddedMetadata,
-#endif
                         out metadataBlob,
                         out metadataBlobSize) &&
                     nativeFormatModuleInfo.TryFindBlob(
@@ -223,13 +219,9 @@ namespace Internal.StackTraceMetadata
             {
                 for (int entryIndex = 0; entryIndex < entryCount; entryIndex++)
                 {
-#if PROJECTN
-                    int methodRva = rvaToTokenMap[2 * entryIndex + 0];
-#else
                     int* pRelPtr32 = &rvaToTokenMap[2 * entryIndex + 0];
                     IntPtr pointer = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
                     int methodRva = (int)((nuint)pointer - (nuint)handle.OsModuleBase);
-#endif
                     int token = rvaToTokenMap[2 * entryIndex + 1];
                     _methodRvaToTokenMap[methodRva] = token;
                 }

@@ -10,7 +10,6 @@ using System.Diagnostics;
 
 namespace Internal.Runtime.CompilerServices
 {
-    [System.Runtime.CompilerServices.DependencyReductionRoot]
     public class MethodNameAndSignature
     {
         public string Name { get; private set; }

@@ -30,14 +30,7 @@ namespace System.Runtime.CompilerServices
         //
         // No attempt is made to detect or break deadlocks due to other synchronization mechanisms.
         //==============================================================================================================
-#if PROJECTN
-        [RuntimeExport("CheckStaticClassConstruction")]
-        public static unsafe void* CheckStaticClassConstruction(void* returnValue, StaticClassConstructionContext* pContext)
-        {
-            EnsureClassConstructorRun(pContext);
-            return returnValue;
-        }
-#else
+
         private static unsafe object CheckStaticClassConstructionReturnGCStaticBase(StaticClassConstructionContext* context, object gcStaticBase)
         {
             EnsureClassConstructorRun(context);
@@ -56,7 +49,6 @@ namespace System.Runtime.CompilerServices
             EnsureClassConstructorRun(context);
             return threadStaticBase;
         }
-#endif
 
         public static unsafe void EnsureClassConstructorRun(StaticClassConstructionContext* pContext)
         {

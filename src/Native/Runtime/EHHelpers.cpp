@@ -55,22 +55,6 @@ COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromCodeAddress, (void * addre
 // found via the provided address does not have the necessary exports.
 COOP_PINVOKE_HELPER(void *, RhpGetClasslibFunctionFromEEType, (EEType * pEEType, ClasslibFunctionId functionId))
 {
-#ifdef PROJECTN
-    if (!pEEType->HasTypeManager())
-    {
-        RuntimeInstance * pRI = GetRuntimeInstance();
-        Module * pModule = pRI->FindModuleByAddress(pEEType);
-        if (pModule != NULL)
-        {
-            return pModule->GetClasslibFunction(functionId);
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-#endif // PROJECTN
-
     return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetClasslibFunction(functionId);
 }
 

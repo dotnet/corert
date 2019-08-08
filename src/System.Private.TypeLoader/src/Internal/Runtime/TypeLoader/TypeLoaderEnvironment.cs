@@ -664,53 +664,7 @@ namespace Internal.Runtime.TypeLoader
         public static unsafe bool TryGetTargetOfUnboxingAndInstantiatingStub(IntPtr maybeInstantiatingAndUnboxingStub, out IntPtr targetMethod)
         {
             targetMethod = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(maybeInstantiatingAndUnboxingStub);
-            if (targetMethod != IntPtr.Zero)
-            {
-                return true;
-            }
-
-            // TODO: The rest of the code in this function is specific to ProjectN only. When we kill the binder, get rid of this
-            // linear search code (the only API that should be used for the lookup is the one above)
-
-            // Get module
-            IntPtr associatedModule = RuntimeAugments.GetOSModuleFromPointer(maybeInstantiatingAndUnboxingStub);
-            if (associatedModule == IntPtr.Zero)
-            {
-                return false;
-            }
-
-            // Module having a type manager means we are not in ProjectN mode. Bail out earlier.
-            foreach (TypeManagerHandle handle in ModuleList.Enumerate())
-            {
-                if (handle.OsModuleBase == associatedModule && handle.IsTypeManager)
-                {
-                    return false;
-                }
-            }
-
-            // Get UnboxingAndInstantiatingTable
-            UnboxingAndInstantiatingStubMapEntry* pBlob;
-            uint cbBlob;
-
-            if (!RuntimeAugments.FindBlob(new TypeManagerHandle(associatedModule), (int)ReflectionMapBlob.UnboxingAndInstantiatingStubMap, (IntPtr)(&pBlob), (IntPtr)(&cbBlob)))
-            {
-                return false;
-            }
-
-            uint cStubs = cbBlob / (uint)sizeof(UnboxingAndInstantiatingStubMapEntry);
-
-            for (uint i = 0; i < cStubs; ++i)
-            {
-                if (RvaToFunctionPointer(new TypeManagerHandle(associatedModule), pBlob[i].StubMethodRva) == maybeInstantiatingAndUnboxingStub)
-                {
-                    // We found a match, create pointer from RVA and move on.
-                    targetMethod = RvaToFunctionPointer(new TypeManagerHandle(associatedModule), pBlob[i].MethodRva);
-                    return true;
-                }
-            }
-
-            // Stub not found.
-            return false;
+            return (targetMethod != IntPtr.Zero);
         }
 
         public bool TryComputeHasInstantiationDeterminedSize(RuntimeTypeHandle typeHandle, out bool hasInstantiationDeterminedSize)

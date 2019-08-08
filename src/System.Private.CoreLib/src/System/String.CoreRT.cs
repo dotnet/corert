@@ -76,9 +76,6 @@ namespace System
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 169, 649
 
-#if PROJECTN
-        [Bound]
-#endif
         // WARNING: We allow diagnostic tools to directly inspect these two members (_stringLength, _firstChar)
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
         // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
@@ -96,13 +93,6 @@ namespace System
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public unsafe char this[int index]
         {
-#if PROJECTN
-            [BoundsChecking]
-            get
-            {
-                return Unsafe.Add(ref _firstChar, index);
-            }
-#else
             [Intrinsic]
             get
             {
@@ -110,7 +100,6 @@ namespace System
                     ThrowHelper.ThrowIndexOutOfRangeException();
                 return Unsafe.Add(ref _firstChar, index);
             }
-#endif
         }
 
         public int Length

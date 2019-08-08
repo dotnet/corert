@@ -20,16 +20,10 @@ namespace System.Collections.Generic
         [Intrinsic]
         private static EqualityComparer<T> Create()
         {
-#if PROJECTN
-            // The compiler will overwrite the Create method with optimized
-            // instantiation-specific implementation.
-            throw new NotSupportedException();
-#else
             // The compiler will overwrite the Create method with optimized
             // instantiation-specific implementation.
             // This body serves as a fallback when instantiation-specific implementation is unavailable.
             return (_default = EqualityComparerHelpers.GetUnknownEquatableComparer<T>());
-#endif
         }
 
         public static EqualityComparer<T> Default

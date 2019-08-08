@@ -218,9 +218,6 @@ namespace ILCompiler.DependencyAnalysis
             // of just necessary. (Which is what the actual templates signatures will ensure)
             public IEnumerable<IDependencyNode> TemplateConstructableTypes(TypeDesc type)
             {
-                if ((_factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
-                    yield break;
-
                 while (type.IsParameterizedType)
                 {
                     type = ((ParameterizedType)type).ParameterType;
@@ -252,9 +249,6 @@ namespace ILCompiler.DependencyAnalysis
             // (Which is what the actual templates signatures will ensure)
             public IEnumerable<IDependencyNode> UniversalTemplateConstructableTypes(TypeDesc type)
             {
-                if ((_factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
-                    yield break;
-
                 while (type.IsParameterizedType)
                 {
                     type = ((ParameterizedType)type).ParameterType;

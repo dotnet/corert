@@ -22,6 +22,14 @@ namespace System
             set => s_latchedExitCode = value;
         }
 
+        public static void Exit(int exitCode)
+        {
+            s_latchedExitCode = exitCode;
+            ShutdownCore();
+            RuntimeImports.RhpShutdown();
+            ExitRaw();
+        }
+
         // Note: The CLR's Watson bucketization code looks at the caller of the FCALL method
         // to assign blame for crashes.  Don't mess with this, such as by making it call 
         // another managed helper method, unless you consult with some CLR Watson experts.
@@ -83,5 +91,7 @@ namespace System
         }
 
         public static int TickCount => (int)TickCount64;
+
+        public static string[] GetCommandLineArgs() => (string[])s_commandLineArgs.Clone();
     }
 }

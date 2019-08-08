@@ -122,21 +122,8 @@ namespace ILCompiler.DependencyAnalysis
                     switch (flags & FieldTableFlags.StorageClass)
                     {
                         case FieldTableFlags.ThreadStatic:
-                            if (factory.Target.Abi == TargetAbi.ProjectN)
-                            {
-                                if (!field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                                {
-                                    ISymbolNode tlsOffsetForType = ((UtcNodeFactory)factory).TypeThreadStaticsOffsetSymbol((MetadataType)field.OwningType);
-                                    vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(_externalReferences.GetIndex(tlsOffsetForType)));
-                                }
-                                vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));
-                            }
-                            else
-                            {
-                                // TODO: CoreRT
-                                continue;
-                            }
-                            break;
+                            // TODO: CoreRT
+                            continue;
 
                         case FieldTableFlags.Static:
                             {
@@ -152,7 +139,7 @@ namespace ILCompiler.DependencyAnalysis
                                         factory.TypeGCStaticsSymbol(metadataType) :
                                         factory.TypeNonGCStaticsSymbol(metadataType);
 
-                                    if (!field.HasGCStaticBase || factory.Target.Abi == TargetAbi.ProjectN)
+                                    if (!field.HasGCStaticBase)
                                     {
                                         uint index = _externalReferences.GetIndex(staticsNode, field.Offset.AsInt);
                                         vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));

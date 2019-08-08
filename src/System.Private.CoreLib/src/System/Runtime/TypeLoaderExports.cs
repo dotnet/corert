@@ -14,9 +14,6 @@ namespace System.Runtime
     [ReflectionBlocked]
     public static class TypeLoaderExports
     {
-#if PROJECTN
-        [RuntimeExport("GetThreadStaticsForDynamicType")]
-#endif
         public static IntPtr GetThreadStaticsForDynamicType(int index)
         {
             IntPtr result = RuntimeImports.RhGetThreadLocalStorageForDynamicType(index, 0, 0);
@@ -33,9 +30,6 @@ namespace System.Runtime
             return result;
         }
 
-#if PROJECTN
-        [RuntimeExport("ActivatorCreateInstanceAny")]
-#endif
         public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
         {
             EETypePtr pEEType = new EETypePtr(pEETypePtr);
@@ -93,9 +87,6 @@ namespace System.Runtime
             s_cache = new Entry[1];
         }
 
-#if PROJECTN
-        [RuntimeExport("GenericLookup")]
-#endif
         public static IntPtr GenericLookup(IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
@@ -106,9 +97,6 @@ namespace System.Runtime
             return entry.Result;
         }
 
-#if PROJECTN
-        [RuntimeExport("GenericLookupAndCallCtor")]
-#endif
         public static void GenericLookupAndCallCtor(object arg, IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
@@ -119,9 +107,6 @@ namespace System.Runtime
             RawCalliHelper.Call(entry.Result, arg);
         }
 
-#if PROJECTN
-        [RuntimeExport("GenericLookupAndAllocObject")]
-#endif
         public static object GenericLookupAndAllocObject(IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
@@ -132,9 +117,6 @@ namespace System.Runtime
             return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult);
         }
 
-#if PROJECTN
-        [RuntimeExport("GenericLookupAndAllocArray")]
-#endif
         public static object GenericLookupAndAllocArray(IntPtr context, IntPtr arg, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
@@ -145,9 +127,6 @@ namespace System.Runtime
             return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult, arg);
         }
 
-#if PROJECTN
-        [RuntimeExport("GenericLookupAndCheckArrayElemType")]
-#endif
         public static void GenericLookupAndCheckArrayElemType(IntPtr context, object arg, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
@@ -158,9 +137,6 @@ namespace System.Runtime
             RawCalliHelper.Call(entry.Result, entry.AuxResult, arg);
         }
 
-#if PROJECTN
-        [RuntimeExport("GenericLookupAndCast")]
-#endif
         public static object GenericLookupAndCast(object arg, IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
@@ -171,18 +147,12 @@ namespace System.Runtime
             return RawCalliHelper.Call<object>(entry.Result, arg, entry.AuxResult);
         }
 
-#if PROJECTN
-        [RuntimeExport("UpdateTypeFloatingDictionary")]
-#endif
         public static IntPtr UpdateTypeFloatingDictionary(IntPtr eetypePtr, IntPtr dictionaryPtr)
         {
             // No caching needed. Update is in-place, and happens once per dictionary
             return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(eetypePtr, dictionaryPtr);
         }
 
-#if PROJECTN
-        [RuntimeExport("UpdateMethodFloatingDictionary")]
-#endif
         public static IntPtr UpdateMethodFloatingDictionary(IntPtr dictionaryPtr)
         {
             // No caching needed. Update is in-place, and happens once per dictionary

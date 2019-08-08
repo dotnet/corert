@@ -140,113 +140,17 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
 
 COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromEEType, (EEType * pEEType))
 {
-#ifdef PROJECTN
-    if (!pEEType->HasTypeManager())
-    {
-        // For dynamically created types, return the module handle that contains the template type
-        if (pEEType->IsDynamicType())
-            pEEType = pEEType->get_DynamicTemplateType();
-
-        if (pEEType->get_DynamicModule() != nullptr)
-            return nullptr;
-
-        FOREACH_MODULE(pModule)
-        {
-            if (pModule->ContainsReadOnlyDataAddress(pEEType) || pModule->ContainsDataAddress(pEEType))
-                return pModule->GetOsModuleHandle();
-        }
-        END_FOREACH_MODULE
-
-        // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
-        RhFailFast();
-        return NULL;
-    }
-#endif // PROJECTN
-
     return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
 }
 
 COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetModuleFromEEType, (EEType * pEEType))
 {
-#ifdef PROJECTN
-    if (!pEEType->HasTypeManager())
-    {
-        // For dynamically created types, return the module handle that contains the template type
-        if (pEEType->IsDynamicType())
-            pEEType = pEEType->get_DynamicTemplateType();
-
-        if (pEEType->get_DynamicModule() != nullptr)
-        {
-            // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
-            RhFailFast();
-            return TypeManagerHandle::Null();
-        }
-
-        FOREACH_MODULE(pModule)
-        {
-            if (pModule->ContainsReadOnlyDataAddress(pEEType) || pModule->ContainsDataAddress(pEEType))
-                return TypeManagerHandle::Create(pModule->GetOsModuleHandle());
-        }
-        END_FOREACH_MODULE
-
-        // We should never get here (an EEType not located in any module) so fail fast to indicate the bug.
-        RhFailFast();
-        return TypeManagerHandle::Null();
-    }
-#endif // PROJECTN
-
     return *pEEType->GetTypeManagerPtr();
 }
 
 COOP_PINVOKE_HELPER(Boolean, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle, UInt32 blobId, UInt8 ** ppbBlob, UInt32 * pcbBlob))
 {
     TypeManagerHandle typeManagerHandle = *pTypeManagerHandle;
-
-#ifdef PROJECTN
-    if (!typeManagerHandle.IsTypeManager())
-    {
-        HANDLE hOsModule = typeManagerHandle.AsOsModule();
-        // Search for the Redhawk module contained by the OS module.
-        FOREACH_MODULE(pModule)
-        {
-            if (pModule->GetOsModuleHandle() == hOsModule)
-            {
-                // Found a module match. Look through the blobs for one with a matching ID.
-                UInt32 cbBlobs;
-                BlobHeader * pBlob = pModule->GetReadOnlyBlobs(&cbBlobs);
-
-                while (cbBlobs)
-                {
-                    UInt32 cbTotalBlob = sizeof(BlobHeader) + pBlob->m_size;
-                    ASSERT(cbBlobs >= cbTotalBlob);
-
-                    if (pBlob->m_id == blobId)
-                    {
-                        // Found the matching blob, return it.
-                        *ppbBlob = (UInt8*)(pBlob + 1);
-                        *pcbBlob = pBlob->m_size;
-                        return TRUE;
-                    }
-
-                    cbBlobs -= cbTotalBlob;
-                    pBlob = (BlobHeader*)((UInt8*)pBlob + cbTotalBlob);
-                }
-
-                // If we get here then we found a module match but didn't find a blob with a matching ID. That's a
-                // non-catastrophic error.
-                *ppbBlob = NULL;
-                *pcbBlob = 0;
-                return FALSE;
-            }
-        }
-        END_FOREACH_MODULE
-
-        // If we get here we were passed a bad module handle and should fail fast since this indicates a nasty bug
-        // (which could lead to the wrong blob being returned in some cases).
-        RhFailFast();
-        return FALSE;
-    }
-#endif // PROJECTN
 
     ReadyToRunSectionType section =
         (ReadyToRunSectionType)((UInt32)ReadyToRunSectionType::ReadonlyBlobRegionStart + blobId);
@@ -299,11 +203,6 @@ COOP_PINVOKE_HELPER(DispatchMap *, RhpGetDispatchMap, (EEType * pEEType))
     return pEEType->GetDispatchMap();
 }
 
-COOP_PINVOKE_HELPER(EEType *, RhpGetArrayBaseType, (EEType * pEEType))
-{
-    return pEEType->GetArrayBaseType();
-}
-
 // Obtain the address of a thread static field for the current thread given the enclosing type and a field cookie
 // obtained from a fixed up binder blob field record.
 COOP_PINVOKE_HELPER(UInt8 *, RhGetThreadStaticFieldAddress, (EEType * pEEType, UInt32 startingOffsetInTlsBlock, UInt32 fieldOffset))
@@ -332,39 +231,24 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetThreadStaticFieldAddress, (EEType * pEEType, U
     }
     else
     {
-#if EETYPE_TYPE_MANAGER && PROJECTN /* TODO: CORERT */
-        if (pEEType->HasTypeManager())
-        {
-            TypeManager* pTypeManager = pEEType->GetTypeManagerPtr()->AsTypeManager();
-            ASSERT(pTypeManager != NULL);
+        /* TODO: CORERT */
 
-            UInt32* pTlsIndex = pTypeManager->GetPointerToTlsIndex();
-            if (pTlsIndex == NULL)
-                return NULL;
-            
-            uiTlsIndex = *pTlsIndex;
-            uiFieldOffset = startingOffsetInTlsBlock + fieldOffset;
-        }
-        else
-#endif
-        {
-            // The startingOffsetInTlsBlock is an offset from the base of all Redhawk thread statics
-            // to the field. The TLS index and offset adjustment (in cases where the module was linked with native
-            // code using .tls) is that from the exe module.
+        // The startingOffsetInTlsBlock is an offset from the base of all Redhawk thread statics
+        // to the field. The TLS index and offset adjustment (in cases where the module was linked with native
+        // code using .tls) is that from the exe module.
 
-            // In the separate compilation case, the generic unification logic should assure
-            // that the pEEType parameter passed in is indeed the "winner" of generic unification,
-            // not one of the "losers".
-            // TODO: come up with an assert to check this.
-            Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(pEEType);
-            if (pModule == NULL)
-                pModule = pRuntimeInstance->FindModuleByDataAddress(pEEType);
-            ASSERT(pModule != NULL);
-            ModuleHeader * pExeModuleHeader = pModule->GetModuleHeader();
+        // In the separate compilation case, the generic unification logic should assure
+        // that the pEEType parameter passed in is indeed the "winner" of generic unification,
+        // not one of the "losers".
+        // TODO: come up with an assert to check this.
+        Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(pEEType);
+        if (pModule == NULL)
+            pModule = pRuntimeInstance->FindModuleByDataAddress(pEEType);
+        ASSERT(pModule != NULL);
+        ModuleHeader * pExeModuleHeader = pModule->GetModuleHeader();
 
-            uiTlsIndex = *pExeModuleHeader->PointerToTlsIndex;
-            uiFieldOffset = pExeModuleHeader->TlsStartOffset + startingOffsetInTlsBlock + fieldOffset;
-        }
+        uiTlsIndex = *pExeModuleHeader->PointerToTlsIndex;
+        uiFieldOffset = pExeModuleHeader->TlsStartOffset + startingOffsetInTlsBlock + fieldOffset;
 
         // Now look at the current thread and retrieve the address of the field.
         return ThreadStore::GetCurrentThread()->GetThreadLocalStorage(uiTlsIndex, uiFieldOffset);
