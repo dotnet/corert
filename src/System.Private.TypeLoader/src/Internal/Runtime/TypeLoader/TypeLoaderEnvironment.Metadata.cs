@@ -67,47 +67,6 @@ namespace Internal.Runtime.TypeLoader
     public sealed partial class TypeLoaderEnvironment
     {
         /// <summary>
-        /// Cross-module RVA has the high bit set which denotes that an additional indirection
-        /// through the indirection cell is required to reach the final destination address.
-        /// </summary>
-        private const uint RVAIsIndirect = 0x80000000u;
-
-        /// <summary>
-        /// Convert RVA to runtime type handle with indirection handling.
-        /// </summary>
-        /// <param name="moduleHandle">Module containing the pointer</param>
-        /// <param name="rva">Relative virtual address, high bit denotes additional indirection</param>
-        public static unsafe RuntimeTypeHandle RvaToRuntimeTypeHandle(TypeManagerHandle moduleHandle, uint rva)
-        {
-            if ((rva & RVAIsIndirect) != 0)
-            {
-                return RuntimeAugments.CreateRuntimeTypeHandle(*(IntPtr*)(moduleHandle.ConvertRVAToPointer(rva & ~RVAIsIndirect)));
-            }
-            return RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)(moduleHandle.ConvertRVAToPointer(+ rva)));
-        }
-
-        /// <summary>
-        /// Convert RVA in a given module to function pointer. This may involve an additional indirection
-        /// through the indirection cell if the RVA has the DynamicInvokeMapEntry.IsImportMethodFlag set
-        /// (when the actual function in question resides in a different binary module).
-        /// </summary>
-        /// <param name="moduleHandle">Module handle (= load address) containing the function or indirection cell</param>
-        /// <param name="rva">
-        /// Relative virtual address, the DynamicInvokeMapEntry.IsImportMethodFlag bit denotes additional indirection
-        /// </param>
-        public static unsafe IntPtr RvaToFunctionPointer(TypeManagerHandle moduleHandle, uint rva)
-        {
-            if ((rva & DynamicInvokeMapEntry.IsImportMethodFlag) == DynamicInvokeMapEntry.IsImportMethodFlag)
-            {
-                return *((IntPtr*)((byte*)moduleHandle.ConvertRVAToPointer(rva & DynamicInvokeMapEntry.InstantiationDetailIndexMask)));
-            }
-            else
-            {
-                return (IntPtr)((byte*)moduleHandle.ConvertRVAToPointer(rva));
-            }
-        }
-
-        /// <summary>
         /// Compare two arrays sequentially.
         /// </summary>
         /// <param name="seq1">First array to compare</param>
@@ -829,8 +788,6 @@ namespace Internal.Runtime.TypeLoader
             externalReferences.InitializeCommonFixupsTable(module);
 
             //
-            // When working with the ProjectN ABI, the entries in the map are based on the definition types. All
-            // instantiations of these definition types will have the same vtable method entries.
             // On CoreRT, the vtable entries for each instantiated type might not necessarily exist.
             // Example 1: 
             //      If there's a call to Foo<string>.Method1 and a call to Foo<int>.Method2, Foo<string> will
@@ -842,21 +799,10 @@ namespace Internal.Runtime.TypeLoader
             // For this reason, the entries that we write to the map in CoreRT will be based on the canonical form
             // of the method's containing type instead of the open type definition.
             //
-            // Similarly, given that we use the open type definition for ProjectN, the slot numbers ignore dictionary
-            // entries in the vtable, and computing the correct slot number in the presence of dictionary entries is 
-            // done at runtime. When working with the CoreRT ABI, the correct slot numbers will be written to the map,
-            // and no adjustments will be performed at runtime.
-            //
 
-#if PROJECTN
-            CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(
-                Instance.GetTypeDefinition(methodHandleDeclaringType), 
-                CanonicalFormKind.Specific);
-#else
             CanonicallyEquivalentEntryLocator canonHelper = new CanonicallyEquivalentEntryLocator(
                 methodHandleDeclaringType,
                 CanonicalFormKind.Specific);
-#endif
 
             var lookup = invokeHashtable.Lookup(canonHelper.LookupHashCode);
 
@@ -874,7 +820,7 @@ namespace Internal.Runtime.TypeLoader
                 if (!canonHelper.IsCanonicallyEquivalent(entryType))
                     continue;
 
-                uint nameAndSigPointerToken = externalReferences.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
+                uint nameAndSigPointerToken = entryParser.GetUnsigned();
 
                 MethodNameAndSignature nameAndSig;
                 if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(module.Handle, nameAndSigPointerToken, out nameAndSig))
@@ -930,39 +876,6 @@ namespace Internal.Runtime.TypeLoader
                 else
                 {
                     uint slot = entryParser.GetUnsigned();
-
-#if PROJECTN
-                    RuntimeTypeHandle searchForSharedGenericTypesInParentHierarchy = declaringTypeOfVirtualInvoke;
-                    while (!searchForSharedGenericTypesInParentHierarchy.IsNull())
-                    {
-                        // See if this type is shared generic. If so, adjust the slot by 1.
-                        if (RuntimeAugments.IsGenericType(searchForSharedGenericTypesInParentHierarchy))
-                        {
-                            if (RuntimeAugments.IsInterface(searchForSharedGenericTypesInParentHierarchy))
-                            {
-                                // Generic interfaces always have a dictionary slot in the vtable (see binder code in MdilModule::SaveMethodTable)
-                                // Interfaces do not have base types, so we can just break out of the loop here ...
-                                slot++;
-                                break;
-                            }
-
-                            RuntimeTypeHandle[] genericTypeArgs;
-                            RuntimeAugments.GetGenericInstantiation(searchForSharedGenericTypesInParentHierarchy,
-                                                                    out genericTypeArgs);
-                            if (TypeLoaderEnvironment.Instance.ConversionToCanonFormIsAChange(genericTypeArgs, CanonicalFormKind.Specific))
-                            {
-                                // Shared generic types have a slot dedicated to holding the generic dictionary.
-                                slot++;
-                            }
-                        }
-
-                        // Walk to parent
-                        if (!RuntimeAugments.TryGetBaseType(searchForSharedGenericTypesInParentHierarchy, out searchForSharedGenericTypesInParentHierarchy))
-                        {
-                            break;
-                        }
-                    }
-#endif
 
                     lookupResult = new VirtualResolveDataResult
                     {
@@ -1020,7 +933,7 @@ namespace Internal.Runtime.TypeLoader
                 if (!canonHelper.IsCanonicallyEquivalent(entryType))
                     continue;
 
-                uint nameAndSigPointerToken = externalReferences.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
+                uint nameAndSigPointerToken = entryParser.GetUnsigned();
 
                 uint parentHierarchyAndFlag = entryParser.GetUnsigned();
                 bool isGenericVirtualMethod = ((parentHierarchyAndFlag & VirtualInvokeTableEntry.FlagsMask) == VirtualInvokeTableEntry.GenericVirtualMethod);
@@ -1337,9 +1250,6 @@ namespace Internal.Runtime.TypeLoader
             IntPtr entryPoint = IntPtr.Zero;
             IntPtr unboxingStubAddress = IntPtr.Zero;
             MethodAddressType foundAddressType = MethodAddressType.None;
-#if SUPPORTS_R2R_LOADING
-            TryGetCodeTableEntry(methodOnType, out entryPoint, out unboxingStubAddress, out foundAddressType);
-#endif
 #if SUPPORT_DYNAMIC_CODE
             if (foundAddressType == MethodAddressType.None)
                 MethodEntrypointStubs.TryGetMethodEntrypoint(methodOnType, out entryPoint, out unboxingStubAddress, out foundAddressType);
@@ -1618,7 +1528,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 else
                 {
-                    uint nameAndSigToken = extRefTable.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
+                    uint nameAndSigToken = entryParser.GetUnsigned();
                     MethodNameAndSignature nameAndSig;
                     if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigToken, out nameAndSig))
                     {
@@ -1650,7 +1560,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     Debug.Assert((_hasEntryPoint || ((_flags & InvokeTableFlags.HasVirtualInvoke) != 0)) && ((_flags & InvokeTableFlags.RequiresInstArg) != 0));
 
-                    uint nameAndSigPointerToken = extRefTable.GetExternalNativeLayoutOffset(entryParser.GetUnsigned());
+                    uint nameAndSigPointerToken = entryParser.GetUnsigned();
                     if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigPointerToken, out _nameAndSignature))
                     {
                         Debug.Assert(false);    //Error

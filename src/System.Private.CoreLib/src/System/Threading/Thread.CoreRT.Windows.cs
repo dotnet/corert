@@ -362,9 +362,6 @@ namespace System.Threading
 
         private static void InitializeExistingThreadPoolThread()
         {
-#if PROJECTN
-            InitializeCom();
-#else
             // Take advantage of implicit MTA initialized by the finalizer thread
             SpinWait sw = new SpinWait();
             while (!s_comInitializedOnFinalizerThread)
@@ -372,7 +369,6 @@ namespace System.Threading
                 RuntimeImports.RhInitializeFinalizerThread();
                 sw.SpinOnce(0);
             }
-#endif
 
             // Prevent re-initialization of COM model on threadpool threads
             t_comState |= ComState.Locked;

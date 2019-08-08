@@ -61,12 +61,7 @@ namespace System.Threading
             }
         }
 
-#if PROJECTN
-        // Use a compiler intrinsic for .NET Native
-        private static IntPtr CurrentNativeThreadId => (IntPtr)Environment.CurrentNativeThreadId;
-#else
         private static IntPtr CurrentNativeThreadId => (IntPtr)RuntimeImports.RhCurrentNativeThreadId();
-#endif // PROJECTN
 
         // On platforms where CurrentNativeThreadId redirects to ManagedThreadId.Current the inlined
         // version of Lock.Acquire has the ManagedThreadId.Current call not inlined, while the non-inlined

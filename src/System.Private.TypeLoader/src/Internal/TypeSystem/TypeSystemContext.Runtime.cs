@@ -647,43 +647,6 @@ namespace Internal.TypeSystem
             _typesToFlushTypeSystemStateFrom = null;
         }
 
-#if PROJECTN
-        private TypeDesc _canonAlikeType;
-
-        public TypeDesc CanonAlikeType
-        {
-            get
-            {
-                if (_canonAlikeType == null)
-                    _canonAlikeType = ResolveRuntimeTypeHandle(typeof(__CanonAlike).TypeHandle);
-                return _canonAlikeType;
-            }
-        }
-
-        private TypeDesc[] _canonAlikeTypeArray;
-
-        public TypeDesc[] CanonAlikeTypeArray
-        {
-            get
-            {
-                if (_canonAlikeTypeArray == null)
-                    _canonAlikeTypeArray = new TypeDesc[] { CanonAlikeType };
-                return _canonAlikeTypeArray;
-            }
-        }
-
-        private TypeDesc[] _canonTypeArray;
-        public TypeDesc[] CanonTypeArray
-        {
-            get
-            {
-                if (_canonTypeArray == null)
-                    _canonTypeArray = new TypeDesc[] { CanonType };
-                return _canonTypeArray;
-            }
-        }
-#endif
-
 #if ECMA_METADATA_SUPPORT
         public class ModuleToEcmaModuleHashtable : LockFreeReaderHashtable<EcmaModuleInfo, Internal.TypeSystem.Ecma.EcmaModule>
         {

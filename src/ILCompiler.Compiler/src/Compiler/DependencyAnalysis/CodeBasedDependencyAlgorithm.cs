@@ -23,12 +23,9 @@ namespace ILCompiler.DependencyAnalysis
                 if (dependencies == null)
                     dependencies = new DependencyList();
 
-                // The fact we need to exclude Project N is likely a bug in Project N metadata manager
-                if (factory.Target.Abi != TargetAbi.ProjectN)
-                    dependencies.Add(factory.MaximallyConstructableType(method.OwningType), "Reflection invoke");
+                dependencies.Add(factory.MaximallyConstructableType(method.OwningType), "Reflection invoke");
 
-                if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method)
-                    && ((factory.Target.Abi != TargetAbi.ProjectN) || ProjectNDependencyBehavior.EnableFullAnalysis || !method.IsCanonicalMethod(CanonicalFormKind.Any)))
+                if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
                 {
                     MethodDesc canonInvokeStub = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
                     if (canonInvokeStub.IsSharedByGenericInstantiations)
@@ -40,16 +37,7 @@ namespace ILCompiler.DependencyAnalysis
                         dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(canonInvokeStub), "Reflection invoke"));
                 }
 
-                bool skipUnboxingStubDependency = false;
-                if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
-                {
-                    // ProjectN compilation currently computes the presence of these stubs independent from dependency analysis here
-                    // TODO: fix that issue and remove this odd treatment of unboxing stubs
-                    if (!method.HasInstantiation && method.OwningType.IsValueType && method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) && !method.Signature.IsStatic)
-                        skipUnboxingStubDependency = true;
-                }
-
-                if (method.OwningType.IsValueType && !method.Signature.IsStatic && !skipUnboxingStubDependency)
+                if (method.OwningType.IsValueType && !method.Signature.IsStatic)
                     dependencies.Add(new DependencyListEntry(factory.ExactCallableAddress(method, isUnboxingStub: true), "Reflection unboxing stub"));
 
                 // If the method is defined in a different module than this one, a metadata token isn't known for performing the reference
@@ -92,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
 
-            if (method.IsIntrinsic && factory.Target.Abi != TargetAbi.ProjectN && factory.MetadataManager.SupportsReflection)
+            if (method.IsIntrinsic && factory.MetadataManager.SupportsReflection)
             {
                 if (method.OwningType is MetadataType owningType)
                 {

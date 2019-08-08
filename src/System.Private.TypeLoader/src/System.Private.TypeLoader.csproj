@@ -30,7 +30,7 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(METADATA_TYPE_LOADER)' != ''">SUPPORTS_NATIVE_METADATA_TYPE_LOADING;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <PropertyGroup>
     <DefineConstants>EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(DynamicCodeSupport)' == 'true'">
@@ -44,7 +44,7 @@
     <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
     <ReferencePath Condition="'$(EcmaMetadataSupport)' == 'true'" Include="$(AotPackageReferencePath)\System.Private.Reflection.Metadata.Ecma335.dll" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <ItemGroup>
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
@@ -496,7 +496,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\MetadataExtensions.cs">
       <Link>NativeFormat\MetadataExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
       <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MetadataType.Interop.cs">

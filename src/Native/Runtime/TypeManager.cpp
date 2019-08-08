@@ -178,25 +178,7 @@ HANDLE TypeManager::GetOsModuleHandle()
     return m_osModule;
 }
 
-bool TypeManagerHandle::IsTypeManager()
-{
-#if PROJECTN
-    if (((uintptr_t)_value & 1) == 0)
-        return false;
-#endif
-
-    return true;
-}
-
 TypeManager* TypeManagerHandle::AsTypeManager()
 {
-    ASSERT(IsTypeManager());
     return (TypeManager*)(((uint8_t *)_value) - 1);
 }
-
-HANDLE TypeManagerHandle::AsOsModule()
-{
-    ASSERT(!IsTypeManager());
-    return (HANDLE)_value;
-}
-

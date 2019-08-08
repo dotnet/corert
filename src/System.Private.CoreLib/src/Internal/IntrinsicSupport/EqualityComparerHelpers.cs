@@ -185,12 +185,7 @@ namespace Internal.IntrinsicSupport
         [Intrinsic]
         internal static EqualityComparer<T> GetComparerForReferenceTypesOnly<T>()
         {
-#if PROJECTN
-            // When T is a reference type or a universal canon type, then this will redirect to EqualityComparer<T>.Default.
-            return null;
-#else
             return EqualityComparer<T>.Default;
-#endif
         }
 
         private static bool StructOnlyNormalEquals<T>(T left, T right)

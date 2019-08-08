@@ -165,7 +165,7 @@ namespace Internal.TypeSystem
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
-            else if (type.IsSequentialLayout || type.Context.Target.Abi == TargetAbi.ProjectN || type.Context.Target.Abi == TargetAbi.CppCodegen)
+            else if (type.IsSequentialLayout || type.Context.Target.Abi == TargetAbi.CppCodegen)
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }

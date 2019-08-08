@@ -17,7 +17,6 @@ using Interlocked = System.Threading.Interlocked;
 namespace System
 {
     [System.Runtime.CompilerServices.ReflectionBlocked]
-    [System.Runtime.CompilerServices.DependencyReductionRoot]
     public static class InvokeUtils
     {
         //

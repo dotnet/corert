@@ -42,10 +42,6 @@ namespace Internal.TypeSystem
         /// </summary>
         CoreRT,
         /// <summary>
-        /// Windows-specific UWP model
-        /// </summary>
-        ProjectN,
-        /// <summary>
         /// Jit runtime ABI
         /// </summary>
         Jit,
@@ -119,12 +115,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (Abi == TargetAbi.ProjectN)
-                {
-                    // ProjectN doesn't support hardware intrinsics
-                    return 8;
-                }
-                else if (Architecture == TargetArchitecture.ARM)
+                if (Architecture == TargetArchitecture.ARM)
                 {
                     // Corresponds to alignment required for __m128 (there's no __m256)
                     return 8;
@@ -149,12 +140,6 @@ namespace Internal.TypeSystem
         {
             get
             {
-                if (Abi == TargetAbi.ProjectN)
-                {
-                    // We use default packing size of 8 irrespective of the platform to match NUTC.
-                    return 8;
-                }
-
                 // We use default packing size of 32 irrespective of the platform.
                 return 32;
             }
