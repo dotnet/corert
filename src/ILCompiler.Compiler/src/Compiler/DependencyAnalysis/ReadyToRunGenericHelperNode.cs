@@ -32,9 +32,14 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
 
             _lookupSignature = GetLookupSignature(factory, helperId, target);
+            if (_dictionaryOwner.ToString()
+                .Contains(
+                    "S.P.CoreLib]System.Threading.Interlocked.CompareExchange<__Canon>(__Canon&,__Canon,__Canon"))
+            {
+
             if (_lookupSignature.ToString()
                     .Contains(
-                        "[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<M_System.__Canon>")
+                        "TypeHandle: T_System.__Canon")
             )
             {
                 if (_lookupSignature is TypeNonGCStaticBaseGenericLookupResult)
@@ -50,6 +55,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 }
             }
+            }
+
         }
 
         public static GenericLookupResult GetLookupSignature(NodeFactory factory, ReadyToRunHelperId id, object target)
@@ -99,6 +106,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             DictionaryLayoutNode layout = factory.GenericDictionaryLayout(_dictionaryOwner);
 
+            if (DictionaryOwner.ToString()
+                .Contains(
+                    "S.P.CoreLib]System.Threading.Interlocked.CompareExchange<__Canon>(__Canon&,__Canon,__Canon"))
+            {
+
+            }
             if (layout.HasUnfixedSlots)
             {
                 // When the helper call gets marked, ensure the generic layout for the associated dictionaries

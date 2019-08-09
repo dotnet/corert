@@ -25,7 +25,7 @@ namespace System.Threading
     internal class ManagedThreadId
     {
         [DllImport("*")]
-        private static unsafe extern int printf(byte* str, byte* unused);
+        internal static unsafe extern int printf(byte* str, byte* unused);
         private static unsafe void PrintString(string s)
         {
             int length = s.Length;
@@ -43,6 +43,22 @@ namespace System.Threading
         internal static void PrintLine(string s)
         {
             PrintString(s);
+            PrintString("\n");
+        }
+
+        internal unsafe static void PrintUintRev(int s)
+        {
+            byte[] intBytes = BitConverter.GetBytes(s);
+            for (var i = 0; i < 4; i++)
+            {
+                TwoByteStr curCharStr = new TwoByteStr();
+                var nib = (intBytes[i] & 0xf0) >> 4;
+                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib: nib - 10));
+                printf((byte*)&curCharStr, null);
+                nib = (intBytes[i] & 0xf);
+                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
+                printf((byte*)&curCharStr, null);
+            }
             PrintString("\n");
         }
 

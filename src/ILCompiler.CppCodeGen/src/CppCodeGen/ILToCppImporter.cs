@@ -3059,7 +3059,12 @@ namespace Internal.IL
         private void ImportBox(int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
+            if (this._method.ToString()
+                .Contains(
+                    "System.Threading.Interlocked.CompareExchange<__Canon>(__Canon&,__Canon,__Canon)"))
+            {
 
+            }
             if (type.IsValueType)
             {
                 if (type.IsNullable)

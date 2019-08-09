@@ -71,4 +71,7 @@
     <RunCommand Condition="'$(OS)' != 'Windows_NT'">$(TargetDir)$(AssemblyName)</RunCommand>
     <RunArguments>$(StartArguments)</RunArguments>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DefineConstants>TRACE;DEBUG;AMD64;BIT64;PLATFORM_WINDOWS;CORERT;;DEBUGRESOURCES;SIGNED;ILC</DefineConstants>
+  </PropertyGroup>
 </Project>

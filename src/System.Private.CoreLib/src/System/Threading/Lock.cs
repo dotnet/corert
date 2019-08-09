@@ -110,8 +110,18 @@ namespace System.Threading
             //
             // Make one quick attempt to acquire an uncontended lock
             //
+            ManagedThreadId.PrintLine("TryAcquire stat");
+            if (_state == Uncontended)
+            {
+                ManagedThreadId.PrintLine("TryAcquire stat Uncontended");
+
+            }
+            var i = (int)_state;
+            ManagedThreadId.PrintUintRev(i);
             if (Interlocked.CompareExchange(ref _state, Locked, Uncontended) == Uncontended)
             {
+                ManagedThreadId.PrintLine("TryAcquire quick success");
+
                 Debug.Assert(_owningThreadId == IntPtr.Zero);
                 Debug.Assert(_recursionCount == 0);
                 _owningThreadId = currentThreadId;
@@ -306,6 +316,11 @@ namespace System.Threading
             //
             // Make one quick attempt to release an uncontended lock
             //
+            ManagedThreadId.PrintLine("ReleaseCore state");
+            if (_state == Uncontended)
+            {
+                ManagedThreadId.PrintLine("ReleaseCore Uncontended");
+            }
             if (Interlocked.CompareExchange(ref _state, Uncontended, Locked) == Locked)
                 return;
 

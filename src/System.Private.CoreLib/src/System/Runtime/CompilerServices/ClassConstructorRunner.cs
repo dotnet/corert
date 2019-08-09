@@ -62,16 +62,30 @@ namespace System.Runtime.CompilerServices
         {
             IntPtr pfnCctor = pContext->cctorMethodAddress;
             NoisyLog("EnsureClassConstructorRun, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
-
+            ManagedThreadId.PrintLine("EnsureClassConstructorRun");
+            ManagedThreadId.PrintUintRev(pfnCctor.ToInt32());
             // If we were called from MRT, this check is redundant but harmless. This is in case someone within classlib
             // (cough, Reflection) needs to call this explicitly.
             if (pContext->initialized == 1)
             {
+                ManagedThreadId.PrintLine("EnsureClassConstructorRun initialized");
+
                 NoisyLog("Cctor already run, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
                 return;
             }
 
             CctorHandle cctor = Cctor.GetCctor(pContext);
+            ManagedThreadId.PrintLine("cctor index");
+            for (var i = 0; i < 10; i++)
+            {
+                if (cctor.Index == i)
+                {
+                    ManagedThreadId.PrintLine("matched");
+                    break;
+                }
+                ManagedThreadId.PrintLine("not matched");
+            }
+
             Cctor[] cctors = cctor.Array;
             int cctorIndex = cctor.Index;
             try
@@ -286,6 +300,8 @@ namespace System.Runtime.CompilerServices
                 {
                     Interlocked.CompareExchange(ref s_cctorGlobalLock, new Lock(), null);
                 }
+                    ManagedThreadId.PrintLine("past first compareexchange");
+
                 if (s_cctorArrays == null)
                 {
                     Interlocked.CompareExchange(ref s_cctorArrays, new Cctor[10][], null);

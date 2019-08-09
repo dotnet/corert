@@ -313,6 +313,9 @@ namespace Internal.Reflection.Execution
             {
                 RuntimeAssemblyName defName = scopeDefinitionHandle.ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
                 ScopeDefinitionGroup scopeDefinitionGroup;
+                PrintLine("defName");
+                PrintLine(defName.Name);
+
                 if (groups.TryGetValue(defName, out scopeDefinitionGroup))
                 {
                     scopeDefinitionGroup.AddOverflowScope(new QScopeDefinition(reader, scopeDefinitionHandle));

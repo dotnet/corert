@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 
+using System.Text;
 using global::System;
 using global::System.Reflection;
 using global::System.Collections.Generic;
 
 using global::Internal.Metadata.NativeFormat;
-
+using Internal.Reflection.Execution;
 using Debug = System.Diagnostics.Debug;
 using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
@@ -89,6 +90,11 @@ namespace System.Reflection.Runtime.General
         public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeDefinitionHandle scopeDefinitionHandle, MetadataReader reader)
         {
             ScopeDefinition scopeDefinition = scopeDefinitionHandle.GetScopeDefinition(reader);
+            AssemblyBinderImplementation.PrintLine("ToRuntimeAssemblyName");
+
+            AssemblyBinderImplementation.PrintLine(scopeDefinition.Name.ToString());
+            var ns = scopeDefinition.Name.GetString(reader);
+            AssemblyBinderImplementation.PrintLine(ns);
             return CreateRuntimeAssemblyNameFromMetadata(
                 reader,
                 scopeDefinition.Name,

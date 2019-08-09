@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
@@ -43,6 +44,8 @@ namespace System.Collections.Generic
 
         public LowLevelDictionary(int capacity)
         {
+            PrintLine("Capacity");
+            PrintLine(capacity.ToString());
             Clear(capacity);
         }
 
@@ -101,13 +104,29 @@ namespace System.Collections.Generic
             PrintString("\n");
         }
 
+        private unsafe void PrintPointer(object o)
+        {
+            var ptr = Unsafe.AsPointer(ref o);
+            var intPtr = (IntPtr*)ptr;
+            var address = *intPtr;
+            PrintLine(address.ToInt32().ToString());
+        }
+
         public bool TryGetValue(TKey key, out TValue value)
         {
             PrintLine("TryGetValue");
             var ran = new RuntimeAssemblyName("something", new Version(1, 1), "en-GB", AssemblyNameFlags.None, null);
             var x = ran.GetHashCode();
+            PrintPointer(ran);
             PrintLine("TryGetValue called  RuntimeAssemblyName GetHashCode");
 
+            PrintPointer(key);
+            var ran2 = key as RuntimeAssemblyName;
+            if (ran2 != null)
+            {
+                PrintLine("TryGetValue key is RAN");
+                PrintLine(ran2.Name);
+            }
             int h = key.GetHashCode();
             PrintLine("TryGetValue key.GetHashCode called ");
 

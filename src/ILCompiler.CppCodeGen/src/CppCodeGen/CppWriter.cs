@@ -1934,6 +1934,11 @@ namespace ILCompiler.CppCodeGen
             sb.Append("void *");
             sb.Append(argNames[0]);
 
+            if (mangledName == "__GenericLookupFromDict__System_Private_CoreLib_System_Threading_Interlocked_CompareExchange_4_A__System___Canon_V__MethodDictionary_As_0_A__T_System___Canon___System_Private_CoreLib_System_Object_V_")
+            {
+
+            }
+
             if (node.Id == ReadyToRunHelperId.DelegateCtor)
             {
                 sb.Append(", ");

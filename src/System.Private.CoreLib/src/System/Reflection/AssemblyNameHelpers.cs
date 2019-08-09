@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace System.Reflection
 {
@@ -56,7 +57,8 @@ namespace System.Reflection
             byte[] publicKeyOrToken = name.PublicKeyOrToken;
             if (publicKeyOrToken != null)
                 publicKeyOrToken = ComputePublicKeyToken(publicKeyOrToken);
-
+            ManagedThreadId.PrintLine("CanonicalizePublicKeyToken");
+            ManagedThreadId.PrintLine(name.Name);
             return new RuntimeAssemblyName(name.Name, name.Version, name.CultureName, flags, publicKeyOrToken);
         }
 

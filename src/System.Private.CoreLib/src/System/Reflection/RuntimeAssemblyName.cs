@@ -112,14 +112,38 @@ namespace System.Reflection
             return Equals(other);
         }
 
+        private unsafe void PrintPointer()
+        {
+            var x = this;
+            var ptr = Unsafe.AsPointer(ref x);
+            var intPtr = (IntPtr*)ptr;
+            var address = *intPtr;
+            ManagedThreadId.PrintLine(address.ToInt32().ToString());
+        }
+
+        private unsafe void PrintPointer(object x)
+        {
+            var ptr = Unsafe.AsPointer(ref x);
+            var intPtr = (IntPtr*)ptr;
+            var address = *intPtr;
+            ManagedThreadId.PrintLine(address.ToInt32().ToString());
+        }
+
         public sealed override int GetHashCode()
         {
+            ManagedThreadId.PrintLine("GetHashCode got name");
+            PrintPointer();
             var name = this.Name;
-//            ManagedThreadId.PrintLine("got Name:");
-//            ManagedThreadId.PrintLine(name);
-//            var stringType = name.GetTypeHandle();
-//            ManagedThreadId.PrintLine(stringType.Value.ToString());
+            PrintPointer(name);
+            ManagedThreadId.PrintLine(name);
 
+            //            ManagedThreadId.PrintLine("got Name:");
+            //            ManagedThreadId.PrintLine(name);
+            //            var stringType = name.GetTypeHandle();
+            //            ManagedThreadId.PrintLine(stringType.Value.ToString());
+            PrintPointer();
+            PrintPointer(name);
+            ManagedThreadId.PrintLine(name);
             var hc = name.GetHashCode();
             ManagedThreadId.PrintLine("returned from gethashcode");
             return hc;

@@ -1558,9 +1558,8 @@ namespace Internal.IL
                 var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, type, out helper);
                 _dependencies.Add(node);
 
-                //TODO refactor call to helper
-
-                var typeHandle = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext()}, "getHelper");
+                //TODO refactor call to shadow stack & helper
+                var typeHandle = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
 
                 //todo refactor argument creation with else below
                 arguments = new StackEntry[]
@@ -1635,7 +1634,7 @@ namespace Internal.IL
             //
             //            }
             if (_method.ToString().Contains("LowLevelDictionary") &&
-                _method.ToString().Contains("GetBucket") &&
+                _method.ToString().Contains("TryGetValue") &&
                 callee.ToString().Contains("GetHashCode"))
             {
 
@@ -1719,6 +1718,8 @@ namespace Internal.IL
                             typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
                             LLVMValueRef helper;
                             var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeToAlloc, out helper);
+//                            int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
+
                             var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { GetGenericContext() }, "getHelper");
                             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
                             var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
@@ -2327,11 +2328,11 @@ namespace Internal.IL
                 {
                     if (canonMethod.RequiresInstMethodDescArg())
                     {
-                        var dictSymbol = LoadAddressOfSymbolNode(GetMethodGenericDictionaryNode(callee));
-                        hiddenParam = LLVM.BuildGEP(_builder, dictSymbol, new LLVMValueRef[]
-                        {
-                            BuildConstInt32(1)
-                        }, "dictGepToTypes");
+                        hiddenParam = LoadAddressOfSymbolNode(GetMethodGenericDictionaryNode(callee));
+//                        hiddenParam = LLVM.BuildGEP(_builder, dictSymbol, new LLVMValueRef[]
+//                        {
+//                            BuildConstInt32(1)
+//                        }, "dictGepToTypes");
 
                     }
                     else
@@ -2353,7 +2354,7 @@ namespace Internal.IL
             }
             if (hiddenParam.Pointer != IntPtr.Zero)
             {
-                llvmArgs.Add(hiddenParam);
+                llvmArgs.Add(CastIfNecessary(hiddenParam, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0)));
             }
 //            if (canonMethod != null && canonMethod.ToString().Contains("Interlocked")
 //                && canonMethod.ToString().Contains("CompareExchange")
@@ -3839,7 +3840,7 @@ namespace Internal.IL
             {
                 node = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArg, _method);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
-                    LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), new []
+                    LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), new []
                                                                                                   {
                                                                                                       LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), 
                                                                                                   }, false));
@@ -3849,7 +3850,7 @@ namespace Internal.IL
                 Debug.Assert(_method.RequiresInstMethodTableArg() || _method.AcquiresInstMethodTableFromThis());
                 node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArg, _method.OwningType);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
-                    LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), new[]
+                    LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), new[]
                                                                                                   {
                                                                                                       LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0),
                                                                                                   }, false));
@@ -4018,6 +4019,12 @@ namespace Internal.IL
             TypeDesc type = ResolveTypeToken(token);
             StackEntry eeTypeEntry;
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+//            if (this._method.ToString()
+//                .Contains(
+//                    "[S.P.CoreLib]System.Threading.Interlocked.CompareExchange<__Canon>(__Canon&,__Canon,__Canon)"))
+//            {
+//
+//            }
             if (type.IsRuntimeDeterminedSubtype)
             {
                 var runtimeDeterminedType = type;
@@ -4078,7 +4085,7 @@ namespace Internal.IL
             var sizeOfArray = _stack.Pop();
             StackEntry[] arguments;
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime", "EEType").MakePointerType();
-            if (runtimeDeterminedType.IsRuntimeDeterminedSubtype)
+            if (runtimeDeterminedArrayType.IsRuntimeDeterminedSubtype)
             {
                 LLVMValueRef helper;
                 //TODO refactor this across the class
@@ -4101,8 +4108,15 @@ namespace Internal.IL
 
             if (_method.AcquiresInstMethodTableFromThis())
             {
-                var ptr = LLVM.BuildGEP(_builder, s_shadowStackTop, new[] {BuildConstInt32(0)}, "shadowGep");
-                return CastIfNecessary(_builder, ptr, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "ShdwSPArg");
+                LLVMValueRef typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
+                    LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0), 0));
+                return LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, typedAddress, "loadThis"), "typeFromThis");
+//                LLVMValueRef typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
+//                    LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0));
+//                return LLVM.BuildLoad(_builder, typedAddress, "loadThis");
+// this doesn't get as far
+                //                return CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
+                //                    LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), "typeFromThis");
             }
             return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 /* hidden param after shadow stack */), LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "HiddenArg"); 
         }
