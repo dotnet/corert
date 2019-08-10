@@ -168,14 +168,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                // If the type is can be converted to some interesting canon type, and this is the non-constructed variant of an EEType
-                // we may need to trigger the fully constructed type to exist to make the behavior of the type consistent
-                // in reflection and generic template expansion scenarios
-                if (CanonFormTypeMayExist && ProjectNDependencyBehavior.EnableFullAnalysis)
-                {
-                    return true;
-                }
-
                 if (!EmitVirtualSlotsAndInterfaces)
                     return false;
 

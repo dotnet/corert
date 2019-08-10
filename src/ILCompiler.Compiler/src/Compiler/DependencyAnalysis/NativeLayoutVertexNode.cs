@@ -912,36 +912,16 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
-            ISymbolNode symbol;
-
-            if (context is UtcNodeFactory)
-            {
-                symbol = ((UtcNodeFactory)context).TypeGCStaticDescSymbol((MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific));
-                staticsBagKind = BagElementKind.GcStaticDesc;
-            }
-            else
-            {
-                symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(_type.GetClosestDefType()));
-                staticsBagKind = BagElementKind.GcStaticEEType;
-            }
+            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(_type.GetClosestDefType()));
+            staticsBagKind = BagElementKind.GcStaticEEType;
 
             return symbol;
         }
 
         private ISymbolNode GetThreadStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
-            ISymbolNode symbol;
-
-            if (context is UtcNodeFactory)
-            {
-                symbol = ((UtcNodeFactory)context).TypeThreadStaticGCDescNode((MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific));
-                staticsBagKind = BagElementKind.ThreadStaticDesc;
-            }
-            else
-            {
-                symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(_type.GetClosestDefType()));
-                staticsBagKind = BagElementKind.End; // GC static EETypes not yet implemented in type loader
-            }
+            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(_type.GetClosestDefType()));
+            staticsBagKind = BagElementKind.End; // GC static EETypes not yet implemented in type loader
 
             return symbol;
         }
