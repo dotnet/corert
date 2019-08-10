@@ -27,7 +27,7 @@ See the LICENSE file in the project root for more information.
 
   <!-- Set up the defaults for the compatibility mode -->
   <PropertyGroup Condition="'$(NativeCodeGen)' != 'readytorun'">
-    <_BuildingInCompatibleMode Condition="$(RootAllApplicationAssemblies) == '' and $(IlcGenerateCompleteTypeMetadata) == '' and $(IlcGenerateStackTraceData) == ''">true</_BuildingInCompatibleMode>
+    <_BuildingInCompatibleMode Condition="$(RootAllApplicationAssemblies) == '' and $(IlcGenerateCompleteTypeMetadata) == '' and $(IlcGenerateStackTraceData) == '' and $(IlcDisableReflection) == ''">true</_BuildingInCompatibleMode>
 
     <RootAllApplicationAssemblies Condition="$(RootAllApplicationAssemblies) == ''">true</RootAllApplicationAssemblies>
     <IlcGenerateCompleteTypeMetadata Condition="$(IlcGenerateCompleteTypeMetadata) == ''">true</IlcGenerateCompleteTypeMetadata>
