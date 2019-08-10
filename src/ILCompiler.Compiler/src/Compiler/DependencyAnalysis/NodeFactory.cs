@@ -288,12 +288,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             });
 
-            _runtimeDeterminedMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
-            {
-                return new RuntimeDeterminedMethodNode(method,
-                    MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
-            });
-
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
             {
                 // We don't need to track virtual method uses for types that have a vtable with a known layout.
@@ -363,11 +357,6 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(method.IsStaticConstructor);
                 Debug.Assert(TypeSystemContext.HasEagerStaticConstructor((MetadataType)method.OwningType));
                 return EagerCctorTable.NewNode(MethodEntrypoint(method));
-            });
-
-            _namedJumpStubNodes = new NodeCache<Tuple<string, ISymbolNode>, NamedJumpStubNode>((Tuple<string, ISymbolNode> id) =>
-            {
-                return new NamedJumpStubNode(id.Item1, id.Item2);
             });
 
             _delegateMarshalingDataNodes = new NodeCache<DefType, DelegateMarshallingDataNode>(type =>
@@ -811,12 +800,6 @@ namespace ILCompiler.DependencyAnalysis
             return _shadowConcreteMethods.GetOrAdd(new MethodKey(method, isUnboxingStub));
         }
 
-        private NodeCache<MethodDesc, IMethodNode> _runtimeDeterminedMethods;
-        public IMethodNode RuntimeDeterminedMethod(MethodDesc method)
-        {
-            return _runtimeDeterminedMethods.GetOrAdd(method);
-        }
-
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnGCStaticBase" },
             new string[] { "System.Runtime.CompilerServices", "ClassConstructorRunner", "CheckStaticClassConstructionReturnNonGCStaticBase" },
@@ -1000,13 +983,6 @@ namespace ILCompiler.DependencyAnalysis
             string symbolName = "__utf8str_" + NameMangler.GetMangledStringName(str);
 
             return ReadOnlyDataBlob(symbolName, stringBytes, 1);
-        }
-
-        private NodeCache<Tuple<string, ISymbolNode>, NamedJumpStubNode> _namedJumpStubNodes;
-
-        public ISymbolNode NamedJumpStub(string name, ISymbolNode target)
-        {
-            return _namedJumpStubNodes.GetOrAdd(new Tuple<string, ISymbolNode>(name, target));
         }
 
         private NodeCache<DefType, DelegateMarshallingDataNode> _delegateMarshalingDataNodes;

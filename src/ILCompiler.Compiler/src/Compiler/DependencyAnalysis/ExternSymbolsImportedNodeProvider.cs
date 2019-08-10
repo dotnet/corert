@@ -29,12 +29,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISortableSymbolNode ImportedThreadStaticOffsetNode(NodeFactory factory, MetadataType type)
         {
-            return new ExternSymbolNode(ThreadStaticsOffsetNode.GetMangledName(factory.NameMangler, type));
+            throw new NotImplementedException();
         }
 
         public override ISortableSymbolNode ImportedThreadStaticIndexNode(NodeFactory factory, MetadataType type)
         {
-            return factory.ExternSymbol(ThreadStaticsIndexNode.GetMangledName((factory.NameMangler as UTCNameMangler).GetImportedTlsIndexPrefix()));
+            throw new NotImplementedException();
         }
 
         public override ISortableSymbolNode ImportedTypeDictionaryNode(NodeFactory factory, TypeDesc type)
