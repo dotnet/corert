@@ -1481,8 +1481,8 @@ namespace Internal.IL
 
             var arguments = new StackEntry[]
             {
-                _stack.Pop(),
-                new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(type, true), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"))
+                new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(type, true), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr")),
+                _stack.Pop()
             };
 
             _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, type));

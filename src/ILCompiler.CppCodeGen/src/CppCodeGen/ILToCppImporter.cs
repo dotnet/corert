@@ -1020,21 +1020,22 @@ namespace Internal.IL
 
             Append(opcode == ILOpcode.isinst ? "__isinst" : "__castclass");
             Append("(");
-            Append(value);
-            Append(", ");
             if (runtimeDeterminedType.IsRuntimeDeterminedSubtype)
             {
                 Append("(MethodTable *)");
                 Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedType));
                 Append("(");
                 Append(GetGenericContext());
-                Append("))");
+                Append(")");
             }
             else
             {
                 Append(_writer.GetCppTypeName(runtimeDeterminedType));
-                Append("::__getMethodTable())");
+                Append("::__getMethodTable()");
             }
+            Append(", ");
+            Append(value);
+            Append(")");
             AppendSemicolon();
         }
 

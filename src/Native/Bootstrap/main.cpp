@@ -112,8 +112,8 @@ static char& __unbox_z = __stop___unbox;
 
 extern "C" Object * RhNewObject(MethodTable * pMT);
 extern "C" Object * RhNewArray(MethodTable * pMT, int32_t elements);
-extern "C" void * RhTypeCast_IsInstanceOf(void * pObject, MethodTable * pMT);
-extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
+extern "C" void * RhTypeCast_IsInstanceOf(MethodTable * pMT, void* pObject);
+extern "C" void * RhTypeCast_CheckCast(MethodTable * pMT, void* pObject);
 extern "C" void RhpStelemRef(void * pArray, int index, void * pObj);
 extern "C" void * RhpLdelemaRef(void * pArray, int index, MethodTable * pMT);
 extern "C" __NORETURN void RhpThrowEx(void * pEx);
@@ -129,14 +129,14 @@ extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT)
     return RhNewArray(pMT, (int32_t)elements); // TODO: type mismatch
 }
 
-extern "C" Object * __castclass(void * obj, MethodTable * pTargetMT)
+extern "C" Object * __castclass(MethodTable * pTargetMT, void* obj)
 {
-    return (Object *)RhTypeCast_CheckCast(obj, pTargetMT);
+    return (Object *)RhTypeCast_CheckCast(pTargetMT, obj);
 }
 
-extern "C" Object * __isinst(void * obj, MethodTable * pTargetMT)
+extern "C" Object * __isinst(MethodTable * pTargetMT, void* obj)
 {
-    return (Object *)RhTypeCast_IsInstanceOf(obj, pTargetMT);
+    return (Object *)RhTypeCast_IsInstanceOf(pTargetMT, obj);
 }
 
 extern "C" void __stelem_ref(void * pArray, unsigned idx, void * obj)
