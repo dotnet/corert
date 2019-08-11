@@ -291,17 +291,17 @@ namespace System.Runtime.InteropServices
 
         public static bool IsInstanceOf(object obj, RuntimeTypeHandle typeHandle)
         {
-            return (null != RuntimeImports.IsInstanceOf(obj, typeHandle.ToEETypePtr()));
+            return (null != RuntimeImports.IsInstanceOf(typeHandle.ToEETypePtr(), obj));
         }
 
         public static bool IsInstanceOfClass(object obj, RuntimeTypeHandle classTypeHandle)
         {
-            return (null != RuntimeImports.IsInstanceOfClass(obj, classTypeHandle.ToEETypePtr()));
+            return (null != RuntimeImports.IsInstanceOfClass(classTypeHandle.ToEETypePtr(), obj));
         }
 
         public static bool IsInstanceOfInterface(object obj, RuntimeTypeHandle interfaceTypeHandle)
         {
-            return (null != RuntimeImports.IsInstanceOfInterface(obj, interfaceTypeHandle.ToEETypePtr()));
+            return (null != RuntimeImports.IsInstanceOfInterface(interfaceTypeHandle.ToEETypePtr(), obj));
         }
 
         public static bool GuidEquals(ref Guid left, ref Guid right)

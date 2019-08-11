@@ -408,7 +408,7 @@ namespace System
                 for (int i = 0; i < length; i++)
                 {
                     object value = Unsafe.Add(ref refSourceArray, sourceIndex - i);
-                    if (mustCastCheckEachElement && value != null && RuntimeImports.IsInstanceOf(value, destinationElementEEType) == null)
+                    if (mustCastCheckEachElement && value != null && RuntimeImports.IsInstanceOf(destinationElementEEType, value) == null)
                         throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
                     Unsafe.Add(ref refDestinationArray, destinationIndex - i) = value;
                 }
@@ -418,7 +418,7 @@ namespace System
                 for (int i = 0; i < length; i++)
                 {
                     object value = Unsafe.Add(ref refSourceArray, sourceIndex + i);
-                    if (mustCastCheckEachElement && value != null && RuntimeImports.IsInstanceOf(value, destinationElementEEType) == null)
+                    if (mustCastCheckEachElement && value != null && RuntimeImports.IsInstanceOf(destinationElementEEType, value) == null)
                         throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
                     Unsafe.Add(ref refDestinationArray, destinationIndex + i) = value;
                 }

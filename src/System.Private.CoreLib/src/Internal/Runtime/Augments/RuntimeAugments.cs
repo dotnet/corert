@@ -535,7 +535,7 @@ namespace Internal.Runtime.Augments
 
         public static bool IsInstanceOfInterface(object obj, RuntimeTypeHandle interfaceTypeHandle)
         {
-            return (null != RuntimeImports.IsInstanceOfInterface(obj, interfaceTypeHandle.ToEETypePtr()));
+            return (null != RuntimeImports.IsInstanceOfInterface(interfaceTypeHandle.ToEETypePtr(), obj));
         }
 
         //

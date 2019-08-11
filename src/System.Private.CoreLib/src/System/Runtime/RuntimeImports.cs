@@ -339,15 +339,15 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOf")]
-        internal static extern object IsInstanceOf(object obj, EETypePtr pTargetType);
+        internal static extern object IsInstanceOf(EETypePtr pTargetType, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfClass")]
-        internal static extern object IsInstanceOfClass(object obj, EETypePtr pTargetType);
+        internal static extern object IsInstanceOfClass(EETypePtr pTargetType, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfInterface")]
-        internal static extern object IsInstanceOfInterface(object obj, EETypePtr pTargetType);
+        internal static extern object IsInstanceOfInterface(EETypePtr pTargetType, object obj);
 
         //
         // calls to runtime for allocation

@@ -232,28 +232,28 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:
-                    mangledName = "RhTypeCast_CheckCast2";
+                    mangledName = "RhTypeCast_CheckCast";
                     break;
                 case ReadyToRunHelper.CheckInstanceAny:
-                    mangledName = "RhTypeCast_IsInstanceOf2";
+                    mangledName = "RhTypeCast_IsInstanceOf";
                     break;
                 case ReadyToRunHelper.CheckCastInterface:
-                    mangledName = "RhTypeCast_CheckCastInterface2";
+                    mangledName = "RhTypeCast_CheckCastInterface";
                     break;
                 case ReadyToRunHelper.CheckInstanceInterface:
-                    mangledName = "RhTypeCast_IsInstanceOfInterface2";
+                    mangledName = "RhTypeCast_IsInstanceOfInterface";
                     break;
                 case ReadyToRunHelper.CheckCastClass:
-                    mangledName = "RhTypeCast_CheckCastClass2";
+                    mangledName = "RhTypeCast_CheckCastClass";
                     break;
                 case ReadyToRunHelper.CheckInstanceClass:
-                    mangledName = "RhTypeCast_IsInstanceOfClass2";
+                    mangledName = "RhTypeCast_IsInstanceOfClass";
                     break;
                 case ReadyToRunHelper.CheckCastArray:
-                    mangledName = "RhTypeCast_CheckCastArray2";
+                    mangledName = "RhTypeCast_CheckCastArray";
                     break;
                 case ReadyToRunHelper.CheckInstanceArray:
-                    mangledName = "RhTypeCast_IsInstanceOfArray2";
+                    mangledName = "RhTypeCast_IsInstanceOfArray";
                     break;
 
                 case ReadyToRunHelper.MonitorEnter:

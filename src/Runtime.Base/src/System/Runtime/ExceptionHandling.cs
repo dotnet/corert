@@ -900,7 +900,7 @@ namespace System.Runtime
             AssertNotRuntimeObject(pClauseType);
 #endif
 
-            return TypeCast.IsInstanceOfClass(exception, pClauseType) != null;
+            return TypeCast.IsInstanceOfClass(pClauseType, exception) != null;
         }
 
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart)
