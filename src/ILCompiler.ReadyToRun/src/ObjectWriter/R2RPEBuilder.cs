@@ -460,6 +460,7 @@ namespace ILCompiler.PEWriter
         {
             PEDirectoriesBuilder builder = new PEDirectoriesBuilder();
             builder.CorHeaderTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.CorHeaderTableDirectory);
+            builder.ResourceTable = RelocateDirectoryEntry(_peReader.PEHeaders.PEHeader.ResourceTableDirectory);
 
             _sectionBuilder.UpdateDirectories(builder);
 
