@@ -165,11 +165,6 @@ namespace ILCompiler.PEWriter
         private readonly int _textSectionIndex;
 
         /// <summary>
-        /// Zero-based index of the CPAOT-generated read-only data section
-        /// </summary>
-        private readonly int _rdataSectionIndex;
-
-        /// <summary>
         /// Zero-based index of the CPAOT-generated read-write data section
         /// </summary>
         private readonly int _dataSectionIndex;
@@ -212,7 +207,6 @@ namespace ILCompiler.PEWriter
             _sectionBuilder.SetSectionStartNodeLookup(sectionStartNodeLookup);
 
             _textSectionIndex = _sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
-            _rdataSectionIndex = _sectionBuilder.AddSection(".rdata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead, 512);
             _dataSectionIndex = _sectionBuilder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
 
             _customSections = new HashSet<string>();
@@ -280,16 +274,14 @@ namespace ILCompiler.PEWriter
             int targetSectionIndex;
             switch (section.Type)
             {
+                case SectionType.ReadOnly:
+                    // We put ReadOnly data into the text section to limit the number of sections.
                 case SectionType.Executable:
                     targetSectionIndex = _textSectionIndex;
                     break;
 
                 case SectionType.Writeable:
                     targetSectionIndex = _dataSectionIndex;
-                    break;
-
-                case SectionType.ReadOnly:
-                    targetSectionIndex = _rdataSectionIndex;
                     break;
 
                 default:
