@@ -51,8 +51,41 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, _method.Token.Module, _signatureContext);
-            dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
+
+            // Optimize some of the fixups into a more compact form
+            ReadyToRunFixupKind fixupKind = _fixupKind;
+            bool optimized = false;
+            if (!_isUnboxingStub && !_isInstantiatingStub && _method.ConstrainedType == null &&
+                fixupKind == ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry)
+            {
+                if (!_method.Method.OwningType.HasInstantiation)
+                {
+                    if (_method.Token.TokenType == CorTokenType.mdtMethodDef)
+                    {
+                        fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_DefToken;
+                    }
+                    else if (_method.Token.TokenType == CorTokenType.mdtMemberRef)
+                    {
+                        fixupKind = ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_RefToken;
+                    }
+                    optimized = true;
+                }
+            }
+
+            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, fixupKind, _method.Token.Module, _signatureContext);
+
+            if (optimized && _method.Token.TokenType == CorTokenType.mdtMethodDef)
+            {
+                dataBuilder.EmitMethodDefToken(_method.Token);
+            }
+            else if (optimized && _method.Token.TokenType == CorTokenType.mdtMemberRef)
+            {
+                dataBuilder.EmitMethodRefToken(_method.Token);
+            }
+            else
+            {
+                dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
+            }
 
             return dataBuilder.ToObjectData();
         }
