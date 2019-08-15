@@ -147,6 +147,12 @@ namespace System.Reflection.Runtime.General
             foreach (byte b in publicKeyOrToken)
                 keyOrTokenArrayBuilder.Add(b);
 
+            var handleName = name.GetString(reader);
+            AssemblyBinderImplementation.PrintLine("handleName GetHashCode\n");
+            var x = handleName.GetHashCode();
+            AssemblyBinderImplementation.PrintLine("handleName GetHashCode ok\n");
+
+
             return new RuntimeAssemblyName(
                 name.GetString(reader),
                 new Version(majorVersion, minorVersion, buildNumber, revisionNumber),

@@ -77,6 +77,13 @@ namespace ILCompiler.DependencyAnalysis
             // an EETypeNode from the factory with the sole purpose of making sure the validation has run
             // and that the result of the positive validation is "cached" (by the presence of an EETypeNode).
             CheckCanGenerateEEType(factory, type);
+            if(type.IsArray &&                 type.ToString()
+                                                   .Contains(
+                                                       "PerModuleMethodNameResolver")
+            )
+            {
+
+            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

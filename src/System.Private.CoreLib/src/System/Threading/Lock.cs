@@ -117,7 +117,7 @@ namespace System.Threading
 
             }
             var i = (int)_state;
-            ManagedThreadId.PrintUintRev(i);
+            ManagedThreadId.PrintUint(i);
             if (Interlocked.CompareExchange(ref _state, Locked, Uncontended) == Uncontended)
             {
                 ManagedThreadId.PrintLine("TryAcquire quick success");

@@ -149,7 +149,18 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
 #endif // !BIT64
     {
 	    printf("basesize\n");
-	    printf("%d", pArrayEEType->get_BaseSize());
+	    printf("%d\n", pArrayEEType->get_BaseSize());
+	    if(pArrayEEType->get_BaseSize() == 0)
+	    {
+
+        ASSERT_UNCONDITIONALLY("basesize is 0");  // TODO: Throw OOM
+
+	    }
+	    if(pArrayEEType->get_BaseSize() > 10000)
+	    {
+	    printf("bogus basesize\n");
+        ASSERT_UNCONDITIONALLY("BB");  // TODO: Throw OOM
+	    }
         size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
         size = ALIGN_UP(size, sizeof(UIntNative));
     }

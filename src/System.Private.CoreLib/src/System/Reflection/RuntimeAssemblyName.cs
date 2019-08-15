@@ -36,6 +36,9 @@ namespace System.Reflection
 
             // Optional public key (if Flags.PublicKey == true) or public key token.
             this.PublicKeyOrToken = publicKeyOrToken;
+            ManagedThreadId.PrintLine("RAN ctor attempt ");
+            var x = GetHashCode();
+            ManagedThreadId.PrintLine("RAN ctor attempt ok");
         }
 
         // Simple name.

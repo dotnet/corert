@@ -35,14 +35,22 @@ namespace ILCompiler.DependencyAnalysis
 
             if (symbol is ObjectNode)
             {
+
+
                 ISymbolDefinitionNode symbolDefNode = (ISymbolDefinitionNode)symbol;
                 var symbolName = _nodeFactory.GetSymbolAlternateName(symbolDefNode) ?? symbol.GetMangledName(nameMangler);
+
                 if (symbolDefNode.Offset == 0)
                 {
                     return symbolName;
                 }
                 else
                 {
+                    if (symbolName == "__EEType___Array<S_P_StackTraceMetadata_Internal_StackTraceMetadata_StackTraceMetadata_PerModuleMethodNameResolver>")
+                    {
+                        var x = symbol.ToString();
+
+                    }
                     return symbolName + "___REALBASE";
                 }
             }
@@ -72,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private static Dictionary<string, LLVMValueRef> s_symbolValues = new Dictionary<string, LLVMValueRef>();
+        public static Dictionary<string, LLVMValueRef> s_symbolValues = new Dictionary<string, LLVMValueRef>();
         private static Dictionary<FieldDesc, LLVMValueRef> s_staticFieldMapping = new Dictionary<FieldDesc, LLVMValueRef>();
 
         public static LLVMValueRef GetSymbolValuePointer(LLVMModuleRef module, ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
@@ -83,14 +91,26 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             string symbolAddressGlobalName = symbol.GetMangledName(nameMangler) + "___SYMBOL";
+            return GetOrAddGlobalSymbol(module, symbolAddressGlobalName);
+        }
+
+        public static LLVMValueRef GetOrAddGlobalSymbol(LLVMModuleRef module, string symbolAddressGlobalName)
+        {
             LLVMValueRef symbolAddress;
             if (s_symbolValues.TryGetValue(symbolAddressGlobalName, out symbolAddress))
             {
                 return symbolAddress;
             }
+
+            if (symbolAddressGlobalName ==
+                "__GenericDict_S_P_CoreLib_Internal_TypeSystem_LockFreeReaderHashtable_2<IntPtr__S_P_StackTraceMetadata_Internal_StackTraceMetadata_StackTraceMetadata_PerModuleMethodNameResolver>"
+            )
+            {
+
+            }
             var intPtrType = LLVM.PointerType(LLVM.Int32Type(), 0);
             var myGlobal = LLVM.AddGlobalInAddressSpace(module, intPtrType, symbolAddressGlobalName, 0);
-            LLVM.SetGlobalConstant(myGlobal, (LLVMBool)true);
+            LLVM.SetGlobalConstant(myGlobal, (LLVMBool) true);
             LLVM.SetLinkage(myGlobal, LLVMLinkage.LLVMInternalLinkage);
             s_symbolValues.Add(symbolAddressGlobalName, myGlobal);
             return myGlobal;
@@ -425,7 +445,21 @@ namespace ILCompiler.DependencyAnalysis
             string realName = GetBaseSymbolName(symNode, _nodeFactory.NameMangler, true);
 
             var intPtrType = LLVM.PointerType(LLVM.Int32Type(), 0);
+
             var arrayglobal = LLVM.AddGlobalInAddressSpace(Module, LLVM.ArrayType(intPtrType, (uint)countOfPointerSizedElements), realName, 0);
+            if (realName ==
+                "__EEType___Array<S_P_StackTraceMetadata_Internal_StackTraceMetadata_StackTraceMetadata_PerModuleMethodNameResolver>___REALBASE"
+            )
+            {
+                PerModuleMethodNameResolver = arrayglobal;
+            }
+            
+            if (realName ==
+                "__GenericDict_S_P_CoreLib_Internal_TypeSystem_LockFreeReaderHashtable_2<IntPtr__S_P_StackTraceMetadata_Internal_StackTraceMetadata_StackTraceMetadata_PerModuleMethodNameResolver>"
+            )
+            {
+                GenericDict = arrayglobal;
+            }
             LLVM.SetLinkage(arrayglobal, LLVMLinkage.LLVMExternalLinkage);
 
             _dataToFill.Add(new ObjectNodeDataEmission(arrayglobal, _currentObjectData.ToArray(), _currentObjectSymbolRefs));
@@ -657,6 +691,8 @@ namespace ILCompiler.DependencyAnalysis
 
         //System.IO.FileStream _file;
         string _objectFilePath;
+        static LLVMValueRef PerModuleMethodNameResolver;
+        static LLVMValueRef GenericDict;
 
         public WebAssemblyObjectWriter(string objectFilePath, NodeFactory factory, WebAssemblyCodegenCompilation compilation)
         {
@@ -946,6 +982,7 @@ namespace ILCompiler.DependencyAnalysis
 
             var args = new List<LLVMTypeRef>();
             args.Add(LLVM.PointerType(LLVM.Int8Type(), 0));
+            args.Add(LLVM.PointerType(LLVM.Int8Type(), 0));
             if (node.Id == ReadyToRunHelperId.DelegateCtor)
             {
                 DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
@@ -973,11 +1010,7 @@ namespace ILCompiler.DependencyAnalysis
 
             var helperSignature = LLVM.FunctionType(retType, args.ToArray(), false);
             var mangledName = node.GetMangledName(factory.NameMangler); //TODO: inline
-            if (mangledName.Contains(
-                "GenericLookupFromDict_S_P_CoreLib_System_Threading_Interlocked__CompareExchange_4"))
-            {
 
-            }
             LLVMValueRef helperFunc = LLVM.GetNamedFunction(Module, mangledName);
 
             if (helperFunc.Pointer == IntPtr.Zero)
@@ -992,6 +1025,7 @@ namespace ILCompiler.DependencyAnalysis
             //            List<string> argNames = new List<string>(new string[] { "arg" });
             //            string retVarName = "ret";
             //
+            var print = false;
 
             LLVMValueRef ctx;
             string gepName;
@@ -1003,19 +1037,45 @@ namespace ILCompiler.DependencyAnalysis
                 int pointerSize = factory.Target.PointerSize;
                 // Load the dictionary pointer from the VTable
                 int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
-                var ptrPtr = LLVM.BuildBitCast(builder, LLVM.GetParam(helperFunc, 0), LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), 0), "ptrPtr");
-                var slotGep = LLVM.BuildGEP(builder, ptrPtr, new[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)slotOffset, LLVMMisc.False)}, "slotGep");
-                ctx = LLVM.BuildLoad(builder, slotGep, "ctx");
+                var ptr8 = LLVM.BuildPointerCast(builder, LLVM.GetParam(helperFunc, 1),
+                    LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "ptr8");
+                var slotGep = LLVM.BuildGEP(builder, ptr8, new[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)slotOffset, LLVMMisc.False)}, "slotGep");
+                var slotGep32 = LLVM.BuildPointerCast(builder, slotGep,
+                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "slotGep32");
+                ctx = LLVM.BuildLoad(builder, slotGep32, "dictGep");
+                ctx = LLVM.BuildIntToPtr(builder, ctx, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "castCtx");
                 gepName = "typeNodeGep";
+
+                if (mangledName.Contains(
+                    "__GenericLookupFromType_S_P_CoreLib_Internal_TypeSystem_LockFreeReaderHashtable_2<IntPtr__System___Canon>_TypeHandle___Array<TValue_System___Canon>"))
+                {
+                    PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 10, false), LLVM.GetParam(helperFunc, 0));
+                    PrintIntPtr(builder, ptr8, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
+                        LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // should be the generic context, i.e. the *methodtable from GetGenericContext
+                    PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 11, false), LLVM.GetParam(helperFunc, 0));
+                    PrintIntPtr(builder, ctx, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0), 
+                        LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // should be the generic dict symbol
+
+                    PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 12, false), LLVM.GetParam(helperFunc, 0));
+                    PrintIntPtr(builder, GenericDict, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
+                        LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // this is the saved generic dict symbol
+                    var gdCast = LLVM.BuildBitCast(builder, GenericDict,
+                        LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "gdcast");
+                    var gdLoad = LLVM.BuildLoad(builder, gdCast, "gdLoad");
+                    PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 13, false), LLVM.GetParam(helperFunc, 0));
+                    PrintInt32(builder, gdLoad, LLVM.GetParam(helperFunc, 0)); // this is the saved generic dict symbol
+//                    ctx = GenericDict; // this seems to fix it, so guess the second deref is good
+                    print = true;
+                }
             }
             else
             {
-                ctx = LLVM.GetParam(helperFunc, 0);
+                ctx = LLVM.GetParam(helperFunc, 1);
                 ctx = LLVM.BuildPointerCast(builder, ctx, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "castCtx");
                 gepName = "paramGep";
             }
 
-            LLVMValueRef resVar = OutputCodeForDictionaryLookup(builder, factory, node, node.LookupSignature, ctx, gepName);
+            LLVMValueRef resVar = OutputCodeForDictionaryLookup(builder, factory, node, node.LookupSignature, ctx, gepName, helperFunc, print);
             
             switch (node.Id)
             {
@@ -1056,7 +1116,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
 
-                            resVar = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "lazyGep");
+                            resVar = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "lazyGep", helperFunc);
 
                             //                            importer.OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase);
                             importer.OutputCodeForTriggerCctor(target, resVar);
@@ -1072,7 +1132,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
 
-                            resVar = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "tsGep");
+                            resVar = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "tsGep", helperFunc);
             
                             importer.OutputCodeForTriggerCctor(target, resVar);
                         }
@@ -1168,9 +1228,74 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, LLVMTypeRef functionType)
+        {
+            LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
+
+            if (llvmFunction.Pointer == IntPtr.Zero)
+            {
+                return LLVM.AddFunction(Module, mangledName, functionType);
+            }
+            return llvmFunction;
+        }
+
+        void PrintIntPtr(LLVMBuilderRef _builder, LLVMValueRef ptr, LLVMValueRef shadowStack)
+        {
+            var asInt = LLVM.BuildPointerCast(_builder, ptr, LLVMTypeRef.Int32Type(), "asint");
+
+            LLVM.BuildCall(_builder,
+                GetOrCreateLLVMFunction("S_P_CoreLib_System_Threading_ManagedThreadId__PrintUint",
+                    LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
+                        {
+                            LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+                            LLVMTypeRef.Int32Type()
+                        },
+                        false)),
+                new LLVMValueRef[]
+                {
+                    ILImporter.CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
+                    asInt
+                }, string.Empty);
+
+//            var loaded = LLVM.BuildIntToPtr(_builder, asInt, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "inttoptr");
+//            var loadedasInt = LLVM.BuildPointerCast(_builder,  loaded, LLVMTypeRef.Int32Type(), "loadedasint");
+//            LLVM.BuildCall(_builder,
+//                GetOrCreateLLVMFunction("S_P_CoreLib_System_Threading_ManagedThreadId__PrintUint",
+//                    LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
+//                        {
+//                            LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+//                            LLVMTypeRef.Int32Type()
+//                        },
+//                        false)),
+//                new LLVMValueRef[]
+//                {
+//                    ILImporter.CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
+//                    loadedasInt
+//                }, string.Empty);
+        }
+
+        void PrintInt32(LLVMBuilderRef _builder, LLVMValueRef ptr, LLVMValueRef shadowStack)
+        {
+            LLVM.BuildCall(_builder,
+                GetOrCreateLLVMFunction("S_P_CoreLib_System_Threading_ManagedThreadId__PrintUint",
+                    LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
+                        {
+                            LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+                            LLVMTypeRef.Int32Type()
+                        },
+                        false)),
+                new LLVMValueRef[]
+                {
+                    ILImporter.CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
+                    ptr
+                }, string.Empty);
+        }
+
 
         private LLVMValueRef OutputCodeForDictionaryLookup(LLVMBuilderRef builder, NodeFactory factory,
-            ReadyToRunGenericHelperNode node, GenericLookupResult lookup, LLVMValueRef ctx, string gepName /* remove this as its for debugging */)
+            ReadyToRunGenericHelperNode node, GenericLookupResult lookup, LLVMValueRef ctx, string gepName,
+            LLVMValueRef helperFunc, bool print = false
+/* remove this as its for debugging */)
         {
             // Find the generic dictionary slot
             int dictionarySlot = factory.GenericDictionaryLayout(node.DictionaryOwner).GetSlotForEntry(lookup);
@@ -1178,10 +1303,27 @@ namespace ILCompiler.DependencyAnalysis
             int offset = dictionarySlot * factory.Target.PointerSize;
 
             // Load the generic dictionary cell
-            LLVMValueRef retGep = LLVM.BuildGEP(builder, ctx, new[] {LLVM.ConstInt(LLVM.Int8Type(), (ulong)offset, LLVMMisc.False)}, "retGep");
+            LLVMValueRef retGep = LLVM.BuildGEP(builder, ctx, new[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)offset, LLVMMisc.False)}, "retGep");
             LLVMValueRef castGep = LLVM.BuildBitCast(builder, retGep, LLVMTypeRef.PointerType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), 0), "ptrPtr");
             LLVMValueRef retRef = LLVM.BuildLoad(builder, castGep, gepName);
 
+            if (print)
+            {
+                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 14, false), LLVM.GetParam(helperFunc, 0));
+                PrintIntPtr(builder, retRef, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
+                    LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
+
+                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 15, false), LLVM.GetParam(helperFunc, 0));
+                LLVMValueRef addressOfAddress = PerModuleMethodNameResolver;
+                //return addressOfAddress;
+//                var sym = LLVM.BuildLoad(builder, addressOfAddress,
+//                    "LoadAddressOfSymbolNode");
+
+                PrintIntPtr(builder, addressOfAddress,
+                    ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
+                    LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
+
+            }
             switch (lookup.LookupResultReferenceType(factory))
             {
                 case GenericLookupResultReferenceType.Indirect:

@@ -28,6 +28,10 @@ namespace Internal.Reflection.Execution
     {
         private AssemblyBinderImplementation()
         {
+            PrintLine("ABI ctor ll type");
+            new LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup>().PrintTypeHandle();
+            PrintLine("ABI ctor ll type2");
+            new LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup>().PrintTypeHandle();
             _scopeGroups = new KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[0];
             ModuleList.AddModuleRegistrationCallback(RegisterModule);
         }
@@ -246,6 +250,9 @@ namespace Internal.Reflection.Execution
         /// <param name="moduleInfo">Module to register</param>
         private void RegisterModule(ModuleInfo moduleInfo)
         {
+            PrintLine("ABI RegisterModule ll type");
+            new LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup>().PrintTypeHandle();
+
             NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
 
             if (nativeFormatModuleInfo == null)

@@ -17,6 +17,7 @@ using Internal.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
+using Internal.Reflection.Execution;
 using Internal.TypeSystem;
 using Internal.TypeSystem.NativeFormat;
 
@@ -139,6 +140,7 @@ namespace Internal.Runtime.TypeLoader
             Instance = new TypeLoaderEnvironment();
             RuntimeAugments.InitializeLookups(new Callbacks());
             NoStaticsData = (IntPtr)1;
+            AssemblyBinderImplementation.PrintLine("TL Init End");
         }
 
         public TypeLoaderEnvironment()

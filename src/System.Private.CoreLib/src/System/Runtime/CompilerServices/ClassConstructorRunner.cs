@@ -63,7 +63,7 @@ namespace System.Runtime.CompilerServices
             IntPtr pfnCctor = pContext->cctorMethodAddress;
             NoisyLog("EnsureClassConstructorRun, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
             ManagedThreadId.PrintLine("EnsureClassConstructorRun");
-            ManagedThreadId.PrintUintRev(pfnCctor.ToInt32());
+            ManagedThreadId.PrintUint(pfnCctor.ToInt32());
             // If we were called from MRT, this check is redundant but harmless. This is in case someone within classlib
             // (cough, Reflection) needs to call this explicitly.
             if (pContext->initialized == 1)
@@ -564,7 +564,7 @@ s_cctorArraysCount = 0;
             s_cctorGlobalLock = new Lock();
             s_cctorArraysCount = 0;
             s_count = 0;
-            ManagedThreadId.PrintLine("Initialize ccr");
+//            ManagedThreadId.PrintLine("Initialize ccr");
         }
 
         [Conditional("ENABLE_NOISY_CCTOR_LOG")]

@@ -127,6 +127,8 @@ namespace System.Collections.Generic
                 PrintLine("TryGetValue key is RAN");
                 PrintLine(ran2.Name);
             }
+            x = ran.GetHashCode();
+            PrintLine("TryGetValue ran.GetHashCode called 2 ");
             int h = key.GetHashCode();
             PrintLine("TryGetValue key.GetHashCode called ");
 
@@ -158,6 +160,13 @@ namespace System.Collections.Generic
             _version++;
             _buckets = new Entry[capacity];
             _numEntries = 0;
+        }
+        
+        public void PrintTypeHandle()
+        {
+            var t = this.GetTypeHandle().Value;
+            PrintLine(t.ToInt32().ToString());
+            PrintLine("lld type ptr ^^^:");
         }
 
         public bool Remove(TKey key)

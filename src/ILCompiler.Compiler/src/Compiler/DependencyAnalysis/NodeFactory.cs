@@ -453,6 +453,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected virtual IEETypeNode CreateNecessaryTypeNode(TypeDesc type)
         {
+
             Debug.Assert(!_compilationModuleGroup.ShouldReferenceThroughImportTable(type));
             if (_compilationModuleGroup.ContainsType(type))
             {
@@ -479,6 +480,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        public static IEETypeNode PerModuleArrayNode { get; set; }
         protected virtual IEETypeNode CreateConstructedTypeNode(TypeDesc type)
         {
             // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
@@ -493,7 +495,12 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    return new ConstructedEETypeNode(this, type);
+                    var x = new ConstructedEETypeNode(this, type);
+                    if (type.IsArray && type.ToString().Contains("PerModuleMethodNameResolver"))
+                    {
+                        PerModuleArrayNode = x;
+                    }
+                    return x;
                 }
             }
             else
@@ -517,6 +524,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
         {
+
             if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
             {
                 return ImportedEETypeSymbol(type);
@@ -550,6 +558,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode MaximallyConstructableType(TypeDesc type)
         {
+
             if (ConstructedEETypeNode.CreationAllowed(type))
                 return ConstructedTypeSymbol(type);
             else
@@ -558,6 +567,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public IEETypeNode ConstructedClonedTypeSymbol(TypeDesc type)
         {
+            if (type.ToString()
+                    .Contains(
+                        "Array")
+                && type.ToString().Contains(
+                    "PerModuleMethodNameResolver")
+            )
+            {
+
+            }
             Debug.Assert(!TypeCannotHaveEEType(type));
             return _clonedTypeSymbols.GetOrAdd(type);
         }
