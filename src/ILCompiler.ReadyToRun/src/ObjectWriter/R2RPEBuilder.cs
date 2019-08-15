@@ -880,7 +880,7 @@ namespace ILCompiler.PEWriter
                 sectionAlignment = fileAlignment;
             }
 
-            DllCharacteristics dllCharacteristics = 0;
+            DllCharacteristics dllCharacteristics = DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible;
 
             if (!is64BitTarget)
             {
@@ -889,9 +889,7 @@ namespace ILCompiler.PEWriter
 
             // Copy over selected DLL characteristics bits from IL image
             dllCharacteristics |= peHeaders.PEHeader.DllCharacteristics &
-                (DllCharacteristics.NxCompatible | DllCharacteristics.TerminalServerAware | DllCharacteristics.AppContainer);
-
-            dllCharacteristics |= DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible;
+                (DllCharacteristics.TerminalServerAware | DllCharacteristics.AppContainer);
 
             if (is64BitTarget)
             {
