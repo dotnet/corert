@@ -872,6 +872,14 @@ namespace ILCompiler.PEWriter
                 fileAlignment = 0x1000;
             }
 
+            int sectionAlignment = 0x1000;
+            if (!target.IsWindows && is64BitTarget)
+            {
+                // On Linux, we must match the bottom 12 bits of section RVA's to their file offsets. For this reason
+                // we need the same alignment for both.
+                sectionAlignment = fileAlignment;
+            }
+
             DllCharacteristics dllCharacteristics = 0;
 
             if (!is64BitTarget)
@@ -879,17 +887,11 @@ namespace ILCompiler.PEWriter
                 dllCharacteristics |= DllCharacteristics.NoSeh;
             }
 
-            if (target.Architecture == TargetArchitecture.ARM)
-            {
-                // Images without NX compat bit set fail to load on ARM
-                dllCharacteristics = DllCharacteristics.NxCompatible;
-            }
-
             // Copy over selected DLL characteristics bits from IL image
             dllCharacteristics |= peHeaders.PEHeader.DllCharacteristics &
                 (DllCharacteristics.NxCompatible | DllCharacteristics.TerminalServerAware | DllCharacteristics.AppContainer);
 
-            dllCharacteristics |= DllCharacteristics.DynamicBase;
+            dllCharacteristics |= DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible;
 
             if (is64BitTarget)
             {
@@ -898,9 +900,7 @@ namespace ILCompiler.PEWriter
 
             return new PEHeaderBuilder(
                 machine: target.MachineFromTarget(),
-                // On Linux, we must match the bottom 12 bits of section RVA's to their file offsets. For this reason
-                // we need the same alignment for both.
-                sectionAlignment: (target.IsWindows || !is64BitTarget ? 0x1000 : fileAlignment),
+                sectionAlignment: sectionAlignment,
                 fileAlignment: fileAlignment,
                 imageBase: peHeaders.PEHeader.ImageBase,
                 majorLinkerVersion: 11,
