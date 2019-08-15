@@ -858,28 +858,58 @@ namespace ILCompiler.PEWriter
                 imageCharacteristics |= Characteristics.LargeAddressAware;
             }
 
-            return new PEHeaderBuilder(
-                machine: target.MachineFromTarget(),
+            int fileAlignment = 0x200;
+            if (!target.IsWindows && !is64BitTarget)
+            {
+                // To minimize wasted VA space on 32 bit systems align file to page bounaries (presumed to be 4K).
+                fileAlignment = 0x1000;
+            }
+
+            int sectionAlignment = 0x1000;
+            if (!target.IsWindows && is64BitTarget)
+            {
                 // On Linux, we must match the bottom 12 bits of section RVA's to their file offsets. For this reason
                 // we need the same alignment for both.
-                sectionAlignment: (target.IsWindows ? peHeaders.PEHeader.SectionAlignment : peHeaders.PEHeader.FileAlignment),
-                fileAlignment: peHeaders.PEHeader.FileAlignment,
+                sectionAlignment = fileAlignment;
+            }
+
+            DllCharacteristics dllCharacteristics = DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible;
+
+            if (!is64BitTarget)
+            {
+                dllCharacteristics |= DllCharacteristics.NoSeh;
+            }
+
+            // Copy over selected DLL characteristics bits from IL image
+            dllCharacteristics |= peHeaders.PEHeader.DllCharacteristics &
+                (DllCharacteristics.TerminalServerAware | DllCharacteristics.AppContainer);
+
+            if (is64BitTarget)
+            {
+                dllCharacteristics |= DllCharacteristics.HighEntropyVirtualAddressSpace;
+            }
+
+            return new PEHeaderBuilder(
+                machine: target.MachineFromTarget(),
+                sectionAlignment: sectionAlignment,
+                fileAlignment: fileAlignment,
                 imageBase: peHeaders.PEHeader.ImageBase,
-                majorLinkerVersion: peHeaders.PEHeader.MajorLinkerVersion,
-                minorLinkerVersion: peHeaders.PEHeader.MinorLinkerVersion,
-                majorOperatingSystemVersion: peHeaders.PEHeader.MajorOperatingSystemVersion,
-                minorOperatingSystemVersion: peHeaders.PEHeader.MinorOperatingSystemVersion,
+                majorLinkerVersion: 11,
+                minorLinkerVersion: 0,
+                majorOperatingSystemVersion: 5,
+                // Win2k = 5.0 for 32-bit images, Win2003 = 5.2 for 64-bit images
+                minorOperatingSystemVersion: is64BitTarget ? (ushort)2 : (ushort)0,
                 majorImageVersion: peHeaders.PEHeader.MajorImageVersion,
                 minorImageVersion: peHeaders.PEHeader.MinorImageVersion,
                 majorSubsystemVersion: peHeaders.PEHeader.MajorSubsystemVersion,
                 minorSubsystemVersion: peHeaders.PEHeader.MinorSubsystemVersion,
                 subsystem: peHeaders.PEHeader.Subsystem,
-                dllCharacteristics: peHeaders.PEHeader.DllCharacteristics,
+                dllCharacteristics: dllCharacteristics,
                 imageCharacteristics: imageCharacteristics,
                 sizeOfStackReserve: peHeaders.PEHeader.SizeOfStackReserve,
                 sizeOfStackCommit: peHeaders.PEHeader.SizeOfStackCommit,
-                sizeOfHeapReserve: peHeaders.PEHeader.SizeOfHeapReserve,
-                sizeOfHeapCommit: peHeaders.PEHeader.SizeOfHeapCommit);
+                sizeOfHeapReserve: 0,
+                sizeOfHeapCommit: 0);
         }
     }
 }
