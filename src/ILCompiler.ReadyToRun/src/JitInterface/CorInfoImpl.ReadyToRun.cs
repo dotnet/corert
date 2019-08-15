@@ -1010,7 +1010,7 @@ namespace Internal.JitInterface
                 // Insert explicit null checks for cross-version bubble non-interface calls.
                 // It is required to handle null checks properly for non-virtual <-> virtual change between versions
                 pResult->nullInstanceCheck = callVirtCrossingVersionBubble && !targetMethod.OwningType.IsInterface;
-                pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;
+                pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
 
                 // We can't make stub calls when we need exact information
                 // for interface calls from shared code.
@@ -1257,7 +1257,7 @@ namespace Internal.JitInterface
                         else if (entryKind == DictionaryEntryKind.MethodEntrySlot || entryKind == DictionaryEntryKind.ConstrainedMethodEntrySlot)
                             pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
                         else
-                            pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualEntry;
+                            pResultLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.VirtualDispatchCell;
 
                         pResultLookup.lookupKind.runtimeLookupArgs = pConstrainedResolvedToken;
                         break;
