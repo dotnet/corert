@@ -80,6 +80,7 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\StructMarshallingThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\TypeGetTypeMethodThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\UnsafeIntrinsics.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\VolatileIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\Marshaller.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalHelpers.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalUtils.cs" />

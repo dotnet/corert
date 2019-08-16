@@ -138,6 +138,11 @@ namespace Internal.IL
                 return UnsafeIntrinsics.EmitIL(method);
             }
 
+            if (mdType.Name == "Volatile" && mdType.Namespace == "System.Threading")
+            {
+                return VolatileIntrinsics.EmitIL(method);
+            }
+
             return null;
         }
 
