@@ -1115,11 +1115,8 @@ namespace ILCompiler.DependencyAnalysis
                         if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
-
-                            resVar = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "lazyGep", helperFunc);
-
-                            //                            importer.OutputCodeForTriggerCctor(sb, factory, target, nonGcStaticsBase);
-                            importer.OutputCodeForTriggerCctor(target, resVar);
+                            var nonGcStaticsBase = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "lazyGep", helperFunc);
+                            importer.OutputCodeForTriggerCctor(target, nonGcStaticsBase);
                         }
                     }
                     break;
@@ -1131,10 +1128,8 @@ namespace ILCompiler.DependencyAnalysis
                         if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
-
-                            resVar = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "tsGep", helperFunc);
-            
-                            importer.OutputCodeForTriggerCctor(target, resVar);
+                            var threadStaticBase = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "tsGep", helperFunc);
+                            importer.OutputCodeForTriggerCctor(target, threadStaticBase);
                         }
                     }
                     break;

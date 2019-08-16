@@ -1581,7 +1581,7 @@ namespace Internal.IL
                 arguments = new StackEntry[]
                             {
                                 _stack.Pop(),
-                                new LoadExpressionEntry(StackValueKind.ValueType, "eeType", typeHandle,
+                                new ExpressionEntry(StackValueKind.ValueType, "eeType", typeHandle,
                                     _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"))
                             };
             }
@@ -1649,15 +1649,17 @@ namespace Internal.IL
             //            {
             //
             //            }
-            if (_method.ToString().Contains("LowLevelDictionary") &&
-                _method.ToString().Contains("TryGetValue") &&
-                callee.ToString().Contains("GetHashCode"))
+            if (_method.ToString().Contains("ConcurrentUnifierW")
+                &&
+//                _method.ToString().Contains("IntPtr") &&
+                _method.ToString().Contains("ctor")
+                )
             {
 
             }
             if (callee.IsIntrinsic)
             {
-                if (ImportIntrinsicCall(callee))
+                if (ImportIntrinsicCall(callee, runtimeDeterminedMethod))
                 {
                     return;
                 }
@@ -1742,7 +1744,7 @@ namespace Internal.IL
                                 GetGenericContext()
                             }, "getHelper");
                             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-                            var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
+                            var arguments = new StackEntry[] { new ExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
                             newObjResult = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments);
                         }
                         else
@@ -2107,7 +2109,7 @@ namespace Internal.IL
         /// Implements intrinsic methods instread of calling them
         /// </summary>
         /// <returns>True if the method was implemented</returns>
-        private bool ImportIntrinsicCall(MethodDesc method)
+        private bool ImportIntrinsicCall(MethodDesc method, MethodDesc runtimeDeterminedMethod)
         {
             Debug.Assert(method.IsIntrinsic);
 
@@ -2199,6 +2201,33 @@ namespace Internal.IL
                         LLVM.BuildStore(_builder, byRefValueParamHolder.ValueForStackKind(StackValueKind.ByRef, _builder, false), typedAddress);
 
                         _stack.Push(spillEntry);
+                        return true;
+                    }
+                    break;
+                case "GetValueInternal":
+                    if (metadataType.Namespace == "System" && metadataType.Name == "RuntimeTypeHandle")
+                    {
+                        var typeHandleSlot = (LdTokenEntry<TypeDesc>)_stack.Pop();
+                        TypeDesc typeOfEEType = typeHandleSlot.LdToken;
+
+                        if (typeOfEEType.IsRuntimeDeterminedSubtype)
+                        {
+                            LLVMValueRef helper;
+                            var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeOfEEType, out helper);
+                            var typeHandlerRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
+                            {
+                                GetShadowStack(),
+                                GetGenericContext()
+                            }, "getHelper");
+                            PushExpression(StackValueKind.Int32, "eeType", typeHandlerRef, GetWellKnownType(WellKnownType.IntPtr));
+
+                            _dependencies.Add(node);
+                        }
+                        else
+                        {
+                            // TODO: should this be a loadExpression?
+                            PushExpression(StackValueKind.Int32, "eeType", GetEETypePointerForTypeDesc(typeOfEEType, true), GetWellKnownType(WellKnownType.IntPtr));
+                        }
                         return true;
                     }
                     break;
@@ -3507,6 +3536,8 @@ namespace Internal.IL
         {
             TypeDesc type = ResolveTypeToken(token);
             LLVMValueRef eeType;
+            var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+            ExpressionEntry eeTypeExp;
             if (type.IsRuntimeDeterminedSubtype)
             {
                 LLVMValueRef helper;
@@ -3516,16 +3547,20 @@ namespace Internal.IL
                     GetShadowStack(),
                     GetGenericContext()
                 }, "getHelper");
+                eeTypeExp = new ExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc);
             }
-            else eeType = GetEETypePointerForTypeDesc(type, true);
-            var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+            else
+            {
+                eeType = GetEETypePointerForTypeDesc(type, true);
+                eeTypeExp = new LoadExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc);
+            }
             StackEntry boxedObject = _stack.Pop();
             if (opCode == ILOpcode.unbox)
             {
                 if (type.IsNullable)
                     throw new NotImplementedException();
 
-                var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc), boxedObject };
+                var arguments = new StackEntry[] { eeTypeExp, boxedObject };
                 PushNonNull(CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhUnbox2", arguments));
             }
             else //unbox_any
@@ -3536,7 +3571,7 @@ namespace Internal.IL
                 {
                     boxedObject,
                     new ExpressionEntry(StackValueKind.ByRef, "objPtr", untypedObjectValue, type.MakePointerType()),
-                    new LoadExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc)
+                    eeTypeExp
                 };
                 CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhUnboxAny", arguments);
                 PushLoadExpression(GetStackValueKind(type), "unboxed", untypedObjectValue, type);
@@ -3565,18 +3600,50 @@ namespace Internal.IL
 
         private void ImportLdToken(int token)
         {
-//            var ldtokenValue = _methodIL.GetObject(token);
-            var ldtokenValue = _canonMethodIL.GetObject(token); // TODO : should this have the same conditions as cpp
+            var ldtokenValue = _methodIL.GetObject(token); 
             WellKnownType ldtokenKind;
             string name;
             StackEntry value;
             if (ldtokenValue is TypeDesc)
             {
+                if (_method.ToString().Contains("EETypePtrOf"))
+                {
+
+                }
                 ldtokenKind = WellKnownType.RuntimeTypeHandle;
-                PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(ldtokenValue as TypeDesc, false), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"));
+                var typeDesc = (TypeDesc)ldtokenValue;
                 MethodDesc helper = _compilation.TypeSystemContext.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
                 AddMethodReference(helper);
-                HandleCall(helper, helper.Signature, helper);
+                bool hasHiddenParam;
+                var fn = LLVMFunctionForMethod(helper, null/* static method */, false /* not virt */, _constrainedType, helper, out hasHiddenParam);
+
+                if (typeDesc.IsRuntimeDeterminedSubtype)
+                {
+                    LLVMValueRef helperRef;
+                    var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeDesc, out helperRef);
+                    var genericContext = GetGenericContext();
+                    var hiddenParam = LLVM.BuildCall(_builder, helperRef, new LLVMValueRef[]
+                    {
+                        GetShadowStack(),
+                        genericContext
+                    }, "getHelper");
+                    List<LLVMValueRef> llvmArgsGetRuntimeTypeHandle = new List<LLVMValueRef>();
+                    var handleRef = LLVM.BuildCall(_builder, fn, new LLVMValueRef[]
+                    {
+                        GetShadowStack(),
+                        hiddenParam
+                    }, "getHelper");
+                    _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, handleRef, GetWellKnownType(ldtokenKind)));
+                }
+                else
+                {
+                    var handleRef = LLVM.BuildCall(_builder, fn, new LLVMValueRef[]
+                    {
+                        GetShadowStack(),
+                        CastIfNecessary(_builder, GetEETypePointerForTypeDesc(typeDesc, true), LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0))
+                    }, "getHelper");
+                    _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, handleRef, GetWellKnownType(ldtokenKind)));
+                }
                 name = ldtokenValue.ToString();
             }
             else if (ldtokenValue is FieldDesc)
@@ -3993,10 +4060,9 @@ namespace Internal.IL
         {
             ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
             _dependencies.Add(classConstructionContextSymbol);
-            LLVMValueRef firstNonGcStatic = LoadAddressOfSymbolNode(classConstructionContextSymbol);
 
             //TODO: is this gep necessary here
-            LLVMValueRef classConstructionContextPtr = LLVM.BuildGEP(_builder, firstNonGcStatic, new LLVMValueRef[] { BuildConstInt32(-2) }, "classConstructionContext");
+            LLVMValueRef classConstructionContextPtr = LLVM.BuildGEP(_builder, staticBaseValueRef, new LLVMValueRef[] { BuildConstInt32(-2) }, "classConstructionContext");
             StackEntry classConstructionContext = new AddressExpressionEntry(StackValueKind.NativeInt, "classConstructionContext", classConstructionContextPtr,
                 GetWellKnownType(WellKnownType.IntPtr));
             StackEntry staticBaseEntry = new AddressExpressionEntry(StackValueKind.NativeInt, "staticBase", staticBaseValueRef,

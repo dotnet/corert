@@ -123,8 +123,6 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
         ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
     }
 
-    printf("alloc array elements\n");
-    printf("%d\n", pArrayEEType);
     if(numElements > 100)
     {printf("big elements\n");
     }
@@ -148,8 +146,8 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     else
 #endif // !BIT64
     {
-	    printf("basesize\n");
-	    printf("%d\n", pArrayEEType->get_BaseSize());
+	    //printf("basesize\n");
+	    //printf("%d\n", pArrayEEType->get_BaseSize());
 	    if(pArrayEEType->get_BaseSize() == 0)
 	    {
 
@@ -176,7 +174,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
         return pObject;
     }
 
-    printf("alloc array size\n");
+    //printf("alloc array size\n");
     if(size > 1000)
     {printf("big\n");
     }

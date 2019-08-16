@@ -1282,9 +1282,7 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (_method.ToString().Contains("LowLevelDictionary") &&
-                _method.ToString().Contains("GetBucket") &&
-                method.ToString().Contains("GetHashCode"))
+            if (_method.ToString().Contains("FastAllocateString"))
             {
 
             }
@@ -3469,6 +3467,10 @@ namespace Internal.IL
             WellKnownType ldtokenKind;
             string name;
             StackEntry value;
+            if (_method.ToString().Contains("EETypePtrOf"))
+            {
+
+            }
             if (ldtokenValue is TypeDesc)
             {
                 ldtokenKind = WellKnownType.RuntimeTypeHandle;

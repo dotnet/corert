@@ -37,7 +37,7 @@ namespace System
             }
         }
 
-        private static void PrintLine(string s)
+        public static void PrintLine(string s)
         {
             PrintString(s);
             PrintString("\n");

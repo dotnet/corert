@@ -59,7 +59,12 @@ namespace System.Reflection.Runtime.General
 
         public static string GetString(this ConstantStringValueHandle handle, MetadataReader reader)
         {
-            return reader.GetConstantStringValue(handle).Value;
+            var s = reader.GetConstantStringValue(handle).Value;
+            AssemblyBinderImplementation.PrintLine("GetString calling GetHashCode");
+            var x = s.GetHashCode();
+            AssemblyBinderImplementation.PrintLine("GetString calling GetHashCode ol" );
+
+            return s;
         }
 
         // Useful for namespace Name string which can be a null handle.
@@ -110,6 +115,8 @@ namespace System.Reflection.Runtime.General
 
         public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeReferenceHandle scopeReferenceHandle, MetadataReader reader)
         {
+            AssemblyBinderImplementation.PrintLine("ToRuntimeAssemblyName2");
+
             ScopeReference scopeReference = scopeReferenceHandle.GetScopeReference(reader);
             return CreateRuntimeAssemblyNameFromMetadata(
                 reader,
@@ -149,6 +156,7 @@ namespace System.Reflection.Runtime.General
 
             var handleName = name.GetString(reader);
             AssemblyBinderImplementation.PrintLine("handleName GetHashCode\n");
+            AssemblyBinderImplementation.PrintLine(handleName);
             var x = handleName.GetHashCode();
             AssemblyBinderImplementation.PrintLine("handleName GetHashCode ok\n");
 

@@ -125,6 +125,10 @@ namespace System
             // size of this object includes the _firstChar field.
             string newStr = RuntimeImports.RhNewString(EETypePtr.EETypePtrOf<string>(), length);
             Debug.Assert(newStr._stringLength == length);
+            SR.PrintLine("FastAllocateString GetHashCode");
+            var x = newStr.GetHashCode();
+            SR.PrintLine("FastAllocateString GetHashCode ok");
+
             return newStr;
         }
     }
