@@ -4,6 +4,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 
 using Internal.IL;
@@ -117,6 +119,31 @@ namespace Internal.JitInterface
             : this(jitConfig)
         {
             _compilation = compilation;
+        }
+
+        private static mdToken FindGenericMethodArgTypeSpec(EcmaModule module)
+        {
+            // Find the TypeSpec for "!!0"
+            MetadataReader reader = module.MetadataReader;
+            int numTypeSpecs = reader.GetTableRowCount(TableIndex.TypeSpec);
+            for (int i = 1; i < numTypeSpecs + 1; i++)
+            {
+                TypeSpecificationHandle handle = MetadataTokens.TypeSpecificationHandle(i);
+                BlobHandle typeSpecSigHandle = reader.GetTypeSpecification(handle).Signature;
+                BlobReader typeSpecSig = reader.GetBlobReader(typeSpecSigHandle);
+                SignatureTypeCode typeCode = typeSpecSig.ReadSignatureTypeCode();
+                if (typeCode == SignatureTypeCode.GenericMethodParameter)
+                {
+                    if (typeSpecSig.ReadByte() == 0)
+                    {
+                        return (mdToken)MetadataTokens.GetToken(handle);
+                    }
+                }
+            }
+
+            // Should be unreachable - couldn't find a TypeSpec.
+            // Are we still compiling CoreLib?
+            throw new NotSupportedException();
         }
 
         public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)

@@ -23,6 +23,7 @@ using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 
 #if READYTORUN
+using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
 
@@ -1052,6 +1053,67 @@ namespace Internal.JitInterface
                 owningType is EcmaType owningEcmaType)
             {
                 tokenContextToRecord = owningEcmaType.EcmaModule;
+
+                mdToken token = pResolvedToken.token;
+
+                // If the method body is synthetized by the compiler (the definition of the MethodIL is not
+                // an EcmaMethodIL), the tokens in the MethodIL are not actual tokens: they're just
+                // "per-MethodIL unique cookies". For ready to run, we need to be able to get to an actual
+                // token to refer to the result of token lookup in the R2R fixups.
+                //
+                // We replace the token with the token of the ECMA entity. This only works for **non-generic
+                // types/members within the current module**, but this happens to be good enough because
+                // we only do this replacement within CoreLib to replace method bodies in places
+                // that we cannot express in C# right now).
+                MethodIL methodILDef = methodIL.GetMethodILDefinition();
+                object resultDef = null;
+                bool isFauxMethodIL = !(methodILDef is EcmaMethodIL);
+                if (isFauxMethodIL)
+                {
+                    resultDef = methodILDef.GetObject((int)pResolvedToken.token);
+                }
+                    
+                if (result is MethodDesc method)
+                {
+                    if (isFauxMethodIL)
+                    {
+                        Debug.Assert(resultDef is EcmaMethod && ((EcmaMethod)resultDef).Module == tokenContextToRecord);
+                        token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultDef).Handle);
+                    }
+
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForMethod(method, new ModuleToken(tokenContextToRecord, token));
+                }
+                else if (result is FieldDesc field)
+                {
+                    if (isFauxMethodIL)
+                    {
+                        Debug.Assert(resultDef is EcmaField && ((EcmaField)resultDef).Module == tokenContextToRecord);
+                        token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultDef).Handle);
+                    }
+
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, new ModuleToken(tokenContextToRecord, token));
+                }
+                else
+                {
+                    if (isFauxMethodIL)
+                    {
+                        if (resultDef is EcmaType ecmaType)
+                        {
+                            Debug.Assert(ecmaType.Module == tokenContextToRecord);
+                            token = (mdToken)MetadataTokens.GetToken(((EcmaType)resultDef).Handle);
+                        }
+                        else
+                        {
+                            // To replace !!0, we need to find the token for a !!0 TypeSpec within the image.
+                            Debug.Assert(resultDef is SignatureMethodVariable);
+                            Debug.Assert(((SignatureMethodVariable)resultDef).Index == 0);
+                            token = FindGenericMethodArgTypeSpec(tokenContextToRecord);
+                        }
+                        
+                    }
+
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForType((TypeDesc)result, new ModuleToken(tokenContextToRecord, token));
+                }
             }
 #endif
 
@@ -1060,13 +1122,6 @@ namespace Internal.JitInterface
                 MethodDesc method = result as MethodDesc;
                 pResolvedToken.hMethod = ObjectToHandle(method);
                 pResolvedToken.hClass = ObjectToHandle(method.OwningType);
-
-#if READYTORUN
-            if (tokenContextToRecord != null)
-            {
-                _compilation.NodeFactory.Resolver.AddModuleTokenForMethod(method, new ModuleToken(tokenContextToRecord, (mdToken)pResolvedToken.token));
-            }
-#endif
             }
             else
             if (result is FieldDesc)
@@ -1080,24 +1135,10 @@ namespace Internal.JitInterface
 
                 pResolvedToken.hField = ObjectToHandle(field);
                 pResolvedToken.hClass = ObjectToHandle(field.OwningType);
-
-#if READYTORUN
-                if (tokenContextToRecord != null)
-                {
-                    _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, new ModuleToken(tokenContextToRecord, (mdToken)pResolvedToken.token));
-                }
-#endif
             }
             else
             {
                 TypeDesc type = (TypeDesc)result;
-#if READYTORUN
-                if (tokenContextToRecord != null)
-                {
-                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, new ModuleToken(tokenContextToRecord, (mdToken)pResolvedToken.token));
-                }
-#endif
-
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 {
                     if (type.IsVoid)
