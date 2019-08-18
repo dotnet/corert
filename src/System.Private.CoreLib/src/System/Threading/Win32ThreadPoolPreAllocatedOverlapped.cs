@@ -22,7 +22,7 @@ namespace System.Threading
 
         internal bool AddRef()
         {
-            return _lifetime.AddRef(this);
+            return _lifetime.AddRef();
         }
 
         internal void Release()

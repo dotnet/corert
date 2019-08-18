@@ -179,7 +179,7 @@ namespace System.Threading
 
         private bool AddRef()
         {
-            return _lifetime.AddRef(this);
+            return _lifetime.AddRef();
         }
 
         private void Release()
