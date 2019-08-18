@@ -1,13 +1,5 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <PropertyGroup>
-    <!--
-      Prevent dotnet CLI from deploying the CoreCLR shim executable since we produce
-      a native executable.
-    -->
-    <DeployAppHost Condition="'$(NativeCodeGen)' != 'readytorun'">false</DeployAppHost>
-  </PropertyGroup>
-
   <Target Name="_ComputeIlcCompileInputs"
           BeforeTargets="ComputeIlcCompileInputs"
           DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -92,6 +84,12 @@
       <ReadyToRunOutputAssembliesToPublish Include="@(_ManagedResolvedAssembliesToPublish->'$(NativeIntermediateOutputPath)%(Filename)%(Extension)')" Condition="'$(NativeCodeGen)' == 'readytorun'" />
     </ItemGroup>
     
+  </Target>
+
+  <Target Name="CopyNativeBinary" Condition="'$(NativeCodeGen)' != 'readytorun'" AfterTargets="Publish">
+    <!-- override apphost with binary we generated during native compilation -->
+    <Delete Files="$(PublishDir)\$(TargetName)$(NativeBinaryExt)"/>
+    <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)" DestinationFolder="$(PublishDir)" />
   </Target>
 
   <Target Name="CopyNativePdb" Condition="'$(DebugType)' != 'None' and '$(TargetOS)' == 'Windows_NT' and '$(NativeLib)' != 'Static' and '$(NativeCodeGen)' != 'readytorun'" AfterTargets="Publish">
