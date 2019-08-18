@@ -4,9 +4,6 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Threading;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -36,9 +33,6 @@ namespace System.Reflection
 
             // Optional public key (if Flags.PublicKey == true) or public key token.
             this.PublicKeyOrToken = publicKeyOrToken;
-            ManagedThreadId.PrintLine("RAN ctor attempt ");
-            var x = GetHashCode();
-            ManagedThreadId.PrintLine("RAN ctor attempt ok");
         }
 
         // Simple name.
@@ -56,11 +50,32 @@ namespace System.Reflection
         // Optional public key (if Flags.PublicKey == true) or public key token.
         public byte[] PublicKeyOrToken { get; }
 
+        internal static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    SR.TwoByteStr curCharStr = new SR.TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    X.printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        internal static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
         // Equality - this compares every bit of data in the RuntimeAssemblyName which is acceptable for use as keys in a cache
         // where semantic duplication is permissible. This method is *not* meant to define ref->def binding rules or 
         // assembly binding unification rules.
         public bool Equals(RuntimeAssemblyName other)
         {
+            PrintLine("In Equals!");
             if (other == null)
                 return false;
             if (!this.Name.Equals(other.Name))
@@ -115,41 +130,9 @@ namespace System.Reflection
             return Equals(other);
         }
 
-        private unsafe void PrintPointer()
-        {
-            var x = this;
-            var ptr = Unsafe.AsPointer(ref x);
-            var intPtr = (IntPtr*)ptr;
-            var address = *intPtr;
-            ManagedThreadId.PrintLine(address.ToInt32().ToString());
-        }
-
-        private unsafe void PrintPointer(object x)
-        {
-            var ptr = Unsafe.AsPointer(ref x);
-            var intPtr = (IntPtr*)ptr;
-            var address = *intPtr;
-            ManagedThreadId.PrintLine(address.ToInt32().ToString());
-        }
-
         public sealed override int GetHashCode()
         {
-            ManagedThreadId.PrintLine("GetHashCode got name");
-            PrintPointer();
-            var name = this.Name;
-            PrintPointer(name);
-            ManagedThreadId.PrintLine(name);
-
-            //            ManagedThreadId.PrintLine("got Name:");
-            //            ManagedThreadId.PrintLine(name);
-            //            var stringType = name.GetTypeHandle();
-            //            ManagedThreadId.PrintLine(stringType.Value.ToString());
-            PrintPointer();
-            PrintPointer(name);
-            ManagedThreadId.PrintLine(name);
-            var hc = name.GetHashCode();
-            ManagedThreadId.PrintLine("returned from gethashcode");
-            return hc;
+            return this.Name.GetHashCode();
         }
 
         //

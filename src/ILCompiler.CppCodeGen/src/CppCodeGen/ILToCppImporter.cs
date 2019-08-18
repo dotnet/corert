@@ -1282,7 +1282,9 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (_method.ToString().Contains("FastAllocateString"))
+            if (_method.ToString().Contains("LowLevelDictionary") &&
+                _method.ToString().Contains("Find")
+                && method.ToString().Contains("Equals"))
             {
 
             }

@@ -455,7 +455,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             
             if (realName ==
-                "__GenericDict_S_P_CoreLib_Internal_TypeSystem_LockFreeReaderHashtable_2<IntPtr__S_P_StackTraceMetadata_Internal_StackTraceMetadata_StackTraceMetadata_PerModuleMethodNameResolver>"
+                "__GenericDict_S_P_TypeLoader_System_Collections_Generic_LowLevelDictionaryWithIEnumerable_2<S_P_CoreLib_System_Reflection_RuntimeAssemblyName__S_P_TypeLoader_Internal_Reflection_Execution_AssemblyBinderImplementation_ScopeDefinitionGroup>"
             )
             {
                 GenericDict = arrayglobal;
@@ -1047,7 +1047,7 @@ namespace ILCompiler.DependencyAnalysis
                 gepName = "typeNodeGep";
 
                 if (mangledName.Contains(
-                    "__GenericLookupFromType_S_P_CoreLib_Internal_TypeSystem_LockFreeReaderHashtable_2<IntPtr__System___Canon>_TypeHandle___Array<TValue_System___Canon>"))
+                    "GenericLookupFromType_S_P_TypeLoader_System_Collections_Generic_LowLevelDictionary"))
                 {
                     PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 10, false), LLVM.GetParam(helperFunc, 0));
                     PrintIntPtr(builder, ptr8, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
@@ -1237,9 +1237,9 @@ namespace ILCompiler.DependencyAnalysis
         void PrintIntPtr(LLVMBuilderRef _builder, LLVMValueRef ptr, LLVMValueRef shadowStack)
         {
             var asInt = LLVM.BuildPointerCast(_builder, ptr, LLVMTypeRef.Int32Type(), "asint");
-
+            
             LLVM.BuildCall(_builder,
-                GetOrCreateLLVMFunction("S_P_CoreLib_System_Threading_ManagedThreadId__PrintUint",
+                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
                     LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
                         {
                             LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
@@ -1252,27 +1252,27 @@ namespace ILCompiler.DependencyAnalysis
                     asInt
                 }, string.Empty);
 
-//            var loaded = LLVM.BuildIntToPtr(_builder, asInt, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "inttoptr");
-//            var loadedasInt = LLVM.BuildPointerCast(_builder,  loaded, LLVMTypeRef.Int32Type(), "loadedasint");
-//            LLVM.BuildCall(_builder,
-//                GetOrCreateLLVMFunction("S_P_CoreLib_System_Threading_ManagedThreadId__PrintUint",
-//                    LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
-//                        {
-//                            LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
-//                            LLVMTypeRef.Int32Type()
-//                        },
-//                        false)),
-//                new LLVMValueRef[]
-//                {
-//                    ILImporter.CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
-//                    loadedasInt
-//                }, string.Empty);
+                        var ptr32 = LLVM.BuildIntToPtr(_builder, asInt, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "inttoptr");
+                        var loaded = LLVM.BuildLoad(_builder, ptr32, "loadedasint2");
+                        LLVM.BuildCall(_builder,
+                            GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
+                                LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
+                                    {
+                                        LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+                                        LLVMTypeRef.Int32Type()
+                                    },
+                                    false)),
+                            new LLVMValueRef[]
+                            {
+                                ILImporter.CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
+                                loaded
+                            }, string.Empty);
         }
 
         void PrintInt32(LLVMBuilderRef _builder, LLVMValueRef ptr, LLVMValueRef shadowStack)
         {
             LLVM.BuildCall(_builder,
-                GetOrCreateLLVMFunction("S_P_CoreLib_System_Threading_ManagedThreadId__PrintUint",
+                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
                     LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
                         {
                             LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),

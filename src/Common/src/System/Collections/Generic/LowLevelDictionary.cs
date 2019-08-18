@@ -16,7 +16,52 @@ namespace System.Collections.Generic
     {
         [DllImport("*")]
         internal static unsafe extern int printf(byte* str, byte* unused);
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        internal static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+
+        public unsafe static void PrintUint(int s)
+        {
+            byte[] intBytes = BitConverter.GetBytes(s);
+            for (var i = 0; i < 4; i++)
+            {
+                TwoByteStr curCharStr = new TwoByteStr();
+                var nib = (intBytes[3 - i] & 0xf0) >> 4;
+                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
+                printf((byte*)&curCharStr, null);
+                nib = (intBytes[3 - i] & 0xf);
+                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
+                printf((byte*)&curCharStr, null);
+            }
+            PrintString("\n");
+        }
+
+        public struct TwoByteStr
+        {
+            public byte first;
+            public byte second;
+        }
+
     }
+
+
+
     /*============================================================
     **
     ** Class:  LowLevelDictionary<TKey, TValue>
@@ -84,7 +129,7 @@ namespace System.Collections.Generic
         }
 
 
-        private static unsafe void PrintString(string s)
+        internal static unsafe void PrintString(string s)
         {
             int length = s.Length;
             fixed (char* curChar = s)
@@ -211,18 +256,21 @@ namespace System.Collections.Generic
         private Entry Find(TKey key)
         {
             PrintLine("Find");
-            var ran = new RuntimeAssemblyName("something", new Version(1, 1), "en-GB", AssemblyNameFlags.None, null);
-            var x = ran.GetHashCode();
-            PrintLine("Find called  RuntimeAssemblyName GetHashCode");
             int h = key.GetHashCode();
             PrintLine("Find key.GetHashCode called ");
 
             int bucket = GetBucket(key);
+            PrintLine("got bucket");
             Entry entry = _buckets[bucket];
             while (entry != null)
             {
-                if (key.Equals(entry.m_key))
+                X.PrintUint(0); // need a reference
+                PrintLine("getting m_key");
+                var k = entry.m_key;
+                PrintLine("trying equals");
+                if (key.Equals(k))
                     return entry;
+                PrintLine("getting next");
 
                 entry = entry.m_next;
             }

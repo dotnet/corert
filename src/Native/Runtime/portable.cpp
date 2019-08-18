@@ -123,9 +123,11 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
         ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
     }
 
-    if(numElements > 100)
+    if(numElements > 1000)
     {printf("big elements\n");
+        ASSERT_UNCONDITIONALLY("BE");  // TODO: Throw overflow
     }
+
 
     size_t size;
 #ifndef BIT64

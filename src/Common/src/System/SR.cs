@@ -150,7 +150,8 @@ namespace System
                 }
                 if (_currentlyLoading == null)
                     _currentlyLoading = new List<string>();
-
+                PrintLine("adding");
+                PrintLine(key);
                 _currentlyLoading.Add(key); // Push
 
                 string s = ResourceManager.GetString(key, null);

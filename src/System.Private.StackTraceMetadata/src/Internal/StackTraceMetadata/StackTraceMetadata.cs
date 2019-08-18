@@ -5,8 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Threading;
+
 using Internal.Metadata.NativeFormat;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
@@ -36,36 +35,6 @@ namespace Internal.StackTraceMetadata
         /// Module address-keyed map of per-module method name resolvers.
         /// </summary>
         static PerModuleMethodNameResolverHashtable _perModuleMethodNameResolverHashtable;
-        [DllImport("*")]
-        internal static unsafe extern int printf(byte* str, byte* unused);
-        private static unsafe void PrintString(string s)
-        {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    TwoByteStr curCharStr = new TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    printf((byte*)&curCharStr, null);
-                }
-            }
-        }
-        public unsafe static void PrintUint(int s)
-        {
-            byte[] intBytes = BitConverter.GetBytes(s);
-            for (var i = 0; i < 4; i++)
-            {
-                TwoByteStr curCharStr = new TwoByteStr();
-                var nib = (intBytes[3 - i] & 0xf0) >> 4;
-                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
-                printf((byte*)&curCharStr, null);
-                nib = (intBytes[3 - i] & 0xf);
-                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
-                printf((byte*)&curCharStr, null);
-            }
-            PrintString("\n");
-        }
 
         /// <summary>
         /// Eager startup initialization of stack trace metadata support creates
@@ -74,7 +43,6 @@ namespace Internal.StackTraceMetadata
         /// </summary>
         internal static void Initialize()
         {
-            PrintString("STM Initialize\n");
             _perModuleMethodNameResolverHashtable = new PerModuleMethodNameResolverHashtable();
             RuntimeAugments.InitializeStackTraceMetadataSupport(new StackTraceMetadataCallbacksImpl());
         }

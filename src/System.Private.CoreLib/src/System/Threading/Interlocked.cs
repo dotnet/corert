@@ -322,13 +322,6 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
         {
-//                ManagedThreadId.PrintLine("CompareExchange");
-//            if (comparand == null)
-//            {
-//                ManagedThreadId.PrintLine("in quick");
-//                location1 = value;
-//                return location1;
-//            }
             return Unsafe.As<T>(RuntimeImports.InterlockedCompareExchange(ref Unsafe.As<T, object>(ref location1), value, comparand));
         }
 

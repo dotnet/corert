@@ -1649,11 +1649,9 @@ namespace Internal.IL
             //            {
             //
             //            }
-            if (_method.ToString().Contains("ConcurrentUnifierW")
-                &&
-//                _method.ToString().Contains("IntPtr") &&
-                _method.ToString().Contains("ctor")
-                )
+            if (_method.ToString().Contains("LowLevelDictionary") &&
+                _method.ToString().Contains("Find")
+                && callee.ToString().Contains("Equals"))
             {
 
             }
@@ -1773,10 +1771,6 @@ namespace Internal.IL
 
             TypeDesc localConstrainedType = _constrainedType;
             _constrainedType = null;
-            if (_method.ToString().Contains("KeyValuePair") && _method.ToString().Contains("Unbox"))
-            {
-
-            }
             HandleCall(callee, callee.Signature, runtimeDeterminedMethod, opcode, localConstrainedType);
         }
 
@@ -1867,7 +1861,7 @@ namespace Internal.IL
 
                 return isCallVirt && callee.HasInstantiation && callee.IsVirtual && !callee.IsFinal && !callee.OwningType.IsSealed() 
                     ? GetCallableGenericVirtualMethod(thisPointer, canonMethod, callee, runtimeDeterminedMethod, hasHiddenParam)
-                    : GetCallableVirtualMethod(thisPointer, canonMethod, callee, hasHiddenParam);
+                    : GetCallableVirtualMethod(thisPointer, runtimeDeterminedMethod, callee, hasHiddenParam, constrainedType);
 
             }
             else
@@ -1903,7 +1897,7 @@ namespace Internal.IL
             return LLVM.BuildLoad(_builder, slot, $"{callee.Name}_slot");
         }
 
-        private LLVMValueRef GetCallableVirtualMethod(StackEntry objectPtr, MethodDesc method, MethodDesc callee, bool hasHiddenParam)
+        private LLVMValueRef GetCallableVirtualMethod(StackEntry objectPtr, MethodDesc method, MethodDesc callee, bool hasHiddenParam, TypeDesc constrainedType)
         {
             Debug.Assert(method.IsVirtual);
             Debug.Assert(!hasHiddenParam);  // TODO delete if never happens
@@ -1921,10 +1915,35 @@ namespace Internal.IL
             ThrowIfNull(thisPointer);
             if (method.OwningType.IsInterface)
             {
-                var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-                var interfaceEEType = new LoadExpressionEntry(StackValueKind.ValueType, "interfaceEEType", GetEETypePointerForTypeDesc(method.OwningType, true), eeTypeDesc);
-                var eeTypeExpression = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", thisPointer, eeTypeDesc);
+                ExpressionEntry interfaceEEType;
+                ExpressionEntry eeTypeExpression;
+                if (method.OwningType.IsRuntimeDeterminedSubtype)
+                {
+                    LLVMValueRef helper;
+                    var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, method.OwningType, out helper);
+                    var genericContext = GetGenericContext(constrainedType);
+                    var hiddenParam = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
+                    {
+                        GetShadowStack(),
+                        genericContext
+                    }, "getHelper");
+                    PrintIntPtr(hiddenParam);
+                    var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                    //TODO interfaceEEType can be refactored out
+                    eeTypeExpression = CallRuntime("System", _compilation.TypeSystemContext, "Object", "get_EEType",
+                        new[] {new ExpressionEntry(StackValueKind.ObjRef, "thisPointer", thisPointer)});
+                    interfaceEEType = new ExpressionEntry(StackValueKind.ValueType, "eeType", hiddenParam, eeTypeDesc);
+                }
+                else
+                {
+                    var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                    interfaceEEType = new LoadExpressionEntry(StackValueKind.ValueType, "interfaceEEType", GetEETypePointerForTypeDesc(method.OwningType, true), eeTypeDesc);
+                    eeTypeExpression = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", thisPointer, eeTypeDesc);
+                }
+                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 256, false));
+
                 var targetEntry = CallRuntime(_compilation.TypeSystemContext, DispatchResolve, "FindInterfaceMethodImplementationTarget", new StackEntry[] { eeTypeExpression, interfaceEEType, new ExpressionEntry(StackValueKind.Int32, "slot", slot, GetWellKnownType(WellKnownType.UInt16)) });
+                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 257, false));
                 functionPtr = targetEntry.ValueAsType(LLVM.PointerType(llvmSignature, 0), _builder);
             }
             else
@@ -4243,16 +4262,29 @@ namespace Internal.IL
             PushNonNull(CallRuntime(_compilation.TypeSystemContext, InternalCalls, "RhpNewArray", arguments, runtimeDeterminedArrayType));
         }
 
-        LLVMValueRef GetGenericContext()
+        LLVMValueRef GetGenericContext(TypeDesc constrainedType = null)
         {
             Debug.Assert(_method.IsSharedByGenericInstantiations);
 
             if (_method.AcquiresInstMethodTableFromThis())
             {
+                LLVMValueRef typedAddress;
+                LLVMValueRef thisPtr;
                 PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 0, false));
-                LLVMValueRef typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
-                    LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0), 0));
-                var thisPtr = LLVM.BuildLoad(_builder, typedAddress, "loadThis");
+                //TODO this is for interface calls, can it be simplified
+//                if (constrainedType != null && !constrainedType.IsValueType)
+//                {
+//                    typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
+//                        LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0), 0), 0));
+//                    thisPtr = LLVM.BuildLoad(_builder, typedAddress, "loadThis");
+////                    thisPtr = LLVM.BuildLoad(_builder, thisPtr, "loadConstrainedThis");
+//                }
+//                else
+//                {
+                    typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
+                        LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0), 0));
+                    thisPtr = LLVM.BuildLoad(_builder, typedAddress, "loadThis");
+//                }
                 PrintIntPtr(thisPtr);
                 PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 1, false));
 
@@ -4260,7 +4292,7 @@ namespace Internal.IL
                 PrintIntPtr(methodTablePtrRef);
 
                 LLVMValueRef symbolAddress = WebAssemblyObjectWriter.GetOrAddGlobalSymbol(Module,
-                    "__EEType_S_P_StackTraceMetadata_Internal_StackTraceMetadata_StackTraceMetadata_PerModuleMethodNameResolverHashtable___SYMBOL");
+                    "__EEType_S_P_TypeLoader_System_Collections_Generic_LowLevelDictionaryWithIEnumerable_2<S_P_CoreLib_System_Reflection_RuntimeAssemblyName__S_P_TypeLoader_Internal_Reflection_Execution_AssemblyBinderImplementation_ScopeDefinitionGroup>___SYMBOL");
                 PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 2, false));
                 PrintIntPtr(symbolAddress);
 
@@ -4285,7 +4317,7 @@ namespace Internal.IL
                 new LLVMValueRef[] {LLVM.ConstInt(LLVM.Int32Type(), (uint) offset, LLVMMisc.False)},
                 String.Empty);
             LLVM.BuildCall(_builder,
-                GetOrCreateLLVMFunction("S_P_CoreLib_System_Threading_ManagedThreadId__PrintUint",
+                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
                     LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
                         {
                             LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
@@ -4301,7 +4333,7 @@ namespace Internal.IL
             var loaded = LLVM.BuildLoad(_builder, ptr32, "loadptr");
             var loadedasInt = CastIfNecessary(_builder, loaded, LLVMTypeRef.Int32Type(), "loadedasint");
             LLVM.BuildCall(_builder,
-                GetOrCreateLLVMFunction("S_P_CoreLib_System_Threading_ManagedThreadId__PrintUint",
+                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
                     LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
                         {
                             LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
@@ -4322,7 +4354,7 @@ namespace Internal.IL
                 new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
                 String.Empty);
             LLVM.BuildCall(_builder,
-                GetOrCreateLLVMFunction("S_P_CoreLib_System_Threading_ManagedThreadId__PrintUint",
+                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
                     LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
                         {
                             LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
