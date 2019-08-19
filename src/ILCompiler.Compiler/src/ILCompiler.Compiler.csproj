@@ -73,6 +73,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\GetCanonTypeIntrinsic.cs">
       <Link>IL\Stubs\GetCanonTypeIntrinsic.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\InterlockedIntrinsics.cs" Link="IL\Stubs\InterlockedIntrinsics.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\MethodBaseGetCurrentMethodThunk.cs">
       <Link>IL\Stubs\MethodBaseGetCurrentMethodThunk.cs</Link>
     </Compile>
@@ -88,6 +89,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\MethodBaseGetCurrentMethodThunk.Sorting.cs">
       <Link>IL\Stubs\MethodBaseGetCurrentMethodThunk.Sorting.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeGetTypeMethodThunk.cs">
       <Link>IL\Stubs\TypeGetTypeMethodThunk.cs</Link>
     </Compile>
@@ -409,6 +411,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\VolatileIntrinsics.cs">
+      <Link>IL\Stubs\VolatileIntrinsics.cs</Link>
     </Compile>
     <Compile Include="..\..\JitInterface\src\CorInfoTypes.VarInfo.cs">
       <Link>JitInterface\CorInfoTypes.VarInfo.cs</Link>

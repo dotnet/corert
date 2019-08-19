@@ -226,23 +226,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsBitwiseEquatable<T>()
         {
-            return
-                typeof(T) == typeof(bool) ||
-                typeof(T) == typeof(byte) ||
-                typeof(T) == typeof(sbyte) ||
-#if FEATURE_UTF8STRING
-                typeof(T) == typeof(Char8) ||
-#endif
-                typeof(T) == typeof(char) ||
-                typeof(T) == typeof(short) ||
-                typeof(T) == typeof(ushort) ||
-                typeof(T) == typeof(int) ||
-                typeof(T) == typeof(uint) ||
-                typeof(T) == typeof(long) ||
-                typeof(T) == typeof(ulong) ||
-                typeof(T) == typeof(IntPtr) ||
-                typeof(T) == typeof(UIntPtr) ||
-                typeof(T) == typeof(Rune);
+            // Only reachable for universal shared code - the compiler replaces this otherwise.
+            // Returning false is conservative.
+            return false;
         }
 
         // Returns true iff the object has a component size;
