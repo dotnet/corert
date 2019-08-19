@@ -67,7 +67,7 @@ namespace ReadyToRun.SuperIlc
             {
                 processParameters.TimeoutMilliseconds = ProcessParameters.DefaultIlcTimeout;
             }
-            processParameters.LogPath = Path.ChangeExtension(outputFileName, ".ilc.log");
+            processParameters.LogPath = outputFileName + ".ilc.log";
             processParameters.InputFileName = assemblyFileName;
             processParameters.OutputFileName = outputFileName;
             processParameters.CompilationCostHeuristic = new FileInfo(assemblyFileName).Length;
@@ -118,7 +118,15 @@ namespace ReadyToRun.SuperIlc
             param.LogPath = compiledExecutable + (naked ? ".naked.r2r.log" : ".raw.r2r.log");
             param.InputFileName = compiledExecutable;
             param.OutputFileName = outputFileName;
-            param.CompilationCostHeuristic = new FileInfo(compiledExecutable).Length;
+            try
+            {
+                param.CompilationCostHeuristic = new FileInfo(compiledExecutable).Length;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("File not found: {0}: {1}", compiledExecutable, ex);
+                param.CompilationCostHeuristic = 0;
+            }
 
             return param;
         }
@@ -215,7 +223,7 @@ namespace ReadyToRun.SuperIlc
             Path.Combine(GetOutputPath(outputRoot), $"{Path.GetFileName(fileName)}");
 
         public string GetResponseFileName(string outputRoot, string assemblyFileName) =>
-            Path.Combine(GetOutputPath(outputRoot), Path.GetFileNameWithoutExtension(assemblyFileName) + ".rsp");
+            Path.Combine(GetOutputPath(outputRoot), Path.GetFileName(assemblyFileName) + ".rsp");
     }
 
     public abstract class CompilerRunnerProcessConstructor : ProcessConstructor

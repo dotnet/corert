@@ -38,6 +38,10 @@ namespace ReadyToRun.SuperIlc
 
         private Dictionary<string, byte> _crossgenManagedSequentialResults;
 
+        private Dictionary<string, byte> _cpaotRequiresMarshalingResults;
+
+        private Dictionary<string, byte> _crossgenRequiresMarshalingResults;
+
         public BuildFolderSet(
             IEnumerable<BuildFolder> buildFolders,
             IEnumerable<CompilerRunner> compilerRunners,
@@ -53,6 +57,10 @@ namespace ReadyToRun.SuperIlc
 
             _cpaotManagedSequentialResults = new Dictionary<string, byte>();
             _crossgenManagedSequentialResults = new Dictionary<string, byte>();
+
+            _cpaotRequiresMarshalingResults = new Dictionary<string, byte>();
+            _crossgenRequiresMarshalingResults = new Dictionary<string, byte>();
+
         }
 
         private void WriteJittedMethodSummary(StreamWriter logWriter)
@@ -294,15 +302,18 @@ namespace ReadyToRun.SuperIlc
         private void AnalyzeCompilationLog(ProcessInfo compilationProcess, CompilerIndex runnerIndex)
         {
             Dictionary<string, byte> managedSequentialTarget;
+            Dictionary<string, byte> requiresMarshalingTarget;
 
             switch (runnerIndex)
             {
                 case CompilerIndex.CPAOT:
                     managedSequentialTarget = _cpaotManagedSequentialResults;
+                    requiresMarshalingTarget = _cpaotRequiresMarshalingResults;
                     break;
 
                 case CompilerIndex.Crossgen:
                     managedSequentialTarget = _crossgenManagedSequentialResults;
+                    requiresMarshalingTarget = _crossgenRequiresMarshalingResults;
                     break;
 
                 default:
@@ -311,51 +322,59 @@ namespace ReadyToRun.SuperIlc
 
             try
             {
-                const string StartMarker = "[[[IsManagedSequential{";
-                const string FalseEndMarker = "}=False]]]";
-                const string TrueEndMarker = "}=True]]]";
-                const string MultiEndMarker = "}=Multi]]]";
+                const string ManagedSequentialStartMarker = "[[[IsManagedSequential{";
+                const string RequiresMarshalingStartMarker = "[[[MethodRequiresMarshaling{";
 
                 foreach (string line in File.ReadAllLines(compilationProcess.Parameters.LogPath))
                 {
-                    int startIndex = line.IndexOf(StartMarker);
-                    if (startIndex >= 0)
-                    {
-                        startIndex += StartMarker.Length;
-                        int falseEndIndex = line.IndexOf(FalseEndMarker, startIndex);
-                        int trueEndIndex = falseEndIndex >= 0 ? falseEndIndex : line.IndexOf(TrueEndMarker, startIndex);
-                        int multiEndIndex = trueEndIndex >= 0 ? trueEndIndex : line.IndexOf(MultiEndMarker, startIndex);
-                        byte result;
-                        if (falseEndIndex >= 0)
-                        {
-                            result = 0;
-                        }
-                        else if (trueEndIndex >= 0)
-                        {
-                            result = 1;
-                        }
-                        else if (multiEndIndex >= 0)
-                        {
-                            result = 2;
-                        }
-                        else
-                        {
-                            throw new NotImplementedException();
-                        }
-                        string typeName = line.Substring(startIndex, multiEndIndex - startIndex);
-
-                        byte previousValue;
-                        if (managedSequentialTarget.TryGetValue(typeName, out previousValue) && previousValue != result)
-                        {
-                            result = 2;
-                        }
-                        managedSequentialTarget[typeName] = result;
-                    }
+                    AnalyzeMarker(line, ManagedSequentialStartMarker, managedSequentialTarget);
+                    AnalyzeMarker(line, RequiresMarshalingStartMarker, requiresMarshalingTarget);
                 }
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine("Error reading log file {0}: {1}", compilationProcess.Parameters.LogPath, ex.Message);
+            }
+        }
+
+        private void AnalyzeMarker(string line, string marker, Dictionary<string, byte> target)
+        {
+            const string FalseEndMarker = "}=False]]]";
+            const string TrueEndMarker = "}=True]]]";
+            const string MultiEndMarker = "}=Multi]]]";
+
+            int startIndex = line.IndexOf(marker);
+            if (startIndex >= 0)
+            {
+                startIndex += marker.Length;
+                int falseEndIndex = line.IndexOf(FalseEndMarker, startIndex);
+                int trueEndIndex = falseEndIndex >= 0 ? falseEndIndex : line.IndexOf(TrueEndMarker, startIndex);
+                int multiEndIndex = trueEndIndex >= 0 ? trueEndIndex : line.IndexOf(MultiEndMarker, startIndex);
+                byte result;
+                if (falseEndIndex >= 0)
+                {
+                    result = 0;
+                }
+                else if (trueEndIndex >= 0)
+                {
+                    result = 1;
+                }
+                else if (multiEndIndex >= 0)
+                {
+                    result = 2;
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+                string typeName = line.Substring(startIndex, multiEndIndex - startIndex);
+
+                byte previousValue;
+                if (target.TryGetValue(typeName, out previousValue) && previousValue != result)
+                {
+                    result = 2;
+                }
+                target[typeName] = result;
             }
         }
 
@@ -805,8 +824,27 @@ namespace ReadyToRun.SuperIlc
                     if ((crossgenCompilation?.Succeeded ?? false) &&
                         (cpaotCompilation?.Succeeded ?? false))
                     {
-                        long cpaotSize = new FileInfo(cpaotCompilation.Parameters.OutputFileName).Length;
-                        long crossgenSize = new FileInfo(crossgenCompilation.Parameters.OutputFileName).Length;
+                        long cpaotSize;
+                        try
+                        {
+                            cpaotSize = new FileInfo(cpaotCompilation.Parameters.OutputFileName).Length;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.Error.WriteLine("Cannot find CPAOT output file '{0}', ignoring in size stats", cpaotCompilation.Parameters.OutputFileName);
+                            continue;
+                        }
+
+                        long crossgenSize;
+                        try
+                        {
+                            crossgenSize = new FileInfo(crossgenCompilation.Parameters.OutputFileName).Length;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.Error.WriteLine("Cannot find Crossgen output file '{0}', ignoring in size stats", crossgenCompilation.Parameters.OutputFileName);
+                            continue;
+                        }
 
                         string ext = Path.GetExtension(cpaotCompilation.Parameters.OutputFileName).ToLower();
                         if (ext == ".dll" || ext == ".so")
@@ -1085,19 +1123,29 @@ namespace ReadyToRun.SuperIlc
             ExecutionFailureBuckets.WriteToFile(executionBucketsFile, detailed: true);
 
             string cpaotManagedSequentialFile = Path.Combine(_options.OutputDirectory.FullName, "managed-sequential-cpaot-" + suffix);
-            WriteManagedSequentialLog(cpaotManagedSequentialFile, _cpaotManagedSequentialResults);
+            WriterMarkerLog(cpaotManagedSequentialFile, _cpaotManagedSequentialResults);
+
+            string cpaotRequiresMarshalingFile = Path.Combine(_options.OutputDirectory.FullName, "requires-marshaling-cpaot-" + suffix);
+            WriterMarkerLog(cpaotRequiresMarshalingFile, _cpaotRequiresMarshalingResults);
+
 
             if (_options.Crossgen)
             {
                 string crossgenManagedSequentialFile = Path.Combine(_options.OutputDirectory.FullName, "managed-sequential-crossgen-" + suffix);
-                WriteManagedSequentialLog(crossgenManagedSequentialFile, _crossgenManagedSequentialResults);
+                WriterMarkerLog(crossgenManagedSequentialFile, _crossgenManagedSequentialResults);
+
+                string crossgenRequiresMarshalingFile = Path.Combine(_options.OutputDirectory.FullName, "requires-marshaling-crossgen-" + suffix);
+                WriterMarkerLog(crossgenRequiresMarshalingFile, _crossgenRequiresMarshalingResults);
 
                 string managedSequentialDiffFile = Path.Combine(_options.OutputDirectory.FullName, "managed-sequential-diff-" + suffix);
-                WriteManagedSequentialDiff(managedSequentialDiffFile, _cpaotManagedSequentialResults, _crossgenManagedSequentialResults);
+                WriterMarkerDiff(managedSequentialDiffFile, _cpaotManagedSequentialResults, _crossgenManagedSequentialResults);
+
+                string requiresMarshalingDiffFile = Path.Combine(_options.OutputDirectory.FullName, "requires-marshaling-diff-" + suffix);
+                WriterMarkerDiff(requiresMarshalingDiffFile, _cpaotRequiresMarshalingResults, _crossgenRequiresMarshalingResults);
             }
         }
 
-        private static void WriteManagedSequentialLog(string fileName, Dictionary<string, byte> managedSequentialResults)
+        private static void WriterMarkerLog(string fileName, Dictionary<string, byte> managedSequentialResults)
         {
             using (StreamWriter logWriter = new StreamWriter(fileName))
             {
@@ -1108,48 +1156,48 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        private static void WriteManagedSequentialDiff(string fileName, Dictionary<string, byte> cpaot, Dictionary<string, byte> crossgen)
+        private static void WriterMarkerDiff(string fileName, Dictionary<string, byte> cpaot, Dictionary<string, byte> crossgen)
         {
             using (StreamWriter logWriter = new StreamWriter(fileName))
             {
                 int cpaotCount = cpaot.Count();
-                logWriter.WriteLine("Types queried by CPAOT:          {0}", cpaotCount);
+                logWriter.WriteLine("Objects queried by CPAOT:        {0}", cpaotCount);
                 logWriter.WriteLine("CPAOT conflicting results:       {0}", cpaot.Count(kvp => kvp.Value == 2));
                 int crossgenCount = crossgen.Count();
-                logWriter.WriteLine("Types queried by Crossgen:       {0}", crossgenCount);
+                logWriter.WriteLine("Objects queried by Crossgen:     {0}", crossgenCount);
                 logWriter.WriteLine("Crossgen conflicting results:    {0}", crossgen.Count(kvp => kvp.Value == 2));
                 int matchCount = cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == kvp.Value);
                 int bothCount = cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key));
-                logWriter.WriteLine("Types queried by both:           {0}", bothCount);
+                logWriter.WriteLine("Objects queried by both:         {0}", bothCount);
                 logWriter.WriteLine("Matching results:                {0} ({1:F3}%)", matchCount, matchCount * 100.0 / Math.Max(bothCount, 1));
                 logWriter.WriteLine("Mismatched results:              {0}",
                     cpaot.Count(kvp => crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] != kvp.Value));
-                logWriter.WriteLine("Types not queried by Crossgen:   {0}", cpaot.Count(kvp => !crossgen.ContainsKey(kvp.Key)));
-                logWriter.WriteLine("Types not queried by CPAOT:      {0}", crossgen.Count(kvp => !cpaot.ContainsKey(kvp.Key)));
+                logWriter.WriteLine("Objects not queried by Crossgen: {0}", cpaot.Count(kvp => !crossgen.ContainsKey(kvp.Key)));
+                logWriter.WriteLine("Objects not queried by CPAOT:    {0}", crossgen.Count(kvp => !cpaot.ContainsKey(kvp.Key)));
                 logWriter.WriteLine();
 
-                WriteManagedSequentialDiffSection(
+                WriterMarkerDiffSection(
                     logWriter,
                     "CPAOT = TRUE / CROSSGEN = FALSE",
                     cpaot
                         .Where(kvp => kvp.Value == 1 && crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == 0)
                         .Select(kvp => kvp.Key));
 
-                WriteManagedSequentialDiffSection(
+                WriterMarkerDiffSection(
                     logWriter,
                     "CPAOT = FALSE / CROSSGEN = TRUE",
                     cpaot
                         .Where(kvp => kvp.Value == 0 && crossgen.ContainsKey(kvp.Key) && crossgen[kvp.Key] == 1)
                         .Select(kvp => kvp.Key));
 
-                WriteManagedSequentialDiffSection(
+                WriterMarkerDiffSection(
                     logWriter,
                     "CROSSGEN - NO RESULT",
                     cpaot
                         .Where(kvp => !crossgen.ContainsKey(kvp.Key))
                         .Select(kvp => (kvp.Value.ToString() + ":" + kvp.Key)));
 
-                WriteManagedSequentialDiffSection(
+                WriterMarkerDiffSection(
                     logWriter,
                     "CPAOT - NO RESULT",
                     crossgen
@@ -1158,7 +1206,7 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        private static void WriteManagedSequentialDiffSection(StreamWriter logWriter, string title, IEnumerable<string> items)
+        private static void WriterMarkerDiffSection(StreamWriter logWriter, string title, IEnumerable<string> items)
         {
             bool first = true;
             foreach (string item in items)
