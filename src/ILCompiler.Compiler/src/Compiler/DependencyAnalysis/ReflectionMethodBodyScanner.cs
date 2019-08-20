@@ -241,10 +241,10 @@ namespace ILCompiler.DependencyAnalysis
             // Resolve type in the assembly
             type = referenceModule.GetType(typeNamespace.ToString(), typeName.ToString(), false);
             
-            // If it didn't resolve and wasn't assembly-qualified, we also try mscorlib
+            // If it didn't resolve and wasn't assembly-qualified, we also try core library
             if (type == null && assemblyName.Length == 0)
             {
-                referenceModule = context.ResolveAssembly(new AssemblyName("mscorlib"), false);
+                referenceModule = context.SystemModule;
                 type = referenceModule.GetType(typeNamespace.ToString(), typeName.ToString(), false);
             }
             
