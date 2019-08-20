@@ -28,7 +28,7 @@ namespace Internal.Reflection.Core
     //
     public abstract class AssemblyBinder
     {
-        public const String DefaultAssemblyNameForGetType = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+        public const String DefaultAssemblyNameForGetType = "System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
 
         public abstract bool Bind(RuntimeAssemblyName refName, bool cacheMissedLookups, out AssemblyBindResult result, out Exception exception);
 
