@@ -130,73 +130,57 @@ namespace ILCompiler
         /// <summary>
         /// If true, the type is fully contained in the current compilation group.
         /// </summary>
-        /// <returns></returns>
         public override bool ContainsTypeLayout(TypeDesc type)
         {
-            bool containsTypeLayout;
-            if (_containsTypeLayoutCache.TryGetValue(type, out containsTypeLayout))
+            if (!_containsTypeLayoutCache.TryGetValue(type, out bool containsTypeLayout))
             {
-                return containsTypeLayout;
-            }
-            HashSet<TypeDesc> recursionGuard = new HashSet<TypeDesc>();
-            return ContainsTypeLayout(type, recursionGuard);
-        }
-
-        private bool ContainsTypeLayout(TypeDesc type, HashSet<TypeDesc> recursionGuard)
-        {
-            if (!recursionGuard.Add(type))
-            {
-                // We've recursively found the same type - no reason to scan it again
-                return true;
-            }
-
-            try
-            {
-                bool containsTypeLayout = ContainsTypeLayoutUncached(type, recursionGuard);
+                containsTypeLayout = ContainsTypeLayoutUncached(type);
                 _containsTypeLayoutCache[type] = containsTypeLayout;
-                return containsTypeLayout;
             }
-            finally
-            {
-                recursionGuard.Remove(type);
-            }
+            
+            return containsTypeLayout;
         }
 
-        private bool ContainsTypeLayoutUncached(TypeDesc type, HashSet<TypeDesc> recursionGuard)
+        private bool ContainsTypeLayoutUncached(TypeDesc type)
         {
-            if (type.IsValueType || 
-                type.IsObject || 
+            if (type.IsObject || 
                 type.IsPrimitive || 
                 type.IsEnum || 
                 type.IsPointer ||
                 type.IsFunctionPointer ||
-                type.IsByRefLike ||
                 type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
             {
                 return true;
             }
-            DefType defType = type.GetClosestDefType();
-            if (!ContainsType(defType.GetTypeDefinition()))
+            var defType = (MetadataType)type;
+            if (!ContainsType(defType))
             {
-                return false;
-            }
-            if (defType.BaseType != null && !ContainsTypeLayout(defType.BaseType, recursionGuard))
-            {
-                return false;
-            }
-            foreach (TypeDesc genericArg in defType.Instantiation)
-            {
-                if (!ContainsTypeLayout(genericArg, recursionGuard))
+                if (!defType.IsValueType)
+                {
+                    // Eventually, we may respect the non-versionable attribute for reference types too. For now, we are going
+                    // to play is safe and ignore it.
+                    return false;
+                }
+
+                // Valuetypes with non-versionable attribute are candidates for fixed layout. Reject the rest.
+                if (!defType.HasCustomAttribute("System.Runtime.Versioning", "NonVersionableAttribute"))
                 {
                     return false;
                 }
             }
+            if (!defType.IsValueType && !ContainsTypeLayout(defType.BaseType))
+            {
+                return false;
+            }
             foreach (FieldDesc field in defType.GetFields())
             {
-                if (!field.IsLiteral && 
-                    !field.IsStatic && 
-                    !field.HasRva && 
-                    !ContainsTypeLayout(field.FieldType, recursionGuard))
+                if (field.IsStatic)
+                    continue;
+
+                TypeDesc fieldType = field.FieldType;
+
+                if (fieldType.IsValueType && 
+                    !ContainsTypeLayout(fieldType))
                 {
                     return false;
                 }
