@@ -59,6 +59,11 @@ namespace Internal.IL
                 return VolatileIntrinsics.EmitIL(method);
             }
 
+            if (mdType.Name == "Interlocked" && mdType.Namespace == "System.Threading")
+            {
+                return InterlockedIntrinsics.EmitIL(method);
+            }
+
             return null;
         }
 
@@ -76,11 +81,6 @@ namespace Internal.IL
             if (mdType.Name == "RuntimeHelpers" && mdType.Namespace == "System.Runtime.CompilerServices")
             {
                 return RuntimeHelpersIntrinsics.EmitIL(method);
-            }
-
-            if (mdType.Name == "Interlocked" && mdType.Namespace == "System.Threading")
-            {
-                return InterlockedIntrinsics.EmitIL(method);
             }
 
             if (mdType.Name == "Activator" && mdType.Namespace == "System")
