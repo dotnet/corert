@@ -132,13 +132,12 @@ namespace ILCompiler
         /// </summary>
         public override bool ContainsTypeLayout(TypeDesc type)
         {
-            bool containsTypeLayout;
-            if (_containsTypeLayoutCache.TryGetValue(type, out containsTypeLayout))
+            if (!_containsTypeLayoutCache.TryGetValue(type, out bool containsTypeLayout))
             {
-                return containsTypeLayout;
+                containsTypeLayout = ContainsTypeLayoutUncached(type);
+                _containsTypeLayoutCache[type] = containsTypeLayout;
             }
-            containsTypeLayout = ContainsTypeLayoutUncached(type);
-            _containsTypeLayoutCache[type] = containsTypeLayout;
+            
             return containsTypeLayout;
         }
 
