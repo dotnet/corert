@@ -113,7 +113,7 @@ namespace ILCompiler.DependencyAnalysis
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, mapFile);
                 }
 
-                r2rPeBuilder.SetHeaderTable(_nodeFactory.Header, _nodeFactory.Header.GetData(_nodeFactory).Data.Length);
+                r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.GetData(_nodeFactory).Data.Length);
 
                 using (var peStream = File.Create(_objectFilePath))
                 {

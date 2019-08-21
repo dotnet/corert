@@ -139,25 +139,9 @@ namespace ILCompiler.PEWriter
         private int[] _sectionRawSizes;
 
         /// <summary>
-        /// COR header builder is populated from the input MSIL and possibly updated during final
-        /// relocation of the output file.
-        /// </summary>
-        private CorHeaderBuilder _corHeaderBuilder;
-
-        /// <summary>
-        /// File offset of the COR header in the output file.
-        /// </summary>
-        private int _corHeaderFileOffset;
-
-        /// <summary>
         /// R2R PE section builder &amp; relocator.
         /// </summary>
         private readonly SectionBuilder _sectionBuilder;
-
-        /// <summary>
-        /// File offset of the metadata blob in the output file.
-        /// </summary>
-        private int _metadataFileOffset;
 
         /// <summary>
         /// Zero-based index of the CPAOT-generated text section
@@ -173,16 +157,6 @@ namespace ILCompiler.PEWriter
         /// True after Write has been called; it's not possible to add further object data items past that point.
         /// </summary>
         private bool _written;
-
-        /// <summary>
-        /// COR header decoded from the input MSIL file.
-        /// </summary>
-        public CorHeaderBuilder CorHeader => _corHeaderBuilder;
-        
-        /// <summary>
-        /// File offset of the COR header in the output file.
-        /// </summary>
-        public int CorHeaderFileOffset => _corHeaderFileOffset;
 
         /// <summary>
         /// Constructor initializes the various control structures and combines the section list.
@@ -247,14 +221,9 @@ namespace ILCompiler.PEWriter
             _sectionRawSizes = new int[_sections.Length];
         }
 
-        /// <summary>
-        /// Store the symbol and length representing the R2R header table
-        /// </summary>
-        /// <param name="symbol"></param>
-        /// <param name="headerSize"></param>
-        public void SetHeaderTable(ISymbolNode symbol, int headerSize)
+        public void SetCorHeader(ISymbolNode symbol, int headerSize)
         {
-            _sectionBuilder.SetReadyToRunHeaderTable(symbol, headerSize);
+            _sectionBuilder.SetCorHeader(symbol, headerSize);
         }
 
         /// <summary>
@@ -300,32 +269,12 @@ namespace ILCompiler.PEWriter
             BlobBuilder outputPeFile = new BlobBuilder();
             Serialize(outputPeFile);
 
-            CorHeaderBuilder corHeader = CorHeader;
-            if (corHeader != null)
-            {
-                corHeader.Flags = (CorHeader.Flags & ~CorFlags.ILOnly) | CorFlags.ILLibrary;
-
-                corHeader.MetadataDirectory = RelocateDirectoryEntry(corHeader.MetadataDirectory);
-                corHeader.ResourcesDirectory = RelocateDirectoryEntry(corHeader.ResourcesDirectory);
-                corHeader.StrongNameSignatureDirectory = RelocateDirectoryEntry(corHeader.StrongNameSignatureDirectory);
-                corHeader.CodeManagerTableDirectory = RelocateDirectoryEntry(corHeader.CodeManagerTableDirectory);
-                corHeader.VtableFixupsDirectory = RelocateDirectoryEntry(corHeader.VtableFixupsDirectory);
-                corHeader.ExportAddressTableJumpsDirectory = RelocateDirectoryEntry(corHeader.ExportAddressTableJumpsDirectory);
-                corHeader.ManagedNativeHeaderDirectory = RelocateDirectoryEntry(corHeader.ManagedNativeHeaderDirectory);
-
-                _sectionBuilder.UpdateCorHeader(corHeader);
-            }
-
             _sectionBuilder.RelocateOutputFile(
                 outputPeFile,
                 _peReader.PEHeaders.PEHeader.ImageBase,
-                corHeader,
-                CorHeaderFileOffset,
                 outputStream);
 
             UpdateSectionRVAs(outputStream);
-
-            RelocateMetadataBlob(outputStream);
 
             ApplyMachineOSOverride(outputStream);
 
@@ -499,28 +448,6 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
-        /// Relocate the contents of the metadata blob, which contains two tables with embedded RVAs.
-        /// </summary>
-        public void RelocateMetadataBlob(Stream outputStream)
-        {
-            long initialStreamLength = outputStream.Length;
-            outputStream.Position = 0;
-            
-            // The output is already a valid PE file so use that to access the output metadata blob
-            PEReader peReader = new PEReader(outputStream);
-
-            // Create a patched up metadata blob whose RVAs are correct w.r.t the output image
-            BlobBuilder relocatedMetadataBlob = MetadataRvaFixupBuilder.Relocate(peReader, RelocateRVA);
-
-            Debug.Assert(_metadataFileOffset > 0);
-            outputStream.Position = _metadataFileOffset;
-
-            // Splice the new metadata blob back into the output stream
-            relocatedMetadataBlob.WriteContentTo(outputStream);
-            Debug.Assert(initialStreamLength == outputStream.Length);
-        }
-
-        /// <summary>
         /// Provide an array of sections for the PEBuilder to use.
         /// </summary>
         protected override ImmutableArray<Section> CreateSections()
@@ -540,7 +467,6 @@ namespace ILCompiler.PEWriter
         protected override BlobBuilder SerializeSection(string name, SectionLocation location)
         {
             BlobBuilder sectionDataBuilder = null;
-            bool haveCustomSection = _customSections.Contains(name);
             int sectionStartRva = location.RelativeVirtualAddress;
 
             int outputSectionIndex = _sections.Length - 1;
@@ -596,25 +522,14 @@ namespace ILCompiler.PEWriter
                         // the blob data goes out of sync and WriteContentTo outputs garbage.
                         sectionDataBuilder = PEResourceHelper.Relocate(inputSectionReader, rvaDelta);
                     }
+                    else if (name == ".text")
+                    {
+                        // Skip copying the .text section. We will pull out the metadata, IL blobs and RVA fields as part of compilation
+                    }
                     else
                     {
                         sectionDataBuilder = new BlobBuilder();
                         sectionDataBuilder.WriteBytes(inputSectionReader.CurrentPointer, inputSectionReader.RemainingBytes);
-                    }
-
-                    int metadataRvaDelta = _peReader.PEHeaders.CorHeader.MetadataDirectory.RelativeVirtualAddress - sectionHeader.VirtualAddress;
-                    if (metadataRvaDelta >= 0 && metadataRvaDelta < bytesToRead)
-                    {
-                        _metadataFileOffset = location.PointerToRawData + metadataRvaDelta;
-                    }
-
-                    int corHeaderRvaDelta = _peReader.PEHeaders.PEHeader.CorHeaderTableDirectory.RelativeVirtualAddress - sectionHeader.VirtualAddress;
-                    if (corHeaderRvaDelta >= 0 && corHeaderRvaDelta < bytesToRead)
-                    {
-                        // Assume COR header resides in this section, deserialize it and store its location
-                        _corHeaderFileOffset = location.PointerToRawData + corHeaderRvaDelta;
-                        inputSectionReader.Offset = corHeaderRvaDelta;
-                        _corHeaderBuilder = new CorHeaderBuilder(ref inputSectionReader);
                     }
 
                     int alignedSize = sectionHeader.VirtualSize;
@@ -626,15 +541,19 @@ namespace ILCompiler.PEWriter
                         alignedSize = (alignedSize + 0xFFF) & ~0xFFF;
                     }
 
-                    if (alignedSize > bytesToRead)
+                    if (sectionDataBuilder != null)
                     {
-                        // If the number of bytes read from the source PE file is less than the virtual size,
-                        // zero pad to the end of virtual size before emitting extra section data
-                        sectionDataBuilder.WriteBytes(0, alignedSize - bytesToRead);
+                        if (alignedSize > bytesToRead)
+                        {
+                            // If the number of bytes read from the source PE file is less than the virtual size,
+                            // zero pad to the end of virtual size before emitting extra section data
+                            sectionDataBuilder.WriteBytes(0, alignedSize - bytesToRead);
+                        }
+
+                        location = new SectionLocation(
+                            location.RelativeVirtualAddress + sectionDataBuilder.Count,
+                            location.PointerToRawData + sectionDataBuilder.Count);
                     }
-                    location = new SectionLocation(
-                        location.RelativeVirtualAddress + sectionDataBuilder.Count,
-                        location.PointerToRawData + sectionDataBuilder.Count);
                 }
             }
 

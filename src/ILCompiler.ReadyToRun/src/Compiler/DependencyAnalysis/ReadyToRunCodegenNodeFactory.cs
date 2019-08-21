@@ -2,17 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
-using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.JitInterface;
-using Internal.TypeSystem;
 using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
@@ -212,7 +204,8 @@ namespace ILCompiler.DependencyAnalysis
             CompilationModuleGroup compilationModuleGroup,
             NameMangler nameMangler,
             ModuleTokenResolver moduleTokenResolver,
-            SignatureContext signatureContext)
+            SignatureContext signatureContext,
+            CopiedCorHeaderNode corHeaderNode)
             : base(context,
                   compilationModuleGroup,
                   nameMangler,
@@ -222,11 +215,14 @@ namespace ILCompiler.DependencyAnalysis
 
             Resolver = moduleTokenResolver;
             InputModuleContext = signatureContext;
+            CopiedCorHeaderNode = corHeaderNode;
         }
 
         public SignatureContext InputModuleContext;
 
         public ModuleTokenResolver Resolver;
+
+        public CopiedCorHeaderNode CopiedCorHeaderNode;
 
         public HeaderNode Header;
 
@@ -545,6 +541,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
+            graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated");
 
             MetadataManager.AttachToDependencyGraph(graph);
         }
@@ -676,6 +673,76 @@ namespace ILCompiler.DependencyAnalysis
                     signatureContext);
                 _dynamicHelperCellCache.Add(methodWithToken, result);
             }
+            return result;
+        }
+
+        private Dictionary<EcmaModule, CopiedCorHeaderNode> _copiedCorHeaders = new Dictionary<EcmaModule, CopiedCorHeaderNode>();
+
+        public ISymbolNode CopiedCorHeader(EcmaModule module)
+        {
+            CopiedCorHeaderNode result;
+            if (!_copiedCorHeaders.TryGetValue(module, out result))
+            {
+                result = new CopiedCorHeaderNode(module);
+                _copiedCorHeaders.Add(module, result);
+            }
+
+            return result;
+        }
+
+        private Dictionary<EcmaModule, CopiedMetadataBlobNode> _copiedMetadataBlobs = new Dictionary<EcmaModule, CopiedMetadataBlobNode>();
+
+        public ISymbolNode CopiedMetadataBlob(EcmaModule module)
+        {
+            CopiedMetadataBlobNode result;
+            if (!_copiedMetadataBlobs.TryGetValue(module, out result))
+            {
+                result = new CopiedMetadataBlobNode(module);
+                _copiedMetadataBlobs.Add(module, result);
+            }
+
+            return result;
+        }
+
+        private Dictionary<MethodDesc, CopiedMethodILNode> _copiedMethodIL = new Dictionary<MethodDesc, CopiedMethodILNode>();
+
+        public ISymbolNode CopiedMethodIL(EcmaMethod method)
+        {
+            CopiedMethodILNode result;
+            if (!_copiedMethodIL.TryGetValue(method, out result))
+            {
+                result = new CopiedMethodILNode(method);
+                _copiedMethodIL.Add(method, result);
+            }
+
+            return result;
+        }
+
+        private Dictionary<EcmaField, CopiedFieldRvaNode> _copiedFieldRvas = new Dictionary<EcmaField, CopiedFieldRvaNode>();
+
+        public ISymbolNode CopiedFieldRva(EcmaField field)
+        {
+            CopiedFieldRvaNode result;
+            if (!_copiedFieldRvas.TryGetValue(field, out result))
+            {
+                result = new CopiedFieldRvaNode(field);
+                _copiedFieldRvas.Add(field, result);
+            }
+
+            return result;
+        }
+
+        private Dictionary<EcmaModule, CopiedStrongNameSignatureNode> _copiedStrongNameSignatures = new Dictionary<EcmaModule, CopiedStrongNameSignatureNode>();
+
+        public ISymbolNode CopiedStrongNameSignature(EcmaModule module)
+        {
+            CopiedStrongNameSignatureNode result;
+            if (!_copiedStrongNameSignatures.TryGetValue(module, out result))
+            {
+                result = new CopiedStrongNameSignatureNode(module);
+                _copiedStrongNameSignatures.Add(module, result);
+            }
+
             return result;
         }
     }

@@ -77,13 +77,15 @@ namespace ILCompiler
         {
             ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(_compilationGroup, _context);
             SignatureContext signatureContext = new SignatureContext(_inputModule, moduleTokenResolver);
+            CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(_inputModule);
 
             ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
                 _context,
                 _compilationGroup,
                 _nameMangler,
                 moduleTokenResolver,
-                signatureContext);
+                signatureContext,
+                corHeaderNode);
 
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
