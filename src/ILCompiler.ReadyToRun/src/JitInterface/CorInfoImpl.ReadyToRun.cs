@@ -558,22 +558,66 @@ namespace Internal.JitInterface
             return false;
         }
 
-        private EcmaModule HandleToModule(CORINFO_MODULE_STRUCT_* module)
-        {
-            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
-            EcmaMethod method = (EcmaMethod)methodIL.OwningMethod.GetTypicalMethodDefinition();
-            return method.Module;
-        }
-
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
-            return new ModuleToken(HandleToModule(pResolvedToken.tokenScope), pResolvedToken.token);
+            mdToken token = pResolvedToken.token;
+            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+
+            // If the method body is synthetized by the compiler (the definition of the MethodIL is not
+            // an EcmaMethodIL), the tokens in the MethodIL are not actual tokens: they're just
+            // "per-MethodIL unique cookies". For ready to run, we need to be able to get to an actual
+            // token to refer to the result of token lookup in the R2R fixups.
+            //
+            // We replace the token with the token of the ECMA entity. This only works for **non-generic
+            // types/members within the current module**, but this happens to be good enough because
+            // we only do this replacement within CoreLib to replace method bodies in places
+            // that we cannot express in C# right now).
+            MethodIL methodILDef = methodIL.GetMethodILDefinition();
+            bool isFauxMethodIL = !(methodILDef is EcmaMethodIL);
+            if (isFauxMethodIL)
+            {
+                object resultDef = methodILDef.GetObject((int)pResolvedToken.token);
+
+                if (resultDef is MethodDesc)
+                {
+                    Debug.Assert(resultDef is EcmaMethod em && em.Module == ((MetadataType)methodILDef.OwningMethod.OwningType).Module);
+                    token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultDef).Handle);
+                }
+                else if (resultDef is FieldDesc)
+                {
+                    Debug.Assert(resultDef is EcmaField ef && ef.Module == ((MetadataType)methodILDef.OwningMethod.OwningType).Module);
+                    token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultDef).Handle);
+                }
+                else
+                {
+                    if (resultDef is EcmaType ecmaType)
+                    {
+                        Debug.Assert(ecmaType.Module == ((MetadataType)methodILDef.OwningMethod.OwningType).Module);
+                        token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
+                    }
+                    else
+                    {
+                        // To replace !!0, we need to find the token for a !!0 TypeSpec within the image.
+                        Debug.Assert(resultDef is SignatureMethodVariable);
+                        Debug.Assert(((SignatureMethodVariable)resultDef).Index == 0);
+                        token = FindGenericMethodArgTypeSpec((EcmaModule)((MetadataType)methodILDef.OwningMethod.OwningType).Module);
+                    }
+                }
+            }
+
+            return new ModuleToken(((EcmaMethod)methodIL.OwningMethod.GetTypicalMethodDefinition()).Module, token);
         }
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
         {
+            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
+
+            // If this is not a MethodIL backed by a physical method body, we need to remap the token.
+            Debug.Assert(methodIL.GetMethodILDefinition() is EcmaMethodIL);
+
+            EcmaMethod method = (EcmaMethod)methodIL.OwningMethod.GetTypicalMethodDefinition();
             ISymbolNode stringObject = _compilation.SymbolNodeFactory.StringLiteral(
-                new ModuleToken(HandleToModule(module), metaTok), GetSignatureContext());
+                new ModuleToken(method.Module, metaTok), GetSignatureContext());
             ppValue = (void*)ObjectToHandle(stringObject);
             return InfoAccessType.IAT_PPVALUE;
         }
