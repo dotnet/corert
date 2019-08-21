@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -1662,6 +1664,96 @@ namespace Internal.JitInterface
         }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
-        { throw new NotImplementedException("getAddressOfPInvokeTarget"); }
+        {
+            EcmaMethod ecmaMethod = (EcmaMethod)HandleToObject(method);
+            ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
+            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null);
+            
+            pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetIndirectPInvokeTargetNode(methodWithToken, GetSignatureContext()));
+            pLookup.accessType = InfoAccessType.IAT_PPVALUE;
+        }
+
+        private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
+        {
+            EcmaMethod method = (EcmaMethod)HandleToObject(handle);
+            return MethodRequiresMarshaling(method);
+        }
+
+        private static bool FitsInU2(int stackSize)
+        {
+            return unchecked((ushort)stackSize) == stackSize;
+        }
+
+        private bool MethodRequiresMarshaling(EcmaMethod method)
+        {
+            if (method.GetPInvokeMethodMetadata().Flags.SetLastError)
+            {
+                // SetLastError is handled by stub
+                return true;
+            }
+
+            if ((method.ImplAttributes & MethodImplAttributes.PreserveSig) == 0)
+            {
+                // HRESULT swapping is handled by stub
+                return true;
+            }
+
+            int stackSize = 0;
+            if (TypeRequiresMarshaling(method.Signature.ReturnType, isReturnType: true, ref stackSize))
+            {
+                return true;
+            }
+
+            // The return type size doesn't contribute to stackSize
+            stackSize = 0;
+            foreach (TypeDesc argType in method.Signature)
+            {
+                if (TypeRequiresMarshaling(argType, isReturnType: false, ref stackSize))
+                {
+                    return true;
+                }
+            }
+            return !FitsInU2(stackSize);
+        }
+
+        private bool TypeRequiresMarshaling(TypeDesc type, bool isReturnType, ref int stackSize)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.Pointer:
+                    // TODO: custom modifiers S(NeedsCopyConstructorModifier, IsCopyConstructed)
+                    break;
+
+                case TypeFlags.Enum:
+                case TypeFlags.ValueType:
+                    if (!MarshalUtils.IsBlittableType(type) && !type.IsEnum)
+                    {
+                        return true;
+                    }
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
+                    {
+                        return true;
+                    }
+                    if (isReturnType && !type.UnderlyingType.IsPrimitive)
+                    {
+                        return true;
+                    }
+                    break;
+
+                case TypeFlags.Boolean:
+                case TypeFlags.Char:
+                    return true;
+
+                default:
+                    if (!type.IsPrimitive)
+                    {
+                        return true;
+                    }
+                    break;
+            }
+
+            stackSize += LayoutInt.AlignUp(((DefType)type).InstanceFieldSize, new LayoutInt(type.Context.Target.PointerSize), type.Context.Target).AsInt;
+            return false;
+        }
     }
 }

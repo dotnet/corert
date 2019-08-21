@@ -604,7 +604,7 @@ namespace ILCompiler.DependencyAnalysis
             return node;
         }
 
-        Dictionary<int, RVAFieldNode> _rvaFieldSymbols = new Dictionary<int, RVAFieldNode>();
+        private Dictionary<int, RVAFieldNode> _rvaFieldSymbols = new Dictionary<int, RVAFieldNode>();
 
         public ISymbolNode GetRvaFieldNode(FieldDesc fieldDesc)
         {
@@ -649,6 +649,29 @@ namespace ILCompiler.DependencyAnalysis
                 _rvaFieldSymbols.Add(rva, rvaFieldNode);
             }
             return rvaFieldNode;
+        }
+
+        private Dictionary<MethodWithToken, ISymbolNode> _indirectPInvokeTargetNodes = new Dictionary<MethodWithToken, ISymbolNode>();
+
+        public ISymbolNode GetIndirectPInvokeTargetNode(MethodWithToken methodWithToken, SignatureContext signatureContext)
+        {
+            ISymbolNode result;
+
+            if (!_indirectPInvokeTargetNodes.TryGetValue(methodWithToken, out result))
+            {
+                result = new PrecodeHelperImport(
+                    _codegenNodeFactory,
+                    _codegenNodeFactory.MethodSignature(
+                        ReadyToRunFixupKind.READYTORUN_FIXUP_IndirectPInvokeTarget,
+                        methodWithToken,
+                        signatureContext: signatureContext,
+                        isUnboxingStub: false,
+                        isInstantiatingStub: false));
+
+                _indirectPInvokeTargetNodes.Add(methodWithToken, result);
+            }
+
+            return result;
         }
     }
 }

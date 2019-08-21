@@ -1541,5 +1541,30 @@ namespace Internal.JitInterface
                 throw new NotImplementedException("getGSCookie");
             }
         }
+
+        private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
+        {
+            // calli is covered by convertPInvokeCalliToCall
+            if (handle == null)
+            {
+#if DEBUG
+                MethodSignature methodSignature = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
+
+                MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(methodSignature);
+                Debug.Assert(!IsPInvokeStubRequired(stub));
+#endif
+
+                return false;
+            }
+
+            MethodDesc method = HandleToObject(handle);
+
+            if (method.IsRawPInvoke())
+                return false;
+
+            // We could have given back the PInvoke stub IL to the JIT and let it inline it, without
+            // checking whether there is any stub required. Save the JIT from doing the inlining by checking upfront.
+            return IsPInvokeStubRequired(method);
+        }
     }
 }
