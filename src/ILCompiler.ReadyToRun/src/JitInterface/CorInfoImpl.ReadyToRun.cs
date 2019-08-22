@@ -1751,7 +1751,7 @@ namespace Internal.JitInterface
                     {
                         return true;
                     }
-                    if (isReturnType && !type.UnderlyingType.IsPrimitive)
+                    if (isReturnType && !type.IsPrimitive)
                     {
                         return true;
                     }
