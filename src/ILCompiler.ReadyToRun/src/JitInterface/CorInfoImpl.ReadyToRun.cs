@@ -1675,13 +1675,26 @@ namespace Internal.JitInterface
 
         private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
         {
-            EcmaMethod method = (EcmaMethod)HandleToObject(handle);
-            return MethodRequiresMarshaling(method);
+            if (_compilation.NodeFactory.Target.Architecture == TargetArchitecture.X86)
+            {
+                // TODO-PERF: x86 pinvoke stubs on Unix platforms
+                return true;
+            }
+
+            if (handle != null)
+            {
+                EcmaMethod method = (EcmaMethod)HandleToObject(handle);
+                return MethodRequiresMarshaling(method);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
-        private static bool FitsInU2(int stackSize)
+        private bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
         {
-            return unchecked((ushort)stackSize) == stackSize;
+            throw new NotImplementedException();
         }
 
         private bool MethodRequiresMarshaling(EcmaMethod method)
@@ -1698,25 +1711,23 @@ namespace Internal.JitInterface
                 return true;
             }
 
-            int stackSize = 0;
-            if (TypeRequiresMarshaling(method.Signature.ReturnType, isReturnType: true, ref stackSize))
+            if (TypeRequiresMarshaling(method.Signature.ReturnType, isReturnType: true))
             {
                 return true;
             }
 
-            // The return type size doesn't contribute to stackSize
-            stackSize = 0;
             foreach (TypeDesc argType in method.Signature)
             {
-                if (TypeRequiresMarshaling(argType, isReturnType: false, ref stackSize))
+                if (TypeRequiresMarshaling(argType, isReturnType: false))
                 {
                     return true;
                 }
             }
-            return !FitsInU2(stackSize);
+
+            return false;
         }
 
-        private bool TypeRequiresMarshaling(TypeDesc type, bool isReturnType, ref int stackSize)
+        private bool TypeRequiresMarshaling(TypeDesc type, bool isReturnType)
         {
             switch (type.Category)
             {
@@ -1725,8 +1736,14 @@ namespace Internal.JitInterface
                     break;
 
                 case TypeFlags.Enum:
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
+                    {
+                        return true;
+                    }
+                    break;
+
                 case TypeFlags.ValueType:
-                    if (!MarshalUtils.IsBlittableType(type) && !type.IsEnum)
+                    if (!MarshalUtils.IsBlittableType(type))
                     {
                         return true;
                     }
@@ -1752,7 +1769,6 @@ namespace Internal.JitInterface
                     break;
             }
 
-            stackSize += LayoutInt.AlignUp(((DefType)type).InstanceFieldSize, new LayoutInt(type.Context.Target.PointerSize), type.Context.Target).AsInt;
             return false;
         }
     }
