@@ -700,24 +700,6 @@ def call_msbuild(coreclr_repo_location,
 
     return proc.returncode
 
-def running_in_ci():
-    """ Check if running in ci
-
-    Returns:
-        bool
-    """
-
-    is_ci = False
-
-    try:
-        jenkins_build_number = os.environ["BUILD_NUMBER"]
-
-        is_ci = True
-    except:
-        pass
-
-    return is_ci
-
 def copy_native_test_bin_to_core_root(host_os, path, core_root):
     """ Recursively copy all files to core_root
     
@@ -1927,37 +1909,8 @@ def build_test_wrappers(host_os,
     print(" ".join(command))
 
     sys.stdout.flush() # flush output before creating sub-process
-    if not g_verbose:
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        if not running_in_ci():
-            try:
-                expected_time_to_complete = 60*5 # 5 Minutes
-                estimated_time_running = 0
-
-                time_delta = 1
-
-                while True:
-                    time_remaining = expected_time_to_complete - estimated_time_running
-                    time_in_minutes = math.floor(time_remaining / 60)
-                    remaining_seconds = time_remaining % 60
-
-                    sys.stdout.write("\rEstimated time remaining: %d minutes %d seconds" % (time_in_minutes, remaining_seconds))
-                    sys.stdout.flush()
-
-                    time.sleep(time_delta)
-                    estimated_time_running += time_delta
-
-                    if estimated_time_running == expected_time_to_complete:
-                        break
-                    if proc.poll() is not None:
-                        break
-
-            except KeyboardInterrupt:
-                proc.kill()
-                sys.exit(1)
-    else:
-        proc = subprocess.Popen(command)
+    proc = subprocess.Popen(command)
 
     try:
         proc.communicate()
@@ -2111,11 +2064,6 @@ def parse_test_results(host_os, arch, build_type, coreclr_repo_location, test_lo
             print("It could also mean there was a problem logging. Please run the tests again.")
 
             return
-
-    if host_os != "Windows_NT" and running_in_ci():
-        # Huge hack.
-        # TODO change netci to parse testResults.xml
-        shutil.copy2(test_run_location, os.path.join(os.path.dirname(test_run_location), "coreclrtests.xml"))
 
     assemblies = xml.etree.ElementTree.parse(test_run_location).getroot()
 
