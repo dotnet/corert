@@ -35,6 +35,7 @@ class Program
         TestGenericInlining.Run();
 #if !CODEGEN_CPP
         TestNullableCasting.Run();
+        TestVariantCasting.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
@@ -2183,6 +2184,27 @@ class Program
                 throw new Exception();
 
             if (!(((object)new Mine<object>()) is Nullable<Mine<object>>))
+                throw new Exception();
+        }
+    }
+
+    class TestVariantCasting
+    {
+        private delegate T GenericDelegate<out T>();
+
+        class Base { }
+        class Derived : Base { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool IsInstanceOfGenericDelegateOf<T>(object o)
+        {
+            return o is GenericDelegate<T>;
+        }
+
+        public static void Run()
+        {
+            GenericDelegate<Derived> del = () => null;
+            if (!IsInstanceOfGenericDelegateOf<Base>(del))
                 throw new Exception();
         }
     }
