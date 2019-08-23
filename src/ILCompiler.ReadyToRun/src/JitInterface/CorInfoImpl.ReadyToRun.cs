@@ -362,6 +362,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE:
                     id = ReadyToRunHelper.Unbox_Nullable;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
+                    throw new RequiresRuntimeJitException(ftnNum.ToString());
+
                 case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR:
                     id = ReadyToRunHelper.NewMultiDimArr;
                     break;
