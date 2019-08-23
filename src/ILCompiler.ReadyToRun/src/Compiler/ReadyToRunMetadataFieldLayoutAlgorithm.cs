@@ -731,6 +731,11 @@ namespace ILCompiler
 
         public static bool IsManagedSequentialType(TypeDesc type)
         {
+            if (type.IsPointer)
+            {
+                return true;
+            }
+
             if (!type.IsValueType)
             {
                 return false;
