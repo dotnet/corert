@@ -872,36 +872,6 @@ namespace Internal.JitInterface
             return (CorInfoUnmanagedCallConv)unmanagedCallConv;
         }
 
-        private bool IsPInvokeStubRequired(MethodDesc method)
-        {
-            return ((Internal.IL.Stubs.PInvokeILStubMethodIL)_compilation.GetMethodIL(method))?.IsStubRequired ?? false;
-        }
-
-        private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
-        {
-            // calli is covered by convertPInvokeCalliToCall
-            if (handle == null)
-            {
-#if DEBUG
-                MethodSignature methodSignature = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
-
-                MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(methodSignature);
-                Debug.Assert(!IsPInvokeStubRequired(stub));
-#endif
-
-                return false;
-            }
-
-            MethodDesc method = HandleToObject(handle);
-
-            if (method.IsRawPInvoke())
-                return false;
-
-            // We could have given back the PInvoke stub IL to the JIT and let it inline it, without
-            // checking whether there is any stub required. Save the JIT from doing the inlining by checking upfront.
-            return IsPInvokeStubRequired(method);
-        }
-
         private bool satisfiesMethodConstraints(CORINFO_CLASS_STRUCT_* parent, CORINFO_METHOD_STRUCT_* method)
         { throw new NotImplementedException("satisfiesMethodConstraints"); }
         private bool isCompatibleDelegate(CORINFO_CLASS_STRUCT_* objCls, CORINFO_CLASS_STRUCT_* methodParentCls, CORINFO_METHOD_STRUCT_* method, CORINFO_CLASS_STRUCT_* delegateCls, ref bool pfIsOpenDelegate)
@@ -2715,34 +2685,6 @@ namespace Internal.JitInterface
             // Slow tailcalls are not supported yet
             // https://github.com/dotnet/corert/issues/1683
             return null;
-        }
-
-        private bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
-        {
-            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
-            if (methodIL.OwningMethod.IsPInvoke)
-            {
-                return false;
-            }
-
-            MethodSignature signature = (MethodSignature)methodIL.GetObject((int)pResolvedToken.token);
-
-            CorInfoCallConv callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
-            if (callConv != CorInfoCallConv.CORINFO_CALLCONV_C &&
-                callConv != CorInfoCallConv.CORINFO_CALLCONV_STDCALL &&
-                callConv != CorInfoCallConv.CORINFO_CALLCONV_THISCALL &&
-                callConv != CorInfoCallConv.CORINFO_CALLCONV_FASTCALL)
-            {
-                return false;
-            }
-
-            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(signature);
-            if (!mustConvert && !IsPInvokeStubRequired(stub))
-                return false;
-
-            pResolvedToken.hMethod = ObjectToHandle(stub);
-            pResolvedToken.hClass = ObjectToHandle(stub.OwningType);
-            return true;
         }
 
         private void* getMemoryManager()

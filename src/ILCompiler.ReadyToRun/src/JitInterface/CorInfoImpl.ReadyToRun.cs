@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
@@ -1662,6 +1664,112 @@ namespace Internal.JitInterface
         }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
-        { throw new NotImplementedException("getAddressOfPInvokeTarget"); }
+        {
+            EcmaMethod ecmaMethod = (EcmaMethod)HandleToObject(method);
+            ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
+            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null);
+            
+            pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetIndirectPInvokeTargetNode(methodWithToken, GetSignatureContext()));
+            pLookup.accessType = InfoAccessType.IAT_PPVALUE;
+        }
+
+        private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
+        {
+            if (_compilation.NodeFactory.Target.Architecture == TargetArchitecture.X86)
+            {
+                // TODO-PERF: x86 pinvoke stubs on Unix platforms
+                return true;
+            }
+
+            if (handle != null)
+            {
+                EcmaMethod method = (EcmaMethod)HandleToObject(handle);
+                return MethodRequiresMarshaling(method);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
+        {
+            throw new NotImplementedException();
+        }
+
+        private bool MethodRequiresMarshaling(EcmaMethod method)
+        {
+            if (method.GetPInvokeMethodMetadata().Flags.SetLastError)
+            {
+                // SetLastError is handled by stub
+                return true;
+            }
+
+            if ((method.ImplAttributes & MethodImplAttributes.PreserveSig) == 0)
+            {
+                // HRESULT swapping is handled by stub
+                return true;
+            }
+
+            if (TypeRequiresMarshaling(method.Signature.ReturnType, isReturnType: true))
+            {
+                return true;
+            }
+
+            foreach (TypeDesc argType in method.Signature)
+            {
+                if (TypeRequiresMarshaling(argType, isReturnType: false))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TypeRequiresMarshaling(TypeDesc type, bool isReturnType)
+        {
+            switch (type.Category)
+            {
+                case TypeFlags.Pointer:
+                    // TODO: custom modifiers S(NeedsCopyConstructorModifier, IsCopyConstructed)
+                    break;
+
+                case TypeFlags.Enum:
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
+                    {
+                        return true;
+                    }
+                    break;
+
+                case TypeFlags.ValueType:
+                    if (!MarshalUtils.IsBlittableType(type))
+                    {
+                        return true;
+                    }
+                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(type))
+                    {
+                        return true;
+                    }
+                    if (isReturnType && !type.IsPrimitive)
+                    {
+                        return true;
+                    }
+                    break;
+
+                case TypeFlags.Boolean:
+                case TypeFlags.Char:
+                    return true;
+
+                default:
+                    if (!type.IsPrimitive)
+                    {
+                        return true;
+                    }
+                    break;
+            }
+
+            return false;
+        }
     }
 }
