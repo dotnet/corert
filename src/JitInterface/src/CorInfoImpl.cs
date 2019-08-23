@@ -1055,7 +1055,13 @@ namespace Internal.JitInterface
             {
                 MethodDesc method = result as MethodDesc;
                 pResolvedToken.hMethod = ObjectToHandle(method);
-                pResolvedToken.hClass = ObjectToHandle(method.OwningType);
+
+                TypeDesc owningClass = method.OwningType;
+                pResolvedToken.hClass = ObjectToHandle(owningClass);
+
+#if !SUPPORT_JIT
+                _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
+#endif
 
 #if READYTORUN
                 if (recordToken)
@@ -1075,7 +1081,13 @@ namespace Internal.JitInterface
                     ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
 
                 pResolvedToken.hField = ObjectToHandle(field);
-                pResolvedToken.hClass = ObjectToHandle(field.OwningType);
+
+                TypeDesc owningClass = field.OwningType;
+                pResolvedToken.hClass = ObjectToHandle(owningClass);
+
+#if !SUPPORT_JIT
+                _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
+#endif
 
 #if READYTORUN
                 if (recordToken)
@@ -1103,6 +1115,10 @@ namespace Internal.JitInterface
                     type = type.MakeArrayType();
                 }
                 pResolvedToken.hClass = ObjectToHandle(type);
+
+#if !SUPPORT_JIT
+                _compilation.TypeSystemContext.EnsureLoadableType(type);
+#endif
             }
 
             pResolvedToken.pTypeSpec = null;

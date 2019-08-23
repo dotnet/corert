@@ -226,7 +226,6 @@ namespace ILCompiler.DependencyAnalysis
             TypeFixupSignature signature;
             if (!perFixupKindMap.TryGetValue(typeDesc, out signature))
             {
-                EETypeNode.CheckCanGenerateEEType(this, typeDesc);
                 signature = new TypeFixupSignature(fixupKind, typeDesc, signatureContext);
                 perFixupKindMap.Add(typeDesc, signature);
             }
