@@ -1120,6 +1120,7 @@ namespace Internal.JitInterface
                                 new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken), constrainedType),
                                 isUnboxingStub,
                                 isInstantiatingStub: useInstantiatingStub,
+                                isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0,
                                 GetSignatureContext()));
                     }
                     break;

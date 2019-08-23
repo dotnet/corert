@@ -106,22 +106,37 @@ namespace ILCompiler.DependencyAnalysis
             MethodWithToken method,
             bool isUnboxingStub,
             bool isInstantiatingStub,
+            bool isPrecodeImportRequired,
             SignatureContext signatureContext)
         {
             IMethodNode methodImport;
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, isPrecodeImportRequired);
             if (!_importMethods.TryGetValue(key, out methodImport))
             {
                 if (CompilationModuleGroup.ContainsMethodBody(method.Method, false))
                 {
-                    methodImport = new LocalMethodImport(
-                        this,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                        method,
-                        CreateMethodEntrypointNode(method, isUnboxingStub, isInstantiatingStub, signatureContext),
-                        isUnboxingStub,
-                        isInstantiatingStub,
-                        signatureContext);
+                    if (isPrecodeImportRequired)
+                    {
+                        methodImport = new PrecodeMethodImport(
+                            this,
+                            ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                            method,
+                            CreateMethodEntrypointNode(method, isUnboxingStub, isInstantiatingStub, signatureContext),
+                            isUnboxingStub,
+                            isInstantiatingStub,
+                            signatureContext);
+                    }
+                    else
+                    {
+                        methodImport = new LocalMethodImport(
+                            this,
+                            ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                            method,
+                            CreateMethodEntrypointNode(method, isUnboxingStub, isInstantiatingStub, signatureContext),
+                            isUnboxingStub,
+                            isInstantiatingStub,
+                            signatureContext);
+                    }
                 }
                 else
                 {
@@ -150,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis
 
             TypeAndMethod localMethodKey = new TypeAndMethod(localMethod.OwningType,
                 new MethodWithToken(localMethod, default(ModuleToken), constrainedType: null),
-                isUnboxingStub: false, isInstantiatingStub: false);
+                isUnboxingStub: false, isInstantiatingStub: false, isPrecodeImportRequired: false);
             MethodWithGCInfo localMethodNode;
             if (!_localMethodCache.TryGetValue(localMethodKey, out localMethodNode))
             {
@@ -170,6 +185,10 @@ namespace ILCompiler.DependencyAnalysis
                 if (methodCodeNode == null && methodNode is LocalMethodImport localMethodImport)
                 {
                     methodCodeNode = localMethodImport.MethodCodeNode;
+                }
+                if (methodCodeNode == null && methodNode is PrecodeMethodImport PrecodeMethodImport)
+                {
+                    methodCodeNode = PrecodeMethodImport.MethodCodeNode;
                 }
 
                 if (methodCodeNode != null && !methodCodeNode.IsEmpty)
@@ -201,7 +220,7 @@ namespace ILCompiler.DependencyAnalysis
                 _methodSignatures.Add(fixupKind, perFixupKindMap);
             }
 
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, false);
             MethodFixupSignature signature;
             if (!perFixupKindMap.TryGetValue(key, out signature))
             {
@@ -350,7 +369,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(MethodImports, "Method imports are always generated");
             graph.AddRoot(DispatchImports, "Dispatch imports are always generated");
             graph.AddRoot(HelperImports, "Helper imports are always generated");
-            graph.AddRoot(PrecodeImports, "Precode imports are always generated");
+            graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
 
@@ -389,9 +408,10 @@ namespace ILCompiler.DependencyAnalysis
             ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
             return MethodEntrypoint(
                 new MethodWithToken(method, moduleToken, constrainedType: null),
-                signatureContext: InputModuleContext,
                 isUnboxingStub: false,
-                isInstantiatingStub: false);
+                isInstantiatingStub: false,
+                isPrecodeImportRequired: false,
+                signatureContext: InputModuleContext);
         }
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
