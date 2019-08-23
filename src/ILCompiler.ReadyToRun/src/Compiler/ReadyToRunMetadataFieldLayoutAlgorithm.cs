@@ -731,29 +731,31 @@ namespace ILCompiler
 
         public static bool IsManagedSequentialType(TypeDesc type)
         {
-            if (type is MetadataType metadataType && (metadataType.IsExplicitLayout || !metadataType.IsSequentialLayout))
+            if (!type.IsValueType)
             {
                 return false;
             }
-            if (type.IsPrimitive || type.Category == TypeFlags.Pointer)
+
+            MetadataType metadataType = (MetadataType)type;
+            if (metadataType.IsExplicitLayout || !metadataType.IsSequentialLayout)
+            {
+                return false;
+            }
+
+            if (type.IsPrimitive)
             {
                 return true;
             }
-            if (type.IsValueType)
+
+            foreach (FieldDesc field in type.GetFields())
             {
-                foreach (FieldDesc field in type.GetFields())
+                if (!field.IsStatic && !IsManagedSequentialType(field.FieldType.UnderlyingType))
                 {
-                    if (!field.IsStatic &&
-                        !field.IsLiteral &&
-                        !field.FieldType.IsEnum &&
-                        !IsManagedSequentialType(field.FieldType))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-                return true;
             }
-            return false;
+
+            return true;
         }
     }
 }
