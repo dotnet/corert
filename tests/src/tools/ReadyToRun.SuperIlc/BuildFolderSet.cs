@@ -1035,9 +1035,25 @@ namespace ReadyToRun.SuperIlc
                             ProcessInfo compilationProcess = compilation[(int)runner.Index];
                             if (compilationProcess != null)
                             {
-                                string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.Parameters.InputFileName}\n" + File.ReadAllText(compilationProcess.Parameters.LogPath);
-                                perRunnerLog[(int)runner.Index].Write(log);
-                                combinedLog.Write(log);
+                                string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.Parameters.InputFileName}";
+                                StreamWriter runnerLog = perRunnerLog[(int)runner.Index];
+                                runnerLog.WriteLine(log);
+                                combinedLog.WriteLine(log);
+                                try
+                                {
+                                    using (Stream input = new FileStream(compilationProcess.Parameters.LogPath, FileMode.Open, FileAccess.Read))
+                                    {
+                                        input.CopyTo(combinedLog.BaseStream);
+                                        input.Seek(0, SeekOrigin.Begin);
+                                        input.CopyTo(runnerLog.BaseStream);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    combinedLog.WriteLine(" -> " + ex.Message);
+                                    runnerLog.WriteLine(" -> " + ex.Message);
+                                }
+
                                 if (!compilationProcess.Succeeded)
                                 {
                                     compilationErrorPerRunner[(int)runner.Index] = true;
