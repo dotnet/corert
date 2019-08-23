@@ -183,6 +183,16 @@ namespace Internal.IL
 
             try
             {
+                if (_method.ToString().Contains("InternalGetResourceString"))
+                {
+                    throw new Exception();
+                }
+                if (this._method.ToString().Contains("cctor") &&
+                    _method.ToString().Contains("Canon") &&
+                    _method.ToString().Contains("LowLevelList"))
+                {
+                    throw new Exception();
+                }
 
                 ImportBasicBlocks();
             }
@@ -574,22 +584,22 @@ namespace Internal.IL
             _currentFunclet = GetFuncletForBlock(basicBlock);
 
             LLVM.PositionBuilderAtEnd(_builder, _curBasicBlock);
-            if (_method.Name == "StartupCodeMain")
-            {
-                LLVMValueRef symbolAddress = WebAssemblyObjectWriter.GetOrAddGlobalSymbol(Module,
-                    "__EEType_S_P_StackTraceMetadata_Internal_StackTraceMetadata_StackTraceMetadata_PerModuleMethodNameResolverHashtable___SYMBOL");
-                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 20, false));
-                PrintIntPtr(symbolAddress);
-                var eetype = CastToRawPointer(LLVM.BuildLoad(_builder, symbolAddress, "eetype"));
-
-                var dictAddr = LLVM.BuildGEP(_builder, eetype, new[] {BuildConstInt32(36)}, "dictSlot");
-                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 21, false));
-                PrintIntPtr(dictAddr);
-
-                var dictAddr2 = LLVM.BuildGEP(_builder, eetype, new[] { BuildConstInt32(16) }, "dictSlot");
-                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 22, false));
-                PrintIntPtr(dictAddr2);
-            }
+//            if (_method.Name == "StartupCodeMain")
+//            {
+//                LLVMValueRef symbolAddress = WebAssemblyObjectWriter.GetOrAddGlobalSymbol(Module,
+//                    "__EEType_S_P_StackTraceMetadata_Internal_StackTraceMetadata_StackTraceMetadata_PerModuleMethodNameResolverHashtable___SYMBOL");
+//                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 20, false));
+//                PrintIntPtr(symbolAddress);
+//                var eetype = CastToRawPointer(LLVM.BuildLoad(_builder, symbolAddress, "eetype"));
+//
+//                var dictAddr = LLVM.BuildGEP(_builder, eetype, new[] {BuildConstInt32(36)}, "dictSlot");
+//                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 21, false));
+//                PrintIntPtr(dictAddr);
+//
+//                var dictAddr2 = LLVM.BuildGEP(_builder, eetype, new[] { BuildConstInt32(16) }, "dictSlot");
+//                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 22, false));
+//                PrintIntPtr(dictAddr2);
+//            }
         }
 
         private void EndImportingBasicBlock(BasicBlock basicBlock)
@@ -1927,12 +1937,12 @@ namespace Internal.IL
                         GetShadowStack(),
                         genericContext
                     }, "getHelper");
-                    PrintIntPtr(hiddenParam);
+//                    PrintIntPtr(hiddenParam);
                     var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
                     //TODO interfaceEEType can be refactored out
                     eeTypeExpression = CallRuntime("System", _compilation.TypeSystemContext, "Object", "get_EEType",
                         new[] {new ExpressionEntry(StackValueKind.ObjRef, "thisPointer", thisPointer)});
-                    interfaceEEType = new ExpressionEntry(StackValueKind.ValueType, "eeType", hiddenParam, eeTypeDesc);
+                    interfaceEEType = new ExpressionEntry(StackValueKind.ValueType, "interfaceEEType", hiddenParam, eeTypeDesc);
                 }
                 else
                 {
@@ -4077,13 +4087,17 @@ namespace Internal.IL
 
         private ExpressionEntry TriggerCctorReturnStaticBase(MetadataType type, LLVMValueRef staticBaseValueRef, string runnerMethodName, out ExpressionEntry returnExp)
         {
+            //TODO: is this necessary and what is the type?
             ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
             _dependencies.Add(classConstructionContextSymbol);
 
-            //TODO: is this gep necessary here
-            LLVMValueRef classConstructionContextPtr = LLVM.BuildGEP(_builder, staticBaseValueRef, new LLVMValueRef[] { BuildConstInt32(-2) }, "classConstructionContext");
-            StackEntry classConstructionContext = new AddressExpressionEntry(StackValueKind.NativeInt, "classConstructionContext", classConstructionContextPtr,
+            var classConstCtx = LLVM.BuildGEP(_builder,
+                LLVM.BuildBitCast(_builder, staticBaseValueRef, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+                    "ptr8"), new LLVMValueRef[] {BuildConstInt32(-8)}, "backToClassCtx");
+            PrintInt32(BuildConstInt32(32));
+            StackEntry classConstructionContext = new AddressExpressionEntry(StackValueKind.NativeInt, "classConstructionContext", classConstCtx,
                 GetWellKnownType(WellKnownType.IntPtr));
+            PrintIntPtr(staticBaseValueRef);
             StackEntry staticBaseEntry = new AddressExpressionEntry(StackValueKind.NativeInt, "staticBase", staticBaseValueRef,
                 GetWellKnownType(WellKnownType.IntPtr));
 
@@ -4270,7 +4284,7 @@ namespace Internal.IL
             {
                 LLVMValueRef typedAddress;
                 LLVMValueRef thisPtr;
-                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 0, false));
+//                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 0, false));
                 //TODO this is for interface calls, can it be simplified
 //                if (constrainedType != null && !constrainedType.IsValueType)
 //                {
@@ -4285,16 +4299,16 @@ namespace Internal.IL
                         LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0), 0));
                     thisPtr = LLVM.BuildLoad(_builder, typedAddress, "loadThis");
 //                }
-                PrintIntPtr(thisPtr);
-                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 1, false));
+//                PrintIntPtr(thisPtr);
+//                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 1, false));
 
                 var methodTablePtrRef = LLVM.BuildLoad(_builder, thisPtr, "methodTablePtrRef");
-                PrintIntPtr(methodTablePtrRef);
+//                PrintIntPtr(methodTablePtrRef);
 
                 LLVMValueRef symbolAddress = WebAssemblyObjectWriter.GetOrAddGlobalSymbol(Module,
                     "__EEType_S_P_TypeLoader_System_Collections_Generic_LowLevelDictionaryWithIEnumerable_2<S_P_CoreLib_System_Reflection_RuntimeAssemblyName__S_P_TypeLoader_Internal_Reflection_Execution_AssemblyBinderImplementation_ScopeDefinitionGroup>___SYMBOL");
-                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 2, false));
-                PrintIntPtr(symbolAddress);
+//                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 2, false));
+//                PrintIntPtr(symbolAddress);
 
                 return methodTablePtrRef;
                 // this fails at S_P_TypeLoader_Internal_Runtime_CompilerHelpers_LibraryInitializer__InitializeLibrary

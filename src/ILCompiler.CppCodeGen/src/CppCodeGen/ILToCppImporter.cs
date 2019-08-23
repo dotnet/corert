@@ -126,6 +126,10 @@ namespace Internal.IL
             // Get the runtime determined method IL so that this works right in shared code
             // and tokens in shared code resolve to runtime determined types.
             MethodIL uninstantiatiedMethodIL = methodIL.GetMethodILDefinition();
+            if (method.ToString().Contains("ClassConstructorRunner"))
+            {
+
+            }
             if (methodIL != uninstantiatiedMethodIL)
             {
                 MethodDesc sharedMethod = method.GetSharedRuntimeFormMethodTarget();
