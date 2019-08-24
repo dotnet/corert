@@ -62,6 +62,7 @@ namespace Internal.IL
         private LLVMMetadataRef _debugFunction;
         private TypeDesc _constrainedType = null;
         private TypeDesc _canonThisType;
+        private LLVMBasicBlockRef _currentEndIfBlock;
         /// <summary>
         /// Offset by which fat function pointers are shifted to distinguish them
         /// from real function pointers.
@@ -604,7 +605,7 @@ namespace Internal.IL
 
         private void EndImportingBasicBlock(BasicBlock basicBlock)
         {
-            var terminator = basicBlock.Block.GetBasicBlockTerminator();
+            var terminator = (_currentEndIfBlock.Pointer != IntPtr.Zero ? _currentEndIfBlock : basicBlock.Block).GetBasicBlockTerminator();
             if (terminator.Pointer == IntPtr.Zero)
             {
                 if (_basicBlocks.Length > _currentOffset)
@@ -2310,7 +2311,7 @@ namespace Internal.IL
         {
             //TODO: refactor so this is a simple call llvm method from the MethodDesc/Sig
             LLVMValueRef fn;
-            bool hasHiddenParam = false;
+            bool hasHiddenParam;
             LLVMValueRef hiddenParam = default;
             if (opcode == ILOpcode.calli)
             {
@@ -2357,37 +2358,32 @@ namespace Internal.IL
                 {
                     exactContextNeedsRuntimeLookup = callee.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any);
                 }
-            }
 
 
-            if (hasHiddenParam)
-            {
-                if (exactContextNeedsRuntimeLookup)
+                if (hasHiddenParam)
                 {
+                    if (exactContextNeedsRuntimeLookup)
+                    {
 //                    if (!resolvedConstraint)
 //                    {
-                        if (callee.RequiresInstMethodDescArg()) 
+                        if (callee.RequiresInstMethodDescArg())
                         {
                             LLVMValueRef helper;
-                            var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod, out helper);
+                            var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodDictionary,
+                                runtimeDeterminedMethod, out helper);
                             var genericContext = GetGenericContext();
-                            hiddenParam = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                            {
-                    GetShadowStack(),
-                                genericContext
-                            }, "getHelper");
-                        //                            Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod));
-                    }
-                    else
+                            hiddenParam = LLVM.BuildCall(_builder, helper,
+                                new LLVMValueRef[] {GetShadowStack(), genericContext}, "getHelper");
+                            //                            Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedMethod));
+                        }
+                        else
                         {
                             LLVMValueRef helper;
-                            var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType, out helper);
+                            var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle,
+                                runtimeDeterminedMethod.OwningType, out helper);
                             var genericContext = GetGenericContext();
-                            hiddenParam = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                            {
-                    GetShadowStack(),
-                                genericContext
-                            }, "getHelper");
+                            hiddenParam = LLVM.BuildCall(_builder, helper,
+                                new LLVMValueRef[] {GetShadowStack(), genericContext}, "getHelper");
                         }
 
 //                        Append("(");
@@ -2417,35 +2413,37 @@ namespace Internal.IL
 //                            }
 //                        }
 //                    }
-                }
-                else if(opcode == ILOpcode.calli && hiddenRef.Pointer == IntPtr.Zero) // this is calli and the hidden param is passed
-                {
-                    if (canonMethod.RequiresInstMethodDescArg())
+                    }
+                    else
                     {
-                        hiddenParam = LoadAddressOfSymbolNode(GetMethodGenericDictionaryNode(callee));
+                        if (canonMethod.RequiresInstMethodDescArg())
+                        {
+                            hiddenParam = LoadAddressOfSymbolNode(GetMethodGenericDictionaryNode(callee));
 //                        hiddenParam = LLVM.BuildGEP(_builder, dictSymbol, new LLVMValueRef[]
 //                        {
 //                            BuildConstInt32(1)
 //                        }, "dictGepToTypes");
 
+                        }
+                        else
+                        {
+                            var owningTypeSymbol = _compilation.NodeFactory.ConstructedTypeSymbol(callee.OwningType);
+                            _dependencies.Add(owningTypeSymbol);
+                            hiddenParam = LoadAddressOfSymbolNode(owningTypeSymbol);
+                        }
                     }
-                    else
-                    {
-                        var owningTypeSymbol = _compilation.NodeFactory.ConstructedTypeSymbol(callee.OwningType);
-                        _dependencies.Add(owningTypeSymbol);
-                        hiddenParam = LoadAddressOfSymbolNode(owningTypeSymbol);
-                    }
+                    //                var method = (MethodDesc)_canonMethodIL.GetObject(token);
+                    //
+                    //                typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
+                    //                LLVMValueRef helper;
+                    //                var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeToAlloc, out helper);
+                    //                var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
+                    //                var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                    //                var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
+                    //                newObjResult = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments);
                 }
-                //                var method = (MethodDesc)_canonMethodIL.GetObject(token);
-                //
-                //                typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
-                //                LLVMValueRef helper;
-                //                var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeToAlloc, out helper);
-                //                var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
-                //                var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-                //                var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
-                //                newObjResult = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments);
             }
+
             if (hiddenParam.Pointer != IntPtr.Zero)
             {
                 llvmArgs.Add(CastIfNecessary(hiddenParam, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0)));
@@ -2861,7 +2859,9 @@ namespace Internal.IL
         {
             MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
 
-            var target = ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature, false /* TODO: should this be true sometimes */), 0), _builder);
+            var noHiddenParamSig = GetLLVMSignatureForMethod(methodSignature, false);
+            var hddenParamSig = GetLLVMSignatureForMethod(methodSignature, true);
+            var target = ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(noHiddenParamSig, 0), _builder);
 
             var functionPtrAsInt = LLVM.BuildPtrToInt(_builder, target, LLVMTypeRef.Int32Type(), "ptrToInt");
             var andResRef = LLVM.BuildBinOp(_builder, LLVMOpcode.LLVMAnd, functionPtrAsInt, BuildConstInt32(FatFunctionPointerOffset), "andFatCheck");
@@ -2871,8 +2871,26 @@ namespace Internal.IL
             var endif = LLVM.AppendBasicBlock(_currentFunclet, "endif");
             LLVM.BuildCondBr(_builder, boolConv, notFatBranch, fatBranch);
             LLVM.PositionBuilderAtEnd(_builder, notFatBranch);
-
+            var parameterCount = methodSignature.Length + (methodSignature.IsStatic ? 0 : 1);
+            StackEntry[] stackCopy = new StackEntry[parameterCount];
+            for (int i = 0; i < stackCopy.Length; i++)
+            {
+                stackCopy[i] = _stack.Pop();
+            }
+            for (int i = 0; i < stackCopy.Length; i++)
+            {
+                 _stack.Push(stackCopy[stackCopy.Length - i - 1]);
+            }
             HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: target);
+            StackEntry nonFatRes = null;
+            LLVMValueRef fatResRef = default;
+            LLVMValueRef nonFatResRef = default;
+            bool hasRes = !methodSignature.ReturnType.IsVoid;
+            if (hasRes)
+            {
+                nonFatRes = _stack.Pop();
+                nonFatResRef = nonFatRes.ValueAsType(methodSignature.ReturnType, _builder);
+            }
             LLVM.BuildBr(_builder, endif);
             LLVM.PositionBuilderAtEnd(_builder, fatBranch);
             var minusOffset = LLVM.BuildGEP(_builder,
@@ -2883,10 +2901,31 @@ namespace Internal.IL
             //            PushExpression(StackValueKind.Int32, "ctx", hiddenGep, GetWellKnownType(WellKnownType.IntPtr));
             //            var castToFunctionPtrPtr = LLVM.BuildPointerCast(_builder, minusOffset, LLVM.PointerType(target.TypeOf(), 0), "funcPtrPtr");
             //            var funcPtr = LLVM.BuildLoad(_builder, castToFunctionPtrPtr, "funcPtr");
-            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: target, hiddenRef: hiddenRef);
+            for (int i = 0; i < stackCopy.Length; i++)
+            {
+                _stack.Push(stackCopy[stackCopy.Length - i - 1]);
+            }
+            var funcWithHidden = LLVM.BuildPointerCast(_builder, target, LLVM.PointerType(hddenParamSig, 0), "hiddenFuncPtr");
+            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: funcWithHidden, hiddenRef: hiddenRef);
+            StackEntry fatRes = null;
+            if (hasRes)
+            {
+                fatRes = _stack.Pop();
+                fatResRef = fatRes.ValueAsType(methodSignature.ReturnType, _builder);
+            }
             LLVM.BuildBr(_builder, endif);
             LLVM.PositionBuilderAtEnd(_builder, endif);
-            _currentBasicBlock.Block = endif; // we do this so that ending the BasicBlock acts on the endif, not the original block which now terminates in the CondBr
+            // choose the right return value
+            if (hasRes)
+            {
+                var phi = LLVM.BuildPhi(_builder, GetLLVMTypeForTypeDesc(methodSignature.ReturnType), "phi");
+                LLVM.AddIncoming(phi, new LLVMValueRef[] {
+                        fatResRef,
+                        nonFatResRef }, 
+                    new LLVMBasicBlockRef[] {fatBranch, notFatBranch }, 2);
+                PushExpression(fatRes.Kind, "phi", phi, fatRes.Type);
+            }
+            _currentEndIfBlock = endif;// we do this so that ending the BasicBlock acts on the endif, not the original block which now terminates in the CondBr
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
