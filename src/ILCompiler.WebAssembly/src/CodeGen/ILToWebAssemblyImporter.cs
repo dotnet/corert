@@ -612,6 +612,7 @@ namespace Internal.IL
                     if (_basicBlocks[_currentOffset].StartOffset == 0)
                         throw new InvalidProgramException();
                     MarkBasicBlock(_basicBlocks[_currentOffset]);
+
                     LLVM.BuildBr(_builder, GetLLVMBasicBlockForBlock(_basicBlocks[_currentOffset]));
                 }
             }
@@ -2265,7 +2266,7 @@ namespace Internal.IL
             return false;
         }
 
-        private void HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef))
+        private void HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), LLVMValueRef hiddenRef = default(LLVMValueRef))
         {
             var canonMethod = callee?.GetCanonMethodTarget(CanonicalFormKind.Specific);
             var canonMethodSignature = canonMethod?.Signature;
@@ -2301,17 +2302,21 @@ namespace Internal.IL
                 }
             }
             //TODO: refactor generic logic out here
-            PushNonNull(HandleCall(callee, signature, canonMethod, canonMethodSignature, argumentValues, runtimeDeterminedMethod, opcode, constrainedType, calliTarget));
+            PushNonNull(HandleCall(callee, signature, canonMethod, canonMethodSignature, argumentValues, runtimeDeterminedMethod, opcode, constrainedType, calliTarget, hiddenRef));
         }
 
-        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc canonMethod, MethodSignature canonSignature, StackEntry[] argumentValues, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
+        // TODO: rename hiddenRef param
+        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc canonMethod, MethodSignature canonSignature, StackEntry[] argumentValues, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), LLVMValueRef hiddenRef = default(LLVMValueRef), TypeDesc forcedReturnType = null)
         {
             //TODO: refactor so this is a simple call llvm method from the MethodDesc/Sig
             LLVMValueRef fn;
             bool hasHiddenParam = false;
+            LLVMValueRef hiddenParam = default;
             if (opcode == ILOpcode.calli)
             {
                 fn = calliTarget;
+                hasHiddenParam = hiddenRef.Pointer != IntPtr.Zero;
+                hiddenParam = hiddenRef;
             }
             else
             {
@@ -2354,7 +2359,6 @@ namespace Internal.IL
                 }
             }
 
-            LLVMValueRef hiddenParam = default;
 
             if (hasHiddenParam)
             {
@@ -2414,7 +2418,7 @@ namespace Internal.IL
 //                        }
 //                    }
                 }
-                else
+                else if(opcode == ILOpcode.calli && hiddenRef.Pointer == IntPtr.Zero) // this is calli and the hidden param is passed
                 {
                     if (canonMethod.RequiresInstMethodDescArg())
                     {
@@ -2856,7 +2860,33 @@ namespace Internal.IL
         private void ImportCalli(int token)
         {
             MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
-            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature, false /* TODO: should this be true sometimes */), 0), _builder));
+
+            var target = ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(GetLLVMSignatureForMethod(methodSignature, false /* TODO: should this be true sometimes */), 0), _builder);
+
+            var functionPtrAsInt = LLVM.BuildPtrToInt(_builder, target, LLVMTypeRef.Int32Type(), "ptrToInt");
+            var andResRef = LLVM.BuildBinOp(_builder, LLVMOpcode.LLVMAnd, functionPtrAsInt, BuildConstInt32(FatFunctionPointerOffset), "andFatCheck");
+            var boolConv = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, andResRef, BuildConstInt32(0), "bitConv");
+            var fatBranch = LLVM.AppendBasicBlock(_currentFunclet, "fat");
+            var notFatBranch = LLVM.AppendBasicBlock(_currentFunclet, "notFat");
+            var endif = LLVM.AppendBasicBlock(_currentFunclet, "endif");
+            LLVM.BuildCondBr(_builder, boolConv, notFatBranch, fatBranch);
+            LLVM.PositionBuilderAtEnd(_builder, notFatBranch);
+
+            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: target);
+            LLVM.BuildBr(_builder, endif);
+            LLVM.PositionBuilderAtEnd(_builder, fatBranch);
+            var minusOffset = LLVM.BuildGEP(_builder,
+                CastIfNecessary(_builder, target, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
+                new LLVMValueRef[] {BuildConstInt32(-FatFunctionPointerOffset)}, "minusFatOffset");
+            var hiddenRef = LLVM.BuildGEP(_builder, minusOffset, new[] {BuildConstInt32(_pointerSize)}, "fatArgPtr");
+            // TODO: do we need to change the methodSignature?????
+            //            PushExpression(StackValueKind.Int32, "ctx", hiddenGep, GetWellKnownType(WellKnownType.IntPtr));
+            //            var castToFunctionPtrPtr = LLVM.BuildPointerCast(_builder, minusOffset, LLVM.PointerType(target.TypeOf(), 0), "funcPtrPtr");
+            //            var funcPtr = LLVM.BuildLoad(_builder, castToFunctionPtrPtr, "funcPtr");
+            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: target, hiddenRef: hiddenRef);
+            LLVM.BuildBr(_builder, endif);
+            LLVM.PositionBuilderAtEnd(_builder, endif);
+            _currentBasicBlock.Block = endif; // we do this so that ending the BasicBlock acts on the endif, not the original block which now terminates in the CondBr
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
