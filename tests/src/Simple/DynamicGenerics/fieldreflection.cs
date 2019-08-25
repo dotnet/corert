@@ -426,7 +426,7 @@ public class FieldReflectionTests
     [TestMethod]
     public static void TestFieldSetValueOnInstantiationsThatAlreadyExistButAreNotKnownToReflection()
     {
-
+#if UNIVERSAL_GENERICS
         // The int instantiation is visible to both nutc and analysis, MyGenericClass<int>.MyGenericField appears in RequiredGenericFields.
         // This works.
         MyGenericClass<int>.SetField(3);
@@ -507,5 +507,6 @@ public class FieldReflectionTests
 
         threadStaticSbOtherField.SetValue(null, newStringBuilder); // Throws a MissingRuntimeArtifactException
         Assert.AreEqual(newStringBuilder, MyOtherGenericClass<StringBuilder>.MyThreadStaticField);
+#endif
     }
 }

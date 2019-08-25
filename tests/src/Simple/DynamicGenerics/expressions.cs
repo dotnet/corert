@@ -263,11 +263,13 @@ namespace Expressions
                 Assert.AreEqual(SomeGenericClass2<U, T>.CheckInternalGenericExpression(tval2, tval1), tval2.ToString() + tval1.ToString());
             }
 
+#if UNIVERSAL_GENERICS
             {
                 Expression<Func<U>> expr1 = ()=>default(U);
                 Assert.AreEqual(expr1.Compile()(), default(U));
             }
             RunTestDefaultExpression<U>();
+#endif
 #if false
             // BUG 971950
             // MethodInfo Tests
@@ -311,6 +313,7 @@ namespace Expressions
         [TestMethod]
         public static void TestLdTokenResultsWithStructTypes()
         {
+#if UNIVERSAL_GENERICS
             var dynamicType = TypeOf.E_TestRunner.MakeGenericType(typeof(MyStructType1));
             var instance = Activator.CreateInstance(dynamicType);
 
@@ -318,6 +321,7 @@ namespace Expressions
             testMethod = testMethod.MakeGenericMethod(typeof(MyStructType2));
 
             testMethod.Invoke(instance, new object[] { new MyStructType1("Dynamic1"), new MyStructType1("Dynamic2"), new MyStructType2(123), new MyStructType2(456) });
+#endif
         }
     }
 }

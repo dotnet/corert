@@ -2394,6 +2394,7 @@ namespace TypeLayout
 
         public static void AssertTypesSimilar(Type left, Type right)
         {
+#if INTERNAL_CONTRACTS
             int sizeLeft, sizeRight, alignmentLeft, alignmentRight;
             RuntimeTypeHandle rthLeft = left.TypeHandle;
             RuntimeTypeHandle rthRight = right.TypeHandle;
@@ -2401,6 +2402,7 @@ namespace TypeLayout
             Internal.Runtime.TypeLoader.TypeLoaderEnvironment.GetFieldAlignmentAndSize(rthRight, out alignmentRight, out sizeRight);
             Assert.AreEqual(sizeLeft, sizeRight);
             Assert.AreEqual(alignmentLeft, alignmentRight);
+#endif
         }
 
         public unsafe static void AssertSameGCDesc(Type left, Type right)

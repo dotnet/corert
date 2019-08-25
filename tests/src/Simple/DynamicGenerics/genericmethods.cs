@@ -310,6 +310,7 @@ namespace MakeGenMethod
             string result = (string)mi.Invoke(new NonGenericType(), new object[] { typeof(string), null, null, null, null, null, null, null, null, null, null });
             Assert.AreEqual("FuncWithManyEnumArgsAndDefaultValues<System.Type>: 0", result);
 
+#if UNIVERSAL_GENERICS
             // Universal shared generics case
             mi = ti.GetDeclaredMethod("FuncWithManyEnumArgsAndDefaultValues").MakeGenericMethod(TypeOf.Double);
             result = (string)mi.Invoke(new NonGenericType(), new object[] { 12.34, null, null, null, null, null, null, null, null, null, null });
@@ -318,6 +319,7 @@ namespace MakeGenMethod
             mi = ti.GetDeclaredMethod("FuncWithManyEnumArgsAndDefaultValues").MakeGenericMethod(TypeOf.Int32);
             result = (string)mi.Invoke(new NonGenericType(), new object[] { 123, null, null, null, null, null, null, null, null, null, null });
             Assert.AreEqual("FuncWithManyEnumArgsAndDefaultValues<System.Int32>: 0", result);
+#endif
         }
 
         [TestMethod]

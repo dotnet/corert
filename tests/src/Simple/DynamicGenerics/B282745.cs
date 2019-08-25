@@ -11,7 +11,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Reflection;
 
+#if INTERNAL_CONTRACTS
 using Internal.Runtime.Augments;
+#endif
 using TypeOfRepo;
 
 public static class B282745
@@ -58,7 +60,9 @@ public static class B282745
         GC.KeepAlive(array);
 
         RuntimeTypeHandle arrayTypeHandle = array.GetType().TypeHandle;
+#if INTERNAL_CONTRACTS
         Assert.IsTrue(RuntimeAugments.IsDynamicType(arrayTypeHandle));
+#endif
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -73,7 +77,9 @@ public static class B282745
         GC.KeepAlive(array);
 
         RuntimeTypeHandle arrayTypeHandle = array.GetType().TypeHandle;
+#if INTERNAL_CONTRACTS
         Assert.IsTrue(RuntimeAugments.IsDynamicType(arrayTypeHandle));
+#endif
     }
 
     struct SomeGenStruct<T>
@@ -107,7 +113,9 @@ public static class B282745
             GC.KeepAlive(array);
 
         RuntimeTypeHandle arrayTypeHandle = array.GetType().TypeHandle;
+#if INTERNAL_CONTRACTS
             Assert.IsTrue(RuntimeAugments.IsDynamicType(arrayTypeHandle));
+#endif
         }
     }
 
@@ -131,9 +139,11 @@ public static class B282745
     [TestMethod]
     public static void testMDArrayWithPointerLikeValuesOfUnknownStructPrimitiveType()
     {
+#if UNIVERSAL_GENERICS
         Type genType = typeof(GenericType<>).MakeGenericType(TypeOf.Short);
         MethodInfo m = genType.GetTypeInfo().GetDeclaredMethod("test");
         m.Invoke(null, new object[] {});
+#endif
     }
     
     public class MDArrayTestType

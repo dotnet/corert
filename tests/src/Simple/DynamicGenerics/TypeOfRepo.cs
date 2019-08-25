@@ -246,6 +246,7 @@ namespace TypeOfRepo
                 s_TypeRepo["EIT_MyClass4"] = typeof(ExistingInstantiations.MyClass4);
             }
 
+#if UNIVERSAL_GENERICS
             // Types in universal_generics.cs
             {
                 s_TypeRepo["UG_MyGen"] = typeof(UniversalGen.MyGen<>);
@@ -300,14 +301,17 @@ namespace TypeOfRepo
                 s_TypeRepo["UCC_NonGenericStructThatImplementsInterfaceAndOverridesObjectFuncs"] = typeof(UnivConstCalls.NonGenericStructThatImplementsInterfaceAndOverridesObjectFuncs);
                 s_TypeRepo["UCC_GenericStructThatImplementsInterface"] = typeof(UnivConstCalls.GenericStructThatImplementsInterface<>);
             }
+#endif
             // Types in B282745.cs
             {
                 s_TypeRepo["B282475_MDArrayTestType"] = typeof(B282745.MDArrayTestType);
             }
+#if UNIVERSAL_GENERICS
             // Types in fieldlayout.cs
             {
                 s_TypeRepo["FieldLayout_StructTypeNotUsedAsANullable"] = typeof(FieldLayoutTests.StructTypeNotUsedAsANullable);
             }
+#endif
         }
 
         // Common framework types

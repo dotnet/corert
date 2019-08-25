@@ -7,7 +7,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+#if INTERNAL_CONTRACTS
 using Internal.Runtime.Augments;
+#endif
 using CoreFXTestLibrary;
 using TypeOfRepo;
 
@@ -189,6 +191,7 @@ namespace ArrayTests
         [TestMethod]
         public static void TestDynamicArrays()
         {
+#if UNIVERSAL_GENERICS
             var typeofGenStructOfString = typeof(GenericStruct<>).MakeGenericType(TypeOf.String);
             var typeofSetArrayValGenStructOfString = typeof(SetArrayVal<>).MakeGenericType(typeofGenStructOfString);
             var typeofGenStructOfShort = typeof(GenericStruct<>).MakeGenericType(TypeOf.Short);
@@ -198,10 +201,12 @@ namespace ArrayTests
             var typeofGenClassOfShort = typeof(GenericClass<>).MakeGenericType(TypeOf.Short);
             var typeofSetArrayValGenClassOfShort = typeof(SetArrayVal<>).MakeGenericType(typeofGenClassOfShort);
 
+#if INTERNAL_CONTRACTS
             Assert.IsTrue(RuntimeAugments.IsDynamicType(typeofSetArrayValGenStructOfString.TypeHandle));
             Assert.IsTrue(RuntimeAugments.IsDynamicType(typeofSetArrayValGenStructOfShort.TypeHandle));
             Assert.IsTrue(RuntimeAugments.IsDynamicType(typeofSetArrayValGenClassOfString.TypeHandle));
             Assert.IsTrue(RuntimeAugments.IsDynamicType(typeofSetArrayValGenClassOfShort.TypeHandle));
+#endif
 
             Array array_GS_String = Array.CreateInstance(typeofGenStructOfString, 1);
             var mdArrayRank2_GS_String = Array.CreateInstance(typeofGenStructOfString, 2, 3);
@@ -238,11 +243,13 @@ namespace ArrayTests
             setVal_GC_Short.SetVal(mdArrayRank2_GC_Short, (short)123, 1, 2);
             Assert.AreEqual("123", array_GC_Short.GetValue(0).ToString());
             Assert.AreEqual("123", mdArrayRank2_GC_Short.GetValue(1,2).ToString());
+#endif
         } 
 
         [TestMethod]
         public static void TestMDArrays()
         {
+#if UNIVERSAL_GENERICS
             int[,,] array = new int[1, 2, 3];
             int value = 1;
             for (int i = 0; i < 1; i++)
@@ -257,21 +264,26 @@ namespace ArrayTests
 
             MethodInfo mi = typeof(ArrayTests).GetTypeInfo().GetDeclaredMethod("DynamicMDArrayTest").MakeGenericMethod(TypeOf.Short);
             mi.Invoke(null, new object[] { new Func<short, short>((val) => (short)(val + 10)) });
+#endif
         }
 
         [TestMethod]
         public static void TestArrayIndexOfNullableStructOfCanon_USG()
         {
+#if UNIVERSAL_GENERICS
             // Test USG Scenario
             var typeofGenStructOfString = typeof(GenStructImplementsIEquatable<>).MakeGenericType(TypeOf.String);
             var typeofIndexOfValGenStructOfString = typeof(IndexOfVal<>).MakeGenericType(typeofGenStructOfString);
+#if INTERNAL_CONTRACTS
             Assert.IsTrue(RuntimeAugments.IsDynamicType(typeofGenStructOfString.TypeHandle));
+#endif
             var typeofNullableGenStructOfString = typeof(Nullable<>).MakeGenericType(typeofGenStructOfString);
 
             Array array_GS_String = Array.CreateInstance(typeofNullableGenStructOfString, 1);
             IndexOfValBase indexOf_GS_String = (IndexOfValBase)Activator.CreateInstance(typeofIndexOfValGenStructOfString);
             indexOf_GS_String.FillArray(array_GS_String, Activator.CreateInstance(typeofGenStructOfString));
             Assert.AreEqual(0, indexOf_GS_String.IndexOf(array_GS_String, Activator.CreateInstance(typeofGenStructOfString)));
+#endif
         }
 
         [TestMethod]
@@ -286,7 +298,9 @@ namespace ArrayTests
             // Just as in the above USG logic
             var typeofGenStructOfString = typeof(GenStructImplementsIEquatable2<>).MakeGenericType(TypeOf.String);
             var typeofIndexOfValGenStructOfString = typeof(IndexOfVal<>).MakeGenericType(typeofGenStructOfString);
+#if INTERNAL_CONTRACTS
             Assert.IsTrue(RuntimeAugments.IsDynamicType(typeofGenStructOfString.TypeHandle));
+#endif
             var typeofNullableGenStructOfString = typeof(Nullable<>).MakeGenericType(typeofGenStructOfString);
 
             Array array_GS_String = Array.CreateInstance(typeofNullableGenStructOfString, 1);

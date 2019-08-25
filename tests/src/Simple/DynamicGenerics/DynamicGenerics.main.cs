@@ -48,9 +48,11 @@ new CoreFXTestLibrary.Internal.TestInfo("MethodAndUnboxingStubTesting.Test.TestN
 new CoreFXTestLibrary.Internal.TestInfo("ExistingInstantiations.Test.TestWithExistingInst", () => global::ExistingInstantiations.Test.TestWithExistingInst(), null),
 new CoreFXTestLibrary.Internal.TestInfo("ExistingInstantiations.Test.TestInstantiationsWithExistingArrayTypeArgs", () => global::ExistingInstantiations.Test.TestInstantiationsWithExistingArrayTypeArgs(), null),
 new CoreFXTestLibrary.Internal.TestInfo("TemplateDependencyFromGenArgs.TestRunner.TemplateDependencyFromGenArgsTest", () => global::TemplateDependencyFromGenArgs.TestRunner.TemplateDependencyFromGenArgsTest(), null),
+#if UNIVERSAL_GENERICS
 new CoreFXTestLibrary.Internal.TestInfo("FieldLayoutTests.TestFieldLayoutMatchesBetweenStaticAndDynamic_Long", () => global::FieldLayoutTests.TestFieldLayoutMatchesBetweenStaticAndDynamic_Long(), null),
 new CoreFXTestLibrary.Internal.TestInfo("FieldLayoutTests.TestFieldLayoutMatchesBetweenStaticAndDynamic_Int64Enum", () => global::FieldLayoutTests.TestFieldLayoutMatchesBetweenStaticAndDynamic_Int64Enum(), null),
 new CoreFXTestLibrary.Internal.TestInfo("FieldLayoutTests.TestBoxingUSGCreatedNullable", () => global::FieldLayoutTests.TestBoxingUSGCreatedNullable(), null),
+#endif
 new CoreFXTestLibrary.Internal.TestInfo("FieldReflectionTests.TestInstanceFieldsOnDerivedType", () => global::FieldReflectionTests.TestInstanceFieldsOnDerivedType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("FieldReflectionTests.TestInstanceFields", () => global::FieldReflectionTests.TestInstanceFields(), null),
 new CoreFXTestLibrary.Internal.TestInfo("FieldReflectionTests.TestStaticFields", () => global::FieldReflectionTests.TestStaticFields(), null),
@@ -77,6 +79,7 @@ new CoreFXTestLibrary.Internal.TestInfo("DynamicListTests.TestSortWithComparer",
 new CoreFXTestLibrary.Internal.TestInfo("RdExperienceTests.TestRdExperience", () => global::RdExperienceTests.TestRdExperience(), null),
 new CoreFXTestLibrary.Internal.TestInfo("StaticsTests.TestStatics", () => global::StaticsTests.TestStatics(), null),
 new CoreFXTestLibrary.Internal.TestInfo("ThreadLocalStatics.TLSTesting.ThreadLocalStatics_Test", () => global::ThreadLocalStatics.TLSTesting.ThreadLocalStatics_Test(), null),
+#if UNIVERSAL_GENERICS
 new CoreFXTestLibrary.Internal.TestInfo("UnivConstCalls.Test.TestRefTypeCallsOnNonGenClass", () => global::UnivConstCalls.Test.TestRefTypeCallsOnNonGenClass(), null),
 new CoreFXTestLibrary.Internal.TestInfo("UnivConstCalls.Test.TestUSCCallsOnNonGenStruct", () => global::UnivConstCalls.Test.TestUSCCallsOnNonGenStruct(), null),
 new CoreFXTestLibrary.Internal.TestInfo("UnivConstCalls.Test.TestUSCCallsOnSharedGenStruct", () => global::UnivConstCalls.Test.TestUSCCallsOnSharedGenStruct(), null),
@@ -143,13 +146,17 @@ new CoreFXTestLibrary.Internal.TestInfo("PartialUniversalGen.Test.TestUniversalG
 new CoreFXTestLibrary.Internal.TestInfo("PartialUniversalGen.Test.TestUniversalGenericThatUsesCanonicalGenericMethodWithConstraints", () => global::PartialUniversalGen.Test.TestUniversalGenericThatUsesCanonicalGenericMethodWithConstraints(), null),
 new CoreFXTestLibrary.Internal.TestInfo("PartialUniversalGen.Test.TestDependenciesOfPartialUniversalCanonicalCode", () => global::PartialUniversalGen.Test.TestDependenciesOfPartialUniversalCanonicalCode(), null),
 new CoreFXTestLibrary.Internal.TestInfo("PartialUniversalGen.Test.TestCornerCaseSealedVTableSlot", () => global::PartialUniversalGen.Test.TestCornerCaseSealedVTableSlot(), null),
+#endif
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testIntMDArrayWithPointerLikeValues", () => global::B282745.testIntMDArrayWithPointerLikeValues(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testLongMDArrayWithPointerLikeValues", () => global::B282745.testLongMDArrayWithPointerLikeValues(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfKnownStructType", () => global::B282745.testMDArrayWithPointerLikeValuesOfKnownStructType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfUnknownStructReferenceType", () => global::B282745.testMDArrayWithPointerLikeValuesOfUnknownStructReferenceType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfUnknownStructPrimitiveType", () => global::B282745.testMDArrayWithPointerLikeValuesOfUnknownStructPrimitiveType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWith3Dimensions", () => global::B282745.testMDArrayWith3Dimensions(), null),
-new CoreFXTestLibrary.Internal.TestInfo("B279085.TestB279085Repro", () => global::B279085.TestB279085Repro(), null)};
+#if UNIVERSAL_GENERICS
+new CoreFXTestLibrary.Internal.TestInfo("B279085.TestB279085Repro", () => global::B279085.TestB279085Repro(), null),
+#endif
+};
         bool passed = CoreFXTestLibrary.Internal.Runner.RunTests(tests, args);
         CoreFXTestLibrary.Logger.LogInformation("Passed: {0}, Failed: {1}, Number of Tests Run: {2}", CoreFXTestLibrary.Internal.Runner.NumPassedTests, CoreFXTestLibrary.Internal.Runner.NumFailedTests, CoreFXTestLibrary.Internal.Runner.NumTests);
         if (passed && CoreFXTestLibrary.Internal.Runner.NumPassedTests > 0)

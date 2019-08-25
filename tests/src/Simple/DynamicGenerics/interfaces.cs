@@ -191,6 +191,7 @@ public class InterfacesTests
                 Assert.AreEqual("CommonType1 Frob", useFrobber.UseFrob());
             }
             
+#if UNIVERSAL_GENERICS
             // LoadVirtualFunction case (used by USG callers)
             {
                 Type useFrobberType = TypeOf.IT_UseFrobber.MakeGenericType(TypeOf.IT_AnotherFrobtasticFrobberStruct, TypeOf.CommonType1);
@@ -198,6 +199,7 @@ public class InterfacesTests
 
                 Assert.AreEqual("CommonType1 Frob", useFrobber.UseFrob());
             }
+#endif
         }
     }
 }
