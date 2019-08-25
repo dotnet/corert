@@ -612,6 +612,7 @@ namespace System
             where T : IEquatable<T>
 #nullable restore
         {
+            var t = typeof(T);
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))

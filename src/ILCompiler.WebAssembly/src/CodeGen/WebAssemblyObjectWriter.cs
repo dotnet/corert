@@ -333,7 +333,7 @@ namespace ILCompiler.DependencyAnalysis
         ArrayBuilder<byte> _currentObjectData = new ArrayBuilder<byte>();
         struct SymbolRefData
         {
-            public SymbolRefData(bool isFunction, string symbolName, int offset)
+            public SymbolRefData(bool isFunction, string symbolName, uint offset)
             {
                 IsFunction = isFunction;
                 SymbolName = symbolName;
@@ -342,7 +342,7 @@ namespace ILCompiler.DependencyAnalysis
 
             readonly bool IsFunction;
             readonly string SymbolName;
-            readonly int Offset;
+            readonly uint Offset;
 
             public LLVMValueRef ToLLVMValueRef(LLVMModuleRef module)
             {
@@ -352,7 +352,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     var pointerType = LLVM.PointerType(LLVM.Int8Type(), 0);
                     var bitCast = LLVM.ConstBitCast(valRef, pointerType);
-                    LLVMValueRef[] index = new LLVMValueRef[] {LLVM.ConstInt(LLVM.Int32Type(), (uint)Offset, (LLVMBool)false)};
+                    LLVMValueRef[] index = new LLVMValueRef[] {LLVM.ConstInt(LLVM.Int32Type(), Offset, (LLVMBool)false)};
                     valRef = LLVM.ConstGEP(bitCast, index);
                 }
 
@@ -546,7 +546,7 @@ namespace ILCompiler.DependencyAnalysis
             {
 
             }
-            int totalOffset = checked(delta + offsetFromSymbolName);
+            uint totalOffset = checked((uint)delta + (uint)offsetFromSymbolName);
 
             EmitBlob(new byte[this._nodeFactory.Target.PointerSize]);
             if (relocType == RelocType.IMAGE_REL_BASED_REL32)

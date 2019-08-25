@@ -10,7 +10,7 @@ namespace Internal.Runtime
         /// Offset by which fat function pointers are shifted to distinguish them
         /// from real function pointers.
         /// </summary>
-        public const int Offset = 2;
+        public const int Offset = 0x40000000;
     }
 
     internal static class IndirectionConstants

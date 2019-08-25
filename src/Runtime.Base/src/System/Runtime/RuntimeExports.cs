@@ -9,6 +9,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+
 using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
@@ -110,57 +111,17 @@ namespace System.Runtime
             return result;
         }
 
-        public struct TwoByteStr
-        {
-            internal byte first;
-            public byte second;
-        }
-
-        [DllImport("*")]
-        private static unsafe extern int printf(byte* str, byte* unused);
-        private static unsafe void PrintString(string s)
-        {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    TwoByteStr curCharStr = new TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    printf((byte*)&curCharStr, null);
-                }
-            }
-        }
-
-        internal static void PrintLine(string s)
-        {
-            PrintString(s);
-            PrintString("\n");
-        }
-
         [RuntimeExport("RhBoxAny")]
         public static unsafe object RhBoxAny(ref byte data, EETypePtr pEEType)
         {
             EEType* ptrEEType = (EEType*)pEEType.ToPointer();
             if (ptrEEType->IsValueType)
             {
-//                PrintLine("value type");
                 return RhBox(pEEType, ref data);
             }
             else
             {
-                PrintLine("!value type");
-//                if ((byte*)data == null)
-//                {
-//                    PrintLine("data is null");
-//                }
-                var o = Unsafe.As<byte, object>(ref data);
-//                if (o == null)
-//                {
-//                    PrintLine("o is null");
-//                }
-
-                return o;
+                return Unsafe.As<byte, object>(ref data);
             }
         }
 

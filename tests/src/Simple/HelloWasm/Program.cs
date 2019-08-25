@@ -772,6 +772,7 @@ internal static class Program
         instance.ReturnTrueIf1AndThis(0, null); // force method output
         ClassForMetaTests.ReturnsParam(null); // force method output
 
+        /*
         StartTest("Class get+invoke simple method via reflection");
         var mtd = classForMetaTestsType.GetMethod("ReturnTrueIf1");
         bool shouldBeTrue = (bool)mtd.Invoke(instance, new object[] {1});
@@ -788,6 +789,7 @@ internal static class Program
         var staticMtd = classForMetaTestsType.GetMethod("ReturnsParam");
         var retVal = (ClassForMetaTests)staticMtd.Invoke(null, new object[] { instance });
         EndTest(Object.ReferenceEquals(retVal, instance));
+        */
     }
 
     public class ClassForMetaTests
