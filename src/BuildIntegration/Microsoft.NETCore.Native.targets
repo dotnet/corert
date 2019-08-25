@@ -194,7 +194,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(NativeCodeGen) != ''" Include="--$(NativeCodeGen)" />
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
-      <IlcArg Condition="$(DebugSymbols) == 'true'" Include="-g" />
+      <IlcArg Condition="$(DebugSymbols) == 'true' or ($(DebugType) != 'none' and $(DebugType) != '')" Include="-g" />
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)$(ManagedBinaryFilename).map.xml" />
       <IlcArg Include="@(RdXmlFile->'--rdxml:%(Identity)')" />
       <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) != ''" Include="--nativelib" />
