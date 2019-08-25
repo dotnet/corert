@@ -854,7 +854,7 @@ namespace Internal.Runtime.TypeLoader
 
             void** baseOffsetPtr = (void**)gcdesc - 1;
 
-#if WIN64
+#if BIT64
             int* ptr = (int*)baseOffsetPtr - 1;
 #else
             short* ptr = (short*)baseOffsetPtr - 1;
