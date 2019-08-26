@@ -40,11 +40,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
+            if (relocsOnly)
+            {
+                return new ObjectData(
+                    data: Array.Empty<byte>(),
+                    relocs: Array.Empty<Relocation>(),
+                    alignment: 1,
+                    definedSymbols: new ISymbolDefinitionNode[] { this });
+            }
+
             var rva = _method.MetadataReader.GetMethodDefinition(_method.Handle).RelativeVirtualAddress;
             var reader = _method.Module.PEReader.GetSectionData(rva).GetReader();
             int size = MethodBodyBlock.Create(reader).Size;
             
-            return new ObjectData(reader.ReadBytes(size), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
+            return new ObjectData(reader.ReadBytes(size), Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
         }
 
         public override int ClassCode => 541651465;

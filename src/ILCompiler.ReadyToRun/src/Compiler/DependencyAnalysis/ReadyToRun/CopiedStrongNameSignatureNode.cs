@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// <summary>
     /// Container node for emitting an input MSIL image's strong name signature blob
     /// </summary>
-    class CopiedStrongNameSignatureNode : ObjectNode, ISymbolDefinitionNode
+    public class CopiedStrongNameSignatureNode : ObjectNode, ISymbolDefinitionNode
     {
         private EcmaModule _module;
 
@@ -37,6 +37,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append("__StrongNameSignature");
         }
+
+        public int Size => _module.PEReader.PEHeaders.CorHeader.StrongNameSignatureDirectory.Size;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

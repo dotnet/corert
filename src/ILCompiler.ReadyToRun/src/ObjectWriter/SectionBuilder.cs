@@ -490,9 +490,9 @@ namespace ILCompiler.PEWriter
                 }
             }
 
-            if (_exportSymbols.Count != 0 && FindSection(".edata") == null)
+            if (_exportSymbols.Count != 0 && FindSection(R2RPEBuilder.ExportDataSectionName) == null)
             {
-                sectionList.Add(new SectionInfo(".edata", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
+                sectionList.Add(new SectionInfo(R2RPEBuilder.ExportDataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemRead));
             }
 
             return sectionList;
@@ -508,12 +508,12 @@ namespace ILCompiler.PEWriter
         /// <returns></returns>
         public BlobBuilder SerializeSection(string name, SectionLocation sectionLocation, int sectionStartRva)
         {
-            if (name == ".reloc")
+            if (name == R2RPEBuilder.RelocSectionName)
             {
                 return SerializeRelocationSection(sectionLocation);
             }
             
-            if (name == ".edata")
+            if (name == R2RPEBuilder.ExportDataSectionName)
             {
                 return SerializeExportSection(sectionLocation);
             }

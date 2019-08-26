@@ -89,6 +89,16 @@ namespace ILCompiler.PEWriter
         public const string RelocSectionName = ".reloc";
 
         /// <summary>
+        /// Name of the writeable data section.
+        /// </summary>
+        public const string DataSectionName = ".data";
+
+        /// <summary>
+        /// Name of the export data section.
+        /// </summary>
+        public const string ExportDataSectionName = ".edata";
+
+        /// <summary>
         /// Compilation target OS and architecture specification.
         /// </summary>
         private TargetDetails _target;
@@ -180,8 +190,8 @@ namespace ILCompiler.PEWriter
             _sectionBuilder = new SectionBuilder(target);
             _sectionBuilder.SetSectionStartNodeLookup(sectionStartNodeLookup);
 
-            _textSectionIndex = _sectionBuilder.AddSection(R2RPEBuilder.TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
-            _dataSectionIndex = _sectionBuilder.AddSection(".data", SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
+            _textSectionIndex = _sectionBuilder.AddSection(TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
+            _dataSectionIndex = _sectionBuilder.AddSection(DataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
 
             _customSections = new HashSet<string>();
             foreach (SectionInfo section in _sectionBuilder.GetSections())
@@ -516,13 +526,13 @@ namespace ILCompiler.PEWriter
                     int bytesToRead = Math.Min(sectionHeader.SizeOfRawData, sectionHeader.VirtualSize);
                     BlobReader inputSectionReader = _peReader.GetEntireImage().GetReader(sectionOffset, bytesToRead);
                         
-                    if (name == ".rsrc")
+                    if (name == RsrcSectionName)
                     {
                         // There seems to be a bug in BlobBuilder - when we LinkSuffix to an empty blob builder,
                         // the blob data goes out of sync and WriteContentTo outputs garbage.
                         sectionDataBuilder = PEResourceHelper.Relocate(inputSectionReader, rvaDelta);
                     }
-                    else if (name == ".text")
+                    else if (name == TextSectionName)
                     {
                         // Skip copying the .text section. We will pull out the metadata, IL blobs and RVA fields as part of compilation
                     }

@@ -35,6 +35,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override bool StaticDependenciesAreComputed => true;
         public int Offset => 0;
 
+        public int Size => _sourceModule.PEReader.GetMetadata().Length;
+
         private void WriteMethodTableRvas(NodeFactory factory, ref ObjectDataBuilder builder, ref BlobReader reader)
         {
             MetadataReader metadataReader = _sourceModule.MetadataReader;
@@ -121,6 +123,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             Debug.Assert(builder.CountBytes == metadataBlob.Length);
             Debug.Assert(builder.CountBytes == metadataBlob.Offset);
+            Debug.Assert(builder.CountBytes == Size);
+
             return builder.ToObjectData();
         }
 

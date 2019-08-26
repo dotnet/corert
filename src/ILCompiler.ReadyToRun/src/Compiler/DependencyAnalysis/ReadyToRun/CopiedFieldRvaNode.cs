@@ -2,18 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
+using System;
 
 using Internal.Text;
-using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    class CopiedFieldRvaNode : ObjectNode, ISymbolDefinitionNode
+    public class CopiedFieldRvaNode : ObjectNode, ISymbolDefinitionNode
     {
         private EcmaField _field;
 
@@ -21,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(field.HasRva);
 
-            _field = (EcmaField)field.GetTypicalFieldDefinition();
+            _field = field;
         }
 
         public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
@@ -36,6 +34,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
+            if (relocsOnly)
+            {
+                return new ObjectData(
+                    data: Array.Empty<byte>(),
+                    relocs: Array.Empty<Relocation>(),
+                    alignment: 1,
+                    definedSymbols: new ISymbolDefinitionNode[] { this });
+            }
+
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);

@@ -14,6 +14,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class CopiedCorHeaderNode : ObjectNode, ISymbolDefinitionNode
     {
+        private static readonly int s_corHeaderSize = 0x48;
+
         private EcmaModule _module;
         
         public CopiedCorHeaderNode(EcmaModule sourceModule)
@@ -30,6 +32,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override bool StaticDependenciesAreComputed => true;
 
         public int Offset => 0;
+
+        public int Size => s_corHeaderSize;
 
         /// <summary>
         /// Deserialize a directory entry from a blob reader.
@@ -72,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadDirectoryEntry(ref reader);
             var metadataBlob = r2rFactory.CopiedMetadataBlob(_module);
             builder.EmitReloc(metadataBlob, RelocType.IMAGE_REL_BASED_ADDR32NB);
-            builder.EmitInt(((CopiedMetadataBlobNode)metadataBlob).GetData(factory, relocsOnly).Data.Length);
+            builder.EmitInt(metadataBlob.Size);
 
             // Flags
             builder.EmitUInt((uint)(((CorFlags)reader.ReadUInt32() & ~CorFlags.ILOnly) | CorFlags.ILLibrary));
@@ -88,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadDirectoryEntry(ref reader);
             var strongNameSignature = r2rFactory.CopiedStrongNameSignature(_module);
             builder.EmitReloc(strongNameSignature, RelocType.IMAGE_REL_BASED_ADDR32NB);
-            builder.EmitInt(((CopiedStrongNameSignatureNode)strongNameSignature).GetData(factory, relocsOnly).Data.Length);
+            builder.EmitInt(strongNameSignature.Size);
 
             // Code Manager Table Directory
             ReadDirectoryEntry(ref reader);
@@ -110,6 +114,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Did we fully read the header?
             Debug.Assert(reader.Offset - headerSize == _module.PEReader.PEHeaders.CorHeaderStartOffset);
             Debug.Assert(builder.CountBytes == headerSize);
+            Debug.Assert(headerSize == Size);
 
             return builder.ToObjectData();
         }

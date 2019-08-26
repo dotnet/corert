@@ -678,7 +678,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private Dictionary<EcmaModule, CopiedCorHeaderNode> _copiedCorHeaders = new Dictionary<EcmaModule, CopiedCorHeaderNode>();
 
-        public ISymbolNode CopiedCorHeader(EcmaModule module)
+        public CopiedCorHeaderNode CopiedCorHeader(EcmaModule module)
         {
             CopiedCorHeaderNode result;
             if (!_copiedCorHeaders.TryGetValue(module, out result))
@@ -692,7 +692,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private Dictionary<EcmaModule, CopiedMetadataBlobNode> _copiedMetadataBlobs = new Dictionary<EcmaModule, CopiedMetadataBlobNode>();
 
-        public ISymbolNode CopiedMetadataBlob(EcmaModule module)
+        public CopiedMetadataBlobNode CopiedMetadataBlob(EcmaModule module)
         {
             CopiedMetadataBlobNode result;
             if (!_copiedMetadataBlobs.TryGetValue(module, out result))
@@ -706,7 +706,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private Dictionary<MethodDesc, CopiedMethodILNode> _copiedMethodIL = new Dictionary<MethodDesc, CopiedMethodILNode>();
 
-        public ISymbolNode CopiedMethodIL(EcmaMethod method)
+        public CopiedMethodILNode CopiedMethodIL(EcmaMethod method)
         {
             CopiedMethodILNode result;
             if (!_copiedMethodIL.TryGetValue(method, out result))
@@ -720,7 +720,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private Dictionary<EcmaField, CopiedFieldRvaNode> _copiedFieldRvas = new Dictionary<EcmaField, CopiedFieldRvaNode>();
 
-        public ISymbolNode CopiedFieldRva(EcmaField field)
+        public CopiedFieldRvaNode CopiedFieldRva(EcmaField field)
         {
             CopiedFieldRvaNode result;
             if (!_copiedFieldRvas.TryGetValue(field, out result))
@@ -734,7 +734,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private Dictionary<EcmaModule, CopiedStrongNameSignatureNode> _copiedStrongNameSignatures = new Dictionary<EcmaModule, CopiedStrongNameSignatureNode>();
 
-        public ISymbolNode CopiedStrongNameSignature(EcmaModule module)
+        public CopiedStrongNameSignatureNode CopiedStrongNameSignature(EcmaModule module)
         {
             CopiedStrongNameSignatureNode result;
             if (!_copiedStrongNameSignatures.TryGetValue(module, out result))
