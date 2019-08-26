@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime;
 using System.Runtime.InteropServices;
-using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
