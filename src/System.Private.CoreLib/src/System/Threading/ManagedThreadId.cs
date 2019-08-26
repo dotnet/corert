@@ -9,7 +9,6 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using Internal.Runtime.Augments;
 using System.Diagnostics;
 
 namespace System.Threading
