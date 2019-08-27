@@ -1018,6 +1018,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             TypeDesc owningType = methodIL.OwningMethod.GetTypicalMethodDefinition().OwningType;
+            ReadyToRunMetadataFieldLayoutAlgorithm.ProbeType(owningType);
             bool recordToken = _compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(owningType) && owningType is EcmaType;
 #endif
 

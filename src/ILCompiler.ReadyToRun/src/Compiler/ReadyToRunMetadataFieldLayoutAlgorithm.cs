@@ -793,7 +793,7 @@ namespace ILCompiler
         {
             StringBuilder builder = new StringBuilder();
             builder.Append("[[[IsManagedSequential{");
-            CoreCLRTypeNameFormatter.Instance.AppendName(builder, type);
+            CoreCLRTypeNameFormatter.Qualified.AppendName(builder, type);
             builder.Append("}=");
             builder.Append(IsManagedSequentialType(type));
             builder.Append("]]]");
@@ -802,7 +802,15 @@ namespace ILCompiler
 
         private class CoreCLRTypeNameFormatter : TypeNameFormatter
         {
-            public static CoreCLRTypeNameFormatter Instance = new CoreCLRTypeNameFormatter();
+            public static CoreCLRTypeNameFormatter Qualified = new CoreCLRTypeNameFormatter(qualified: true);
+            public static CoreCLRTypeNameFormatter Unqualified = new CoreCLRTypeNameFormatter(qualified: false);
+
+            private bool _qualified;
+
+            public CoreCLRTypeNameFormatter(bool qualified)
+            {
+                _qualified = qualified;
+            }
 
             public override void AppendName(StringBuilder sb, ArrayType type)
             {
@@ -839,23 +847,24 @@ namespace ILCompiler
                 sb.Append("(*)");
                 if (type.Signature.GenericParameterCount > 0)
                 {
-                    sb.Append('<');
+                    sb.Append('[');
                     for (int argIndex = 0; argIndex < type.Signature.GenericParameterCount; argIndex++)
                     {
                         if (argIndex > 0)
                         {
-                            sb.Append(", ");
+                            sb.Append(",");
                         }
                         sb.Append("!!");
                         sb.Append(argIndex);
                     }
+                    sb.Append(']');
                 }
                 sb.Append('(');
                 for (int paramIndex = 0; paramIndex < type.Signature.Length; paramIndex++)
                 {
                     if (paramIndex > 0)
                     {
-                        sb.Append(", ");
+                        sb.Append(",");
                     }
                     AppendName(sb, type.Signature[paramIndex]);
                 }
@@ -880,24 +889,27 @@ namespace ILCompiler
             protected override void AppendNameForInstantiatedType(StringBuilder sb, DefType type)
             {
                 AppendName(sb, type.GetTypeDefinition());
-                sb.Append('<');
+                sb.Append('[');
                 for (int argIndex = 0; argIndex < type.Instantiation.Length; argIndex++)
                 {
                     if (argIndex > 0)
                     {
-                        sb.Append(", ");
+                        sb.Append(",");
                     }
-                    AppendName(sb, type.Instantiation[argIndex]);
+                    Unqualified.AppendName(sb, type.Instantiation[argIndex]);
                 }
-                sb.Append('>');
+                sb.Append(']');
             }
 
             protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
             {
                 MetadataType mdType = (MetadataType)type;
-                sb.Append('[');
-                sb.Append(mdType.Module.Assembly.GetName().Name);
-                sb.Append(']');
+                if (_qualified)
+                {
+                    sb.Append('[');
+                    sb.Append(mdType.Module.Assembly.GetName().Name);
+                    sb.Append(']');
+                }
                 sb.Append(mdType.Namespace);
                 if (!string.IsNullOrEmpty(type.Namespace))
                 {

@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
+using System.Text;
 
 using Internal.IL;
 using Internal.Text;
@@ -817,6 +818,11 @@ namespace Internal.JitInterface
             if (originalMethod.Signature.IsStatic && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0)
             {
                 throw new BadImageFormatException();
+            }
+
+            if (originalMethod.IsPInvoke)
+            {
+                MethodRequiresMarshaling((EcmaMethod)originalMethod);
             }
 
             exactType = type;
