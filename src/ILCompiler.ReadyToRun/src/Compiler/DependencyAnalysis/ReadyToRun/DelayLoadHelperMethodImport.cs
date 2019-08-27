@@ -61,6 +61,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     new MethodWithToken(canonMethod, _method.Token, constrainedType: null),
                     isUnboxingStub: false,
                     isInstantiatingStub: false,
+                    isPrecodeImportRequired: false,
                     signatureContext: _signatureContext);
                 yield return new DependencyListEntry(canonMethodNode, "Canonical method for instantiating stub");
             }
