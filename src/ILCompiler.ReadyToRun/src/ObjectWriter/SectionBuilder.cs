@@ -398,7 +398,8 @@ namespace ILCompiler.PEWriter
         {
             if (_nameMangler == null)
             {
-                _nameMangler = new CoreRTNameMangler(new WindowsNodeMangler(), mangleForCplusPlus: false);
+                // TODO-REFACTOR: why do we have two name manglers?
+                _nameMangler = new CoreRTNameMangler();
                 _nameMangler.CompilationUnitPrefix = "";
             }
             return _nameMangler;

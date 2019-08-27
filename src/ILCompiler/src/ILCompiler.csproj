@@ -1,4 +1,4 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools</OutputPath>
@@ -27,7 +27,6 @@
     <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
     <ProjectReference Include="..\..\ILCompiler.CppCodeGen\src\ILCompiler.CppCodeGen.csproj" />
     <ProjectReference Include="..\..\ILCompiler.WebAssembly\src\ILCompiler.WebAssembly.csproj" />
-    <ProjectReference Include="..\..\ILCompiler.ReadyToRun\src\ILCompiler.ReadyToRun.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.CommandLine">

@@ -18,12 +18,17 @@ namespace ILCompiler
     public class CoreRTNameMangler : NameMangler
     {
         private SHA256 _sha256;
+
+#if !READYTORUN
         private readonly bool _mangleForCplusPlus;
 
         public CoreRTNameMangler(NodeMangler nodeMangler, bool mangleForCplusPlus) : base(nodeMangler)
         {
             _mangleForCplusPlus = mangleForCplusPlus;
         }
+#else
+        private readonly bool _mangleForCplusPlus = false;
+#endif
 
         private string _compilationUnitPrefix;
 
