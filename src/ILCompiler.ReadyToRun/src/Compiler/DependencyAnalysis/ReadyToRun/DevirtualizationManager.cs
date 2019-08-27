@@ -17,18 +17,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool IsEffectivelySealed(TypeDesc type)
         {
-            return _compilationModuleGroup.ContainsType(type) && base.IsEffectivelySealed(type);
+            return _compilationModuleGroup.VersionsWithType(type) && base.IsEffectivelySealed(type);
         }
 
         public override bool IsEffectivelySealed(MethodDesc method)
         {
-            return _compilationModuleGroup.ContainsMethodBody(method, unboxingStub: false) && base.IsEffectivelySealed(method);
+            return _compilationModuleGroup.VersionsWithMethodBody(method) && base.IsEffectivelySealed(method);
         }
 
         protected override MethodDesc ResolveVirtualMethod(MethodDesc declMethod, DefType implType)
         {
-            if (_compilationModuleGroup.ContainsMethodBody(declMethod, unboxingStub: false) &&
-                _compilationModuleGroup.ContainsType(implType))
+            if (_compilationModuleGroup.VersionsWithMethodBody(declMethod) &&
+                _compilationModuleGroup.VersionsWithType(implType))
             {
                 return base.ResolveVirtualMethod(declMethod, implType);
             }
