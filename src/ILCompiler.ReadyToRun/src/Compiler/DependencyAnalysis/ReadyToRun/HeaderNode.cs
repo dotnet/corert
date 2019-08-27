@@ -75,7 +75,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void Add(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol)
         {
-            _items.Add(new HeaderItem(id, node, startSymbol));
+            lock (_items)
+            {
+                _items.Add(new HeaderItem(id, node, startSymbol));
+            }
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

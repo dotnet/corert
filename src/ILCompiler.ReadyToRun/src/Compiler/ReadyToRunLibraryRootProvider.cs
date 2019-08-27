@@ -13,30 +13,55 @@ namespace ILCompiler
     public class ReadyToRunRootProvider : ICompilationRootProvider
     {
         private EcmaModule _module;
+        private ProfileData _profileData;
 
-        public ReadyToRunRootProvider(EcmaModule module)
+        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager)
         {
             _module = module;
+            _profileData = profileDataManager.GetDataForModuleDesc(module);
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            foreach (TypeDesc type in _module.GetAllTypes())
+            foreach (var methodProfileInfo in _profileData.GetAllMethodProfileData())
             {
-                try
+                if (!methodProfileInfo.Flags.HasFlag(MethodProfilingDataFlags.ExcludeHotMethodCode) &&
+                    !methodProfileInfo.Flags.HasFlag(MethodProfilingDataFlags.ExcludeColdMethodCode))
                 {
-                    rootProvider.AddCompilationRoot(type, "Library module type");
+                    try
+                    {
+                        MethodDesc method = methodProfileInfo.Method;
+                        CheckCanGenerateMethod(method);
+                        rootProvider.AddCompilationRoot(method, "Profile triggered method");
+                    }
+                    catch (TypeSystemException)
+                    {
+                        // Individual methods can fail to load types referenced in their signatures.
+                        // Skip them in library mode since they're not going to be callable.
+                        continue;
+                    }
                 }
-                catch (TypeSystemException)
-                {
-                    // Swallow type load exceptions while rooting
-                    continue;
-                }
+            }
 
-                // If this is not a generic definition, root all methods
-                if (!type.HasInstantiation)
+            if (!_profileData.PartialNGen)
+            {
+                foreach (TypeDesc type in _module.GetAllTypes())
                 {
-                    RootMethods(type, "Library module method", rootProvider);
+                    try
+                    {
+                        rootProvider.AddCompilationRoot(type, "Library module type");
+                    }
+                    catch (TypeSystemException)
+                    {
+                        // Swallow type load exceptions while rooting
+                        continue;
+                    }
+
+                    // If this is not a generic definition, root all methods
+                    if (!type.HasInstantiation)
+                    {
+                        RootMethods(type, "Library module method", rootProvider);
+                    }
                 }
             }
         }

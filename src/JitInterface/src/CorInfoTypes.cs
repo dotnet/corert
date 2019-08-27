@@ -137,7 +137,9 @@ namespace Internal.JitInterface
         mdtBaseType = 0x72000000,
     }
 
-    public enum HRESULT { }
+    public enum HRESULT {
+        E_NOTIMPL = -2147467263
+    }
 
     public unsafe struct CORINFO_SIG_INFO
     {

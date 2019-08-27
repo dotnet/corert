@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Internal.TypeSystem;
 
 using NumberStyles = System.Globalization.NumberStyles;
 
@@ -14,6 +15,7 @@ namespace Internal.JitInterface
     {
         private CorJitFlag[] _jitFlags;
         private Dictionary<string, string> _config = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private List<ModuleDesc> _modulesBeingInstrumented;
         private object _keepAlive; // Keeps callback delegates alive
 
         public IntPtr UnmanagedInstance
@@ -27,8 +29,9 @@ namespace Internal.JitInterface
         /// Creates a new instance of <see cref="JitConfigProvider"/>.
         /// </summary>
         /// <param name="parameters">Name-value pairs separated by an equals sign.</param>
-        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters)
+        public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters, IEnumerable<ModuleDesc> modulesBeingInstrumented)
         {
+            _modulesBeingInstrumented = new List<ModuleDesc>(modulesBeingInstrumented);
             foreach (var param in parameters)
             {
                 _config[param.Key] = param.Value;
@@ -76,6 +79,11 @@ namespace Internal.JitInterface
             }
 
             return String.Empty;
+        }
+
+        public bool IsModuleInstrumented(ModuleDesc module)
+        {
+            return _modulesBeingInstrumented.Contains(module);
         }
 
         #region Unmanaged instance

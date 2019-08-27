@@ -38,6 +38,7 @@ namespace ILCompiler
         private string _targetOSStr;
         private OptimizationMode _optimizationMode;
         private string _systemModuleName = DefaultSystemModule;
+        private bool _tuning;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -125,6 +126,7 @@ namespace ILCompiler
                 syntax.DefineOption("Os", ref optimizeSpace, "Enable optimizations, favor code space");
                 syntax.DefineOption("Ot", ref optimizeTime, "Enable optimizations, favor code speed");
                 syntax.DefineOption("inputbubble", ref _isInputVersionBubble, "True when the entire input forms a version bubble (default = per-assembly bubble)");
+                syntax.DefineOption("tuning", ref _tuning, "Enable tuning codegen");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("verbose", ref _isVerbose, "Enable verbose logging");
@@ -332,7 +334,7 @@ namespace ILCompiler
                 inputFilePath = input.Value;
                 break;
             }
-            CompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
+            CompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath, _tuning);
 
             string compilationUnitPrefix = "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);

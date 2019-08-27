@@ -134,6 +134,8 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewObjectFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NibbleWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeHelperImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ProfileDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ProfileDataSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs" />
@@ -153,6 +155,10 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
+    <Compile Include="Compiler\ibcdatamodel.cs" />
+    <Compile Include="Compiler\ibcdatareader.cs" />
+    <Compile Include="Compiler\ibcextensions.cs" />
+    <Compile Include="Compiler\ProfileData.cs" />
     <Compile Include="Compiler\ReadyToRunHashCode.cs" />
     <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
@@ -161,6 +167,14 @@
     <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ReadyToRunTableManager.cs" />
+    <Compile Include="Compiler\Resources\ResourceData.cs" />
+    <Compile Include="Compiler\Resources\ResourceData.FileAbstraction.cs" />
+    <Compile Include="Compiler\Resources\ResourceData.Reader.cs" />
+    <Compile Include="Compiler\Resources\ResourceData.ResourcesDataModel.cs" />
+    <Compile Include="Compiler\Resources\ResourceData.UpdateResourceDataModel.cs" />
+    <Compile Include="Compiler\Resources\ResourceData.Win32Enums.cs" />
+    <Compile Include="Compiler\Resources\ResourceData.Win32Structs.cs" />
+    <Compile Include="Compiler\Resources\ResourceData.Win32_NT_HEADER.cs" />
     <Compile Include="Compiler\RuntimeDeterminedTypeHelper.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />

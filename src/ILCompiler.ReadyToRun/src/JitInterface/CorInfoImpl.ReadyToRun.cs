@@ -151,6 +151,7 @@ namespace Internal.JitInterface
         public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
         {
             _methodCodeNode = methodCodeNodeNeedingCode;
+            _profileDataNode = null;
 
             CompileMethodInternal(methodCodeNodeNeedingCode);
         }
@@ -530,6 +531,10 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_END:
                     id = ReadyToRunHelper.PInvokeEnd;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_BBT_FCN_ENTER:
+                    id = ReadyToRunHelper.LogMethodEnter;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
@@ -1189,7 +1194,10 @@ namespace Internal.JitInterface
                     {
                         // Constrained token is not interesting with this transforms
                         if (pResult->thisTransform != CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM)
+                        {
                             pConstrainedResolvedToken = null;
+                            constrainedType = null;
+                        }
 
                         MethodDesc nonUnboxingMethod = methodToCall;
                         bool isUnboxingStub = methodToCall.IsUnboxingThunk();

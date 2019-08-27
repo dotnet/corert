@@ -207,6 +207,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
     {
         private Dictionary<TypeAndMethod, IMethodNode> _importMethods;
+        private bool _ibcTuning;
 
         public ReadyToRunCodegenNodeFactory(
             CompilerTypeSystemContext context,
@@ -214,12 +215,14 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler nameMangler,
             ModuleTokenResolver moduleTokenResolver,
             SignatureContext signatureContext,
-            CopiedCorHeaderNode corHeaderNode)
+            CopiedCorHeaderNode corHeaderNode,
+            bool ibcTuning)
             : base(context,
                   compilationModuleGroup,
                   nameMangler,
                   new ReadyToRunTableManager(context))
         {
+            _ibcTuning = ibcTuning;
             _importMethods = new Dictionary<TypeAndMethod, IMethodNode>();
 
             Resolver = moduleTokenResolver;
@@ -238,6 +241,8 @@ namespace ILCompiler.DependencyAnalysis
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
 
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
+
+        public ProfileDataSectionNode ProfileDataSection;
 
         public MethodEntryPointTableNode MethodEntryPointTable;
 
@@ -442,6 +447,15 @@ namespace ILCompiler.DependencyAnalysis
 
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
+
+            if (_ibcTuning)
+            {
+                ProfileDataSection = new ProfileDataSectionNode();
+                // Don't add to root and R2R Header here, as if we don't actually compile any methods, we cannot have this section
+                // We need to have at least one ProfileDataNode in order to support creating this section
+                // However, we create the section node itself so that ProfileDataNode's can find it, and as an indicator to the 
+                // rest of the compiler that IBC tuning should be enabled.
+            }
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode, exceptionInfoLookupTableNode);
@@ -768,6 +782,19 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return result;
+        }
+
+        private readonly Dictionary<MethodWithGCInfo, ProfileDataNode> _profileDataCountsNodes = new Dictionary<MethodWithGCInfo, ProfileDataNode>();
+
+        public ProfileDataNode ProfileDataNode(MethodWithGCInfo method)
+        {
+            ProfileDataNode node;
+            if (!_profileDataCountsNodes.TryGetValue(method, out node))
+            {
+                node = new ProfileDataNode(method, Target);
+                _profileDataCountsNodes.Add(method, node);
+            }
+            return node;
         }
     }
 }
