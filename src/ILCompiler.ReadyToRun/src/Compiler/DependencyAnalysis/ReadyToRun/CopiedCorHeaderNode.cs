@@ -85,14 +85,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.EmitInt(reader.ReadInt32());
 
             // Resources Directory
-            ReadDirectoryEntry(ref reader);
-            WriteEmptyDirectoryEntry(ref builder);
+            if (ReadDirectoryEntry(ref reader).Size > 0)
+            {
+                var managedResources = r2rFactory.CopiedManagedResources(_module);
+                builder.EmitReloc(managedResources, RelocType.IMAGE_REL_BASED_ADDR32NB);
+                builder.EmitInt(managedResources.Size);
+            }
+            else
+            {
+                WriteEmptyDirectoryEntry(ref builder);
+            }
 
             // Strong Name Signature Directory
-            ReadDirectoryEntry(ref reader);
-            var strongNameSignature = r2rFactory.CopiedStrongNameSignature(_module);
-            builder.EmitReloc(strongNameSignature, RelocType.IMAGE_REL_BASED_ADDR32NB);
-            builder.EmitInt(strongNameSignature.Size);
+            if (ReadDirectoryEntry(ref reader).Size > 0)
+            {
+                var strongNameSignature = r2rFactory.CopiedStrongNameSignature(_module);
+                builder.EmitReloc(strongNameSignature, RelocType.IMAGE_REL_BASED_ADDR32NB);
+                builder.EmitInt(strongNameSignature.Size);
+            }
+            else
+            {
+                WriteEmptyDirectoryEntry(ref builder);
+            }
+            
 
             // Code Manager Table Directory
             ReadDirectoryEntry(ref reader);

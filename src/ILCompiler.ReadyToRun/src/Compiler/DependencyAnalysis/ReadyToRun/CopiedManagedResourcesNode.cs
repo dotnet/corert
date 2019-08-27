@@ -10,14 +10,11 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    /// <summary>
-    /// Container node for emitting an input MSIL image's strong name signature blob
-    /// </summary>
-    public class CopiedStrongNameSignatureNode : ObjectNode, ISymbolDefinitionNode
+    public class CopiedManagedResourcesNode : ObjectNode, ISymbolDefinitionNode
     {
         private EcmaModule _module;
 
-        public CopiedStrongNameSignatureNode(EcmaModule module)
+        public CopiedManagedResourcesNode(EcmaModule module)
         {
             _module = module;
         }
@@ -26,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool IsShareable => false;
 
-        public override int ClassCode => 932489234;
+        public override int ClassCode => 329839;
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -35,12 +32,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__StrongNameSignature");
+            sb.Append("__ManagedResources");
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public int Size => _module.PEReader.PEHeaders.CorHeader.StrongNameSignatureDirectory.Size;
+        public int Size => _module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.Size;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -57,9 +54,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialAlignment(4);
             builder.AddSymbol(this);
 
-            DirectoryEntry strongNameDirectory = _module.PEReader.PEHeaders.CorHeader.StrongNameSignatureDirectory;
-            PEMemoryBlock block = _module.PEReader.GetSectionData(strongNameDirectory.RelativeVirtualAddress);
-            builder.EmitBytes(block.GetReader().ReadBytes(strongNameDirectory.Size));
+            DirectoryEntry resourcesDirectory = _module.PEReader.PEHeaders.CorHeader.ResourcesDirectory;
+            PEMemoryBlock block = _module.PEReader.GetSectionData(resourcesDirectory.RelativeVirtualAddress);
+            builder.EmitBytes(block.GetReader().ReadBytes(resourcesDirectory.Size));
 
             return builder.ToObjectData();
         }

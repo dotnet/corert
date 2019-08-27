@@ -521,49 +521,38 @@ namespace ILCompiler.PEWriter
                     endRVA: sectionHeader.VirtualAddress + Math.Max(sectionHeader.VirtualSize, sectionHeader.SizeOfRawData),
                     deltaRVA: rvaDelta));
                 
-                unsafe
-                {
-                    int bytesToRead = Math.Min(sectionHeader.SizeOfRawData, sectionHeader.VirtualSize);
-                    BlobReader inputSectionReader = _peReader.GetEntireImage().GetReader(sectionOffset, bytesToRead);
+                
+                int bytesToRead = Math.Min(sectionHeader.SizeOfRawData, sectionHeader.VirtualSize);
+                BlobReader inputSectionReader = _peReader.GetEntireImage().GetReader(sectionOffset, bytesToRead);
                         
-                    if (name == RsrcSectionName)
-                    {
-                        // There seems to be a bug in BlobBuilder - when we LinkSuffix to an empty blob builder,
-                        // the blob data goes out of sync and WriteContentTo outputs garbage.
-                        sectionDataBuilder = PEResourceHelper.Relocate(inputSectionReader, rvaDelta);
-                    }
-                    else if (name == TextSectionName)
-                    {
-                        // Skip copying the .text section. We will pull out the metadata, IL blobs and RVA fields as part of compilation
-                    }
-                    else
-                    {
-                        sectionDataBuilder = new BlobBuilder();
-                        sectionDataBuilder.WriteBytes(inputSectionReader.CurrentPointer, inputSectionReader.RemainingBytes);
-                    }
+                if (name == RsrcSectionName)
+                {
+                    // There seems to be a bug in BlobBuilder - when we LinkSuffix to an empty blob builder,
+                    // the blob data goes out of sync and WriteContentTo outputs garbage.
+                    sectionDataBuilder = PEResourceHelper.Relocate(inputSectionReader, rvaDelta);
+                }
 
-                    int alignedSize = sectionHeader.VirtualSize;
+                int alignedSize = sectionHeader.VirtualSize;
                     
-                    // When custom section data is present, align the section size to 4K to prevent
-                    // pre-generated MSIL relocations from tampering with native relocations.
-                    if (_customSections.Contains(name))
+                // When custom section data is present, align the section size to 4K to prevent
+                // pre-generated MSIL relocations from tampering with native relocations.
+                if (_customSections.Contains(name))
+                {
+                    alignedSize = (alignedSize + 0xFFF) & ~0xFFF;
+                }
+
+                if (sectionDataBuilder != null)
+                {
+                    if (alignedSize > bytesToRead)
                     {
-                        alignedSize = (alignedSize + 0xFFF) & ~0xFFF;
+                        // If the number of bytes read from the source PE file is less than the virtual size,
+                        // zero pad to the end of virtual size before emitting extra section data
+                        sectionDataBuilder.WriteBytes(0, alignedSize - bytesToRead);
                     }
 
-                    if (sectionDataBuilder != null)
-                    {
-                        if (alignedSize > bytesToRead)
-                        {
-                            // If the number of bytes read from the source PE file is less than the virtual size,
-                            // zero pad to the end of virtual size before emitting extra section data
-                            sectionDataBuilder.WriteBytes(0, alignedSize - bytesToRead);
-                        }
-
-                        location = new SectionLocation(
-                            location.RelativeVirtualAddress + sectionDataBuilder.Count,
-                            location.PointerToRawData + sectionDataBuilder.Count);
-                    }
+                    location = new SectionLocation(
+                        location.RelativeVirtualAddress + sectionDataBuilder.Count,
+                        location.PointerToRawData + sectionDataBuilder.Count);
                 }
             }
 

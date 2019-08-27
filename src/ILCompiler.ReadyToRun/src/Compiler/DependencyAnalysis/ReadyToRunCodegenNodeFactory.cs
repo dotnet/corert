@@ -745,5 +745,19 @@ namespace ILCompiler.DependencyAnalysis
 
             return result;
         }
+
+        private Dictionary<EcmaModule, CopiedManagedResourcesNode> _copiedManagedResources = new Dictionary<EcmaModule, CopiedManagedResourcesNode>();
+
+        public CopiedManagedResourcesNode CopiedManagedResources(EcmaModule module)
+        {
+            CopiedManagedResourcesNode result;
+            if (!_copiedManagedResources.TryGetValue(module, out result))
+            {
+                result = new CopiedManagedResourcesNode(module);
+                _copiedManagedResources.Add(module, result);
+            }
+
+            return result;
+        }
     }
 }
