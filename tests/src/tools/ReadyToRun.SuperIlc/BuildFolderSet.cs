@@ -829,7 +829,7 @@ namespace ReadyToRun.SuperIlc
                         {
                             cpaotSize = new FileInfo(cpaotCompilation.Parameters.OutputFileName).Length;
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             Console.Error.WriteLine("Cannot find CPAOT output file '{0}', ignoring in size stats", cpaotCompilation.Parameters.OutputFileName);
                             continue;
@@ -840,7 +840,7 @@ namespace ReadyToRun.SuperIlc
                         {
                             crossgenSize = new FileInfo(crossgenCompilation.Parameters.OutputFileName).Length;
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             Console.Error.WriteLine("Cannot find Crossgen output file '{0}', ignoring in size stats", crossgenCompilation.Parameters.OutputFileName);
                             continue;

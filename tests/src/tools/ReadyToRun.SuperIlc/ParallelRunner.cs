@@ -64,21 +64,23 @@ public sealed class ParallelRunner
         /// <param name="processIndex">Numeric index used to prefix messages pertaining to this process in the console output</param>
         /// <param name="processCount">Total number of processes being executed (used for displaying progress)</param>
         /// <param name="progressIndex">Number of processes that have already finished (for displaying progress)</param>
-        public void Launch(ProcessInfo processInfo, ReadyToRunJittedMethods jittedMethods, int processIndex, int processCount, int progressIndex)
+        /// <param name="failureCount">Number of pre-existing failures in this parallel build step (for displaying progress)</param>
+        public void Launch(ProcessInfo processInfo, ReadyToRunJittedMethods jittedMethods, int processIndex, int processCount, int progressIndex, int failureCount)
         {
             Debug.Assert(_processRunner == null);
-            Console.WriteLine($"{processIndex} / {processCount} ({(progressIndex * 100 / processCount)}%): launching: {processInfo.Parameters.ProcessPath} {processInfo.Parameters.Arguments}");
+            Console.WriteLine($"{processIndex} / {processCount} ({(progressIndex * 100 / processCount)}%, {failureCount} failed): " +
+                $"launching: {processInfo.Parameters.ProcessPath} {processInfo.Parameters.Arguments}");
 
             _processRunner = new ProcessRunner(processInfo, processIndex, processCount, jittedMethods, _processExitEvent);
         }
 
-        public bool IsAvailable(ref int progressIndex)
+        public bool IsAvailable(ref int progressIndex, ref int failureCount)
         {
             if (_processRunner == null)
             {
                 return true;
             }
-            if (!_processRunner.IsAvailable(ref progressIndex))
+            if (!_processRunner.IsAvailable(ref progressIndex, ref failureCount))
             {
                 return false;
             }
@@ -126,24 +128,35 @@ public sealed class ParallelRunner
             // may get recycled by the OS and we can no longer back-translate PIDs in events to the logical
             // process executions. Without parallelization, we simply run the processes one by one.
             int etwCollectionBatching = (degreeOfParallelism == 1 ? 1 : 10);
+            int failureCount = 0;
 
             for (int batchStartIndex = 0; batchStartIndex < processCount; batchStartIndex += etwCollectionBatching)
             {
+                int batchEndIndex = Math.Min(batchStartIndex + etwCollectionBatching, processCount);
                 BuildEtwProcesses(
                     startIndex: batchStartIndex,
-                    endIndex: Math.Min(batchStartIndex + etwCollectionBatching, processCount),
+                    endIndex: batchEndIndex,
                     totalCount: processCount,
+                    failureCount: failureCount,
                     processList,
                     degreeOfParallelism);
+                
+                for (int processIndex = batchStartIndex; processIndex < batchEndIndex; processIndex++)
+                {
+                    if (!processList[processIndex].Succeeded)
+                    {
+                        failureCount++;
+                    }
+                }
             }
         }
         else
         {
-            BuildProjects(startIndex: 0, endIndex: processCount, totalCount: processCount, processList, null, degreeOfParallelism);
+            BuildProjects(startIndex: 0, endIndex: processCount, totalCount: processCount, failureCount: 0, processList, null, degreeOfParallelism);
         }
     }
 
-    private static void BuildEtwProcesses(int startIndex, int endIndex, int totalCount, List<ProcessInfo> processList, int degreeOfParallelism)
+    private static void BuildEtwProcesses(int startIndex, int endIndex, int totalCount, int failureCount, List<ProcessInfo> processList, int degreeOfParallelism)
     {
         using (TraceEventSession traceEventSession = new TraceEventSession("ReadyToRunTestSession"))
         {
@@ -152,7 +165,7 @@ public sealed class ParallelRunner
             {
                 Task.Run(() =>
                 {
-                    BuildProjects(startIndex, endIndex, totalCount, processList, jittedMethods, degreeOfParallelism);
+                    BuildProjects(startIndex, endIndex, totalCount, failureCount, processList, jittedMethods, degreeOfParallelism);
                     traceEventSession.Stop();
                 });
             }
@@ -187,7 +200,7 @@ public sealed class ParallelRunner
         }
     }
 
-    private static void BuildProjects(int startIndex, int endIndex, int totalCount, List<ProcessInfo> processList, ReadyToRunJittedMethods jittedMethods, int degreeOfParallelism)
+    private static void BuildProjects(int startIndex, int endIndex, int totalCount, int failureCount, List<ProcessInfo> processList, ReadyToRunJittedMethods jittedMethods, int degreeOfParallelism)
     {
         using (AutoResetEvent processExitEvent = new AutoResetEvent(initialState: false))
         {
@@ -209,7 +222,7 @@ public sealed class ParallelRunner
                 {
                     foreach (ProcessSlot slot in processSlots)
                     {
-                        if (slot.IsAvailable(ref progressIndex))
+                        if (slot.IsAvailable(ref progressIndex, ref failureCount))
                         {
                             freeSlot = slot;
                             break;
@@ -218,12 +231,12 @@ public sealed class ParallelRunner
                     if (freeSlot == null)
                     {
                         // All slots are busy - wait for a process to finish
-                        processExitEvent.WaitOne();
+                        processExitEvent.WaitOne(200);
                     }
                 }
                 while (freeSlot == null);
 
-                freeSlot.Launch(processInfo, jittedMethods, index, totalCount, progressIndex);
+                freeSlot.Launch(processInfo, jittedMethods, index, totalCount, progressIndex, failureCount);
             }
 
             // We have launched all the commands, now wait for all processes to finish
@@ -233,7 +246,7 @@ public sealed class ParallelRunner
                 activeProcessesExist = false;
                 foreach (ProcessSlot slot in processSlots)
                 {
-                    if (!slot.IsAvailable(ref progressIndex))
+                    if (!slot.IsAvailable(ref progressIndex, ref failureCount))
                     {
                         activeProcessesExist = true;
                     }
