@@ -37,6 +37,7 @@
     <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\CompilationBuilder.cs" Link="Compiler\CompilationBuilder.cs" />
     <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\CompilationModuleGroup.cs" Link="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
+    <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
     <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\CoreRTNameMangler.cs" Link="Compiler\CoreRTNameMangler.cs" />
     <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" Link="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" Link="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
