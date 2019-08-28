@@ -10,7 +10,10 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public struct ObjectDataBuilder : Internal.Runtime.ITargetBinaryWriter
+    public struct ObjectDataBuilder
+#if !READYTORUN
+        : Internal.Runtime.ITargetBinaryWriter
+#endif
     {
         public ObjectDataBuilder(NodeFactory factory, bool relocsOnly)
         {

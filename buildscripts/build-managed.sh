@@ -56,6 +56,18 @@ build_managed_corert()
     fi
     chmod +x $__ProductBinDir/tools/ilc
 
+    $__dotnetclipath/dotnet restore $__sourceroot/ILCompiler/netcoreapp-crossgen2/crossgen2.csproj -r $__NugetRuntimeId
+    export BUILDERRORLEVEL=$?
+    if [ $BUILDERRORLEVEL != 0 ]; then
+        exit $BUILDERRORLEVEL
+    fi
+    $__dotnetclipath/dotnet publish $__sourceroot/ILCompiler/netcoreapp-crossgen2/crossgen2.csproj -r $__NugetRuntimeId -o $__ProductBinDir/tools
+    export BUILDERRORLEVEL=$?
+    if [ $BUILDERRORLEVEL != 0 ]; then
+        exit $BUILDERRORLEVEL
+    fi
+    chmod +x $__ProductBinDir/tools/crossgen2
+
     $__ProjectRoot/Tools/msbuild.sh "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:NuPkgRid=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__buildarch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) $__UnprocessedBuildArgs $__ExtraMsBuildArgs
     export BUILDERRORLEVEL=$?
 

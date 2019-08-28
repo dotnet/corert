@@ -35,11 +35,6 @@ namespace ILCompiler
             return type.GetTypeDefinition() is EcmaType ecmaType && IsModuleInCompilationGroup(ecmaType.EcmaModule);
         }
 
-        public sealed override bool ContainsTypeDictionary(TypeDesc type)
-        {
-            return ContainsType(type);
-        }
-
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
             if (method is ArrayMethod)
@@ -52,77 +47,9 @@ namespace ILCompiler
             return ContainsType(method.OwningType);
         }
 
-        public sealed override bool ContainsMethodDictionary(MethodDesc method)
-        {
-            Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
-            return ContainsMethodBody(method, false);
-        }
-
-        public override bool ImportsMethod(MethodDesc method, bool unboxingStub)
-        {
-            return false;
-        }
-
-        public sealed override ExportForm GetExportTypeForm(TypeDesc type)
-        {
-            return ExportForm.None;
-        }
-
-        public sealed override ExportForm GetExportTypeFormDictionary(TypeDesc type)
-        {
-            return ExportForm.None;
-        }
-
-        public sealed override ExportForm GetExportMethodForm(MethodDesc method, bool unboxingStub)
-        {
-            return ExportForm.None;
-        }
-
-        public override ExportForm GetExportMethodDictionaryForm(MethodDesc method)
-        {
-            return ExportForm.None;
-        }
-
         private bool IsModuleInCompilationGroup(EcmaModule module)
         {
             return _compilationModuleSet.Contains(module);
-        }
-
-        public sealed override bool IsSingleFileCompilation
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public sealed override bool ShouldReferenceThroughImportTable(TypeDesc type)
-        {
-            return false;
-        }
-
-        public override bool CanHaveReferenceThroughImportTable
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override bool ShouldProduceFullVTable(TypeDesc type)
-        {
-            return false;
-        }
-
-        public override bool ShouldPromoteToFullType(TypeDesc type)
-        {
-            return ShouldProduceFullVTable(type);
-        }
-
-        public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
-        {
-            return (type.HasInstantiation || type.IsArray) && ShouldProduceFullVTable(type) &&
-                   type.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any);
         }
 
         Dictionary<TypeDesc, bool> _containsTypeLayoutCache = new Dictionary<TypeDesc, bool>();

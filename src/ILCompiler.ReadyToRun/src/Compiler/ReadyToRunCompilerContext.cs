@@ -12,6 +12,15 @@ using VectorIntrinsicFieldLayoutAlgorithm = ILCompiler.VectorFieldLayoutAlgorith
 
 namespace ILCompiler
 {
+    partial class CompilerTypeSystemContext
+    {
+        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
+            : base(details)
+        {
+            _genericsMode = genericsMode;
+        }
+    }
+
     public partial class ReadyToRunCompilerContext : CompilerTypeSystemContext
     {
         private ReadyToRunMetadataFieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
@@ -20,7 +29,7 @@ namespace ILCompiler
         VectorIntrinsicFieldLayoutAlgorithm _vectorIntrinsicFieldLayoutAlgorithm;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
-            : base(details, genericsMode, delegateFeatures: 0)
+            : base(details, genericsMode)
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);

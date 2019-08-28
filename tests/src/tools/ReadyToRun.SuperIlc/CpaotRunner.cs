@@ -17,7 +17,7 @@ namespace ReadyToRun.SuperIlc
     {
         public override CompilerIndex Index => CompilerIndex.CPAOT;
 
-        protected override string CompilerFileName => "ilc".OSExeSuffix();
+        protected override string CompilerFileName => "crossgen2".OSExeSuffix();
 
         private List<string> _resolvedReferences;
 
@@ -40,14 +40,8 @@ namespace ReadyToRun.SuperIlc
             // Output
             yield return $"-o:{outputFileName}";
 
-            // Don't forget this one.
-            yield return "--readytorun";
-
             // Todo: Allow control of some of these
-            yield return "-g";
-            yield return "--runtimeopt:RH_UseServerGC=1";
             yield return "--targetarch=x64";
-            yield return "--stacktracedata";
 
             if (_options.Release)
             {

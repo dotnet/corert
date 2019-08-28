@@ -252,6 +252,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public int Offset => 0;
-        public override bool IsShareable => _method is InstantiatedMethod || EETypeNode.IsTypeNodeShareable(_method.OwningType);
+        public override bool IsShareable => throw new NotImplementedException();
     }
 }

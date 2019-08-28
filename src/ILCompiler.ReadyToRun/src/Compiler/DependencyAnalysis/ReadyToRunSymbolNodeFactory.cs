@@ -14,6 +14,30 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    public enum ReadyToRunHelperId
+    {
+        Invalid,
+        NewHelper,
+        NewArr1,
+        IsInstanceOf,
+        CastClass,
+        GetNonGCStaticBase,
+        GetGCStaticBase,
+        GetThreadStaticBase,
+        GetThreadNonGcStaticBase,
+        CctorTrigger,
+
+        //// The following helpers are used for generic lookups only
+        TypeHandle,
+        DeclaringTypeHandle,
+        MethodHandle,
+        FieldHandle,
+        MethodDictionary,
+        TypeDictionary,
+        MethodEntry,
+        VirtualDispatchCell,
+    }
+
     public sealed class ReadyToRunSymbolNodeFactory
     {
         private readonly ReadyToRunCodegenNodeFactory _codegenNodeFactory;
@@ -94,14 +118,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.FieldHandle:
                     helperNode = CreateFieldHandleHelper((FieldDesc)target, signatureContext);
-                    break;
-
-                case ReadyToRunHelperId.VirtualCall:
-                    helperNode = CreateVirtualCallHelper((MethodWithToken)target, signatureContext);
-                    break;
-
-                case ReadyToRunHelperId.DelegateCtor:
-                    helperNode = CreateDelegateCtorHelper((DelegateCreationInfo)target, signatureContext);
                     break;
 
                 case ReadyToRunHelperId.CctorTrigger:
@@ -222,29 +238,6 @@ namespace ILCompiler.DependencyAnalysis
             return new PrecodeHelperImport(
                 _codegenNodeFactory,
                 new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle, field, signatureContext));
-        }
-
-        private ISymbolNode CreateVirtualCallHelper(MethodWithToken methodWithToken, SignatureContext signatureContext)
-        {
-            return new DelayLoadHelperMethodImport(
-                _codegenNodeFactory,
-                _codegenNodeFactory.DispatchImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper_Obj,
-                methodWithToken,
-                useVirtualCall: false,
-                useInstantiatingStub: false,
-                _codegenNodeFactory.MethodSignature(
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
-                    methodWithToken,
-                    signatureContext: signatureContext, 
-                    isUnboxingStub: false, 
-                    isInstantiatingStub: false),
-                signatureContext);
-        }
-
-        private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, SignatureContext signatureContext)
-        {
-            return info.Constructor;
         }
 
         private ISymbolNode CreateCctorTrigger(TypeDesc type, SignatureContext signatureContext)
