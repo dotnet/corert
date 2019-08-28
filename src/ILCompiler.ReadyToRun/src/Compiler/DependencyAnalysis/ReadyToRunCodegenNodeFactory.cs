@@ -101,6 +101,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
 
+        // TODO-REFACTOR: we should try and get rid of this
         public IMethodNode MethodEntrypoint(MethodDesc method)
         {
             return _methodEntrypoints.GetOrAdd(method);
