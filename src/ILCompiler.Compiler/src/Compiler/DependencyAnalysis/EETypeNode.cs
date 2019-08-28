@@ -73,10 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             _type = type;
             _optionalFieldsNode = new EETypeOptionalFieldsNode(this);
 
-            // Note: The fact that you can't create invalid EETypeNode is used from many places that grab
-            // an EETypeNode from the factory with the sole purpose of making sure the validation has run
-            // and that the result of the positive validation is "cached" (by the presence of an EETypeNode).
-            CheckCanGenerateEEType(factory, type);
+            factory.TypeSystemContext.EnsureLoadableType(type);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -1058,135 +1055,6 @@ namespace ILCompiler.DependencyAnalysis
             if (!context.IsCppCodegenTemporaryWorkaround)
             { 
                 Debug.Assert(_type.IsTypeDefinition || !_type.HasSameTypeDefinition(context.ArrayOfTClass), "Asking for Array<T> EEType");
-            }
-        }
-
-        /// <summary>
-        /// Validates that it will be possible to create an EEType for '<paramref name="type"/>'.
-        /// </summary>
-        public static void CheckCanGenerateEEType(NodeFactory factory, TypeDesc type)
-        {
-            // Don't validate generic definitons
-            if (type.IsGenericDefinition)
-            {
-                return;
-            }
-
-            // System.__Canon or System.__UniversalCanon
-            if(type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-            {
-                return;
-            }
-
-            // It must be possible to create an EEType for the base type of this type
-            TypeDesc baseType = type.BaseType;
-            if (baseType != null)
-            {
-                // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(baseType.NormalizeInstantiation());
-            }
-            
-            // We need EETypes for interfaces
-            foreach (var intf in type.RuntimeInterfaces)
-            {
-                // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(intf.NormalizeInstantiation());
-            }
-
-            // Validate classes, structs, enums, interfaces, and delegates
-            DefType defType = type as DefType;
-            if (defType != null)
-            {
-                // Ensure we can compute the type layout
-                defType.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
-
-                //
-                // The fact that we generated an EEType means that someone can call RuntimeHelpers.RunClassConstructor.
-                // We need to make sure this is possible.
-                //
-                if (factory.TypeSystemContext.HasLazyStaticConstructor(defType))
-                {
-                    defType.ComputeStaticFieldLayout(StaticLayoutKind.StaticRegionSizesAndFields);
-                }
-
-                // Make sure instantiation length matches the expectation
-                // TODO: it might be more resonable for the type system to enforce this (also for methods)
-                if (defType.Instantiation.Length != defType.GetTypeDefinition().Instantiation.Length)
-                {
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                }
-
-                foreach (TypeDesc typeArg in defType.Instantiation)
-                {
-                    // ByRefs, pointers, function pointers, and System.Void are never valid instantiation arguments
-                    if (typeArg.IsByRef
-                        || typeArg.IsPointer
-                        || typeArg.IsFunctionPointer
-                        || typeArg.IsVoid
-                        || typeArg.IsByRefLike)
-                    {
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                    }
-
-                    // TODO: validate constraints
-                }
-
-                // Check the type doesn't have bogus MethodImpls or overrides and we can get the finalizer.
-                defType.GetFinalizer();
-            }
-
-            // Validate parameterized types
-            ParameterizedType parameterizedType = type as ParameterizedType;
-            if (parameterizedType != null)
-            {
-                TypeDesc parameterType = parameterizedType.ParameterType;
-
-                // Make sure EEType can be created for this.
-                factory.NecessaryTypeSymbol(parameterType);
-
-                if (parameterizedType.IsArray)
-                {
-                    if (parameterType.IsFunctionPointer)
-                    {
-                        // Arrays of function pointers are not currently supported
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                    }
-
-                    LayoutInt elementSize = parameterType.GetElementSize();
-                    if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
-                    {
-                        // Element size over 64k can't be encoded in the GCDesc
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
-                    }
-
-                    if (((ArrayType)parameterizedType).Rank > 32)
-                    {
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadRankTooLarge, type);
-                    }
-
-                    if (parameterType.IsByRefLike)
-                    {
-                        // Arrays of byref-like types are not allowed
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                    }
-                }
-
-                // Validate we're not constructing a type over a ByRef
-                if (parameterType.IsByRef)
-                {
-                    // CLR compat note: "ldtoken int32&&" will actually fail with a message about int32&; "ldtoken int32&[]"
-                    // will fail with a message about being unable to create an array of int32&. This is a middle ground.
-                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                }
-
-                // It might seem reasonable to disallow array of void, but the CLR doesn't prevent that too hard.
-                // E.g. "newarr void" will fail, but "newarr void[]" or "ldtoken void[]" will succeed.
-            }
-
-            // Function pointer EETypes are not currently supported
-            if (type.IsFunctionPointer)
-            {
-                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
         }
 

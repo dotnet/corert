@@ -347,13 +347,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodWithToken method, SignatureContext signatureContext)
         {
-            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, method, isUnboxingStub: false, isInstantiatingStub: false);
+            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, method, isUnboxingStub: false, isInstantiatingStub: false, isPrecodeImportRequired: false);
             if (!_delegateCtors.TryGetValue(ctorKey, out ISymbolNode ctorNode))
             {
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
                     method,
                     isUnboxingStub: false,
                     isInstantiatingStub: false,
+                    isPrecodeImportRequired: false,
                     signatureContext: signatureContext);
 
                 ctorNode = new DelayLoadHelperImport(

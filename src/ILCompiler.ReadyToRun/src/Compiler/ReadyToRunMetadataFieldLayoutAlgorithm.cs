@@ -729,29 +729,38 @@ namespace ILCompiler
             }
         }
 
-
         public static bool IsManagedSequentialType(TypeDesc type)
         {
-            type = type.UnderlyingType;
-            if (type.IsPrimitive || type.Category == TypeFlags.Pointer)
+            if (type.IsPointer)
             {
                 return true;
             }
-            if (type.IsValueType)
+
+            if (!type.IsValueType)
             {
-                foreach (FieldDesc field in type.GetFields())
+                return false;
+            }
+
+            MetadataType metadataType = (MetadataType)type;
+            if (metadataType.IsExplicitLayout || !metadataType.IsSequentialLayout)
+            {
+                return false;
+            }
+
+            if (type.IsPrimitive)
+            {
+                return true;
+            }
+
+            foreach (FieldDesc field in type.GetFields())
+            {
+                if (!field.IsStatic && !IsManagedSequentialType(field.FieldType.UnderlyingType))
                 {
-                    if (!field.IsStatic && !field.IsLiteral)
-                    {
-                        if (!IsManagedSequentialType(field.FieldType))
-                        {
-                            return false;
-                        }
-                    }
+                    return false;
                 }
-                return true;
             }
-            return false;
+
+            return true;
         }
     }
 }
