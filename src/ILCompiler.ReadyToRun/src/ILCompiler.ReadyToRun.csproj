@@ -151,7 +151,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SectionStartNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\ReadyToRunHashCode.cs" />

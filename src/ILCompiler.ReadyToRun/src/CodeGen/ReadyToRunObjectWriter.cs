@@ -74,7 +74,6 @@ namespace ILCompiler.DependencyAnalysis
                 R2RPEBuilder r2rPeBuilder = new R2RPEBuilder(
                     _nodeFactory.Target,
                     _inputPeReader,
-                    _nodeFactory.SectionStartNode,
                     GetRuntimeFunctionsTable);
 
                 int nodeIndex = -1;

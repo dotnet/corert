@@ -247,11 +247,6 @@ namespace ILCompiler.PEWriter
         ISymbolNode _corHeaderSymbol;
 
         /// <summary>
-        /// Delegate for translation of section names to section start symbols
-        /// </summary>
-        Func<string, ISymbolNode> _sectionStartNodeLookup;
-
-        /// <summary>
         /// Size of the ready-to-run header table in bytes.
         /// </summary>
         int _corHeaderSize;
@@ -279,7 +274,6 @@ namespace ILCompiler.PEWriter
             _entryPointSymbol = null;
             _exportDirectoryEntry = default(DirectoryEntry);
             _relocationDirectoryEntry = default(DirectoryEntry);
-            _sectionStartNodeLookup = null;
 
             switch (_target.Architecture)
             {
@@ -376,15 +370,6 @@ namespace ILCompiler.PEWriter
         {
             _corHeaderSymbol = symbol;
             _corHeaderSize = headerSize;
-        }
-
-        /// <summary>
-        /// Set delegate translating section names to section start symbols.
-        /// </summary>
-        /// <param name="sectionStartNodeLookup">Section start symbol lookup delegate to install</param>
-        public void SetSectionStartNodeLookup(Func<string, ISymbolNode> sectionStartNodeLookup)
-        {
-            _sectionStartNodeLookup = sectionStartNodeLookup;
         }
 
         private CoreRTNameMangler _nameMangler;
@@ -504,9 +489,8 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="name">Section to serialize</param>
         /// <param name="sectionLocation">Logical section address within the output PE file</param>
-        /// <param name="sectionStartRva">Section start RVA</param>
         /// <returns></returns>
-        public BlobBuilder SerializeSection(string name, SectionLocation sectionLocation, int sectionStartRva)
+        public BlobBuilder SerializeSection(string name, SectionLocation sectionLocation)
         {
             if (name == R2RPEBuilder.RelocSectionName)
             {
@@ -541,18 +525,6 @@ namespace ILCompiler.PEWriter
                 // Place the section
                 section.RVAWhenPlaced = sectionLocation.RelativeVirtualAddress;
                 section.FilePosWhenPlaced = sectionLocation.PointerToRawData;
-
-                // Place section start symbol node if available
-                if (_sectionStartNodeLookup != null)
-                {
-                    ISymbolNode sectionStartNode = _sectionStartNodeLookup(name);
-                    if (sectionStartNode != null)
-                    {
-                        // We back-compensate the start section symbol to point at the beginning of the original
-                        // section data. This is needed to access RVA field data in the embedded MSIL.
-                        _symbolMap.Add(sectionStartNode, new SymbolTarget(section.Index, sectionStartRva - section.RVAWhenPlaced));
-                    }
-                }
 
                 if (section.Content.Count != 0)
                 {

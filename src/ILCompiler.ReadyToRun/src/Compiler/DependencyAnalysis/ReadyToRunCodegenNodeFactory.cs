@@ -646,19 +646,6 @@ namespace ILCompiler.DependencyAnalysis
                     InputModuleContext));
         }
 
-        private Dictionary<string, SectionStartNode> _sectionStartNodes = new Dictionary<string, SectionStartNode>();
-
-        public ISymbolNode SectionStartNode(string sectionName)
-        {
-            SectionStartNode sectionStartNode;
-            if (!_sectionStartNodes.TryGetValue(sectionName, out sectionStartNode))
-            {
-                sectionStartNode = new SectionStartNode(sectionName);
-                _sectionStartNodes.Add(sectionName, sectionStartNode);
-            }
-            return sectionStartNode;
-        }
-
         private Dictionary<MethodWithToken, ISymbolNode> _dynamicHelperCellCache = new Dictionary<MethodWithToken, ISymbolNode>();
 
         public ISymbolNode DynamicHelperCell(MethodWithToken methodWithToken, bool isInstantiatingStub, SignatureContext signatureContext)
@@ -729,13 +716,27 @@ namespace ILCompiler.DependencyAnalysis
 
         private Dictionary<EcmaField, CopiedFieldRvaNode> _copiedFieldRvas = new Dictionary<EcmaField, CopiedFieldRvaNode>();
 
-        public CopiedFieldRvaNode CopiedFieldRva(EcmaField field)
+        public CopiedFieldRvaNode CopiedFieldRva(FieldDesc field)
         {
-            CopiedFieldRvaNode result;
-            if (!_copiedFieldRvas.TryGetValue(field, out result))
+            Debug.Assert(field.HasRva);
+            EcmaField ecmaField = (EcmaField)field.GetTypicalFieldDefinition();
+
+            if (!CompilationModuleGroup.ContainsType(ecmaField.OwningType))
             {
-                result = new CopiedFieldRvaNode(field);
-                _copiedFieldRvas.Add(field, result);
+                // TODO: cross-bubble RVA field
+                throw new NotSupportedException($"{ecmaField} ... {ecmaField.Module.Assembly}");
+            }
+            if (TypeSystemContext.InputFilePaths.Count > 1)
+            {
+                // TODO: RVA fields in merged multi-file compilation
+                throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", TypeSystemContext.InputFilePaths.Keys)}");
+            }
+
+            CopiedFieldRvaNode result;
+            if (!_copiedFieldRvas.TryGetValue(ecmaField, out result))
+            {
+                result = new CopiedFieldRvaNode(ecmaField);
+                _copiedFieldRvas.Add(ecmaField, result);
             }
 
             return result;
