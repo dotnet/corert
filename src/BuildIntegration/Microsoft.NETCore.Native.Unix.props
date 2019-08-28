@@ -59,7 +59,7 @@ See the LICENSE file in the project root for more information.
       <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libPortableRuntime.bc" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(NativeCodeGen)' != 'readytorun'">
       <!-- Workaround for https://github.com/dotnet/corert/issues/7000 -->
       <IlcArg Include="--removefeature:CurlHandler" />
       <!-- libicu loader in System.Globalization.Native is not compatible with static linking -->
