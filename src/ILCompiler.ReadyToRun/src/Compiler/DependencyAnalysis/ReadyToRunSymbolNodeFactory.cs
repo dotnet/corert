@@ -598,8 +598,6 @@ namespace ILCompiler.DependencyAnalysis
             return node;
         }
 
-        private Dictionary<int, RVAFieldNode> _rvaFieldSymbols = new Dictionary<int, RVAFieldNode>();
-
         public ISymbolNode GetRvaFieldNode(FieldDesc fieldDesc)
         {
             Debug.Assert(fieldDesc.HasRva);
@@ -616,33 +614,7 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", _codegenNodeFactory.TypeSystemContext.InputFilePaths.Keys)}");
             }
 
-            int rva = ecmaField.MetadataReader.GetFieldDefinition(ecmaField.Handle).GetRelativeVirtualAddress();
-            RVAFieldNode rvaFieldNode;
-            if (!_rvaFieldSymbols.TryGetValue(rva, out rvaFieldNode))
-            {
-                PEReader ilReader = ecmaField.Module.PEReader;
-                int sectionIndex;
-                int sectionRelativeOffset = 0;
-                ISymbolNode sectionStartNode = null;
-                for (sectionIndex = ilReader.PEHeaders.SectionHeaders.Length - 1; sectionIndex >= 0; sectionIndex--)
-                {
-                    SectionHeader sectionHeader = ilReader.PEHeaders.SectionHeaders[sectionIndex];
-                    if (rva >= sectionHeader.VirtualAddress && rva < sectionHeader.VirtualAddress + sectionHeader.VirtualSize)
-                    {
-                        sectionRelativeOffset = rva - sectionHeader.VirtualAddress;
-                        sectionStartNode = _codegenNodeFactory.SectionStartNode(sectionHeader.Name);
-                        break;
-                    }
-                }
-                if (sectionIndex < 0)
-                {
-                    // Target section for the RVA field was not found
-                    throw new NotImplementedException(fieldDesc.ToString());
-                }
-                rvaFieldNode = new RVAFieldNode(sectionStartNode, sectionRelativeOffset);
-                _rvaFieldSymbols.Add(rva, rvaFieldNode);
-            }
-            return rvaFieldNode;
+            return _codegenNodeFactory.CopiedFieldRva(ecmaField);
         }
 
         private Dictionary<MethodWithToken, ISymbolNode> _indirectPInvokeTargetNodes = new Dictionary<MethodWithToken, ISymbolNode>();
