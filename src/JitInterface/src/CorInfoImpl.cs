@@ -2429,6 +2429,12 @@ namespace Internal.JitInterface
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
         {
             MethodDesc method = HandleToObject(hMethod);
+#if READYTORUN
+            if (method is UnboxingMethodDesc unboxingMethodDesc)
+            {
+                method = unboxingMethodDesc.Target;
+            }
+#endif
             MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
 
             // Need to cast down to EcmaMethod. Do not use this as a precedent that casting to Ecma*
