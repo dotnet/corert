@@ -74,7 +74,7 @@ namespace System
         //
         // The Project N version takes a raw metadata handle rather than a completed type so that it remains robust in the face of missing metadata.
         //
-        public string FormatTypeName()
+        public string FormatTypeNameForReflection()
         {
             try
             {

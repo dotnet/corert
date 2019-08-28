@@ -100,7 +100,7 @@ namespace System.Reflection.Runtime.FieldInfos.EcmaFormat
                 if (reflectionTypeProvider.ExceptionOccurred)
                     fieldTypeName = Type.DefaultTypeNameWhenMissingMetadata;
                 else 
-                    fieldTypeName = fieldType.FormatTypeName();
+                    fieldTypeName = fieldType.FormatTypeNameForReflection();
                     
                 return fieldTypeName + " " + this.Name;
             }

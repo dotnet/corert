@@ -58,7 +58,7 @@ namespace System.Reflection.Runtime.CustomAttributes
         {
             get
             {
-                return _attributeType.FormatTypeName();
+                return _attributeType.FormatTypeNameForReflection();
             }
         }
 
