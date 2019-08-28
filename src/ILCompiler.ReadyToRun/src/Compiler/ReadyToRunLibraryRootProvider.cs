@@ -52,6 +52,9 @@ namespace ILCompiler
                 if (method.IsInternalCall)
                     continue;
 
+                if (method.IsAggressiveOptimization)
+                    continue;
+
                 try
                 {
                     CheckCanGenerateMethod(method);
