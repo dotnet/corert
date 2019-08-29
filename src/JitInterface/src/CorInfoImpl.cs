@@ -434,8 +434,10 @@ namespace Internal.JitInterface
             if (method.IsIntrinsic)
             {
                 // Some intrinsics will beg to differ about the hasHiddenParameter decision
+#if !READYTORUN
                 if (_compilation.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
                     hasHiddenParameter = false;
+#endif
 
                 if (method.IsArrayAddressMethod())
                     hasHiddenParameter = true;
@@ -1025,7 +1027,13 @@ namespace Internal.JitInterface
             {
                 MethodDesc method = result as MethodDesc;
                 pResolvedToken.hMethod = ObjectToHandle(method);
-                pResolvedToken.hClass = ObjectToHandle(method.OwningType);
+
+                TypeDesc owningClass = method.OwningType;
+                pResolvedToken.hClass = ObjectToHandle(owningClass);
+
+#if !SUPPORT_JIT
+                _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
+#endif
 
 #if READYTORUN
                 if (recordToken)
@@ -1045,7 +1053,13 @@ namespace Internal.JitInterface
                     ThrowHelper.ThrowMissingFieldException(field.OwningType, field.Name);
 
                 pResolvedToken.hField = ObjectToHandle(field);
-                pResolvedToken.hClass = ObjectToHandle(field.OwningType);
+
+                TypeDesc owningClass = field.OwningType;
+                pResolvedToken.hClass = ObjectToHandle(owningClass);
+
+#if !SUPPORT_JIT
+                _compilation.TypeSystemContext.EnsureLoadableType(owningClass);
+#endif
 
 #if READYTORUN
                 if (recordToken)
@@ -1073,6 +1087,10 @@ namespace Internal.JitInterface
                     type = type.MakeArrayType();
                 }
                 pResolvedToken.hClass = ObjectToHandle(type);
+
+#if !SUPPORT_JIT
+                _compilation.TypeSystemContext.EnsureLoadableType(type);
+#endif
             }
 
             pResolvedToken.pTypeSpec = null;
@@ -2413,6 +2431,12 @@ namespace Internal.JitInterface
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
         {
             MethodDesc method = HandleToObject(hMethod);
+#if READYTORUN
+            if (method is UnboxingMethodDesc unboxingMethodDesc)
+            {
+                method = unboxingMethodDesc.Target;
+            }
+#endif
             MethodDesc methodDefinition = method.GetTypicalMethodDefinition();
 
             // Need to cast down to EcmaMethod. Do not use this as a precedent that casting to Ecma*

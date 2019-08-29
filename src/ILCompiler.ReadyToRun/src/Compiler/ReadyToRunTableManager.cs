@@ -30,15 +30,44 @@ namespace ILCompiler
         }
     }
 
+    // TODO-REFACTOR: merge with the table manager
+    public class MetadataManager
+    {
+        protected readonly CompilerTypeSystemContext _typeSystemContext;
+        private HashSet<MethodDesc> _methodsGenerated = new HashSet<MethodDesc>();
+
+        public MetadataManager(CompilerTypeSystemContext context)
+        {
+            _typeSystemContext = context;
+        }
+
+        public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
+        {
+            graph.NewMarkedNode += Graph_NewMarkedNode;
+        }
+
+        protected virtual void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
+        {
+            IMethodBodyNode methodBodyNode = obj as IMethodBodyNode;
+            var methodNode = methodBodyNode as IMethodNode;
+            if (methodNode == null)
+                methodNode = obj as ShadowConcreteMethodNode;
+
+            if (methodNode != null)
+            {
+                _methodsGenerated.Add(methodNode.Method);
+            }
+        }
+        public IEnumerable<MethodDesc> GetCompiledMethods()
+        {
+            return _methodsGenerated;
+        }
+    }
+
     public class ReadyToRunTableManager : MetadataManager
     {
         public ReadyToRunTableManager(CompilerTypeSystemContext typeSystemContext)
-            : base(typeSystemContext, new NoMetadataBlockingPolicy(), new NoManifestResourceBlockingPolicy(), new NoDynamicInvokeThunkGenerationPolicy()) {}
-
-        public override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
-        {
-            // We don't attach any metadata blobs.
-        }
+            : base(typeSystemContext) {}
 
         public IEnumerable<TypeInfo<TypeDefinitionHandle>> GetDefinedTypes()
         {
@@ -63,14 +92,5 @@ namespace ILCompiler
                 }
             }
         }
-
-        public override MethodDesc GetCanonicalReflectionInvokeStub(MethodDesc method) => throw new NotImplementedException();
-        public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata() => throw new NotImplementedException();
-        public override bool WillUseMetadataTokenToReferenceField(FieldDesc field) => throw new NotImplementedException();
-        public override bool WillUseMetadataTokenToReferenceMethod(MethodDesc method) => throw new NotImplementedException();
-        protected override void ComputeMetadata(NodeFactory factory, out byte[] metadataBlob, out List<MetadataMapping<MetadataType>> typeMappings, out List<MetadataMapping<MethodDesc>> methodMappings, out List<MetadataMapping<FieldDesc>> fieldMappings, out List<MetadataMapping<MethodDesc>> stackTraceMapping) => throw new NotImplementedException();
-        protected override MetadataCategory GetMetadataCategory(MethodDesc method) => throw new NotImplementedException();
-        protected override MetadataCategory GetMetadataCategory(TypeDesc type) => throw new NotImplementedException();
-        protected override MetadataCategory GetMetadataCategory(FieldDesc field) => throw new NotImplementedException();
     }
 }

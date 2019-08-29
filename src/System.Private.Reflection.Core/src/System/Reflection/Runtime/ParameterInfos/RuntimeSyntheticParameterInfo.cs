@@ -98,7 +98,7 @@ namespace System.Reflection.Runtime.ParameterInfos
         {
             get
             {
-                return _parameterType.FormatTypeName();
+                return _parameterType.FormatTypeNameForReflection();
             }
         }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection.PortableExecutable;
@@ -17,6 +18,144 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler
 {
+    public abstract class Compilation : ICompilation
+    {
+        protected readonly DependencyAnalyzerBase<NodeFactory> _dependencyGraph;
+        protected readonly NodeFactory _nodeFactory;
+        protected readonly Logger _logger;
+        private readonly DevirtualizationManager _devirtualizationManager;
+        private ILCache _methodILCache;
+
+        public NameMangler NameMangler => _nodeFactory.NameMangler;
+        public NodeFactory NodeFactory => _nodeFactory;
+        public CompilerTypeSystemContext TypeSystemContext => NodeFactory.TypeSystemContext;
+        public Logger Logger => _logger;
+
+        protected Compilation(
+            DependencyAnalyzerBase<NodeFactory> dependencyGraph,
+            NodeFactory nodeFactory,
+            IEnumerable<ICompilationRootProvider> compilationRoots,
+            ILProvider ilProvider,
+            DevirtualizationManager devirtualizationManager,
+            Logger logger)
+        {
+            _dependencyGraph = dependencyGraph;
+            _nodeFactory = nodeFactory;
+            _logger = logger;
+            _devirtualizationManager = devirtualizationManager;
+
+            _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
+            NodeFactory.AttachToDependencyGraph(_dependencyGraph);
+
+            var rootingService = new RootingServiceProvider(nodeFactory, _dependencyGraph.AddRoot);
+            foreach (var rootProvider in compilationRoots)
+                rootProvider.AddCompilationRoots(rootingService);
+
+            _methodILCache = new ILCache(ilProvider);
+        }
+
+        public abstract void Compile(string outputFileName);
+
+        protected abstract void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj);
+
+        public bool CanInline(MethodDesc caller, MethodDesc callee)
+        {
+            return NodeFactory.CompilationModuleGroup.CanInline(caller, callee);
+        }
+
+        public virtual MethodIL GetMethodIL(MethodDesc method)
+        {
+            // Flush the cache when it grows too big
+            if (_methodILCache.Count > 1000)
+                _methodILCache = new ILCache(_methodILCache.ILProvider);
+
+            return _methodILCache.GetOrCreateValue(method).MethodIL;
+        }
+
+        public bool IsEffectivelySealed(TypeDesc type)
+        {
+            return _devirtualizationManager.IsEffectivelySealed(type);
+        }
+
+        public bool IsEffectivelySealed(MethodDesc method)
+        {
+            return _devirtualizationManager.IsEffectivelySealed(method);
+        }
+
+        public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType)
+        {
+            return _devirtualizationManager.ResolveVirtualMethod(declMethod, implType);
+        }
+
+        private sealed class ILCache : LockFreeReaderHashtable<MethodDesc, ILCache.MethodILData>
+        {
+            public ILProvider ILProvider { get; }
+
+            public ILCache(ILProvider provider)
+            {
+                ILProvider = provider;
+            }
+
+            protected override int GetKeyHashCode(MethodDesc key)
+            {
+                return key.GetHashCode();
+            }
+            protected override int GetValueHashCode(MethodILData value)
+            {
+                return value.Method.GetHashCode();
+            }
+            protected override bool CompareKeyToValue(MethodDesc key, MethodILData value)
+            {
+                return Object.ReferenceEquals(key, value.Method);
+            }
+            protected override bool CompareValueToValue(MethodILData value1, MethodILData value2)
+            {
+                return Object.ReferenceEquals(value1.Method, value2.Method);
+            }
+            protected override MethodILData CreateValueFromKey(MethodDesc key)
+            {
+                return new MethodILData() { Method = key, MethodIL = ILProvider.GetMethodIL(key) };
+            }
+
+            internal class MethodILData
+            {
+                public MethodDesc Method;
+                public MethodIL MethodIL;
+            }
+        }
+
+        private delegate void RootAdder(object o, string reason);
+
+        private class RootingServiceProvider : IRootingServiceProvider
+        {
+            private readonly NodeFactory _factory;
+            private readonly RootAdder _rootAdder;
+
+            public RootingServiceProvider(NodeFactory factory, RootAdder rootAdder)
+            {
+                _factory = factory;
+                _rootAdder = rootAdder;
+            }
+
+            public void AddCompilationRoot(MethodDesc method, string reason)
+            {
+                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
+                _rootAdder(methodEntryPoint, reason);
+            }
+
+            public void AddCompilationRoot(TypeDesc type, string reason)
+            {
+                _rootAdder(_factory.ConstructedTypeSymbol(type), reason);
+            }
+        }
+    }
+
+    public interface ICompilation
+    {
+        void Compile(string outputFileName);
+    }
+
     public sealed class ReadyToRunCodegenCompilation : Compilation
     {
         /// <summary>
@@ -43,12 +182,11 @@ namespace ILCompiler
             ReadyToRunCodegenNodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
-            DebugInformationProvider debugInformationProvider,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
             JitConfigProvider configProvider,
             string inputFilePath)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, logger)
         {
             NodeFactory = nodeFactory;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
@@ -58,7 +196,7 @@ namespace ILCompiler
             _corInfo = new CorInfoImpl(this, _jitConfigProvider);
         }
 
-        protected override void CompileInternal(string outputFile, ObjectDumper dumper)
+        public override void Compile(string outputFile)
         {
             using (FileStream inputFile = File.OpenRead(_inputFilePath))
             {
@@ -78,7 +216,7 @@ namespace ILCompiler
             return true;
         }
 
-        public override TypeDesc GetTypeOfRuntimeType()
+        public TypeDesc GetTypeOfRuntimeType()
         {
             return TypeSystemContext.SystemModule.GetKnownType("System", "RuntimeType");
         }
@@ -129,6 +267,6 @@ namespace ILCompiler
             }
         }
 
-        public override ISymbolNode GetFieldRvaData(FieldDesc field) => SymbolNodeFactory.GetRvaFieldNode(field);
+        public ISymbolNode GetFieldRvaData(FieldDesc field) => SymbolNodeFactory.GetRvaFieldNode(field);
     }
 }

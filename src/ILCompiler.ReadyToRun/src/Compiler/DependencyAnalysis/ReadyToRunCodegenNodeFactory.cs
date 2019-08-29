@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -12,9 +13,197 @@ using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
+using Internal.Text;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    // TODO-REFACTOR: rename this
+    public interface IEETypeNode
+    {
+        TypeDesc Type { get; }
+    }
+
+    // TODO-REFACTOR: merge with the ReadyToRunCodegen factory
+    public abstract class NodeFactory
+    {
+        private bool _markingComplete;
+
+        public NodeFactory(CompilerTypeSystemContext context,
+            CompilationModuleGroup compilationModuleGroup,
+            NameMangler nameMangler,
+            MetadataManager metadataManager)
+        {
+            TypeSystemContext = context;
+            CompilationModuleGroup = compilationModuleGroup;
+            Target = context.Target;
+            NameMangler = nameMangler;
+            MetadataManager = metadataManager;
+
+            CreateNodeCaches();
+        }
+
+        public CompilerTypeSystemContext TypeSystemContext { get; }
+
+        public TargetDetails Target { get; }
+
+        public CompilationModuleGroup CompilationModuleGroup { get; }
+
+        public NameMangler NameMangler { get; }
+
+        public MetadataManager MetadataManager { get; }
+
+        public bool MarkingComplete => _markingComplete;
+
+        public void SetMarkingComplete()
+        {
+            _markingComplete = true;
+        }
+
+        private void CreateNodeCaches()
+        {
+            _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>(CreateNecessaryTypeNode);
+            _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>(CreateConstructedTypeNode);
+            _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
+            _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromDictionaryNode);
+            _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromTypeNode);
+
+            _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
+            {
+                return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment);
+            });
+        }
+
+        public abstract void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph);
+
+        protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
+
+        protected abstract IEETypeNode CreateNecessaryTypeNode(TypeDesc type);
+
+        protected abstract IEETypeNode CreateConstructedTypeNode(TypeDesc type);
+
+        protected abstract ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey);
+
+        protected abstract ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey);
+
+        private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
+
+        public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
+        {
+            return _typeSymbols.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeDesc, IEETypeNode> _constructedTypeSymbols;
+
+        public IEETypeNode ConstructedTypeSymbol(TypeDesc type)
+        {
+            return _constructedTypeSymbols.GetOrAdd(type);
+        }
+
+        protected NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
+
+        // TODO-REFACTOR: we should try and get rid of this
+        public IMethodNode MethodEntrypoint(MethodDesc method)
+        {
+            return _methodEntrypoints.GetOrAdd(method);
+        }
+
+        private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
+
+        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        {
+            return _genericReadyToRunHelpersFromDict.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
+        }
+
+        private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromType;
+
+        public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        {
+            return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
+        }
+
+        private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;
+
+        public BlobNode ReadOnlyDataBlob(Utf8String name, byte[] blobData, int alignment)
+        {
+            return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
+        }
+
+        protected struct NodeCache<TKey, TValue>
+        {
+            private Func<TKey, TValue> _creator;
+            private ConcurrentDictionary<TKey, TValue> _cache;
+
+            public NodeCache(Func<TKey, TValue> creator, IEqualityComparer<TKey> comparer)
+            {
+                _creator = creator;
+                _cache = new ConcurrentDictionary<TKey, TValue>(comparer);
+            }
+
+            public NodeCache(Func<TKey, TValue> creator)
+            {
+                _creator = creator;
+                _cache = new ConcurrentDictionary<TKey, TValue>();
+            }
+
+            public TValue GetOrAdd(TKey key)
+            {
+                return _cache.GetOrAdd(key, _creator);
+            }
+
+            public TValue GetOrAdd(TKey key, Func<TKey, TValue> creator)
+            {
+                return _cache.GetOrAdd(key, creator);
+            }
+        }
+
+        protected struct ReadyToRunGenericHelperKey : IEquatable<ReadyToRunGenericHelperKey>
+        {
+            public readonly object Target;
+            public readonly TypeSystemEntity DictionaryOwner;
+            public readonly ReadyToRunHelperId HelperId;
+
+            public ReadyToRunGenericHelperKey(ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
+            {
+                HelperId = helperId;
+                Target = target;
+                DictionaryOwner = dictionaryOwner;
+            }
+
+            public bool Equals(ReadyToRunGenericHelperKey other)
+                => HelperId == other.HelperId && DictionaryOwner == other.DictionaryOwner && Target.Equals(other.Target);
+            public override bool Equals(object obj) => obj is ReadyToRunGenericHelperKey && Equals((ReadyToRunGenericHelperKey)obj);
+            public override int GetHashCode()
+            {
+                int hashCode = (int)HelperId * 0x5498341 + 0x832424;
+                hashCode = hashCode * 23 + Target.GetHashCode();
+                hashCode = hashCode * 23 + DictionaryOwner.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        protected struct ReadOnlyDataBlobKey : IEquatable<ReadOnlyDataBlobKey>
+        {
+            public readonly Utf8String Name;
+            public readonly byte[] Data;
+            public readonly int Alignment;
+
+            public ReadOnlyDataBlobKey(Utf8String name, byte[] data, int alignment)
+            {
+                Name = name;
+                Data = data;
+                Alignment = alignment;
+            }
+
+            // The assumption here is that the name of the blob is unique.
+            // We can't emit two blobs with the same name and different contents.
+            // The name is part of the symbolic name and we don't do any mangling on it.
+            public bool Equals(ReadOnlyDataBlobKey other) => Name.Equals(other.Name);
+            public override bool Equals(object obj) => obj is ReadOnlyDataBlobKey && Equals((ReadOnlyDataBlobKey)obj);
+            public override int GetHashCode() => Name.GetHashCode();
+        }
+    }
+
     public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
     {
         private Dictionary<TypeAndMethod, IMethodNode> _importMethods;
@@ -22,32 +211,27 @@ namespace ILCompiler.DependencyAnalysis
         public ReadyToRunCodegenNodeFactory(
             CompilerTypeSystemContext context,
             CompilationModuleGroup compilationModuleGroup,
-            MetadataManager metadataManager,
-            InteropStubManager interopStubManager,
             NameMangler nameMangler,
-            VTableSliceProvider vtableSliceProvider,
-            DictionaryLayoutProvider dictionaryLayoutProvider,
             ModuleTokenResolver moduleTokenResolver,
-            SignatureContext signatureContext)
+            SignatureContext signatureContext,
+            CopiedCorHeaderNode corHeaderNode)
             : base(context,
                   compilationModuleGroup,
-                  metadataManager,
-                  interopStubManager,
                   nameMangler,
-                  new LazyGenericsDisabledPolicy(),
-                  vtableSliceProvider,
-                  dictionaryLayoutProvider,
-                  new ImportedNodeProviderThrowing())
+                  new ReadyToRunTableManager(context))
         {
             _importMethods = new Dictionary<TypeAndMethod, IMethodNode>();
 
             Resolver = moduleTokenResolver;
             InputModuleContext = signatureContext;
+            CopiedCorHeaderNode = corHeaderNode;
         }
 
         public SignatureContext InputModuleContext;
 
         public ModuleTokenResolver Resolver;
+
+        public CopiedCorHeaderNode CopiedCorHeaderNode;
 
         public HeaderNode Header;
 
@@ -106,22 +290,37 @@ namespace ILCompiler.DependencyAnalysis
             MethodWithToken method,
             bool isUnboxingStub,
             bool isInstantiatingStub,
+            bool isPrecodeImportRequired,
             SignatureContext signatureContext)
         {
             IMethodNode methodImport;
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, isPrecodeImportRequired);
             if (!_importMethods.TryGetValue(key, out methodImport))
             {
                 if (CompilationModuleGroup.ContainsMethodBody(method.Method, false))
                 {
-                    methodImport = new LocalMethodImport(
-                        this,
-                        ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
-                        method,
-                        CreateMethodEntrypointNode(method, isUnboxingStub, isInstantiatingStub, signatureContext),
-                        isUnboxingStub,
-                        isInstantiatingStub,
-                        signatureContext);
+                    if (isPrecodeImportRequired)
+                    {
+                        methodImport = new PrecodeMethodImport(
+                            this,
+                            ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                            method,
+                            CreateMethodEntrypointNode(method, isUnboxingStub, isInstantiatingStub, signatureContext),
+                            isUnboxingStub,
+                            isInstantiatingStub,
+                            signatureContext);
+                    }
+                    else
+                    {
+                        methodImport = new LocalMethodImport(
+                            this,
+                            ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry,
+                            method,
+                            CreateMethodEntrypointNode(method, isUnboxingStub, isInstantiatingStub, signatureContext),
+                            isUnboxingStub,
+                            isInstantiatingStub,
+                            signatureContext);
+                    }
                 }
                 else
                 {
@@ -150,7 +349,7 @@ namespace ILCompiler.DependencyAnalysis
 
             TypeAndMethod localMethodKey = new TypeAndMethod(localMethod.OwningType,
                 new MethodWithToken(localMethod, default(ModuleToken), constrainedType: null),
-                isUnboxingStub: false, isInstantiatingStub: false);
+                isUnboxingStub: false, isInstantiatingStub: false, isPrecodeImportRequired: false);
             MethodWithGCInfo localMethodNode;
             if (!_localMethodCache.TryGetValue(localMethodKey, out localMethodNode))
             {
@@ -171,17 +370,16 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     methodCodeNode = localMethodImport.MethodCodeNode;
                 }
+                if (methodCodeNode == null && methodNode is PrecodeMethodImport PrecodeMethodImport)
+                {
+                    methodCodeNode = PrecodeMethodImport.MethodCodeNode;
+                }
 
                 if (methodCodeNode != null && !methodCodeNode.IsEmpty)
                 {
                     yield return methodCodeNode;
                 }
             }
-        }
-
-        protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
-        {
-            throw new NotImplementedException();
         }
 
         private readonly Dictionary<ReadyToRunFixupKind, Dictionary<TypeAndMethod, MethodFixupSignature>> _methodSignatures =
@@ -201,7 +399,7 @@ namespace ILCompiler.DependencyAnalysis
                 _methodSignatures.Add(fixupKind, perFixupKindMap);
             }
 
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isUnboxingStub, isInstantiatingStub, false);
             MethodFixupSignature signature;
             if (!perFixupKindMap.TryGetValue(key, out signature))
             {
@@ -226,7 +424,6 @@ namespace ILCompiler.DependencyAnalysis
             TypeFixupSignature signature;
             if (!perFixupKindMap.TryGetValue(typeDesc, out signature))
             {
-                EETypeNode.CheckCanGenerateEEType(this, typeDesc);
                 signature = new TypeFixupSignature(fixupKind, typeDesc, signatureContext);
                 perFixupKindMap.Add(typeDesc, signature);
             }
@@ -350,9 +547,10 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(MethodImports, "Method imports are always generated");
             graph.AddRoot(DispatchImports, "Dispatch imports are always generated");
             graph.AddRoot(HelperImports, "Helper imports are always generated");
-            graph.AddRoot(PrecodeImports, "Precode imports are always generated");
+            graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
+            graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated");
 
             MetadataManager.AttachToDependencyGraph(graph);
         }
@@ -389,14 +587,10 @@ namespace ILCompiler.DependencyAnalysis
             ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
             return MethodEntrypoint(
                 new MethodWithToken(method, moduleToken, constrainedType: null),
-                signatureContext: InputModuleContext,
                 isUnboxingStub: false,
-                isInstantiatingStub: false);
-        }
-
-        protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
-        {
-            throw new NotImplementedException();
+                isInstantiatingStub: false,
+                isPrecodeImportRequired: false,
+                signatureContext: InputModuleContext);
         }
 
         private ReadyToRunHelper GetGenericStaticHelper(ReadyToRunHelperId helperId)
@@ -488,6 +682,90 @@ namespace ILCompiler.DependencyAnalysis
                     signatureContext);
                 _dynamicHelperCellCache.Add(methodWithToken, result);
             }
+            return result;
+        }
+
+        private Dictionary<EcmaModule, CopiedCorHeaderNode> _copiedCorHeaders = new Dictionary<EcmaModule, CopiedCorHeaderNode>();
+
+        public CopiedCorHeaderNode CopiedCorHeader(EcmaModule module)
+        {
+            CopiedCorHeaderNode result;
+            if (!_copiedCorHeaders.TryGetValue(module, out result))
+            {
+                result = new CopiedCorHeaderNode(module);
+                _copiedCorHeaders.Add(module, result);
+            }
+
+            return result;
+        }
+
+        private Dictionary<EcmaModule, CopiedMetadataBlobNode> _copiedMetadataBlobs = new Dictionary<EcmaModule, CopiedMetadataBlobNode>();
+
+        public CopiedMetadataBlobNode CopiedMetadataBlob(EcmaModule module)
+        {
+            CopiedMetadataBlobNode result;
+            if (!_copiedMetadataBlobs.TryGetValue(module, out result))
+            {
+                result = new CopiedMetadataBlobNode(module);
+                _copiedMetadataBlobs.Add(module, result);
+            }
+
+            return result;
+        }
+
+        private Dictionary<MethodDesc, CopiedMethodILNode> _copiedMethodIL = new Dictionary<MethodDesc, CopiedMethodILNode>();
+
+        public CopiedMethodILNode CopiedMethodIL(EcmaMethod method)
+        {
+            CopiedMethodILNode result;
+            if (!_copiedMethodIL.TryGetValue(method, out result))
+            {
+                result = new CopiedMethodILNode(method);
+                _copiedMethodIL.Add(method, result);
+            }
+
+            return result;
+        }
+
+        private Dictionary<EcmaField, CopiedFieldRvaNode> _copiedFieldRvas = new Dictionary<EcmaField, CopiedFieldRvaNode>();
+
+        public CopiedFieldRvaNode CopiedFieldRva(EcmaField field)
+        {
+            CopiedFieldRvaNode result;
+            if (!_copiedFieldRvas.TryGetValue(field, out result))
+            {
+                result = new CopiedFieldRvaNode(field);
+                _copiedFieldRvas.Add(field, result);
+            }
+
+            return result;
+        }
+
+        private Dictionary<EcmaModule, CopiedStrongNameSignatureNode> _copiedStrongNameSignatures = new Dictionary<EcmaModule, CopiedStrongNameSignatureNode>();
+
+        public CopiedStrongNameSignatureNode CopiedStrongNameSignature(EcmaModule module)
+        {
+            CopiedStrongNameSignatureNode result;
+            if (!_copiedStrongNameSignatures.TryGetValue(module, out result))
+            {
+                result = new CopiedStrongNameSignatureNode(module);
+                _copiedStrongNameSignatures.Add(module, result);
+            }
+
+            return result;
+        }
+
+        private Dictionary<EcmaModule, CopiedManagedResourcesNode> _copiedManagedResources = new Dictionary<EcmaModule, CopiedManagedResourcesNode>();
+
+        public CopiedManagedResourcesNode CopiedManagedResources(EcmaModule module)
+        {
+            CopiedManagedResourcesNode result;
+            if (!_copiedManagedResources.TryGetValue(module, out result))
+            {
+                result = new CopiedManagedResourcesNode(module);
+                _copiedManagedResources.Add(module, result);
+            }
+
             return result;
         }
     }

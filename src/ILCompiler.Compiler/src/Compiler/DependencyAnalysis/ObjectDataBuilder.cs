@@ -10,7 +10,10 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public struct ObjectDataBuilder : Internal.Runtime.ITargetBinaryWriter
+    public struct ObjectDataBuilder
+#if !READYTORUN
+        : Internal.Runtime.ITargetBinaryWriter
+#endif
     {
         public ObjectDataBuilder(NodeFactory factory, bool relocsOnly)
         {
@@ -76,6 +79,12 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public void EmitShort(short emit)
+        {
+            EmitByte((byte)(emit & 0xFF));
+            EmitByte((byte)((emit >> 8) & 0xFF));
+        }
+
+        public void EmitUShort(ushort emit)
         {
             EmitByte((byte)(emit & 0xFF));
             EmitByte((byte)((emit >> 8) & 0xFF));

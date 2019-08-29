@@ -255,7 +255,7 @@ public class ProcessRunner : IDisposable
         }
     }
 
-    public bool IsAvailable(ref int progressIndex)
+    public bool IsAvailable(ref int progressIndex, ref int failureCount)
     {
         if (_state != StateFinishing)
         {
@@ -272,17 +272,21 @@ public class ProcessRunner : IDisposable
             processSpec = _processInfo.Parameters.ProcessPath;
         }
 
-        string linePrefix = $"{_processIndex} / {_processCount} ({(++progressIndex * 100 / _processCount)}%): ";
-
         _processInfo.TimedOut = !_process.WaitForExit(0);
         if (_processInfo.TimedOut)
         {
             KillProcess();
         }
-        _process.WaitForExit();
         _processInfo.ExitCode = (_processInfo.TimedOut ? TimeoutExitCode : _process.ExitCode);
         _processInfo.Succeeded = (!_processInfo.TimedOut && _processInfo.ExitCode == _processInfo.Parameters.ExpectedExitCode);
         _logWriter.WriteLine(">>>>");
+
+        if (!_processInfo.Succeeded)
+        {
+            failureCount++;
+        }
+
+        string linePrefix = $"{_processIndex} / {_processCount} ({(++progressIndex * 100 / _processCount)}%, {failureCount} failed): ";
 
         if (_processInfo.Succeeded)
         {

@@ -14,6 +14,30 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    public enum ReadyToRunHelperId
+    {
+        Invalid,
+        NewHelper,
+        NewArr1,
+        IsInstanceOf,
+        CastClass,
+        GetNonGCStaticBase,
+        GetGCStaticBase,
+        GetThreadStaticBase,
+        GetThreadNonGcStaticBase,
+        CctorTrigger,
+
+        //// The following helpers are used for generic lookups only
+        TypeHandle,
+        DeclaringTypeHandle,
+        MethodHandle,
+        FieldHandle,
+        MethodDictionary,
+        TypeDictionary,
+        MethodEntry,
+        VirtualDispatchCell,
+    }
+
     public sealed class ReadyToRunSymbolNodeFactory
     {
         private readonly ReadyToRunCodegenNodeFactory _codegenNodeFactory;
@@ -94,14 +118,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.FieldHandle:
                     helperNode = CreateFieldHandleHelper((FieldDesc)target, signatureContext);
-                    break;
-
-                case ReadyToRunHelperId.VirtualCall:
-                    helperNode = CreateVirtualCallHelper((MethodWithToken)target, signatureContext);
-                    break;
-
-                case ReadyToRunHelperId.DelegateCtor:
-                    helperNode = CreateDelegateCtorHelper((DelegateCreationInfo)target, signatureContext);
                     break;
 
                 case ReadyToRunHelperId.CctorTrigger:
@@ -224,29 +240,6 @@ namespace ILCompiler.DependencyAnalysis
                 new FieldFixupSignature(ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle, field, signatureContext));
         }
 
-        private ISymbolNode CreateVirtualCallHelper(MethodWithToken methodWithToken, SignatureContext signatureContext)
-        {
-            return new DelayLoadHelperMethodImport(
-                _codegenNodeFactory,
-                _codegenNodeFactory.DispatchImports,
-                ILCompiler.ReadyToRunHelper.DelayLoad_Helper_Obj,
-                methodWithToken,
-                useVirtualCall: false,
-                useInstantiatingStub: false,
-                _codegenNodeFactory.MethodSignature(
-                    ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry,
-                    methodWithToken,
-                    signatureContext: signatureContext, 
-                    isUnboxingStub: false, 
-                    isInstantiatingStub: false),
-                signatureContext);
-        }
-
-        private ISymbolNode CreateDelegateCtorHelper(DelegateCreationInfo info, SignatureContext signatureContext)
-        {
-            return info.Constructor;
-        }
-
         private ISymbolNode CreateCctorTrigger(TypeDesc type, SignatureContext signatureContext)
         {
             return new DelayLoadHelperImport(
@@ -354,13 +347,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public ISymbolNode DelegateCtor(TypeDesc delegateType, MethodWithToken method, SignatureContext signatureContext)
         {
-            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, method, isUnboxingStub: false, isInstantiatingStub: false);
+            TypeAndMethod ctorKey = new TypeAndMethod(delegateType, method, isUnboxingStub: false, isInstantiatingStub: false, isPrecodeImportRequired: false);
             if (!_delegateCtors.TryGetValue(ctorKey, out ISymbolNode ctorNode))
             {
                 IMethodNode targetMethodNode = _codegenNodeFactory.MethodEntrypoint(
                     method,
                     isUnboxingStub: false,
                     isInstantiatingStub: false,
+                    isPrecodeImportRequired: false,
                     signatureContext: signatureContext);
 
                 ctorNode = new DelayLoadHelperImport(
@@ -604,8 +598,6 @@ namespace ILCompiler.DependencyAnalysis
             return node;
         }
 
-        private Dictionary<int, RVAFieldNode> _rvaFieldSymbols = new Dictionary<int, RVAFieldNode>();
-
         public ISymbolNode GetRvaFieldNode(FieldDesc fieldDesc)
         {
             Debug.Assert(fieldDesc.HasRva);
@@ -622,33 +614,7 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", _codegenNodeFactory.TypeSystemContext.InputFilePaths.Keys)}");
             }
 
-            int rva = ecmaField.MetadataReader.GetFieldDefinition(ecmaField.Handle).GetRelativeVirtualAddress();
-            RVAFieldNode rvaFieldNode;
-            if (!_rvaFieldSymbols.TryGetValue(rva, out rvaFieldNode))
-            {
-                PEReader ilReader = ecmaField.Module.PEReader;
-                int sectionIndex;
-                int sectionRelativeOffset = 0;
-                ISymbolNode sectionStartNode = null;
-                for (sectionIndex = ilReader.PEHeaders.SectionHeaders.Length - 1; sectionIndex >= 0; sectionIndex--)
-                {
-                    SectionHeader sectionHeader = ilReader.PEHeaders.SectionHeaders[sectionIndex];
-                    if (rva >= sectionHeader.VirtualAddress && rva < sectionHeader.VirtualAddress + sectionHeader.VirtualSize)
-                    {
-                        sectionRelativeOffset = rva - sectionHeader.VirtualAddress;
-                        sectionStartNode = _codegenNodeFactory.SectionStartNode(sectionHeader.Name);
-                        break;
-                    }
-                }
-                if (sectionIndex < 0)
-                {
-                    // Target section for the RVA field was not found
-                    throw new NotImplementedException(fieldDesc.ToString());
-                }
-                rvaFieldNode = new RVAFieldNode(sectionStartNode, sectionRelativeOffset);
-                _rvaFieldSymbols.Add(rva, rvaFieldNode);
-            }
-            return rvaFieldNode;
+            return _codegenNodeFactory.CopiedFieldRva(ecmaField);
         }
 
         private Dictionary<MethodWithToken, ISymbolNode> _indirectPInvokeTargetNodes = new Dictionary<MethodWithToken, ISymbolNode>();

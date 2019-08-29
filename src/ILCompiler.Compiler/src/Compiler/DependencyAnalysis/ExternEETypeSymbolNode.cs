@@ -19,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _type = type;
 
-            EETypeNode.CheckCanGenerateEEType(factory, type);
+            factory.TypeSystemContext.EnsureLoadableType(type);
         }
 
         public TypeDesc Type => _type;

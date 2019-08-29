@@ -14,6 +14,7 @@ namespace ILCompiler
     //
     public abstract class NameMangler
     {
+#if !READYTORUN
         public NameMangler(NodeMangler nodeMangler)
         {
             nodeMangler.NameMangler = this;
@@ -21,6 +22,7 @@ namespace ILCompiler
         }
 
         public NodeMangler NodeMangler { get; private set; }
+#endif
 
         public abstract string CompilationUnitPrefix { get; set; }
 

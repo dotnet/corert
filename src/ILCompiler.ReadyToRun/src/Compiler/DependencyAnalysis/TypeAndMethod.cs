@@ -17,13 +17,15 @@ namespace ILCompiler.DependencyAnalysis
         public readonly MethodWithToken Method;
         public readonly bool IsUnboxingStub;
         public readonly bool IsInstantiatingStub;
+        public readonly bool IsPrecodeImportRequired;
 
-        public TypeAndMethod(TypeDesc type, MethodWithToken method, bool isUnboxingStub, bool isInstantiatingStub)
+        public TypeAndMethod(TypeDesc type, MethodWithToken method, bool isUnboxingStub, bool isInstantiatingStub, bool isPrecodeImportRequired)
         {
             Type = type;
             Method = method;
             IsUnboxingStub = isUnboxingStub;
             IsInstantiatingStub = isInstantiatingStub;
+            IsPrecodeImportRequired = isPrecodeImportRequired;
         }
 
         public bool Equals(TypeAndMethod other)
@@ -31,7 +33,8 @@ namespace ILCompiler.DependencyAnalysis
             return Type == other.Type &&
                    Method.Equals(other.Method) &&
                    IsUnboxingStub == other.IsUnboxingStub &&
-                   IsInstantiatingStub == other.IsInstantiatingStub;
+                   IsInstantiatingStub == other.IsInstantiatingStub &&
+                   IsPrecodeImportRequired == other.IsPrecodeImportRequired;
         }
 
         public override bool Equals(object obj)
@@ -44,7 +47,8 @@ namespace ILCompiler.DependencyAnalysis
             return (Type?.GetHashCode() ?? 0) ^ 
                 unchecked(Method.GetHashCode() * 31) ^ 
                 (IsUnboxingStub ? -0x80000000 : 0) ^ 
-                (IsInstantiatingStub ? 0x40000000 : 0);
+                (IsInstantiatingStub ? 0x40000000 : 0) ^
+                (IsPrecodeImportRequired ? 0x20000000 : 0);
         }
     }
 }

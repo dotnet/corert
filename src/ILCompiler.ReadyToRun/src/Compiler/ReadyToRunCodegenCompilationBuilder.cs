@@ -27,10 +27,9 @@ namespace ILCompiler
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
         public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
-            : base(context, group, new CoreRTNameMangler(new ReadyToRunNodeMangler(), false))
+            : base(context, group, new CoreRTNameMangler())
         {
             _inputFilePath = inputFilePath;
-            _devirtualizationManager = new DependencyAnalysis.ReadyToRun.DevirtualizationManager(group);
 
             _inputModule = context.GetModuleFromPath(_inputFilePath);
 
@@ -76,21 +75,17 @@ namespace ILCompiler
 
         public override ICompilation ToCompilation()
         {
-            var interopStubManager = new EmptyInteropStubManager();
-
             ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(_compilationGroup, _context);
             SignatureContext signatureContext = new SignatureContext(_inputModule, moduleTokenResolver);
+            CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(_inputModule);
 
             ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
                 _context,
                 _compilationGroup,
-                _metadataManager,
-                interopStubManager,
                 _nameMangler,
-                _vtableSliceProvider,
-                _dictionaryLayoutProvider,
                 moduleTokenResolver,
-                signatureContext);
+                signatureContext,
+                corHeaderNode);
 
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 
@@ -124,9 +119,8 @@ namespace ILCompiler
                 factory,
                 _compilationRoots,
                 _ilProvider,
-                _debugInformationProvider,
                 _logger,
-                _devirtualizationManager,
+                new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
                 jitConfig,
                 _inputFilePath);
         }

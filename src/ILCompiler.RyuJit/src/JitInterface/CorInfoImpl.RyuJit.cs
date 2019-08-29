@@ -773,7 +773,17 @@ namespace Internal.JitInterface
                     IEnumerable<ILSequencePoint> ilSequencePoints = debugInfo.GetSequencePoints();
                     if (ilSequencePoints != null)
                     {
-                        SetSequencePoints(ilSequencePoints);
+                        try
+                        {
+                            SetSequencePoints(ilSequencePoints);
+                        }
+                        catch (BadImageFormatException)
+                        {
+                            // Roslyn had a bug where it was generating bad sequence points:
+                            // https://github.com/dotnet/roslyn/issues/20118
+                            // Do not crash the compiler.
+                            _compilation.Logger.Writer.WriteLine($"Warning: ignoring debug info for {methodCodeNodeNeedingCode.Method.ToString()}");
+                        }
                     }
                 }
 
