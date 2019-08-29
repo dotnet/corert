@@ -50,6 +50,11 @@ static class PathExtensions
         return str;
     }
 
+    internal static string ConcatenatePaths(this IEnumerable<string> paths)
+    {
+        return string.Join(Path.PathSeparator, paths);
+    }
+
     // TODO: this assumes we're running tests from the CoreRT root
     internal static string DotNetAppPath => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dotnet" : "Tools/dotnetcli/dotnet";
 
