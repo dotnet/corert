@@ -31,6 +31,8 @@ static class PathExtensions
 
     internal static string OSExeSuffix(this string path) => (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? path + ".exe" : path);
 
+    internal static char OSPathSeparator => (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ';' : ':');
+
     internal static string ToAbsolutePath(this string argValue) => Path.GetFullPath(argValue);
 
     internal static string ToAbsoluteDirectoryPath(this string argValue) => argValue.ToAbsolutePath().StripTrailingDirectorySeparators();
@@ -48,6 +50,11 @@ static class PathExtensions
         }
 
         return str;
+    }
+
+    internal static string ConcatenatePaths(this IEnumerable<string> paths)
+    {
+        return string.Join(OSPathSeparator, paths);
     }
 
     // TODO: this assumes we're running tests from the CoreRT root

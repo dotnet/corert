@@ -47,10 +47,9 @@ namespace ReadyToRun.SuperIlc
 
             yield return "/platform_assemblies_paths";
 
-            StringBuilder sb = new StringBuilder();
-            sb.Append(Path.GetDirectoryName(assemblyFileName) + (_referenceFolders.Any() ? ";" : ""));
-            sb.AppendJoin(';', _referenceFolders);
-            yield return sb.ToString();
+            IEnumerable<string> paths = new string[] { Path.GetDirectoryName(assemblyFileName) }.Concat(_referenceFolders);
+
+            yield return paths.ConcatenatePaths();
         }
     }
 }
