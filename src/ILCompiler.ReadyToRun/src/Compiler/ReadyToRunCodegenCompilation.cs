@@ -267,6 +267,6 @@ namespace ILCompiler
             }
         }
 
-        public ISymbolNode GetFieldRvaData(FieldDesc field) => SymbolNodeFactory.GetRvaFieldNode(field);
+        public ISymbolNode GetFieldRvaData(FieldDesc field) => NodeFactory.CopiedFieldRva(field);
     }
 }

@@ -173,12 +173,10 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="target">Target environment specifier</param>
         /// <param name="peReader">Input MSIL PE file reader</param>
-        /// <param name="sectionStartNodeLookup">Callback to locate section start node for a given section name</param>
         /// <param name="getRuntimeFunctionsTable">Callback to retrieve the runtime functions table</param>
         public R2RPEBuilder(
             TargetDetails target,
             PEReader peReader,
-            Func<string, ISymbolNode> sectionStartNodeLookup,
             Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable)
             : base(PEHeaderCopier.Copy(peReader.PEHeaders, target), deterministicIdProvider: null)
         {
@@ -188,7 +186,6 @@ namespace ILCompiler.PEWriter
             _sectionRvaDeltas = new List<SectionRVADelta>();
 
             _sectionBuilder = new SectionBuilder(target);
-            _sectionBuilder.SetSectionStartNodeLookup(sectionStartNodeLookup);
 
             _textSectionIndex = _sectionBuilder.AddSection(TextSectionName, SectionCharacteristics.ContainsCode | SectionCharacteristics.MemExecute | SectionCharacteristics.MemRead, 512);
             _dataSectionIndex = _sectionBuilder.AddSection(DataSectionName, SectionCharacteristics.ContainsInitializedData | SectionCharacteristics.MemWrite | SectionCharacteristics.MemRead, 512);
@@ -556,7 +553,7 @@ namespace ILCompiler.PEWriter
                 }
             }
 
-            BlobBuilder extraData = _sectionBuilder.SerializeSection(name, location, sectionStartRva);
+            BlobBuilder extraData = _sectionBuilder.SerializeSection(name, location);
             if (extraData != null)
             {
                 if (sectionDataBuilder == null)

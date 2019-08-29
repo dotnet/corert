@@ -598,25 +598,6 @@ namespace ILCompiler.DependencyAnalysis
             return node;
         }
 
-        public ISymbolNode GetRvaFieldNode(FieldDesc fieldDesc)
-        {
-            Debug.Assert(fieldDesc.HasRva);
-            EcmaField ecmaField = (EcmaField)fieldDesc.GetTypicalFieldDefinition();
-
-            if (!_codegenNodeFactory.CompilationModuleGroup.ContainsType(ecmaField.OwningType))
-            {
-                // TODO: cross-bubble RVA field
-                throw new NotSupportedException($"{ecmaField} ... {ecmaField.Module.Assembly}");
-            }
-            if (_codegenNodeFactory.TypeSystemContext.InputFilePaths.Count > 1)
-            {
-                // TODO: RVA fields in merged multi-file compilation
-                throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", _codegenNodeFactory.TypeSystemContext.InputFilePaths.Keys)}");
-            }
-
-            return _codegenNodeFactory.CopiedFieldRva(ecmaField);
-        }
-
         private Dictionary<MethodWithToken, ISymbolNode> _indirectPInvokeTargetNodes = new Dictionary<MethodWithToken, ISymbolNode>();
 
         public ISymbolNode GetIndirectPInvokeTargetNode(MethodWithToken methodWithToken, SignatureContext signatureContext)
