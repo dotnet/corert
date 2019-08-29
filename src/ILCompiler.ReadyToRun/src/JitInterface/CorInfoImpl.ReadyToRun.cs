@@ -577,6 +577,8 @@ namespace Internal.JitInterface
             // that we cannot express in C# right now).
             MethodIL methodILDef = methodIL.GetMethodILDefinition();
             bool isFauxMethodIL = !(methodILDef is EcmaMethodIL);
+            MethodDesc contextMethod;
+
             if (isFauxMethodIL)
             {
                 object resultDef = methodILDef.GetObject((int)pResolvedToken.token);
@@ -606,9 +608,15 @@ namespace Internal.JitInterface
                         token = FindGenericMethodArgTypeSpec((EcmaModule)((MetadataType)methodILDef.OwningMethod.OwningType).Module);
                     }
                 }
+
+                contextMethod = methodIL.OwningMethod;
+            }
+            else
+            {
+                contextMethod = (MethodDesc)HandleToObject((IntPtr)pResolvedToken.tokenContext);
             }
 
-            return new ModuleToken(((EcmaMethod)methodIL.OwningMethod.GetTypicalMethodDefinition()).Module, token);
+            return new ModuleToken(((EcmaMethod)contextMethod.GetTypicalMethodDefinition()).Module, token);
         }
 
         private InfoAccessType constructStringLiteral(CORINFO_MODULE_STRUCT_* module, mdToken metaTok, ref void* ppValue)
