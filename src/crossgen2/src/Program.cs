@@ -126,7 +126,7 @@ namespace ILCompiler
                 syntax.DefineOption("Os", ref optimizeSpace, "Enable optimizations, favor code space");
                 syntax.DefineOption("Ot", ref optimizeTime, "Enable optimizations, favor code speed");
                 syntax.DefineOption("inputbubble", ref _isInputVersionBubble, "True when the entire input forms a version bubble (default = per-assembly bubble)");
-                syntax.DefineOption("tuning", ref _tuning, "Enable tuning codegen");
+                syntax.DefineOption("tuning", ref _tuning, "Generate IBC tuning image");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("verbose", ref _isVerbose, "Enable verbose logging");
