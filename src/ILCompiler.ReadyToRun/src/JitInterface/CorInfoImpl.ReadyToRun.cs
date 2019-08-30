@@ -614,6 +614,10 @@ namespace Internal.JitInterface
             else
             {
                 contextMethod = (MethodDesc)HandleToObject((IntPtr)pResolvedToken.tokenContext);
+                if (contextMethod is UnboxingMethodDesc unboxingMethodDesc)
+                {
+                    contextMethod = unboxingMethodDesc.Target;
+                }
             }
 
             return new ModuleToken(((EcmaMethod)contextMethod.GetTypicalMethodDefinition()).Module, token);
