@@ -65,6 +65,11 @@ namespace ILCompiler
 
         public virtual MethodIL GetMethodIL(MethodDesc method)
         {
+            if (method is UnboxingMethodDesc unboxingMethodDesc)
+            {
+                method = unboxingMethodDesc.Target;
+            }
+ 
             // Flush the cache when it grows too big
             if (_methodILCache.Count > 1000)
                 _methodILCache = new ILCache(_methodILCache.ILProvider);
