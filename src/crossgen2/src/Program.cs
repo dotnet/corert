@@ -261,6 +261,9 @@ namespace ILCompiler
             // Single method mode?
             MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
 
+            var logger = new Logger(Console.Out, _isVerbose);
+            ProfileDataManager profileDataManager = new ProfileDataManager(logger);
+
             CompilationModuleGroup compilationGroup;
             List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
             if (singleMethod != null)
@@ -290,7 +293,7 @@ namespace ILCompiler
                 foreach (var inputFile in typeSystemContext.InputFilePaths)
                 {
                     EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                    compilationRoots.Add(new ReadyToRunRootProvider(module));
+                    compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager));
                     inputModules.Add(module);
 
                     if (!_isInputVersionBubble)
@@ -341,7 +344,6 @@ namespace ILCompiler
 
             ILProvider ilProvider = new ReadyToRunILProvider();
 
-            var logger = new Logger(Console.Out, _isVerbose);
 
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
