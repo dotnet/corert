@@ -1189,7 +1189,7 @@ namespace Internal.JitInterface
                     {
                         // Constrained token is not interesting with this transforms
                         if (pResult->thisTransform != CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM)
-                            pConstrainedResolvedToken = null;
+                            constrainedType = null;
 
                         MethodDesc nonUnboxingMethod = methodToCall;
                         bool isUnboxingStub = methodToCall.IsUnboxingThunk();
