@@ -23,9 +23,6 @@ namespace ILCompiler
         {
             _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
 
-            // The fake assembly that holds compiler generated types is part of the compilation.
-            _compilationModuleSet.Add(context.GeneratedAssembly);
-
             _versionBubbleModuleSet = new HashSet<ModuleDesc>(versionBubbleModuleSet);
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
         }
