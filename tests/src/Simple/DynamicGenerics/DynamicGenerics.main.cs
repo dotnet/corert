@@ -4,7 +4,7 @@ public class EntryPointMain
     {
         CoreFXTestLibrary.Internal.TestInfo[] tests = new CoreFXTestLibrary.Internal.TestInfo[]{new CoreFXTestLibrary.Internal.TestInfo("My.TestActivatorCreateInstance", () => global::My.TestActivatorCreateInstance(), null),
 new CoreFXTestLibrary.Internal.TestInfo("My.TestDefaultCtorInLazyGenerics", () => global::My.TestDefaultCtorInLazyGenerics(), null),
-//new CoreFXTestLibrary.Internal.TestInfo("Expressions.ExpressionsTesting.TestLdTokenResults", () => global::Expressions.ExpressionsTesting.TestLdTokenResults(), null),
+new CoreFXTestLibrary.Internal.TestInfo("Expressions.ExpressionsTesting.TestLdTokenResults", () => global::Expressions.ExpressionsTesting.TestLdTokenResults(), null),
 new CoreFXTestLibrary.Internal.TestInfo("Expressions.ExpressionsTesting.TestLdTokenResultsWithStructTypes", () => global::Expressions.ExpressionsTesting.TestLdTokenResultsWithStructTypes(), null),
 new CoreFXTestLibrary.Internal.TestInfo("MakeGenMethod.Test.TestInstanceMethod", () => global::MakeGenMethod.Test.TestInstanceMethod(), null),
 new CoreFXTestLibrary.Internal.TestInfo("MakeGenMethod.Test.TestStaticMethod", () => global::MakeGenMethod.Test.TestStaticMethod(), null),
@@ -148,6 +148,11 @@ new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWith3Dimensions", ()
 #if UNIVERSAL_GENERICS
 new CoreFXTestLibrary.Internal.TestInfo("B279085.TestB279085Repro", () => global::B279085.TestB279085Repro(), null),
 #endif
+new CoreFXTestLibrary.Internal.TestInfo("GenericVirtualMethods.TestCalls", () => global::GenericVirtualMethods.TestCalls(), null),
+new CoreFXTestLibrary.Internal.TestInfo("GenericVirtualMethods.TestLdFtnToGetStaticMethodOnGenericType", () => global::GenericVirtualMethods.TestLdFtnToGetStaticMethodOnGenericType(), null),
+new CoreFXTestLibrary.Internal.TestInfo("GenericVirtualMethods.TestLdFtnToInstanceGenericMethod", () => global::GenericVirtualMethods.TestLdFtnToInstanceGenericMethod(), null),
+new CoreFXTestLibrary.Internal.TestInfo("GenericVirtualMethods.TestGenericExceptionType", () => global::GenericVirtualMethods.TestGenericExceptionType(), null),
+new CoreFXTestLibrary.Internal.TestInfo("GenericVirtualMethods.TestCoAndContraVariantCalls", () => global::GenericVirtualMethods.TestCoAndContraVariantCalls(), null)
 };
         bool passed = CoreFXTestLibrary.Internal.Runner.RunTests(tests, args);
         CoreFXTestLibrary.Logger.LogInformation("Passed: {0}, Failed: {1}, Number of Tests Run: {2}", CoreFXTestLibrary.Internal.Runner.NumPassedTests, CoreFXTestLibrary.Internal.Runner.NumFailedTests, CoreFXTestLibrary.Internal.Runner.NumTests);
