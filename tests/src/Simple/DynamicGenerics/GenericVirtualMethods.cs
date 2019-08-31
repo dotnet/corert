@@ -205,7 +205,8 @@ public static class GenericVirtualMethods
         Assert.AreEqual("Called GVMStructGeneric<object>.GVM<int>", igvmStructGenericOverObject.GVM<int>(54));
         Assert.AreEqual("Called GVMStructGeneric<object>.GVM<GVMDerivedClass>", igvmStructGenericOverObject.GVM<GVMDerivedClass>(testObject));
         Assert.AreEqual("Called GVMStructGeneric<object>.GVM<string>", igvmStructGenericOverObject.GVM<string>("testString"));
-        TestConstrainedCalls<GVMStructGeneric<object>>(new GVMStructGeneric<object>(), "Called GVMStructGeneric<object>.GVM<int>", "Called GVMStructGeneric<object>.GVM<GVMDerivedClass>", "Called GVMStructGeneric<object>.GVM<string>");
+        // https://github.com/dotnet/corert/issues/3608
+        // TestConstrainedCalls<GVMStructGeneric<object>>(new GVMStructGeneric<object>(), "Called GVMStructGeneric<object>.GVM<int>", "Called GVMStructGeneric<object>.GVM<GVMDerivedClass>", "Called GVMStructGeneric<object>.GVM<string>");
         TestConstrainedCalls<IInterfaceWithGVM>(new GVMStructGeneric<object>(), "Called GVMStructGeneric<object>.GVM<int>", "Called GVMStructGeneric<object>.GVM<GVMDerivedClass>", "Called GVMStructGeneric<object>.GVM<string>");
     }
 
