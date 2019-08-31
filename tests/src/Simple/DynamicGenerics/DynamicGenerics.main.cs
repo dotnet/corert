@@ -55,6 +55,7 @@ new CoreFXTestLibrary.Internal.TestInfo("InterfacesTests.TestImplementedInterfac
 new CoreFXTestLibrary.Internal.TestInfo("InterfacesTests.TestBaseType", () => global::InterfacesTests.TestBaseType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("InterfacesTests.TestInterfaceInvoke", () => global::InterfacesTests.TestInterfaceInvoke(), null),
 new CoreFXTestLibrary.Internal.TestInfo("InterfacesTests.TestConstrainedCall", () => global::InterfacesTests.TestConstrainedCall(), null),
+#if !MULTIMODULE_BUILD
 new CoreFXTestLibrary.Internal.TestInfo("DynamicListTests.TestGetRange", () => global::DynamicListTests.TestGetRange(), null),
 new CoreFXTestLibrary.Internal.TestInfo("DynamicListTests.TestAddRange", () => global::DynamicListTests.TestAddRange(), null),
 new CoreFXTestLibrary.Internal.TestInfo("DynamicListTests.TestAddRemove", () => global::DynamicListTests.TestAddRemove(), null),
@@ -68,6 +69,7 @@ new CoreFXTestLibrary.Internal.TestInfo("DynamicListTests.TestToArray", () => gl
 new CoreFXTestLibrary.Internal.TestInfo("DynamicListTests.TestContains", () => global::DynamicListTests.TestContains(), null),
 new CoreFXTestLibrary.Internal.TestInfo("DynamicListTests.TestSortWithComparison", () => global::DynamicListTests.TestSortWithComparison(), null),
 new CoreFXTestLibrary.Internal.TestInfo("DynamicListTests.TestSortWithComparer", () => global::DynamicListTests.TestSortWithComparer(), null),
+#endif
 //new CoreFXTestLibrary.Internal.TestInfo("RdExperienceTests.TestRdExperience", () => global::RdExperienceTests.TestRdExperience(), null),
 new CoreFXTestLibrary.Internal.TestInfo("StaticsTests.TestStatics", () => global::StaticsTests.TestStatics(), null),
 //new CoreFXTestLibrary.Internal.TestInfo("ThreadLocalStatics.TLSTesting.ThreadLocalStatics_Test", () => global::ThreadLocalStatics.TLSTesting.ThreadLocalStatics_Test(), null),
