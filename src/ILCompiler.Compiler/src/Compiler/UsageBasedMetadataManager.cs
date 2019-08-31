@@ -320,6 +320,18 @@ namespace ILCompiler
                 dependencies = dependencies ?? new DependencyList();
                 dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "LDTOKEN method");
             }
+
+            // Since this is typically used for LINQ expressions, let's also make sure there's runnable code
+            // for this available, unless this is ldtoken of something we can't generate code for
+            // (ldtoken of an uninstantiated generic method - F# makes this).
+            if (!method.IsGenericMethodDefinition)
+            {
+                var deps = dependencies ?? new DependencyList();
+                RootingHelpers.TryRootMethod(
+                    new RootingServiceProvider(
+                        factory, (o, reason) => deps.Add((DependencyNodeCore<NodeFactory>)o, reason)), method, "LDTOKEN method");
+                dependencies = deps;
+            }
         }
 
         protected override void GetDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
