@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace IBC
+namespace ILCompiler.IBC
 {
     public class IBCException : Exception
     {

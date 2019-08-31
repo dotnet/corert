@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Diagnostics;
 
-namespace IBC
+namespace ILCompiler.IBC
 {
     public class IBCDataReader
     {

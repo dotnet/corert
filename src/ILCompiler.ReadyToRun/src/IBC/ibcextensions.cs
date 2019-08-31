@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 
-namespace IBC
+namespace ILCompiler.IBC
 {
     public static class ReaderExtensions
     {
