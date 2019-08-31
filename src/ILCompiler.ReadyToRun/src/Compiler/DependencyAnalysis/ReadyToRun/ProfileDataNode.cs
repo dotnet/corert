@@ -16,8 +16,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class ProfileDataNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         MethodWithGCInfo _methodNode;
-        private BLOCK_DATA[] _profileData;
+        private byte[] _profileData;
         private int _ilSize;
+        private int _blockCount;
         private TargetDetails _targetDetails;
 
         public ProfileDataNode(MethodWithGCInfo methodNode, TargetDetails targetDetails)
@@ -26,19 +27,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _targetDetails = targetDetails;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        public struct BLOCK_DATA
-        {
-            public uint ILOffset;
-            public uint ExecutionCount;
-        }
-
-        public void SetProfileData(int ilSize, BLOCK_DATA[] data)
+        public void SetProfileData(int ilSize, int blockCount, byte[] data)
         {
             if (_profileData != null)
                 throw new Exception();
             _profileData = data;
             _ilSize = ilSize;
+            _blockCount = blockCount;
         }
 
         public override bool StaticDependenciesAreComputed => _profileData != null;
@@ -100,17 +95,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             EcmaMethod ecmaMethod = (EcmaMethod)_methodNode.Method.GetTypicalMethodDefinition();
-            dataBuilder.EmitInt(_profileData.Length * (2 * sizeof(int)) + 5 * sizeof(int)); // CORBBTPROF_METHOD_HEADER::size
+            dataBuilder.EmitInt(_profileData.Length + 5 * sizeof(int)); // CORBBTPROF_METHOD_HEADER::size
             dataBuilder.EmitInt(0); // CORBBTPROF_METHOD_HEADER::cDetail
             dataBuilder.EmitInt(ecmaMethod.MetadataReader.GetToken(ecmaMethod.Handle)); // CORBBT_METHOD_INFO::token
             dataBuilder.EmitInt(_ilSize); // CORBBT_METHOD_INFO::ILSize
-            dataBuilder.EmitInt(_profileData.Length); // CORBBT_METHOD_INFO::cBlock
-
-            foreach (var block in _profileData)
-            {
-                dataBuilder.EmitUInt(block.ILOffset);
-                dataBuilder.EmitUInt(block.ExecutionCount);
-            }
+            dataBuilder.EmitInt(_blockCount); // CORBBT_METHOD_INFO::cBlock
+            dataBuilder.EmitBytes(_profileData);
 
             while ((dataBuilder.CountBytes & (dataBuilder.TargetPointerSize - 1)) != 0)
                 dataBuilder.EmitByte(0);

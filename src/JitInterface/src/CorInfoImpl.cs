@@ -278,16 +278,9 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
-#if READYTORUN
-            if (_profileDataNode != null)
-            {
-                CORINFO_METHOD_INFO methodInfo;
-                var methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, null, &methodInfo);
-
-                _profileDataNode.SetProfileData(methodIL.GetILBytes().Length, _bbCounts);
-            }
-#endif
         }
+
+        partial void PublishProfileData();
 
         private MethodDesc MethodBeingCompiled
         {
@@ -2732,14 +2725,8 @@ namespace Internal.JitInterface
         private byte[] _coldCode;
 
         private byte[] _roData;
-#if READYTORUN
-        private ProfileDataNode.BLOCK_DATA[] _bbCounts;
-#endif
 
         private BlobNode _roDataBlob;
-#if READYTORUN
-        private ProfileDataNode _profileDataNode;
-#endif
 
         private int _numFrameInfos;
         private int _usedFrameInfos;
@@ -2852,46 +2839,6 @@ namespace Internal.JitInterface
             // CompileMethod is going to fail with this CorJitResult anyway.
         }
 
-        private HRESULT allocMethodBlockCounts(uint count, ref BlockCounts* pBlockCounts)
-        {
-#if READYTORUN
-            CORJIT_FLAGS flags = default(CORJIT_FLAGS);
-            getJitFlags(ref flags, 0);
-
-            if (flags.IsSet(CorJitFlag.CORJIT_FLAG_IL_STUB))
-            {
-                pBlockCounts = null;
-                return HRESULT.E_NOTIMPL;
-            }
-
-            // Methods without ecma metadata are not instrumented
-            EcmaMethod ecmaMethod = _methodCodeNode.Method.GetTypicalMethodDefinition() as EcmaMethod;
-            if (ecmaMethod == null)
-            {
-                pBlockCounts = null;
-                return HRESULT.E_NOTIMPL;
-            }
-
-            if (!_jitConfig.IsModuleInstrumented(ecmaMethod.Module))
-            {
-                pBlockCounts = null;
-                return HRESULT.E_NOTIMPL;
-            }
-
-            pBlockCounts = (BlockCounts*)GetPin(_bbCounts = new ProfileDataNode.BLOCK_DATA[count]);
-            if (_profileDataNode == null)
-            {
-                _profileDataNode = _compilation.NodeFactory.ProfileDataNode((MethodWithGCInfo)_methodCodeNode);
-            }
-            return 0;
-#else
-            throw new NotImplementedException("allocMethodBlockCounts");
-#endif
-        }
-
-        private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
-        { throw new NotImplementedException("getBBProfileData"); }
-
         private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
         {
         }
@@ -2950,23 +2897,19 @@ namespace Internal.JitInterface
                 }
             }
 
-#if READYTORUN
-            if (_bbCounts != null)
             {
-                fixed (ProfileDataNode.BLOCK_DATA* pBBCountData = _bbCounts)
-                {
-                    if (pBBCountData <= (byte*)location && (byte*)location < pBBCountData + (_bbCounts.Length + sizeof(ProfileDataNode.BLOCK_DATA)))
-                    {
-                        offset = (int)((byte*)location - (byte*)pBBCountData);
-                        return BlockType.BBCounts;
-                    }
-                }
+                BlockType retBlockType = BlockType.Unknown;
+                offset = 0;
+                findKnownBBCountBlock(ref retBlockType, location, ref offset);
+                if (retBlockType == BlockType.BBCounts)
+                    return retBlockType;
             }
-#endif
 
             offset = 0;
             return BlockType.Unknown;
         }
+
+        partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
