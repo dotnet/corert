@@ -109,8 +109,16 @@ namespace ILCompiler
             // RootModuleMetadata is kind of a hack - this is pretty much only used to force include
             // type forwarders from assemblies metadata generator would normally not look at.
             // This will go away when the temporary RD.XML parser goes away.
-            if (_factory.MetadataManager is UsageBasedMetadataManager)
-                _rootAdder(_factory.ModuleMetadata(module), reason);
+            if (_factory.MetadataManager is UsageBasedMetadataManager mdManager)
+            {
+                // If we wouldn't generate metadata for the global module type, don't root the metadata at all.
+                // Global module type always gets metadata and if we're not generating it, this is not the right
+                // compilation unit (we're likely doing multifile).
+                if (mdManager.CanGenerateMetadata(module.GetGlobalModuleType()))
+                {
+                    _rootAdder(_factory.ModuleMetadata(module), reason);
+                }
+            }
         }
 
         public void RootReadOnlyDataBlob(byte[] data, int alignment, string reason, string exportName)
