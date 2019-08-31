@@ -385,6 +385,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void EmitMethodSignature(
             MethodWithToken method, 
             bool enforceDefEncoding,
+            bool enforceOwningType,
             SignatureContext context,
             bool isUnboxingStub,
             bool isInstantiatingStub)
@@ -402,6 +403,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained;
             }
+            if(enforceOwningType)
+            {
+                flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
+            }
 
             if ((method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation) && !method.Method.IsGenericMethodDefinition)
             {
@@ -412,14 +417,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 switch (method.Token.TokenType)
                 {
                     case CorTokenType.mdtMethodDef:
-                        // TODO: module override for methoddefs with external module context
-                        EmitUInt(flags);
-                        EmitMethodDefToken(method.Token);
+                        {
+                            EmitUInt(flags);
+                            if ((flags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
+                            {
+                                EmitTypeSignature(method.Method.OwningType, context);
+                            }
+                            EmitMethodDefToken(method.Token);
+                        }
                         break;
 
                     case CorTokenType.mdtMemberRef:
                         {
-                            // TODO: module override for methodrefs with external module context
                             flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken;
 
                             MemberReference memberRef = method.Token.MetadataReader.GetMemberReference((MemberReferenceHandle)method.Token.Handle);

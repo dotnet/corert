@@ -16,10 +16,13 @@ namespace ILCompiler
         private HashSet<ModuleDesc> _compilationModuleSet;
         private HashSet<ModuleDesc> _versionBubbleModuleSet;
 
+        private bool _compileGenericDependenciesFromVersionBubbleModuleSet;
+
         public ReadyToRunSingleAssemblyCompilationModuleGroup(
             TypeSystemContext context, 
             IEnumerable<ModuleDesc> compilationModuleSet,
-            IEnumerable<ModuleDesc> versionBubbleModuleSet)
+            IEnumerable<ModuleDesc> versionBubbleModuleSet,
+            bool compileGenericDependenciesFromVersionBubbleModuleSet)
         {
             _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
 
@@ -28,6 +31,8 @@ namespace ILCompiler
 
             _versionBubbleModuleSet = new HashSet<ModuleDesc>(versionBubbleModuleSet);
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
+
+            _compileGenericDependenciesFromVersionBubbleModuleSet = compileGenericDependenciesFromVersionBubbleModuleSet;
         }
 
         public sealed override bool ContainsType(TypeDesc type)
@@ -44,12 +49,24 @@ namespace ILCompiler
                 return false;
             }
 
-            return ContainsType(method.OwningType);
+            return ContainsType(method.OwningType) || CompileVersionBubbleGenericsIntoCurrentModule(method);
+
         }
 
         private bool IsModuleInCompilationGroup(EcmaModule module)
         {
             return _compilationModuleSet.Contains(module);
+        }
+
+        private bool CompileVersionBubbleGenericsIntoCurrentModule(MethodDesc method)
+        {
+            if (!_compileGenericDependenciesFromVersionBubbleModuleSet)
+                return false;
+
+            if (!method.HasInstantiation && !method.OwningType.HasInstantiation)
+                return false;
+
+            return VersionsWithType(method.OwningType);
         }
 
         Dictionary<TypeDesc, bool> _containsTypeLayoutCache = new Dictionary<TypeDesc, bool>();
