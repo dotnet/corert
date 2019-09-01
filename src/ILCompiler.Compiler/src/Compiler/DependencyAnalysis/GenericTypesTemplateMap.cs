@@ -84,9 +84,6 @@ namespace ILCompiler.DependencyAnalysis
         
         public static void GetTemplateTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
-            if (!factory.MetadataManager.SupportsReflection)
-                return;
-
             TypeDesc templateType = ConvertArrayOfTToRegularArray(factory, type);
 
             if (!IsEligibleToHaveATemplate(templateType))

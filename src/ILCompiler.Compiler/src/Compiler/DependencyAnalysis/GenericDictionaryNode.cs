@@ -208,6 +208,7 @@ namespace ILCompiler.DependencyAnalysis
             if (factory.CompilationModuleGroup.ContainsMethodBody(canonicalTarget, false))
                 dependencies.Add(GetDictionaryLayout(factory), "Layout");
 
+            // TODO-SIZE: We probably don't need to add these for all dictionaries
             GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(ref dependencies, factory, _owningMethod);
 
             factory.InteropStubManager.AddMarshalAPIsGenericDependencies(ref dependencies, factory, _owningMethod);

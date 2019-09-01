@@ -21,8 +21,6 @@ namespace ILCompiler
     {
         private readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
 
-        public override bool SupportsReflection => false;
-
         public EmptyMetadataManager(CompilerTypeSystemContext typeSystemContext)
             : this(typeSystemContext, new NoStackTraceEmissionPolicy())
         {
@@ -32,15 +30,6 @@ namespace ILCompiler
             : base(typeSystemContext, new FullyBlockedMetadataPolicy(), new FullyBlockedManifestResourcePolicy(), new NoDynamicInvokeThunkGenerationPolicy())
         {
             _stackTraceEmissionPolicy = stackTraceEmissionPolicy;
-        }
-
-        public override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
-        {
-            var metadataNode = new MetadataNode();
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.EmbeddedMetadata), metadataNode, metadataNode, metadataNode.EndSymbol);
-
-            var stackTraceMethodMappingNode = new StackTraceMethodMappingNode();
-            header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceMethodRvaToTokenMapping), stackTraceMethodMappingNode, stackTraceMethodMappingNode, stackTraceMethodMappingNode.EndSymbol);
         }
 
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()

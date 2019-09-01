@@ -48,9 +48,6 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         public static void AddStaticsInfoDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
-            if (!factory.MetadataManager.SupportsReflection)
-                return;
-
             if (type is MetadataType && type.HasInstantiation && !type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
                 MetadataType metadataType = (MetadataType)type;
