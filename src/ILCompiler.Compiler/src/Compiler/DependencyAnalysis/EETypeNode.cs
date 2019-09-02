@@ -378,6 +378,7 @@ namespace ILCompiler.DependencyAnalysis
             // emitting it.
             dependencies.Add(new DependencyListEntry(_optionalFieldsNode, "Optional fields"));
 
+            // TODO-SIZE: We probably don't need to add these for all EETypes
             StaticsInfoHashtableNode.AddStaticsInfoDependencies(ref dependencies, factory, _type);
 
             if (EmitVirtualSlotsAndInterfaces)
@@ -1064,9 +1065,9 @@ namespace ILCompiler.DependencyAnalysis
             // if a type may be reflectable, and it is generic, if a canonical instantiation of reflection
             // can exist which can refer to the associated type of this static base, ensure that type
             // has an EEType. (Which will allow the static field lookup logic to find the right type)
-            if (type.HasInstantiation && factory.MetadataManager.SupportsReflection && !factory.MetadataManager.IsReflectionBlocked(type))
+            if (type.HasInstantiation && !factory.MetadataManager.IsReflectionBlocked(type))
             {
-                // This current implementation is slightly generous, as it does not attempt to restrict
+                // TODO-SIZE: This current implementation is slightly generous, as it does not attempt to restrict
                 // the created types to the maximum extent by investigating reflection data and such. Here we just
                 // check if we support use of a canonically equivalent type to perform reflection.
                 // We don't check to see if reflection is enabled on the type.

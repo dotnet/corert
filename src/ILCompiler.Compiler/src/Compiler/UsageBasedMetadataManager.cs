@@ -334,7 +334,7 @@ namespace ILCompiler
             }
         }
 
-        protected override void GetDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        protected override void GetDependenciesDueToMethodCodePresenceInternal(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             if ((_generationOptions & UsageBasedMetadataGenerationOptions.ILScanning) != 0)
             {

@@ -57,7 +57,6 @@ namespace ILCompiler
 
         internal NativeLayoutInfoNode NativeLayoutInfo { get; private set; }
         internal DynamicInvokeTemplateDataNode DynamicInvokeTemplateData { get; private set; }
-        public virtual bool SupportsReflection => true;
 
         public MetadataManager(CompilerTypeSystemContext typeSystemContext, MetadataBlockingPolicy blockingPolicy,
             ManifestResourceBlockingPolicy resourceBlockingPolicy, DynamicInvokeThunkGenerationPolicy dynamicInvokeThunkGenerationPolicy)
@@ -295,6 +294,11 @@ namespace ILCompiler
         /// </summary>
         public void GetDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
+            if (method.HasInstantiation)
+            {
+                ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
+            }
+
             GetDependenciesDueToMethodCodePresence(ref dependencies, factory, method);
 
             MetadataCategory category = GetMetadataCategory(method);
@@ -356,6 +360,8 @@ namespace ILCompiler
                 // have one, since we got this callback). But check if a child wants to do something extra.
                 GetRuntimeMappingDependenciesDueToReflectability(ref dependencies, factory, type);
             }
+
+            GetDependenciesDueToEETypePresence(ref dependencies, factory, type);
         }
 
         protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
@@ -369,6 +375,11 @@ namespace ILCompiler
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of a runtime
             // mapping for a type.
+        }
+
+        protected virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            // MetadataManagers can override this to provide additional dependencies caused by the emission of an EEType.
         }
 
         /// <summary>

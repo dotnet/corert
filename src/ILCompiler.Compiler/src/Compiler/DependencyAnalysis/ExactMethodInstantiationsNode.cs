@@ -110,9 +110,6 @@ namespace ILCompiler.DependencyAnalysis
             if (!IsMethodEligibleForTracking(method))
                 return;
 
-            if (!factory.MetadataManager.SupportsReflection)
-                return;
-
             dependencies = dependencies ?? new DependencyList();
 
             // Method entry point dependency

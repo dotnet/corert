@@ -88,9 +88,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void GetVirtualInvokeMapDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (!factory.MetadataManager.SupportsReflection)
-                return;
-
             if (NeedsVirtualInvokeInfo(method))
             {
                 dependencies = dependencies ?? new DependencyList();

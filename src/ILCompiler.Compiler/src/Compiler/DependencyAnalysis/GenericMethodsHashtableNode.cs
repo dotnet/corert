@@ -100,9 +100,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void GetGenericMethodsHashtableDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (!factory.MetadataManager.SupportsReflection)
-                return;
-
             Debug.Assert(method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any));
             
             // Method's containing type
