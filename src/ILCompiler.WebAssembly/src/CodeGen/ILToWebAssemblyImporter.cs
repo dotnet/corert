@@ -3450,7 +3450,7 @@ namespace Internal.IL
             StackEntry numBitsToShift = _stack.Pop();
             StackEntry valueToShift = _stack.Pop();
 
-            LLVMValueRef valueToShiftValue = valueToShift.ValueForStackKind(valueToShift.Kind, _builder, false);
+            LLVMValueRef valueToShiftValue = valueToShift.ValueForStackKind(valueToShift.Kind, _builder, TypeNeedsSignExtension(valueToShift.Type));
 
             // while it seems excessive that the bits to shift should need to be 64 bits, the LLVM docs say that both operands must be the same type and a compilation failure results if this is not the case.
             LLVMValueRef rhs;
@@ -3476,7 +3476,7 @@ namespace Internal.IL
                 default:
                     throw new InvalidOperationException(); // Should be unreachable
             }
-
+            //TODO: do we need this if we sign extend above?
             PushExpression(valueToShift.Kind, "shiftop", result, WidenBytesAndShorts(valueToShift.Type));
         }
 

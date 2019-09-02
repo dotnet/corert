@@ -102,6 +102,16 @@ namespace Internal.NativeFormat
             {
                 if (stream + 2 >= streamEnd)
                     ThrowBadImageFormatException();
+                X2.PrintLine("decoding 3 bytes");
+                var b1 = val;
+                var b2 = (int)*(stream + 1);
+                var b3 = ((int)*(sbyte*)(stream + 2));
+                X2.PrintUint(b1);
+                X2.PrintUint(b2);
+                X2.PrintUint(b3);
+                X2.PrintUint((b1 >> 3) |
+                             (b2 << 5) |
+                             (b3 << 13));
                 value = (val >> 3) |
                       (((int)*(stream + 1)) << 5) |
                       (((int)*(sbyte*)(stream + 2)) << 13);
