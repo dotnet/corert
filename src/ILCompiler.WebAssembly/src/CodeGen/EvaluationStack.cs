@@ -184,7 +184,7 @@ namespace Internal.IL
 
         public LLVMValueRef ValueAsType(LLVMTypeRef type, LLVMBuilderRef builder)
         {
-            return ValueAsTypeInternal(type, builder, false);
+            return ValueAsTypeInternal(type, builder, Type != null && (Type.IsWellKnownType(WellKnownType.SByte) || Type.IsWellKnownType(WellKnownType.Int16)));
         }
 
         public LLVMValueRef ValueAsType(TypeDesc type, LLVMBuilderRef builder)
