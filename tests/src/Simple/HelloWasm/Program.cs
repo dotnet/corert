@@ -22,6 +22,8 @@ internal static class Program
     {
         Success = true;
         PrintLine("Starting");
+        TestMetaData();
+
 
         TestSimplestSharedGeneric();
 //        TestSimpleGVMScenarios.Run();
@@ -265,8 +267,6 @@ internal static class Program
         TestValueTypeElementIndexing();
 
         TestArrayItfDispatch();
-
-        TestMetaData();
 
         TestTryFinally();
 
