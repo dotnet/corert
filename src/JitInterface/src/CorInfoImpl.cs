@@ -771,7 +771,20 @@ namespace Internal.JitInterface
         }
 
         private CORINFO_MODULE_STRUCT_* getMethodModule(CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException("getMethodModule"); }
+        {
+            MethodDesc m = HandleToObject(method);
+            if (m is UnboxingMethodDesc unboxingMethodDesc)
+            {
+                m = unboxingMethodDesc.Target;
+            }
+
+            MethodIL methodIL = _compilation.GetMethodIL(m);
+            if (methodIL == null)
+            {
+                return null;
+            }
+            return (CORINFO_MODULE_STRUCT_*)ObjectToHandle(methodIL);
+        }
 
         private CORINFO_METHOD_STRUCT_* resolveVirtualMethod(CORINFO_METHOD_STRUCT_* baseMethod, CORINFO_CLASS_STRUCT_* derivedClass, CORINFO_CONTEXT_STRUCT* ownerType)
         {
