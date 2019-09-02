@@ -2510,8 +2510,8 @@ namespace Internal.IL
                         kind = op2.Kind;
                     }
 
-                    LLVMValueRef right = op1.ValueForStackKind(kind, _builder, false);
-                    LLVMValueRef left = op2.ValueForStackKind(kind, _builder, false);
+                    LLVMValueRef right = op1.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op1.Type));
+                    LLVMValueRef left = op2.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op1.Type));
 
                     if (kind != StackValueKind.Float)
                     {
@@ -2694,8 +2694,8 @@ namespace Internal.IL
             }
 
             LLVMValueRef result;
-            LLVMValueRef left = op2.ValueForStackKind(kind, _builder, false);
-            LLVMValueRef right = op1.ValueForStackKind(kind, _builder, false);
+            LLVMValueRef left = op2.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op2.Type));
+            LLVMValueRef right = op1.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op1.Type));
             if (kind == StackValueKind.Float)
             {
                 if(op1.Type.IsWellKnownType(WellKnownType.Double) && op2.Type.IsWellKnownType(WellKnownType.Single))
@@ -2827,7 +2827,7 @@ namespace Internal.IL
             StackEntry numBitsToShift = _stack.Pop();
             StackEntry valueToShift = _stack.Pop();
 
-            LLVMValueRef valueToShiftValue = valueToShift.ValueForStackKind(valueToShift.Kind, _builder, false);
+            LLVMValueRef valueToShiftValue = valueToShift.ValueForStackKind(valueToShift.Kind, _builder, TypeNeedsSignExtension(valueToShift.Type));
 
             // while it seems excessive that the bits to shift should need to be 64 bits, the LLVM docs say that both operands must be the same type and a compilation failure results if this is not the case.
             LLVMValueRef rhs;
