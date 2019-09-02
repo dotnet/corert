@@ -28,6 +28,7 @@ namespace Internal.NativeFormat
         public Vertex()
         {
         }
+        public virtual Vertex MNASS =>null;
 
         internal abstract void Save(NativeWriter writer);
 
@@ -128,6 +129,8 @@ namespace Internal.NativeFormat
             _encoder.Init();
         }
 
+        public Vertex OfInterest { get; set; }
+
         public Section NewSection()
         {
             Section section = new Section();
@@ -200,11 +203,10 @@ namespace Internal.NativeFormat
 
         public void WriteString(string s)
         {
-            // The actual bytes are only necessary for the final version during the growing plase
+            // The actual bytes are only necessary for the final version during the growing phase
             if (IsGrowing())
             {
                 byte[] bytes = _stringEncoding.GetBytes(s);
-
                 _encoder.WriteUnsigned((uint)bytes.Length);
                 for (int i = 0; i < bytes.Length; i++)
                     _encoder.WriteByte(bytes[i]);
@@ -284,8 +286,10 @@ namespace Internal.NativeFormat
             _encoder.Clear();
 
             _phase = SavePhase.Initial;
+            int i = 0;
             foreach (var section in _sections) foreach (var vertex in section._items)
             {
+                i++;
                 vertex._offset = GetCurrentOffset();
                 vertex._iteration = _iteration;
                 vertex.Save(this);
@@ -296,18 +300,24 @@ namespace Internal.NativeFormat
                 Debug.Assert(_compressionDepth == 0);
 #endif
             }
-
             // Aggressive phase that only allows offsets to shrink.
             _phase = SavePhase.Shrinking;
             for (; ; )
             {
+
                 _iteration++;
                 _encoder.Clear();
 
                 _offsetAdjustment = 0;
+                i = 0;
 
                 foreach (var section in _sections) foreach (var vertex in section._items)
                 {
+                    i++;
+                    if (i == 24)
+                    {
+
+                    }
                     int currentOffset = GetCurrentOffset();
 
                     // Only allow the offsets to shrink.
@@ -410,7 +420,13 @@ namespace Internal.NativeFormat
             Debug.Assert(vertex._offset == Vertex.NotPlaced);
             vertex._offset = Vertex.Unified;
             _unifier.Add(vertex, vertex);
+            if (OfInterest != null && vertex.MNASS == OfInterest)
+            {
+                if (OfInterest.Equals(vertex))
+                {
 
+                }
+            }
             return vertex;
         }
 
@@ -542,6 +558,10 @@ namespace Internal.NativeFormat
 
         internal override void Save(NativeWriter writer)
         {
+            if (_unified == writer.OfInterest)
+            {
+
+            }
             _unified.Save(writer);
         }
     }
@@ -736,7 +756,13 @@ namespace Internal.NativeFormat
         {
             writer.WriteUnsigned((uint)_elements.Count);
             foreach (var elem in _elements)
+            {
+                if (elem == writer.OfInterest)
+                {
+
+                }
                 elem.Save(writer);
+            }
         }
 
         public override bool Equals(object obj)
@@ -952,12 +978,12 @@ namespace Internal.NativeFormat
         }
     }
 
-#if NATIVEFORMAT_PUBLICWRITER
-    public
-#else
-    internal
-#endif
-    class MethodSignature : Vertex
+//#if NATIVEFORMAT_PUBLICWRITER
+//    public
+//#else
+//    internal
+//#endif
+    public class MethodSignature : Vertex
     {
         private uint _flags;
         private uint _fptrReferenceId;
@@ -978,6 +1004,8 @@ namespace Internal.NativeFormat
             if ((flags & (uint)MethodFlags.HasFunctionPointer) == 0)
                 Debug.Assert(fptrReferenceId == 0);
         }
+
+        public override Vertex MNASS => _methodNameAndSig;
 
         internal override void Save(NativeWriter writer)
         {

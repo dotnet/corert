@@ -83,6 +83,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitInt(int emit)
         {
+            if (emit == 0x001F9E1A)
+            {
+
+            }
             EmitByte((byte)(emit & 0xFF));
             EmitByte((byte)((emit >> 8) & 0xFF));
             EmitByte((byte)((emit >> 16) & 0xFF));
@@ -111,6 +115,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitNaturalInt(int emit)
         {
+            if (emit == 0x001F9E1A)
+            {
+
+            }
             if (_target.PointerSize == 8)
             {
                 EmitLong(emit);
@@ -240,6 +248,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitInt(Reservation reservation, int emit)
         {
+            if (emit == 0x001F9E1A)
+            {
+
+            }
             int offset = ReturnReservationTicket(reservation);
             _data[offset] = (byte)(emit & 0xFF);
             _data[offset + 1] = (byte)((emit >> 8) & 0xFF);

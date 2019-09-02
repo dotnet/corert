@@ -18,6 +18,10 @@ namespace Internal.Runtime.CompilerServices
         [CLSCompliant(false)]
         public static RuntimeSignature CreateFromNativeLayoutSignature(TypeManagerHandle moduleHandle, uint nativeLayoutOffset)
         {
+            if (nativeLayoutOffset == 0x002000BB)
+            {
+                throw new Exception("0x002000BB");
+            }
             return new RuntimeSignature
             {
                 _moduleHandle = moduleHandle.GetIntPtrUNSAFE(),
@@ -39,6 +43,10 @@ namespace Internal.Runtime.CompilerServices
 
         public static RuntimeSignature CreateFromMethodHandle(TypeManagerHandle moduleHandle, int token)
         {
+            if (token == 0x002000BB)
+            {
+                throw new Exception("0x002000BB");
+            }
             return new RuntimeSignature
             {
                 _moduleHandle = moduleHandle.GetIntPtrUNSAFE(),
@@ -49,6 +57,10 @@ namespace Internal.Runtime.CompilerServices
 
         public static RuntimeSignature CreateFromMethodHandle(IntPtr moduleHandle, int token)
         {
+            if (token == 0x002000BB)
+            {
+                throw new Exception("0x002000BB");
+            }
             return new RuntimeSignature
             {
                 _moduleHandle = moduleHandle,
@@ -60,6 +72,10 @@ namespace Internal.Runtime.CompilerServices
         [CLSCompliant(false)]
         public static RuntimeSignature CreateFromNativeLayoutSignatureForDebugger(uint nativeLayoutOffset)
         {
+            if (nativeLayoutOffset == 0x002000BB)
+            {
+                throw new Exception("0x002000BB");
+            }
             // This is a RuntimeSignature object used by the debugger only, 
             // the fact that the _moduleHandle is NULL signify that information.
             return new RuntimeSignature

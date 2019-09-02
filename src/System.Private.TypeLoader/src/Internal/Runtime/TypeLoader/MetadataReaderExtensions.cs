@@ -3,13 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 
-using System.Text;
 using global::System;
 using global::System.Reflection;
 using global::System.Collections.Generic;
 
 using global::Internal.Metadata.NativeFormat;
-using Internal.Reflection.Execution;
+
 using Debug = System.Diagnostics.Debug;
 using AssemblyFlags = Internal.Metadata.NativeFormat.AssemblyFlags;
 
@@ -59,12 +58,7 @@ namespace System.Reflection.Runtime.General
 
         public static string GetString(this ConstantStringValueHandle handle, MetadataReader reader)
         {
-            var s = reader.GetConstantStringValue(handle).Value;
-            AssemblyBinderImplementation.PrintLine("GetString calling GetHashCode");
-            var x = s.GetHashCode();
-            AssemblyBinderImplementation.PrintLine("GetString calling GetHashCode ol" );
-
-            return s;
+            return reader.GetConstantStringValue(handle).Value;
         }
 
         // Useful for namespace Name string which can be a null handle.
@@ -95,11 +89,6 @@ namespace System.Reflection.Runtime.General
         public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeDefinitionHandle scopeDefinitionHandle, MetadataReader reader)
         {
             ScopeDefinition scopeDefinition = scopeDefinitionHandle.GetScopeDefinition(reader);
-            AssemblyBinderImplementation.PrintLine("ToRuntimeAssemblyName");
-
-            AssemblyBinderImplementation.PrintLine(scopeDefinition.Name.ToString());
-            var ns = scopeDefinition.Name.GetString(reader);
-            AssemblyBinderImplementation.PrintLine(ns);
             return CreateRuntimeAssemblyNameFromMetadata(
                 reader,
                 scopeDefinition.Name,
@@ -115,8 +104,6 @@ namespace System.Reflection.Runtime.General
 
         public static RuntimeAssemblyName ToRuntimeAssemblyName(this ScopeReferenceHandle scopeReferenceHandle, MetadataReader reader)
         {
-            AssemblyBinderImplementation.PrintLine("ToRuntimeAssemblyName2");
-
             ScopeReference scopeReference = scopeReferenceHandle.GetScopeReference(reader);
             return CreateRuntimeAssemblyNameFromMetadata(
                 reader,
@@ -153,13 +140,6 @@ namespace System.Reflection.Runtime.General
             ArrayBuilder<byte> keyOrTokenArrayBuilder = new ArrayBuilder<byte>();
             foreach (byte b in publicKeyOrToken)
                 keyOrTokenArrayBuilder.Add(b);
-
-            var handleName = name.GetString(reader);
-            AssemblyBinderImplementation.PrintLine("handleName GetHashCode\n");
-            AssemblyBinderImplementation.PrintLine(handleName);
-            var x = handleName.GetHashCode();
-            AssemblyBinderImplementation.PrintLine("handleName GetHashCode ok\n");
-
 
             return new RuntimeAssemblyName(
                 name.GetString(reader),

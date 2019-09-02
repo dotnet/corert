@@ -341,6 +341,9 @@ namespace ILCompiler.DependencyAnalysis
             _method = method;
             _methodSig = factory.NativeLayout.MethodSignatureVertex(method.Signature);
         }
+
+        public MethodDesc Method => _method;
+
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
         {
             return new DependencyListEntry[] { new DependencyListEntry(_methodSig, "NativeLayoutMethodNameAndSignatureVertexNode signature vertex") };
@@ -668,7 +671,10 @@ namespace ILCompiler.DependencyAnalysis
         public NativeLayoutTemplateMethodSignatureVertexNode(NodeFactory factory, MethodDesc method)
             : base(factory, method, MethodEntryFlags.CreateInstantiatedSignature | (method.IsVirtual ? MethodEntryFlags.SaveEntryPoint : 0))
         {
+            MethodDesc = method;
         }
+
+        public MethodDesc MethodDesc { get; }
 
         public override Vertex WriteVertex(NodeFactory factory)
         {

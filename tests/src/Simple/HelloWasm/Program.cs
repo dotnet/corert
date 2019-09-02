@@ -726,7 +726,7 @@ internal static class Program
 
         StartTest("Type GetFields length");
         var x = new ClassForMetaTests();
-        var s = x.StringField;  
+        var s = x.StringField;
         var i = x.IntField;
         var classForMetaTestsType = typeof(ClassForMetaTests);
         FieldInfo[] fields = classForMetaTestsType.GetFields();
@@ -772,24 +772,32 @@ internal static class Program
         instance.ReturnTrueIf1AndThis(0, null); // force method output
         ClassForMetaTests.ReturnsParam(null); // force method output
 
-        /*
-        StartTest("Class get+invoke simple method via reflection");
-        var mtd = classForMetaTestsType.GetMethod("ReturnTrueIf1");
-        bool shouldBeTrue = (bool)mtd.Invoke(instance, new object[] {1});
-        bool shouldBeFalse = (bool)mtd.Invoke(instance, new object[] {2});
-        EndTest(shouldBeTrue && !shouldBeFalse);
+        NewMethod(classForMetaTestsType, instance);
 
-        StartTest("Class get+invoke method with ref param via reflection");
-        var mtdWith2Params = classForMetaTestsType.GetMethod("ReturnTrueIf1AndThis");
-        shouldBeTrue = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, instance });
-        shouldBeFalse = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, new ClassForMetaTests() });
-        EndTest(shouldBeTrue && !shouldBeFalse);
+        /*
 
         StartTest("Class get+invoke static method with ref param via reflection");
         var staticMtd = classForMetaTestsType.GetMethod("ReturnsParam");
         var retVal = (ClassForMetaTests)staticMtd.Invoke(null, new object[] { instance });
         EndTest(Object.ReferenceEquals(retVal, instance));
         */
+    }
+
+    private static void NewMethod(Type classForMetaTestsType, ClassForMetaTests instance)
+    {
+/*
+        StartTest("Class get+invoke simple method via reflection");
+        var mtd = classForMetaTestsType.GetMethod("ReturnTrueIf1");
+        bool shouldBeTrue = (bool)mtd.Invoke(instance, new object[] { 1 });
+        bool shouldBeFalse = (bool)mtd.Invoke(instance, new object[] { 2 });
+        EndTest(shouldBeTrue && !shouldBeFalse);
+*/
+        StartTest("Class get+invoke method with ref param via reflection");
+        var mtdWith2Params = classForMetaTestsType.GetMethod("ReturnTrueIf1AndThis");
+        bool shouldBeTrue = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, instance });
+//        shouldBeFalse = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, new ClassForMetaTests() });
+        EndTest(shouldBeTrue/* && !shouldBeFalse*/);
+
     }
 
     public class ClassForMetaTests

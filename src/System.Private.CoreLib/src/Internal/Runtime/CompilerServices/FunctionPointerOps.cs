@@ -131,6 +131,7 @@ namespace Internal.Runtime.CompilerServices
             if ((functionPointer.ToInt32() & FatFunctionPointerConstants.Offset) == FatFunctionPointerConstants.Offset)
 #endif
             {
+                X.PrintLine("IsGenericMethodPointer");
                 return true;
             }
             return false;

@@ -31,6 +31,9 @@ namespace Internal.Runtime.TypeLoader
                 if(signature1.StructuralEquals(signature2))
                     return true;
 
+                X2.PrintLine("CompareMethodSignatures");
+                X2.PrintUint((int)signature1.NativeLayoutOffset);
+                X2.PrintUint((int)signature2.NativeLayoutOffset);
                 NativeFormatModuleInfo module1 = ModuleList.GetModuleInfoByHandle(new TypeManagerHandle(signature1.ModuleHandle));
                 NativeReader reader1 = GetNativeLayoutInfoReader(signature1);
                 NativeParser parser1 = new NativeParser(reader1, signature1.NativeLayoutOffset);
@@ -170,14 +173,22 @@ namespace Internal.Runtime.TypeLoader
 
         internal MethodNameAndSignature GetMethodNameAndSignature(ref NativeParser parser, TypeManagerHandle moduleHandle, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
         {
+            X2.PrintLine("GetMethodNameAndSignature");
+            X2.PrintUint((int)parser.Offset);
             methodNameSig = RuntimeSignature.CreateFromNativeLayoutSignature(moduleHandle, parser.Offset);
             string methodName = parser.GetString();
+            X2.PrintLine("methodName");
+            X2.PrintLine(methodName);
 
             // Signatures are indirected to through a relative offset so that we don't have to parse them
             // when not comparing signatures (parsing them requires resolving types and is tremendously 
             // expensive).
             NativeParser sigParser = parser.GetParserFromRelativeOffset();
+            X2.PrintLine("sigParser.Offset");
+            X2.PrintUint((int)sigParser.Offset);
             methodSig = RuntimeSignature.CreateFromNativeLayoutSignature(moduleHandle, sigParser.Offset);
+            X2.PrintLine("methodSig.NativeLayoutOffset");
+            X2.PrintUint((int)methodSig.NativeLayoutOffset);
 
             return new MethodNameAndSignature(methodName, methodSig);
         }

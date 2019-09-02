@@ -57,6 +57,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (!IsEligibleToBeATemplate(method))
                     continue;
 
+
                 // Method entry
                 Vertex methodEntry = factory.NativeLayout.TemplateMethodEntry(method).SavedVertex;
 
@@ -70,6 +71,10 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Add to the hash table, hashed by the containing type's hashcode
                 uint hashCode = (uint)method.GetHashCode();
+                if (method.ToString().Contains("InvokeRetOII"))
+                {
+
+                }
                 hashtable.Append(hashCode, nativeSection.Place(entry));
             }
 

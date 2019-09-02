@@ -291,16 +291,16 @@ namespace Internal.Reflection.Execution
         private static unsafe extern int printf(byte* str, byte* unused);
         private static unsafe void PrintString(string s)
         {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    SR.TwoByteStr curCharStr = new SR.TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    printf((byte*)&curCharStr, null);
-                }
-            }
+//            int length = s.Length;
+//            fixed (char* curChar = s)
+//            {
+//                for (int i = 0; i < length; i++)
+//                {
+//                    SR.TwoByteStr curCharStr = new SR.TwoByteStr();
+//                    curCharStr.first = (byte)(*(curChar + i));
+//                    printf((byte*)&curCharStr, null);
+//                }
+//            }
         }
 
         internal static void PrintLine(string s)

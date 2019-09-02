@@ -186,10 +186,6 @@ namespace System.Collections.Generic
         //
         public void Add(T item)
         {
-            if (_items == null)
-            {
-                SR.PrintLine("_items is null, this corrupt");
-            }
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             _items[_size++] = item;
             _version++;

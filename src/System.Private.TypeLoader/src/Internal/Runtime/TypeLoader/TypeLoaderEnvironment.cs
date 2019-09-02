@@ -49,6 +49,8 @@ namespace Internal.Runtime.TypeLoader
 
         public override bool CompareMethodSignatures(RuntimeSignature signature1, RuntimeSignature signature2)
         {
+            X2.PrintLine("Callbacks");
+            X2.PrintUint((int)signature1.NativeLayoutOffset);
             return TypeLoaderEnvironment.Instance.CompareMethodSignatures(signature1, signature2);
         }
 

@@ -68,16 +68,73 @@ namespace ILCompiler.DependencyAnalysis
 
         public void SaveNativeLayoutInfoWriter(NodeFactory factory)
         {
+//            var d =
+//                new Dictionary<MethodNameAndSigSignature, List<NativeLayoutMethodNameAndSignatureVertexNode>>();
+
             if (_writerSavedBytes != null)
                 return;
 
             foreach (var vertexNode in _vertexNodesToWrite)
-                vertexNode.WriteVertex(factory);
+            {
+                if (vertexNode is NativeLayoutMethodNameAndSignatureVertexNode)
+                {
+                    var m = (NativeLayoutMethodNameAndSignatureVertexNode)vertexNode;
+                    var method = m.Method.ToString();
+                    if ((uint)m.Method.GetHashCode() == 0x91B91B75)
+                    {
+
+                    }
+                    if (method.Contains("[S.P.CompilerGenerated]Internal.CompilerGenerated.<Module>.InvokeRetOII<int32,__Canon,bool>(object,native int,ArgSetupState&,bool)"))
+                    {
+                    }
+                }
+                var v= vertexNode.WriteVertex(factory);
+                if (vertexNode is NativeLayoutMethodNameAndSignatureVertexNode)
+                {
+                    var m = (NativeLayoutMethodNameAndSignatureVertexNode)vertexNode;
+//                    if (v is MethodNameAndSigSignature)
+//                    {
+//                        if (d.ContainsKey((MethodNameAndSigSignature)v))
+//                        {
+//                            d[(MethodNameAndSigSignature)v].Add(m);
+//                        }
+//                        else d.Add((MethodNameAndSigSignature)v, new List<NativeLayoutMethodNameAndSignatureVertexNode> {m});
+//                    }
+                    var method = m.Method.ToString();
+                    if (method.Contains("[S.P.CompilerGenerated]Internal.CompilerGenerated.<Module>.InvokeRetOII<int32,__Canon,bool>(object,native int,ArgSetupState&,bool)"))
+                    {
+                        _writer.OfInterest = v;
+                    }
+                }
+                if (vertexNode is NativeLayoutTemplateMethodSignatureVertexNode)
+                {
+                    var m = (NativeLayoutTemplateMethodSignatureVertexNode)vertexNode;
+                    if ((uint)m.MethodDesc.GetHashCode() == 0x91B91B75)
+                    {
+
+                    }
+                }
+            }
 
             _writerSavedBytes = _writer.Save();
+//            foreach (var v in d.Keys)
+//            {
+//                if (v.VertexOffset == 25234)
+//                {
+//                    var m = d[v];
+//                }
+//            }
+            if (_writerSavedBytes.Length == 36495)
+            {
+                var section = new byte[100];
+                for (var i = 25236; i < 25336; i++)
+                {
+                    section[i - 25236] = _writerSavedBytes[i];
+                }
+            }
 
-            // Zero out the native writer and vertex list so that we AV if someone tries to insert after we're done.
-            _writer = null;
+                // Zero out the native writer and vertex list so that we AV if someone tries to insert after we're done.
+                _writer = null;
             _vertexNodesToWrite = null;
         }
 

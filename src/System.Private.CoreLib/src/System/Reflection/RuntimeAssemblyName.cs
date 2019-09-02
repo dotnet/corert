@@ -52,16 +52,16 @@ namespace System.Reflection
 
         internal static unsafe void PrintString(string s)
         {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    SR.TwoByteStr curCharStr = new SR.TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    X.printf((byte*)&curCharStr, null);
-                }
-            }
+//            int length = s.Length;
+//            fixed (char* curChar = s)
+//            {
+//                for (int i = 0; i < length; i++)
+//                {
+//                    SR.TwoByteStr curCharStr = new SR.TwoByteStr();
+//                    curCharStr.first = (byte)(*(curChar + i));
+//                    X.printf((byte*)&curCharStr, null);
+//                }
+//            }
         }
 
         internal static void PrintLine(string s)

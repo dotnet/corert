@@ -27,6 +27,10 @@ namespace Internal.NativeFormat
         {
             if (_buffer.Length == _size)
                 Array.Resize(ref _buffer, 2 * _buffer.Length);
+            if (_size == 25236 && b == 24)
+            {
+
+            }
             _buffer[_size++] = b;
         }
 

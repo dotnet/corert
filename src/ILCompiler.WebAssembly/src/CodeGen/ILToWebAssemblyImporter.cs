@@ -4447,23 +4447,23 @@ namespace Internal.IL
 
         void PrintInt32(LLVMValueRef ptr)
         {
-            int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
-            LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_currentFunclet),
-                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
-                String.Empty);
-            LLVM.BuildCall(_builder,
-                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
-                    LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
-                        {
-                            LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
-                            LLVMTypeRef.Int32Type()
-                        },
-                        false)),
-                new LLVMValueRef[]
-                {
-                    CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
-                    ptr
-                }, string.Empty);
+//            int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
+//            LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_currentFunclet),
+//                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
+//                String.Empty);
+//            LLVM.BuildCall(_builder,
+//                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
+//                    LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
+//                        {
+//                            LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+//                            LLVMTypeRef.Int32Type()
+//                        },
+//                        false)),
+//                new LLVMValueRef[]
+//                {
+//                    CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
+//                    ptr
+//                }, string.Empty);
         }
 
         private LLVMValueRef ArrayBaseSize()
