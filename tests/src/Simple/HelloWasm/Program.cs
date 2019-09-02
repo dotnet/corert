@@ -300,7 +300,7 @@ internal static class Program
             FailTest();
         }
 
-        TestSvyteExtend();
+        TestSByteExtend();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -992,9 +992,9 @@ internal static class Program
         EndTest(strt.DoubleField == 0d);
     }
 
-    private static void TestSbyteExtend()
+    private static void TestSByteExtend()
     {
-        StartTest("sbyte extend")
+        StartTest("SByte extend");
         sbyte s = -1;
         int x = (int)s;
         sbyte s2 = 1;
@@ -1005,7 +1005,7 @@ internal static class Program
         }
         else
         {
-            FailTest("Expected -1 and 1 but got " + x.ToString() + " " + x2.ToString());
+            FailTest("Expected -1 and 1 but got " + x.ToString() + " and " + x2.ToString());
         }
     }
 
