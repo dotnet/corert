@@ -278,6 +278,7 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+            PublishProfileData();
         }
 
         partial void PublishProfileData();
