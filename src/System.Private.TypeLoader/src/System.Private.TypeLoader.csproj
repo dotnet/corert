@@ -317,9 +317,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.cs">
       <Link>Internal\TypeSystem\InstantiatedType.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.FieldLayout.cs">
-      <Link>Internal\TypeSystem\InstantiatedType.FieldLayout.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedType.Interfaces.cs">
       <Link>Internal\TypeSystem\InstantiatedType.Interfaces.cs</Link>
     </Compile>
