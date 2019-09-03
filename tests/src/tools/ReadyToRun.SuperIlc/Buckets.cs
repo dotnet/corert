@@ -153,13 +153,22 @@ namespace ReadyToRun.SuperIlc
                         }
                         return line;
                     }
-                    else if (line.StartsWith("Unhandled Exception:"))
+                    else if (line.StartsWith("Unhandled exception", StringComparison.OrdinalIgnoreCase))
                     {
                         int leftBracket = line.IndexOf('[');
                         int rightBracket = line.IndexOf(']', leftBracket + 1);
                         if (leftBracket >= 0 && rightBracket > leftBracket)
                         {
                             line = line.Substring(0, leftBracket) + line.Substring(rightBracket + 1);
+                        }
+                        for (int detailLineIndex = lineIndex + 1; detailLineIndex < lines.Length; detailLineIndex++)
+                        {
+                            string detailLine = lines[detailLineIndex].TrimStart();
+                            if (!detailLine.StartsWith("--->"))
+                            {
+                                break;
+                            }
+                            line += " " + detailLine;
                         }
                         return line;
                     }
