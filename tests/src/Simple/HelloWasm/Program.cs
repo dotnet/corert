@@ -992,7 +992,7 @@ internal static class Program
         EndTest(strt.DoubleField == 0d);
     }
 
-    private unsafe static void TestSByteExtend()
+    private static void TestSByteExtend()
     {
         StartTest("SByte extend");
         sbyte s = -1;
@@ -1030,8 +1030,8 @@ internal static class Program
             FailTest();
         }
 
-        StartTest("Negative SByte br");
-        if (s == -1)
+        StartTest("Negative SByte br"); 
+        if (s == -1) // this only creates the bne opcode, which it is testing, in Release mode.
         {
             PassTest();
         }
