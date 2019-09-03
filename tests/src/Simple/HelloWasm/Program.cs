@@ -1029,6 +1029,16 @@ internal static class Program
         {
             FailTest();
         }
+
+        StartTest("Negative SByte br");
+        if (s == -1)
+        {
+            PassTest();
+        }
+        else
+        {
+            FailTest();
+        }
     }
 
     [DllImport("*")]

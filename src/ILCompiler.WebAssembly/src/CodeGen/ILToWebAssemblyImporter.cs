@@ -2511,7 +2511,7 @@ namespace Internal.IL
                     }
 
                     LLVMValueRef right = op1.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op1.Type));
-                    LLVMValueRef left = op2.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op1.Type));
+                    LLVMValueRef left = op2.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op2.Type));
 
                     if (kind != StackValueKind.Float)
                     {
