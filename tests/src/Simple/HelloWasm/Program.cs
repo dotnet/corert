@@ -1042,23 +1042,38 @@ internal static class Program
         {
             FailTest("Expected -1 and 1 but got " + x.ToString() + " and " + x2.ToString());
         }
-        StartTest("test nativereader");
-        byte b1 = 211;
-        byte b2 = 240;
-        byte b3 = 252;
-        var ba = new byte[3] { b1, b2, b3 };
-        fixed (byte* stream = &ba[0])
+
+        StartTest("SByte left shift");
+        x = (int)(s << 1);
+        if(x == -2)
         {
-                        var i = ((int)*(sbyte*)(stream + 2)); // ok
-            //            var i = (((int)*(sbyte*)(stream + 2)) << 13); // broken
-            //var i = (((int)(sbyte)b3) << 13); //ok
-            PrintLine("stream calc");
-            PrintLine(i.ToString());
+            PassTest();
         }
-        int value = (b1 >> 3) |
-      (((int)b2) << 5) |
-      (((int)((sbyte)(b3))) << 13);
-        PrintLine(value.ToString());
+        else
+        {
+            FailTest("Expected -2 but got " + x.ToString());
+        }
+
+        sbyte minus1 = -1;
+        StartTest("Negative SByte op");
+        if((s & minus1) == -1)
+        {
+            PassTest();
+        }
+        else
+        {
+            FailTest();
+        }
+
+        StartTest("Negative SByte br"); 
+        if (s == -1) // this only creates the bne opcode, which it is testing, in Release mode.
+        {
+            PassTest();
+        }
+        else
+        {
+            FailTest();
+        }
     }
 
     [DllImport("*")]

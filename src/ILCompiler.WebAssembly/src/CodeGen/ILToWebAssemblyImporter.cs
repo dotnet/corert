@@ -3133,8 +3133,8 @@ namespace Internal.IL
                         kind = op2.Kind;
                     }
 
-                    LLVMValueRef right = op1.ValueForStackKind(kind, _builder, false);
-                    LLVMValueRef left = op2.ValueForStackKind(kind, _builder, false);
+                    LLVMValueRef right = op1.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op1.Type));
+                    LLVMValueRef left = op2.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op2.Type));
 
                     if (kind != StackValueKind.Float)
                     {
@@ -3317,8 +3317,8 @@ namespace Internal.IL
             }
 
             LLVMValueRef result;
-            LLVMValueRef left = op2.ValueForStackKind(kind, _builder, false);
-            LLVMValueRef right = op1.ValueForStackKind(kind, _builder, false);
+            LLVMValueRef left = op2.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op2.Type));
+            LLVMValueRef right = op1.ValueForStackKind(kind, _builder, TypeNeedsSignExtension(op1.Type));
             if (kind == StackValueKind.Float)
             {
                 if(op1.Type.IsWellKnownType(WellKnownType.Double) && op2.Type.IsWellKnownType(WellKnownType.Single))
