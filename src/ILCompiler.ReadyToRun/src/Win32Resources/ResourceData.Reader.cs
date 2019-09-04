@@ -21,8 +21,10 @@ namespace ILCompiler.Win32Resources
             uint onewexe;
             IMAGE_DOS_HEADER oldexe = new IMAGE_DOS_HEADER();
 
-            Mu inpfh = new Mu(peFileData);
-            inpfh.FilePos = 0;
+            Mu inpfh = new Mu(peFileData)
+            {
+                FilePos = 0
+            };
             oldexe.Read(inpfh);
             if (oldexe.e_magic != IMAGE_DOS_SIGNATURE)
                 throw new Exception("Invalid Exe Signature");
@@ -78,7 +80,7 @@ namespace ILCompiler.Win32Resources
 
         }
 
-        void PEReadResource<NT_HEADER_TYPE>(
+        private void PEReadResource<NT_HEADER_TYPE>(
             Mu inpfh,
             uint cbOldexe
             ) where NT_HEADER_TYPE : unmanaged, I_NT_HEADER_TYPE
@@ -105,7 +107,7 @@ namespace ILCompiler.Win32Resources
                      Old.GetFileHeaderNumberOfSections() * sizeof(IMAGE_SECTION_HEADER));
 
             Mu laidOutImage = new Mu((int)Old.GetOptionalHeaderSizeOfImage());
-            foreach (var section in pObjtblOld)
+            foreach (ImageSectionHeaderObject section in pObjtblOld)
             {
                 inpfh.FilePosUnsigned = section.Data.PointerToRawData;
                 byte[] sectionData = Mu.Read(inpfh, section.Data.PhysicalAddressOrVirtualSize);
@@ -122,7 +124,7 @@ namespace ILCompiler.Win32Resources
             }
         }
 
-        void ReadResources(Mu laidOutImage, uint resourceDirectoryRVA)
+        private void ReadResources(Mu laidOutImage, uint resourceDirectoryRVA)
         {
             laidOutImage.FilePosUnsigned = resourceDirectoryRVA;
 
@@ -169,7 +171,7 @@ namespace ILCompiler.Win32Resources
             }
         }
 
-        void DoResourceDirectoryRead(Mu resourceReaderExternal, uint startOffset, Action<object, uint, bool> entry)
+        private void DoResourceDirectoryRead(Mu resourceReaderExternal, uint startOffset, Action<object, uint, bool> entry)
         {
             // Create a copy of the Mu, so that we don't allow the delegate to affect its state
             Mu resourceReader = new Mu(resourceReaderExternal);

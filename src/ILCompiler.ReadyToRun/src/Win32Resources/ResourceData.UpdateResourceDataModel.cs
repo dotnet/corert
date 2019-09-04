@@ -14,44 +14,12 @@ namespace ILCompiler.Win32Resources
 {
     public unsafe partial class ResourceData
     {
-        private static string UpperCaseResourceString(string input)
-        {
-            if (input.Length > 0xFFFF)
-                throw new ArgumentException();
-
-            // Note that uppercasing only applies to lowercase, unaccented
-            // Latin letters.
-
-            char[] newString = new char[input.Length];
-            for (int i = 0; i < input.Length; i++)
-            {
-                char upperCaseChar = input[i];
-                if (upperCaseChar >= 'a' && upperCaseChar <= 'z')
-                {
-                    upperCaseChar = checked((char)(upperCaseChar - 'a' + 'A'));
-                }
-                newString[i] = upperCaseChar;
-            }
-            return new string(newString);
-        }
-
-        private static void ConvertToValidResourceName(ref object name)
-        {
-            if (name is ushort)
-                return;
-            else
-            {
-                name = UpperCaseResourceString((string)name);
-            }
-        }
-
         private void AddResource(object type, object name, ushort language, byte[] data)
         {
             ResType resType = null;
             // Allocate new object in case it is needed.
             ResType newResType;
             int newIndex;
-            bool newType = false;
 
             IList typeList;
             bool updateExisting;
@@ -59,7 +27,7 @@ namespace ILCompiler.Win32Resources
             {
                 ResType_Ordinal newOrdinalType = new ResType_Ordinal((ushort)type);
                 newResType = newOrdinalType;
-                typeList = ResTypeHeadID;
+                typeList = _resTypeHeadID;
 
                 newIndex = GetIndexOfFirstItemMatchingInListOrInsertionPoint(typeList, (ushort left, ushort right) => (int)left - (int)right, (ushort)type, out updateExisting);
             }
@@ -67,9 +35,9 @@ namespace ILCompiler.Win32Resources
             {
                 ResType_Name newStringType = new ResType_Name((string)type);
                 newResType = newStringType;
-                typeList = ResTypeHeadName;
+                typeList = _resTypeHeadName;
 
-                newIndex = GetIndexOfFirstItemMatchingInListOrInsertionPoint(typeList, String.CompareOrdinal, (string)type, out updateExisting);
+                newIndex = GetIndexOfFirstItemMatchingInListOrInsertionPoint(typeList, string.CompareOrdinal, (string)type, out updateExisting);
             }
 
             if (updateExisting)
@@ -78,8 +46,6 @@ namespace ILCompiler.Win32Resources
             }
             else
             {
-                newType = true;
-
                 // This is a new type
                 if (newIndex == -1)
                     typeList.Add(newResType);
@@ -103,7 +69,7 @@ namespace ILCompiler.Win32Resources
             {
                 nameList = resType.NameHeadName;
                 resNameType = typeof(ResName_Name);
-                nameIndex = GetIndexOfFirstItemMatchingInListOrInsertionPoint(nameList, String.CompareOrdinal, (string)name, out updateExisting);
+                nameIndex = GetIndexOfFirstItemMatchingInListOrInsertionPoint(nameList, string.CompareOrdinal, (string)name, out updateExisting);
             }
 
             if (updateExisting)
@@ -144,7 +110,7 @@ namespace ILCompiler.Win32Resources
                 else
                 {
                     // Insert a new name at the new spot
-                    AddNewName(nameList, resNameType, newIndexForNewOrUpdatedNameWithMatchingLanguage, name, language, data, newType, type);
+                    AddNewName(nameList, resNameType, newIndexForNewOrUpdatedNameWithMatchingLanguage, name, language, data);
                     // Update the NumberOfLanguages for the language list
                     resName = (ResName)nameList[nameIndex];
                     resName.NumberOfLanguages = (ushort)newNumberOfLanguages;
@@ -159,7 +125,7 @@ namespace ILCompiler.Win32Resources
                     throw new ArgumentException();
                 }
 
-                AddNewName(nameList, resNameType, nameIndex, name, language, data, newType, type);
+                AddNewName(nameList, resNameType, nameIndex, name, language, data);
             }
         }
 
@@ -194,7 +160,7 @@ namespace ILCompiler.Win32Resources
             return -1;
         }
 
-        void AddNewName(IList list, Type resNameType, int insertPoint, object name, ushort language, byte[] data, bool newType, object type)
+        private void AddNewName(IList list, Type resNameType, int insertPoint, object name, ushort language, byte[] data)
         {
             ResName newResName = (ResName)Activator.CreateInstance(resNameType, name);
             newResName.LanguageId = language;
@@ -213,7 +179,7 @@ namespace ILCompiler.Win32Resources
 
             if (type is ushort)
             {
-                foreach (var candidate in ResTypeHeadID)
+                foreach (ResType_Ordinal candidate in _resTypeHeadID)
                 {
                     if (candidate.Type.Ordinal == (ushort)type)
                     {
@@ -224,7 +190,7 @@ namespace ILCompiler.Win32Resources
             }
             if (type is string)
             {
-                foreach (var candidate in ResTypeHeadName)
+                foreach (ResType_Name candidate in _resTypeHeadName)
                 {
                     if (candidate.Type == (string)type)
                     {
@@ -239,7 +205,7 @@ namespace ILCompiler.Win32Resources
 
             if (name is ushort)
             {
-                foreach (var candidate in resType.NameHeadID)
+                foreach (ResName_Ordinal candidate in resType.NameHeadID)
                 {
                     if (candidate.Name.Ordinal != (ushort)type)
                         continue;
@@ -252,7 +218,7 @@ namespace ILCompiler.Win32Resources
             }
             if (name is string)
             {
-                foreach (var candidate in resType.NameHeadName)
+                foreach (ResName_Name candidate in resType.NameHeadName)
                 {
                     if (candidate.Name != (string)name)
                         continue;

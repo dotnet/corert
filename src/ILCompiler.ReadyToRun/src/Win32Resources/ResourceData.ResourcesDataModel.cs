@@ -14,21 +14,21 @@ namespace ILCompiler.Win32Resources
 {
     public unsafe partial class ResourceData
     {
-        private List<ResType_Ordinal> ResTypeHeadID = new List<ResType_Ordinal>();
-        private List<ResType_Name> ResTypeHeadName = new List<ResType_Name>();
+        private readonly List<ResType_Ordinal> _resTypeHeadID = new List<ResType_Ordinal>();
+        private readonly List<ResType_Name> _resTypeHeadName = new List<ResType_Name>();
 
-        class OrdinalName
+        private class OrdinalName
         {
             public OrdinalName(ushort ordinal) { Ordinal = ordinal; }
             public readonly ushort Ordinal;
         }
 
-        interface IUnderlyingName<T>
+        private interface IUnderlyingName<T>
         {
             T Name { get; }
         }
 
-        class ResName
+        private class ResName
         {
             public uint DataSize => (uint)DataEntry.Length;
             public byte[] DataEntry;
@@ -36,7 +36,7 @@ namespace ILCompiler.Win32Resources
             public ushort LanguageId;
         }
 
-        class ResName_Name : ResName, IUnderlyingName<string>
+        private class ResName_Name : ResName, IUnderlyingName<string>
         {
             public ResName_Name(string name)
             {
@@ -46,7 +46,7 @@ namespace ILCompiler.Win32Resources
             public string Name { get; }
         }
 
-        class ResName_Ordinal : ResName, IUnderlyingName<ushort>
+        private class ResName_Ordinal : ResName, IUnderlyingName<ushort>
         {
             public ResName_Ordinal(ushort name)
             {
@@ -57,13 +57,13 @@ namespace ILCompiler.Win32Resources
             ushort IUnderlyingName<ushort>.Name => Name.Ordinal;
         }
 
-        class ResType
+        private class ResType
         {
             public List<ResName_Name> NameHeadName = new List<ResName_Name>();
             public List<ResName_Ordinal> NameHeadID = new List<ResName_Ordinal>();
         }
 
-        class ResType_Ordinal : ResType, IUnderlyingName<ushort>
+        private class ResType_Ordinal : ResType, IUnderlyingName<ushort>
         {
             public ResType_Ordinal(ushort type)
             {
@@ -74,7 +74,7 @@ namespace ILCompiler.Win32Resources
             ushort IUnderlyingName<ushort>.Name => Type.Ordinal;
         }
 
-        class ResType_Name : ResType, IUnderlyingName<string>
+        private class ResType_Name : ResType, IUnderlyingName<string>
         {
             public ResType_Name(string type)
             {

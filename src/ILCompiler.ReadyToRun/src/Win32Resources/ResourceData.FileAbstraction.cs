@@ -19,10 +19,10 @@ namespace ILCompiler.Win32Resources
         /// </summary>
         private class Mu
         {
-            List<byte> _data;
-            int _curIndex;
-            bool _fixedSize;
-            bool _readonly;
+            private readonly List<byte> _data;
+            private int _curIndex;
+            private readonly bool _fixedSize;
+            private readonly bool _readonly;
 
             public Mu()
             {

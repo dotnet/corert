@@ -11,12 +11,12 @@ namespace ILCompiler.IBC
 {
     public class IBCException : Exception
     {
-        public IBCException(String message) : base(message) { }
+        public IBCException(string message) : base(message) { }
     }
 
     public static class IBCData
     {
-        private static readonly SectionTypeInfo[] s_sectionTypeInfo;
+        private static readonly SectionTypeInfo[] s_sectionTypeInfo = ComputeSectionTypeInfos();
 
         // Methods and types for managing the various stream types
 
@@ -35,23 +35,23 @@ namespace ILCompiler.IBC
 
             public SectionTypeInfo(TokenType tokenType, SectionFormat section)
             {
-                this.TokenType = tokenType;
-                this.Description = section.ToString();
+                TokenType = tokenType;
+                Description = section.ToString();
             }
         }
 
         //
         // Class constuctor for class IBCData
         //
-        static IBCData()
+        private static SectionTypeInfo[] ComputeSectionTypeInfos()
         {
             TokenType tokenType;
 
-            s_sectionTypeInfo = new SectionTypeInfo[(int)SectionFormat.SectionFormatCount];
+            SectionTypeInfo[] sectionTypeInfo = new SectionTypeInfo[(int)SectionFormat.SectionFormatCount];
 
             tokenType = TokenType.TokenTypeOther;
-            s_sectionTypeInfo[(int)SectionFormat.BasicBlockInfo] = new SectionTypeInfo(tokenType, SectionFormat.BasicBlockInfo);
-            s_sectionTypeInfo[(int)SectionFormat.BlobStream] = new SectionTypeInfo(tokenType, SectionFormat.BlobStream);
+            sectionTypeInfo[(int)SectionFormat.BasicBlockInfo] = new SectionTypeInfo(tokenType, SectionFormat.BasicBlockInfo);
+            sectionTypeInfo[(int)SectionFormat.BlobStream] = new SectionTypeInfo(tokenType, SectionFormat.BlobStream);
 
             for (SectionFormat section = 0; section < SectionFormat.SectionFormatCount; section++)
             {
@@ -60,9 +60,9 @@ namespace ILCompiler.IBC
                 //
                 tokenType = TokenType.MetaDataToken;
 
-                // 
-                // Override the typical values of tokenType or commonMask 
-                // using this switch statement whenever necessary 
+                //
+                // Override the typical values of tokenType or commonMask
+                // using this switch statement whenever necessary
                 //
                 switch (section)
                 {
@@ -82,11 +82,13 @@ namespace ILCompiler.IBC
                         break;
                 }
 
-                s_sectionTypeInfo[(int)section] = new SectionTypeInfo(tokenType, section);
+                sectionTypeInfo[(int)section] = new SectionTypeInfo(tokenType, section);
             }
+
+            return sectionTypeInfo;
         }
 
-        static public bool IsTokenList(SectionFormat sectionType)
+        public static bool IsTokenList(SectionFormat sectionType)
         {
             return (s_sectionTypeInfo[(int)sectionType].TokenType != TokenType.TokenTypeOther);
         }
@@ -310,7 +312,7 @@ namespace ILCompiler.IBC
         mdtMemberRef = 0x0a000000,       //
         mdtConstant = 0x0b000000,       //
         mdtCustomAttribute = 0x0c000000,       //
-        mdtFieldMarshal = 0x0d000000,       // 
+        mdtFieldMarshal = 0x0d000000,       //
         mdtPermission = 0x0e000000,       //
         mdtClassLayout = 0x0f000000,       //
         mdtFieldLayout = 0x10000000,       //
@@ -446,7 +448,7 @@ namespace ILCompiler.IBC
 
         ParamTypeSpec = 4,    // Instantiated Type Signature
         ParamMethodSpec = 5,    // Instantiated Method Signature
-        ExternalNamespaceDef = 6,    // External Namespace Token Definition 
+        ExternalNamespaceDef = 6,    // External Namespace Token Definition
         ExternalTypeDef = 7,    // External Type Token Definition
         ExternalSignatureDef = 8,    // External Signature Definition
         ExternalMethodDef = 9,    // External Method Token Definition
@@ -462,7 +464,7 @@ namespace ILCompiler.IBC
         ExternalModule = 1,    // Tokens are (or will be) encoded/decoded using ibcExternalType and ibcExternalMethod
     }
 
-    static class CONSTANT
+    internal static class CONSTANT
     {
         public const SectionFormat FirstTokenFlagSection = SectionFormat.BlobStream + 1;
     }

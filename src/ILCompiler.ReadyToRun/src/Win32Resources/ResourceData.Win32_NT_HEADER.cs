@@ -38,7 +38,7 @@ namespace ILCompiler.Win32Resources
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        struct IMAGE_OPTIONAL_HEADER32
+        private struct IMAGE_OPTIONAL_HEADER32
         {
             public ushort Magic;
             public byte MajorLinkerVersion;
@@ -79,7 +79,7 @@ namespace ILCompiler.Win32Resources
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        struct IMAGE_OPTIONAL_HEADER64
+        private struct IMAGE_OPTIONAL_HEADER64
         {
             public ushort Magic;
             public byte MajorLinkerVersion;
@@ -114,7 +114,7 @@ namespace ILCompiler.Win32Resources
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        struct IMAGE_NT_HEADERS64 : I_NT_HEADER_TYPE
+        private struct IMAGE_NT_HEADERS64 : I_NT_HEADER_TYPE
         {
             public uint Signature;
             public IMAGE_FILE_HEADER FileHeader;
@@ -172,7 +172,7 @@ namespace ILCompiler.Win32Resources
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        struct IMAGE_NT_HEADERS32 : I_NT_HEADER_TYPE
+        private struct IMAGE_NT_HEADERS32 : I_NT_HEADER_TYPE
         {
             public uint Signature;
             public IMAGE_FILE_HEADER FileHeader;

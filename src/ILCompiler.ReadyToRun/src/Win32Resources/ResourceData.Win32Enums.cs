@@ -41,13 +41,13 @@ namespace ILCompiler.Win32Resources
         private const uint IMAGE_NT_SIGNATURE = 0x00004550;
         private const ushort IMAGE_DOS_SIGNATURE = 0x5A4D;
 
-        enum IMAGE_FILE : uint
+        private enum IMAGE_FILE : uint
         {
             EXECUTABLE_IMAGE = 0x0002, // File is executable  (i.e. no unresolved external references).
             DLL = 0x2000  // File is a DLL.
         }
 
-        enum IMAGE_NT_OPTIONAL_HDR : uint
+        private enum IMAGE_NT_OPTIONAL_HDR : uint
         {
             _32_MAGIC = 0x10b,
             _64_MAGIC = 0x20b,

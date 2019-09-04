@@ -95,12 +95,12 @@ namespace ILCompiler.Win32Resources
 
             public uint OffsetToData;
             public uint Size;
-            uint CodePage;
-            uint Reserved;
+            private uint CodePage;
+            private uint Reserved;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        struct IMAGE_FILE_HEADER
+        private struct IMAGE_FILE_HEADER
         {
             public ushort Machine;
             public ushort NumberOfSections;
@@ -112,7 +112,7 @@ namespace ILCompiler.Win32Resources
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        struct IMAGE_DOS_HEADER
+        private struct IMAGE_DOS_HEADER
         {
             public unsafe void Read(Mu f)
             {
@@ -124,23 +124,23 @@ namespace ILCompiler.Win32Resources
             }
 
             public ushort e_magic;                     // Magic number
-            ushort e_cblp;                      // Bytes on last page of file
-            ushort e_cp;                        // Pages in file
-            ushort e_crlc;                      // Relocations
-            ushort e_cparhdr;                   // Size of header in paragraphs
-            ushort e_minalloc;                  // Minimum extra paragraphs needed
-            ushort e_maxalloc;                  // Maximum extra paragraphs needed
-            ushort e_ss;                        // Initial (relative) SS value
-            ushort e_sp;                        // Initial SP value
-            ushort e_csum;                      // Checksum
-            ushort e_ip;                        // Initial IP value
-            ushort e_cs;                        // Initial (relative) CS value
-            ushort e_lfarlc;                    // File address of relocation table
-            ushort e_ovno;                      // Overlay number
-            unsafe fixed ushort e_res[4];                    // Reserved words
-            ushort e_oemid;                     // OEM identifier (for e_oeminfo)
-            ushort e_oeminfo;                   // OEM information; e_oemid specific
-            unsafe fixed ushort e_res2[10];                  // Reserved words
+            private ushort e_cblp;                      // Bytes on last page of file
+            private ushort e_cp;                        // Pages in file
+            private ushort e_crlc;                      // Relocations
+            private ushort e_cparhdr;                   // Size of header in paragraphs
+            private ushort e_minalloc;                  // Minimum extra paragraphs needed
+            private ushort e_maxalloc;                  // Maximum extra paragraphs needed
+            private ushort e_ss;                        // Initial (relative) SS value
+            private ushort e_sp;                        // Initial SP value
+            private ushort e_csum;                      // Checksum
+            private ushort e_ip;                        // Initial IP value
+            private ushort e_cs;                        // Initial (relative) CS value
+            private ushort e_lfarlc;                    // File address of relocation table
+            private ushort e_ovno;                      // Overlay number
+            private unsafe fixed ushort e_res[4];                    // Reserved words
+            private ushort e_oemid;                     // OEM identifier (for e_oeminfo)
+            private ushort e_oeminfo;                   // OEM information; e_oemid specific
+            private unsafe fixed ushort e_res2[10];                  // Reserved words
             public int e_lfanew;                    // File address of new exe header
         }
 

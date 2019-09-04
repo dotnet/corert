@@ -17,7 +17,7 @@ using ILCompiler.Win32Resources;
 
 namespace ILCompiler.IBC
 {
-    class IBCProfileParser
+    internal class IBCProfileParser
     {
         public IBCProfileParser(Logger logger)
         {
@@ -38,14 +38,12 @@ namespace ILCompiler.IBC
 
             var reader = new IBCDataReader();
             int pos = 0;
-            bool minified;
             bool basicBlocksOnly = false;
-            var parsedData = reader.Read(ibcDataSection, ref pos, out minified);
+            AssemblyData parsedData = reader.Read(ibcDataSection, ref pos, out bool minified);
             if (parsedData.FormatMajorVersion == 1)
                 throw new Exception("Unsupported V1 IBC Format");
 
-            HashSet<uint> ignoredIbcMethodSpecTokens;
-            var blobs = GetIBCBlobs(parsedData.BlobStream, out ignoredIbcMethodSpecTokens);
+            Dictionary<IBCBlobKey, BlobEntry> blobs = GetIBCBlobs(parsedData.BlobStream, out HashSet<uint> ignoredIbcMethodSpecTokens);
 
             List<MethodProfileData> methodProfileData = new List<MethodProfileData>();
 
@@ -54,8 +52,7 @@ namespace ILCompiler.IBC
             IBCData.SectionIteratorKind iteratorKind = basicBlocksOnly ? IBCData.SectionIteratorKind.BasicBlocks : IBCData.SectionIteratorKind.TokenFlags;
             foreach (SectionFormat section in IBCData.SectionIterator(iteratorKind))
             {
-                List<TokenData> TokenList;
-                if (!parsedData.Tokens.TryGetValue(section, out TokenList) ||
+                if (!parsedData.Tokens.TryGetValue(section, out List<TokenData> TokenList) ||
                     TokenList.Count == 0)
                 {
                     continue;
@@ -69,7 +66,7 @@ namespace ILCompiler.IBC
 
                 const uint scenarioMaskIfMissing = 1u;
 
-                foreach (var entry in TokenList)
+                foreach (TokenData entry in TokenList)
                 {
                     //
                     // Discard any token list entries which refer to the ParamMethodSpec blob stream entries
@@ -110,8 +107,7 @@ namespace ILCompiler.IBC
 
                         case CorTokenType.ibcMethodSpec:
                             {
-                                BlobEntry blobEntry;
-                                if (!blobs.TryGetValue(new IBCBlobKey(entry.Token, BlobType.ParamMethodSpec), out blobEntry))
+                                if (!blobs.TryGetValue(new IBCBlobKey(entry.Token, BlobType.ParamMethodSpec), out BlobEntry blobEntry))
                                     throw new Exception($"Missing blob entry for ibcMethodSpec {entry.Token:x}");
                                 BlobEntry.SignatureEntry paramSignatureEntry = blobEntry as BlobEntry.SignatureEntry;
                                 if (paramSignatureEntry == null)
@@ -172,7 +168,7 @@ namespace ILCompiler.IBC
 
             if (inputBlobs != null)
             {
-                foreach (var blob in inputBlobs)
+                foreach (BlobEntry blob in inputBlobs)
                 {
                     bool ignore = false;
 
@@ -268,54 +264,12 @@ namespace ILCompiler.IBC
             return blobs;
         }
 
-
-        /// <summary>
-        /// Initialize the moduleId and typeToken
-        /// </summary>
-        /// <returns>false on failure</returns>
-        public static bool InitializeModuleIdAndTypeToken(out ModuleId moduleId, out uint typeToken, BlobReader typeSig)
-        {
-
-            moduleId = ModuleId.CurrentModule;
-            typeToken = 0;
-
-            byte currentTypeSigByte = typeSig.ReadByte();
-
-            if (currentTypeSigByte == (byte)CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG)
-            {
-                // Get the external module index
-                uint index = (uint)typeSig.ReadCompressedInteger();
-                if (index == 0)
-                    return false;
-
-                // Get the new moduleId
-                // NOTE: The encoding of assembly token here only allows reference to the assemblies directly
-                //       referenced by the binary. They do not allow handling type forwarders or other complexity
-                moduleId = (ModuleId)(CorTokenType.mdtAssemblyRef + index);
-
-                currentTypeSigByte = typeSig.ReadByte();
-            }
-
-            if (currentTypeSigByte == (byte)CorElementType.ELEMENT_TYPE_GENERICINST)
-                currentTypeSigByte = typeSig.ReadByte();
-
-            if (currentTypeSigByte == (byte)CorElementType.ELEMENT_TYPE_CLASS ||
-                currentTypeSigByte == (byte)CorElementType.ELEMENT_TYPE_VALUETYPE)
-            {
-                typeToken = (uint)MetadataTokens.GetToken(typeSig.ReadTypeHandle());
-                if (moduleId != ModuleId.CurrentModule)
-                    typeToken = Cor.Macros.TokenFromRid(Cor.Macros.RidFromToken(typeToken), CorTokenType.ibcExternalType);
-            }
-
-            return true;
-        }
-
-        uint LookupIbcTypeToken(EcmaModule externalModule, uint ibcToken, Dictionary<IBCBlobKey, BlobEntry> blobs)
+        private uint LookupIbcTypeToken(EcmaModule externalModule, uint ibcToken, Dictionary<IBCBlobKey, BlobEntry> blobs)
         {
             var typeEntry = (BlobEntry.ExternalTypeEntry)blobs[new IBCBlobKey(ibcToken, BlobType.ExternalTypeDef)];
             string typeNamespace = null;
             string typeName = Encoding.UTF8.GetString(typeEntry.Name);
-            TypeDefinitionHandle enclosingType = default(TypeDefinitionHandle);
+            TypeDefinitionHandle enclosingType = default;
             if (!Cor.Macros.IsNilToken(typeEntry.NamespaceToken))
             {
                 if (!Cor.Macros.IsNilToken(typeEntry.NestedClassToken))
@@ -349,7 +303,7 @@ namespace ILCompiler.IBC
             else
             {
                 TypeDefinition nestedClassDefinition = externalModule.MetadataReader.GetTypeDefinition(enclosingType);
-                var stringComparer = externalModule.MetadataReader.StringComparer;
+                MetadataStringComparer stringComparer = externalModule.MetadataReader.StringComparer;
                 foreach (TypeDefinitionHandle tdNested in nestedClassDefinition.GetNestedTypes())
                 {
                     TypeDefinition candidateClassDefinition = externalModule.MetadataReader.GetTypeDefinition(tdNested);
@@ -363,7 +317,7 @@ namespace ILCompiler.IBC
             }
         }
 
-        uint LookupIbcMethodToken(MetadataType methodMetadataType, uint ibcToken, Dictionary<IBCBlobKey, BlobEntry> blobs)
+        private uint LookupIbcMethodToken(MetadataType methodMetadataType, uint ibcToken, Dictionary<IBCBlobKey, BlobEntry> blobs)
         {
             var methodEntry = (BlobEntry.ExternalMethodEntry)blobs[new IBCBlobKey(ibcToken, BlobType.ExternalMethodDef)];
             var signatureEntry = (BlobEntry.ExternalSignatureEntry)blobs[new IBCBlobKey(methodEntry.SignatureToken, BlobType.ExternalSignatureDef)];
@@ -385,7 +339,7 @@ namespace ILCompiler.IBC
                     if (method == null)
                         continue;
 
-                    var metadataReader = ecmaCandidateMethod.MetadataReader;
+                    MetadataReader metadataReader = ecmaCandidateMethod.MetadataReader;
                     BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetMethodDefinition(ecmaCandidateMethod.Handle).Signature);
 
                     // Compare for equality
@@ -410,7 +364,7 @@ namespace ILCompiler.IBC
         }
 
 
-        class IBCModule
+        private class IBCModule
         {
             public IBCModule(EcmaModule ecmaModule, Dictionary<IBCBlobKey, BlobEntry> blobs)
             {
@@ -420,11 +374,15 @@ namespace ILCompiler.IBC
 
             public readonly EcmaModule EcmaModule;
             public readonly Dictionary<IBCBlobKey, BlobEntry> Blobs;
-            public EcmaModule GetModuleFromIndex(int index) { throw new NotImplementedException(); } // Always returns null for non-version bubble local modules
+
+            public EcmaModule GetModuleFromIndex(int index)
+            {
+                return EcmaModule.GetObject(MetadataTokens.EntityHandle(((int)CorTokenType.mdtAssemblyRef) | index)) as EcmaModule;
+            }
         }
 
         // Load type from IBC ZapSig. Returns null for cases where the type is legally defined, but is not used in R2R image generation
-        TypeDesc GetSigTypeFromIBCZapSig(IBCModule ibcModule, EcmaModule ecmaModule, BlobReader sig)
+        private TypeDesc GetSigTypeFromIBCZapSig(IBCModule ibcModule, EcmaModule ecmaModule, BlobReader sig)
         {
             TypeSystemContext context = ibcModule.EcmaModule.Context;
 
@@ -540,7 +498,7 @@ namespace ILCompiler.IBC
             }
         }
 
-        static void SkipTypeInIBCZapSig(ref BlobReader sig)
+        private static void SkipTypeInIBCZapSig(ref BlobReader sig)
         {
             CorElementType typ = (CorElementType)sig.ReadByte();
             switch (typ)
@@ -575,7 +533,7 @@ namespace ILCompiler.IBC
                     throw new Exception("Attempt to parse ELEMENT_TYPE_VAR or ELEMENT_TYPE_MVAR in an IBC ZapSig");
 
                 case CorElementType.ELEMENT_TYPE_GENERICINST:
-                    CorElementType genericTyp = (CorElementType)sig.ReadByte();
+                    sig.ReadByte();
                     sig.ReadTypeHandle();
                     int numTypeArgs = sig.ReadCompressedInteger();
                     for (int i = 0; i < numTypeArgs; i++)
@@ -595,7 +553,7 @@ namespace ILCompiler.IBC
 
                 case CorElementType.ELEMENT_TYPE_ARRAY:
                     SkipTypeInIBCZapSig(ref sig);
-                    int rank = sig.ReadCompressedInteger();
+                    sig.ReadCompressedInteger(); // rank
                     int numSizes = sig.ReadCompressedInteger();
                     for (int i = 0; i < numSizes; i++)
                         sig.ReadCompressedInteger();
@@ -615,14 +573,13 @@ namespace ILCompiler.IBC
             }
         }
 
-        MetadataType LoadTypeFromIBCZapSig(IBCModule ibcModule, EcmaModule ecmaModule, CorElementType typ, ref BlobReader sig)
+        private MetadataType LoadTypeFromIBCZapSig(IBCModule ibcModule, EcmaModule ecmaModule, CorElementType typ, ref BlobReader sig)
         {
             switch (typ)
             {
                 case CorElementType.ELEMENT_TYPE_CLASS:
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
                     uint token = (uint)ecmaModule.MetadataReader.GetToken(sig.ReadTypeHandle());
-                    uint origToken = token;
                     if (ecmaModule != ibcModule.EcmaModule)
                     {
                         // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
@@ -653,18 +610,8 @@ namespace ILCompiler.IBC
             }
         }
 
-        MethodDesc GetSigMethodInstantiationFromIBCMethodSpec(IBCModule ibcModule, BlobReader sig)
+        private MethodDesc GetSigMethodInstantiationFromIBCMethodSpec(IBCModule ibcModule, BlobReader sig)
         {
-            ModuleId moduleId;
-            uint typeToken;
-            //
-            // Initialize moduleId and typeToken
-            // 
-            if (!InitializeModuleIdAndTypeToken(out moduleId, out typeToken, sig))
-            {
-                throw new Exception("Unable to process module id and type token");
-            }
-
             TypeDesc methodType = GetSigTypeFromIBCZapSig(ibcModule, ibcModule.EcmaModule, sig);
             SkipTypeInIBCZapSig(ref sig);
             uint flags = (uint)sig.ReadCompressedInteger();
@@ -696,11 +643,11 @@ namespace ILCompiler.IBC
                     }
                 }
 
-                var ecmaModuleOfMethod = ((EcmaType)methodMetadataType.GetTypeDefinition()).EcmaModule;
-                var ecmaMethod = ecmaModuleOfMethod.GetMethod(MetadataTokens.EntityHandle((int)methodToken));
-                var methodOnType = methodType.FindMethodOnTypeWithMatchingTypicalMethod(ecmaMethod);
+                EcmaModule ecmaModuleOfMethod = ((EcmaType)methodMetadataType.GetTypeDefinition()).EcmaModule;
+                MethodDesc ecmaMethod = ecmaModuleOfMethod.GetMethod(MetadataTokens.EntityHandle((int)methodToken));
+                MethodDesc methodOnType = methodType.FindMethodOnTypeWithMatchingTypicalMethod(ecmaMethod);
 
-                var methodFound = methodOnType;
+                MethodDesc methodFound = methodOnType;
                 if (Macros.IsInstantiationNeeded(flags))
                 {
                     int instantiationArgumentCount = methodOnType.Instantiation.Length;

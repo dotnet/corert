@@ -57,13 +57,15 @@ namespace ILCompiler
 
     public class EmptyProfileData : ProfileData
     {
-        public readonly static EmptyProfileData Singleton = new EmptyProfileData();
+        private static readonly EmptyProfileData s_singleton = new EmptyProfileData();
 
         private EmptyProfileData()
         {
         }
 
         public override bool PartialNGen => false;
+
+        public static EmptyProfileData Singleton => s_singleton;
 
         public override MethodProfileData GetMethodProfileData(MethodDesc m)
         {
@@ -84,12 +86,10 @@ namespace ILCompiler
 
     public class ProfileDataManager
     {
-        private readonly Logger _logger;
         private readonly IBCProfileParser _ibcParser;
 
         public ProfileDataManager(Logger logger)
         {
-            _logger = logger;
             _ibcParser = new IBCProfileParser(logger);
         }
 
@@ -99,17 +99,15 @@ namespace ILCompiler
         {
             lock (_profileData)
             {
-                ProfileData precomputedProfileData;
-                if (_profileData.TryGetValue(moduleDesc, out precomputedProfileData))
+                if (_profileData.TryGetValue(moduleDesc, out ProfileData precomputedProfileData))
                     return precomputedProfileData;
             }
-            
+
             ProfileData computedProfileData = ComputeDataForModuleDesc(moduleDesc);
 
             lock (_profileData)
             {
-                ProfileData precomputedProfileData;
-                if (_profileData.TryGetValue(moduleDesc, out precomputedProfileData))
+                if (_profileData.TryGetValue(moduleDesc, out ProfileData precomputedProfileData))
                     return precomputedProfileData;
 
                 _profileData.Add(moduleDesc, computedProfileData);
@@ -119,11 +117,10 @@ namespace ILCompiler
 
         private ProfileData ComputeDataForModuleDesc(ModuleDesc moduleDesc)
         {
-            EcmaModule ecmaModule = moduleDesc as EcmaModule;
-            if (ecmaModule == null)
+            if (!(moduleDesc is EcmaModule ecmaModule))
                 return EmptyProfileData.Singleton;
 
-            var profileData = _ibcParser.ParseIBCDataFromModule(ecmaModule);
+            ProfileData profileData = _ibcParser.ParseIBCDataFromModule(ecmaModule);
             if (profileData == null)
                 profileData = EmptyProfileData.Singleton;
 
