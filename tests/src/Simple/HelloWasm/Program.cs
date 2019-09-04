@@ -300,6 +300,8 @@ internal static class Program
             FailTest();
         }
 
+        TestSByteExtend();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -988,6 +990,23 @@ internal static class Program
         StartTest("Init struct with double field test");
         StructWithDouble strt = new StructWithDouble();
         EndTest(strt.DoubleField == 0d);
+    }
+
+    private static void TestSByteExtend()
+    {
+        StartTest("SByte extend");
+        sbyte s = -1;
+        int x = (int)s;
+        sbyte s2 = 1;
+        int x2 = (int)s2;
+        if (x == -1 && x2 == 1)
+        {
+            PassTest();
+        }
+        else
+        {
+            FailTest("Expected -1 and 1 but got " + x.ToString() + " and " + x2.ToString());
+        }
     }
 
     [DllImport("*")]

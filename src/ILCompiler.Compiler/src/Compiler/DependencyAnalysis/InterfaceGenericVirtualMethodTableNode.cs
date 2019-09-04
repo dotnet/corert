@@ -52,9 +52,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(callingMethod.OwningType.IsInterface);
 
-            if (!factory.MetadataManager.SupportsReflection)
-                return;
-
             // Compute the open method signatures
             MethodDesc openCallingMethod = callingMethod.GetTypicalMethodDefinition();
             MethodDesc openImplementationMethod = implementationMethod.GetTypicalMethodDefinition();

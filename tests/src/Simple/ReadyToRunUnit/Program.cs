@@ -9,6 +9,7 @@ using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 internal class ClassWithStatic
@@ -1139,6 +1140,21 @@ internal class Program
         return success;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static object ObjectGetTypeOnGenericParamTestWorker<T>(T t)
+    {
+        return t.GetType();
+    }
+
+    private static bool ObjectGetTypeOnGenericParamTest()
+    {
+        object returnedObject = ObjectGetTypeOnGenericParamTestWorker<int>(42);
+        if (returnedObject == null) return false;
+        if (!(returnedObject is Type)) return false;
+        if (!Object.ReferenceEquals(returnedObject, typeof(int))) return false;
+        return true;
+    }
+
     private static string EmitTextFileForTesting()
     {
         string file = Path.GetTempFileName();
@@ -1202,6 +1218,7 @@ internal class Program
         RunTest("VirtualDelegateLoadTest", VirtualDelegateLoadTest());
         RunTest("GVMTest", GVMTest());
         RunTest("RuntimeMethodHandle", RuntimeMethodHandle());
+        RunTest("ObjectGetTypeOnGenericParamTest", ObjectGetTypeOnGenericParamTest());
 
         File.Delete(TextFileName);
 

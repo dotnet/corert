@@ -62,25 +62,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, method);
 
-            if (method.HasInstantiation)
-            {
-                ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
-                GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
-            }
-            else
-            {
-                TypeDesc owningTemplateType = method.OwningType;
-
-                // Unboxing and Instantiating stubs use a different type as their template
-                if (factory.TypeSystemContext.IsSpecialUnboxingThunk(method))
-                    owningTemplateType = factory.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(method).OwningType;
-
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningTemplateType);
-            }
-
             factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
 
-            if (method.IsIntrinsic && factory.MetadataManager.SupportsReflection)
+            if (method.IsIntrinsic)
             {
                 if (method.OwningType is MetadataType owningType)
                 {
