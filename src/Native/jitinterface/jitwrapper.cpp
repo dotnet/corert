@@ -37,7 +37,7 @@ static const GUID JITEEVersionIdentifier = { /* d609bed1-7831-49fc-bd49-b6f054dd
 class Jit
 {
 public:
-    virtual int __stdcall compileMethod(
+    virtual int STDMETHODCALLTYPE compileMethod(
         void* compHnd,
         void* methodInfo,
         unsigned flags,
