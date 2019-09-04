@@ -1720,7 +1720,7 @@ namespace Internal.JitInterface
                 return HRESULT.E_NOTIMPL;
             }
 
-            if (!_jitConfig.IsModuleInstrumented(ecmaMethod.Module))
+            if (!_compilation.IsModuleInstrumented(ecmaMethod.Module))
             {
                 pBlockCounts = null;
                 return HRESULT.E_NOTIMPL;

@@ -16,7 +16,7 @@ namespace ILCompiler.IBC
 
     public static class IBCData
     {
-        static public SectionTypeInfo[] sectionTypeInfo;
+        private static readonly SectionTypeInfo[] s_sectionTypeInfo;
 
         // Methods and types for managing the various stream types
 
@@ -30,13 +30,13 @@ namespace ILCompiler.IBC
 
         public struct SectionTypeInfo
         {
-            public TokenType tokenType;
-            public string description;
+            public readonly TokenType TokenType;
+            public readonly string Description;
 
             public SectionTypeInfo(TokenType tokenType, SectionFormat section)
             {
-                this.tokenType = tokenType;
-                this.description = section.ToString();
+                this.TokenType = tokenType;
+                this.Description = section.ToString();
             }
         }
 
@@ -47,11 +47,11 @@ namespace ILCompiler.IBC
         {
             TokenType tokenType;
 
-            sectionTypeInfo = new SectionTypeInfo[(int)SectionFormat.SectionFormatCount];
+            s_sectionTypeInfo = new SectionTypeInfo[(int)SectionFormat.SectionFormatCount];
 
             tokenType = TokenType.TokenTypeOther;
-            sectionTypeInfo[(int)SectionFormat.BasicBlockInfo] = new SectionTypeInfo(tokenType, SectionFormat.BasicBlockInfo);
-            sectionTypeInfo[(int)SectionFormat.BlobStream] = new SectionTypeInfo(tokenType, SectionFormat.BlobStream);
+            s_sectionTypeInfo[(int)SectionFormat.BasicBlockInfo] = new SectionTypeInfo(tokenType, SectionFormat.BasicBlockInfo);
+            s_sectionTypeInfo[(int)SectionFormat.BlobStream] = new SectionTypeInfo(tokenType, SectionFormat.BlobStream);
 
             for (SectionFormat section = 0; section < SectionFormat.SectionFormatCount; section++)
             {
@@ -82,13 +82,13 @@ namespace ILCompiler.IBC
                         break;
                 }
 
-                sectionTypeInfo[(int)section] = new SectionTypeInfo(tokenType, section);
+                s_sectionTypeInfo[(int)section] = new SectionTypeInfo(tokenType, section);
             }
         }
 
         static public bool IsTokenList(SectionFormat sectionType)
         {
-            return (sectionTypeInfo[(int)sectionType].tokenType != TokenType.TokenTypeOther);
+            return (s_sectionTypeInfo[(int)sectionType].TokenType != TokenType.TokenTypeOther);
         }
 
         public enum SectionIteratorKind : int

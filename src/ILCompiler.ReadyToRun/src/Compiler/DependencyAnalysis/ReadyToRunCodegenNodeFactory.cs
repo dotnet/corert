@@ -451,10 +451,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_ibcTuning)
             {
                 ProfileDataSection = new ProfileDataSectionNode();
-                // Don't add to root and R2R Header here, as if we don't actually compile any methods, we cannot have this section
-                // We need to have at least one ProfileDataNode in order to support creating this section
-                // However, we create the section node itself so that ProfileDataNode's can find it, and as an indicator to the 
-                // rest of the compiler that IBC tuning should be enabled.
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.ProfileDataInfo, ProfileDataSection, ProfileDataSection.StartSymbol);
             }
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);

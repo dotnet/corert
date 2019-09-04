@@ -13,11 +13,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
         }
 
-        protected override void OnMarked(NodeFactory context)
-        {
-            ((ReadyToRunCodegenNodeFactory)context).Header.Add(Internal.Runtime.ReadyToRunSectionType.ProfileDataInfo, this, StartSymbol);
-        }
-
         public override int ClassCode => 576050264;
 
         public override ObjectNodeSection Section => ObjectNodeSection.DataSection;

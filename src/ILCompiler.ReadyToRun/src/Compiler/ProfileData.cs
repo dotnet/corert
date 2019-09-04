@@ -4,21 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 
-using ILCompiler.DependencyAnalysis;
-using ILCompiler.DependencyAnalysis.ReadyToRun;
-using ILCompiler.DependencyAnalysisFramework;
-using ILCompiler.Win32Resources;
 using ILCompiler.IBC;
-using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -94,8 +84,8 @@ namespace ILCompiler
 
     public class ProfileDataManager
     {
-        private Logger _logger;
-        private IBCProfileParser _ibcParser;
+        private readonly Logger _logger;
+        private readonly IBCProfileParser _ibcParser;
 
         public ProfileDataManager(Logger logger)
         {
@@ -103,7 +93,7 @@ namespace ILCompiler
             _ibcParser = new IBCProfileParser(logger);
         }
 
-        private Dictionary<ModuleDesc, ProfileData> _profileData = new Dictionary<ModuleDesc, ProfileData>();
+        private readonly Dictionary<ModuleDesc, ProfileData> _profileData = new Dictionary<ModuleDesc, ProfileData>();
 
         public ProfileData GetDataForModuleDesc(ModuleDesc moduleDesc)
         {

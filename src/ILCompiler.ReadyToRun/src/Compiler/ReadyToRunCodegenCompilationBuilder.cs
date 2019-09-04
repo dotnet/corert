@@ -118,7 +118,7 @@ namespace ILCompiler
 
             corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PROF_REJIT_NOPS);
 
-            var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions, new ModuleDesc[] { _inputModule });
+            var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions);
 
             return new ReadyToRunCodegenCompilation(
                 graph,
@@ -128,7 +128,8 @@ namespace ILCompiler
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
                 jitConfig,
-                _inputFilePath);
+                _inputFilePath,
+                new ModuleDesc[] { _inputModule });
         }
     }
 }

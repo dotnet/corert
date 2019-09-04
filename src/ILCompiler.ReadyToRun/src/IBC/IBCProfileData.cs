@@ -24,7 +24,6 @@ namespace ILCompiler.IBC
         }
 
         private Dictionary<MethodDesc, MethodProfileData> _methodData = new Dictionary<MethodDesc, MethodProfileData>();
-        private IEnumerable<MethodProfileData> _methodDataList;
         private bool _partialNGen;
 
         public override bool PartialNGen { get { return _partialNGen; } }

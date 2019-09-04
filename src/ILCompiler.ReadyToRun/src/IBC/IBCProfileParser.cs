@@ -398,6 +398,7 @@ namespace ILCompiler.IBC
                     }
 
                     // TODO, consider implementing the fuzzy matching that CrossGen implements
+                    // It will be necessary for handling version tolerant ibc parsing of generics
 
                     // Exact match
                     return (uint)MetadataTokens.GetToken(ecmaCandidateMethod.Handle);
