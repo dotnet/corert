@@ -47,7 +47,6 @@ namespace Internal.TypeSystem
         GenericParameter        = 0x1C,
         SignatureTypeVariable   = 0x1D,
         SignatureMethodVariable = 0x1E,
-        MaxCategory             = 0x1F,
 
         HasGenericVariance         = 0x100,
         HasGenericVarianceComputed = 0x200,
