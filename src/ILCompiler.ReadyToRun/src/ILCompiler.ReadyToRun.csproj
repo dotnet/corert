@@ -155,9 +155,9 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
-    <Compile Include="IBC\ibcdatamodel.cs" />
-    <Compile Include="IBC\ibcdatareader.cs" />
-    <Compile Include="IBC\ibcextensions.cs" />
+    <Compile Include="IBC\IBCDataModel_.cs" />
+    <Compile Include="IBC\IBCDataReader_.cs" />
+    <Compile Include="IBC\ReaderExtensions.cs" />
     <Compile Include="Compiler\ProfileData.cs" />
     <Compile Include="Compiler\ReadyToRunHashCode.cs" />
     <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />

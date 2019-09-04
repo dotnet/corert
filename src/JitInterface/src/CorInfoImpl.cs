@@ -351,6 +351,10 @@ namespace Internal.JitInterface
             _debugLocInfos = null;
             _debugVarInfos = null;
             _lastException = null;
+
+#if READYTORUN
+            _profileDataNode = null;
+#endif
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();

@@ -151,7 +151,6 @@ namespace Internal.JitInterface
         public void CompileMethod(IReadyToRunMethodCodeNode methodCodeNodeNeedingCode)
         {
             _methodCodeNode = methodCodeNodeNeedingCode;
-            _profileDataNode = null;
 
             CompileMethodInternal(methodCodeNodeNeedingCode);
         }
@@ -1680,9 +1679,7 @@ namespace Internal.JitInterface
         {
             if (_profileDataNode != null)
             {
-                CORINFO_METHOD_INFO methodInfo;
-                var methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, null, &methodInfo);
-
+                MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
                 _profileDataNode.SetProfileData(methodIL.GetILBytes().Length, _bbCounts.Length / sizeof(BlockCounts), _bbCounts);
             }
         }

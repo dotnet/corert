@@ -59,19 +59,15 @@ namespace ILCompiler
 
     public abstract class ProfileData
     {
-        public ProfileData()
-        {
-        }
-
         public abstract bool PartialNGen { get; }
         public abstract MethodProfileData GetMethodProfileData(MethodDesc m);
-        public abstract IReadOnlyList<MethodProfileData> GetAllMethodProfileData();
+        public abstract IEnumerable<MethodProfileData> GetAllMethodProfileData();
         public abstract byte[] GetMethodBlockCount(MethodDesc m);
     }
 
     public class EmptyProfileData : ProfileData
     {
-        public static EmptyProfileData Singleton = new EmptyProfileData();
+        public readonly static EmptyProfileData Singleton = new EmptyProfileData();
 
         private EmptyProfileData()
         {
@@ -84,7 +80,7 @@ namespace ILCompiler
             return null;
         }
 
-        public override IReadOnlyList<MethodProfileData> GetAllMethodProfileData()
+        public override IEnumerable<MethodProfileData> GetAllMethodProfileData()
         {
             return Array.Empty<MethodProfileData>();
         }
@@ -98,12 +94,12 @@ namespace ILCompiler
 
     public class ProfileDataManager
     {
-        private Logger Logger;
+        private Logger _logger;
         private IBCProfileParser _ibcParser;
 
         public ProfileDataManager(Logger logger)
         {
-            Logger = logger;
+            _logger = logger;
             _ibcParser = new IBCProfileParser(logger);
         }
 
@@ -111,12 +107,21 @@ namespace ILCompiler
 
         public ProfileData GetDataForModuleDesc(ModuleDesc moduleDesc)
         {
-            lock(_profileData)
+            lock (_profileData)
             {
-                ProfileData computedProfileData;
-                if (_profileData.TryGetValue(moduleDesc, out computedProfileData))
-                    return computedProfileData;
-                computedProfileData = ComputeDataForModuleDesc(moduleDesc);
+                ProfileData precomputedProfileData;
+                if (_profileData.TryGetValue(moduleDesc, out precomputedProfileData))
+                    return precomputedProfileData;
+            }
+            
+            ProfileData computedProfileData = ComputeDataForModuleDesc(moduleDesc);
+
+            lock (_profileData)
+            {
+                ProfileData precomputedProfileData;
+                if (_profileData.TryGetValue(moduleDesc, out precomputedProfileData))
+                    return precomputedProfileData;
+
                 _profileData.Add(moduleDesc, computedProfileData);
                 return computedProfileData;
             }

@@ -4,12 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.Reflection.Metadata.Ecma335;
+
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -95,11 +95,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             EcmaMethod ecmaMethod = (EcmaMethod)_methodNode.Method.GetTypicalMethodDefinition();
-            dataBuilder.EmitInt(_profileData.Length + 5 * sizeof(int)); // CORBBTPROF_METHOD_HEADER::size
+            int startOffset = dataBuilder.CountBytes;
+            var reservation = dataBuilder.ReserveInt();
+
             dataBuilder.EmitInt(0); // CORBBTPROF_METHOD_HEADER::cDetail
             dataBuilder.EmitInt(ecmaMethod.MetadataReader.GetToken(ecmaMethod.Handle)); // CORBBT_METHOD_INFO::token
             dataBuilder.EmitInt(_ilSize); // CORBBT_METHOD_INFO::ILSize
             dataBuilder.EmitInt(_blockCount); // CORBBT_METHOD_INFO::cBlock
+            int sizeOfCORBBTPROF_METHOD_HEADER = dataBuilder.CountBytes - startOffset;
+
+            Debug.Assert(sizeOfCORBBTPROF_METHOD_HEADER == (OffsetFromStartOfObjectToSymbol - _targetDetails.PointerSize));
+            dataBuilder.EmitInt(reservation, sizeOfCORBBTPROF_METHOD_HEADER + _profileData.Length);
+
             dataBuilder.EmitBytes(_profileData);
 
             while ((dataBuilder.CountBytes & (dataBuilder.TargetPointerSize - 1)) != 0)

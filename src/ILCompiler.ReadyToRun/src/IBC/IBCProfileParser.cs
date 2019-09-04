@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
@@ -8,6 +12,7 @@ using System.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.Win32Resources;
 
 namespace ILCompiler.IBC
@@ -16,10 +21,10 @@ namespace ILCompiler.IBC
     {
         public IBCProfileParser(Logger logger)
         {
-            Logger = logger;
+            _logger = logger;
         }
 
-        private readonly Logger Logger;
+        private readonly Logger _logger;
 
         public ProfileData ParseIBCDataFromModule(EcmaModule ecmaModule)
         {
@@ -57,14 +62,12 @@ namespace ILCompiler.IBC
                 }
 
                 // In V1 and minified V3+ files, tokens aren't stored with a
-                // scenario mask. In the former case, the scenario mask should
-                // be treated as 0 (unprocessed) so that the appropriate flags
-                // will be set. In the latter case, it can be treated as
+                // scenario mask. In minified V3+ files, it can be treated as
                 // anything nonzero--minified files make no guarantee about
                 // preserving scenario information, but the flags must be left
                 // alone.
 
-                uint scenarioMaskIfMissing = (parsedData.FormatMajorVersion == 1) ? 0u : 1u;
+                const uint scenarioMaskIfMissing = 1u;
 
                 foreach (var entry in TokenList)
                 {
@@ -104,28 +107,6 @@ namespace ILCompiler.IBC
                         case CorTokenType.mdtMethodSpec:
                             associatedMethod = ecmaModule.GetMethod(System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle((int)entry.Token));
                             break;
-
-                        /*                        case CorTokenType.ibcExternalMethod:
-                                                    {
-                                                        BlobEntry blobEntry;
-                                                        if (!blobs.TryGetValue(new IBCBlobKey(entry.Token, BlobType.ExternalMethodDef), out blobEntry))
-                                                            throw new Exception($"Missing blob entry for ibcExternalMethod {entry.Token:x}");
-                                                        BlobEntry.ExternalMethodEntry externalMethodEntry = blobEntry as BlobEntry.ExternalMethodEntry;
-                                                        BlobEntry.ExternalTypeEntry extType;
-                                                        extType.
-                                                        externalMethodEntry.
-                                                        if (externalMethodEntry == null)
-                                                            throw new Exception($"Blob entry for {entry.Token:x} is invalid");
-                                                        unsafe
-                                                        {
-                                                            fixed (byte* pb = &externalMethodEntry.Signature[0])
-                                                            {
-                                                                BlobReader br = new BlobReader(pb, externalMethodEntry.Signature.Length);
-                                                                associatedMethod = GetSigMethodInstantiationFromIBCMethodSpec(ibcModule, br);
-                                                            }
-                                                        }
-                                                    }
-                                                break;*/
 
                         case CorTokenType.ibcMethodSpec:
                             {
@@ -203,11 +184,7 @@ namespace ILCompiler.IBC
                             if ((Cor.Macros.TypeFromToken(blob.Token) == CorTokenType.ibcTypeSpec) ||
                                 (Cor.Macros.TypeFromToken(blob.Token) == CorTokenType.ibcMethodSpec))
                             {
-                                if (blob.Type == BlobType.ParamTypeSpec)
-                                {
-                                    //                                    UTILS.CheckAndSetHighest(ref result.highestIbcTypeSpecToken, blob.Token);
-                                }
-                                else
+                                if (blob.Type == BlobType.ParamMethodSpec)
                                 {
                                     //
                                     // In the ParamMethodSpec case, the full signature was always originally encoded by
@@ -253,15 +230,10 @@ namespace ILCompiler.IBC
                                         }
                                     }
 
-                                    if (owningTypeSignatureAppearsToBeEncodedInStandardForm)
-                                    {
-                                        //                                        UTILS.CheckAndSetHighest(ref result.highestIbcMethodSpecToken, blob.Token);
-                                    }
-                                    else
+                                    if (!owningTypeSignatureAppearsToBeEncodedInStandardForm)
                                     {
                                         ignoredIbcMethodSpecTokens.Add(blob.Token);
                                         ignore = true;
-                                        //                                        UTILS.Info(String.Format("Ignoring ParamMethodSpec due to non-standard owning type signature: 0x{0:x8}", blob.Token));
                                     }
                                 }
                             }
@@ -273,19 +245,9 @@ namespace ILCompiler.IBC
                             break;
 
                         case BlobType.ExternalNamespaceDef:
-                            //                            UTILS.CheckAndSetHighest(ref result.highestExternalNamespaceToken, blob.Token);
-                            break;
-
                         case BlobType.ExternalTypeDef:
-                            //                            UTILS.CheckAndSetHighest(ref result.highestExternalTypeToken, blob.Token);
-                            break;
-
                         case BlobType.ExternalSignatureDef:
-                            //                            UTILS.CheckAndSetHighest(ref result.highestExternalSignatureToken, blob.Token);
-                            break;
-
                         case BlobType.ExternalMethodDef:
-                            //                            UTILS.CheckAndSetHighest(ref result.highestExternalMethodToken, blob.Token);
                             break;
 
                         case BlobType.MetadataStringPool:
@@ -327,6 +289,8 @@ namespace ILCompiler.IBC
                     return false;
 
                 // Get the new moduleId
+                // NOTE: The encoding of assembly token here only allows reference to the assemblies directly
+                //       referenced by the binary. They do not allow handling type forwarders or other complexity
                 moduleId = (ModuleId)(CorTokenType.mdtAssemblyRef + index);
 
                 currentTypeSigByte = typeSig.ReadByte();
@@ -440,7 +404,7 @@ namespace ILCompiler.IBC
                 }
             }
 
-            Logger.Writer.WriteLine("Warning: Unable to find exact match for candidate external method");
+            _logger.Writer.WriteLine("Warning: Unable to find exact match for candidate external method");
             return 0;
         }
 
@@ -498,10 +462,6 @@ namespace ILCompiler.IBC
                     return context.GetWellKnownType(WellKnownType.Object);
                 case CorElementType.ELEMENT_TYPE_TYPEDBYREF:
                     return context.GetWellKnownType(WellKnownType.TypedReference);
-                case CorElementType.ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
-                    throw new Exception("Attempt to parse ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG"); // These shouldn't ever appear in type definition signatures
-                case CorElementType.ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
-                    return null; // Native valuetypes are not part of the R2R file format
                 case CorElementType.ELEMENT_TYPE_CANON_ZAPSIG:
                     if (!context.SupportsCanon)
                         return null;
@@ -511,9 +471,6 @@ namespace ILCompiler.IBC
                     // If null, then the remote reference is not permitted.
                     EcmaModule remoteModule = ibcModule.GetModuleFromIndex(sig.ReadCompressedInteger());
                     return GetSigTypeFromIBCZapSig(ibcModule, remoteModule, sig);
-                case CorElementType.ELEMENT_TYPE_VAR_ZAPSIG:
-                    // VAR_ZAPSIG is not supported in IBC ZapSigs
-                    throw new Exception("Attempt to parse ELEMENT_TYPE_VAR_ZAPSIG in an IBC ZapSig");
 
                 case CorElementType.ELEMENT_TYPE_VAR:
                 case CorElementType.ELEMENT_TYPE_MVAR:
@@ -605,21 +562,12 @@ namespace ILCompiler.IBC
                 case CorElementType.ELEMENT_TYPE_TYPEDBYREF:
                     return;
 
-                case CorElementType.ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
-                    throw new Exception("Attempt to parse ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG"); // These shouldn't ever appear in type definition signatures
-                case CorElementType.ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
-                    SkipTypeInIBCZapSig(ref sig);
-                    return;
                 case CorElementType.ELEMENT_TYPE_CANON_ZAPSIG:
                     return;
                 case CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG:
                     sig.ReadCompressedInteger();
                     SkipTypeInIBCZapSig(ref sig);
                     return;
-                case CorElementType.ELEMENT_TYPE_VAR_ZAPSIG:
-                    // VAR_ZAPSIG is not supported in IBC ZapSigs
-                    throw new Exception("Attempt to parse ELEMENT_TYPE_VAR_ZAPSIG in an IBC ZapSig");
-
                 case CorElementType.ELEMENT_TYPE_VAR:
                 case CorElementType.ELEMENT_TYPE_MVAR:
                     // VAR/MVAR can never appear in a ZapSig
@@ -722,7 +670,7 @@ namespace ILCompiler.IBC
             if (Macros.IsSlotUsedInsteadOfToken(flags))
             {
                 int slot = sig.ReadCompressedInteger();
-                Logger.Writer.WriteLine($"Warning: IBC Data for `{methodType}` with slot '{slot}' was ignored");
+                _logger.Writer.WriteLine($"Warning: IBC Data for `{methodType}` with slot '{slot}' was ignored");
                 return null; // Unsupported case thought to be used only for array methods, which don't really matter for R2R codegen
             }
             else
@@ -742,7 +690,7 @@ namespace ILCompiler.IBC
                     methodToken = LookupIbcMethodToken(methodMetadataType, ibcToken, ibcModule.Blobs);
                     if (Cor.Macros.RidFromToken(methodToken) == 0)
                     {
-                        Logger.Writer.WriteLine($"Warning: External Method Token {ibcToken:x} on '{methodMetadataType}' could not be found.");
+                        _logger.Writer.WriteLine($"Warning: External Method Token {ibcToken:x} on '{methodMetadataType}' could not be found.");
                         return null;
                     }
                 }
@@ -768,13 +716,13 @@ namespace ILCompiler.IBC
 
                 if (Macros.IsUnboxingStub(flags))
                 {
-                    Logger.Writer.WriteLine($"Warning: Skipping IBC data for unboxing stub {methodFound}");
+                    _logger.Writer.WriteLine($"Warning: Skipping IBC data for unboxing stub {methodFound}");
                     return null;
                 }
 
                 if (Macros.IsInstantiatingStub(flags))
                 {
-                    Logger.Writer.WriteLine($"Warning: Skipping IBC data for instantiating stub {methodFound}");
+                    _logger.Writer.WriteLine($"Warning: Skipping IBC data for instantiating stub {methodFound}");
                     return null;
                 }
 
