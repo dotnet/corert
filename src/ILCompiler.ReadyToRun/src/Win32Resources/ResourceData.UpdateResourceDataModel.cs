@@ -137,8 +137,8 @@ namespace ILCompiler.Win32Resources
                     }
                     else
                     {
-                        // Update item
-                        throw new Exception(); // We can only reach here if the file is inconsistent.
+                        // Resource file has two copies of same resource... ignore second copy
+                        return;
                     }
                 }
                 else
