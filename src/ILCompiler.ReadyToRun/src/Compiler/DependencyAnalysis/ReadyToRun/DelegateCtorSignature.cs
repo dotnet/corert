@@ -50,6 +50,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 builder.EmitMethodSignature(
                     new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null),
                     enforceDefEncoding: false,
+                    enforceOwningType: false,
                     innerContext,
                     isUnboxingStub: false,
                     isInstantiatingStub: false);

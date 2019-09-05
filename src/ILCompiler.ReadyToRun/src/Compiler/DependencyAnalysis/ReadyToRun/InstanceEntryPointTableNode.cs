@@ -53,17 +53,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(method);
 
+                    bool enforceOwningType = false;
                     ModuleToken moduleToken = method.SignatureContext.GetModuleTokenForMethod(method.Method.GetTypicalMethodDefinition());
                     if (moduleToken.Module != r2rFactory.InputModuleContext.GlobalContext)
                     {
-                        // TODO: encoding of instance methods relative to other modules within the version bubble
-                        continue;
+                        enforceOwningType = true;
                     }
 
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                     signatureBuilder.EmitMethodSignature(
                         new MethodWithToken(method.Method, moduleToken, constrainedType: null),
                         enforceDefEncoding: true,
+                        enforceOwningType,
                         method.SignatureContext,
                         isUnboxingStub: false, 
                         isInstantiatingStub: false);

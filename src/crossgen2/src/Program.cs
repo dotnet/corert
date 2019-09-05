@@ -27,6 +27,7 @@ namespace ILCompiler
 
         private string _outputFilePath;
         private bool _isInputVersionBubble;
+        private bool _includeGenericsFromVersionBubble;
         private bool _isVerbose;
 
         private string _dgmlLogFileName;
@@ -125,6 +126,7 @@ namespace ILCompiler
                 syntax.DefineOption("Os", ref optimizeSpace, "Enable optimizations, favor code space");
                 syntax.DefineOption("Ot", ref optimizeTime, "Enable optimizations, favor code speed");
                 syntax.DefineOption("inputbubble", ref _isInputVersionBubble, "True when the entire input forms a version bubble (default = per-assembly bubble)");
+                syntax.DefineOption("compilebubblegenerics", ref _includeGenericsFromVersionBubble, "Compile instantiations from reference modules used in the current module");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
                 syntax.DefineOption("verbose", ref _isVerbose, "Enable verbose logging");
@@ -145,6 +147,15 @@ namespace ILCompiler
             {
                 Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
                 Console.ReadLine();
+            }
+
+            if (_includeGenericsFromVersionBubble)
+            {
+                if (!_isInputVersionBubble)
+                {
+                    Console.WriteLine("Warning: ignoring --compilebubblegenerics because --inputbubble was not specified");
+                    _includeGenericsFromVersionBubble = false;
+                }
             }
 
             _optimizationMode = OptimizationMode.None;
@@ -319,7 +330,7 @@ namespace ILCompiler
                 }
 
                 compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                    typeSystemContext, inputModules, versionBubbleModules);
+                    typeSystemContext, inputModules, versionBubbleModules, _includeGenericsFromVersionBubble);
             }
 
             //
