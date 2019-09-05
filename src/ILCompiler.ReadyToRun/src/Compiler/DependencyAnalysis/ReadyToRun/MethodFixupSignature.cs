@@ -84,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else
             {
-                dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
+                dataBuilder.EmitMethodSignature(_method, enforceDefEncoding: false, enforceOwningType: false, innerContext, _isUnboxingStub, _isInstantiatingStub);
             }
 
             return dataBuilder.ToObjectData();

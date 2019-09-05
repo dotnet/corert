@@ -114,6 +114,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.EmitMethodSignature(
                     _methodArgument,
                     enforceDefEncoding: false,
+                    enforceOwningType: false,
                     context: innerContext,
                     isUnboxingStub: false,
                     isInstantiatingStub: true);
