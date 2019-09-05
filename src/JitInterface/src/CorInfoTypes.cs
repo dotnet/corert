@@ -1179,11 +1179,30 @@ namespace Internal.JitInterface
         // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
-        SystemVClassificationTypeMAX = 7,
+
+        // Internal flags - never returned outside of the classification implementation.
+
+        // This value represents a very special type with two eightbytes. 
+        // First ByRef, second Integer (platform int).
+        // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
+        // This is the classification counterpart for that element type. It is used to detect 
+        // the special TypedReference type and specialize its classification.
+        // This type is represented as a struct with two fields. The classification needs to do
+        // special handling of it since the source/methadata type of the fieds is IntPtr. 
+        // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
+        // special handling is warranted (similar thing is done in the getGCLayout function for this type).
+        SystemVClassificationTypeTypedReference     = 8,
+        SystemVClassificationTypeMAX                = 9
     };
 
     public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     {
+        public const int CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS = 2;
+        public const int CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS = 16;
+
+        public const int SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES = 8; // Size of an eightbyte in bytes.
+        public const int SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT = 16; // Maximum number of fields in struct passed in registers
+
         public byte _passedInRegisters;
         // Whether the struct is passable/passed (this includes struct returning) in registers.
         public bool passedInRegisters { get { return _passedInRegisters != 0; } set { _passedInRegisters = value ? (byte)1 : (byte)0; } }

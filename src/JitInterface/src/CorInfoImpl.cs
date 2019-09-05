@@ -2532,31 +2532,13 @@ namespace Internal.JitInterface
         private byte* findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
         { throw new NotImplementedException("findNameOfToken"); }
 
+        SystemVStructClassificator _systemVStructClassificator = new SystemVStructClassificator();
+
         private bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
         {
-            TypeDesc type = HandleToObject(structHnd);
+            TypeDesc typeDesc = HandleToObject(structHnd);
 
-            if (type.IsValueType)
-            {
-                // TODO: actually implement
-                // https://github.com/dotnet/corert/issues/158
-                if (type.GetElementSize().AsInt <= 8)
-                {
-                    structPassInRegDescPtr->passedInRegisters = true;
-                    structPassInRegDescPtr->eightByteCount = 1;
-                    structPassInRegDescPtr->eightByteClassifications0 = SystemVClassificationType.SystemVClassificationTypeInteger;
-                    structPassInRegDescPtr->eightByteSizes0 = (byte)type.GetElementSize().AsInt;
-                    structPassInRegDescPtr->eightByteOffsets0 = 0;
-                }
-                else
-                    structPassInRegDescPtr->passedInRegisters = false;
-            }
-            else
-            {
-                structPassInRegDescPtr->passedInRegisters = false;
-            }
-
-            return true;
+            return _systemVStructClassificator.getSystemVAmd64PassStructInRegisterDescriptor(typeDesc, structPassInRegDescPtr);
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
