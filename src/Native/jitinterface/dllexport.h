@@ -16,12 +16,8 @@
 // ***
 // Define default call conventions
 // ***
-#if _X86_
-#ifdef PLATFORM_UNIX
-#define STDMETHODCALLTYPE  __attribute__((stdcall))
-#else
+#if _X86_ && !PLATFORM_UNIX
 #define STDMETHODCALLTYPE  __stdcall
-#endif // PLATFORM_UNIX
 #else
 #define STDMETHODCALLTYPE
-#endif // _X86_
+#endif // _X86_ && !PLATFORM_UNIX
