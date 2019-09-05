@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
@@ -293,7 +291,7 @@ namespace Internal.JitInterface
             // We do this check here to save looking up the FixedBufferAttribute when loading the field
             // from metadata.
             bool isFixedBuffer = numIntroducedFields == 1
-                                    && (firstFieldElementType.IsPrimitive || firstFieldElementType.IsValueType)
+                                    && firstFieldElementType.IsValueType
                                     && firstField.Offset.AsInt == 0
                                     && mdType.HasLayout()
                                     && ((typeDesc.GetElementSize().AsInt % firstFieldSize) == 0);
@@ -463,7 +461,7 @@ namespace Internal.JitInterface
         private static void AssignClassifiedEightByteTypes(ref SystemVStructRegisterPassingHelper helper)
         {
             const int CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS = CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS * SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
-            //static_assert_no_msg(CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS == SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
+            Debug.Assert(CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS == SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
 
             if (!helper.InEmbeddedStruct)
             {
@@ -473,7 +471,6 @@ namespace Internal.JitInterface
                 // We're at the top level of the recursion, and we're done looking at the fields.
                 // Now sort the fields by offset and set the output data.
 
-                //Span<int> sortedFieldOrder = stackalloc int[CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS];
                 int[] sortedFieldOrder = new int[CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS];
                 for (int i = 0; i < CLR_SYSTEMV_MAX_BYTES_TO_PASS_IN_REGISTERS; i++)
                 {
