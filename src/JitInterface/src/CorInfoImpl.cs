@@ -278,7 +278,10 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+            PublishProfileData();
         }
+
+        partial void PublishProfileData();
 
         private MethodDesc MethodBeingCompiled
         {
@@ -348,6 +351,10 @@ namespace Internal.JitInterface
             _debugLocInfos = null;
             _debugVarInfos = null;
             _lastException = null;
+
+#if READYTORUN
+            _profileDataNode = null;
+#endif
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -2718,6 +2725,7 @@ namespace Internal.JitInterface
         private byte[] _coldCode;
 
         private byte[] _roData;
+
         private BlobNode _roDataBlob;
 
         private int _numFrameInfos;
@@ -2831,11 +2839,6 @@ namespace Internal.JitInterface
             // CompileMethod is going to fail with this CorJitResult anyway.
         }
 
-        private HRESULT allocMethodBlockCounts(uint count, ref BlockCounts* pBlockCounts)
-        { throw new NotImplementedException("allocBBProfileBuffer"); }
-        private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
-        { throw new NotImplementedException("getBBProfileData"); }
-
         private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
         {
         }
@@ -2854,7 +2857,9 @@ namespace Internal.JitInterface
             /// <summary>Represent cold code (i.e. code not called frequently).</summary>
             ColdCode = 1,
             /// <summary>Read-only data.</summary>
-            ROData = 2
+            ROData = 2,
+            /// <summary>Instrumented Block Count Data</summary>
+            BBCounts = 3
         }
 
         private BlockType findKnownBlock(void* location, out int offset)
@@ -2892,9 +2897,19 @@ namespace Internal.JitInterface
                 }
             }
 
+            {
+                BlockType retBlockType = BlockType.Unknown;
+                offset = 0;
+                findKnownBBCountBlock(ref retBlockType, location, ref offset);
+                if (retBlockType == BlockType.BBCounts)
+                    return retBlockType;
+            }
+
             offset = 0;
             return BlockType.Unknown;
         }
+
+        partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
@@ -2931,6 +2946,12 @@ namespace Internal.JitInterface
                 case BlockType.ROData:
                     relocTarget = _roDataBlob;
                     break;
+
+#if READYTORUN
+                case BlockType.BBCounts:
+                    relocTarget = _profileDataNode;
+                    break;
+#endif
 
                 default:
                     // Reloc points to something outside of the generated blocks

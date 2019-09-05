@@ -1520,6 +1520,14 @@ namespace Internal.JitInterface
             }
         }
 
+        private HRESULT allocMethodBlockCounts(uint count, ref BlockCounts* pBlockCounts)
+        {
+            throw new NotImplementedException("allocMethodBlockCounts");
+        }
+
+        private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
+        { throw new NotImplementedException("getBBProfileData"); }
+
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
             MethodDesc md = HandleToObject(method);

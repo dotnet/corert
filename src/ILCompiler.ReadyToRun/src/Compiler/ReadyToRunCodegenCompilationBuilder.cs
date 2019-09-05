@@ -20,15 +20,17 @@ namespace ILCompiler
     {
         private readonly string _inputFilePath;
         private readonly EcmaModule _inputModule;
+        private readonly bool _ibcTuning;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, string inputFilePath, bool ibcTuning)
             : base(context, group, new CoreRTNameMangler())
         {
+            _ibcTuning = ibcTuning;
             _inputFilePath = inputFilePath;
 
             _inputModule = context.GetModuleFromPath(_inputFilePath);
@@ -110,6 +112,9 @@ namespace ILCompiler
                     break;
             }
 
+            if (_ibcTuning)
+                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
+
             corJitFlags.Add(CorJitFlag.CORJIT_FLAG_PROF_REJIT_NOPS);
 
             var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions);
@@ -122,7 +127,8 @@ namespace ILCompiler
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
                 jitConfig,
-                _inputFilePath);
+                _inputFilePath,
+                new ModuleDesc[] { _inputModule });
         }
     }
 }

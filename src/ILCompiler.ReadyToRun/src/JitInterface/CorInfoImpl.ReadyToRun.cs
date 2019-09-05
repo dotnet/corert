@@ -532,6 +532,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.PInvokeEnd;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_BBT_FCN_ENTER:
+                    id = ReadyToRunHelper.LogMethodEnter;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED:
@@ -1664,6 +1668,71 @@ namespace Internal.JitInterface
             // Used with CORINFO_HELP_MON_ENTER_STATIC/CORINFO_HELP_MON_EXIT_STATIC - we don't have this fixup in R2R.
             throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(getMethodSync)}");
         }
+
+        private byte[] _bbCounts;
+        private ProfileDataNode _profileDataNode;
+
+        partial void PublishProfileData()
+        {
+            if (_profileDataNode != null)
+            {
+                MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+                _profileDataNode.SetProfileData(methodIL.GetILBytes().Length, _bbCounts.Length / sizeof(BlockCounts), _bbCounts);
+            }
+        }
+
+        partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset)
+        {
+            if (_bbCounts != null)
+            {
+                fixed (byte* pBBCountData = _bbCounts)
+                {
+                    if (pBBCountData <= (byte*)location && (byte*)location < (pBBCountData + _bbCounts.Length))
+                    {
+                        offset = (int)((byte*)location - pBBCountData);
+                        blockType = BlockType.BBCounts;
+                        return;
+                    }
+                }
+            }
+            blockType = BlockType.Unknown;
+        }
+
+        private HRESULT allocMethodBlockCounts(uint count, ref BlockCounts* pBlockCounts)
+        {
+            CORJIT_FLAGS flags = default(CORJIT_FLAGS);
+            getJitFlags(ref flags, 0);
+
+            if (flags.IsSet(CorJitFlag.CORJIT_FLAG_IL_STUB))
+            {
+                pBlockCounts = null;
+                return HRESULT.E_NOTIMPL;
+            }
+
+            // Methods without ecma metadata are not instrumented
+            EcmaMethod ecmaMethod = _methodCodeNode.Method.GetTypicalMethodDefinition() as EcmaMethod;
+            if (ecmaMethod == null)
+            {
+                pBlockCounts = null;
+                return HRESULT.E_NOTIMPL;
+            }
+
+            if (!_compilation.IsModuleInstrumented(ecmaMethod.Module))
+            {
+                pBlockCounts = null;
+                return HRESULT.E_NOTIMPL;
+            }
+
+            pBlockCounts = (BlockCounts*)GetPin(_bbCounts = new byte[count * sizeof(BlockCounts)]);
+            if (_profileDataNode == null)
+            {
+                _profileDataNode = _compilation.NodeFactory.ProfileDataNode((MethodWithGCInfo)_methodCodeNode);
+            }
+            return 0;
+        }
+
+        private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
+        { throw new NotImplementedException("getBBProfileData"); }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {

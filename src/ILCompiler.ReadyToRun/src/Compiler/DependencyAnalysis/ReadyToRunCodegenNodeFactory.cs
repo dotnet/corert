@@ -239,6 +239,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
+        public ProfileDataSectionNode ProfileDataSection;
+
         public MethodEntryPointTableNode MethodEntryPointTable;
 
         public InstanceEntryPointTableNode InstanceEntryPointTable;
@@ -442,6 +444,9 @@ namespace ILCompiler.DependencyAnalysis
 
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
+
+            ProfileDataSection = new ProfileDataSectionNode();
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ProfileDataInfo, ProfileDataSection, ProfileDataSection.StartSymbol);
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode, exceptionInfoLookupTableNode);
@@ -768,6 +773,19 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return result;
+        }
+
+        private readonly Dictionary<MethodWithGCInfo, ProfileDataNode> _profileDataCountsNodes = new Dictionary<MethodWithGCInfo, ProfileDataNode>();
+
+        public ProfileDataNode ProfileDataNode(MethodWithGCInfo method)
+        {
+            ProfileDataNode node;
+            if (!_profileDataCountsNodes.TryGetValue(method, out node))
+            {
+                node = new ProfileDataNode(method, Target);
+                _profileDataCountsNodes.Add(method, node);
+            }
+            return node;
         }
     }
 }

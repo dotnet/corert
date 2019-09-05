@@ -134,6 +134,8 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewObjectFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NibbleWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeHelperImport.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ProfileDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ProfileDataSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs" />
@@ -153,6 +155,10 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunSymbolNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
+    <Compile Include="IBC\IBCDataModel.cs" />
+    <Compile Include="IBC\IBCDataReader.cs" />
+    <Compile Include="IBC\ReaderExtensions.cs" />
+    <Compile Include="Compiler\ProfileData.cs" />
     <Compile Include="Compiler\ReadyToRunHashCode.cs" />
     <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
@@ -161,6 +167,13 @@
     <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ReadyToRunTableManager.cs" />
+    <Compile Include="IBC\IBCProfileData.cs" />
+    <Compile Include="IBC\IBCProfileParser.cs" />
+    <Compile Include="Win32Resources\ResourceData.cs" />
+    <Compile Include="Win32Resources\ResourceData.Reader.cs" />
+    <Compile Include="Win32Resources\ResourceData.ResourcesDataModel.cs" />
+    <Compile Include="Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
+    <Compile Include="Win32Resources\ResourceData.Win32Structs.cs" />
     <Compile Include="Compiler\RuntimeDeterminedTypeHelper.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />

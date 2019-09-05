@@ -39,6 +39,7 @@ namespace ILCompiler
         private string _targetOSStr;
         private OptimizationMode _optimizationMode;
         private string _systemModuleName = DefaultSystemModule;
+        private bool _tuning;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -126,6 +127,7 @@ namespace ILCompiler
                 syntax.DefineOption("Os", ref optimizeSpace, "Enable optimizations, favor code space");
                 syntax.DefineOption("Ot", ref optimizeTime, "Enable optimizations, favor code speed");
                 syntax.DefineOption("inputbubble", ref _isInputVersionBubble, "True when the entire input forms a version bubble (default = per-assembly bubble)");
+                syntax.DefineOption("tuning", ref _tuning, "Generate IBC tuning image");
                 syntax.DefineOption("compilebubblegenerics", ref _includeGenericsFromVersionBubble, "Compile instantiations from reference modules used in the current module");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
@@ -270,6 +272,9 @@ namespace ILCompiler
             // Single method mode?
             MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
 
+            var logger = new Logger(Console.Out, _isVerbose);
+            ProfileDataManager profileDataManager = new ProfileDataManager(logger);
+
             CompilationModuleGroup compilationGroup;
             List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
             if (singleMethod != null)
@@ -299,7 +304,7 @@ namespace ILCompiler
                 foreach (var inputFile in typeSystemContext.InputFilePaths)
                 {
                     EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                    compilationRoots.Add(new ReadyToRunRootProvider(module));
+                    compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager));
                     inputModules.Add(module);
 
                     if (!_isInputVersionBubble)
@@ -343,14 +348,13 @@ namespace ILCompiler
                 inputFilePath = input.Value;
                 break;
             }
-            CompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
+            CompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath, _tuning);
 
             string compilationUnitPrefix = "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
             ILProvider ilProvider = new ReadyToRunILProvider();
 
-            var logger = new Logger(Console.Out, _isVerbose);
 
             DependencyTrackingLevel trackingLevel = _dgmlLogFileName == null ?
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);

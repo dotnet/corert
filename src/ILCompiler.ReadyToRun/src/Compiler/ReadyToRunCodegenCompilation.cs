@@ -25,6 +25,8 @@ namespace ILCompiler
         protected readonly Logger _logger;
         private readonly DevirtualizationManager _devirtualizationManager;
         private ILCache _methodILCache;
+        private readonly HashSet<ModuleDesc> _modulesBeingInstrumented;
+
 
         public NameMangler NameMangler => _nodeFactory.NameMangler;
         public NodeFactory NodeFactory => _nodeFactory;
@@ -37,12 +39,14 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> compilationRoots,
             ILProvider ilProvider,
             DevirtualizationManager devirtualizationManager,
+            IEnumerable<ModuleDesc> modulesBeingInstrumented,
             Logger logger)
         {
             _dependencyGraph = dependencyGraph;
             _nodeFactory = nodeFactory;
             _logger = logger;
             _devirtualizationManager = devirtualizationManager;
+            _modulesBeingInstrumented = new HashSet<ModuleDesc>(modulesBeingInstrumented);
 
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
@@ -85,6 +89,11 @@ namespace ILCompiler
         public MethodDesc ResolveVirtualMethod(MethodDesc declMethod, TypeDesc implType)
         {
             return _devirtualizationManager.ResolveVirtualMethod(declMethod, implType);
+        }
+
+        public bool IsModuleInstrumented(ModuleDesc module)
+        {
+            return _modulesBeingInstrumented.Contains(module);
         }
 
         private sealed class ILCache : LockFreeReaderHashtable<MethodDesc, ILCache.MethodILData>
@@ -185,8 +194,9 @@ namespace ILCompiler
             Logger logger,
             DevirtualizationManager devirtualizationManager,
             JitConfigProvider configProvider,
-            string inputFilePath)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, logger)
+            string inputFilePath,
+            IEnumerable<ModuleDesc> modulesBeingInstrumented)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, modulesBeingInstrumented, logger)
         {
             NodeFactory = nodeFactory;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
