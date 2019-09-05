@@ -87,8 +87,7 @@ namespace ILCompiler
                 _nameMangler,
                 moduleTokenResolver,
                 signatureContext,
-                corHeaderNode,
-                _ibcTuning);
+                corHeaderNode);
 
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory);
 

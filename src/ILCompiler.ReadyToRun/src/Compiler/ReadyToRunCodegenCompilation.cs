@@ -25,7 +25,7 @@ namespace ILCompiler
         protected readonly Logger _logger;
         private readonly DevirtualizationManager _devirtualizationManager;
         private ILCache _methodILCache;
-        private readonly List<ModuleDesc> _modulesBeingInstrumented;
+        private readonly HashSet<ModuleDesc> _modulesBeingInstrumented;
 
 
         public NameMangler NameMangler => _nodeFactory.NameMangler;
@@ -46,7 +46,7 @@ namespace ILCompiler
             _nodeFactory = nodeFactory;
             _logger = logger;
             _devirtualizationManager = devirtualizationManager;
-            _modulesBeingInstrumented = new List<ModuleDesc>(modulesBeingInstrumented);
+            _modulesBeingInstrumented = new HashSet<ModuleDesc>(modulesBeingInstrumented);
 
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);

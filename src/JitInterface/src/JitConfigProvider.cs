@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Internal.TypeSystem;
 
 using NumberStyles = System.Globalization.NumberStyles;
 

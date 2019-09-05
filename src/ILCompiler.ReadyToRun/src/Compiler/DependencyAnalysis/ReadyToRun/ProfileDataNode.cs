@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
-
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -29,8 +29,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public void SetProfileData(int ilSize, int blockCount, byte[] data)
         {
-            if (_profileData != null)
-                throw new Exception();
+            Debug.Assert(_profileData == null); // This function should not be called twice on the same object
+
             _profileData = data;
             _ilSize = ilSize;
             _blockCount = blockCount;
@@ -121,7 +121,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sb.ToString();
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => new DependencyListEntry[] 
-        { new DependencyListEntry(((ReadyToRunCodegenNodeFactory)context).ProfileDataSection,"ProfileBlocksImplySection") };
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            return Array.Empty<DependencyListEntry>();
+        }
     }
 }

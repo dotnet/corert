@@ -207,7 +207,6 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
     {
         private Dictionary<TypeAndMethod, IMethodNode> _importMethods;
-        private bool _ibcTuning;
 
         public ReadyToRunCodegenNodeFactory(
             CompilerTypeSystemContext context,
@@ -215,14 +214,12 @@ namespace ILCompiler.DependencyAnalysis
             NameMangler nameMangler,
             ModuleTokenResolver moduleTokenResolver,
             SignatureContext signatureContext,
-            CopiedCorHeaderNode corHeaderNode,
-            bool ibcTuning)
+            CopiedCorHeaderNode corHeaderNode)
             : base(context,
                   compilationModuleGroup,
                   nameMangler,
                   new ReadyToRunTableManager(context))
         {
-            _ibcTuning = ibcTuning;
             _importMethods = new Dictionary<TypeAndMethod, IMethodNode>();
 
             Resolver = moduleTokenResolver;
@@ -448,11 +445,8 @@ namespace ILCompiler.DependencyAnalysis
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
-            if (_ibcTuning)
-            {
-                ProfileDataSection = new ProfileDataSectionNode();
-                Header.Add(Internal.Runtime.ReadyToRunSectionType.ProfileDataInfo, ProfileDataSection, ProfileDataSection.StartSymbol);
-            }
+            ProfileDataSection = new ProfileDataSectionNode();
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.ProfileDataInfo, ProfileDataSection, ProfileDataSection.StartSymbol);
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode, exceptionInfoLookupTableNode);
