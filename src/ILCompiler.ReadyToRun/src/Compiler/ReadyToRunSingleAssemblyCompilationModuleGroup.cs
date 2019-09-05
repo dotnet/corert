@@ -15,6 +15,7 @@ namespace ILCompiler
     {
         private HashSet<ModuleDesc> _compilationModuleSet;
         private HashSet<ModuleDesc> _versionBubbleModuleSet;
+        private ProfileDataManager _profileGuidedCompileRestriction;
 
         private bool _compileGenericDependenciesFromVersionBubbleModuleSet;
 
@@ -22,7 +23,8 @@ namespace ILCompiler
             TypeSystemContext context, 
             IEnumerable<ModuleDesc> compilationModuleSet,
             IEnumerable<ModuleDesc> versionBubbleModuleSet,
-            bool compileGenericDependenciesFromVersionBubbleModuleSet)
+            bool compileGenericDependenciesFromVersionBubbleModuleSet,
+            ProfileDataManager profileGuidedCompileRestriction)
         {
             _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
 
@@ -30,6 +32,7 @@ namespace ILCompiler
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = compileGenericDependenciesFromVersionBubbleModuleSet;
+            _profileGuidedCompileRestriction = profileGuidedCompileRestriction;
         }
 
         public sealed override bool ContainsType(TypeDesc type)
@@ -39,6 +42,39 @@ namespace ILCompiler
 
         public sealed override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
+            if (_profileGuidedCompileRestriction != null)
+            {
+                bool found = false;
+
+                if (!method.HasInstantiation && !method.OwningType.HasInstantiation)
+                {
+                    // Check only the defining module for non-generics
+                    MetadataType mdType = method.OwningType as MetadataType;
+                    if (mdType != null)
+                    {
+                        if (_profileGuidedCompileRestriction.GetDataForModuleDesc(mdType.Module).GetMethodProfileData(method) != null)
+                        {
+                            found = true;
+                        }
+                    }
+                }
+                else
+                {
+                    // For generics look in the profile data of all modules being compiled
+                    foreach (ModuleDesc module in _compilationModuleSet)
+                    {
+                        if (_profileGuidedCompileRestriction.GetDataForModuleDesc(module).GetMethodProfileData(method) != null)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found == false)
+                    return false;
+            }
+
             if (method is ArrayMethod)
             {
                 // TODO-PERF: for now, we never emit native code for array methods as Crossgen ignores

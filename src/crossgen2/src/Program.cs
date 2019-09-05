@@ -40,6 +40,7 @@ namespace ILCompiler
         private OptimizationMode _optimizationMode;
         private string _systemModuleName = DefaultSystemModule;
         private bool _tuning;
+        private bool _partial;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -128,6 +129,7 @@ namespace ILCompiler
                 syntax.DefineOption("Ot", ref optimizeTime, "Enable optimizations, favor code speed");
                 syntax.DefineOption("inputbubble", ref _isInputVersionBubble, "True when the entire input forms a version bubble (default = per-assembly bubble)");
                 syntax.DefineOption("tuning", ref _tuning, "Generate IBC tuning image");
+                syntax.DefineOption("partial", ref _partial, "Generate partial image driven by profile");
                 syntax.DefineOption("compilebubblegenerics", ref _includeGenericsFromVersionBubble, "Compile instantiations from reference modules used in the current module");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
                 syntax.DefineOption("fulllog", ref _generateFullDgmlLog, "Save detailed log of dependency analysis");
@@ -335,7 +337,8 @@ namespace ILCompiler
                 }
 
                 compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                    typeSystemContext, inputModules, versionBubbleModules, _includeGenericsFromVersionBubble);
+                    typeSystemContext, inputModules, versionBubbleModules, _includeGenericsFromVersionBubble, 
+                    _partial ? profileDataManager : null);
             }
 
             //
