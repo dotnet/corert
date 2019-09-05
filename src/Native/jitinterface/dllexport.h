@@ -16,8 +16,8 @@
 // ***
 // Define default call conventions
 // ***
-#if _X86_ && !PLATFORM_UNIX
+#if defined(_X86_) && !defined(PLATFORM_UNIX)
 #define STDMETHODCALLTYPE  __stdcall
 #else
 #define STDMETHODCALLTYPE
-#endif // _X86_ && !PLATFORM_UNIX
+#endif //  defined(_X86_) && !defined(PLATFORM_UNIX)
