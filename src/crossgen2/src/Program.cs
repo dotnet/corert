@@ -149,7 +149,7 @@ namespace ILCompiler
                 Console.ReadLine();
             }
 
-            if(_includeGenericsFromVersionBubble)
+            if (_includeGenericsFromVersionBubble)
             {
                 if (!_isInputVersionBubble)
                 {
