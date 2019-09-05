@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 using Internal.TypeSystem.Ecma;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 
 namespace ILCompiler.Win32Resources
 {
@@ -19,7 +14,8 @@ namespace ILCompiler.Win32Resources
     /// </summary>
     public unsafe partial class ResourceData
     {
-        private byte[] _initialFileData;
+        BlobReader _resourceDataBlob;
+        PEReader _peFile;
 
         /// <summary>
         /// Initialize a ResourceData instance from a PE file
@@ -28,11 +24,14 @@ namespace ILCompiler.Win32Resources
         public ResourceData(EcmaModule ecmaModule)
         {
             var ecmaData = ecmaModule.PEReader.GetEntireImage().GetContent();
-            byte[] ecmaByteData = new byte[ecmaData.Length];
-            ecmaData.CopyTo(ecmaByteData);
+            _peFile = ecmaModule.PEReader;
 
-            _initialFileData = ecmaByteData;
-            ReadResourceData();
+            DirectoryEntry resourceDirectory = _peFile.PEHeaders.PEHeader.ResourceTableDirectory;
+            if (resourceDirectory.Size != 0)
+            {
+                _resourceDataBlob = ecmaModule.PEReader.GetSectionData(resourceDirectory.RelativeVirtualAddress).GetReader(0, resourceDirectory.Size);
+                ReadResourceData();
+            }
         }
 
         /// <summary>

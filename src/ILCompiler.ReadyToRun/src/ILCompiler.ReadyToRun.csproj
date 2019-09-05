@@ -170,13 +170,10 @@
     <Compile Include="IBC\IBCProfileData.cs" />
     <Compile Include="IBC\IBCProfileParser.cs" />
     <Compile Include="Win32Resources\ResourceData.cs" />
-    <Compile Include="Win32Resources\ResourceData.FileAbstraction.cs" />
     <Compile Include="Win32Resources\ResourceData.Reader.cs" />
     <Compile Include="Win32Resources\ResourceData.ResourcesDataModel.cs" />
     <Compile Include="Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
-    <Compile Include="Win32Resources\ResourceData.Win32Enums.cs" />
     <Compile Include="Win32Resources\ResourceData.Win32Structs.cs" />
-    <Compile Include="Win32Resources\ResourceData.Win32_NT_HEADER.cs" />
     <Compile Include="Compiler\RuntimeDeterminedTypeHelper.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
