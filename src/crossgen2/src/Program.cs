@@ -275,7 +275,19 @@ namespace ILCompiler
             MethodDesc singleMethod = CheckAndParseSingleMethodModeArguments(typeSystemContext);
 
             var logger = new Logger(Console.Out, _isVerbose);
-            ProfileDataManager profileDataManager = new ProfileDataManager(logger);
+
+            List<ModuleDesc> referenceableModules = new List<ModuleDesc>();
+            foreach (var inputFile in inputFilePaths)
+            {
+                referenceableModules.Add(typeSystemContext.GetModuleFromPath(inputFile.Value));
+            }
+
+            foreach (var referenceFile in _referenceFilePaths.Values)
+            {
+                referenceableModules.Add(typeSystemContext.GetModuleFromPath(referenceFile));
+            }
+
+            ProfileDataManager profileDataManager = new ProfileDataManager(logger, referenceableModules);
 
             CompilationModuleGroup compilationGroup;
             List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();

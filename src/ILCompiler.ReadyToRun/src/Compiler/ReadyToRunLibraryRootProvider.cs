@@ -31,6 +31,30 @@ namespace ILCompiler
                     try
                     {
                         MethodDesc method = methodProfileInfo.Method;
+
+                        // Validate that this method is fully instantiated
+                        if ((method.OwningType.HasInstantiation && method.OwningType.IsGenericDefinition) || method.OwningType.ContainsSignatureVariables())
+                        {
+                            continue;
+                        }
+                        bool containsSignatureVariables = false;
+                        foreach (TypeDesc t in method.Instantiation)
+                        {
+                            if (t.HasInstantiation &&t.IsGenericDefinition)
+                            {
+                                containsSignatureVariables = true;
+                                break;
+                            }
+
+                            if (t.ContainsSignatureVariables())
+                            {
+                                containsSignatureVariables = true;
+                                break;
+                            }
+                        }
+                        if (containsSignatureVariables)
+                            continue;
+
                         CheckCanGenerateMethod(method);
                         rootProvider.AddCompilationRoot(method, "Profile triggered method");
                     }
