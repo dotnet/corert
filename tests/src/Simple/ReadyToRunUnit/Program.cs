@@ -34,10 +34,16 @@ internal class Program
 
     private static List<string> _failedTests;
 
+    [MethodImpl((MethodImplOptions)512)]
+    public static int DoNotCompile()
+    {
+        return 10086;
+    }
+
     private static bool NewString()
     {
         string s = new string('x', 10);
-        return s.Length == 10;
+        return DoNotCompile() == 10086 && s.Length == 10;
     }
 
     private static bool WriteLine()

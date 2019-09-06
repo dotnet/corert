@@ -35,6 +35,7 @@ namespace ReadyToRun.TestHarness
         private const int StatusTestErrorTimeOut = -103;
         private const int StatusTestErrorBadInput = -104;
         private const int StatusTestErrorNoAssemblyLoadEvents = -105;
+        private const int StatusTestErrorRequiredMethodsNotJitted = -102;
         private const int StatusTestPassed = 100;
 
         private static bool _help;
@@ -161,6 +162,7 @@ namespace ReadyToRun.TestHarness
         private static int AnalyzeResults(ReadyToRunJittedMethods jittedMethods, string whiteListFilePath = null)
         {
             var whiteListedMethods = new HashSet<string>();
+            var requiredMethods = new Dictionary<string, bool>();
             if (!string.IsNullOrEmpty(whiteListFilePath))
             {
                 using (TextReader tr = File.OpenText(whiteListFilePath))
@@ -168,6 +170,11 @@ namespace ReadyToRun.TestHarness
                     string line = "";
                     while ((line = tr.ReadLine()) != null)
                     {
+                        if (line.StartsWith("+"))
+                        {
+                            line = line.Substring(1);
+                            requiredMethods.Add(line, false);
+                        }
                         whiteListedMethods.Add(line);
                     }
                 }
@@ -208,6 +215,11 @@ namespace ReadyToRun.TestHarness
                 {
                     Console.WriteLine(jittedMethod.Key);
                     whiteListedJittedMethodCount++;
+                    if (requiredMethods.ContainsKey(jittedMethod.Key))
+                    {
+                        requiredMethods.Remove(jittedMethod.Key);
+                        requiredMethods.Add(jittedMethod.Key, false);
+                    }
                 }
             }
 
@@ -230,6 +242,24 @@ namespace ReadyToRun.TestHarness
             {
                 Console.WriteLine($"Error: {jittedMethodNames.Count} methods were jitted.");
                 return StatusTestErrorMethodsJitted;
+            }
+
+            Console.WriteLine("");
+            Console.WriteLine("Methods that were not jitted but required (test failure):");
+            int missedRequiredMethodCount = 0;
+            foreach (string missedRequiredMethod in requiredMethods.Where(kvp => kvp.Value).Select(kvp => kvp.Key))
+            {
+                missedRequiredMethodCount++;
+                Console.WriteLine(missedRequiredMethodCount);
+            }
+            if (missedRequiredMethodCount == 0)
+            {
+                Console.WriteLine("-None-");
+            }
+            else
+            {
+                Console.WriteLine($"Error: {missedRequiredMethodCount} methods were not jitted when required.");
+                return StatusTestErrorRequiredMethodsNotJitted;
             }
 
             return StatusTestPassed;
