@@ -217,6 +217,11 @@ namespace ILCompiler.PEWriter
             _sectionBuilder.SetCorHeader(symbol, headerSize);
         }
 
+        public void SetWin32Resources(ISymbolNode symbol, int resourcesSize)
+        {
+            _sectionBuilder.SetWin32Resources(symbol, resourcesSize);
+        }
+
         /// <summary>
         /// Emit a single object data item into the output R2R PE file using the section builder.
         /// </summary>

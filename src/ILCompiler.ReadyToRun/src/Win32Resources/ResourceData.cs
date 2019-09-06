@@ -19,23 +19,20 @@ namespace ILCompiler.Win32Resources
     /// </summary>
     public unsafe partial class ResourceData
     {
-        BlobReader _resourceDataBlob;
-        PEReader _peFile;
-
         /// <summary>
         /// Initialize a ResourceData instance from a PE file
         /// </summary>
         /// <param name="ecmaModule"></param>
-        public ResourceData(EcmaModule ecmaModule)
+        public ResourceData(EcmaModule ecmaModule, Func<object, object, ushort, bool> resourceFilter = null)
         {
             System.Collections.Immutable.ImmutableArray<byte> ecmaData = ecmaModule.PEReader.GetEntireImage().GetContent();
-            _peFile = ecmaModule.PEReader;
+            PEReader peFile = ecmaModule.PEReader;
 
-            DirectoryEntry resourceDirectory = _peFile.PEHeaders.PEHeader.ResourceTableDirectory;
+            DirectoryEntry resourceDirectory = peFile.PEHeaders.PEHeader.ResourceTableDirectory;
             if (resourceDirectory.Size != 0)
             {
-                _resourceDataBlob = ecmaModule.PEReader.GetSectionData(resourceDirectory.RelativeVirtualAddress).GetReader(0, resourceDirectory.Size);
-                ReadResourceData();
+                BlobReader resourceDataBlob = ecmaModule.PEReader.GetSectionData(resourceDirectory.RelativeVirtualAddress).GetReader(0, resourceDirectory.Size);
+                ReadResourceData(resourceDataBlob, peFile, resourceFilter);
             }
         }
 
@@ -69,6 +66,20 @@ namespace ILCompiler.Win32Resources
         public byte[] FindResource(ushort name, ushort type, ushort language)
         {
             return FindResourceInternal(name, type, language);
+        }
+
+        public bool IsEmpty
+        {
+            get
+            {
+                if (_resTypeHeadID.Count > 0)
+                    return false;
+
+                if (_resTypeHeadName.Count > 0)
+                    return false;
+
+                return true;
+            }
         }
 
         public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ObjectDataBuilder dataBuilder)
@@ -146,6 +157,7 @@ namespace ILCompiler.Win32Resources
                 dataBuilder.EmitInt(language.Item2, dataBuilder.CountBytes);
                 IMAGE_RESOURCE_DATA_ENTRY.Write(dataBuilder, nodeAssociatedWithDataBuilder, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
             }
+            dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
         }
     }
 }

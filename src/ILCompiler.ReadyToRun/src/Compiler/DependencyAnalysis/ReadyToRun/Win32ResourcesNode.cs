@@ -17,9 +17,10 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    class Win32ResourcesNode : ObjectNode, ISymbolDefinitionNode
+    public class Win32ResourcesNode : ObjectNode, ISymbolDefinitionNode
     {
-        ResourceData _resourceData;
+        private ResourceData _resourceData;
+        private int _size;
 
         public Win32ResourcesNode(ResourceData resourceData)
         {
@@ -45,6 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             ObjectDataBuilder builder = new ObjectDataBuilder();
             _resourceData.WriteResources(this, builder);
+            _size = builder.CountBytes;
             return builder.ToObjectData();
         }
 
@@ -52,5 +54,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             return "____Win32Resources";
         }
+
+        public int Size => _size;
     }
 }
