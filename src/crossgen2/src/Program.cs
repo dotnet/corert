@@ -279,12 +279,20 @@ namespace ILCompiler
             List<ModuleDesc> referenceableModules = new List<ModuleDesc>();
             foreach (var inputFile in inputFilePaths)
             {
-                referenceableModules.Add(typeSystemContext.GetModuleFromPath(inputFile.Value));
+                try
+                {
+                    referenceableModules.Add(typeSystemContext.GetModuleFromPath(inputFile.Value));
+                }
+                catch { } // Ignore non-managed pe files
             }
 
             foreach (var referenceFile in _referenceFilePaths.Values)
             {
-                referenceableModules.Add(typeSystemContext.GetModuleFromPath(referenceFile));
+                try
+                {
+                    referenceableModules.Add(typeSystemContext.GetModuleFromPath(referenceFile));
+                }
+                catch { } // Ignore non-managed pe files
             }
 
             ProfileDataManager profileDataManager = new ProfileDataManager(logger, referenceableModules);
