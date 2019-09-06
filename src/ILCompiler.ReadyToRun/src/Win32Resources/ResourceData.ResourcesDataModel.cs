@@ -22,12 +22,16 @@ namespace ILCompiler.Win32Resources
             T Name { get; }
         }
 
-        private class ResName
+        private class ResLanguage
         {
             public uint DataSize => (uint)DataEntry.Length;
             public byte[] DataEntry;
-            public ushort NumberOfLanguages;
             public ushort LanguageId;
+        }
+
+        private class ResName
+        {
+            public List<ResLanguage> Languages;
         }
 
         private class ResName_Name : ResName, IUnderlyingName<string>

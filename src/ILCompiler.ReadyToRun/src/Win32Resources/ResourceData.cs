@@ -2,9 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.TypeSystem.Ecma;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+
+using ILCompiler.DependencyAnalysis;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.Win32Resources
 {
@@ -64,6 +69,83 @@ namespace ILCompiler.Win32Resources
         public byte[] FindResource(ushort name, ushort type, ushort language)
         {
             return FindResourceInternal(name, type, language);
+        }
+
+        public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ObjectDataBuilder dataBuilder)
+        {
+            Debug.Assert(dataBuilder.CountBytes == 0);
+
+            SortedDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable = new SortedDictionary<string, List<ObjectDataBuilder.Reservation>>();
+            Dictionary<ResLanguage, int> dataEntryTable = new Dictionary<ResLanguage, int>();
+            List<Tuple<ResType, ObjectDataBuilder.Reservation>> resTypes = new List<Tuple<ResType, ObjectDataBuilder.Reservation>>();
+            List<Tuple<ResName, ObjectDataBuilder.Reservation>> resNames = new List<Tuple<ResName, ObjectDataBuilder.Reservation>>();
+            List<Tuple<ResLanguage, ObjectDataBuilder.Reservation>> resLanguages = new List<Tuple<ResLanguage, ObjectDataBuilder.Reservation>>();
+
+            IMAGE_RESOURCE_DIRECTORY.Write(dataBuilder, checked((ushort)_resTypeHeadName.Count), checked((ushort)_resTypeHeadName.Count));
+            foreach (ResType_Name res in _resTypeHeadName)
+            {
+                resTypes.Add(new Tuple<ResType, ObjectDataBuilder.Reservation>(res, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(dataBuilder, res.Type, nameTable)));
+            }
+            foreach (ResType_Ordinal res in _resTypeHeadID)
+            {
+                resTypes.Add(new Tuple<ResType, ObjectDataBuilder.Reservation>(res, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(dataBuilder, res.Type.Ordinal)));
+            }
+
+            foreach (Tuple<ResType, ObjectDataBuilder.Reservation> type in resTypes)
+            {
+                dataBuilder.EmitUInt(type.Item2, (uint)dataBuilder.CountBytes | 0x80000000);
+                IMAGE_RESOURCE_DIRECTORY.Write(dataBuilder, checked((ushort)type.Item1.NameHeadName.Count), checked((ushort)type.Item1.NameHeadID.Count));
+
+                foreach (ResName_Name res in type.Item1.NameHeadName)
+                {
+                    resNames.Add(new Tuple<ResName, ObjectDataBuilder.Reservation>(res, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(dataBuilder, res.Name, nameTable)));
+                }
+                foreach (ResName_Ordinal res in type.Item1.NameHeadID)
+                {
+                    resNames.Add(new Tuple<ResName, ObjectDataBuilder.Reservation>(res, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(dataBuilder, res.Name.Ordinal)));
+                }
+            }
+
+            foreach (Tuple<ResName, ObjectDataBuilder.Reservation> type in resNames)
+            {
+                dataBuilder.EmitUInt(type.Item2, (uint)dataBuilder.CountBytes | 0x80000000);
+                IMAGE_RESOURCE_DIRECTORY.Write(dataBuilder, 0, checked((ushort)type.Item1.Languages.Count));
+                foreach (ResLanguage res in type.Item1.Languages)
+                {
+                    resLanguages.Add(new Tuple<ResLanguage, ObjectDataBuilder.Reservation>(res, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(dataBuilder, res.LanguageId)));
+                }
+            }
+
+            // Emit name table
+            dataBuilder.PadAlignment(2); // name table is 2 byte aligned
+            foreach (KeyValuePair<string, List<ObjectDataBuilder.Reservation>> name in nameTable)
+            {
+                foreach (ObjectDataBuilder.Reservation reservation in name.Value)
+                {
+                    dataBuilder.EmitUInt(reservation, (uint)dataBuilder.CountBytes | 0x80000000);
+                }
+
+                dataBuilder.EmitUShort(checked((ushort)name.Key.Length));
+                foreach (char c in name.Key)
+                {
+                    dataBuilder.EmitUShort((ushort)c);
+                }
+            }
+
+            // Emit byte arrays of resource data, capture the offsets
+            foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
+            {
+                dataBuilder.PadAlignment(4); // Data in resource files is 4 byte aligned
+                dataEntryTable.Add(language.Item1, dataBuilder.CountBytes);
+                dataBuilder.EmitBytes(language.Item1.DataEntry);
+            }
+
+            dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
+            foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
+            {
+                dataBuilder.EmitInt(language.Item2, dataBuilder.CountBytes);
+                IMAGE_RESOURCE_DATA_ENTRY.Write(dataBuilder, nodeAssociatedWithDataBuilder, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
+            }
         }
     }
 }
