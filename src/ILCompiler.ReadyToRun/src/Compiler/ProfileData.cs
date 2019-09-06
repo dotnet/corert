@@ -88,9 +88,9 @@ namespace ILCompiler
     {
         private readonly IBCProfileParser _ibcParser;
 
-        public ProfileDataManager(Logger logger)
+        public ProfileDataManager(Logger logger, IEnumerable<ModuleDesc> possibleReferenceModules)
         {
-            _ibcParser = new IBCProfileParser(logger);
+            _ibcParser = new IBCProfileParser(logger, possibleReferenceModules);
         }
 
         private readonly Dictionary<ModuleDesc, ProfileData> _profileData = new Dictionary<ModuleDesc, ProfileData>();

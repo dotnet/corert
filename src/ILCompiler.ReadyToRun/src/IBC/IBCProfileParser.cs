@@ -19,9 +19,12 @@ namespace ILCompiler.IBC
 {
     internal class IBCProfileParser
     {
-        public IBCProfileParser(Logger logger)
+        private readonly List<ModuleDesc> _possibleReferenceModules;
+
+        public IBCProfileParser(Logger logger, IEnumerable<ModuleDesc> possibleReferenceModules)
         {
             _logger = logger;
+            _possibleReferenceModules = new List<ModuleDesc>(possibleReferenceModules);
         }
 
         private readonly Logger _logger;
@@ -264,11 +267,13 @@ namespace ILCompiler.IBC
             return blobs;
         }
 
-        private uint LookupIbcTypeToken(EcmaModule externalModule, uint ibcToken, Dictionary<IBCBlobKey, BlobEntry> blobs)
+        // LookupIbcTypeToken and (possibly) find the module associated with it.
+        // externalModule may be null if the exact assembly isn't known
+        private uint LookupIbcTypeToken(ref EcmaModule externalModule, uint ibcToken, Dictionary<IBCBlobKey, BlobEntry> blobs)
         {
             var typeEntry = (BlobEntry.ExternalTypeEntry)blobs[new IBCBlobKey(ibcToken, BlobType.ExternalTypeDef)];
             string typeNamespace = null;
-            string typeName = Encoding.UTF8.GetString(typeEntry.Name);
+            string typeName = Encoding.UTF8.GetString(typeEntry.Name, 0, typeEntry.Name.Length - 1 /* these strings are null terminated */);
             TypeDefinitionHandle enclosingType = default;
             if (!Cor.Macros.IsNilToken(typeEntry.NamespaceToken))
             {
@@ -283,22 +288,50 @@ namespace ILCompiler.IBC
                     throw new Exception($"Ibc TypeToken {ibcToken:x} has Namespace tokens that is not a ibcExternalNamespace");
 
                 var namespaceEntry = (BlobEntry.ExternalNamespaceEntry)blobs[new IBCBlobKey(nameSpaceToken, BlobType.ExternalNamespaceDef)];
-                typeNamespace = Encoding.UTF8.GetString(namespaceEntry.Name);
+                typeNamespace = Encoding.UTF8.GetString(namespaceEntry.Name, 0, namespaceEntry.Name.Length - 1 /* these strings are null terminated */);
             }
             else if (!Cor.Macros.IsNilToken(typeEntry.NestedClassToken))
             {
-                uint enclosingTypeTokenValue = LookupIbcTypeToken(externalModule, typeEntry.NestedClassToken, blobs);
+                uint enclosingTypeTokenValue = LookupIbcTypeToken(ref externalModule, typeEntry.NestedClassToken, blobs);
                 if (Cor.Macros.TypeFromToken(enclosingTypeTokenValue) != CorTokenType.mdtTypeDef)
                     throw new Exception($"Ibc TypeToken {ibcToken:x} has NestedClass token which does not resolve to a type definition");
 
                 enclosingType = MetadataTokens.TypeDefinitionHandle((int)Cor.Macros.RidFromToken(enclosingTypeTokenValue));
                 if (enclosingType.IsNil)
-                    throw new Exception($"Ibc TypeToken {ibcToken:x} has NestedClass token which resolves to a nil token");
+                    _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} has NestedClass token which resolves to a nil token");
             }
 
             if (enclosingType.IsNil)
             {
-                return (uint)externalModule.MetadataReader.GetToken(((EcmaType)externalModule.GetType(typeNamespace, typeName)).Handle);
+                EcmaType foundType = null;
+                if (externalModule == null)
+                {
+                    // Lookup actual module scenario.
+                    foreach (ModuleDesc m in _possibleReferenceModules)
+                    {
+                        if (!(m is EcmaModule))
+                            continue;
+
+                        foundType = (EcmaType)m.GetType(typeNamespace, typeName, throwIfNotFound: false);
+                        if (foundType != null)
+                        {
+                            externalModule = foundType.EcmaModule;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    foundType = (EcmaType)externalModule.GetType(typeNamespace, typeName, throwIfNotFound: false);
+                }
+
+                if (foundType == null)
+                {
+                    _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} has type token which resolves to a nil token");
+                    return Cor.Macros.RidToToken(0, CorTokenType.mdtTypeDef); // Nil TypeDef token
+                }
+
+                return (uint)externalModule.MetadataReader.GetToken(foundType.Handle);
             }
             else
             {
@@ -313,7 +346,8 @@ namespace ILCompiler.IBC
                     }
                 }
 
-                throw new Exception($"Ibc TypeToken {ibcToken:x} unable to find nested type '{typeName}' on type '{externalModule.MetadataReader.GetToken(enclosingType):x}'");
+                _logger.Writer.WriteLine($"Ibc TypeToken {ibcToken:x} unable to find nested type '{typeName}' on type '{externalModule.MetadataReader.GetToken(enclosingType):x}'");
+                return Cor.Macros.RidToToken(0, CorTokenType.mdtTypeDef); // Nil TypeDef token
             }
         }
 
@@ -327,7 +361,8 @@ namespace ILCompiler.IBC
 
             var ecmaType = (EcmaType)methodMetadataType.GetTypeDefinition();
 
-            var lookupClassTokenTypeDef = (int)LookupIbcTypeToken(ecmaType.EcmaModule, methodEntry.ClassToken, blobs);
+            EcmaModule ecmaModule = ecmaType.EcmaModule;
+            var lookupClassTokenTypeDef = (int)LookupIbcTypeToken(ref ecmaModule, methodEntry.ClassToken, blobs);
             if (lookupClassTokenTypeDef != ecmaType.MetadataReader.GetToken(ecmaType.Handle))
                 throw new Exception($"Ibc MethodToken {ibcToken:x} incosistent classToken '{ibcToken:x}' with specified exact type '{ecmaType}'");
 
@@ -377,6 +412,8 @@ namespace ILCompiler.IBC
 
             public EcmaModule GetModuleFromIndex(int index)
             {
+                if (EcmaModule.MetadataReader.GetTableRowCount(TableIndex.AssemblyRef) < index)
+                    return null;
                 return EcmaModule.GetObject(MetadataTokens.EntityHandle(((int)CorTokenType.mdtAssemblyRef) | index)) as EcmaModule;
             }
         }
@@ -426,8 +463,7 @@ namespace ILCompiler.IBC
                         return null;
                     return context.CanonType;
                 case CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG:
-                    // Check version bubble by looking at reference to non-local module
-                    // If null, then the remote reference is not permitted.
+                    // If null, then the remote reference is not found. GetSigTypeFromIBCZapSig will search all locations to try and resolve the type
                     EcmaModule remoteModule = ibcModule.GetModuleFromIndex(sig.ReadCompressedInteger());
                     return GetSigTypeFromIBCZapSig(ibcModule, remoteModule, sig);
 
@@ -579,13 +615,13 @@ namespace ILCompiler.IBC
             {
                 case CorElementType.ELEMENT_TYPE_CLASS:
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    uint token = (uint)ecmaModule.MetadataReader.GetToken(sig.ReadTypeHandle());
+                    uint token = (uint)ibcModule.EcmaModule.MetadataReader.GetToken(sig.ReadTypeHandle());
                     if (ecmaModule != ibcModule.EcmaModule)
                     {
                         // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
                         uint rid = Cor.Macros.RidFromToken(token);
                         uint ibcToken = Cor.Macros.TokenFromRid(rid, CorTokenType.ibcExternalType);
-                        token = LookupIbcTypeToken(ecmaModule, ibcToken, ibcModule.Blobs);
+                        token = LookupIbcTypeToken(ref ecmaModule, ibcToken, ibcModule.Blobs);
                     }
                     switch (Cor.Macros.TypeFromToken(token))
                     {
@@ -597,7 +633,7 @@ namespace ILCompiler.IBC
                             throw new Exception("Invalid token found while parsing IBC ZapSig generic instantiation");
                     }
                     if (Cor.Macros.IsNilToken(token))
-                        throw new Exception("Nil token found while parsing IBC ZapSig generic instantiation");
+                        return null;
 
                     var result = (MetadataType)ecmaModule.GetType(MetadataTokens.EntityHandle((int)token));
                     if ((typ == CorElementType.ELEMENT_TYPE_VALUETYPE) != result.IsValueType)
@@ -613,6 +649,9 @@ namespace ILCompiler.IBC
         private MethodDesc GetSigMethodInstantiationFromIBCMethodSpec(IBCModule ibcModule, BlobReader sig)
         {
             TypeDesc methodType = GetSigTypeFromIBCZapSig(ibcModule, ibcModule.EcmaModule, sig);
+            if (methodType == null)
+                return null;
+
             SkipTypeInIBCZapSig(ref sig);
             uint flags = (uint)sig.ReadCompressedInteger();
             if (Macros.IsSlotUsedInsteadOfToken(flags))
