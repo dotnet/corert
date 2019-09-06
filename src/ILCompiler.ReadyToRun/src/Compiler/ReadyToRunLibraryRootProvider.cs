@@ -33,14 +33,14 @@ namespace ILCompiler
                         MethodDesc method = methodProfileInfo.Method;
 
                         // Validate that this method is fully instantiated
-                        if ((method.OwningType.HasInstantiation && method.OwningType.IsGenericDefinition) || method.OwningType.ContainsSignatureVariables())
+                        if (method.OwningType.IsGenericDefinition || method.OwningType.ContainsSignatureVariables())
                         {
                             continue;
                         }
                         bool containsSignatureVariables = false;
                         foreach (TypeDesc t in method.Instantiation)
                         {
-                            if (t.HasInstantiation &&t.IsGenericDefinition)
+                            if (t.IsGenericDefinition)
                             {
                                 containsSignatureVariables = true;
                                 break;
