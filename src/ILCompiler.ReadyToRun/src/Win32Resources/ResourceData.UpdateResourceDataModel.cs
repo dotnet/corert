@@ -37,7 +37,7 @@ namespace ILCompiler.Win32Resources
                 if (!resType.NameHeadID.TryGetValue((ushort)name, out resName))
                 {
                     resName = new ResName();
-                    resType.NameHeadID[(ushort)type] = resName;
+                    resType.NameHeadID[(ushort)name] = resName;
                 }
             }
             else
@@ -45,7 +45,7 @@ namespace ILCompiler.Win32Resources
                 if (!resType.NameHeadName.TryGetValue((string)name, out resName))
                 {
                     resName = new ResName();
-                    resType.NameHeadName[(string)type] = resName;
+                    resType.NameHeadName[(string)name] = resName;
                 }
             }
 
@@ -79,7 +79,7 @@ namespace ILCompiler.Win32Resources
                 resType.NameHeadName.TryGetValue((string)name, out resName);
             }
 
-            if (resType == null)
+            if (resName == null)
                 return null;
 
             if (!resName.Languages.TryGetValue(language, out ResLanguage resLanguage))

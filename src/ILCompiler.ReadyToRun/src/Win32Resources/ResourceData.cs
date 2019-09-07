@@ -82,7 +82,7 @@ namespace ILCompiler.Win32Resources
             }
         }
 
-        public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ObjectDataBuilder dataBuilder)
+        public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder)
         {
             Debug.Assert(dataBuilder.CountBytes == 0);
 
@@ -92,38 +92,38 @@ namespace ILCompiler.Win32Resources
             List<Tuple<ResName, ObjectDataBuilder.Reservation>> resNames = new List<Tuple<ResName, ObjectDataBuilder.Reservation>>();
             List<Tuple<ResLanguage, ObjectDataBuilder.Reservation>> resLanguages = new List<Tuple<ResLanguage, ObjectDataBuilder.Reservation>>();
 
-            IMAGE_RESOURCE_DIRECTORY.Write(dataBuilder, checked((ushort)_resTypeHeadName.Count), checked((ushort)_resTypeHeadName.Count));
+            IMAGE_RESOURCE_DIRECTORY.Write(ref dataBuilder, checked((ushort)_resTypeHeadName.Count), checked((ushort)_resTypeHeadName.Count));
             foreach (KeyValuePair<string, ResType> res in _resTypeHeadName)
             {
-                resTypes.Add(new Tuple<ResType, ObjectDataBuilder.Reservation>(res.Value, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(dataBuilder, res.Key, nameTable)));
+                resTypes.Add(new Tuple<ResType, ObjectDataBuilder.Reservation>(res.Value, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(ref dataBuilder, res.Key, nameTable)));
             }
             foreach (KeyValuePair<ushort, ResType> res in _resTypeHeadID)
             {
-                resTypes.Add(new Tuple<ResType, ObjectDataBuilder.Reservation>(res.Value, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(dataBuilder, res.Key)));
+                resTypes.Add(new Tuple<ResType, ObjectDataBuilder.Reservation>(res.Value, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(ref dataBuilder, res.Key)));
             }
 
             foreach (Tuple<ResType, ObjectDataBuilder.Reservation> type in resTypes)
             {
                 dataBuilder.EmitUInt(type.Item2, (uint)dataBuilder.CountBytes | 0x80000000);
-                IMAGE_RESOURCE_DIRECTORY.Write(dataBuilder, checked((ushort)type.Item1.NameHeadName.Count), checked((ushort)type.Item1.NameHeadID.Count));
+                IMAGE_RESOURCE_DIRECTORY.Write(ref dataBuilder, checked((ushort)type.Item1.NameHeadName.Count), checked((ushort)type.Item1.NameHeadID.Count));
 
                 foreach (KeyValuePair<string, ResName> res in type.Item1.NameHeadName)
                 {
-                    resNames.Add(new Tuple<ResName, ObjectDataBuilder.Reservation>(res.Value, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(dataBuilder, res.Key, nameTable)));
+                    resNames.Add(new Tuple<ResName, ObjectDataBuilder.Reservation>(res.Value, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(ref dataBuilder, res.Key, nameTable)));
                 }
                 foreach (KeyValuePair<ushort, ResName> res in type.Item1.NameHeadID)
                 {
-                    resNames.Add(new Tuple<ResName, ObjectDataBuilder.Reservation>(res.Value, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(dataBuilder, res.Key)));
+                    resNames.Add(new Tuple<ResName, ObjectDataBuilder.Reservation>(res.Value, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(ref dataBuilder, res.Key)));
                 }
             }
 
             foreach (Tuple<ResName, ObjectDataBuilder.Reservation> type in resNames)
             {
                 dataBuilder.EmitUInt(type.Item2, (uint)dataBuilder.CountBytes | 0x80000000);
-                IMAGE_RESOURCE_DIRECTORY.Write(dataBuilder, 0, checked((ushort)type.Item1.Languages.Count));
+                IMAGE_RESOURCE_DIRECTORY.Write(ref dataBuilder, 0, checked((ushort)type.Item1.Languages.Count));
                 foreach (KeyValuePair<ushort, ResLanguage> res in type.Item1.Languages)
                 {
-                    resLanguages.Add(new Tuple<ResLanguage, ObjectDataBuilder.Reservation>(res.Value, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(dataBuilder, res.Key)));
+                    resLanguages.Add(new Tuple<ResLanguage, ObjectDataBuilder.Reservation>(res.Value, IMAGE_RESOURCE_DIRECTORY_ENTRY.Write(ref dataBuilder, res.Key)));
                 }
             }
 
@@ -155,7 +155,7 @@ namespace ILCompiler.Win32Resources
             foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
             {
                 dataBuilder.EmitInt(language.Item2, dataBuilder.CountBytes);
-                IMAGE_RESOURCE_DATA_ENTRY.Write(dataBuilder, nodeAssociatedWithDataBuilder, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
+                IMAGE_RESOURCE_DATA_ENTRY.Write(ref dataBuilder, nodeAssociatedWithDataBuilder, dataEntryTable[language.Item1], language.Item1.DataEntry.Length);
             }
             dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
         }

@@ -45,7 +45,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder();
-            _resourceData.WriteResources(this, builder);
+            builder.AddSymbol(this);
+            _resourceData.WriteResources(this, ref builder);
             _size = builder.CountBytes;
             return builder.ToObjectData();
         }
