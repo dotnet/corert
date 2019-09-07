@@ -530,20 +530,22 @@ namespace ReadyToRun.SuperIlc
             Count
         }
 
-        private CompilationOutcome GetCompilationOutcome(ProcessInfo[] compilation)
+        private CompilationOutcome GetCompilationOutcome(ProcessInfo compilation)
         {
-            return _compilerRunners.Any(runner => !compilation[(int)runner.Index].Succeeded) ? CompilationOutcome.FAIL : CompilationOutcome.PASS;
+            return compilation.Succeeded ? CompilationOutcome.PASS : CompilationOutcome.FAIL;
         }
 
-        private ExecutionOutcome GetExecutionOutcome(ProcessInfo[] execution)
+        private ExecutionOutcome GetExecutionOutcome(ProcessInfo execution)
         {
-            if (_compilerRunners.Any(runner => execution[(int)runner.Index]?.TimedOut ?? false))
+            if (execution.TimedOut)
+            {
                 return ExecutionOutcome.TIMED_OUT;
-            if (_compilerRunners.Any(runner => execution[(int)runner.Index]?.Crashed ?? false))
+            }
+            if (execution.Crashed)
+            {
                 return ExecutionOutcome.CRASHED;
-            if (!_compilerRunners.Any(runner => execution[(int)runner.Index]?.Succeeded ?? false))
-                return ExecutionOutcome.EXIT_CODE;
-            return ExecutionOutcome.PASS;
+            }
+            return (execution.Succeeded ? ExecutionOutcome.PASS : ExecutionOutcome.EXIT_CODE);
         }
 
         private void WriteBuildStatistics(StreamWriter logWriter)
@@ -563,16 +565,15 @@ namespace ReadyToRun.SuperIlc
                     bool anyCompilationFailed = false;
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        bool compilationFailed = compilation[(int)runner.Index] != null && !compilation[(int)runner.Index].Succeeded;
-                        if (compilationFailed)
+                        if (compilation[(int)runner.Index] != null)
                         {
-                            compilationOutcomes[(int)CompilationOutcome.FAIL, (int)runner.Index]++;
-                            anyCompilationFailed = true;
-                            compilationFailedPerRunner[(int)runner.Index] = true;
-                        }
-                        else
-                        {
-                            compilationOutcomes[(int)CompilationOutcome.PASS, (int)runner.Index]++;
+                            CompilationOutcome outcome = GetCompilationOutcome(compilation[(int)runner.Index]);
+                            compilationOutcomes[(int)outcome, (int)runner.Index]++;
+                            if (outcome != CompilationOutcome.PASS)
+                            {
+                                anyCompilationFailed = true;
+                                compilationFailedPerRunner[(int)runner.Index] = true;
+                            }
                         }
                     }
                     if (anyCompilationFailed)
@@ -598,9 +599,7 @@ namespace ReadyToRun.SuperIlc
                         bool executionFailed = !compilationFailed && (execProcess != null && !execProcess.Succeeded);
                         if (executionFailed)
                         {
-                            ExecutionOutcome outcome = (execProcess.TimedOut ? ExecutionOutcome.TIMED_OUT :
-                                execProcess.Crashed ? ExecutionOutcome.CRASHED :
-                                ExecutionOutcome.EXIT_CODE);
+                            ExecutionOutcome outcome = GetExecutionOutcome(execProcess);
                             executionOutcomes[(int)outcome, (int)runner.Index]++;
                             executionFailureOutcomeMask |= 1 << (int)outcome;
                         }
@@ -1191,11 +1190,17 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        private static void WriterMarkerLog(string fileName, Dictionary<string, byte> managedSequentialResults)
+        private static void WriterMarkerLog(string fileName, Dictionary<string, byte> markerResults)
         {
+            if (markerResults.Count == 0)
+            {
+                // Don't emit marker logs when the instrumentation is off
+                return;
+            }
+
             using (StreamWriter logWriter = new StreamWriter(fileName))
             {
-                foreach (KeyValuePair<string, byte> kvp in managedSequentialResults.OrderBy((kvp) => kvp.Key))
+                foreach (KeyValuePair<string, byte> kvp in markerResults.OrderBy((kvp) => kvp.Key))
                 {
                     logWriter.WriteLine("{0}:{1}", kvp.Value, kvp.Key);
                 }
@@ -1204,6 +1209,12 @@ namespace ReadyToRun.SuperIlc
 
         private static void WriterMarkerDiff(string fileName, Dictionary<string, byte> cpaot, Dictionary<string, byte> crossgen)
         {
+            if (cpaot.Count == 0 && crossgen.Count == 0)
+            {
+                // Don't emit empty marker diffs just polluting the output folder
+                return;
+            }
+
             using (StreamWriter logWriter = new StreamWriter(fileName))
             {
                 int cpaotCount = cpaot.Count();
@@ -1275,16 +1286,14 @@ namespace ReadyToRun.SuperIlc
             {
                 foreach (ProcessInfo[] compilation in folder.Compilations)
                 {
-                    if (GetCompilationOutcome(compilation) == outcome)
+                    foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        foreach (CompilerRunner runner in _compilerRunners)
+                        ProcessInfo compilationPerRunner = compilation[(int)runner.Index];
+                        if (compilationPerRunner != null &&
+                            GetCompilationOutcome(compilationPerRunner) == outcome && 
+                            compilationPerRunner.Parameters != null)
                         {
-                            ProcessInfo compilationPerRunner = compilation[(int)runner.Index];
-                            if (compilationPerRunner?.Parameters != null)
-                            {
-                                filteredTestList.Add(compilationPerRunner.Parameters.OutputFileName);
-                                break;
-                            }
+                            filteredTestList.Add(compilationPerRunner.Parameters.OutputFileName);
                         }
                     }
                 }
@@ -1301,16 +1310,14 @@ namespace ReadyToRun.SuperIlc
             {
                 foreach (ProcessInfo[] execution in folder.Executions)
                 {
-                    if (GetExecutionOutcome(execution) == outcome)
+                    foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        foreach (CompilerRunner runner in _compilerRunners)
+                        ProcessInfo executionPerRunner = execution[(int)runner.Index];
+                        if (executionPerRunner != null &&
+                            GetExecutionOutcome(executionPerRunner) == outcome &&
+                            executionPerRunner.Parameters != null)
                         {
-                            ProcessInfo executionPerRunner = execution[(int)runner.Index];
-                            if (executionPerRunner?.Parameters != null)
-                            {
-                                filteredTestList.Add(executionPerRunner.Parameters.OutputFileName);
-                                break;
-                            }
+                            filteredTestList.Add(executionPerRunner.Parameters.InputFileName);
                         }
                     }
                 }
