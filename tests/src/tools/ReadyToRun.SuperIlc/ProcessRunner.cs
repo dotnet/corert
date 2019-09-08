@@ -57,6 +57,8 @@ public class ProcessInfo
     public int ExitCode;
     public Dictionary<string, HashSet<string>> JittedMethods;
 
+    public bool Crashed => ExitCode < -1000 * 1000;
+
     public ProcessInfo(ProcessConstructor constructor)
     {
         Constructor = constructor;

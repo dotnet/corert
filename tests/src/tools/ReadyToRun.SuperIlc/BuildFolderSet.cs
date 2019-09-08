@@ -391,8 +391,6 @@ namespace ReadyToRun.SuperIlc
 
             ParallelRunner.Run(executionsToRun, degreeOfParallelism: _options.Sequential ? 1 : 0);
 
-            List<KeyValuePair<string, string>> failedExecutionsPerBuilder = new List<KeyValuePair<string, string>>();
-
             int successfulExecuteCount = 0;
 
             bool success = true;
@@ -422,7 +420,6 @@ namespace ReadyToRun.SuperIlc
                     }
                     if (file != null)
                     {
-                        failedExecutionsPerBuilder.Add(new KeyValuePair<string, string>(file, failedBuilders));
                         success = false;
                     }
                     else
@@ -533,6 +530,24 @@ namespace ReadyToRun.SuperIlc
             Count
         }
 
+        private CompilationOutcome GetCompilationOutcome(ProcessInfo compilation)
+        {
+            return compilation.Succeeded ? CompilationOutcome.PASS : CompilationOutcome.FAIL;
+        }
+
+        private ExecutionOutcome GetExecutionOutcome(ProcessInfo execution)
+        {
+            if (execution.TimedOut)
+            {
+                return ExecutionOutcome.TIMED_OUT;
+            }
+            if (execution.Crashed)
+            {
+                return ExecutionOutcome.CRASHED;
+            }
+            return (execution.Succeeded ? ExecutionOutcome.PASS : ExecutionOutcome.EXIT_CODE);
+        }
+
         private void WriteBuildStatistics(StreamWriter logWriter)
         {
             // The Count'th element corresponds to totals over all compiler runners used in the run
@@ -550,16 +565,15 @@ namespace ReadyToRun.SuperIlc
                     bool anyCompilationFailed = false;
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        bool compilationFailed = compilation[(int)runner.Index] != null && !compilation[(int)runner.Index].Succeeded;
-                        if (compilationFailed)
+                        if (compilation[(int)runner.Index] != null)
                         {
-                            compilationOutcomes[(int)CompilationOutcome.FAIL, (int)runner.Index]++;
-                            anyCompilationFailed = true;
-                            compilationFailedPerRunner[(int)runner.Index] = true;
-                        }
-                        else
-                        {
-                            compilationOutcomes[(int)CompilationOutcome.PASS, (int)runner.Index]++;
+                            CompilationOutcome outcome = GetCompilationOutcome(compilation[(int)runner.Index]);
+                            compilationOutcomes[(int)outcome, (int)runner.Index]++;
+                            if (outcome != CompilationOutcome.PASS)
+                            {
+                                anyCompilationFailed = true;
+                                compilationFailedPerRunner[(int)runner.Index] = true;
+                            }
                         }
                     }
                     if (anyCompilationFailed)
@@ -585,9 +599,7 @@ namespace ReadyToRun.SuperIlc
                         bool executionFailed = !compilationFailed && (execProcess != null && !execProcess.Succeeded);
                         if (executionFailed)
                         {
-                            ExecutionOutcome outcome = (execProcess.TimedOut ? ExecutionOutcome.TIMED_OUT :
-                                execProcess.ExitCode < -1000 * 1000 ? ExecutionOutcome.CRASHED :
-                                ExecutionOutcome.EXIT_CODE);
+                            ExecutionOutcome outcome = GetExecutionOutcome(execProcess);
                             executionOutcomes[(int)outcome, (int)runner.Index]++;
                             executionFailureOutcomeMask |= 1 << (int)outcome;
                         }
@@ -1138,12 +1150,29 @@ namespace ReadyToRun.SuperIlc
             string executionBucketsFile = Path.Combine(_options.OutputDirectory.FullName, "execution-buckets-" + suffix);
             ExecutionFailureBuckets.WriteToFile(executionBucketsFile, detailed: true);
 
+            string compilationPassedFile = Path.Combine(_options.OutputDirectory.FullName, "compilation-passed-" + suffix);
+            WriteFileListPerCompilationOutcome(compilationPassedFile, CompilationOutcome.PASS);
+
+            string compilationFailedFile = Path.Combine(_options.OutputDirectory.FullName, "compilation-failed-" + suffix);
+            WriteFileListPerCompilationOutcome(compilationFailedFile, CompilationOutcome.FAIL);
+
+            string executionPassedFile = Path.Combine(_options.OutputDirectory.FullName, "execution-passed-" + suffix);
+            WriteFileListPerExecutionOutcome(executionPassedFile, ExecutionOutcome.PASS);
+
+            string executionTimedOutFile = Path.Combine(_options.OutputDirectory.FullName, "execution-timed-out-" + suffix);
+            WriteFileListPerExecutionOutcome(executionTimedOutFile, ExecutionOutcome.TIMED_OUT);
+
+            string executionCrashedFile = Path.Combine(_options.OutputDirectory.FullName, "execution-crashed-" + suffix);
+            WriteFileListPerExecutionOutcome(executionCrashedFile, ExecutionOutcome.CRASHED);
+
+            string executionExitCodeFile = Path.Combine(_options.OutputDirectory.FullName, "execution-exit-code-" + suffix);
+            WriteFileListPerExecutionOutcome(executionExitCodeFile, ExecutionOutcome.EXIT_CODE);
+
             string cpaotManagedSequentialFile = Path.Combine(_options.OutputDirectory.FullName, "managed-sequential-cpaot-" + suffix);
             WriterMarkerLog(cpaotManagedSequentialFile, _cpaotManagedSequentialResults);
 
             string cpaotRequiresMarshalingFile = Path.Combine(_options.OutputDirectory.FullName, "requires-marshaling-cpaot-" + suffix);
             WriterMarkerLog(cpaotRequiresMarshalingFile, _cpaotRequiresMarshalingResults);
-
 
             if (_options.Crossgen)
             {
@@ -1161,11 +1190,17 @@ namespace ReadyToRun.SuperIlc
             }
         }
 
-        private static void WriterMarkerLog(string fileName, Dictionary<string, byte> managedSequentialResults)
+        private static void WriterMarkerLog(string fileName, Dictionary<string, byte> markerResults)
         {
+            if (markerResults.Count == 0)
+            {
+                // Don't emit marker logs when the instrumentation is off
+                return;
+            }
+
             using (StreamWriter logWriter = new StreamWriter(fileName))
             {
-                foreach (KeyValuePair<string, byte> kvp in managedSequentialResults.OrderBy((kvp) => kvp.Key))
+                foreach (KeyValuePair<string, byte> kvp in markerResults.OrderBy((kvp) => kvp.Key))
                 {
                     logWriter.WriteLine("{0}:{1}", kvp.Value, kvp.Key);
                 }
@@ -1174,6 +1209,12 @@ namespace ReadyToRun.SuperIlc
 
         private static void WriterMarkerDiff(string fileName, Dictionary<string, byte> cpaot, Dictionary<string, byte> crossgen)
         {
+            if (cpaot.Count == 0 && crossgen.Count == 0)
+            {
+                // Don't emit empty marker diffs just polluting the output folder
+                return;
+            }
+
             using (StreamWriter logWriter = new StreamWriter(fileName))
             {
                 int cpaotCount = cpaot.Count();
@@ -1236,6 +1277,54 @@ namespace ReadyToRun.SuperIlc
                 }
                 logWriter.WriteLine(item);
             }
+        }
+
+        private void WriteFileListPerCompilationOutcome(string outputFileName, CompilationOutcome outcome)
+        {
+            List<string> filteredTestList = new List<string>();
+            foreach (BuildFolder folder in _buildFolders)
+            {
+                foreach (ProcessInfo[] compilation in folder.Compilations)
+                {
+                    foreach (CompilerRunner runner in _compilerRunners)
+                    {
+                        ProcessInfo compilationPerRunner = compilation[(int)runner.Index];
+                        if (compilationPerRunner != null &&
+                            GetCompilationOutcome(compilationPerRunner) == outcome && 
+                            compilationPerRunner.Parameters != null)
+                        {
+                            filteredTestList.Add(compilationPerRunner.Parameters.OutputFileName);
+                        }
+                    }
+                }
+            }
+
+            filteredTestList.Sort(StringComparer.OrdinalIgnoreCase);
+            File.WriteAllLines(outputFileName, filteredTestList);
+        }
+
+        private void WriteFileListPerExecutionOutcome(string outputFileName, ExecutionOutcome outcome)
+        {
+            List<string> filteredTestList = new List<string>();
+            foreach (BuildFolder folder in _buildFolders)
+            {
+                foreach (ProcessInfo[] execution in folder.Executions)
+                {
+                    foreach (CompilerRunner runner in _compilerRunners)
+                    {
+                        ProcessInfo executionPerRunner = execution[(int)runner.Index];
+                        if (executionPerRunner != null &&
+                            GetExecutionOutcome(executionPerRunner) == outcome &&
+                            executionPerRunner.Parameters != null)
+                        {
+                            filteredTestList.Add(executionPerRunner.Parameters.InputFileName);
+                        }
+                    }
+                }
+            }
+
+            filteredTestList.Sort(StringComparer.OrdinalIgnoreCase);
+            File.WriteAllLines(outputFileName, filteredTestList);
         }
 
         public IEnumerable<BuildFolder> FoldersToBuild => _buildFolders.Where(folder => !folder.IsBlockedWithIssue);
