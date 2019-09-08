@@ -102,16 +102,6 @@ namespace Internal.NativeFormat
             {
                 if (stream + 2 >= streamEnd)
                     ThrowBadImageFormatException();
-                X2.PrintLine("decoding 3 bytes");
-                var b1 = val;
-                var b2 = (int)*(stream + 1);
-                var b3 = ((int)*(sbyte*)(stream + 2));
-                X2.PrintUint(b1);
-                X2.PrintUint(b2);
-                X2.PrintUint(b3);
-                X2.PrintUint((b1 >> 3) |
-                             (b2 << 5) |
-                             (b3 << 13));
                 value = (val >> 3) |
                       (((int)*(stream + 1)) << 5) |
                       (((int)*(sbyte*)(stream + 2)) << 13);
@@ -376,7 +366,7 @@ namespace Internal.NativeFormat
 
         public uint DecodeUnsigned(uint offset, out uint value)
         {
-            X2.PrintUint((int)offset);
+//            X2.PrintUint((int)offset);
             EnsureOffsetInRange(offset, 0);
 
             byte* data = _base + offset;
@@ -388,12 +378,8 @@ namespace Internal.NativeFormat
         {
             EnsureOffsetInRange(offset, 0);
 
-            X2.PrintLine("DecodeSigned");
-            X2.PrintUint((int)_base);
-            X2.PrintUint((int)offset);
             byte* data = _base + offset;
             value = NativePrimitiveDecoder.DecodeSigned(ref data, _base + _size);
-            X2.PrintUint(value);
             return (uint)(data - _base);
         }
 
@@ -462,8 +448,8 @@ namespace Internal.NativeFormat
             {
                 Debug.Assert(value < _reader.Size);
                 _offset = value;
-                X2.PrintLine("SETTING offset");
-            X2.PrintUint((int)_offset);
+//                X2.PrintLine("SETTING offset");
+//            X2.PrintUint((int)_offset);
             }
         }
 
@@ -482,7 +468,7 @@ namespace Internal.NativeFormat
         public uint GetUnsigned()
         {
             uint value;
-            X2.PrintUint((int)_offset);
+//            X2.PrintUint((int)_offset);
             _offset = _reader.DecodeUnsigned(_offset, out value);
             return value;
         }
@@ -506,14 +492,14 @@ namespace Internal.NativeFormat
             uint pos = _offset;
 
             int delta;
-            X2.PrintLine("GetRelativeOffset offset before decodeSigned");
-            X2.PrintUint((int)_offset);
+//            X2.PrintLine("GetRelativeOffset offset before decodeSigned");
+//            X2.PrintUint((int)_offset);
 
             _offset = _reader.DecodeSigned(_offset, out delta);
-            X2.PrintLine("GetRelativeOffset");
-                X2.PrintUint((int)_offset);
-                X2.PrintUint((int)delta);
-                X2.PrintUint((int)(pos + (uint)delta));
+//            X2.PrintLine("GetRelativeOffset");
+//                X2.PrintUint((int)_offset);
+//                X2.PrintUint((int)delta);
+//                X2.PrintUint((int)(pos + (uint)delta));
                 return pos + (uint)delta;
         }
 

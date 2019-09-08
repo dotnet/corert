@@ -171,17 +171,17 @@ namespace Internal.Runtime.TypeLoader
 
         internal MethodDesc GetMethod(ref NativeParser parser, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
         {
-            X2.PrintLine("GetMethod");
+//            X2.PrintLine("GetMethod");
             MethodFlags flags = (MethodFlags)parser.GetUnsigned();
 
             IntPtr functionPointer = IntPtr.Zero;
             if ((flags & MethodFlags.HasFunctionPointer) != 0)
             {
-                X2.PrintLine("GetMethod HasFunctionPointer");
+//                X2.PrintLine("GetMethod HasFunctionPointer");
                 functionPointer = GetExternalReferencePointer(parser.GetUnsigned());
             }
             DefType containingType = (DefType)GetType(ref parser);
-            X2.PrintLine("containing Type");
+//            X2.PrintLine("containing Type");
 //            X2.PrintLine(containingType.Name);
 
             MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignature(ref parser, _module.Handle, out methodNameSig, out methodSig);

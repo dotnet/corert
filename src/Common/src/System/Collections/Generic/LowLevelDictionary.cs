@@ -32,8 +32,8 @@ namespace System.Collections.Generic
 
         internal static void PrintLine(string s)
         {
-            PrintString(s);
-            PrintString("\n");
+//            PrintString(s);
+//            PrintString("\n");
         }
 
         public unsafe static void PrintUint(int s)
@@ -91,6 +91,7 @@ namespace System.Collections.Generic
         {
             PrintLine("Capacity");
             PrintLine(capacity.ToString());
+            X.PrintUint(1234);
             Clear(capacity);
         }
 
@@ -264,7 +265,7 @@ namespace System.Collections.Generic
             Entry entry = _buckets[bucket];
             while (entry != null)
             {
-                X.PrintUint(0); // need a reference
+//                X.PrintUint(0); // need a reference
                 PrintLine("getting m_key");
                 var k = entry.m_key;
                 PrintLine("trying equals");

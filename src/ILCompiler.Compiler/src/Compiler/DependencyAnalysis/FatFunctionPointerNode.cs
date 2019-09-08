@@ -32,6 +32,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
+            var s = Method.ToString();
+            if (s.Contains("InvokeRetOII"))
+            {
+
+            }
             string prefix = _isUnboxingStub ? "__fatunboxpointer_" : "__fatpointer_";
             sb.Append(prefix).Append(nameMangler.GetMangledMethodName(Method));
         }

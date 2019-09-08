@@ -184,10 +184,6 @@ namespace Internal.IL
 
             try
             {
-                if (_method.ToString().Contains("InternalGetResourceString"))
-                {
-                    throw new Exception();
-                }
                 ImportBasicBlocks();
             }
             catch
@@ -232,7 +228,12 @@ namespace Internal.IL
 
         private void GenerateProlog()
         {
-            Console.WriteLine(_method.ToString());
+            var s = _method.ToString();
+            Console.WriteLine(s);
+            if (s.Contains("InvokeRetOII<") && s.Contains("Canon") && s.Contains("ool"))
+            {
+
+            }
             LLVMBasicBlockRef prologBlock = LLVM.AppendBasicBlock(_llvmFunction, "Prolog");
             LLVM.PositionBuilderAtEnd(_builder, prologBlock);
 
@@ -247,11 +248,11 @@ namespace Internal.IL
             // Keep track of where we are in the llvm signature, starting after the
             // shadow stack pointer and return address
             int signatureIndex = 1;
-            if (_method.RequiresInstArg()) // hidden param after shadow stack pointer
+            if (NeedsReturnStackSlot(_signature))
             {
                 signatureIndex++;
             }
-            if (NeedsReturnStackSlot(_signature))
+            if (_method.RequiresInstArg()) // hidden param after shadow stack pointer and return slot if present
             {
                 signatureIndex++;
             }
@@ -1623,11 +1624,6 @@ namespace Internal.IL
             if (NeedsReturnStackSlot(_signature))
             {
                 var retParam = LLVM.GetNextParam(LLVM.GetFirstParam(_llvmFunction));
-                if (_method.RequiresInstArg())
-                {
-                    // skip over hidden param
-                    retParam = LLVM.GetNextParam(retParam);
-                }
                 ImportStoreHelper(castValue, valueType, retParam, 0);
                 LLVM.BuildRetVoid(_builder);
             }
@@ -1654,11 +1650,11 @@ namespace Internal.IL
             //            {
             //
             //            }
-            if (_method.ToString().Contains("LowLevelDictionary") &&
-                _method.ToString().Contains("Find")
-                && callee.ToString().Contains("Equals"))
+            if (_method.ToString().Contains("InvokeRetOII") &&
+                _method.ToString().Contains("Canon")
+                && callee.ToString().Contains("DynamicInvokeParamHelperIn"))
             {
-
+                PrintInt32(BuildConstInt32(512));
             }
             if (callee.IsIntrinsic)
             {
@@ -1945,10 +1941,10 @@ namespace Internal.IL
                     interfaceEEType = new LoadExpressionEntry(StackValueKind.ValueType, "interfaceEEType", GetEETypePointerForTypeDesc(method.OwningType, true), eeTypeDesc);
                     eeTypeExpression = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", thisPointer, eeTypeDesc);
                 }
-                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 256, false));
+//                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 256, false));
 
                 var targetEntry = CallRuntime(_compilation.TypeSystemContext, DispatchResolve, "FindInterfaceMethodImplementationTarget", new StackEntry[] { eeTypeExpression, interfaceEEType, new ExpressionEntry(StackValueKind.Int32, "slot", slot, GetWellKnownType(WellKnownType.UInt16)) });
-                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 257, false));
+//                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 257, false));
                 functionPtr = targetEntry.ValueAsType(LLVM.PointerType(llvmSignature, 0), _builder);
             }
             else
@@ -2054,14 +2050,14 @@ namespace Internal.IL
             List<LLVMTypeRef> signatureTypes = new List<LLVMTypeRef>();
             signatureTypes.Add(LLVM.PointerType(LLVM.Int8Type(), 0)); // Shadow stack pointer
 
-            if (hasHiddenParam)
-            {
-                signatureTypes.Add(LLVM.PointerType(LLVM.Int32Type(), 0)); // Shadow stack pointer
-            }
-
             if (!returnOnStack && returnType != GetWellKnownType(WellKnownType.Void))
             {
                 signatureTypes.Add(LLVM.PointerType(LLVM.Int8Type(), 0));
+            }
+
+            if (hasHiddenParam)
+            {
+                signatureTypes.Add(LLVM.PointerType(LLVM.Int32Type(), 0)); // Shadow stack pointer
             }
 
             // Intentionally skipping the 'this' pointer since it could always be a GC reference
@@ -2443,10 +2439,6 @@ namespace Internal.IL
                 }
             }
 
-            if (hiddenParam.Pointer != IntPtr.Zero)
-            {
-                llvmArgs.Add(CastIfNecessary(hiddenParam, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0)));
-            }
 //            if (canonMethod != null && canonMethod.ToString().Contains("Interlocked")
 //                && canonMethod.ToString().Contains("CompareExchange")
 //                && canonMethod.ToString().Contains("Canon"))
@@ -2457,6 +2449,11 @@ namespace Internal.IL
             if (needsReturnSlot)
             {
                 llvmArgs.Add(castReturnAddress);
+            }
+
+            if (hiddenParam.Pointer != IntPtr.Zero)
+            {
+                llvmArgs.Add(CastIfNecessary(hiddenParam, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0)));
             }
 
             // argument offset on the shadow stack
@@ -2856,26 +2853,32 @@ namespace Internal.IL
 
         private void ImportCalli(int token)
         {
+            //TODO wasm creates FatPointer for InvokeRet... but cpp does not, why?
+            if (this._method.ToString().Contains("CalliIntrinsics") && this._method.Signature.Length == 6)
+            {
+
+            }
             MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
 
             var noHiddenParamSig = GetLLVMSignatureForMethod(methodSignature, false);
             var hddenParamSig = GetLLVMSignatureForMethod(methodSignature, true);
-            PrintInt32(BuildConstInt32(128));
-            if (_method.ToString().Contains("StartupCodeHelpers"))
-            {
-                //top of stack will be a load, but we want the value before deref.
-            }
+            PrintInt32(BuildConstInt32(64));
             var target = ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(noHiddenParamSig, 0), _builder);
 //            PrintIntPtr(target);
 
             var functionPtrAsInt = LLVM.BuildPtrToInt(_builder, target, LLVMTypeRef.Int32Type(), "ptrToInt");
-            var andResRef = LLVM.BuildBinOp(_builder, LLVMOpcode.LLVMAnd, functionPtrAsInt, LLVM.ConstInt(LLVM.Int32Type(), (ulong)FatFunctionPointerOffset, LLVMMisc.False), "andFatCheck");
+            PrintInt32(functionPtrAsInt);
+            var andResRef = LLVM.BuildBinOp(_builder, LLVMOpcode.LLVMAnd, functionPtrAsInt, LLVM.ConstInt(LLVM.Int32Type(), FatFunctionPointerOffset, LLVMMisc.False), "andFatCheck");
             var boolConv = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, andResRef, BuildConstInt32(0), "bitConv");
             var fatBranch = LLVM.AppendBasicBlock(_currentFunclet, "fat");
             var notFatBranch = LLVM.AppendBasicBlock(_currentFunclet, "notFat");
             var endif = LLVM.AppendBasicBlock(_currentFunclet, "endif");
             LLVM.BuildCondBr(_builder, boolConv, notFatBranch, fatBranch);
             LLVM.PositionBuilderAtEnd(_builder, notFatBranch);
+
+            // non fat branch
+            PrintInt32(BuildConstInt32(65));
+
             var parameterCount = methodSignature.Length + (methodSignature.IsStatic ? 0 : 1);
             StackEntry[] stackCopy = new StackEntry[parameterCount];
             for (int i = 0; i < stackCopy.Length; i++)
@@ -2898,11 +2901,15 @@ namespace Internal.IL
             }
             LLVM.BuildBr(_builder, endif);
             LLVM.PositionBuilderAtEnd(_builder, fatBranch);
-//            for (int i = 0; i < stackCopy.Length; i++)
-//            {
-//                _stack.Push(stackCopy[stackCopy.Length - i - 1]);
-//            }
-//            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: target);
+
+            // fat branch
+            PrintInt32(BuildConstInt32(66));
+
+            //            for (int i = 0; i < stackCopy.Length; i++)
+            //            {
+            //                _stack.Push(stackCopy[stackCopy.Length - i - 1]);
+            //            }
+            //            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: target);
             var minusOffset = LLVM.BuildAnd(_builder,
                             CastIfNecessary(_builder, target, LLVMTypeRef.Int32Type()),
                             BuildConstInt32(0x3fffffff), "minusFatOffset");
@@ -2933,6 +2940,7 @@ namespace Internal.IL
             }
             LLVM.BuildBr(_builder, endif);
             LLVM.PositionBuilderAtEnd(_builder, endif);
+
             // choose the right return value
             if (hasRes)
             {
@@ -4403,7 +4411,7 @@ namespace Internal.IL
                 //                return CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
                 //                    LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), "typeFromThis");
             }
-            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 /* hidden param after shadow stack */), LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "HiddenArg"); 
+            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0) /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "HiddenArg"); 
         }
 
         void PrintIntPtr(LLVMValueRef ptr)
@@ -4447,23 +4455,23 @@ namespace Internal.IL
 
         void PrintInt32(LLVMValueRef ptr)
         {
-//            int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
-//            LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_currentFunclet),
-//                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
-//                String.Empty);
-//            LLVM.BuildCall(_builder,
-//                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
-//                    LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
-//                        {
-//                            LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
-//                            LLVMTypeRef.Int32Type()
-//                        },
-//                        false)),
-//                new LLVMValueRef[]
-//                {
-//                    CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
-//                    ptr
-//                }, string.Empty);
+            int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
+            LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_currentFunclet),
+                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
+                String.Empty);
+            LLVM.BuildCall(_builder,
+                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
+                    LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
+                        {
+                            LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+                            LLVMTypeRef.Int32Type()
+                        },
+                        false)),
+                new LLVMValueRef[]
+                {
+                    CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
+                    ptr
+                }, string.Empty);
         }
 
         private LLVMValueRef ArrayBaseSize()

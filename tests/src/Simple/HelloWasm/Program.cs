@@ -778,7 +778,6 @@ internal static class Program
         NewMethod(classForMetaTestsType, instance);
 
         /*
-
         StartTest("Class get+invoke static method with ref param via reflection");
         var staticMtd = classForMetaTestsType.GetMethod("ReturnsParam");
         var retVal = (ClassForMetaTests)staticMtd.Invoke(null, new object[] { instance });

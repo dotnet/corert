@@ -7,7 +7,7 @@ using System.Runtime;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-
+using Internal.NativeFormat;
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -146,14 +146,16 @@ namespace System
             if (!(srcEEType.IsPrimitive && dstEEType.IsPrimitive))
             {
                 dstObject = null;
-                return CreateChangeTypeException(srcEEType, dstEEType, semantics);
+                throw new Exception();
+//                return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
             RuntimeImports.RhCorElementType dstCorElementType = dstEEType.CorElementType;
             if (!srcEEType.CorElementTypeInfo.CanWidenTo(dstCorElementType))
             {
                 dstObject = null;
-                return CreateChangeTypeArgumentException(srcEEType, dstEEType);
+                throw new Exception();
+//                return CreateChangeTypeArgumentException(srcEEType, dstEEType);
             }
 
             switch (dstCorElementType)
@@ -431,11 +433,14 @@ namespace System
                     {
                         if (dynamicInvokeHelperGenericDictionary != IntPtr.Zero)
                         {
+                            X2.PrintLine("!Zero");
                             result = CalliIntrinsics.Call(dynamicInvokeHelperMethod, dynamicInvokeHelperGenericDictionary, thisPtr, methodToCall, ref argSetupState, methodToCallIsThisCall);
                             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                         }
                         else
                         {
+                            X2.PrintLine("==Zero");
+
                             result = CalliIntrinsics.Call(dynamicInvokeHelperMethod, thisPtr, methodToCall, ref argSetupState, methodToCallIsThisCall);
                             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                         }

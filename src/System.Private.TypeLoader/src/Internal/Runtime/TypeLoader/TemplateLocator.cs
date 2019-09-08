@@ -251,19 +251,19 @@ namespace Internal.Runtime.TypeLoader
                     _module = moduleInfo
                 };
 
-                    X2.PrintLine("hashCode");
-                    X2.PrintUint((int)hashCode);
+//                    X2.PrintLine("hashCode");
+//                    X2.PrintUint((int)hashCode);
                 var enumerator = genericMethodTemplatesHashtable.Lookup(hashCode);
 
                 NativeParser entryParser;
                 while (!(entryParser = enumerator.GetNext()).IsNull)
                 {
                     var offset = entryParser.GetUnsigned();
-                    X2.PrintLine("calling with GetExternalNativeLayoutOffset");
-                    X2.PrintUint((int)offset);
+//                    X2.PrintLine("calling with GetExternalNativeLayoutOffset");
+//                    X2.PrintUint((int)offset);
                     var o2 = externalFixupsTable.GetExternalNativeLayoutOffset(offset);
-                    X2.PrintLine("externalFixupsTable.GetExternalNativeLayoutOffset");
-                    X2.PrintUint((int)o2);
+//                    X2.PrintLine("externalFixupsTable.GetExternalNativeLayoutOffset");
+//                    X2.PrintUint((int)o2);
                     var methodSignatureParser = new NativeParser(nativeLayoutReader, o2);
 
                     // Get the unified generic method holder and convert it to its canonical form

@@ -386,8 +386,8 @@ namespace Internal.TypeSystem
                         if (!key._owningType.Equals(runtimeMethod.OwningType))
                             return false;
 
-                        X2.PrintLine("CompareKeyToValue");
-                        X2.PrintUint((int)key._methodNameAndSignature.Signature.NativeLayoutOffset);
+//                        X2.PrintLine("CompareKeyToValue");
+//                        X2.PrintUint((int)key._methodNameAndSignature.Signature.NativeLayoutOffset);
                         if (!key._methodNameAndSignature.Equals(runtimeMethod.NameAndSignature))
                             return false;
 

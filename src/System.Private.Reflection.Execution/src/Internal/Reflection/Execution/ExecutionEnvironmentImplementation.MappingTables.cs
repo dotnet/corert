@@ -591,7 +591,7 @@ namespace Internal.Reflection.Execution
             CanonicalFormKind canonFormKind)
         {
             MethodInvokeMetadata methodInvokeMetadata;
-
+            X.PrintUint(67);
             if (!TypeLoaderEnvironment.TryGetMethodInvokeMetadata(
                 declaringTypeHandle,
                 methodHandle,

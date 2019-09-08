@@ -2108,6 +2108,11 @@ namespace Internal.IL
                 if (thisArgument.IsValueType)
                     thisArgument = thisArgument.MakeByRefType();
             }
+            if (_method.ToString().Contains("CalliIntrinsics") &&
+                _method.ToString().Contains("InvokeUtils"))
+            {
+
+            }
 
             TypeDesc retType = methodSignature.ReturnType;
             StackValueKind retKind = StackValueKind.Unknown;

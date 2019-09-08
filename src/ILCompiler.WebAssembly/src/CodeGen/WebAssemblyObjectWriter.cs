@@ -441,9 +441,9 @@ namespace ILCompiler.DependencyAnalysis
             var intPtrType = LLVM.PointerType(LLVM.Int32Type(), 0);
 
             var arrayglobal = LLVM.AddGlobalInAddressSpace(Module, LLVM.ArrayType(intPtrType, (uint)countOfPointerSizedElements), realName, 0);
-            if (realName.Contains("__EEType_S_P_Reflection_Core_System_Collections_Generic_LowLevelList_1<String>___REALBASE"))
+            if (realName == "__EEType_Object")
             {
-                EETypeLowLevelList = arrayglobal;
+                EETypeObject = arrayglobal;
             }
             if (realName == "__NonGCStaticBase_S_P_Reflection_Core_System_Collections_Generic_LowLevelList_1<String>___REALBASE"
             )
@@ -614,7 +614,7 @@ namespace ILCompiler.DependencyAnalysis
                 return pointerSize;
             }
             //TODO remove condition so it happens on all node types
-            int offsetFromBase = GetNumericOffsetFromBaseSymbolValue(target) + (target is FatFunctionPointerNode ? target.Offset : 0);
+            int offsetFromBase = GetNumericOffsetFromBaseSymbolValue(target) + /*(target is FatFunctionPointerNode ? */target.Offset /*: 0)*/;
 
             return EmitSymbolRef(realSymbolName, offsetFromBase, target is WebAssemblyMethodCodeNode, relocType, delta);
         }
@@ -701,7 +701,7 @@ namespace ILCompiler.DependencyAnalysis
 
         //System.IO.FileStream _file;
         string _objectFilePath;
-        static LLVMValueRef EETypeLowLevelList;
+        static LLVMValueRef EETypeObject;
         static LLVMValueRef FatPointer;
         static LLVMValueRef NonGCStaticBaseRealBase;
         public WebAssemblyObjectWriter(string objectFilePath, NodeFactory factory, WebAssemblyCodegenCompilation compilation)
@@ -1064,30 +1064,36 @@ namespace ILCompiler.DependencyAnalysis
                 ctx = LLVM.BuildIntToPtr(builder, ctx, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "castCtx");
                 gepName = "typeNodeGep";
 
-//                if (mangledName.Contains(
-//                    "GenericLookupFromType_S_P_Reflection_Core_System_Collections_Generic_LowLevelList"))
-//                {
-//                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 10, false), LLVM.GetParam(helperFunc, 0));
-//                PrintIntPtr(builder, ptr8, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
-//                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // should be the generic context, i.e. the *methodtable from GetGenericContext
-//                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 11, false), LLVM.GetParam(helperFunc, 0));
-//                PrintIntPtr(builder, ctx, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0), 
-//                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // should be the generic dict symbol
-//                
-////                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 12, false), LLVM.GetParam(helperFunc, 0));
-////                PrintIntPtr(builder, GenericDict, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
-////                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // this is the saved generic dict symbol
-////                var gdCast = LLVM.BuildBitCast(builder, GenericDict,
-////                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "gdcast");
-////                var gdLoad = LLVM.BuildLoad(builder, gdCast, "gdLoad");
-////                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 13, false), LLVM.GetParam(helperFunc, 0));
-////                PrintInt32(builder, gdLoad, LLVM.GetParam(helperFunc, 0)); // this is the saved generic dict symbol
-////                                    ctx = GenericDict; // this seems to fix it, so guess the second deref is good
-//                print = true;
-//                }
+                if (mangledName.Contains(
+                    "GenericLookupFromDict_Internal_CompilerGenerated__Module___InvokeRetOII"))
+                {
+                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 10, false), LLVM.GetParam(helperFunc, 0));
+                PrintIntPtr(builder, ptr8, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
+                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // should be the generic context, i.e. the *methodtable from GetGenericContext
+                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 11, false), LLVM.GetParam(helperFunc, 0));
+                PrintIntPtr(builder, ctx, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0), 
+                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // should be the generic dict symbol
+                
+//                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 12, false), LLVM.GetParam(helperFunc, 0));
+//                PrintIntPtr(builder, GenericDict, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
+//                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // this is the saved generic dict symbol
+//                var gdCast = LLVM.BuildBitCast(builder, GenericDict,
+//                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "gdcast");
+//                var gdLoad = LLVM.BuildLoad(builder, gdCast, "gdLoad");
+//                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 13, false), LLVM.GetParam(helperFunc, 0));
+//                PrintInt32(builder, gdLoad, LLVM.GetParam(helperFunc, 0)); // this is the saved generic dict symbol
+//                                    ctx = GenericDict; // this seems to fix it, so guess the second deref is good
+                print = true;
+                }
             }
             else
             {
+                if (mangledName.Contains(
+                    "GenericLookupFromDict_Internal_CompilerGenerated__Module___InvokeRetOII"))
+                {
+                print = true;
+                }
+
                 ctx = LLVM.GetParam(helperFunc, 1);
                 ctx = LLVM.BuildPointerCast(builder, ctx, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "castCtx");
                 gepName = "paramGep";
@@ -1325,7 +1331,7 @@ namespace ILCompiler.DependencyAnalysis
             if (print)
             {
                 PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 13, false), LLVM.GetParam(helperFunc, 0));
-                PrintIntPtr(builder, EETypeLowLevelList,
+                PrintIntPtr(builder, EETypeObject,
                     ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
                         LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
 
