@@ -2,9 +2,9 @@
   <PropertyGroup>
     <RyuJITVersion>5.0.0-alpha1.19453.1</RyuJITVersion>
     <ObjectWriterVersion>1.0.0-alpha-27619-05</ObjectWriterVersion>
-    <CoreFxVersion>4.6.0-preview8.19330.3</CoreFxVersion>
+    <CoreFxVersion>5.0.0-alpha1.19457.4</CoreFxVersion>
     <CoreFxUapVersion>4.7.0-preview6.19265.2</CoreFxUapVersion>
-    <MicrosoftNETCoreNativeVersion>3.0.0-preview8.19330.2</MicrosoftNETCoreNativeVersion>
+    <MicrosoftNETCoreNativeVersion>5.0.0-alpha1.19453.1</MicrosoftNETCoreNativeVersion>
     <MicrosoftNETCoreAppPackageVersion>2.1.11</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftDotNetTestSdkVersion>15.8.0</MicrosoftDotNetTestSdkVersion>
     <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
