@@ -110,6 +110,7 @@
     <Compile Include="Internal\IntrinsicSupport\EqualityComparerHelpers.cs" />
     <Compile Include="Internal\Reflection\Augments\ReflectionAugments.cs" />
     <Compile Include="Internal\Runtime\CompilerServices\HasEmbeddedStringResourcesAttribute.cs" />
+    <Compile Include="Internal\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="Internal\Runtime\EEType.Runtime.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ThrowHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\MathHelpers.cs" />
