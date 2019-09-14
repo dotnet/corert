@@ -832,6 +832,8 @@ DECLARE_INDIRECTION(RhpNewFinalizable);
 
 DECLARE_INDIRECTION(RhpNewArray);
 
+DECLARE_INDIRECTION(RhTypeCast_IsInstanceOf);
+DECLARE_INDIRECTION(RhTypeCast_CheckCast);
 DECLARE_INDIRECTION(RhTypeCast_IsInstanceOfClass);
 DECLARE_INDIRECTION(RhTypeCast_CheckCastClass);
 DECLARE_INDIRECTION(RhTypeCast_IsInstanceOfArray);
@@ -878,15 +880,18 @@ COOP_PINVOKE_HELPER(PTR_VOID, RhGetRuntimeHelperForType, (EEType * pEEType, int 
             return INDIRECTION(RhTypeCast_IsInstanceOfArray);
         else if (pEEType->IsInterface())
             return INDIRECTION(RhTypeCast_IsInstanceOfInterface);
+        else if (pEEType->IsParameterizedType())
+            return INDIRECTION(RhTypeCast_IsInstanceOf); // Array handled above; pointers and byrefs handled here
         else
             return INDIRECTION(RhTypeCast_IsInstanceOfClass);
 
     case RuntimeHelperKind::CastClass:
         if (pEEType->IsArray())
             return INDIRECTION(RhTypeCast_CheckCastArray);
-
         else if (pEEType->IsInterface())
             return INDIRECTION(RhTypeCast_CheckCastInterface);
+        else if (pEEType->IsParameterizedType())
+            return INDIRECTION(RhTypeCast_CheckCast); // Array handled above; pointers and byrefs handled here
         else
             return INDIRECTION(RhTypeCast_CheckCastClass);
 
