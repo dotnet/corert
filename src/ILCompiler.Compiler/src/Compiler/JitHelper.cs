@@ -326,7 +326,11 @@ namespace ILCompiler
             if (type.IsInterface)
                 return throwing ? "RhTypeCast_CheckCastInterface" : "RhTypeCast_IsInstanceOfInterface";
 
-            return throwing ? "RhTypeCast_CheckCastClass" : "RhTypeCast_IsInstanceOfClass";
+            if (type.IsDefType)
+                return throwing ? "RhTypeCast_CheckCastClass" : "RhTypeCast_IsInstanceOfClass";
+
+            // No specialized helper for the rest of the types because they don't make much sense anyway.
+            return throwing ? "RhTypeCast_CheckCast" : "RhTypeCast_IsInstanceOf";
         }
     }
 }
