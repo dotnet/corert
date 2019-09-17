@@ -1286,9 +1286,9 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (_method.ToString().Contains("LowLevelDictionary") &&
-                _method.ToString().Contains("Find")
-                && method.ToString().Contains("Equals"))
+            if (_method.ToString().Contains("CallDelegate")/* &&
+                _method.ToString().Contains("Stack")
+                && method.ToString().Contains("Equals")*/)
             {
 
             }
@@ -2108,8 +2108,7 @@ namespace Internal.IL
                 if (thisArgument.IsValueType)
                     thisArgument = thisArgument.MakeByRefType();
             }
-            if (_method.ToString().Contains("CalliIntrinsics") &&
-                _method.ToString().Contains("InvokeUtils"))
+            if (_method.ToString().Contains("StackDelegate"))
             {
 
             }

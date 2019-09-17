@@ -22,10 +22,10 @@ namespace ILCompiler.DependencyAnalysis
         public CppMethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
-            if (method.ToString().Contains("CheckStaticClassConstructionReturnNonGCStaticBase"))
-            {
-
-            }
+//            if (method.ToString().Contains("StackDelegate"))
+//            {
+//
+//            }
             _method = method;
         }
 

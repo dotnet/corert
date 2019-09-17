@@ -998,15 +998,15 @@ namespace ILCompiler.DependencyAnalysis
                     break;
             }
 
-            var args = new List<LLVMTypeRef>();
-            args.Add(LLVM.PointerType(LLVM.Int8Type(), 0));
-            args.Add(LLVM.PointerType(LLVM.Int8Type(), 0));
+            var args = new List<LLVMTypeRef>(); // TODO: delete?
+            var argRefs = new List<LLVMValueRef>();
+            MethodDesc delegateCtor = null;
             if (node.Id == ReadyToRunHelperId.DelegateCtor)
             {
                 DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
-                MethodDesc constructor = target.Constructor.Method;
-                bool isStatic = constructor.Signature.IsStatic;
-                int argCount = constructor.Signature.Length;
+                delegateCtor = target.Constructor.Method;
+                bool isStatic = delegateCtor.Signature.IsStatic;
+                int argCount = delegateCtor.Signature.Length;
                 if (!isStatic)
                     argCount++;
                 int startIdx = args.Count;
@@ -1015,18 +1015,18 @@ namespace ILCompiler.DependencyAnalysis
                     TypeDesc argType;
                     if (i == 0 && !isStatic)
                     {
-                        argType = constructor.OwningType;
+                        argType = delegateCtor.OwningType;
                     }
                     else
                     {
-                        argType = constructor.Signature[i - (isStatic ? 0 : 1)];
+                        argType = delegateCtor.Signature[i - (isStatic ? 0 : 1)];
                     }
                     args.Add(ILImporter.GetLLVMTypeForTypeDesc(argType));
+//                    argRefs.Add();
                 }
             }
 
-
-            var helperSignature = LLVM.FunctionType(retType, args.ToArray(), false);
+//            var helperSignature = LLVM.FunctionType(retType, args.ToArray(), false);
             var mangledName = node.GetMangledName(factory.NameMangler); //TODO: inline
 
             LLVMValueRef helperFunc = LLVM.GetNamedFunction(Module, mangledName);
@@ -1038,7 +1038,7 @@ namespace ILCompiler.DependencyAnalysis
 //            var helperFunc = LLVM.AddFunction(Module, mangledName, helperSignature);
             var helperBlock = LLVM.AppendBasicBlock(helperFunc, "genericHelper");
             LLVM.PositionBuilderAtEnd(builder, helperBlock);
-            var importer = new ILImporter(builder, compilation, Module, helperFunc);
+            var importer = new ILImporter(builder, compilation, Module, helperFunc, delegateCtor);
             //            string mangledName = GetCppReadyToRunGenericHelperNodeName(factory, node);
             //            List<string> argNames = new List<string>(new string[] { "arg" });
             //            string retVarName = "ret";
@@ -1164,17 +1164,15 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
                         MethodDesc constructor = target.Constructor.Method;
-            
 
-                        //TODO
-//                        sb.Append(argNames[3]);
-//                        sb.Append(" = ((intptr_t)");
-//                        sb.Append(resVarName);
-//                        sb.Append(") + ");
-//                        sb.Append(FatFunctionPointerConstants.Offset.ToString());
-//                        sb.Append(";");
-//                        sb.AppendLine();
-//            
+                        var fatFunction = LLVM.BuildGEP(builder, resVar,
+                            new LLVMValueRef[]
+                            {
+                                LLVM.ConstInt(LLVMTypeRef.Int32Type(), ILImporter.FatFunctionPointerOffset, false)
+                            },
+                            "fatPointer");
+                        importer.OutputCodeForDelegateCtorInit(builder, helperFunc, constructor, fatFunction);
+
 //                        sb.Append("::");
 //                        sb.Append(GetCppMethodDeclarationName(constructor.OwningType, GetCppMethodName(constructor)));
 //                        sb.Append("(");
@@ -1391,16 +1389,54 @@ namespace Internal.IL
 {
     partial class ILImporter
     {
-        public ILImporter(LLVMBuilderRef builder, WebAssemblyCodegenCompilation compilation, LLVMModuleRef module, LLVMValueRef currentFunclet)
+        public ILImporter(LLVMBuilderRef builder, WebAssemblyCodegenCompilation compilation, LLVMModuleRef module, LLVMValueRef helperFunc, MethodDesc delegateCtor)
         {
             this._builder = builder;
             this._compilation = compilation;
             this.Module = module;
-            this._currentFunclet = currentFunclet;
+            this._currentFunclet = helperFunc;
             _locals = new LocalVariableDefinition[0];
-            _signature = new MethodSignature(MethodSignatureFlags.None, 0, GetWellKnownType(WellKnownType.Void), new TypeDesc[0]);
+            if (delegateCtor == null)
+            {
+                _signature = new MethodSignature(MethodSignatureFlags.None, 0, GetWellKnownType(WellKnownType.Void),
+                    new TypeDesc[0]);
+            }
+            else
+            {
+                _signature = delegateCtor.Signature;
+                _argSlots = new LLVMValueRef[_signature.Length];
+                int signatureIndex = 1;
+                if (true) // hidden param after shadow stack pointer and return slot if present  TODO: can this ever be false?
+                {
+                    signatureIndex++;
+                }
+                int thisOffset = 0;
+                if (!_signature.IsStatic)
+                {
+                    thisOffset = 1;
+                }
+                for (int i = 0; i < _signature.Length; i++)
+                {
+                    if (CanStoreTypeOnStack(_signature[i]))
+                    {
+                        LLVMValueRef storageAddr;
+                        LLVMValueRef argValue = LLVM.GetParam(helperFunc, (uint)signatureIndex);
+
+                        // The caller will always pass the argument on the stack. If this function doesn't have 
+                        // EH, we can put it in an alloca for efficiency and better debugging. Otherwise,
+                        // copy it to the shadow stack so funclets can find it
+                        int argOffset = i + thisOffset;
+                        string argName = $"arg{argOffset}_";
+                        storageAddr = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(_signature[i]), argName);
+                        _argSlots[i] = storageAddr;
+                        LLVM.BuildStore(_builder, argValue, storageAddr);
+                        signatureIndex++;
+                    }
+                }
+            }
             _thisType = GetWellKnownType(WellKnownType.Void);
             _pointerSize = compilation.NodeFactory.Target.PointerSize;
+            _exceptionRegions = new ExceptionRegion[0];
         }
 
         internal ExpressionEntry OutputCodeForTriggerCctor(TypeDesc type, LLVMValueRef staticBaseValueRef)
@@ -1420,6 +1456,24 @@ namespace Internal.IL
 //
 //            sb.AppendLine();
             return returnExp2;
+        }
+
+        public void OutputCodeForDelegateCtorInit(LLVMBuilderRef builder, LLVMValueRef helperFunc,
+            MethodDesc constructor,
+            LLVMValueRef fatFunction)
+        {
+            StackEntry[] argValues = new StackEntry [constructor.Signature.Length + 1];  // for Delegate * _this
+            var shadowStack = LLVM.GetFirstParam(helperFunc);
+            argValues[0] = new LoadExpressionEntry(StackValueKind.ObjRef, "this", shadowStack, GetWellKnownType(WellKnownType.Object));
+            for (var i = 0; i < constructor.Signature.Length; i++)
+            {
+                var argRef = LoadVarAddress(i, LocalVarKind.Argument, out TypeDesc type);
+                var loadArg = LLVM.BuildLoad(builder, argRef, "arg" + i);
+                argValues[i + 1] = new ExpressionEntry(GetStackValueKind(constructor.Signature[i]), "arg" + i, loadArg, 
+                    constructor.Signature[i]);
+            }
+            argValues[3] = new ExpressionEntry(StackValueKind.NativeInt, "arg3", fatFunction, GetWellKnownType(WellKnownType.Int32));
+            HandleCall(constructor, constructor.Signature, constructor, constructor.Signature, argValues, null);
         }
     }
 }

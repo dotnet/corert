@@ -9,6 +9,7 @@ using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using Internal.NativeFormat;
 using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -161,6 +162,7 @@ namespace System
         // This function is known to the IL Transformer.
         protected void InitializeClosedInstance(object firstParameter, IntPtr functionPointer)
         {
+            X2.PrintLine("InitializeClosedInstance");
             if (firstParameter == null)
                 throw new ArgumentException(SR.Arg_DlgtNullInst);
 
@@ -171,6 +173,7 @@ namespace System
         // This function is known to the IL Transformer.
         protected void InitializeClosedInstanceSlow(object firstParameter, IntPtr functionPointer)
         {
+            X2.PrintLine("InitializeClosedInstanceSlow");
             // This method is like InitializeClosedInstance, but it handles ALL cases. In particular, it handles generic method with fun function pointers.
 
             if (firstParameter == null)
@@ -193,6 +196,7 @@ namespace System
         // This function is known to the compiler.
         protected void InitializeClosedInstanceWithGVMResolution(object firstParameter, RuntimeMethodHandle tokenOfGenericVirtualMethod)
         {
+            X2.PrintLine("InitializeClosedInstanceWithGVMResolution");
             if (firstParameter == null)
                 throw new ArgumentException(SR.Arg_DlgtNullInst);
 
@@ -221,6 +225,7 @@ namespace System
 
         private void InitializeClosedInstanceToInterface(object firstParameter, IntPtr dispatchCell)
         {
+            X2.PrintLine("InitializeClosedInstanceToInterface");
             if (firstParameter == null)
                 throw new ArgumentException(SR.Arg_DlgtNullInst);
 
@@ -232,6 +237,7 @@ namespace System
         // let you use that api to invoke an instance method with a null 'this'.
         private void InitializeClosedInstanceWithoutNullCheck(object firstParameter, IntPtr functionPointer)
         {
+            X2.PrintLine("InitializeClosedInstanceWithoutNullCheck");
             if (!FunctionPointerOps.IsGenericMethodPointer(functionPointer))
             {
                 m_functionPointer = functionPointer;
@@ -249,6 +255,7 @@ namespace System
         // This function is known to the compiler backend.
         protected void InitializeClosedStaticThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
+            X2.PrintLine("InitializeClosedStaticThunk");
             m_extraFunctionPointerOrData = functionPointer;
             m_helperObject = firstParameter;
             m_functionPointer = functionPointerThunk;
@@ -258,6 +265,7 @@ namespace System
         // This function is known to the compiler backend.
         protected void InitializeClosedStaticWithoutThunk(object firstParameter, IntPtr functionPointer)
         {
+            X2.PrintLine("InitializeClosedStaticWithoutThunk");
             m_extraFunctionPointerOrData = functionPointer;
             m_helperObject = firstParameter;
             m_functionPointer = GetThunk(ClosedStaticThunk);
@@ -267,6 +275,7 @@ namespace System
         // This function is known to the compiler backend.
         protected void InitializeOpenStaticThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
+            X2.PrintLine("InitializeOpenStaticThunk");
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = functionPointerThunk;
@@ -276,6 +285,7 @@ namespace System
         // This function is known to the compiler backend.
         protected void InitializeOpenStaticWithoutThunk(object firstParameter, IntPtr functionPointer)
         {
+            X2.PrintLine("InitializeOpenStaticWithoutThunk");
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = GetThunk(OpenStaticThunk);
@@ -285,6 +295,7 @@ namespace System
         // This function is known to the compiler backend.
         protected void InitializeReversePInvokeThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
+//            X2.PrintLine("InitializeReversePInvokeThunk");
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = functionPointerThunk;
@@ -294,6 +305,7 @@ namespace System
         // This function is known to the compiler backend.
         protected void InitializeReversePInvokeWithoutThunk(object firstParameter, IntPtr functionPointer)
         {
+//            X2.PrintLine("InitializeReversePInvokeWithoutThunk");
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = GetThunk(ReversePinvokeThunk);
@@ -303,6 +315,7 @@ namespace System
         // This function is known to the compiler backend.
         protected void InitializeOpenInstanceThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
+//            X2.PrintLine("InitializeOpenInstanceThunk");
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = functionPointerThunk;
@@ -313,6 +326,7 @@ namespace System
         // This function is known to the compiler backend.
         protected void InitializeOpenInstanceWithoutThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
+//            X2.PrintLine("InitializeOpenInstanceWithoutThunk");
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = GetThunk(OpenInstanceThunk);
@@ -322,6 +336,7 @@ namespace System
 
         protected void InitializeOpenInstanceThunkDynamic(IntPtr functionPointer, IntPtr functionPointerThunk)
         {
+//            X2.PrintLine("InitializeOpenInstanceThunkDynamic");
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = functionPointerThunk;
@@ -330,6 +345,7 @@ namespace System
 
         internal void SetClosedStaticFirstParameter(object firstParameter)
         {
+//            X2.PrintLine("SetClosedStaticFirstParameter");
             // Closed static delegates place a value in m_helperObject that they pass to the target method.
             Debug.Assert(m_functionPointer == GetThunk(ClosedStaticThunk));
             m_helperObject = firstParameter;

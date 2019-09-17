@@ -306,6 +306,8 @@ internal static class Program
 
         TestSByteExtend();
 
+        TestSharedDelegate();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -777,28 +779,25 @@ internal static class Program
 
         NewMethod(classForMetaTestsType, instance);
 
-        /*
         StartTest("Class get+invoke static method with ref param via reflection");
         var staticMtd = classForMetaTestsType.GetMethod("ReturnsParam");
         var retVal = (ClassForMetaTests)staticMtd.Invoke(null, new object[] { instance });
         EndTest(Object.ReferenceEquals(retVal, instance));
-        */
     }
 
     private static void NewMethod(Type classForMetaTestsType, ClassForMetaTests instance)
     {
-/*
         StartTest("Class get+invoke simple method via reflection");
         var mtd = classForMetaTestsType.GetMethod("ReturnTrueIf1");
         bool shouldBeTrue = (bool)mtd.Invoke(instance, new object[] { 1 });
         bool shouldBeFalse = (bool)mtd.Invoke(instance, new object[] { 2 });
         EndTest(shouldBeTrue && !shouldBeFalse);
-*/
+
         StartTest("Class get+invoke method with ref param via reflection");
         var mtdWith2Params = classForMetaTestsType.GetMethod("ReturnTrueIf1AndThis");
-        bool shouldBeTrue = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, instance });
-//        shouldBeFalse = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, new ClassForMetaTests() });
-        EndTest(shouldBeTrue/* && !shouldBeFalse*/);
+        shouldBeTrue = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, instance });
+        shouldBeFalse = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, new ClassForMetaTests() });
+        EndTest(shouldBeTrue && !shouldBeFalse);
 
     }
 
@@ -1075,8 +1074,49 @@ internal static class Program
         }
     }
 
+    public static void TestSharedDelegate()
+    {
+        StartTest("Shared Delegate");
+        var shouldBeFalse = SampleClassWithGenericDelegate.CallDelegate(new object[0]);
+        var shouldBeTrue = SampleClassWithGenericDelegate.CallDelegate(new object[1]);
+        EndTest(!shouldBeFalse && shouldBeTrue);
+    }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
+}
+
+public class SampleClassWithGenericDelegate
+{
+    public static bool CallDelegate<T>(T[] items)
+    {
+        return new Stack<T>(items).CallDelegate(DoWork);
+    }
+
+    public static bool DoWork<T>(T[] items)
+    {
+        Program.PrintLine("DoWork");
+        return items.Length > 0;
+    }
+}
+
+public class Stack<T>
+{
+    T[] items;
+
+    public Stack(T[] items)
+    {
+        this.items = items;
+    }
+
+    public bool CallDelegate(StackDelegate d)
+    {
+        Program.PrintLine("CallDelegate");
+        Program.PrintLine(items.Length.ToString());
+        return d(items);
+    }
+
+    public delegate bool StackDelegate(T[] items);
 }
 
 public struct TwoByteStr

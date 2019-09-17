@@ -75,7 +75,8 @@ namespace ILCompiler.DependencyAnalysis
         public WebAssemblyMethodBodyNode(MethodDesc method)
             : base(method)
         {
-//            if (method.ToString().Contains("System.IO.Error.GetReadNotSupported"))
+//            if (method.ToString().Contains("StackDelegate") &&
+//                method.ToString().Contains("Invoke"))
 //            {
 //
 //            }

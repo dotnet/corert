@@ -42,7 +42,11 @@ namespace Internal.IL
                 //CompileExternMethod(methodCodeNodeNeedingCode, method.GetPInvokeMethodMetadata().Name ?? method.Name);
                 //return;
             }
+            if (method.ToString().Contains("StackDelegate") &&
+                method.ToString().Contains("Invoke"))
+            {
 
+            }
             var methodIL = compilation.GetMethodIL(method);
             if (methodIL == null)
                 return;

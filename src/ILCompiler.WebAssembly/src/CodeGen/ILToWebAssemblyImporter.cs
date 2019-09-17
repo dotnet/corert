@@ -67,7 +67,7 @@ namespace Internal.IL
         /// Offset by which fat function pointers are shifted to distinguish them
         /// from real function pointers.
         /// </summary>
-        private const uint FatFunctionPointerOffset = 0x40000000;
+        internal const uint FatFunctionPointerOffset = 0x40000000;
 
         List<LLVMValueRef> _exceptionFunclets;
 
@@ -178,6 +178,7 @@ namespace Internal.IL
 
         public void Import()
         {
+
             FindBasicBlocks();
 
             GenerateProlog();
@@ -812,10 +813,6 @@ namespace Internal.IL
                     varCountBase = 1;
                 }
 
-                if (_method.ToString().Contains("CompareExchange") && index == 2)
-                {
-
-                }
                 GetArgSizeAndOffsetAtIndex(index, out int argSize, out varOffset, out int realArgIndex);
 
                 if (!_signature.IsStatic && index == 0)
@@ -1650,9 +1647,9 @@ namespace Internal.IL
             //            {
             //
             //            }
-            if (_method.ToString().Contains("InvokeRetOII") &&
+            if (_method.ToString().Contains("CallDelegate") &&
                 _method.ToString().Contains("Canon")
-                && callee.ToString().Contains("DynamicInvokeParamHelperIn"))
+                && callee.ToString().Contains("Stack"))
             {
                 PrintInt32(BuildConstInt32(512));
             }
@@ -1762,9 +1759,57 @@ namespace Internal.IL
             if (opcode == ILOpcode.newobj && callee.OwningType.IsDelegate)
             {
                 FunctionPointerEntry functionPointer = ((FunctionPointerEntry)_stack.Peek());
-                DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(callee.OwningType, functionPointer.Method, functionPointer.IsVirtual);
+                TypeDesc canonDelegateType = callee.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(canonDelegateType, functionPointer.Method, functionPointer.IsVirtual);
                 callee = delegateInfo.Constructor.Method;
-                if (callee.Signature.Length == 3)
+                 if (delegateInfo.NeedsRuntimeLookup && !functionPointer.IsVirtual)
+                {
+                    LLVMValueRef helper;
+                    List<LLVMTypeRef> additionalTypes = new List<LLVMTypeRef>();
+                    var shadowStack = GetShadowStack();
+                    List<LLVMValueRef> helperParams = new List<LLVMValueRef>
+                    {
+                        shadowStack,
+                        GetGenericContext()
+                    };
+                    var sigLength = callee.Signature.Length;
+                    var stackCopy = new StackEntry[sigLength];
+                    for (var i = 0; i < sigLength; i++)
+                    {
+                        stackCopy[i] = _stack.Pop();
+                    }
+                    // by convention(?) the delegate initialize methods take this as the first parameter which is not in the ctor
+                    // method sig, so add that here
+                    var thisEntry = _stack.Peek();
+                    _stack.Push(thisEntry);
+                    int curOffset = 0;
+                    for (var i = 0; i < sigLength; i++)
+                    {
+                        TypeDesc argTypeDesc = callee.Signature[i];
+                        LLVMTypeRef llvmTypeRefForArg = GetLLVMTypeForTypeDesc(argTypeDesc);
+                        StackEntry argStackEntry = stackCopy[sigLength - i - 1];
+                        if (CanStoreTypeOnStack(callee.Signature[i]))
+                        {
+                            LLVMValueRef llvmValueRefForArg = argStackEntry.ValueAsType(llvmTypeRefForArg, _builder);
+                            additionalTypes.Add(llvmTypeRefForArg);
+                            helperParams.Add(llvmValueRefForArg);;
+                        }
+                        else
+                        {
+                            LLVMValueRef llvmValueRefForArg = argStackEntry.ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
+                            curOffset = PadOffset(argTypeDesc, curOffset);
+                            LLVMValueRef argAddr = LLVM.BuildGEP(_builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "arg" + i);
+                            LLVM.BuildStore(_builder, llvmValueRefForArg, CastIfNecessary(_builder, argAddr, LLVM.PointerType(llvmTypeRefForArg, 0), $"parameter{i}_"));
+                            curOffset = PadNextOffset(argTypeDesc, curOffset);
+                        }
+                        _stack.Push(argStackEntry);
+                    }
+                    var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo, out helper,
+                        additionalTypes);
+
+                    LLVM.BuildCall(_builder, helper, helperParams.ToArray(), string.Empty);
+                }
+                else if (callee.Signature.Length == 3)
                 {
                     PushExpression(StackValueKind.NativeInt, "thunk", GetOrCreateLLVMFunction(_compilation.NodeFactory.NameMangler.GetMangledMethodName(delegateInfo.Thunk.Method).ToString(), delegateInfo.Thunk.Method.Signature, false /* TODO: need a test for this to see if it can ever be true */));
                 }
@@ -1786,9 +1831,20 @@ namespace Internal.IL
             var canonMethod = callee.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
             string canonCalleeName = _compilation.NameMangler.GetMangledMethodName(canonMethod).ToString();
-
-            // Sealed methods must not be called virtually due to sealed vTables, so call them directly
-            if(canonMethod.IsFinal || canonMethod.OwningType.IsSealed())
+            TypeDesc owningType = callee.OwningType;
+            bool delegateInvoke = false;
+            // Sealed methods must not be called virtually due to sealed vTables, so call them directly, but not delegate Invoke
+            // TODO this is copied from higher up the stack, pass or remove from higher up (better)
+            if (owningType.IsDelegate)
+            {
+                if (callee.Name == "Invoke")
+                {
+                    //opcode = ILOpcode.call;
+                    delegateInvoke = true;
+                    //TODO make sure the canonMethod is not added as a reference
+                }
+            }
+            if ((canonMethod.IsFinal || canonMethod.OwningType.IsSealed()) && ! delegateInvoke)
             {
                 var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
                 if (canonMethod != null)
@@ -2853,12 +2909,47 @@ namespace Internal.IL
 
         private void ImportCalli(int token)
         {
+            bool print = false;
             //TODO wasm creates FatPointer for InvokeRet... but cpp does not, why?
-            if (this._method.ToString().Contains("CalliIntrinsics") && this._method.Signature.Length == 6)
-            {
+            var m = this._method.ToString();
+                    PrintInt32(BuildConstInt32(128));
 
+                    if (m.Contains("Func"))
+                    {
+                        if (m.Contains("InvokeOpenStaticThunk"))
+                        {
+                            PrintInt32(BuildConstInt32(37));
+                        }
+                    }
+                    if (m.Contains("StackDelegate"))
+            {
+                if (m.Contains("InvokeInstanceClosedOverGenericMethodThunk"))
+                {
+                    PrintInt32(BuildConstInt32(129));
+                }
+                else if (m.Contains("InvokeOpenInstanceThunk"))
+                {
+                    PrintInt32(BuildConstInt32(130));
+                }
+                else if (m.Contains("InvokeOpenStaticThunk"))
+                {
+                    PrintInt32(BuildConstInt32(131));
+                }
+                else if (m.Contains("InvokeClosedStaticThunk"))
+                {
+                    PrintInt32(BuildConstInt32(132));
+                }
+                else if (m.Contains("InvokeMulticastThunk"))
+                {
+                    PrintInt32(BuildConstInt32(133));
+                }
+                else if (m.Contains("Invoke"))
+                {
+                    PrintInt32(BuildConstInt32(134));
+                    print = true;
+                }
             }
-            MethodSignature methodSignature = (MethodSignature)_methodIL.GetObject(token);
+            MethodSignature methodSignature = (MethodSignature)_canonMethodIL.GetObject(token);
 
             var noHiddenParamSig = GetLLVMSignatureForMethod(methodSignature, false);
             var hddenParamSig = GetLLVMSignatureForMethod(methodSignature, true);
@@ -2905,6 +2996,10 @@ namespace Internal.IL
             // fat branch
             PrintInt32(BuildConstInt32(66));
 
+            if (print)
+            {
+
+            }
             //            for (int i = 0; i < stackCopy.Length; i++)
             //            {
             //                _stack.Push(stackCopy[stackCopy.Length - i - 1]);
@@ -4079,31 +4174,32 @@ namespace Internal.IL
         }
 
         static int tl = 0;
-        ISymbolNode GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArg, out LLVMValueRef helper)
+
+        ISymbolNode GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArg, out LLVMValueRef helper, IEnumerable<LLVMTypeRef> additionalArgs = null)
         {
             ISymbolNode node;
+            var retType = helperId == ReadyToRunHelperId.DelegateCtor
+                ? LLVMTypeRef.VoidType()
+                : LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0);
             //in cpp the non DelegateCtor take a void * as arg
-            // TODO : the DelegateCtor variants
+            var helperArgs = new List<LLVMTypeRef>
+            {
+                LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+                LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0),
+            };
+            if(additionalArgs != null) helperArgs.AddRange(additionalArgs);
             if (_method.RequiresInstMethodDescArg())
             {
                 node = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArg, _method);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
-                    LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), new []
-                                                                                                  {
-                                                                                                      LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), //TODO: delete shdst as not needed
-                                                                                                      LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), 
-                                                                                                  }, false));
+                    LLVMTypeRef.FunctionType(retType, helperArgs.ToArray(), false));
             }
             else
             {
                 Debug.Assert(_method.RequiresInstMethodTableArg() || _method.AcquiresInstMethodTableFromThis());
                 node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArg, _method.OwningType);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
-                    LLVMTypeRef.FunctionType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), new[]
-                                                                                                  {
-                                                                                                      LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), //TODO: delete shdst as not needed
-                                                                                                      LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0),
-                                                                                                  }, false));
+                    LLVMTypeRef.FunctionType(retType, helperArgs.ToArray(), false));
 //                if(tl < 2) _dependencies.Add(node); // second one is a problem
                 tl++;
             }
@@ -4729,5 +4825,6 @@ namespace Internal.IL
         {
             return _method.ToString();
         }
+
     }
 }
