@@ -2542,7 +2542,7 @@ namespace System.Diagnostics.Tracing
             String
         }
 
-        private Type EventTypeToType(EventParameterType type)
+        private static Type EventTypeToType(EventParameterType type)
         {
             switch (type)
             {
