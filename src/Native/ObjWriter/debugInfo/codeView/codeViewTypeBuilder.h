@@ -70,4 +70,5 @@ private:
 
   ArrayDimensionsDescriptor ArrayDimentions;
   TypeIndex ClassVTableTypeIndex;
+  TypeIndex VFuncTabTypeIndex;
 };
