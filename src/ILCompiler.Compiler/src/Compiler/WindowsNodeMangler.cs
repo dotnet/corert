@@ -32,7 +32,11 @@ namespace ILCompiler
                 mangledJustTypeName = MangledBoxedTypeName(type);
             else
                 mangledJustTypeName = NameMangler.GetMangledTypeName(type);
-            return "const " + mangledJustTypeName + "::`vftable'";
+
+            // "??_7TypeName@@6B@" is the C++ mangling for "const TypeName::`vftable'"
+            // This, along with LF_VTSHAPE debug records added by the object writer
+            // is the debugger magic that allows debuggers to vcast types to their bases.
+            return "??_7" + mangledJustTypeName + "@@6B@";
         }
 
         public sealed override string GCStatics(TypeDesc type)
