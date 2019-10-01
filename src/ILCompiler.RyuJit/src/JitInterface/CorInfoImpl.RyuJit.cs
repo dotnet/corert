@@ -1500,6 +1500,11 @@ namespace Internal.JitInterface
             }
         }
 
+        private uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            return getMethodAttribsInternal(HandleToObject(ftn));
+        }
+
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
         {
             MethodDesc method = HandleToObject(ftn);
