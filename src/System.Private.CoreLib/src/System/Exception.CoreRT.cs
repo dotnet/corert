@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
@@ -307,6 +308,12 @@ namespace System
             {
                 StackTrace = stackTrace;
             }
+        }
+
+        [StackTraceHidden]
+        internal void SetCurrentStackTrace()
+        {
+            // TODO: Exception.SetCurrentStackTrace
         }
 
         // This is the object against which a lock will be taken
