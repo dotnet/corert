@@ -8,7 +8,6 @@ using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
-using Internal.NativeFormat;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -20,11 +19,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
-        private Dictionary<MethodDesc, int> _methodToTemplateIndex = new Dictionary<MethodDesc, int>();
-        private TypeDesc _dynamicInvokeMethodContainerType;
-#if DEBUG
-        bool _dataEmitted;
-#endif
+        private Dictionary<MethodDesc, int> _methodToTemplateIndex;
 
         public DynamicInvokeTemplateDataNode(ExternalReferencesTableNode externalReferences)
         {
@@ -43,52 +38,58 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => false;
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => _dynamicInvokeMethodContainerType == null;
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !factory.MetadataManager.GetDynamicInvokeTemplateMethods().GetEnumerator().MoveNext();
 
-        public int GetIdForMethod(MethodDesc dynamicInvokeMethod)
+        public int GetIdForMethod(MethodDesc dynamicInvokeMethod, NodeFactory factory)
         {
             // We should only see canonical or non-shared methods here
             Debug.Assert(dynamicInvokeMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) == dynamicInvokeMethod);
             Debug.Assert(!dynamicInvokeMethod.IsCanonicalMethod(CanonicalFormKind.Universal));
 
-            int templateIndex;
-            if (!_methodToTemplateIndex.TryGetValue(dynamicInvokeMethod, out templateIndex))
+            if (_methodToTemplateIndex == null)
             {
-#if DEBUG
-                Debug.Assert(!_dataEmitted, "Cannot get new invoke stub Ids after data is emitted");
-#endif
-                TypeDesc dynamicInvokeMethodContainingType = dynamicInvokeMethod.OwningType;
-
-                if (_dynamicInvokeMethodContainerType == null)
-                {
-                    _dynamicInvokeMethodContainerType = dynamicInvokeMethodContainingType;
-                }
-                Debug.Assert(dynamicInvokeMethodContainingType == _dynamicInvokeMethodContainerType);
-                templateIndex = (2 * _methodToTemplateIndex.Count) + 1;
-                // Add 1 to the index to account for the first blob entry being the containing EEType RVA
-                _methodToTemplateIndex.Add(dynamicInvokeMethod, templateIndex);
+                BuildMethodToIdMap(factory);
             }
 
-            return templateIndex;
+            return _methodToTemplateIndex[dynamicInvokeMethod];
         }
-        
-        public void AddDependenciesDueToInvokeTemplatePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            // Add the invoke stub to the list so its index is available later on when ReflectionInvokeMapNode emits
-            // the type loader dictionary information for the stub.
-            GetIdForMethod(method);
 
-            dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(method), "Dynamic invoke stub"));
-            dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method)), "Dynamic invoke stub"));
-            dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(method.OwningType), "Dynamic invoke stub containing type"));
+        private void BuildMethodToIdMap(NodeFactory factory)
+        {
+            List<MethodDesc> methods = new List<MethodDesc>(factory.MetadataManager.GetDynamicInvokeTemplateMethods());
+
+            // Sort the stubs
+            var typeSystemComparer = new TypeSystemComparer();
+            methods.Sort((first, second) => typeSystemComparer.Compare(first, second));
+
+            // Assign each stub an ID
+            var methodToTemplateIndex = new Dictionary<MethodDesc, int>();
+            foreach (MethodDesc method in methods)
+            {
+                TypeDesc dynamicInvokeMethodContainingType = method.OwningType;
+
+                int templateIndex = (2 * methodToTemplateIndex.Count) + 1;
+                // Add 1 to the index to account for the first blob entry being the containing EEType RVA
+                methodToTemplateIndex.Add(method, templateIndex);
+            }
+
+            _methodToTemplateIndex = methodToTemplateIndex;
+        }
+
+        internal static DependencyListEntry[] GetDependenciesDueToInvokeTemplatePresence(NodeFactory factory, MethodDesc method)
+        {
+            return new[]
+            {
+                new DependencyListEntry(factory.MethodEntrypoint(method), "Dynamic invoke stub"),
+                new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.MethodNameAndSignatureVertex(method)), "Dynamic invoke stub"),
+                new DependencyListEntry(factory.NecessaryTypeSymbol(method.OwningType), "Dynamic invoke stub containing type")
+            };
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
-
-            Debug.Assert(_dynamicInvokeMethodContainerType != null);
 
             // Ensure the native layout blob has been saved
             factory.MetadataManager.NativeLayoutInfo.SaveNativeLayoutInfoWriter(factory);
@@ -97,10 +98,25 @@ namespace ILCompiler.DependencyAnalysis
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
+            if (_methodToTemplateIndex == null)
+            {
+                BuildMethodToIdMap(factory);
+            }
+
+            TypeDesc containerType = null;
+            foreach (var method in _methodToTemplateIndex.Keys)
+            {
+                Debug.Assert(containerType == null || containerType == method.OwningType);
+                containerType = method.OwningType;
+#if !DEBUG
+                break;
+#endif
+            }
+
             if (factory.Target.SupportsRelativePointers)
-                objData.EmitReloc(factory.NecessaryTypeSymbol(_dynamicInvokeMethodContainerType), RelocType.IMAGE_REL_BASED_RELPTR32);
+                objData.EmitReloc(factory.NecessaryTypeSymbol(containerType), RelocType.IMAGE_REL_BASED_RELPTR32);
             else
-                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_dynamicInvokeMethodContainerType));
+                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(containerType));
 
             List<KeyValuePair<MethodDesc, int>> sortedList = new List<KeyValuePair<MethodDesc, int>>(_methodToTemplateIndex);
             sortedList.Sort((firstEntry, secondEntry) => firstEntry.Value.CompareTo(secondEntry.Value));
@@ -123,12 +139,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _endSymbol.SetSymbolOffset(objData.CountBytes);
             objData.AddSymbol(_endSymbol);
-
-            // Prevent further adds now we're done writing
-#if DEBUG
-            if (!relocsOnly)
-                _dataEmitted = true;
-#endif
 
             return objData.ToObjectData();
         }
