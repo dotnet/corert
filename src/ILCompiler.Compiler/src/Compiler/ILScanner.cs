@@ -33,6 +33,7 @@ namespace ILCompiler
             Logger logger)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, null, logger)
         {
+            _helperCache = new HelperCache(this);
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
@@ -81,6 +82,55 @@ namespace ILCompiler
             _dependencyGraph.ComputeMarkedNodes();
 
             return new ILScanResults(_dependencyGraph, _nodeFactory);
+        }
+
+        public ISymbolNode GetHelperEntrypoint(ReadyToRunHelper helper)
+        {
+            return _helperCache.GetOrCreateValue(helper).Symbol;
+        }
+
+        class Helper
+        {
+            public ReadyToRunHelper HelperID { get; }
+            public ISymbolNode Symbol { get; }
+
+            public Helper(ReadyToRunHelper id, ISymbolNode symbol)
+            {
+                HelperID = id;
+                Symbol = symbol;
+            }
+        }
+
+        private HelperCache _helperCache;
+        class HelperCache : LockFreeReaderHashtable<ReadyToRunHelper, Helper>
+        {
+            private Compilation _compilation;
+
+            public HelperCache(Compilation compilation)
+            {
+                _compilation = compilation;
+            }
+
+            protected override bool CompareKeyToValue(ReadyToRunHelper key, Helper value) => key == value.HelperID;
+            protected override bool CompareValueToValue(Helper value1, Helper value2) => value1.HelperID == value2.HelperID;
+            protected override int GetKeyHashCode(ReadyToRunHelper key) => (int)key;
+            protected override int GetValueHashCode(Helper value) => (int)value.HelperID;
+            protected override Helper CreateValueFromKey(ReadyToRunHelper key)
+            {
+                string mangledName;
+                MethodDesc methodDesc;
+                JitHelper.GetEntryPoint(_compilation.TypeSystemContext, key, out mangledName, out methodDesc);
+                Debug.Assert(mangledName != null || methodDesc != null);
+
+                ISymbolNode entryPoint;
+                if (mangledName != null)
+                    entryPoint = _compilation.NodeFactory.ExternSymbol(mangledName);
+                else
+                    entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
+
+                return new Helper(key, entryPoint);
+            }
+
         }
     }
 
