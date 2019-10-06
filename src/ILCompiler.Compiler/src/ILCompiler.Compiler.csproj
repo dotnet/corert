@@ -5,7 +5,7 @@
     <RootNamespace>ILCompiler.Compiler</RootNamespace>
     <AssemblyName>ILCompiler.Compiler</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard1.6</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
