@@ -103,6 +103,9 @@ namespace ILCompiler
             if (_methodBodyFolding)
                 options |= RyuJitCompilationOptions.MethodBodyFolding;
 
+            if (_singleThreaded)
+                options |= RyuJitCompilationOptions.SingleThreadedCompilation;
+
             var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider);
 
             var jitConfig = new JitConfigProvider(jitFlagBuilder.ToArray(), _ryujitOptions);

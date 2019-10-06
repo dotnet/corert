@@ -27,6 +27,7 @@ namespace ILCompiler
         private IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         private MetadataManager _metadataManager;
         private InteropStubManager _interopStubManager = new EmptyInteropStubManager();
+        private bool _singleThreaded;
 
         internal ILScannerBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler mangler, ILProvider ilProvider)
         {
@@ -61,12 +62,18 @@ namespace ILCompiler
             return this;
         }
 
+        public ILScannerBuilder UseSingleThread(bool enable)
+        {
+            _singleThreaded = enable;
+            return this;
+        }
+
         public IILScanner ToILScanner()
         {
             var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler);
             DependencyAnalyzerBase<NodeFactory> graph = _dependencyTrackingLevel.CreateDependencyGraph(nodeFactory);
 
-            return new ILScanner(graph, nodeFactory, _compilationRoots, _ilProvider, new NullDebugInformationProvider(), _logger);
+            return new ILScanner(graph, nodeFactory, _compilationRoots, _ilProvider, new NullDebugInformationProvider(), _logger, _singleThreaded);
         }
     }
 }

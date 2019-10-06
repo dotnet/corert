@@ -15,6 +15,7 @@ namespace ILCompiler
         protected DebugInformationProvider _debugInformationProvider = new DebugInformationProvider();
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
         protected bool _methodBodyFolding;
+        protected bool _singleThreaded;
 
         partial void InitializePartial()
         {
@@ -60,6 +61,12 @@ namespace ILCompiler
         public CompilationBuilder UseMethodBodyFolding(bool enable)
         {
             _methodBodyFolding = enable;
+            return this;
+        }
+
+        public CompilationBuilder UseSingleThread(bool enable)
+        {
+            _singleThreaded = enable;
             return this;
         }
 

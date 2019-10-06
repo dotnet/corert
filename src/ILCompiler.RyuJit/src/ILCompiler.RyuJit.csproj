@@ -20,6 +20,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Threading.ThreadPool">
+      <Version>4.0.10</Version>
+    </PackageReference>
+    <PackageReference Include="System.Threading.Thread">
+      <Version>4.0.0</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
     <Compile Include="Compiler\RyuJitCompilation.cs" />

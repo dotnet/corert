@@ -205,6 +205,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Size'" Include="--Os" />
       <IlcArg Condition="$(Optimize) == 'true' and $(IlcOptimizationPreference) == 'Speed'" Include="--Ot" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
+      <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--singlethreaded" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:EventSource" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:FrameworkStrings" />
       <IlcArg Condition="$(IlcInvariantGlobalization) == 'true'" Include="--removefeature:Globalization" />
