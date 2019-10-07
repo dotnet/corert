@@ -1,10 +1,10 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <RyuJITVersion Condition="'$(RyuJITVersion)' == ''">5.0.0-alpha1.19453.1</RyuJITVersion>
+    <RyuJITVersion Condition="'$(RyuJITVersion)' == ''">5.0.0-alpha1.19525.1</RyuJITVersion>
     <ObjectWriterVersion Condition="'$(ObjectWriterVersion)' == ''">1.0.0-alpha-28204-03</ObjectWriterVersion>
-    <CoreFxVersion Condition="'$(CoreFxVersion)' == ''">5.0.0-alpha1.19457.4</CoreFxVersion>
+    <CoreFxVersion Condition="'$(CoreFxVersion)' == ''">5.0.0-alpha.1.19525.4</CoreFxVersion>
     <CoreFxUapVersion Condition="'$(CoreFxUapVersion)' == ''">4.7.0-preview6.19265.2</CoreFxUapVersion>
-    <MicrosoftNETCoreNativeVersion Condition="'$(MicrosoftNETCoreNativeVersion)' == ''">5.0.0-alpha1.19453.1</MicrosoftNETCoreNativeVersion>
+    <MicrosoftNETCoreNativeVersion Condition="'$(MicrosoftNETCoreNativeVersion)' == ''">5.0.0-alpha1.19525.1</MicrosoftNETCoreNativeVersion>
     <MicrosoftNETCoreAppPackageVersion Condition="'$(MicrosoftNETCoreAppPackageVersion)' == ''">2.1.11</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftDotNetTestSdkVersion Condition="'$(MicrosoftDotNetTestSdkVersion)' == ''">15.8.0</MicrosoftDotNetTestSdkVersion>
     <XUnitPackageVersion Condition="'$(XUnitPackageVersion)' == ''">2.4.1-pre.build.4059</XUnitPackageVersion>
