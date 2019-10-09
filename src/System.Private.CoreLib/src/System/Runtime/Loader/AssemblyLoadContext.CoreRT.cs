@@ -51,11 +51,6 @@ namespace System.Runtime.Loader
             return ReflectionAugments.ReflectionCoreCallbacks.Load(arrAssembly, arrSymbols);
         }
 
-        private static IntPtr InternalLoadUnmanagedDllFromPath(string unmanagedDllPath)
-        {
-            return InteropServices.NativeLibrary.Load(unmanagedDllPath);
-        }
-
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
         {
             IntPtr resolvedDll = IntPtr.Zero;
