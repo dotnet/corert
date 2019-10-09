@@ -83,10 +83,11 @@ build_native_corert()
     else
         make install -j $NumProc $__UnprocessedBuildArgs
     fi
-    if [ $? != 0 ]; then
+    EXITCODE=$?
+    if [ $EXITCODE != 0 ]; then
         echo "Failed to build corert native components."
         popd
-        exit $?
+        exit $EXITCODE
     fi
 
     echo "CoreRT native components successfully built."
