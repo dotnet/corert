@@ -51,7 +51,14 @@ namespace Internal.JitInterface
         {
             _methodCodeNode = methodCodeNodeNeedingCode;
 
-            CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+            try
+            {
+                CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+            }
+            finally
+            {
+                CompileMethodCleanup();
+            }
         }
 
         private CORINFO_RUNTIME_LOOKUP_KIND GetLookupKindFromContextSource(GenericContextSource contextSource)
