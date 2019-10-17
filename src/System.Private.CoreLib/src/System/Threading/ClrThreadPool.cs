@@ -284,13 +284,13 @@ namespace System.Threading
             int elapsedInterval = Environment.TickCount - priorTime;
             if(elapsedInterval >= requiredInterval)
             {
-                /// Avoid trying to adjust the thread count goal if there are already more threads than the thread count goal.
-                /// In that situation, hill climbing must have previously decided to decrease the thread count goal, so let's
-                /// wait until the system responds to that change before calling into hill climbing again. This condition should
-                /// be the opposite of the condition in <see cref="WorkerThread.ShouldStopProcessingWorkNow"/> that causes
-                /// threads processing work to stop in response to a decreased thread count goal. The logic here is a bit
-                /// different from the original CoreCLR code from which this implementation was ported because in this
-                /// implementation there are no retired threads, so only the count of threads processing work is considered.
+                // Avoid trying to adjust the thread count goal if there are already more threads than the thread count goal.
+                // In that situation, hill climbing must have previously decided to decrease the thread count goal, so let's
+                // wait until the system responds to that change before calling into hill climbing again. This condition should
+                // be the opposite of the condition in WorkerThread.ShouldStopProcessingWorkNow that causes
+                // threads processing work to stop in response to a decreased thread count goal. The logic here is a bit
+                // different from the original CoreCLR code from which this implementation was ported because in this
+                // implementation there are no retired threads, so only the count of threads processing work is considered.
                 ThreadCounts counts = ThreadCounts.VolatileReadCounts(ref _separated.counts);
                 return counts.numProcessingWork <= counts.numThreadsGoal;
             }

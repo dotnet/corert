@@ -141,8 +141,7 @@ namespace System.Threading
                 }
 
                 UserUnregisterWaitHandle = waitObject?.SafeWaitHandle;
-                UserUnregisterWaitHandle?.DangerousAddRef();
-                needToRollBackRefCountOnException = true;
+                UserUnregisterWaitHandle?.DangerousAddRef(ref needToRollBackRefCountOnException);
 
                 UserUnregisterWaitHandleValue = UserUnregisterWaitHandle?.DangerousGetHandle() ?? IntPtr.Zero;
 
@@ -207,11 +206,7 @@ namespace System.Threading
                 if (handleValue != IntPtr.Zero && handleValue != (IntPtr)(-1))
                 {
                     Debug.Assert(handleValue == handle.DangerousGetHandle());
-#if PLATFORM_WINDOWS
-                    Interop.Kernel32.SetEvent(handle);
-#else
-                    WaitSubsystem.SetEvent(handleValue);
-#endif
+                    EventWaitHandle.Set(handle);
                 }
             }
             finally

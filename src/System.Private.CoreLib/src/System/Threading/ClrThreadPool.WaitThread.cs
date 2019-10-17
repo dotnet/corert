@@ -336,9 +336,9 @@ namespace System.Threading
             /// Process the completion of a user-registered wait (call the callback).
             /// </summary>
             /// <param name="state">A <see cref="CompletedWaitHandle"/> object representing the wait completion.</param>
-            private void CompleteWait(object state)
+            private void CompleteWait(object? state)
             {
-                CompletedWaitHandle handle = (CompletedWaitHandle)state;
+                CompletedWaitHandle handle = (CompletedWaitHandle)state!;
                 handle.CompletedHandle.PerformCallback(handle.TimedOut);
             }
 
