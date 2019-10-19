@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace System.Threading
 {
-    internal partial class ClrThreadPool
+    internal partial class PortableThreadPool
     {
         /// <summary>
         /// The worker thread infastructure for the CLR thread pool.
@@ -28,7 +28,7 @@ namespace System.Threading
 
             private static void WorkerThreadStart()
             {
-                ClrThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
+                PortableThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
 
                 while (true)
                 {
@@ -73,7 +73,7 @@ namespace System.Threading
                             if (oldCounts == counts)
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
-                                ClrThreadPoolEventSource.Log.WorkerThreadStop(newCounts.numExistingThreads);
+                                PortableThreadPoolEventSource.Log.WorkerThreadStop(newCounts.numExistingThreads);
                                 return;
                             }
                         }
@@ -91,7 +91,7 @@ namespace System.Threading
             /// <returns>If this thread was woken up before it timed out.</returns>
             private static bool WaitForRequest()
             {
-                ClrThreadPoolEventSource.Log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
+                PortableThreadPoolEventSource.Log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
                 return s_semaphore.Wait(ThreadPoolThreadTimeoutMs);
             }
 

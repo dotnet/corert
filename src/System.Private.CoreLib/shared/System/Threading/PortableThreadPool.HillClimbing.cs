@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace System.Threading
 {
-    internal partial class ClrThreadPool
+    internal partial class PortableThreadPool
     {
         /// <summary>
         /// Hill climbing algorithm used for determining the number of threads needed for the thread pool.
@@ -187,7 +187,7 @@ namespace System.Threading
                 //
                 double throughput = numCompletions / sampleDurationSeconds;
 
-                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentSample(throughput);
+                PortableThreadPoolEventSource.Log.WorkerThreadAdjustmentSample(throughput);
 
                 int sampleIndex = (int)(_totalSamples % _samplesToMeasure);
                 _samples[sampleIndex] = throughput;
@@ -357,7 +357,7 @@ namespace System.Threading
                 // Record these numbers for posterity
                 //
 
-                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
+                PortableThreadPoolEventSource.Log.WorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
                     throughputErrorEstimate, _averageThroughputNoise, ratio.Real, confidence, _currentControlSetting, (ushort)newThreadWaveMagnitude);
 
 
@@ -415,7 +415,7 @@ namespace System.Threading
 
                 _logSize++;
 
-                ClrThreadPoolEventSource.Log.WorkerThreadAdjustmentAdjustment(throughput, newThreadCount, (int)stateOrTransition);
+                PortableThreadPoolEventSource.Log.WorkerThreadAdjustmentAdjustment(throughput, newThreadCount, (int)stateOrTransition);
             }
 
             public void ForceChange(int newThreadCount, StateOrTransition state)

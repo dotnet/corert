@@ -9,10 +9,10 @@ namespace System.Threading
     /// <summary>
     /// A thread-pool run and managed on the CLR.
     /// </summary>
-    internal sealed partial class ClrThreadPool
+    internal sealed partial class PortableThreadPool
     {
 #pragma warning disable IDE1006 // Naming Styles
-        public static readonly ClrThreadPool ThreadPoolInstance = new ClrThreadPool();
+        public static readonly PortableThreadPool ThreadPoolInstance = new PortableThreadPool();
 #pragma warning restore IDE1006 // Naming Styles
 
         private const int ThreadPoolThreadTimeoutMs = 20 * 1000; // If you change this make sure to change the timeout times in the tests.
@@ -22,7 +22,7 @@ namespace System.Threading
 #elif BIT32
         private const short MaxPossibleThreadCount = 1023;
 #else
-    #error Unknown platform
+        #error Unknown platform
 #endif
 
         private const int CpuUtilizationHigh = 95;
@@ -65,7 +65,7 @@ namespace System.Threading
 
         private volatile int _numRequestedWorkers = 0;
 
-        private ClrThreadPool()
+        private PortableThreadPool()
         {
             _minThreads = s_forcedMinWorkerThreads > 0 ? s_forcedMinWorkerThreads : (short)ThreadPoolGlobals.processorCount;
             if (_minThreads > MaxPossibleThreadCount)
