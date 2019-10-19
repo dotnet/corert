@@ -1353,4 +1353,27 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha1.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha256.PlatformNotSupported.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\AppContextConfigHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPool.Portable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ClrThreadPool.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ClrThreadPoolEventSource.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ClrThreadPool.GateThread.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ClrThreadPool.HillClimbing.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ClrThreadPool.HillClimbing.Complex.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ClrThreadPool.ThreadCounts.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ClrThreadPool.WaitThread.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ClrThreadPool.WorkerThread.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ClrThreadPool.CpuUtilizationReader.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ClrThreadPool.CpuUtilizationReader.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetSystemTimes.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLifoSemaphore.Windows.cs" Condition="'$(TargetsWindows)'=='true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\HighPerformanceCounter.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\HighPerformanceCounter.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeaturePortableThreadPool)' == 'true' OR '$(FeatureThreadInt64PersistentCounter)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadInt64PersistentCounter.cs" />
+  </ItemGroup>
 </Project>
