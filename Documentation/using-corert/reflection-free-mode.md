@@ -51,3 +51,15 @@ We might be able to add support for the following APIs without sacrificing too m
 * APIs that require dynamic code generation: `Reflection.Emit`, `Assembly.Load` and friends
 * Obvious program introspection APIs: APIs on `Type` and `Assembly` not mentioned above, `MethodBase`, `MethodInfo`, `ConstructorInfo`, `FieldInfo`, `PropertyInfo`, `EventInfo`. These APIs will throw at runtime.
 * APIs building on top of reflection APIs. Too many to enumerate.
+
+## Shimming
+
+Sometimes reflection is used in non-critical paths to retreive type names. In reflection-free mode, accessing type names throws an exception. To help moving such code to reflection-free mode, we have an AppContext switch to generate fake names and namespaces for types. With this mode enabled, accessing the `Name` and `Namespace` property will not throw, but won't return the actual name either.
+
+To enable this mode, add following item to an `ItemGroup` in your project file:
+
+```xml
+  <ItemGroup>
+    <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForNames" />
+  </ItemGroup>
+```
