@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    internal partial class ClrThreadPool
+    internal partial class PortableThreadPool
     {
         /// <summary>
         /// A linked list of <see cref="WaitThread"/>s.

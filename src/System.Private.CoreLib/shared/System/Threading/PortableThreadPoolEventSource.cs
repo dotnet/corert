@@ -7,7 +7,7 @@ using System.Diagnostics.Tracing;
 namespace System.Threading
 {
     [EventSource(Name = "Microsoft-Windows-DotNETRuntime", Guid = "{e13c0d23-ccbc-4e12-931b-d9cc2eee27e4}")]
-    public sealed class ClrThreadPoolEventSource : EventSource
+    public sealed class PortableThreadPoolEventSource : EventSource
     {
         private const string WorkerThreadMessage = "WorkerThreadCount=%1";
         private const string WorkerThreadAdjustmentSampleMessage = "Throughput=%1";
@@ -34,7 +34,7 @@ namespace System.Threading
             public const EventKeywords ThreadingKeyword = (EventKeywords)0x10000;
         }
 
-        private ClrThreadPoolEventSource()
+        private PortableThreadPoolEventSource()
         {
         }
 
@@ -117,7 +117,7 @@ namespace System.Threading
         }
 
 #pragma warning disable IDE1006 // Naming Styles
-        public static readonly ClrThreadPoolEventSource Log = new ClrThreadPoolEventSource();
+        public static readonly PortableThreadPoolEventSource Log = new PortableThreadPoolEventSource();
 #pragma warning restore IDE1006 // Naming Styles
     }
 }

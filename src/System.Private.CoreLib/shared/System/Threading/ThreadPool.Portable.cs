@@ -95,9 +95,9 @@ namespace System.Threading
         internal bool IsBlocking => UserUnregisterWaitHandleValue == (IntPtr)(-1);
 
         /// <summary>
-        /// The <see cref="ClrThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
+        /// The <see cref="PortableThreadPool.WaitThread"/> this <see cref="RegisteredWaitHandle"/> was registered on.
         /// </summary>
-        internal ClrThreadPool.WaitThread WaitThread { get; set; }
+        internal PortableThreadPool.WaitThread WaitThread { get; set; }
 
         /// <summary>
         /// The number of callbacks that are currently queued on the Thread Pool or executing.
@@ -333,14 +333,14 @@ namespace System.Threading
             {
                 return false;
             }
-            return ClrThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads);
+            return PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads);
         }
 
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
         {
             // Note that worker threads and completion port threads share the same thread pool.
             // The total number of threads cannot exceed MaxThreadCount.
-            workerThreads = ClrThreadPool.ThreadPoolInstance.GetMaxThreads();
+            workerThreads = PortableThreadPool.ThreadPoolInstance.GetMaxThreads();
             completionPortThreads = 1;
         }
 
@@ -350,19 +350,19 @@ namespace System.Threading
             {
                 return false;
             }
-            return ClrThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads);
+            return PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads);
         }
 
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
         {
             // All threads are pre-created at present
-            workerThreads = ClrThreadPool.ThreadPoolInstance.GetMinThreads();
+            workerThreads = PortableThreadPool.ThreadPoolInstance.GetMinThreads();
             completionPortThreads = 0;
         }
 
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
         {
-            workerThreads = ClrThreadPool.ThreadPoolInstance.GetAvailableThreads();
+            workerThreads = PortableThreadPool.ThreadPoolInstance.GetAvailableThreads();
             completionPortThreads = 0;
         }
 
@@ -372,7 +372,7 @@ namespace System.Threading
         /// <remarks>
         /// For a thread pool implementation that may have different types of threads, the count includes all types.
         /// </remarks>
-        public static int ThreadCount => ClrThreadPool.ThreadPoolInstance.ThreadCount;
+        public static int ThreadCount => PortableThreadPool.ThreadPoolInstance.ThreadCount;
 
         /// <summary>
         /// Gets the number of work items that have been processed by the thread pool so far.
@@ -380,14 +380,14 @@ namespace System.Threading
         /// <remarks>
         /// For a thread pool implementation that may have different types of work items, the count includes all types.
         /// </remarks>
-        public static long CompletedWorkItemCount => ClrThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
+        public static long CompletedWorkItemCount => PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
 
         /// <summary>
         /// This method is called to request a new thread pool worker to handle pending work.
         /// </summary>
         internal static void RequestWorkerThread()
         {
-            ClrThreadPool.ThreadPoolInstance.RequestWorker();
+            PortableThreadPool.ThreadPoolInstance.RequestWorker();
         }
 
         internal static bool KeepDispatching(int startTickCount)
@@ -397,12 +397,12 @@ namespace System.Threading
 
         internal static void NotifyWorkItemProgress()
         {
-            ClrThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
+            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
         }
 
         internal static bool NotifyWorkItemComplete()
         {
-            return ClrThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
+            return PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete();
         }
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
@@ -424,7 +424,7 @@ namespace System.Threading
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
                 (int)millisecondsTimeOutInterval,
                 !executeOnlyOnce);
-            ClrThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredHandle);
+            PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredHandle);
             return registeredHandle;
         }
     }

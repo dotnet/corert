@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
-    internal partial class ClrThreadPool
+    internal partial class PortableThreadPool
     {
         private static class GateThread
         {
