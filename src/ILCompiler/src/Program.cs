@@ -516,7 +516,7 @@ namespace ILCompiler
             }
             else
             {
-                metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy);
+                metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy, ilProvider);
             }
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
@@ -558,7 +558,7 @@ namespace ILCompiler
                 {
                     // MetadataManager collects a bunch of state (e.g. list of compiled method bodies) that we need to reset.
                     Debug.Assert(metadataManager is EmptyMetadataManager);
-                    metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy);
+                    metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy, ilProvider);
                 }
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
