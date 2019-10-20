@@ -54,7 +54,7 @@ We might be able to add support for the following APIs without sacrificing too m
 
 ## Shimming
 
-Sometimes reflection is used in non-critical paths to retreive type names. In reflection-free mode, accessing type names throws an exception. To help moving such code to reflection-free mode, we have an AppContext switch to generate fake names and namespaces for types. With this mode enabled, accessing the `Name` and `Namespace` property will not throw, but won't return the actual name either.
+Sometimes reflection is used in non-critical paths to retrieve type names. In reflection-free mode, accessing type names throws an exception. To help moving such code to reflection-free mode, we have an AppContext switch to generate fake names and namespaces for types. With this mode enabled, accessing the `Name` and `Namespace` property will not throw, but won't return the actual name either.
 
 To enable this mode, add following item to an `ItemGroup` in your project file:
 
