@@ -618,7 +618,7 @@ namespace System.Runtime.InteropServices
             // Zero-init pNative if it is NULL
             if (managedArray == null)
             {
-                Buffer.ZeroMemory((byte*)pNative, expectedCharCount);
+                Buffer.ZeroMemory((byte*)pNative, (nuint)expectedCharCount);
                 return;
             }
 

@@ -36,11 +36,10 @@ namespace System.Reflection
 
 
             // Poor man's reinterpret_cast into the PublicKeyBlob structure.
-            uint[] publicKeyBlob = new uint[3];
-            Buffer.BlockCopy(publicKey, 0, publicKeyBlob, 0, (int)SizeOfPublicKeyBlob);
-            uint sigAlgID = publicKeyBlob[0];
-            uint hashAlgID = publicKeyBlob[1];
-            uint cbPublicKey = publicKeyBlob[2];
+            ReadOnlySpan<byte> publicKeyBlob = new ReadOnlySpan<byte>(publicKey);
+            uint sigAlgID = BitConverter.ToUInt32(publicKeyBlob);
+            uint hashAlgID = BitConverter.ToUInt32(publicKeyBlob.Slice(4));
+            uint cbPublicKey = BitConverter.ToUInt32(publicKeyBlob.Slice(8));
 
             // The buffer must be the same size as the structure header plus the trailing key data
             if (cbPublicKey != publicKeyLength - SizeOfPublicKeyBlob)
@@ -66,8 +65,6 @@ namespace System.Reflection
             // The key blob must indicate that it is a PUBLICKEYBLOB
             if (publicKey[SizeOfPublicKeyBlob] != PUBLICKEYBLOB)
                 return false;
-
-            //@todo: Desktop also tries to import the public key blob using the Crypto api as further validation - not clear if there's any non-banned API to do this.
 
             return true;
         }

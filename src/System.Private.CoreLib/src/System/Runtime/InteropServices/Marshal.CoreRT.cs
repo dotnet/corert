@@ -10,6 +10,12 @@ using System.Text;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System
 {
     // For System.Private.Reflection.Core's sake
@@ -295,11 +301,12 @@ namespace System.Runtime.InteropServices
 
         public static string PtrToStringBSTR(IntPtr ptr)
         {
-#if PLATFORM_WINDOWS
-            return PtrToStringUni(ptr, (int)Interop.OleAut32.SysStringLen(ptr));
-#else
-            throw new PlatformNotSupportedException();
-#endif
+            if (ptr == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(ptr));
+            }
+
+            return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
         }
 
         public static byte ReadByte(object ptr, int ofs)
@@ -360,7 +367,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(ofs));
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
-            Buffer.ZeroMemory((byte*)nativeBytes, (long)size);
+            Buffer.ZeroMemory((byte*)nativeBytes, (nuint)size);
 
             try
             {
@@ -456,7 +463,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentOutOfRangeException(nameof(ofs));
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
-            Buffer.ZeroMemory((byte*)nativeBytes, (long)size);
+            Buffer.ZeroMemory((byte*)nativeBytes, (nuint)size);
 
             try
             {

@@ -1075,21 +1075,6 @@ namespace System.Runtime
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
         internal static extern unsafe void memset(byte* mem, int value, nuint size);
 
-        // Non-inlinable wrapper around the PInvoke that avoids poluting the fast path with P/Invoke prolog/epilog.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal unsafe static void RhZeroMemory(ref byte b, nuint byteLength)
-        {
-            fixed (byte* bytePointer = &b)
-            {
-                memset(bytePointer, 0, byteLength);
-            }
-        }
-
-        internal unsafe static void RhZeroMemory(IntPtr p, UIntPtr byteLength)
-        {
-            memset((byte*)p, 0, (nuint)byteLength);
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpArrayCopy")]
         internal static extern bool TryArrayCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length);

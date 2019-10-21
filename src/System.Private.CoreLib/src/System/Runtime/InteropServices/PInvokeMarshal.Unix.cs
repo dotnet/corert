@@ -84,15 +84,6 @@ namespace System.Runtime.InteropServices
             return Interop.MemReAlloc(pv, new UIntPtr((void*)cb));
         }
 
-        public static IntPtr SecureStringToBSTR(SecureString s)
-        {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-            throw new PlatformNotSupportedException();
-        }
-
         // In CoreRT on Unix, there is not yet a BSTR implementation. On Windows, we would use SysAllocStringLen from OleAut32.dll.
         internal static IntPtr AllocBSTR(int length)
         {

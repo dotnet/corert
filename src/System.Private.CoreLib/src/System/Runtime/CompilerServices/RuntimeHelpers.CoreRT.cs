@@ -264,30 +264,6 @@ namespace System.Runtime.CompilerServices
                 throw new ArgumentNullException(nameof(d));
         }
 
-        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object userData)
-        {
-            if (code == null)
-                throw new ArgumentNullException(nameof(code));
-            if (backoutCode == null)
-                throw new ArgumentNullException(nameof(backoutCode));
-
-            bool exceptionThrown = false;
-
-            try
-            {
-                code(userData);
-            }
-            catch
-            {
-                exceptionThrown = true;
-                throw;
-            }
-            finally
-            {
-                backoutCode(userData, exceptionThrown);
-            }
-        }
-
         private static object GetUninitializedObjectInternal(Type type)
         {
             if (type.HasElementType || type.IsGenericParameter)
