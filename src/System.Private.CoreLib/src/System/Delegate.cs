@@ -279,6 +279,7 @@ namespace System
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = functionPointerThunk;
+            X2.PrintUint(m_functionPointer.ToInt32());
             m_extraFunctionPointerOrData = functionPointer;
         }
 

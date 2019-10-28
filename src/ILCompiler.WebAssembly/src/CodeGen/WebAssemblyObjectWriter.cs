@@ -450,13 +450,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 NonGCStaticBaseRealBase = arrayglobal;
             }
-            
-            if (realName ==
-                "__fatpointer_S_P_Reflection_Core_System_Collections_Generic_LowLevelList_1<String>___cctor"
-            )
-            {
-                FatPointer = arrayglobal;
-            }
+
             LLVM.SetLinkage(arrayglobal, LLVMLinkage.LLVMExternalLinkage);
 
             _dataToFill.Add(new ObjectNodeDataEmission(arrayglobal, _currentObjectData.ToArray(), _currentObjectSymbolRefs));
@@ -702,7 +696,7 @@ namespace ILCompiler.DependencyAnalysis
         //System.IO.FileStream _file;
         string _objectFilePath;
         static LLVMValueRef EETypeObject;
-        static LLVMValueRef FatPointer;
+//        public static LLVMValueRef InvokeOpenInstanceThunk;
         static LLVMValueRef NonGCStaticBaseRealBase;
         public WebAssemblyObjectWriter(string objectFilePath, NodeFactory factory, WebAssemblyCodegenCompilation compilation)
         {
@@ -1065,7 +1059,7 @@ namespace ILCompiler.DependencyAnalysis
                 gepName = "typeNodeGep";
 
                 if (mangledName.Contains(
-                    "GenericLookupFromDict_Internal_CompilerGenerated__Module___InvokeRetOII"))
+                    "GenericLookupFromDict_HelloWasm_SampleClassWithGenericDelegate__CallDelegate<System___Canon>___DelegateCtor_S_P_CoreLib_System_Delegate__InitializeOpenStaticThunk__HelloWasm_SampleClassWithGenericDelegate__DoWork<T_System___Canon>__HelloWasm_Stack_1_StackDelegate<System___Canon>__InvokeOpenStaticThunk"))
                 {
                 PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 10, false), LLVM.GetParam(helperFunc, 0));
                 PrintIntPtr(builder, ptr8, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
@@ -1089,7 +1083,7 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 if (mangledName.Contains(
-                    "GenericLookupFromDict_Internal_CompilerGenerated__Module___InvokeRetOII"))
+                    "GenericLookupFromDict_HelloWasm_SampleClassWithGenericDelegate__CallDelegate<System___Canon>___DelegateCtor_S_P_CoreLib_System_Delegate__InitializeOpenStaticThunk__HelloWasm_SampleClassWithGenericDelegate__DoWork<T_System___Canon>__HelloWasm_Stack_1_StackDelegate<System___Canon>__InvokeOpenStaticThunk"))
                 {
                 print = true;
                 }
@@ -1164,14 +1158,17 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
                         MethodDesc constructor = target.Constructor.Method;
+//                        PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 49, false), LLVM.GetParam(helperFunc, 0));
+//                        PrintIntPtr(builder, resVar, LLVM.GetParam(helperFunc, 0));
+//                        var fatFunction = LLVM.BuildGEP(builder, resVar,
+//                            new LLVMValueRef[]
+//                            {
+//                                LLVM.ConstInt(LLVMTypeRef.Int32Type(), ILImporter.FatFunctionPointerOffset, false)
+//                            },
+//                            "fatPointer");
+//                        PrintIntPtr(builder, fatFunction, LLVM.GetParam(helperFunc, 0));
 
-                        var fatFunction = LLVM.BuildGEP(builder, resVar,
-                            new LLVMValueRef[]
-                            {
-                                LLVM.ConstInt(LLVMTypeRef.Int32Type(), ILImporter.FatFunctionPointerOffset, false)
-                            },
-                            "fatPointer");
-                        importer.OutputCodeForDelegateCtorInit(builder, helperFunc, constructor, fatFunction);
+                        importer.OutputCodeForDelegateCtorInit(builder, helperFunc, constructor, LLVM.GetParam(helperFunc, 3));
 
 //                        sb.Append("::");
 //                        sb.Append(GetCppMethodDeclarationName(constructor.OwningType, GetCppMethodName(constructor)));
@@ -1276,21 +1273,21 @@ namespace ILCompiler.DependencyAnalysis
                     asInt
                 }, string.Empty);
 
-                        var ptr32 = LLVM.BuildIntToPtr(_builder, asInt, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "inttoptr");
-                        var loaded = LLVM.BuildLoad(_builder, ptr32, "loadedasint2");
-                        LLVM.BuildCall(_builder,
-                            GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
-                                LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
-                                    {
-                                        LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
-                                        LLVMTypeRef.Int32Type()
-                                    },
-                                    false)),
-                            new LLVMValueRef[]
-                            {
-                                ILImporter.CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
-                                loaded
-                            }, string.Empty);
+//                        var ptr32 = LLVM.BuildIntToPtr(_builder, asInt, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "inttoptr");
+//                        var loaded = LLVM.BuildLoad(_builder, ptr32, "loadedasint2");
+//                        LLVM.BuildCall(_builder,
+//                            GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
+//                                LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
+//                                    {
+//                                        LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+//                                        LLVMTypeRef.Int32Type()
+//                                    },
+//                                    false)),
+//                            new LLVMValueRef[]
+//                            {
+//                                ILImporter.CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
+//                                loaded
+//                            }, string.Empty);
         }
 
         void PrintInt32(LLVMBuilderRef _builder, LLVMValueRef ptr, LLVMValueRef shadowStack)
@@ -1328,35 +1325,35 @@ namespace ILCompiler.DependencyAnalysis
 
             if (print)
             {
-                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 13, false), LLVM.GetParam(helperFunc, 0));
-                PrintIntPtr(builder, EETypeObject,
-                    ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
-                        LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
-
-                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 14, false), LLVM.GetParam(helperFunc, 0));
-                PrintIntPtr(builder, retRef, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
-                    LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
-
-                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 15, false), LLVM.GetParam(helperFunc, 0));
-                LLVMValueRef addressOfAddress = FatPointer;
-                //return addressOfAddress;
-//                var sym = LLVM.BuildLoad(builder, addressOfAddress,
-//                    "LoadAddressOfSymbolNode");
-
-                PrintIntPtr(builder, addressOfAddress,
-                    ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
-                    LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
-
-                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 16, false), LLVM.GetParam(helperFunc, 0));
-                LLVMValueRef nonGCAddresss = NonGCStaticBaseRealBase;
-                //return addressOfAddress;
-                //                var sym = LLVM.BuildLoad(builder, addressOfAddress,
-                //                    "LoadAddressOfSymbolNode");
-
-                PrintIntPtr(builder, nonGCAddresss,
-                    ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
-                        LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
-
+//                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 13, false), LLVM.GetParam(helperFunc, 0));
+//                PrintIntPtr(builder, InvokeOpenInstanceThunk,
+//                    ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
+//                        LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
+//
+//                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 14, false), LLVM.GetParam(helperFunc, 0));
+//                PrintIntPtr(builder, retRef, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
+//                    LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
+//
+//                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 15, false), LLVM.GetParam(helperFunc, 0));
+//                LLVMValueRef addressOfAddress = InvokeOpenInstanceThunk;
+//                //return addressOfAddress;
+////                var sym = LLVM.BuildLoad(builder, addressOfAddress,
+////                    "LoadAddressOfSymbolNode");
+//
+//                PrintIntPtr(builder, addressOfAddress,
+//                    ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
+//                    LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
+//
+//                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 16, false), LLVM.GetParam(helperFunc, 0));
+//                LLVMValueRef nonGCAddresss = NonGCStaticBaseRealBase;
+//                //return addressOfAddress;
+//                //                var sym = LLVM.BuildLoad(builder, addressOfAddress,
+//                //                    "LoadAddressOfSymbolNode");
+//
+//                PrintIntPtr(builder, nonGCAddresss,
+//                    ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
+//                        LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
+//
             }
             switch (lookup.LookupResultReferenceType(factory))
             {
@@ -1467,12 +1464,12 @@ namespace Internal.IL
             argValues[0] = new LoadExpressionEntry(StackValueKind.ObjRef, "this", shadowStack, GetWellKnownType(WellKnownType.Object));
             for (var i = 0; i < constructor.Signature.Length; i++)
             {
-                var argRef = LoadVarAddress(i, LocalVarKind.Argument, out TypeDesc type);
-                var loadArg = LLVM.BuildLoad(builder, argRef, "arg" + i);
-                argValues[i + 1] = new ExpressionEntry(GetStackValueKind(constructor.Signature[i]), "arg" + i, loadArg, 
+                var argRef = LoadVarAddress(i + 1, LocalVarKind.Argument, out TypeDesc type);
+                var loadArg = LLVM.BuildLoad(builder, argRef, "arg" + i + 1);
+                argValues[i + 1] = new ExpressionEntry(GetStackValueKind(constructor.Signature[i]), "arg" + i + 1, loadArg, 
                     constructor.Signature[i]);
             }
-            argValues[3] = new ExpressionEntry(StackValueKind.NativeInt, "arg3", fatFunction, GetWellKnownType(WellKnownType.Int32));
+//            argValues[3] = new ExpressionEntry(StackValueKind.NativeInt, "arg3", fatFunction, GetWellKnownType(WellKnownType.Int32));
             HandleCall(constructor, constructor.Signature, constructor, constructor.Signature, argValues, null);
         }
     }
