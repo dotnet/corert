@@ -25,10 +25,4 @@ namespace System
             return true;
         }
     }
-
-    // TODO: Delete. Temporary workaround to fix build break.
-    internal class NativeRuntimeEventSource
-    {
-        public static System.Diagnostics.Tracing.EventSource Log => default;
-    }
 }
