@@ -1286,12 +1286,7 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (_method.ToString().Contains("CallDelegate")/* &&
-                _method.ToString().Contains("Stack")
-                && method.ToString().Contains("Equals")*/)
-            {
 
-            }
 
             if (method.IsIntrinsic)
             {
@@ -1311,7 +1306,11 @@ namespace Internal.IL
                 Append("__pinvoke(&__piframe)");
                 AppendSemicolon();
             }
-
+            if (_method.ToString().Contains("TestSimpleGVMScenarios") &&
+                method.ToString().Contains("IFaceGVMethod1"))
+            {
+                //                        _stack.Push(thisEntry); // this is a newobj so this needs to be on the stack at the end
+            }
             TypeDesc constrained = null;
             bool resolvedConstraint = false;
             if (opcode != ILOpcode.newobj)
@@ -2244,6 +2243,10 @@ namespace Internal.IL
             MethodDesc method = ((MethodDesc)_canonMethodIL.GetObject(token));
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
+            if (canonMethod.ToString().Contains("TestGvmDelegates+Base.Frob<__Canon>"))
+            {
+
+            }
             if (opCode == ILOpcode.ldvirtftn && canonMethod.IsVirtual && !canonMethod.HasInstantiation && canonMethod.OwningType.IsInterface)
             {
                 AddVirtualMethodReference(canonMethod);
