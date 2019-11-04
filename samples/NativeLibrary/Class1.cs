@@ -35,5 +35,22 @@ namespace NativeLibrary
             }
             return 0;
         }
+
+        [NativeCallable(EntryPoint = "sumstring", CallingConvention = CallingConvention.StdCall)]
+        public static IntPtr sumstring(IntPtr first, IntPtr second)
+        {
+            /* Parse strings from the passed pointers */
+            string my1String = Marshal.PtrToStringAnsi(first);
+            string my2String = Marshal.PtrToStringAnsi(second);
+
+            /* Concatenate strings */
+            string sum = my1String + my2String;
+
+            /*Assign pointer of the concatenated string to sumPointer*/
+            IntPtr sumPointer = Marshal.StringToHGlobalAnsi(sum);
+
+            // Return pointer
+            return sumPointer;
+        }
     }
 }
