@@ -1079,6 +1079,7 @@ internal class ReflectionTest
             }
 
 #if !MULTIMODULE_BUILD
+#if !CODEGEN_CPP // https://github.com/dotnet/corert/issues/7799
             Console.WriteLine("Search through a forwarder");
             {
                 Type t = Type.GetType("System.Collections.Generic.List`1, System.Collections", throwOnError: false);
@@ -1092,6 +1093,7 @@ internal class ReflectionTest
                 if (t == null)
                     throw new Exception("SuppressIldasmAttribute");
             }
+#endif
 #endif
 
             Console.WriteLine("Enum.GetValues");

@@ -51,7 +51,14 @@ namespace Internal.JitInterface
         {
             _methodCodeNode = methodCodeNodeNeedingCode;
 
-            CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+            try
+            {
+                CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+            }
+            finally
+            {
+                CompileMethodCleanup();
+            }
         }
 
         private CORINFO_RUNTIME_LOOKUP_KIND GetLookupKindFromContextSource(GenericContextSource contextSource)
@@ -331,6 +338,9 @@ namespace Internal.JitInterface
                     return _compilation.NodeFactory.ExternSymbol("RhpNewArrayAlign8");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC:
                     return _compilation.NodeFactory.ExternSymbol("RhpNewArray");
+
+                case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
+                    return _compilation.NodeFactory.ExternSymbol("RhpStackProbe");
 
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:
                     id = ReadyToRunHelper.LMul;
@@ -1500,6 +1510,11 @@ namespace Internal.JitInterface
             }
         }
 
+        private uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            return getMethodAttribsInternal(HandleToObject(ftn));
+        }
+
         private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
         {
             MethodDesc method = HandleToObject(ftn);
@@ -1519,6 +1534,14 @@ namespace Internal.JitInterface
                 return result;
             }
         }
+
+        private HRESULT allocMethodBlockCounts(uint count, ref BlockCounts* pBlockCounts)
+        {
+            throw new NotImplementedException("allocMethodBlockCounts");
+        }
+
+        private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
+        { throw new NotImplementedException("getBBProfileData"); }
 
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
@@ -1609,5 +1632,32 @@ namespace Internal.JitInterface
         {
             return ((Internal.IL.Stubs.PInvokeILStubMethodIL)_compilation.GetMethodIL(method))?.IsStubRequired ?? false;
         }
+
+        private int SizeOfPInvokeTransitionFrame
+        {
+            get
+            {
+                // struct PInvokeTransitionFrame:
+                // #ifdef _TARGET_ARM_
+                //  m_ChainPointer
+                // #endif
+                //  m_RIP
+                //  m_FramePointer
+                //  m_pThread
+                //  m_Flags + align (no align for ARM64 that has 64 bit m_Flags)
+                //  m_PreserverRegs - RSP
+                //      No need to save other preserved regs because of the JIT ensures that there are
+                //      no live GC references in callee saved registers around the PInvoke callsite.
+                int size = 5 * this.PointerSize;
+
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    size += this.PointerSize; // m_ChainPointer
+
+                return size;
+            }
+        }
+
+        private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
+        { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
     }
 }

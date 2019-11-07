@@ -389,6 +389,7 @@ namespace Internal.IL
                 case ILOpcode.beq:
                 case ILOpcode.ceq:
                     op = "==";
+                    unsigned = op1.Kind == StackValueKind.ByRef ^ op2.Kind == StackValueKind.ByRef;
                     break;
                 case ILOpcode.bge:
                     op = ">=";
@@ -406,6 +407,7 @@ namespace Internal.IL
                     break;
                 case ILOpcode.bne_un:
                     op = "!=";
+                    unsigned = op1.Kind == StackValueKind.ByRef ^ op2.Kind == StackValueKind.ByRef;
                     break;
                 case ILOpcode.bge_un:
                     if (kind == StackValueKind.Float)

@@ -144,7 +144,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (canonInvokeStubMethod.IsSharedByGenericInstantiations)
                     {
                         vertex = writer.GetTuple(vertex,
-                            writer.GetUnsignedConstant(((uint)factory.MetadataManager.DynamicInvokeTemplateData.GetIdForMethod(canonInvokeStubMethod) << 1) | 1));
+                            writer.GetUnsignedConstant(((uint)factory.MetadataManager.DynamicInvokeTemplateData.GetIdForMethod(canonInvokeStubMethod, factory) << 1) | 1));
                     }
                     else
                     {

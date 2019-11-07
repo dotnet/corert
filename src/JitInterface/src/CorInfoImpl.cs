@@ -143,100 +143,81 @@ namespace Internal.JitInterface
 
         private void CompileMethodInternal(IMethodNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
         {
-#if READYTORUN
-            bool codeGotPublished = false;
-#endif
-            try
+            _isFallbackBodyCompilation = methodIL != null;
+
+            CORINFO_METHOD_INFO methodInfo;
+            methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, &methodInfo);
+
+            // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
+            if (methodIL == null)
             {
-                _isFallbackBodyCompilation = methodIL != null;
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
+            }
 
-                CORINFO_METHOD_INFO methodInfo;
-                methodIL = Get_CORINFO_METHOD_INFO(MethodBeingCompiled, methodIL, &methodInfo);
-
-                // This is e.g. an "extern" method in C# without a DllImport or InternalCall.
-                if (methodIL == null)
-                {
-                    ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramSpecific, MethodBeingCompiled);
-                }
-
-                _methodScope = methodInfo.scope;
+            _methodScope = methodInfo.scope;
 
 #if !READYTORUN
-                SetDebugInformation(methodCodeNodeNeedingCode, methodIL);
+            SetDebugInformation(methodCodeNodeNeedingCode, methodIL);
 #endif
 
-                CorInfoImpl _this = this;
+            CorInfoImpl _this = this;
 
-                IntPtr exception;
-                IntPtr nativeEntry;
-                uint codeSize;
-                var result = JitCompileMethod(out exception,
-                        _jit, (IntPtr)Unsafe.AsPointer(ref _this), _unmanagedCallbacks,
-                        ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
-                if (exception != IntPtr.Zero)
-                {
-                    if (_lastException != null)
-                    {
-                        // If we captured a managed exception, rethrow that.
-                        // TODO: might not actually be the real reason. It could be e.g. a JIT failure/bad IL that followed
-                        // an inlining attempt with a type system problem in it...
-#if SUPPORT_JIT
-                        _lastException.Throw();
-#else
-                        if (_lastException.SourceException is TypeSystemException)
-                        {
-                            // Type system exceptions can be turned into code that throws the exception at runtime.
-                            _lastException.Throw();
-                        }
-#if READYTORUN
-                        else if (_lastException.SourceException is RequiresRuntimeJitException)
-                        {
-                            // Runtime JIT requirement is not a cause for failure, we just mustn't JIT a particular method
-                            _lastException.Throw();
-                        }
-#endif
-                        else
-                        {
-                            // This is just a bug somewhere.
-                            throw new CodeGenerationFailedException(_methodCodeNode.Method, _lastException.SourceException);
-                        }
-#endif
-                    }
-
-                    // This is a failure we don't know much about.
-                    char* szMessage = GetExceptionMessage(exception);
-                    string message = szMessage != null ? new string(szMessage) : "JIT Exception";
-                    throw new Exception(message);
-                }
-                if (result == CorJitResult.CORJIT_BADCODE)
-                {
-                    ThrowHelper.ThrowInvalidProgramException();
-                }
-                if (result != CorJitResult.CORJIT_OK)
-                {
-#if SUPPORT_JIT
-                    // FailFast?
-                    throw new Exception("JIT failed");
-#else
-                    throw new CodeGenerationFailedException(_methodCodeNode.Method);
-#endif
-                }
-
-                PublishCode();
-#if READYTORUN
-                codeGotPublished = true;
-#endif
-            }
-            finally
+            IntPtr exception;
+            IntPtr nativeEntry;
+            uint codeSize;
+            var result = JitCompileMethod(out exception,
+                    _jit, (IntPtr)Unsafe.AsPointer(ref _this), _unmanagedCallbacks,
+                    ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
+            if (exception != IntPtr.Zero)
             {
-#if READYTORUN
-                if (!codeGotPublished)
+                if (_lastException != null)
                 {
-                    PublishEmptyCode();
-                }
+                    // If we captured a managed exception, rethrow that.
+                    // TODO: might not actually be the real reason. It could be e.g. a JIT failure/bad IL that followed
+                    // an inlining attempt with a type system problem in it...
+#if SUPPORT_JIT
+                    _lastException.Throw();
+#else
+                    if (_lastException.SourceException is TypeSystemException)
+                    {
+                        // Type system exceptions can be turned into code that throws the exception at runtime.
+                        _lastException.Throw();
+                    }
+#if READYTORUN
+                    else if (_lastException.SourceException is RequiresRuntimeJitException)
+                    {
+                        // Runtime JIT requirement is not a cause for failure, we just mustn't JIT a particular method
+                        _lastException.Throw();
+                    }
 #endif
-                CompileMethodCleanup();
+                    else
+                    {
+                        // This is just a bug somewhere.
+                        throw new CodeGenerationFailedException(_methodCodeNode.Method, _lastException.SourceException);
+                    }
+#endif
+                }
+
+                // This is a failure we don't know much about.
+                char* szMessage = GetExceptionMessage(exception);
+                string message = szMessage != null ? new string(szMessage) : "JIT Exception";
+                throw new Exception(message);
             }
+            if (result == CorJitResult.CORJIT_BADCODE)
+            {
+                ThrowHelper.ThrowInvalidProgramException();
+            }
+            if (result != CorJitResult.CORJIT_OK)
+            {
+#if SUPPORT_JIT
+                // FailFast?
+                throw new Exception("JIT failed");
+#else
+                throw new CodeGenerationFailedException(_methodCodeNode.Method);
+#endif
+            }
+
+            PublishCode();
         }
 
         private void PublishCode()
@@ -278,7 +259,10 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+            PublishProfileData();
         }
+
+        partial void PublishProfileData();
 
         private MethodDesc MethodBeingCompiled
         {
@@ -344,10 +328,17 @@ namespace Internal.JitInterface
 #if !READYTORUN
             _sequencePoints = null;
             _variableToTypeDesc = null;
+
+            _parameterIndexToNameMap = null;
+            _localSlotToInfoMap = null;
 #endif
             _debugLocInfos = null;
             _debugVarInfos = null;
             _lastException = null;
+
+#if READYTORUN
+            _profileDataNode = null;
+#endif
         }
 
         private Dictionary<Object, IntPtr> _objectToHandle = new Dictionary<Object, IntPtr>();
@@ -635,6 +626,13 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
             }
 
+#if READYTORUN
+            if (method.RequireSecObject)
+            {
+                result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE_CALLER;
+            }
+#endif
+
             if (method.IsAggressiveOptimization)
             {
                 result |= CorInfoFlag.CORINFO_FLG_AGGRESSIVE_OPT;
@@ -667,6 +665,12 @@ namespace Internal.JitInterface
             // Check for hardware intrinsics
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
             {
+#if READYTORUN
+                if (!isMethodDefinedInCoreLib())
+                {
+                    throw new RequiresRuntimeJitException("This function is not defined in CoreLib and it is using hardware intrinsics.");
+                }
+#endif
 #if !READYTORUN
                 // Do not report the get_IsSupported method as an intrinsic - RyuJIT would expand it to
                 // a constant depending on the code generation flags passed to it, but we would like to
@@ -682,11 +686,6 @@ namespace Internal.JitInterface
             result |= CorInfoFlag.CORINFO_FLG_NOSECURITYWRAP;
 
             return (uint)result;
-        }
-
-        private uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)
-        {
-            return getMethodAttribsInternal(HandleToObject(ftn));
         }
 
         private void setMethodAttribs(CORINFO_METHOD_STRUCT_* ftn, CorInfoMethodRuntimeFlags attribs)
@@ -866,6 +865,7 @@ namespace Internal.JitInterface
                 getJitFlags(ref flags, (uint)sizeof(CORJIT_FLAGS));
 
                 Debug.Assert(!_simdHelper.IsVectorOfT(type)
+                    || ((DefType)type).InstanceFieldSize.IsIndeterminate /* This would happen in the ReadyToRun case */
                     || ((DefType)type).InstanceFieldSize.AsInt == GetMaxIntrinsicSIMDVectorLength(_jit, &flags));
 #endif
 
@@ -2382,30 +2382,6 @@ namespace Internal.JitInterface
         private void ThrowExceptionForHelper(ref CORINFO_HELPER_DESC throwHelper)
         { throw new NotImplementedException("ThrowExceptionForHelper"); }
 
-        private uint SizeOfPInvokeTransitionFrame
-        {
-            get
-            {
-                // struct PInvokeTransitionFrame:
-                // #ifdef _TARGET_ARM_
-                //  m_ChainPointer
-                // #endif
-                //  m_RIP
-                //  m_FramePointer
-                //  m_pThread
-                //  m_Flags + align (no align for ARM64 that has 64 bit m_Flags)
-                //  m_PreserverRegs - RSP
-                //      No need to save other preserved regs because of the JIT ensures that there are
-                //      no live GC references in callee saved registers around the PInvoke callsite.
-                int size = 5 * this.PointerSize;
-
-                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
-                    size += this.PointerSize; // m_ChainPointer
-
-                return (uint)size;
-            }
-        }
-
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
         {
             pEEInfoOut = new CORINFO_EE_INFO();
@@ -2419,7 +2395,7 @@ namespace Internal.JitInterface
 
             int pointerSize = this.PointerSize;
 
-            pEEInfoOut.inlinedCallFrameInfo.size = this.SizeOfPInvokeTransitionFrame;
+            pEEInfoOut.inlinedCallFrameInfo.size = (uint)SizeOfPInvokeTransitionFrame;
 
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
@@ -2487,33 +2463,45 @@ namespace Internal.JitInterface
             return (byte*)GetPin(StringToUTF8(method.Name));
         }
 
-        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassName)
+        private String getMethodNameFromMetadataImpl(MethodDesc method, out string className, out string namespaceName, out string enclosingClassName)
         {
-            MethodDesc method = HandleToObject(ftn);
-
             string result = null;
-            string classResult = null;
-            string namespaceResult = null;
-            string enclosingResult = null;
+            className = null;
+            namespaceName = null;
+            enclosingClassName = null;
 
             result = method.Name;
 
             MetadataType owningType = method.OwningType as MetadataType;
             if (owningType != null)
             {
-                classResult = owningType.Name;
-                namespaceResult = owningType.Namespace;
+                className = owningType.Name;
+                namespaceName = owningType.Namespace;
 
                 // Query enclosingClassName when the method is in a nested class
                 // and get the namespace of enclosing classes (nested class's namespace is empty)
                 var containingType = owningType.ContainingType;
                 if (containingType != null)
                 {
-                    enclosingResult = containingType.Name;
-                    namespaceResult = containingType.Namespace;
+                    enclosingClassName = containingType.Name;
+                    namespaceName = containingType.Namespace;
                 }
             }
-            
+
+            return result;
+        }
+
+        private byte* getMethodNameFromMetadata(CORINFO_METHOD_STRUCT_* ftn, byte** className, byte** namespaceName, byte** enclosingClassName)
+        {
+            MethodDesc method = HandleToObject(ftn);
+
+            string result;
+            string classResult;
+            string namespaceResult;
+            string enclosingResult;
+
+            result = getMethodNameFromMetadataImpl(method, out classResult, out namespaceResult, out enclosingResult);
+
             if (className != null)
                 *className = classResult != null ? (byte*)GetPin(StringToUTF8(classResult)) : null;
             if (namespaceName != null)
@@ -2532,31 +2520,13 @@ namespace Internal.JitInterface
         private byte* findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
         { throw new NotImplementedException("findNameOfToken"); }
 
+        SystemVStructClassificator _systemVStructClassificator = new SystemVStructClassificator();
+
         private bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
         {
-            TypeDesc type = HandleToObject(structHnd);
+            TypeDesc typeDesc = HandleToObject(structHnd);
 
-            if (type.IsValueType)
-            {
-                // TODO: actually implement
-                // https://github.com/dotnet/corert/issues/158
-                if (type.GetElementSize().AsInt <= 8)
-                {
-                    structPassInRegDescPtr->passedInRegisters = true;
-                    structPassInRegDescPtr->eightByteCount = 1;
-                    structPassInRegDescPtr->eightByteClassifications0 = SystemVClassificationType.SystemVClassificationTypeInteger;
-                    structPassInRegDescPtr->eightByteSizes0 = (byte)type.GetElementSize().AsInt;
-                    structPassInRegDescPtr->eightByteOffsets0 = 0;
-                }
-                else
-                    structPassInRegDescPtr->passedInRegisters = false;
-            }
-            else
-            {
-                structPassInRegDescPtr->passedInRegisters = false;
-            }
-
-            return true;
+            return _systemVStructClassificator.getSystemVAmd64PassStructInRegisterDescriptor(typeDesc, structPassInRegDescPtr);
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
@@ -2641,8 +2611,6 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getAddressOfPInvokeFixup"); }
         private void* GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, ref void* ppIndirection)
         { throw new NotImplementedException("GetCookieForPInvokeCalliSig"); }
-        private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-        { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
         private CORINFO_JUST_MY_CODE_HANDLE_* getJustMyCodeHandle(CORINFO_METHOD_STRUCT_* method, ref CORINFO_JUST_MY_CODE_HANDLE_* ppIndirection)
         {
             ppIndirection = null;
@@ -2736,6 +2704,7 @@ namespace Internal.JitInterface
         private byte[] _coldCode;
 
         private byte[] _roData;
+
         private BlobNode _roDataBlob;
 
         private int _numFrameInfos;
@@ -2849,11 +2818,6 @@ namespace Internal.JitInterface
             // CompileMethod is going to fail with this CorJitResult anyway.
         }
 
-        private HRESULT allocMethodBlockCounts(uint count, ref BlockCounts* pBlockCounts)
-        { throw new NotImplementedException("allocBBProfileBuffer"); }
-        private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
-        { throw new NotImplementedException("getBBProfileData"); }
-
         private void recordCallSite(uint instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_STRUCT_* methodHandle)
         {
         }
@@ -2872,7 +2836,9 @@ namespace Internal.JitInterface
             /// <summary>Represent cold code (i.e. code not called frequently).</summary>
             ColdCode = 1,
             /// <summary>Read-only data.</summary>
-            ROData = 2
+            ROData = 2,
+            /// <summary>Instrumented Block Count Data</summary>
+            BBCounts = 3
         }
 
         private BlockType findKnownBlock(void* location, out int offset)
@@ -2910,9 +2876,19 @@ namespace Internal.JitInterface
                 }
             }
 
+            {
+                BlockType retBlockType = BlockType.Unknown;
+                offset = 0;
+                findKnownBBCountBlock(ref retBlockType, location, ref offset);
+                if (retBlockType == BlockType.BBCounts)
+                    return retBlockType;
+            }
+
             offset = 0;
             return BlockType.Unknown;
         }
+
+        partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
@@ -2949,6 +2925,12 @@ namespace Internal.JitInterface
                 case BlockType.ROData:
                     relocTarget = _roDataBlob;
                     break;
+
+#if READYTORUN
+                case BlockType.BBCounts:
+                    relocTarget = _profileDataNode;
+                    break;
+#endif
 
                 default:
                     // Reloc points to something outside of the generated blocks
@@ -3004,6 +2986,17 @@ namespace Internal.JitInterface
             }
         }
 
+        private bool isMethodDefinedInCoreLib()
+        {
+            TypeDesc owningType = MethodBeingCompiled.OwningType;
+            MetadataType owningMetadataType = owningType as MetadataType;
+            if (owningMetadataType == null)
+            {
+                return false;
+            }
+            return owningMetadataType.Module == _compilation.TypeSystemContext.SystemModule;
+        }
+
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
             // Read the user-defined configuration options.
@@ -3017,9 +3010,12 @@ namespace Internal.JitInterface
             flags.Set(CorJitFlag.CORJIT_FLAG_PREJIT);
             flags.Set(CorJitFlag.CORJIT_FLAG_USE_PINVOKE_HELPERS);
 
-#if !READYTORUN
-            if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86
+            if ((_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X86
                 || _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.X64)
+#if READYTORUN
+                && isMethodDefinedInCoreLib()
+#endif
+               )
             {
                 // This list needs to match the list of intrinsics we can generate detection code for
                 // in HardwareIntrinsicHelpers.EmitIsSupportedIL.
@@ -3029,7 +3025,6 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_SSSE3);
                 flags.Set(CorJitFlag.CORJIT_FLAG_USE_LZCNT);
             }
-#endif
 
             if (this.MethodBeingCompiled.IsNativeCallable)
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);

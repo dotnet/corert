@@ -36,6 +36,17 @@
     </PackageReference>
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
+    <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
+    <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v1.6</TargetFrameworkVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6'">
+    <PackageReference Include="NETStandard.Library">
+      <Version>2.0.3</Version>
+    </PackageReference>
+  </ItemGroup>
+
   <!-- Set default references for netstandard2.0 -->
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>

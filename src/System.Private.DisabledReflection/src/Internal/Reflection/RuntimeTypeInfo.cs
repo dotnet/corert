@@ -22,12 +22,17 @@ namespace Internal.Reflection
             _typeHandle = typeHandle;
         }
 
+        private bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
+
         public override RuntimeTypeHandle TypeHandle => _typeHandle;
-        public override string Namespace => throw new NotSupportedException(SR.Reflection_Disabled);
+
+        public override string Name => DoNotThrowForNames ? RuntimeAugments.GetLastResortString(_typeHandle) : throw new NotSupportedException(SR.Reflection_Disabled);
+
+        public override string Namespace => DoNotThrowForNames ? "" : throw new NotSupportedException(SR.Reflection_Disabled);
+
+        public override string FullName => Name;
 
         public override string AssemblyQualifiedName => throw new NotSupportedException(SR.Reflection_Disabled);
-
-        public override string FullName => throw new NotSupportedException(SR.Reflection_Disabled);
 
         public override Assembly Assembly => throw new NotSupportedException(SR.Reflection_Disabled);
 
@@ -49,8 +54,6 @@ namespace Internal.Reflection
                 return null;
             }
         }
-
-        public override string Name => throw new NotSupportedException(SR.Reflection_Disabled);
 
         public override bool IsByRefLike => RuntimeAugments.IsByRefLike(_typeHandle);
 

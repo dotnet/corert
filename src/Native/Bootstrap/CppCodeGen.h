@@ -12,6 +12,7 @@
 #ifdef _MSC_VER
 // Warnings disabled for generated cpp code
 #pragma warning(disable:4200) // zero-sized array
+#pragma warning(disable:4101) // unreferenced local variable
 #pragma warning(disable:4102) // unreferenced label
 #pragma warning(disable:4244) // possible loss of data
 #pragma warning(disable:4717) // recursive on all control paths

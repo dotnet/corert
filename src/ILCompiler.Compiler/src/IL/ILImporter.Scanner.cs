@@ -176,18 +176,7 @@ namespace Internal.IL
 
         private ISymbolNode GetHelperEntrypoint(ReadyToRunHelper helper)
         {
-            string mangledName;
-            MethodDesc methodDesc;
-            JitHelper.GetEntryPoint(_compilation.TypeSystemContext, helper, out mangledName, out methodDesc);
-            Debug.Assert(mangledName != null || methodDesc != null);
-
-            ISymbolNode entryPoint;
-            if (mangledName != null)
-                entryPoint = _compilation.NodeFactory.ExternSymbol(mangledName);
-            else
-                entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
-
-            return entryPoint;
+            return _compilation.GetHelperEntrypoint(helper);
         }
 
         private void MarkInstructionBoundary() { }

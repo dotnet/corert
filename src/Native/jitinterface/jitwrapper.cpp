@@ -24,20 +24,20 @@ public:
         corJitFlags = other.corJitFlags;
     }
 private:
-    unsigned __int64 corJitFlags;
+    uint64_t corJitFlags;
 };
 
-static const GUID JITEEVersionIdentifier = { /* d609bed1-7831-49fc-bd49-b6f054dd4d46 */
-    0xd609bed1,
-    0x7831,
-    0x49fc,
-    {0xbd, 0x49, 0xb6, 0xf0, 0x54, 0xdd, 0x4d, 0x46}
+static const GUID JITEEVersionIdentifier = { /* 1ce51eeb-dfd0-4450-ba2c-ea0d2d863df5 */
+    0x1ce51eeb,
+    0xdfd0,
+    0x4450,
+    {0xba, 0x2c, 0xea, 0x0d, 0x2d, 0x86, 0x3d, 0xf5}
 };
 
 class Jit
 {
 public:
-    virtual int __stdcall compileMethod(
+    virtual int STDMETHODCALLTYPE compileMethod(
         void* compHnd,
         void* methodInfo,
         unsigned flags,

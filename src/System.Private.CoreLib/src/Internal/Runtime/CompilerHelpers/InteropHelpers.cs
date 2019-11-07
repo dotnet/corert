@@ -13,6 +13,15 @@ using System.Threading;
 
 using Internal.Runtime.Augments;
 
+#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
+#if BIT64
+using nint = System.Int64;
+using nuint = System.UInt64;
+#else
+using nint = System.Int32;
+using nuint = System.UInt32;
+#endif
+
 namespace Internal.Runtime.CompilerHelpers
 {
     /// <summary>
@@ -378,7 +387,7 @@ namespace Internal.Runtime.CompilerHelpers
             // PInvokeMarshal.CoTaskMemAlloc will throw OOMException if out of memory
             Debug.Assert(ptr != null);
 
-            Buffer.ZeroMemory((byte*)ptr, size.ToInt64());
+            Buffer.ZeroMemory((byte*)ptr, (nuint)(nint)size);
             return ptr;
         }
 
