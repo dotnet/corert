@@ -112,4 +112,22 @@
     ldc.i4 0
     ret
   }
+
+  .method public static bool BneSbyteExtend () cil managed 
+  {
+    // Method begins at RVA 0x2050
+    // Code size 8 (0x8)
+    .maxstack 8
+
+    ldc.i4.m1
+    ldc.i4.m1
+    bne.un.s failure
+
+    ldc.i4.1
+    ret
+
+    failure:
+    ldc.i4.0
+    ret
+  }
 }

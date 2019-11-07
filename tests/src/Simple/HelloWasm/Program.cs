@@ -1009,6 +1009,48 @@ internal static class Program
         }
     }
 
+    private static void TestSByteExtend()
+    {
+        StartTest("SByte extend");
+        sbyte s = -1;
+        int x = (int)s;
+        sbyte s2 = 1;
+        int x2 = (int)s2;
+        if (x == -1 && x2 == 1)
+        {
+            PassTest();
+        }
+        else
+        {
+            FailTest("Expected -1 and 1 but got " + x.ToString() + " and " + x2.ToString());
+        }
+
+        StartTest("SByte left shift");
+        x = (int)(s << 1);
+        if(x == -2)
+        {
+            PassTest();
+        }
+        else
+        {
+            FailTest("Expected -2 but got " + x.ToString());
+        }
+
+        sbyte minus1 = -1;
+        StartTest("Negative SByte op");
+        if((s & minus1) == -1)
+        {
+            PassTest();
+        }
+        else
+        {
+            FailTest();
+        }
+
+        StartTest("Negative SByte br"); 
+        EndTest(ILHelpers.ILHelpersTest.BneSbyteExtend());
+    }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
