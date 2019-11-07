@@ -230,9 +230,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
-            // We are getting a constructed type symbol because this might be something passed to newobj.
+            // We are getting a maximally constructable type symbol because this might be something passed to newobj.
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.ConstructedTypeSymbol(instantiatedType);
+            return factory.MaximallyConstructableType(instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

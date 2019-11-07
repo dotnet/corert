@@ -968,6 +968,8 @@ namespace System.Runtime
                 return IsInstanceOfArray(pvTargetType, obj);
             else if (pTargetType->IsInterface)
                 return IsInstanceOfInterface(pvTargetType, obj);
+            else if (pTargetType->IsParameterizedType)
+                return null; // We handled arrays above so this is for pointers and byrefs only.
             else
                 return IsInstanceOfClass(pvTargetType, obj);
         }
@@ -981,8 +983,22 @@ namespace System.Runtime
                 return CheckCastArray(pvTargetType, obj);
             else if (pTargetType->IsInterface)
                 return CheckCastInterface(pvTargetType, obj);
+            else if (pTargetType->IsParameterizedType)
+                return CheckCastNonArrayParameterizedType(pvTargetType, obj);
             else
                 return CheckCastClass(pvTargetType, obj);
+        }
+
+        private static unsafe object CheckCastNonArrayParameterizedType(void* pvTargetType, object obj)
+        {
+            // a null value can be cast to anything
+            if (obj == null)
+            {
+                return null;
+            }
+
+            // Parameterized types are not boxable, so nothing can be an instance of these.
+            throw ((EEType*)pvTargetType)->GetClasslibException(ExceptionIDs.InvalidCast);
         }
 
         // Returns true of the two types are equivalent primitive types. Used by array casts.

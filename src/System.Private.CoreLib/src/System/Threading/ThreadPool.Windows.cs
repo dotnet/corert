@@ -241,9 +241,9 @@ namespace System.Threading
         /// TppComputeDefaultMaxThreads(TppMaxGlobalPool).
         /// </summary>
         /// <remarks>
-        /// Note that Windows 8 and 8.1 used a different value: Math.Max(4 * ThreadPoolGlobals.processorCount, 512).
+        /// Note that Windows 8 and 8.1 used a different value: Math.Max(4 * Environment.ProcessorCount, 512).
         /// </remarks>
-        private static readonly int MaxThreadCount = Math.Max(8 * ThreadPoolGlobals.processorCount, 768);
+        private static readonly int MaxThreadCount = Math.Max(8 * Environment.ProcessorCount, 768);
 
         private static IntPtr s_work;
 

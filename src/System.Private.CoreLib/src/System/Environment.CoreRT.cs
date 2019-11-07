@@ -50,9 +50,7 @@ namespace System
             }
         }
         
-        public static bool HasShutdownStarted => false; // .NET Core does not have shutdown finalization
-
-        public static int ProcessorCount => Runtime.RuntimeImports.RhGetProcessCpuCount();
+        private static int GetProcessorCount() => Runtime.RuntimeImports.RhGetProcessCpuCount();
 
         internal static void ShutdownCore()
         {

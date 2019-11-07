@@ -357,11 +357,11 @@
   "quality": "definition",
   "defaultBranch": "refs/heads/master",
   "queue": {
-    "id": 330,
-    "name": "DotNetCore-Build",
+    "id": 862,
+    "name": "Hosted Mac Internal",
     "pool": {
-      "id": 97,
-      "name": "DotNetCore-Build"
+      "id": 141,
+      "name": "Hosted Mac Internal"
     }
   },
   "path": "\\",

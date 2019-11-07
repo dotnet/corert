@@ -1,16 +1,16 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <RyuJITVersion>5.0.0-alpha1.19428.1</RyuJITVersion>
-    <ObjectWriterVersion>1.0.0-alpha-27619-05</ObjectWriterVersion>
-    <CoreFxVersion>4.6.0-preview8.19330.3</CoreFxVersion>
-    <CoreFxUapVersion>4.7.0-preview6.19265.2</CoreFxUapVersion>
-    <MicrosoftNETCoreNativeVersion>3.0.0-preview8.19330.2</MicrosoftNETCoreNativeVersion>
-    <MicrosoftNETCoreAppPackageVersion>2.1.11</MicrosoftNETCoreAppPackageVersion>
-    <MicrosoftDotNetTestSdkVersion>15.8.0</MicrosoftDotNetTestSdkVersion>
-    <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18420.4</MicrosoftDotNetXUnitExtensionsVersion>
-    <SystemReflectionMetadataVersion>1.4.3</SystemReflectionMetadataVersion>
-    <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>2.1.0-rc1-03905-01</FeedTasksPackageVersion>
+    <RyuJITVersion Condition="'$(RyuJITVersion)' == ''">5.0.0-alpha1.19525.1</RyuJITVersion>
+    <ObjectWriterVersion Condition="'$(ObjectWriterVersion)' == ''">1.0.0-alpha-28204-03</ObjectWriterVersion>
+    <CoreFxVersion Condition="'$(CoreFxVersion)' == ''">5.0.0-alpha.1.19525.4</CoreFxVersion>
+    <CoreFxUapVersion Condition="'$(CoreFxUapVersion)' == ''">4.7.0-preview6.19265.2</CoreFxUapVersion>
+    <MicrosoftNETCoreNativeVersion Condition="'$(MicrosoftNETCoreNativeVersion)' == ''">5.0.0-alpha1.19525.1</MicrosoftNETCoreNativeVersion>
+    <MicrosoftNETCoreAppPackageVersion Condition="'$(MicrosoftNETCoreAppPackageVersion)' == ''">2.1.11</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftDotNetTestSdkVersion Condition="'$(MicrosoftDotNetTestSdkVersion)' == ''">15.8.0</MicrosoftDotNetTestSdkVersion>
+    <XUnitPackageVersion Condition="'$(XUnitPackageVersion)' == ''">2.4.1-pre.build.4059</XUnitPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion Condition="'$(MicrosoftDotNetXUnitExtensionsVersion)' == ''">2.4.0-beta.18420.4</MicrosoftDotNetXUnitExtensionsVersion>
+    <SystemReflectionMetadataVersion Condition="'$(SystemReflectionMetadataVersion)' == ''">1.4.3</SystemReflectionMetadataVersion>
+    <FeedTasksPackage Condition="'$(FeedTasksPackage)' == ''">Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
+    <FeedTasksPackageVersion Condition="'$(FeedTasksPackageVersion)' == ''">2.1.0-rc1-03905-01</FeedTasksPackageVersion>
   </PropertyGroup>
 </Project>

@@ -3,6 +3,7 @@ The following pre-requisites need to be installed for building the repo:
 # Windows (Windows 7+)
 
 1. Install [Visual Studio 2017](https://visualstudio.microsoft.com/vs/community/) or [Visual Studio 2019 Preview](https://visualstudio.microsoft.com/vs/preview/), including Visual C++ support.
+ - For an existing Visual Studio 2019 installation, `buildscripts/install-reqs-vs2019.cmd` is provided.
 2. Install [CMake](http://www.cmake.org/download/) 3.8.0 or later (3.14.0-rc1 or later is required for VS2019). Make sure you add it to the PATH in the setup wizard.
 3. (Windows 7 only) Install PowerShell 3.0. It's part of [Windows Management Framework 3.0](http://go.microsoft.com/fwlink/?LinkID=240290). Windows 8 or later comes with the right version inbox.
 

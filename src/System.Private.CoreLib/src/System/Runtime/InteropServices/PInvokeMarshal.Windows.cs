@@ -79,15 +79,6 @@ namespace System.Runtime.InteropServices
             return Interop.mincore.CoTaskMemRealloc(pv, cb);
         }
 
-        public static IntPtr SecureStringToBSTR(SecureString s)
-        {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-            return s.MarshalToBSTR();
-        }
-
         internal static IntPtr AllocBSTR(int length)
         {
             IntPtr bstr = Interop.OleAut32.SysAllocStringLen(null, length);

@@ -6,30 +6,33 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
+using Internal.IL;
 using Internal.TypeSystem;
 using Internal.Metadata.NativeFormat.Writer;
 
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Metadata;
 
 using Debug = System.Diagnostics.Debug;
-using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 
 namespace ILCompiler
 {
     public class EmptyMetadataManager : MetadataManager
     {
         private readonly StackTraceEmissionPolicy _stackTraceEmissionPolicy;
+        private readonly ILProvider _ilProvider;
 
         public EmptyMetadataManager(CompilerTypeSystemContext typeSystemContext)
-            : this(typeSystemContext, new NoStackTraceEmissionPolicy())
+            : this(typeSystemContext, new NoStackTraceEmissionPolicy(), null)
         {
         }
 
-        public EmptyMetadataManager(CompilerTypeSystemContext typeSystemContext, StackTraceEmissionPolicy stackTraceEmissionPolicy)
+        public EmptyMetadataManager(CompilerTypeSystemContext typeSystemContext, StackTraceEmissionPolicy stackTraceEmissionPolicy, ILProvider ilProvider)
             : base(typeSystemContext, new FullyBlockedMetadataPolicy(), new FullyBlockedManifestResourcePolicy(), new NoDynamicInvokeThunkGenerationPolicy())
         {
             _stackTraceEmissionPolicy = stackTraceEmissionPolicy;
+            _ilProvider = ilProvider;
         }
 
         public override IEnumerable<ModuleDesc> GetCompilationModulesWithMetadata()
@@ -50,6 +53,26 @@ namespace ILCompiler
         protected override MetadataCategory GetMetadataCategory(TypeDesc type)
         {
             return MetadataCategory.None;
+        }
+
+        protected override void GetDependenciesDueToMethodCodePresence(ref DependencyNodeCore<NodeFactory>.DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            if (_ilProvider != null)
+            {
+                MethodIL methodIL = _ilProvider.GetMethodIL(method);
+
+                if (methodIL != null)
+                {
+                    try
+                    {
+                        ReflectionMethodBodyScanner.ScanMarshalOnly(ref dependencies, factory, methodIL);
+                    }
+                    catch (TypeSystemException)
+                    {
+                        // A problem with the IL - we just don't scan it...
+                    }
+                }
+            }
         }
 
         protected override void ComputeMetadata(NodeFactory factory,

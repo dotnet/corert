@@ -1353,38 +1353,417 @@ namespace System
             return -1;
         }
 
-        static void SortImpl(Array keys, Array items, int index, int length, IComparer comparer)
+        // Private value type used by the Sort methods.
+        private readonly struct SorterObjectArray
         {
-            IComparer<object> comparerT = new ComparerAsComparerT(comparer);
-            object[] objKeys = keys as object[];
-            object[] objItems = items as object[];
+            private readonly object[] keys;
+            private readonly object?[]? items;
+            private readonly IComparer comparer;
 
-            // Unfortunately, on Project N, we don't have the ability to specialize ArraySortHelper<> on demand
-            // for value types. Rather than incur a boxing cost on every compare and every swap (and maintain a separate introsort algorithm
-            // just for this), box them all, sort them as an Object[] array and unbox them back.
-
-            // Check if either of the arrays need to be copied.
-            if (objKeys == null)
+            internal SorterObjectArray(object[] keys, object?[]? items, IComparer comparer)
             {
-                objKeys = new object[index + length];
-                Array.CopyImplValueTypeArrayToReferenceArray(keys, index, objKeys, index, length, reliable: false);
-            }
-            if (objItems == null && items != null)
-            {
-                objItems = new object[index + length];
-                Array.CopyImplValueTypeArrayToReferenceArray(items, index, objItems, index, length, reliable: false);
+                this.keys = keys;
+                this.items = items;
+                this.comparer = comparer;
             }
 
-            Sort<Object, Object>(objKeys, objItems, index, length, comparerT);
-
-            // If either array was copied, copy it back into the original
-            if (objKeys != keys)
+            internal void SwapIfGreaterWithItems(int a, int b)
             {
-                Array.CopyImplReferenceArrayToValueTypeArray(objKeys, index, keys, index, length, reliable: false);
+                if (a != b)
+                {
+                    if (comparer.Compare(keys[a], keys[b]) > 0)
+                    {
+                        object temp = keys[a];
+                        keys[a] = keys[b];
+                        keys[b] = temp;
+                        if (items != null)
+                        {
+                            object? item = items[a];
+                            items[a] = items[b];
+                            items[b] = item;
+                        }
+                    }
+                }
             }
-            if (objItems != items)
+
+            private void Swap(int i, int j)
             {
-                Array.CopyImplReferenceArrayToValueTypeArray(objItems, index, items, index, length, reliable: false);
+                object t = keys[i];
+                keys[i] = keys[j];
+                keys[j] = t;
+
+                if (items != null)
+                {
+                    object? item = items[i];
+                    items[i] = items[j];
+                    items[j] = item;
+                }
+            }
+
+            internal void Sort(int left, int length)
+            {
+                IntrospectiveSort(left, length);
+            }
+
+            private void IntrospectiveSort(int left, int length)
+            {
+                if (length < 2)
+                    return;
+
+                try
+                {
+                    IntroSort(left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(length));
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    IntrospectiveSortUtilities.ThrowOrIgnoreBadComparer(comparer);
+                }
+                catch (Exception e)
+                {
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+                }
+            }
+
+            private void IntroSort(int lo, int hi, int depthLimit)
+            {
+                while (hi > lo)
+                {
+                    int partitionSize = hi - lo + 1;
+                    if (partitionSize <= IntrospectiveSortUtilities.IntrosortSizeThreshold)
+                    {
+                        if (partitionSize == 1)
+                        {
+                            return;
+                        }
+                        if (partitionSize == 2)
+                        {
+                            SwapIfGreaterWithItems(lo, hi);
+                            return;
+                        }
+                        if (partitionSize == 3)
+                        {
+                            SwapIfGreaterWithItems(lo, hi - 1);
+                            SwapIfGreaterWithItems(lo, hi);
+                            SwapIfGreaterWithItems(hi - 1, hi);
+                            return;
+                        }
+
+                        InsertionSort(lo, hi);
+                        return;
+                    }
+
+                    if (depthLimit == 0)
+                    {
+                        Heapsort(lo, hi);
+                        return;
+                    }
+                    depthLimit--;
+
+                    int p = PickPivotAndPartition(lo, hi);
+                    IntroSort(p + 1, hi, depthLimit);
+                    hi = p - 1;
+                }
+            }
+
+            private int PickPivotAndPartition(int lo, int hi)
+            {
+                // Compute median-of-three.  But also partition them, since we've done the comparison.
+                int mid = lo + (hi - lo) / 2;
+                // Sort lo, mid and hi appropriately, then pick mid as the pivot.
+                SwapIfGreaterWithItems(lo, mid);
+                SwapIfGreaterWithItems(lo, hi);
+                SwapIfGreaterWithItems(mid, hi);
+
+                object pivot = keys[mid];
+                Swap(mid, hi - 1);
+                int left = lo, right = hi - 1;  // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
+
+                while (left < right)
+                {
+                    while (comparer.Compare(keys[++left], pivot) < 0) ;
+                    while (comparer.Compare(pivot, keys[--right]) < 0) ;
+
+                    if (left >= right)
+                        break;
+
+                    Swap(left, right);
+                }
+
+                // Put pivot in the right location.
+                Swap(left, hi - 1);
+                return left;
+            }
+
+            private void Heapsort(int lo, int hi)
+            {
+                int n = hi - lo + 1;
+                for (int i = n / 2; i >= 1; i--)
+                {
+                    DownHeap(i, n, lo);
+                }
+                for (int i = n; i > 1; i--)
+                {
+                    Swap(lo, lo + i - 1);
+
+                    DownHeap(1, i - 1, lo);
+                }
+            }
+
+            private void DownHeap(int i, int n, int lo)
+            {
+                object d = keys[lo + i - 1];
+                object? dt = items?[lo + i - 1];
+                int child;
+                while (i <= n / 2)
+                {
+                    child = 2 * i;
+                    if (child < n && comparer.Compare(keys[lo + child - 1], keys[lo + child]) < 0)
+                    {
+                        child++;
+                    }
+                    if (!(comparer.Compare(d, keys[lo + child - 1]) < 0))
+                        break;
+                    keys[lo + i - 1] = keys[lo + child - 1];
+                    if (items != null)
+                        items[lo + i - 1] = items[lo + child - 1];
+                    i = child;
+                }
+                keys[lo + i - 1] = d;
+                if (items != null)
+                    items[lo + i - 1] = dt;
+            }
+
+            private void InsertionSort(int lo, int hi)
+            {
+                int i, j;
+                object t;
+                object? ti;
+                for (i = lo; i < hi; i++)
+                {
+                    j = i;
+                    t = keys[i + 1];
+                    ti = items?[i + 1];
+                    while (j >= lo && comparer.Compare(t, keys[j]) < 0)
+                    {
+                        keys[j + 1] = keys[j];
+                        if (items != null)
+                            items[j + 1] = items[j];
+                        j--;
+                    }
+                    keys[j + 1] = t;
+                    if (items != null)
+                        items[j + 1] = ti;
+                }
+            }
+        }
+
+        // Private value used by the Sort methods for instances of Array.
+        // This is slower than the one for Object[], since we can't use the JIT helpers
+        // to access the elements.  We must use GetValue & SetValue.
+        private readonly struct SorterGenericArray
+        {
+            private readonly Array keys;
+            private readonly Array? items;
+            private readonly IComparer comparer;
+
+            internal SorterGenericArray(Array keys, Array? items, IComparer comparer)
+            {
+                this.keys = keys;
+                this.items = items;
+                this.comparer = comparer;
+            }
+
+            internal void SwapIfGreaterWithItems(int a, int b)
+            {
+                if (a != b)
+                {
+                    if (comparer.Compare(keys.GetValue(a), keys.GetValue(b)) > 0)
+                    {
+                        object? key = keys.GetValue(a);
+                        keys.SetValue(keys.GetValue(b), a);
+                        keys.SetValue(key, b);
+                        if (items != null)
+                        {
+                            object? item = items.GetValue(a);
+                            items.SetValue(items.GetValue(b), a);
+                            items.SetValue(item, b);
+                        }
+                    }
+                }
+            }
+
+            private void Swap(int i, int j)
+            {
+                object? t1 = keys.GetValue(i);
+                keys.SetValue(keys.GetValue(j), i);
+                keys.SetValue(t1, j);
+
+                if (items != null)
+                {
+                    object? t2 = items.GetValue(i);
+                    items.SetValue(items.GetValue(j), i);
+                    items.SetValue(t2, j);
+                }
+            }
+
+            internal void Sort(int left, int length)
+            {
+                IntrospectiveSort(left, length);
+            }
+
+            private void IntrospectiveSort(int left, int length)
+            {
+                if (length < 2)
+                    return;
+
+                try
+                {
+                    IntroSort(left, length + left - 1, 2 * IntrospectiveSortUtilities.FloorLog2PlusOne(length));
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    IntrospectiveSortUtilities.ThrowOrIgnoreBadComparer(comparer);
+                }
+                catch (Exception e)
+                {
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_IComparerFailed, e);
+                }
+            }
+
+            private void IntroSort(int lo, int hi, int depthLimit)
+            {
+                while (hi > lo)
+                {
+                    int partitionSize = hi - lo + 1;
+                    if (partitionSize <= IntrospectiveSortUtilities.IntrosortSizeThreshold)
+                    {
+                        if (partitionSize == 1)
+                        {
+                            return;
+                        }
+                        if (partitionSize == 2)
+                        {
+                            SwapIfGreaterWithItems(lo, hi);
+                            return;
+                        }
+                        if (partitionSize == 3)
+                        {
+                            SwapIfGreaterWithItems(lo, hi - 1);
+                            SwapIfGreaterWithItems(lo, hi);
+                            SwapIfGreaterWithItems(hi - 1, hi);
+                            return;
+                        }
+
+                        InsertionSort(lo, hi);
+                        return;
+                    }
+
+                    if (depthLimit == 0)
+                    {
+                        Heapsort(lo, hi);
+                        return;
+                    }
+                    depthLimit--;
+
+                    int p = PickPivotAndPartition(lo, hi);
+                    IntroSort(p + 1, hi, depthLimit);
+                    hi = p - 1;
+                }
+            }
+
+            private int PickPivotAndPartition(int lo, int hi)
+            {
+                // Compute median-of-three.  But also partition them, since we've done the comparison.
+                int mid = lo + (hi - lo) / 2;
+
+                SwapIfGreaterWithItems(lo, mid);
+                SwapIfGreaterWithItems(lo, hi);
+                SwapIfGreaterWithItems(mid, hi);
+
+                object? pivot = keys.GetValue(mid);
+                Swap(mid, hi - 1);
+                int left = lo, right = hi - 1;  // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
+
+                while (left < right)
+                {
+                    while (comparer.Compare(keys.GetValue(++left), pivot) < 0) ;
+                    while (comparer.Compare(pivot, keys.GetValue(--right)) < 0) ;
+
+                    if (left >= right)
+                        break;
+
+                    Swap(left, right);
+                }
+
+                // Put pivot in the right location.
+                Swap(left, hi - 1);
+                return left;
+            }
+
+            private void Heapsort(int lo, int hi)
+            {
+                int n = hi - lo + 1;
+                for (int i = n / 2; i >= 1; i--)
+                {
+                    DownHeap(i, n, lo);
+                }
+                for (int i = n; i > 1; i--)
+                {
+                    Swap(lo, lo + i - 1);
+
+                    DownHeap(1, i - 1, lo);
+                }
+            }
+
+            private void DownHeap(int i, int n, int lo)
+            {
+                object? d = keys.GetValue(lo + i - 1);
+                object? dt = items?.GetValue(lo + i - 1);
+                int child;
+                while (i <= n / 2)
+                {
+                    child = 2 * i;
+                    if (child < n && comparer.Compare(keys.GetValue(lo + child - 1), keys.GetValue(lo + child)) < 0)
+                    {
+                        child++;
+                    }
+
+                    if (!(comparer.Compare(d, keys.GetValue(lo + child - 1)) < 0))
+                        break;
+
+                    keys.SetValue(keys.GetValue(lo + child - 1), lo + i - 1);
+                    if (items != null)
+                        items.SetValue(items.GetValue(lo + child - 1), lo + i - 1);
+                    i = child;
+                }
+                keys.SetValue(d, lo + i - 1);
+                if (items != null)
+                    items.SetValue(dt, lo + i - 1);
+            }
+
+            private void InsertionSort(int lo, int hi)
+            {
+                int i, j;
+                object? t;
+                object? dt;
+                for (i = lo; i < hi; i++)
+                {
+                    j = i;
+                    t = keys.GetValue(i + 1);
+                    dt = items?.GetValue(i + 1);
+
+                    while (j >= lo && comparer.Compare(t, keys.GetValue(j)) < 0)
+                    {
+                        keys.SetValue(keys.GetValue(j), j + 1);
+                        if (items != null)
+                            items.SetValue(items.GetValue(j), j + 1);
+                        j--;
+                    }
+
+                    keys.SetValue(t, j + 1);
+                    if (items != null)
+                        items.SetValue(dt, j + 1);
+                }
             }
         }
     }

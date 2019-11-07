@@ -6,7 +6,7 @@
     <RootNamespace>ILCompiler</RootNamespace>
     <AssemblyName>ILCompiler.RyuJit</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard1.6</TargetFramework>
     <NoWarn>8002</NoWarn>
     <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools</OutputPath>
   </PropertyGroup>
@@ -17,6 +17,15 @@
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Threading.ThreadPool">
+      <Version>4.0.10</Version>
+    </PackageReference>
+    <PackageReference Include="System.Threading.Thread">
+      <Version>4.0.0</Version>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -72,6 +81,9 @@
     </Compile>
     <Compile Include="..\..\JitInterface\src\UnboxingMethodDesc.cs">
       <Link>JitInterface\UnboxingMethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\SystemVStructClassificator.cs">
+      <Link>JitInterface\SystemVStructClassificator.cs</Link>
     </Compile>
   </ItemGroup>
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Threading;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
@@ -24,15 +25,21 @@ namespace ILCompiler
     /// </summary>
     internal sealed class ILScanner : Compilation, IILScanner
     {
+        private CountdownEvent _compilationCountdown;
+        private readonly bool _singleThreaded;
+
         internal ILScanner(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             ILScanNodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
-            Logger logger)
+            Logger logger,
+            bool singleThreaded)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, null, logger)
         {
+            _helperCache = new HelperCache(this);
+            _singleThreaded = singleThreaded;
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
@@ -44,6 +51,10 @@ namespace ILCompiler
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
+            // Determine the list of method we actually need to scan
+            var methodsToCompile = new List<ScannedMethodNode>();
+            var canonicalMethodsToCompile = new HashSet<MethodDesc>();
+
             foreach (DependencyNodeCore<NodeFactory> dependency in obj)
             {
                 var methodCodeNodeNeedingCode = dependency as ScannedMethodNode;
@@ -55,24 +66,81 @@ namespace ILCompiler
                     methodCodeNodeNeedingCode = (ScannedMethodNode)dependencyMethod.CanonicalMethodNode;
                 }
 
-                // We might have already compiled this method.
-                if (methodCodeNodeNeedingCode.StaticDependenciesAreComputed)
-                    continue;
-
+                // We might have already queued this method for compilation
                 MethodDesc method = methodCodeNodeNeedingCode.Method;
+                if (method.IsCanonicalMethod(CanonicalFormKind.Any)
+                    && !canonicalMethodsToCompile.Add(method))
+                {
+                    continue;
+                }
 
-                try
+                methodsToCompile.Add(methodCodeNodeNeedingCode);
+            }
+
+            if (_singleThreaded)
+            {
+                CompileSingleThreaded(methodsToCompile);
+            }
+            else
+            {
+                CompileMultiThreaded(methodsToCompile);
+            }
+        }
+
+        private void CompileMultiThreaded(List<ScannedMethodNode> methodsToCompile)
+        {
+            if (Logger.IsVerbose)
+            {
+                Logger.Writer.WriteLine($"Scanning {methodsToCompile.Count} methods...");
+            }
+
+            WaitCallback compileSingleMethodDelegate = m => CompileSingleMethod((ScannedMethodNode)m);
+
+            using (_compilationCountdown = new CountdownEvent(methodsToCompile.Count))
+            {
+                foreach (ScannedMethodNode methodCodeNodeNeedingCode in methodsToCompile)
                 {
-                    var importer = new ILImporter(this, method);
-                    methodCodeNodeNeedingCode.InitializeDependencies(_nodeFactory, importer.Import());
+                    ThreadPool.QueueUserWorkItem(compileSingleMethodDelegate, methodCodeNodeNeedingCode);
                 }
-                catch (TypeSystemException ex)
+
+                _compilationCountdown.Wait();
+                _compilationCountdown = null;
+            }
+        }
+
+        private void CompileSingleThreaded(List<ScannedMethodNode> methodsToCompile)
+        {
+            foreach (ScannedMethodNode methodCodeNodeNeedingCode in methodsToCompile)
+            {
+                if (Logger.IsVerbose)
                 {
-                    // Try to compile the method again, but with a throwing method body this time.
-                    MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, ex);
-                    var importer = new ILImporter(this, method, throwingIL);
-                    methodCodeNodeNeedingCode.InitializeDependencies(_nodeFactory, importer.Import());
+                    Logger.Writer.WriteLine($"Compiling {methodCodeNodeNeedingCode.Method}...");
                 }
+
+                CompileSingleMethod(methodCodeNodeNeedingCode);
+            }
+        }
+
+        private void CompileSingleMethod(ScannedMethodNode methodCodeNodeNeedingCode)
+        {
+            MethodDesc method = methodCodeNodeNeedingCode.Method;
+
+            try
+            {
+                var importer = new ILImporter(this, method);
+                methodCodeNodeNeedingCode.InitializeDependencies(_nodeFactory, importer.Import());
+            }
+            catch (TypeSystemException ex)
+            {
+                // Try to compile the method again, but with a throwing method body this time.
+                MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, ex);
+                var importer = new ILImporter(this, method, throwingIL);
+                methodCodeNodeNeedingCode.InitializeDependencies(_nodeFactory, importer.Import());
+            }
+            finally
+            {
+                if (_compilationCountdown != null)
+                    _compilationCountdown.Signal();
             }
         }
 
@@ -81,6 +149,55 @@ namespace ILCompiler
             _dependencyGraph.ComputeMarkedNodes();
 
             return new ILScanResults(_dependencyGraph, _nodeFactory);
+        }
+
+        public ISymbolNode GetHelperEntrypoint(ReadyToRunHelper helper)
+        {
+            return _helperCache.GetOrCreateValue(helper).Symbol;
+        }
+
+        class Helper
+        {
+            public ReadyToRunHelper HelperID { get; }
+            public ISymbolNode Symbol { get; }
+
+            public Helper(ReadyToRunHelper id, ISymbolNode symbol)
+            {
+                HelperID = id;
+                Symbol = symbol;
+            }
+        }
+
+        private HelperCache _helperCache;
+        class HelperCache : LockFreeReaderHashtable<ReadyToRunHelper, Helper>
+        {
+            private Compilation _compilation;
+
+            public HelperCache(Compilation compilation)
+            {
+                _compilation = compilation;
+            }
+
+            protected override bool CompareKeyToValue(ReadyToRunHelper key, Helper value) => key == value.HelperID;
+            protected override bool CompareValueToValue(Helper value1, Helper value2) => value1.HelperID == value2.HelperID;
+            protected override int GetKeyHashCode(ReadyToRunHelper key) => (int)key;
+            protected override int GetValueHashCode(Helper value) => (int)value.HelperID;
+            protected override Helper CreateValueFromKey(ReadyToRunHelper key)
+            {
+                string mangledName;
+                MethodDesc methodDesc;
+                JitHelper.GetEntryPoint(_compilation.TypeSystemContext, key, out mangledName, out methodDesc);
+                Debug.Assert(mangledName != null || methodDesc != null);
+
+                ISymbolNode entryPoint;
+                if (mangledName != null)
+                    entryPoint = _compilation.NodeFactory.ExternSymbol(mangledName);
+                else
+                    entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
+
+                return new Helper(key, entryPoint);
+            }
+
         }
     }
 

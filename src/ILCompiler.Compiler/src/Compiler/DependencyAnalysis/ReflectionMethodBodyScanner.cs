@@ -68,6 +68,45 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        /// <summary>
+        /// Subset of <see cref="Scan(ref DependencyList, NodeFactory, MethodIL)"/> that only deals with Marshal.SizeOf.
+        /// </summary>
+        public static void ScanMarshalOnly(ref DependencyList list, NodeFactory factory, MethodIL methodIL)
+        {
+            ILReader reader = new ILReader(methodIL.GetILBytes());
+
+            Tracker tracker = new Tracker(methodIL);
+
+            while (reader.HasNext)
+            {
+                ILOpcode opcode = reader.ReadILOpcode();
+                switch (opcode)
+                {
+                    case ILOpcode.ldtoken:
+                        tracker.TrackLdTokenToken(reader.ReadILToken());
+                        break;
+
+                    case ILOpcode.call:
+                        var method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
+                        if (method != null && method.Name == "SizeOf" && IsMarshalSizeOf(method))
+                        {
+                            TypeDesc type = tracker.GetLastType();
+                            if (IsTypeEligibleForMarshalSizeOfTracking(type))
+                            {
+                                list = list ?? new DependencyList();
+
+                                list.Add(factory.StructMarshallingData((DefType)type), "Marshal.SizeOf");
+                            }
+                        }
+                        break;
+
+                    default:
+                        reader.Skip(opcode);
+                        break;
+                }
+            }
+        }
+
         private static void HandleCall(ref DependencyList list, NodeFactory factory, MethodIL methodIL, MethodDesc methodCalled, ref Tracker tracker)
         {
             switch (methodCalled.Name)
@@ -166,19 +205,29 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
                     break;
-                case "SizeOf" when methodCalled.OwningType.IsSystemRuntimeInteropServicesMarshal() && !methodCalled.HasInstantiation
-                    && methodCalled.Signature.Length == 1 && methodCalled.Signature[0].IsSystemType():
+                case "SizeOf" when IsMarshalSizeOf(methodCalled):
                     {
                         TypeDesc type = tracker.GetLastType();
-                        if (type != null && !type.IsGenericDefinition && !type.IsCanonicalSubtype(CanonicalFormKind.Any) && type is DefType defType)
+                        if (IsTypeEligibleForMarshalSizeOfTracking(type))
                         {
                             list = list ?? new DependencyList();
 
-                            list.Add(factory.StructMarshallingData(defType), "Marshal.SizeOf");
+                            list.Add(factory.StructMarshallingData((DefType)type), "Marshal.SizeOf");
                         }
                     }
                     break;
             }
+        }
+
+        private static bool IsMarshalSizeOf(MethodDesc methodCalled)
+        {
+            return methodCalled.OwningType.IsSystemRuntimeInteropServicesMarshal() && !methodCalled.HasInstantiation
+                    && methodCalled.Signature.Length == 1 && methodCalled.Signature[0].IsSystemType();
+        }
+
+        private static bool IsTypeEligibleForMarshalSizeOfTracking(TypeDesc type)
+        {
+            return type != null && !type.IsGenericDefinition && !type.IsCanonicalSubtype(CanonicalFormKind.Any) && type.IsDefType;
         }
 
         private static bool ResolveType(string name, ModuleDesc callingModule, out TypeDesc type, out ModuleDesc referenceModule)

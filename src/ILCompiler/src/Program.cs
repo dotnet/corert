@@ -57,6 +57,7 @@ namespace ILCompiler
         private bool _completeTypesMetadata;
         private bool _scanReflection;
         private bool _methodBodyFolding;
+        private bool _singleThreaded;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -187,6 +188,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
                 syntax.DefineOptionList("removefeature", ref _removedFeatures, "Framework features to remove");
+                syntax.DefineOption("singlethreaded", ref _singleThreaded, "Run compilation on a single thread");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -514,7 +516,7 @@ namespace ILCompiler
             }
             else
             {
-                metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy);
+                metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy, ilProvider);
             }
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
@@ -538,6 +540,7 @@ namespace ILCompiler
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots)
                     .UseMetadataManager(metadataManager)
+                    .UseSingleThread(enable: _singleThreaded)
                     .UseInteropStubManager(interopStubManager);
 
                 if (_scanDgmlLogFileName != null)
@@ -555,7 +558,7 @@ namespace ILCompiler
                 {
                     // MetadataManager collects a bunch of state (e.g. list of compiled method bodies) that we need to reset.
                     Debug.Assert(metadataManager is EmptyMetadataManager);
-                    metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy);
+                    metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy, ilProvider);
                 }
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
@@ -575,7 +578,8 @@ namespace ILCompiler
 
             builder
                 .UseBackendOptions(_codegenOptions)
-                .UseMethodBodyFolding(_methodBodyFolding)
+                .UseMethodBodyFolding(enable: _methodBodyFolding)
+                .UseSingleThread(enable: _singleThreaded)
                 .UseMetadataManager(metadataManager)
                 .UseInteropStubManager(interopStubManager)
                 .UseLogger(logger)

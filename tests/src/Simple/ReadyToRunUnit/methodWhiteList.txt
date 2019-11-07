@@ -1,7 +1,0 @@
-Program..cctor()
-Program.VectorTestOf(!!0,!!0,!!0)
-Program+DisposeStruct..cctor()
-Program+DisposeClass.Dispose()
-Program+DisposeClass..cctor()
-ClassWithStatic..cctor()
-[ReadyToRunUnit.ni]Program+BaseClass.MyGvm()
