@@ -119,7 +119,13 @@
     // Code size 8 (0x8)
     .maxstack 8
 
+    .locals init (
+        [0] int8
+    )
+
     ldc.i4.m1
+    stloc.0
+    ldloc.0
     ldc.i4.m1
     bne.un.s failure
 

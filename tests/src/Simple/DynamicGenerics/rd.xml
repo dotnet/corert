@@ -130,29 +130,172 @@
           <GenericArgument Name="System.Object, netstandard" />
         </Method>
       </Type>
-      <Type Name="ExistingInstantiationd_cond_signal failed with "%s" (%d) mono_os_cond_signal %s: sem_post failed with "%s" (%d) mono_os_sem_post /mnt/jenkins/workspace/test-mono-mainline-wasm/label/ubuntu-1804-amd64/mono/utils/mono-lazy-init.h %s: pthread_mutexattr_init failed with "%s" (%d) mono_os_mutex_init_type %s: pthread_mutexattr_settype failed with "%s" (%d) %s: pthread_mutexattr_setprotocol failed with "%s" (%d) %s: pthread_mutex_init failed with "%s" (%d) %s: pthread_mutexattr_destroy failed with "%s" (%d) %s: pthread_cond_init failed with "%s" (%d) mono_os_cond_init mono_coop_cond_timedwait       * Assertion at %s:%d, condition `%s' not met
- /mnt/jenkins/workspace/test-mono-mainline-wasm/label/ubuntu-1804-amd64/mono/metadata/handle.c <disabled> %s USED %d handles
- * Assertion at %s:%d, condition `%s' not met
- /mnt/jenkins/workspace/test-mono-mainline-wasm/label/ubuntu-1804-amd64/mono/metadata/file-mmap-posix.c <disabled> mono_mmap_close mono_mmap_configure_inheritability mono_mmap_flush mono_mmap_map mono_mmap_unmap open_file_map unknown FileMode %d unknown MemoryMappedFileAccess %d Invalid init state %d %s: pthread_mutexattr_init failed with "%s" (%d) mono_os_mutex_init_type %s: pthread_mutexattr_settype failed with "%s" (%d) %s: pthread_mutexattr_setprotocol failed with "%s" (%d) %s: pthread_mutex_init failed with "%s" (%d) %s: pthread_mutexattr_destroy failed with "%s" (%d) mono_coop_mutex_lock %s: pthread_mutex_trylock failed with "%s" (%d) mono_os_mutex_trylock %s: pthread_mutex_lock failed with "%s" (%d) mono_os_mutex_lock %s: pthread_mutex_unlock failed with "%s" (%d) mono_os_mutex_unlock /mono.anonmap.XXXXXXXXX open_memory_map  #   !   "      4   '   À   @      @                             indices  * Assertion at %s:%d, condition `%s' not met
- /mnt/jenkins/workspace/test-mono-mainline-wasm/label/ubuntu-1804-amd64/mono/metadata/icall.c <disabled> idxs type lengths assertion `%s' failed mono_array_handle_length (lengths) > 0 bounds mono_array_handle_length (lengths) == mono_array_handle_length (bounds) MonoArgumentException:NULL Arrays of System.Void are not supported. ves_icall_System_Array_FastCopy array Cannot initialize array of non-primitive type field_handle Field '%s' doesn't have an RVA Field not large enough to fill array handle klass _Deleted that %s.%s System Decimal DateTime DBNull type 0x%02x not handled in GetTypeCode() It is illegal to get the value on a field on a type loaded using the ReflectionOnly methods. It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods. type 0x%x not handled in ves_icall_FieldInfo_SetValueInternal * Assertion: should not be reached at %s:%d
- %s& Type must be an array type typeArguments Invalid generic arguments DeclaringMethod can only be used on generic arguments %s System.RuntimeType.IsTypeExportedToWindowsRuntime System.RuntimeType.IsWindowsRuntimeObjectType method System.Refleciton.Emit method with invalid pinvoke information Object of type '%s' doesn't match target type '%s' System.Reflection TargetException .ctor Non-static method requires a target. NotSupportedException Cannot invoke method with stack pointers via reflection Cannot invoke method returning ByRef type via reflection TargetParameterCountException Cannot invoke constructor of an abstract class. It is illegal to invoke a method on a type loaded using the ReflectionOnly api. Cannot invoke a method in a dynamic assembly without run access. enumType Type provided must be an Enum. Implement type 0x%02x in get_hashcode Invoke .cctor typeName failed to parse the type Type names passed to Assembly.GetType() must not specify an assembly. * Assertion at %s:%d, condition `%s' not met, function:%s, %s
- is_ok (inner_error) ves_icall_System_Reflection_Assembly_InternalGetType / ves_icall_System_Reflection_RuntimeAssembly_GetAotIdInternal Stack walks are not supported on this platform. InternalGetAssemblyName ("%s") Invalid Image assemblyFile The file does not contain a manifest ves_icall_System_Reflection_RuntimeModule_GetGuidInternal file %s: line %d (%s): assertion failed: (%s) ves_icall_System_Delegate_CreateDelegate_internal delegate_class->parent == mono_defaults.multicastdelegate_class  Cannot bind to the target method because its signature differs from that of the delegate type count is negative src dest ves_icall_System_Buffer_BlockCopyInternal CLR: Managed code called FailFast without specifying a reason. CLR: Managed code called FailFast, saying "%s" AĞï
-à£   Ò† Ø† á† ä† ó† ‡ ‡ ‡ ‡  ‡ *‡    ;‡ A‡ Q‡ c‡ u‡ ‰‡    d¸ ‡ ¯‡ Á‡ Õ‡    é‡ ğ‡ ù‡ ÿ‡ ˆ    ˆ "ˆ    +ˆ     utf_8 Type cannot be instantiated mono machine.config is_ok (error) ves_icall_System_Configuration_DefaultConfig_get_machine_config_path    {‹=?!÷{~ml16ÑKÚØbl¢—2´°ÅØD/eh#`‹±‰^Êà½Ny()À7zòPS€oô:å¡İ8³|Êa ºqfù”Â@uãÌò)/„}-\ı¡<çûZ¸úCyÎ3÷µpõ‡òœgïkáêå9Ïü{“Èœúq)ù÷&‘9õãRóïM"sêÇ¥Êüu °û'!”ùë@a÷OB(ó×ÂîŸ„—‘³ób†.#gçÅ5 \FÎÎ‹jA¸Œœ3Ô¦ñè¸Rp*MãÑq¥<áTšÆ£ãJyÂ©RÁ ÇÛ±ó!¤‚A·cçCHƒoÇÎ‡ç8[)Îq,¶R6:œãXl¥lt8Ç±ØJÙ}Î¤ô‰^u+ûœIé½êVö9“Ò'zÕ­dØƒ¡KÄ"È°!C—ˆE‘aB†.‹éyi@<ĞÓóÒ€y 7§ç¥ò@oOÏK
-äŞÜuÍÎ`€,¹ëšÁ Ys?Ö5;ƒ²ã?‘×ç™#Ç"¯Î3GÿD^/œg3t¬<{9fèXy>ö8rÌĞ±ò|ìqå˜¡cåùØãÇQ G”Ë‘-£@(—#[GQ.G¶Ÿt³İ¢t$?éfºEéH~ÒÍt‹Ò‘ä*ÿ 	È7T:şA>o¨tıƒ|$ ßPéÿ³å 9Æ©.şgËAsŒS]ıÏ–ƒæ§º2Ã·€”T%e†o)=©JËßRzR•“ ªKİ&T—º;<
-L¨.uwx˜P]êîK7ë yÈ/–nÖ ò_,İ¬@ä!¿o_ï3sú9&Ş¾ŞgæôsL½}½ÏÌéç˜YLŒ)\È”²˜S¸)=d11¦p!SzÈbbLáB¦ôÁzB`î0ƒ'ô„ÀÜaOè	5¸Ã4v.5€×$'iì\j ¯INÒØ¹Ô ^“œ*øñf¬PTğã!ÍX¡>¨àÇCš±B}PÁ‡4c…úéçp­2 ÓÏáZ5d@4¦ŸÃµjÈÙpT†W(³á¨¯*PfÃQ6^U áó©× ÂçS=¯%"@…Ï§z^KD€Mö‡FB§›ì1Œ„N37Ùb	fo²?Ä0:ÍI½ô<)’zèy:R%õ2Ğót.¤m—pöcÖ Û.áìÇ.¬A·]ÂÙ]XƒñE+ƒßDã‹W¿‰4Æ5®~iŒ/j\ü&Ò£{Ì*8F÷$
-˜TpŒîI0¨°µ/ujÖŸ!`k_êÔ¬?CÀÖ¾Ô©Y†&^Y÷!EæL¼²îCŠÌ5™xeİ‡™k3ñÊº)2×
-ıX6
-+ú±lV)ô;bÙ (¬nÊØFøln"İ”±ğÙÜDº)cá³¹‰¾n­8`Š‹}İZqÀ7ûºµâ€).n÷ukÅS\Ü—¯Z w,//^µ î$X_^¼jÜI°¬ßXÍøA#Y¿±*šñƒF²~cU4ãŠLzw
-Ç4™ôîi8(2éİ)ÓpQdÒ»S8¦ávz%w>!-íô Kî|BZÚéA–Üù„´øa@Q_˜$ñÃ€¢¾05Hâ‡E}aj“3tâ'gèş&Ä9NÎĞıMˆsœ¡û›ç…ì¹˜…6.Øs1m\
-°çbÚ¸ÑÎ¼”àjø$¢y)ÁÕğIE;óR‚«á“t¥0ª³ˆ“èJaTg';Ñ•Â¨Î"Nv¢+…QEœì oç©RtR/AŞÎS¥è¤^‚¼§JÑI½€ò…!BÛ% åC„ ·KÊ†An—™[ç4@I3·<Ïi€’<gnyÓ %yÏÜò<§Jò\_ıØ‡3u0¹¾ú±gê`r}õcÎÔÁJLdz9)Ä&”˜ÈôrRˆM(1‘éå¤›;pƒû-Tvà÷[¨>íÀî·P|ÚÜo¡ø’³8_í1$gq¾,Ú=cHÎâ|Y´{ÆA)úEW²'ƒRô1Š®dO¥èc]ÉšºazjßÁ5uÃôÔ¾ƒ?kê†é©}â.NÈîågÄ]œİËÏ2‰»8!»—ŸewqBv/?ËĞ}@±<¦(¡/ú€byLQB_ôÅò˜¢¦¬ı™Zı„ MYû3µú	A›²ögjõ‚…ğÊâıá•)Äû4Â+Sˆ÷h,„W¦ïĞÕ€îœüŸ)«#Ü9ù?SVF¸sò¦wÍÚ$ÊL!ïšµI.”™BŞ5k“\(3…Æ
-¯PßÔ£Œ^¡¾©G5+¼B}Sj1Vx…ú¦Õ£w~çşºŸ*FïüÎıu?UŞùûë~ªÆş…eb"8ŒıËÄ2Dqû–‰eˆ}˜ÑêGú<1£Õ6ôybF«mèóÄŒV<ÚÈ0ôèªœ¥+aèÑU9KW ÃĞ£«r–®'í»ãê"N ÛwÇÕEœ@¶ï«‹…¦W–ï=M¯,9Ş7{š^Yr¼oö,4½²äxßş¤òVÇ±,üHå­cYø#Ê[Ç²Ë éElÁ#–AÓ‹Ø‚G-ƒ¦;±¢€Tr½šE©äz59ŠRÉôjr¤’#èÕäší¶ aÄ-;5ÛmAÃˆ[wj¶Û‚†·K¾øæ$–*|ñÍ5:I,Uøâ›kt’¢ª1úë{JDUcô×÷”:‰ªÆè¯ï)uUÑ_ßSêé)“İ."ÒS&&»]D¤§LLv»6§í‡B~%lNÛ…üJÙœ¶
-=ø•‘RñŸ›rş#¥â?7åü;GJÅnÊùw”ŠÿÜ”óïO·3,„ı/Ÿn7fXû_?İnÌ°ö¿ÙÅ¯õ¼id&²‹_ëyÓÈLe¿Öó¦‘™kY‘ıº¶(Ö²"ûum=Q¬eEöëÚz¢XËŠì×µõS«(‚b^$1§VQÅ¼HbN­¢Šy‘Ä©"º‚KP'REt— N¥Šè.A‡è”4›osÑ)i6ßæ>¢SÒl¾Í}ŸSªÃ&)?§T‡+LR2~N©W˜¤düœR®0IÉÌ…9‰ÖA(˜!r­ƒP0Bä$Z¡<sú «4 y<çôAWi@óxÎéƒ®Ò€—~\È€¼Ã.ı¸y‡3\úq!òg¹ôãBäÎX—-Úš-9)°.[´5[rR`]¶hk¶ä¤y$HâŠú &òHÄõAMä‘ ‰+êƒ”ƒµb(jÄ4>PÔ"ˆi| 4¨EÓåì8×Tt6*ËÙq®©èlT–³ã\SÑÙ¨Wúxİ)Å!<®ôñºSŠCx\éãu§‡Kßaú}!–¾ÃôûB6-}‡é÷…lZúÓï!ØŞş÷/Ï9+½ıî_sV{ûÜ¿<ç¬K2Ïø¿¥”"—dñK)E/É<ãÿ–RŠ£r-3ªFåZf<T7Œ:ÊµÌx¨nu”k™ñPİk„…cC,Ö.+
-Ç†X­]V±‰ßœwji#¿9ïÔ8ÒF$~sŞ©q¤æã’»TÌÇ%w-¨8˜KîZPq:0—Üµ ârÖŸ„’WS-ä¬?	%¯¦ZÈYJ^Mµ(Eæ6u¬B$PŠÌmêX…H ™ÛÔ±
-‘S7¸ø#¦npñ!G:LİàâCt™ºÁÅ‡è¸‹óÒi.pç¥Ó\á.Î7J§¹ù¢q4u!%óEãhêBJç‹>ÆÑÔ…”a‚Ã]´Ã‡»h;†	28wÑvdpî¢í5jzlü†/kÔô,Øø_Ö¨éY°ñ¾÷TÈŞ¼–&ï©½y-LŞS!{óZ˜_ªıŞj¿Tşú½Õ<©üõ{«yşR5øë÷Vóÿv×dbşª0ÿí®ÉÄüUaşÛ]“‰ù«Â2_¬Pè1ï&e¾X¡ĞcŞMË|±B¡Ç¼›(Lğ¦†Á%Q˜àMƒK>¢0Á›—|Ea‚75.ùtqÖ1è&4â¬cÑMh,Ä	XÇHoZhŞ' Ş´Ğ¼OA> ½i¡yŸÙrYH å³å²@Ê?gËd!”kzÓ„)×ô¦33R<®éMgf¥x\Ó›Î Ì!¬…\Ó(B0X!¹¦Q„`°BrM£ç¬‰@Ñ© ÎY¢-RAœ³&E[¤‚¸ğ:Íß qáuš¾A4ãÂë47|ƒhÇ…×inøÑ[´Ä®¯1Î)¶h‰]_cœSlÑ»¾Æ8§]XYÁq!+º:±²‚ãBVtubeÇ…Ş°J­zgÁ¼a•ZõÎ‚5xÃ*µêkñ†UjÕ;Ö–´ª{÷Ï*-iU÷îUZÒªîİ/<«xˆüÅ<?"ñ ù‹y~DâA"òóüˆ-:ı7ÊeZtúo”Ë6µ4èôß(—mjiĞé¿Q.Û®®)•YÖ+]]S*³ ¬W»º¦TfAX¯X%î®¦#±JÜ!\M#Fb•¸C¸šFŒ­ê$§ñZÕINã=8µª“œÆ{8pjU'9÷pà;Øµdã,*"v°kÉÆYUDì`×’³D§•F^é#ˆN+¼:ÒGVyu¤Ğ…Då}º ‰
-Êût9@”÷ér.$*(ïÓå³o:ÕÔ/÷-gßtª©_î[Î¾éTS¿Ü·öòawİ¿Å$ìåÃîº‹IØË‡İuÿ“+_äÿjV¿ÈÿÕ:¬<~‘ÿ«uYyü"ÿWëEœem™/Š08ËÚ2#^ap–µeF¼Ğyñ­§%¡ó,<â[OKCçYxÄ·–sax~Z¾çÂğü´|?<Ï…áùiù~xŸÃóÓòığÏóc*Ê20?çÇT”e`<Ï©(ËÀæØé!&Ì±ÓCM™c?¦‡ <šësTNÓØÖ'æ¨œ¦±=­OÌQ9Mc{[Ÿ˜£ršÆöE†‡°ëZ1‹=a×µbzÂ®kÅjklÀï{'ÕÖ0Ø€ß÷N«­a°¿ïïUà¼fY–Ş«ÀyÍ²,?¼WóšeY~òw³0REäïfa¤(Š2ÉßÍÂHQe“¿›…‘¢(Ê·Œ…çé†n(nÏÓİPÜ2§º¡_=ÑRîkX ¾z¢¥Ü×°@}õDK¹¯aåı@BXVàËû„°¬À3—÷	aYg.ïÂ²Ï	cÎ6ğf)ÆœmáÍR%Œ9Û4Â›¥m‚_×&!Û¾®M>B·	.|]›|„¾Î¢åER|EË‹¤ş4ù:‹–Iıiòu-/’úÓÊJÑÕoPe*”•¢«ß ÊT(+EW¿A•©¡AŞ¿¦ê!C‚¼MÕC†"yÿšª‡´Ó åÿ"i§Êÿ=D6ÒN”ÿ{ˆl¤(ÿ÷ÙºR3Ëi+t¥f–ÓVéJ Ì,§­û õ»"÷@ëvEî;€Ö#ìŠü4³÷ÓÈøhfï§‘7ñ/ĞÌŞO#oã_ ™½ŸFŞÇ¬¹Y†t,Ys=²éX³æzdÒ±Ÿğú~zk#>áõıôÖ G}Âëûé­A²óûË.‰seç÷—]ç8ÊÎï/»$Îq”ß_vIœãê…ùßJ¨…-Õó¿•P[ªæ+¡¶».³íj$w	\fÚÕHî¸Ì"´«‘bñ(:W"Å:ãQt®D:‹uÆ£è\‰tëŒGÑ¹é7bO]X.oÄº°:]ßˆ=9tauº,è¥>­J%YĞK}.Z•J² —ú\´*•ğì·ËEWÕáÙo—‹®ª;Â³ß.]Uw„g¿].ºªî€á¿Ö¾»/Ã%¬}w_†ÿJXûî¾ NfuŞË/&œÌê¼—_L8™Õy/¿˜šqë]£Œ4ãÖ»0F=hÆ­waŒ2zÑŒ[ïÂeôÃµxÉóá0†kñ’ç	Âa×â%Ï„Ã5^-¡\j'k¼ZB¹Ô4N×xµ„r©iœ‘~WçUH#ı®Î-ª>Fú][T!}Œô»:·¨BúO—%rñT2.Käâ©d=]–ÈÅS5È?¬·ÁZª
-(~XoƒµTPı°Şk©* ™VùšHˆ 2­ò5‘@dZåk"!"€aâm ($ÂÄÚ@3PH„‰´f¡7hÍ¹é4jq® )sÓiÔâ\Rç¦Ó¨Å¹¤Ç‡]»ZXÍ »vµ°šAvíja5ƒŸlä•Hà=?ÙÈ+‘À{4²‘W"÷hÿd#¯DïÑÌ­ ¼šü)™[Ay4ùS2·‚ò6hò§pñæ–¤á–!áâÍ-IÃ-CÂÅ›[’†[†ÀZRêß€µ¤$Ô5¾5kII¨k|kÖ’’P×øÖš÷¶ƒv‘ş*4ïmí"ıUiŞÛÚEú«®_’œ+Ae"]¿$9W‚ÊDº~Ir®•‰‹L¨ã"4„™PÇEh7.2¡‹Ğn]dB¡!Üyz@lÑ¹,òô€Ø¢sXäé±Eç°Ç.Í‰§”8#]šO)qF»4'RâŒÒ‹
-;¹C-¥vr‡Z8J/*ìäµp”^TØÉjáFw^(9-;Œî¼Pr*Zwİy¡äT´äù±†ú$É	òcõ!H’äÇêCƒ-[bÚ;[¶
-Ä´9v¶lˆisìlÙ*ÓæüHøn6*.ø‘ğİlT\ğ#á»Ù¨¸7c:`ò‘î$oÆtÀä#İIßŒé€ÉGº“_OÈõ§‹¿3êO;=!gÔŸ.vÿzBÎ¨?]ìÿ~@)ˆÙE/ÿı€R³‹^ÿû¥ f½Ì˜3TÓzÑ%™1g¨¦õ¢K2cÎPMëE—p­v/AáZí^‚<Âµ>Ú=¼y„k}´{x	òMâåğKKh0›ÄËá—–Ğ`7‰—Ã/-¡Á×QZÖÕ¹&¯£´¬«sM_FiYWçš¬4AHxûYi‚ğ"ö=²Ò!áEì{e¥	BÂ‹Ø÷GTh@µ‘1¨Ğ€k#cQ¡5ÖFÆŸvS qÄ§'?í¦ âˆOO~ÚMÄŸLÅB ôi¹˜Š… èÓr?1Ğ§å~£j5 !aGÕj  CÂ2ªÕ @†„eU«€	ËÒİ»fæh›(¤»wÍÌÑ6QIwïš™£m¢Ûc…ëS| ·/Æ
-×§ø@n_Œ®OñâßèïıÅ¿Ñ;ßú3‹£w¾?ôgÿFï|èÏÑÿÚ/Læ”)¢ÿµ_˜Ì)SEÿk¿0™S¦§ÌH&pëC!O™‘LàÖ‡B2#™À­…R=:¸Y¼œ¥ztp³x95Kõèàfñrj–êÑÁÍâåÔ·û)`”*o÷SÁ(UŞî§4>‚Qª,–!¤?M"Y,CHš D²X†ş4Aˆ½NƒÌ=@z#œ™{€6ôF82÷ mépdîÚa°kzü™+Ã8`×ôø3W‡qÀ®éñg®}&VÈ–á"6úL¬-ÃElô™X![†‹|ÊxÓ«çø”=ğ¦WÏ7ğ){àM¯oáSöÀ›^=ßùC1À¸ß¥,ó‡b€q¿KYçÅ ã~—²ûÏf-æ·#öŸÍZÌoGì?7šµ˜ß/sq¸Š“^æâp=&9½ÌÅá*zLrz™‹ÃUô˜äK¸èóİ0¸-—pÑç»ap[.á¢ÏwÃà¶Öù†)KZ“$¬óS–´&IXç¦,iM’D.Ÿ‡¢®B‰\>E]…:¹|Šº
-u&rù<uêJ˜rjÑ.”0åÔ.¢](aÊ©]D»9;à»t%rvÀw%èJåì€;îJĞ•”b³Øbuö(Åf±Åêì;QŠÍb‹ÕÙw¢›Å«³ïº¸ZÑ»ğ/t;qµ¢wá_èvâjEïÂ¿Èú®Ú/Z&/ô]µ_´L _è»j¿h™ ¬aò®Œ®@YÃä]]=€²†É»2ºz e“wetõfGœP~G1Í8¡ü.bšqBù]Ä9°sËÒE'=r`ç–¥‹N{äÀÎ-KKÇY)	k—³RÖ>/g¥$<¬}	9®ºmr"r\uÛäD2&ä¸ê¶É‰dLÈqÕm“Éuã]|7(ëÇ»ø:nPÖ9wñuÜ ^Ø‚±–, ¼°c-/X@xaÆZ^°€äy5Á«ß¼Éój‚W¿y3“çÕ¯~óf&Ï«	^ıæÍÔUh¬2.)©«ĞXe\RR?V¡±Ê¸¤vÙª†#Âñ í²UG„ãAÛe«ÇƒÅzU¶[Šõª
-l¶4ëUØli+Ö«*°ØÒoÄˆğ5+*ŞˆàkVT¼#"À×¬¨¿6:m&+¼!~mtÚLVxCıÚè´™¬ğ†ÿ^ûğQïüş½öá£Şù5ı{íÃG½ókû÷Ú‡zç×eş^N¶K.+Ëü½œl—\V–ù{9Ù
+      <Type Name="ExistingInstantiations.IFrobber">
+        <Method Name="Frob1">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob2">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob3">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob4">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="ExistingInstantiations.Frobber1">
+        <Method Name="Frob1">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob2">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob3">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Frob4">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="Method">
+          <GenericArgument Name="System.Object, netstandard" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+
+      <Type Name="ThreadLocalStatics.MyType1`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="ThreadLocalStatics.MyDerived1`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="ThreadLocalStatics.MySuperDerived1_1`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="ThreadLocalStatics.MySuperDerived1_2`1[[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="ThreadLocalStatics.MyType2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="ThreadLocalStatics.MyDerived2_1`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="ThreadLocalStatics.MyDerived2_2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="Expressions.TestRunner`1[[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="RunTest">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="Expressions.SomeGenericClass2`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="ConcatList1">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+        <Method Name="ConcatList2">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+
+      <Type Name="InterfacesTests+Gen`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+Recursive`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+DoublyRecursive`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+WithInterfaceOverArrayType`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+IInterface`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+IFrobber`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+Frobber`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="InterfacesTests+UseFrobber`2[InterfacesTests+FrobtasticFrobberStruct,[System.String, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="ConstraintsTests+TypeWithClassConstraint`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeRequiringIFoo`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithPrivateCtor" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithNewConstraint`1[[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithSelfReferenceConstraint`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithRecursiveConstraints`2[[ConstraintsTests+TypeWithNoConstraint`1[[System.Object, netstandard]]],[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithVariance`2[[ConstraintsTests+IBar`1[[System.Object, netstandard]]],[System.Object, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithSelfReferenceIEnumerableConstraint`2[[System.Int32[], netstandard],[System.Int32, netstandard]]" Dynamic="Required All"/>
+      <Type Name="ConstraintsTests+TypeWithSelfReferenceIEnumerableConstraint`2[[System.Collections.Generic.IEnumerable`1[[System.Object, netstandard]], netstandard],[System.Object, netstandard]]" Dynamic="Required All"/>
+
+      <!--Type Name="MethodConstraintsTests"-->
+      <Type Name="MethodConstraintsTests+TypeWithNoConstraint" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithClassConstraint" Dynamic="Required All" />
+      <Type Name="MethodConstraintsTests+TypeWithStructConstraint" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeRequiringIFoo" Dynamic="Required All" />
+      <Type Name="MethodConstraintsTests+TypeWithPrivateCtor" Dynamic="Required All" />
+      <Type Name="MethodConstraintsTests+TypeWithNewConstraint" Dynamic="Required All"/>
+      <Type Name="MethodConstraintsTests+TypeWithSelfReferenceConstraint" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Object, netstandard" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithRecursiveConstraints" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="MethodConstraintsTests+TypeWithNoConstraint`1[[System.Object, netstandard]]" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithVariance" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="MethodConstraintsTests+IBar`1[[System.Object, netstandard]]" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithSelfReferenceIEnumerableConstraint" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Int32[], netstandard" />
+          <GenericArgument Name="System.Int32, netstandard" />
+        </Method>
+        <Method Name="Method">
+          <GenericArgument Name="System.Collections.Generic.IEnumerable`1[[System.Object, netstandard]], netstandard" />
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+TypeWithMDArrayConstraints" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Collections.Generic.IEnumerable`1[[MethodConstraintsTests+Derived[,,][]]], netstandard" />
+        </Method>
+      </Type>
+      <Type Name="MethodConstraintsTests+DerivedFromDerived" Dynamic="Required All"/>
+      <Type Name="MethodConstraintsTests+GenericType`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All">
+        <Method Name="Method">
+          <GenericArgument Name="System.Object, netstandard" />
+        </Method>
+      </Type>
+
+      <Type Name="BlockedTypesTests+GenericType`1[[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="DynamicListTests" Dynamic="Required All" />
+      <Type Name="System.Collections.Generic.List`1[DynamicListTests+StructWrapper`1[DynamicListTests+DummyForRdXml]], netstandard" Dynamic="Required All" />
+      <Type Name="System.Collections.Generic.List`1[DynamicListTests+StructWrapperWithEquals`1[DynamicListTests+DummyForRdXml]], netstandard" Dynamic="Required All" />
+      <Type Name="System.Collections.Generic.List`1[DynamicListTests+EquatableStructWrapper`1[DynamicListTests+DummyForRdXml]], netstandard" Dynamic="Required All" />
+      <Type Name="System.Collections.Generic.List`1[DynamicListTests+ComparableStructWrapper`1[DynamicListTests+DummyForRdXml]], netstandard" Dynamic="Required All" />
+
+      <Type Name="StaticsTests+GenericTypeWithStaticTimeSpanField`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+GenericTypeWithNonGcStaticField`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+GenericTypeWithMultipleNonGcStaticFields`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+DerivedGenericTypeWithNonGcStaticField`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+SuperDerivedGeneric`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+GenericTypeWithGcStaticField`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+GenericTypeWithStaticFieldOfTypeT`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+ClassWithStaticConstructor`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="StaticsTests+AnotherClassWithStaticConstructor`1[[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <Type Name="FieldReflectionTests+BaseType2`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="FieldReflectionTests+DerivedTypeWithVariousFields`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="FieldReflectionTests+ReferenceTypeWithVariousFields`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="FieldReflectionTests+ReferenceTypeWithCCtor`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="FieldReflectionTests+ValueTypeWithVariousFields`2[[System.Object, netstandard],[System.Object, netstandard]]" Dynamic="Required All" />
+      <Type Name="FieldReflectionTests+ValueTypeWithCCtor`1[[System.Object, netstandard]]" Dynamic="Required All" />
+
+      <!--Type Name="RdExperienceTests.Foo{System.Object}" Browse="Required Public">
+        <Method Name=".ctor" Dynamic="Required" />
+        <Method Name="Frob" Dynamic="Required" />
+      </Type>
+      <Type Name="RdExperienceTests.Foo{System.String}" Browse="Required Public">
+        <Method Name="Gizmo" Dynamic="Required" />
+      </Type-->
+
+      <Type Name="ArrayTests.ArrayTests" Dynamic="Required All"/>
+      <Type Name="ArrayTests.GenericStruct`1[[System.Object, netstandard]]" Dynamic="Required All" />
+      
+    </Assembly>
+  </Application>
+</Directives>
