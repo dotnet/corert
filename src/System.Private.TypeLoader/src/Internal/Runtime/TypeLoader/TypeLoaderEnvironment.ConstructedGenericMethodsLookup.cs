@@ -312,6 +312,8 @@ namespace Internal.Runtime.TypeLoader
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
+                X2.PrintLine("got a module, lookuphashcode");
+                X2.PrintUint(lookupHashcode);
                 if (!GetHashtableFromBlob(module, ReflectionMapBlob.ExactMethodInstantiationsHashtable, out hashtable, out externalReferencesLookup))
                     continue;
 
@@ -320,11 +322,20 @@ namespace Internal.Runtime.TypeLoader
                 NativeParser entryParser;
                 while (!(entryParser = enumerator.GetNext()).IsNull)
                 {
+                    X2.PrintLine("GetNext");
+
                     if (!lookupData.MatchParsedEntry(ref entryParser, ref externalReferencesLookup, module.Handle))
                         continue;
 
                     // We found a match
-                    result = externalReferencesLookup.GetIntPtrFromIndex(entryParser.GetUnsigned());
+                    X2.PrintLine("found a match for entryParser");
+                    var x = entryParser.GetUnsigned();
+                    X2.PrintUint((int)x);
+
+                    result = externalReferencesLookup.GetIntPtrFromIndex(x);
+                    X2.PrintLine("GetIntPtrFromIndex");
+                    X2.PrintUint(result.ToInt32());
+
                     return true;
                 }
             }
@@ -343,6 +354,7 @@ namespace Internal.Runtime.TypeLoader
         //      - dictionaryPointer: (if applicable) pointer to the dictionary to be used with the GVM call
         public bool TryGetGenericVirtualMethodPointer(RuntimeTypeHandle targetTypeHandle, MethodNameAndSignature nameAndSignature, RuntimeTypeHandle[] genericMethodArgumentHandles, out IntPtr methodPointer, out IntPtr dictionaryPointer)
         {
+            X2.PrintLine("TryGetGenericVirtualMethodPointer");
             methodPointer = dictionaryPointer = IntPtr.Zero;
 
             TypeSystemContext context = TypeSystemContextFactory.Create();
@@ -353,12 +365,16 @@ namespace Internal.Runtime.TypeLoader
 
             if (!method.CanShareNormalGenericCode())
             {
+                X2.PrintLine("!method.CanShareNormalGenericCode()");
                 // First see if we can find an exact method implementation for the GVM (avoid using USG implementations if we can,
                 // because USG code is much slower).
                 if (TryLookupExactMethodPointerForComponents(targetTypeHandle, nameAndSignature, genericMethodArgumentHandles, out methodPointer))
                 {
                     Debug.Assert(methodPointer != IntPtr.Zero);
                     TypeSystemContextFactory.Recycle(context);
+                    X2.PrintLine("TryLookupExactMethodPointerForComponents true");
+                    X2.PrintUint(methodPointer.ToInt32());
+
                     return true;
                 }
             }
@@ -373,7 +389,8 @@ namespace Internal.Runtime.TypeLoader
             methodPointer = templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal) ?
                 templateMethod.UsgFunctionPointer :
                 templateMethod.FunctionPointer;
-
+            X2.PrintLine("got a methodPointer");
+            X2.PrintUint(methodPointer.ToInt32());
             if (!TryLookupGenericMethodDictionaryForComponents(targetTypeHandle, nameAndSignature, genericMethodArgumentHandles, out dictionaryPointer))
             {
                 using (LockHolder.Hold(_typeLoaderLock))
@@ -416,7 +433,7 @@ namespace Internal.Runtime.TypeLoader
                     genericMethodArgumentHandles);
 
                 Debug.Assert(thunkPtr != IntPtr.Zero);
-
+                X2.PrintLine("changing to thunk");
                 methodPointer = thunkPtr;
                 // Set dictionaryPointer to null so we don't make a fat function pointer around the whole thing.
                 dictionaryPointer = IntPtr.Zero;
@@ -426,6 +443,8 @@ namespace Internal.Runtime.TypeLoader
             }
 
             TypeSystemContextFactory.Recycle(context);
+            X2.PrintLine("returning true");
+
             return true;
         }
 

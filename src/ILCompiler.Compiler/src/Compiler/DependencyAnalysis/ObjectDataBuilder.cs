@@ -145,6 +145,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public void EmitCompressedUInt(uint emit)
         {
+            if (emit == 0x229)
+            {
+
+            }
             if (emit < 128)
             {
                 EmitByte((byte)(emit * 2 + 0));

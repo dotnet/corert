@@ -37,6 +37,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
+        static bool found = false;
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // Dependencies for this node are tracked by the method code nodes
@@ -58,7 +59,10 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 // Get the method pointer vertex
+                if (method.ToString().Contains("GMethod1"))
+                {
 
+                }
                 bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;
                 IMethodNode methodEntryPointNode = factory.MethodEntrypoint(method, getUnboxingStub);
                 Vertex methodPointer = nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(methodEntryPointNode));
@@ -92,7 +96,11 @@ namespace ILCompiler.DependencyAnalysis
                 // Make the generic method entry vertex
 
                 Vertex entry = nativeWriter.GetTuple(methodSignature, methodPointer);
-
+                if (!found && method.ToString().Contains("GMethod1"))
+                {
+                    nativeWriter.OfInterest = entry;
+                    found = true;
+                }
                 // Add to the hash table, hashed by the containing type's hashcode
                 uint hashCode = (uint)method.OwningType.GetHashCode();
                 hashtable.Append(hashCode, nativeSection.Place(entry));

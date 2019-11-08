@@ -1306,10 +1306,9 @@ namespace Internal.IL
                 Append("__pinvoke(&__piframe)");
                 AppendSemicolon();
             }
-            if (_method.ToString().Contains("TestSimpleGVMScenarios") &&
-                method.ToString().Contains("IFaceGVMethod1"))
+            if (method.ToString().Contains("GenBase") && method.ToString().Contains("GMethod1"))
             {
-                //                        _stack.Push(thisEntry); // this is a newobj so this needs to be on the stack at the end
+
             }
             TypeDesc constrained = null;
             bool resolvedConstraint = false;
@@ -2107,10 +2106,7 @@ namespace Internal.IL
                 if (thisArgument.IsValueType)
                     thisArgument = thisArgument.MakeByRefType();
             }
-            if (_method.ToString().Contains("StackDelegate"))
-            {
 
-            }
 
             TypeDesc retType = methodSignature.ReturnType;
             StackValueKind retKind = StackValueKind.Unknown;
@@ -2243,7 +2239,7 @@ namespace Internal.IL
             MethodDesc method = ((MethodDesc)_canonMethodIL.GetObject(token));
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (canonMethod.ToString().Contains("TestGvmDelegates+Base.Frob<__Canon>"))
+            if (method.ToString().Contains("TestGvmDelegates") && method.ToString().Contains("IFoo.Frob"))
             {
 
             }

@@ -290,7 +290,12 @@ namespace Internal.NativeFormat
             foreach (var section in _sections) foreach (var vertex in section._items)
             {
                 i++;
-                vertex._offset = GetCurrentOffset();
+                if (i == 146)
+                {
+
+                }
+
+                    vertex._offset = GetCurrentOffset();
                 vertex._iteration = _iteration;
                 vertex.Save(this);
 
@@ -313,8 +318,12 @@ namespace Internal.NativeFormat
 
                 foreach (var section in _sections) foreach (var vertex in section._items)
                 {
+                    if (vertex == OfInterest)
+                    {
+
+                    }
                     i++;
-                    if (i == 24)
+                    if (i == 147)
                     {
 
                     }
@@ -366,7 +375,12 @@ namespace Internal.NativeFormat
 
                 foreach (var section in _sections) foreach (var vertex in section._items)
                 {
-                    int currentOffset = GetCurrentOffset();
+                    if (vertex == OfInterest)
+                    {
+
+                    }
+
+                        int currentOffset = GetCurrentOffset();
 
                     // Only allow the offsets to grow.
                     _offsetAdjustment = Math.Max(_offsetAdjustment, currentOffset - vertex._offset);

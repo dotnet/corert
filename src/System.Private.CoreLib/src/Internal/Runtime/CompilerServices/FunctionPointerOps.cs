@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
@@ -70,9 +71,12 @@ namespace Internal.Runtime.CompilerServices
 
         public static unsafe IntPtr GetGenericMethodFunctionPointer(IntPtr canonFunctionPointer, IntPtr instantiationArgument)
         {
+            X2.PrintLine("GetGenericMethodFunctionPointer");
             if (instantiationArgument == IntPtr.Zero)
+            {
+            X2.PrintLine("canonFunctionPointer");
                 return canonFunctionPointer;
-
+            }
             lock (s_genericFunctionPointerDictionary)
             {
                 GenericMethodDescriptorInfo key;
@@ -118,6 +122,8 @@ namespace Internal.Runtime.CompilerServices
                 System.Diagnostics.Debug.Assert(canonFunctionPointer == genericFunctionPointer->MethodFunctionPointer);
                 System.Diagnostics.Debug.Assert(instantiationArgument == genericFunctionPointer->InstantiationArgument);
 
+                X2.PrintLine("returning fat");
+                X2.PrintUint(new IntPtr((byte*)genericFunctionPointer).ToInt32());
                 return (IntPtr)((byte*)genericFunctionPointer + FatFunctionPointerConstants.Offset);
             }
         }

@@ -397,6 +397,7 @@ namespace Internal.Runtime.TypeLoader
         {
             if (IsPregeneratedOrTemplateRuntimeTypeHandle(targetTypeHandle))
             {
+                X2.PrintLine("IsPregeneratedOrTemplateRuntimeTypeHandle");
                 // If the target type isn't dynamic, or at least is template type generated, the static lookup logic is what we want.
                 return ResolveGenericVirtualMethodTarget_Static(targetTypeHandle, declaringTypeHandle, genericArguments, callingMethodNameAndSignature, out methodPointer, out dictionaryPointer);
             }

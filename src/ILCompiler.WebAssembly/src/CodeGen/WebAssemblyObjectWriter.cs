@@ -552,7 +552,12 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return this._nodeFactory.Target.PointerSize;
             }
+            if (realSymbolName ==
+                "__RuntimeMethodHandle_Generics_Program_TestGvmDelegates_IFoo__Frob<Generics_Program_TestGvmDelegates_Atom>"
+            )
+            {
 
+            }
             _currentObjectSymbolRefs.Add(symbolStartOffset, new SymbolRefData(isFunction, realSymbolName, totalOffset));
             return _nodeFactory.Target.PointerSize;
         }

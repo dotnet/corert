@@ -2079,7 +2079,7 @@ namespace Internal.IL
 
         private LLVMValueRef GetCallableGenericVirtualMethod(StackEntry objectPtr, MethodDesc canonMethod, MethodDesc callee, MethodDesc runtimeDeterminedMethod, bool hasHiddenParam)
         {
-            if (callee.ToString().Contains("TestSimpleGVMScenarios") && callee.ToString().Contains("IFace"))
+            if (callee.ToString().Contains("GenBase") && callee.ToString().Contains("GMethod1"))
             {
 
             }
@@ -2093,8 +2093,6 @@ namespace Internal.IL
             {
                 exactContextNeedsRuntimeLookup = canonMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any);
             }
-            var runtimeDeterminedRetType = runtimeDeterminedMethod.OwningType;
-
             LLVMValueRef slotRef;
             if (exactContextNeedsRuntimeLookup)
             {
@@ -2109,21 +2107,28 @@ namespace Internal.IL
             }
             else
             {
-                slotRef = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(runtimeDeterminedMethod).ToString(), runtimeDeterminedMethod.Signature, hasHiddenParam);
+                var runtimeMethodHandleNode = _compilation.NodeFactory.RuntimeMethodHandle(runtimeDeterminedMethod);
+                _dependencies.Add(runtimeMethodHandleNode);
+                var rmhRef = LoadAddressOfSymbolNode(runtimeMethodHandleNode);
+//                var rmhRef = LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, LLVM.BuildPointerCast(_builder, rmhAddrRef, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVM.Int32Type(), 0), 0), 0), "castBasePtrPtr"), "basePtr"), "base");
+
+                var lookupSlotArgs = new StackEntry[]
+                {
+                    objectPtr, 
+                    new ExpressionEntry(StackValueKind.ObjRef, "rmh", rmhRef, GetWellKnownType(WellKnownType.Object))
+                };
+                var gvmPtr = CallRuntime(_compilation.TypeSystemContext, "TypeLoaderExports", "GVMLookupForSlot", lookupSlotArgs);
+                slotRef = gvmPtr.ValueAsType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
+                PrintInt32(BuildConstInt32(1));
+                PrintIntPtr(slotRef);
             }
-            var runtimeMethodHandle = new LoadExpressionEntry(StackValueKind.Int32, "runtimeMethodHandle", slotRef, GetWellKnownType(WellKnownType.IntPtr));
-
-            var lookupSlotArgs = new StackEntry[] { objectPtr, runtimeMethodHandle };
-            var gvmPtr = CallRuntime(_compilation.TypeSystemContext, "TypeLoaderExports", "GVMLookupForSlot", lookupSlotArgs);
-
-            var gvmPtrRef = gvmPtr.ValueAsType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
 
             var thenBlock = LLVM.AppendBasicBlock(_currentFunclet, "then");
             var elseBlock = LLVM.AppendBasicBlock(_currentFunclet, "else");
             var endifBlock = LLVM.AppendBasicBlock(_currentFunclet, "endif");
             var functionPtrRef = LLVM.BuildAlloca(_builder, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "functionPtr");// TODO : try to use int8* to remove some casting.  Create the llvm and compare. int* done, not check for redundant casting
             // if
-            var andRef = LLVM.BuildAnd(_builder, CastIfNecessary(_builder, gvmPtrRef, LLVMTypeRef.Int32Type()), LLVM.ConstInt(LLVM.Int32Type(), (ulong)FatFunctionPointerOffset, LLVMMisc.False), "andPtrOffset");
+            var andRef = LLVM.BuildAnd(_builder, CastIfNecessary(_builder, slotRef, LLVMTypeRef.Int32Type()), LLVM.ConstInt(LLVM.Int32Type(), (ulong)FatFunctionPointerOffset, LLVMMisc.False), "andPtrOffset");
             var andBoolRef = LLVM.BuildIntCast(_builder, andRef, LLVMTypeRef.Int1Type(), "toBool");
             LLVM.BuildCondBr(_builder, andBoolRef, thenBlock, elseBlock);
 
@@ -2131,7 +2136,7 @@ namespace Internal.IL
             LLVM.PositionBuilderAtEnd(_builder, thenBlock);
             //TODO, change to bit op
             var gep = LLVM.BuildAnd(_builder,
-                CastIfNecessary(_builder, gvmPtrRef, LLVMTypeRef.Int32Type()),
+                CastIfNecessary(_builder, slotRef, LLVMTypeRef.Int32Type()),
                 BuildConstInt32(0x3fffffff), "minusFatOffset");
             var minusOffsetPtr = LLVM.BuildIntToPtr(_builder, gep,
                 LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "ptr");
@@ -2141,12 +2146,13 @@ namespace Internal.IL
 
             // else
             LLVM.PositionBuilderAtEnd(_builder, elseBlock);
-            LLVM.BuildStore(_builder, gvmPtrRef, functionPtrRef);
+            LLVM.BuildStore(_builder, slotRef, functionPtrRef);
             LLVM.BuildBr(_builder, endifBlock);
 
             // end if
             LLVM.PositionBuilderAtEnd(_builder, endifBlock);
-            var asFunc = CastIfNecessary(_builder, functionPtrRef, LLVM.PointerType(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, hasHiddenParam), 0) , "castToFunc");
+            var loadPtr = LLVM.BuildLoad(_builder, functionPtrRef, "loadFromAlloc"); // TODO : can we remove this alloc
+            var asFunc = CastIfNecessary(_builder, loadPtr, LLVM.PointerType(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, hasHiddenParam), 0) , "castToFunc");
             return asFunc;
         }
 
@@ -3113,7 +3119,8 @@ namespace Internal.IL
         private void ImportLdFtn(int token, ILOpcode opCode)
         {
             MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
-            MethodDesc canonMethod = runtimeDeterminedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            MethodDesc method = ((MethodDesc)_canonMethodIL.GetObject(token));
+            MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             LLVMValueRef targetLLVMFunction = default(LLVMValueRef);
             bool hasHiddenParam = false;
 
@@ -3122,7 +3129,7 @@ namespace Internal.IL
                 StackEntry thisPointer = _stack.Pop();
                 if (runtimeDeterminedMethod.IsVirtual)
                 {
-                    targetLLVMFunction = LLVMFunctionForMethod(runtimeDeterminedMethod, thisPointer, true, null, runtimeDeterminedMethod, out hasHiddenParam);
+                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null, runtimeDeterminedMethod, out hasHiddenParam);
                 }
                 else
                 {
@@ -3131,7 +3138,6 @@ namespace Internal.IL
             }
             else
             {
-                MethodDesc method = ((MethodDesc)_canonMethodIL.GetObject(token));
                 if (_method.ToString()
                         .Contains("StackDelegate")
                     && _method.ToString()

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Internal.Runtime.Augments;
 using System.Runtime.InteropServices;
+using Internal.NativeFormat;
 
 namespace Internal.Runtime.CompilerServices
 {
@@ -27,7 +28,13 @@ namespace Internal.Runtime.CompilerServices
             while (!eetype.IsNull)
             {
                 RuntimeTypeHandle handle = new RuntimeTypeHandle(eetype);
+                if (handle.GetHashCode() == 0)
+                {
+                    throw new Exception("not an eetype");
+                }
                 string methodName = methodNameAndSignature.Name;
+                X2.PrintLine("Searching for ");
+                X2.PrintLine(methodName);
                 RuntimeSignature methodSignature = methodNameAndSignature.Signature;
                 if (RuntimeAugments.TypeLoaderCallbacks.TryGetGenericVirtualTargetForTypeAndSlot(handle, ref declaringType, genericArguments, ref methodName, ref methodSignature, out functionPointer, out genericDictionary, out slotChanged))
                 {
@@ -45,6 +52,7 @@ namespace Internal.Runtime.CompilerServices
             // This happens when there is an interface call.
             if (slotChanged)
             {
+                X2.PrintLine("slot changed");
                 return GVMLookupForSlotWorker(type, declaringType, genericArguments, methodNameAndSignature);
             }
 
@@ -53,6 +61,8 @@ namespace Internal.Runtime.CompilerServices
                 Environment.FailFast("GVM resolution failure");
             }
 
+            X2.PrintLine("resolution");
+            X2.PrintUint(resolution.ToInt32());
             return resolution;
         }
 

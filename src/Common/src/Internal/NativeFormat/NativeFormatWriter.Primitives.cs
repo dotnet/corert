@@ -74,6 +74,10 @@ namespace Internal.NativeFormat
         //
         public void WriteUnsigned(uint d)
         {
+            if (d == 0x229)
+            {
+
+            }
             if (d < 128)
             {
                 WriteByte((byte)(d * 2 + 0));
