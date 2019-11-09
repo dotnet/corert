@@ -7,7 +7,8 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 #if CODEGEN_WASM
-using Console=Program.Console
+using System.Runtime.InteropServices;
+using Console=Program.Console;
 #endif
 
 class Program
@@ -2392,7 +2393,7 @@ class Program
             }
         }
 
-        internal void WriteLine(string s)
+        internal static void WriteLine(string s)
         {
             PrintString(s);
             PrintString("\n");

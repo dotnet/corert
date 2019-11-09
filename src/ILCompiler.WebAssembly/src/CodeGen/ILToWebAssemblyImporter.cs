@@ -235,7 +235,7 @@ namespace Internal.IL
         {
             var s = _method.ToString();
             Console.WriteLine(s);
-            if (s.Contains("InvokeOpenStaticThunk") && s.Contains("Canon"))
+            if (s.Contains("ToString"))
             {
 
             }
@@ -2079,7 +2079,7 @@ namespace Internal.IL
 
         private LLVMValueRef GetCallableGenericVirtualMethod(StackEntry objectPtr, MethodDesc canonMethod, MethodDesc callee, MethodDesc runtimeDeterminedMethod, bool hasHiddenParam)
         {
-            if (callee.ToString().Contains("GenBase") && callee.ToString().Contains("GMethod1"))
+            if (callee.ToString().Contains("Base") && callee.ToString().Contains("GMethod1"))
             {
 
             }
@@ -3260,6 +3260,12 @@ namespace Internal.IL
         }
         private void ImportLoadInt(long value, StackValueKind kind)
         {
+            if (this._method.ToString()
+                .Contains(
+                    "TestBox"))
+            {
+
+            }
             switch (kind)
             {
                 case StackValueKind.Int32:
@@ -4467,12 +4473,12 @@ namespace Internal.IL
             TypeDesc type = ResolveTypeToken(token);
             StackEntry eeTypeEntry;
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-            //            if (this._method.ToString()
-            //                .Contains(
-            //                    "[S.P.CoreLib]System.Threading.Interlocked.CompareExchange<__Canon>(__Canon&,__Canon,__Canon)"))
-            //            {
-            //
-            //            }
+            if (this._method.ToString()
+                .Contains(
+                    "TestBox"))
+            {
+            
+            }
             if (type.IsRuntimeDeterminedSubtype)
             {
                 var runtimeDeterminedType = type;

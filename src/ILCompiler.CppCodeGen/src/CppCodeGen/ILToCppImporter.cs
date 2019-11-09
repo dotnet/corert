@@ -772,7 +772,12 @@ namespace Internal.IL
 
         public void Compile(CppMethodCodeNode methodCodeNodeNeedingCode)
         {
-            Console.WriteLine(_method.ToString());
+            var s = _method.ToString();
+            Console.WriteLine(s);
+            if (s.Contains("GMethod1"))
+            {
+
+            }
 
             FindBasicBlocks();
             for (int i = 0; i < methodCodeNodeNeedingCode.Method.Signature.Length; i++)

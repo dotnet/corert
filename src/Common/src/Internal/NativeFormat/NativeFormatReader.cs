@@ -31,8 +31,8 @@ namespace Internal.NativeFormat
             uint value = 0;
 
             uint val = *stream;
-            X2.PrintLine("first byte");
-            X2.PrintUint((int)val);
+//            X2.PrintLine("first byte");
+//            X2.PrintUint((int)val);
             if ((val & 1) == 0)
             {
                 value = (val >> 1);
@@ -369,8 +369,8 @@ namespace Internal.NativeFormat
         public uint DecodeUnsigned(uint offset, out uint value)
         {
 //            X2.PrintUint((int)offset);
-            X2.PrintLine("DecodeUnsigned base");
-            X2.PrintUint((int)_base);
+//            X2.PrintLine("DecodeUnsigned base");
+//            X2.PrintUint((int)_base);
             EnsureOffsetInRange(offset, 0);
 
             byte* data = _base + offset;

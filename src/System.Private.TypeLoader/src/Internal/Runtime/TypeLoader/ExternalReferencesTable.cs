@@ -158,11 +158,11 @@ namespace Internal.Runtime.TypeLoader
                 return (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
             }
 
-            X2.PrintLine("GetAddressFromIndex, index");
-            X2.PrintUint((int)index);
+//            X2.PrintLine("GetAddressFromIndex, index");
+//            X2.PrintUint((int)index);
             var p = (IntPtr)(((void**)_elements)[index]);
-            X2.PrintLine("GetAddressFromIndex, IntPtr _elements[index]");
-            X2.PrintUint((int)p.ToInt32());
+//            X2.PrintLine("GetAddressFromIndex, IntPtr _elements[index]");
+//            X2.PrintUint((int)p.ToInt32());
             return p;
         }
 #endif

@@ -21,7 +21,10 @@ internal static class Program
     private static unsafe int Main(string[] args)
     {
         Success = true;
-        PrintLine("Starting");
+        PrintLine("Starting " + 1);
+
+        TestBox();
+
         TestSByteExtend(); 
         TestMetaData();
 
@@ -343,6 +346,15 @@ internal static class Program
         Success = false;
         PrintLine("Failed.");
         if (failMessage != null) PrintLine(failMessage + "-");
+    }
+
+    private static void TestBox()
+    {
+        StartTest("Box int test");
+        object o = (Int32)1;
+        string virtCallRes = o.ToString();
+        PrintLine(virtCallRes);
+        EndTest(virtCallRes == "1");
     }
 
     private static void TestSimplestSharedGeneric()
