@@ -51,28 +51,6 @@ namespace System.Runtime.Loader
             return ReflectionAugments.ReflectionCoreCallbacks.Load(arrAssembly, arrSymbols);
         }
 
-        internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
-        {
-            IntPtr resolvedDll = IntPtr.Zero;
-
-            Func<Assembly, string, IntPtr> dllResolveHandler = _resolvingUnmanagedDll;
-
-            if (dllResolveHandler != null)
-            {
-                // Loop through the event subscribers and return the first non-null native library handle
-                foreach (Func<Assembly, string, IntPtr>  handler in dllResolveHandler.GetInvocationList())
-                {
-                    resolvedDll = handler(assembly, unmanagedDllName);
-                    if (resolvedDll != IntPtr.Zero)
-                    {
-                        return resolvedDll;
-                    }
-                }
-            }
-
-            return IntPtr.Zero;
-        }
-
         private void ReferenceUnreferencedEvents()
         {
             // Dummy method to avoid CS0067 "Event is never used" warning.
