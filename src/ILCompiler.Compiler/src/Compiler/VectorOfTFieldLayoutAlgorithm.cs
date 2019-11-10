@@ -73,5 +73,9 @@ namespace ILCompiler
             return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
         }
 
+        public static bool IsVectorOfTType(DefType type)
+        {
+            return type.IsIntrinsic && type.Namespace == "System.Numerics" && type.Name == "Vector`1";
+        }
     }
 }
