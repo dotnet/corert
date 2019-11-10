@@ -63,7 +63,7 @@ namespace ILCompiler
                 return UniversalCanonLayoutAlgorithm.Instance;
             else if (type.IsRuntimeDeterminedType)
                 return _runtimeDeterminedFieldLayoutAlgorithm;
-            else if (_simdHelper.IsVectorOfT(type))
+            else if (VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(type))
                 return _vectorOfTFieldLayoutAlgorithm;
             else if (VectorFieldLayoutAlgorithm.IsVectorType(type))
                 return _vectorFieldLayoutAlgorithm;

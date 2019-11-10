@@ -627,8 +627,6 @@ namespace ILCompiler
 
             if (scanResults != null)
             {
-                SimdHelper simdHelper = new SimdHelper();
-
                 if (_scanDgmlLogFileName != null)
                     scanResults.WriteDependencyLog(_scanDgmlLogFileName);
 
@@ -656,7 +654,7 @@ namespace ILCompiler
                     // We additionally skip methods in SIMD module because there's just too many intrisics to handle and IL scanner
                     // doesn't expand them. They would show up as noisy diffs.
                     DiffCompilationResults(ref dummy, scanResults.CompiledMethodBodies, compilationResults.CompiledMethodBodies,
-                    "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || simdHelper.IsSimdType(method.OwningType));
+                    "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.OwningType.IsIntrinsic);
                     DiffCompilationResults(ref dummy, scanResults.ConstructedEETypes, compilationResults.ConstructedEETypes,
                         "EETypes", "scanned", "compiled", type => !(type.GetTypeDefinition() is EcmaType));
                 }
