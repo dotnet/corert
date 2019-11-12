@@ -45,12 +45,9 @@ namespace TypeSystemTests
 
             MetadataType derivedClassType = _testModule.GetType("", "DerivedClass");
             IEnumerable<MethodDesc> derivedClassMethods = derivedClassType.GetMethods().Where(m => string.Equals(m.Name, "Method"));
-            Assert.Equal(1, (int)derivedClassMethods.Count());
             IEnumerable<bool> matches = derivedClassMethods.Select(m => matchingSignature.Equals(m.Signature));
             int matchCount = matches.Select(b => b ? 1 : 0).Sum();
             Assert.Equal(1, matchCount);
-            // MethodSignature derivedClassMethodSignature = derivedClassMethod.Signature;
-            // Assert.True(matchingSignature.Equals(derivedClassMethodSignature));
         }
     }
 }
