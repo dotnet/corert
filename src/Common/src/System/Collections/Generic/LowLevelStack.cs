@@ -28,6 +28,9 @@ namespace System.Collections.Generic
     /// Data size is smaller because there will be minimal virtual function table.
     /// Code size is smaller because only functions called will be in the binary.
     /// </summary>
+#if TYPE_LOADER_IMPLEMENTATION
+    [System.Runtime.CompilerServices.ForceDictionaryLookups]
+#endif
     internal class LowLevelStack<T>
     {
         protected T[] _items;
