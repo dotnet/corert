@@ -44,64 +44,6 @@ namespace System
             return ToObject(enumType.TypeHandle.ToEETypePtr(), value);
         }
 
-        public int CompareTo(object target)
-        {
-            if (target == null)
-                return 1;
-
-            if (target == this)
-                return 0;
-
-            if (this.EETypePtr != target.EETypePtr)
-            {
-                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, target.GetType(), this.GetType()));
-            }
-
-            ref byte pThisValue = ref this.GetRawData();
-            ref byte pTargetValue = ref target.GetRawData();
-
-            // Compare the values. Note that we're required to return 0/1/-1 for backwards compat.
-            switch (this.EETypePtr.CorElementType)
-            {
-                case CorElementType.ELEMENT_TYPE_I1:
-                    return (Unsafe.As<byte, sbyte>(ref pThisValue) == Unsafe.As<byte, sbyte>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, sbyte>(ref pThisValue) < Unsafe.As<byte, sbyte>(ref pTargetValue)) ? -1 : 1;
-
-                case CorElementType.ELEMENT_TYPE_U1:
-                case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    return (Unsafe.As<byte, byte>(ref pThisValue) == Unsafe.As<byte, byte>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, byte>(ref pThisValue) < Unsafe.As<byte, byte>(ref pTargetValue)) ? -1 : 1;
-
-                case CorElementType.ELEMENT_TYPE_I2:
-                    return (Unsafe.As<byte, short>(ref pThisValue) == Unsafe.As<byte, short>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, short>(ref pThisValue) < Unsafe.As<byte, short>(ref pTargetValue)) ? -1 : 1;
-
-                case CorElementType.ELEMENT_TYPE_U2:
-                case CorElementType.ELEMENT_TYPE_CHAR:
-                    return (Unsafe.As<byte, ushort>(ref pThisValue) == Unsafe.As<byte, ushort>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, ushort>(ref pThisValue) < Unsafe.As<byte, ushort>(ref pTargetValue)) ? -1 : 1;
-
-                case CorElementType.ELEMENT_TYPE_I4:
-                    return (Unsafe.As<byte, int>(ref pThisValue) == Unsafe.As<byte, int>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, int>(ref pThisValue) < Unsafe.As<byte, int>(ref pTargetValue)) ? -1 : 1;
-
-                case CorElementType.ELEMENT_TYPE_U4:
-                    return (Unsafe.As<byte, uint>(ref pThisValue) == Unsafe.As<byte, uint>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, uint>(ref pThisValue) < Unsafe.As<byte, uint>(ref pTargetValue)) ? -1 : 1;
-
-                case CorElementType.ELEMENT_TYPE_I8:
-                    return (Unsafe.As<byte, long>(ref pThisValue) == Unsafe.As<byte, long>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, long>(ref pThisValue) < Unsafe.As<byte, long>(ref pTargetValue)) ? -1 : 1;
-
-                case CorElementType.ELEMENT_TYPE_U8:
-                    return (Unsafe.As<byte, ulong>(ref pThisValue) == Unsafe.As<byte, ulong>(ref pTargetValue)) ?
-                        0 : (Unsafe.As<byte, ulong>(ref pThisValue) < Unsafe.As<byte, ulong>(ref pTargetValue)) ? -1 : 1;
-
-                default:
-                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
-            }
-        }
-
         public override bool Equals(object obj)
         {
             if (obj == null)

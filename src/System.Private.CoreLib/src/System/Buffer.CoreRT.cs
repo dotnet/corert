@@ -16,9 +16,6 @@ namespace System
 {
     partial class Buffer
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsPrimitiveTypeArray(Array array) => array.ElementEEType.IsPrimitive;
-
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImpl(MethodImplOptions.NoInlining)]
