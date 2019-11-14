@@ -409,10 +409,10 @@ namespace Internal.IL
 
         private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParam)
         {
-            //            if (mangledName == "S_P_CoreLib_System_Collections_Generic_KeyValuePair_2<System___Canon__System___Canon>__get_Value")
-            //            {
-            //
-            //            }
+            if (mangledName == "S_P_CoreLib_System_Collections_Generic_KeyValuePair_2<System___Canon__System___Canon>__get_Value")
+            {
+            
+            }
             LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
 
             if (llvmFunction.Pointer == IntPtr.Zero)
@@ -721,10 +721,11 @@ namespace Internal.IL
             return LLVM.BuildLoad(_builder, CastIfNecessary(address, LLVM.PointerType(asType, 0), $"Temp{index}_"), $"LdTemp{index}_");
         }
 
-        private void StoreTemp(int index, LLVMValueRef value, string name = null)
+        private LLVMValueRef StoreTemp(int index, LLVMValueRef value, string name = null)
         {
             LLVMValueRef address = LoadVarAddress(index, LocalVarKind.Temp, out TypeDesc type);
             LLVM.BuildStore(_builder, CastToTypeDesc(value, type, name), CastToPointerToTypeDesc(address, type, $"Temp{index}_"));
+            return address;
         }
 
         internal static LLVMValueRef LoadValue(LLVMBuilderRef builder, LLVMValueRef address, TypeDesc sourceType, LLVMTypeRef targetType, bool signExtend, string loadName = null)
@@ -1588,8 +1589,8 @@ namespace Internal.IL
                 arguments = new StackEntry[]
                             {
                                 new ExpressionEntry(StackValueKind.ValueType, "eeType", typeHandle,
-                                    _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"))
-                                _stack.Pop(),
+                                    _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr")),
+                                _stack.Pop()
                             };
             }
             else
@@ -1597,8 +1598,8 @@ namespace Internal.IL
                 arguments = new StackEntry[]
                                 {
                                     new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(type, true),
-                                        _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"))
-                                    _stack.Pop(),
+                                        _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr")),
+                                    _stack.Pop()
                                 };
             }
 
@@ -1651,23 +1652,17 @@ namespace Internal.IL
             //            {
             //
             //            }
-            if (_method.ToString().Contains("CallDelegate") &&
-                _method.ToString().Contains("Canon")
-                && callee.ToString().Contains("Stack"))
+            if (_method.ToString().Contains("KeyValuePair") &&
+                _method.ToString().Contains("ToString")
+                && callee.ToString().Contains("ToString"))
             {
-                PrintInt32(BuildConstInt32(512));
+//                PrintInt32(BuildConstInt32(512));
 //                LLVMValueRef invokeOpenInstanceThunkAddr = WebAssemblyObjectWriter.InvokeOpenInstanceThunk;
 //                //return addressOfAddress;
 //                //                var sym = LLVM.BuildLoad(builder, addressOfAddress,
 //                //                    "LoadAddressOfSymbolNode");
 //
 //                PrintIntPtr(invokeOpenInstanceThunkAddr);
-            }
-
-            if (_method.ToString().Contains("TestSimpleGVMScenarios") &&
-                        callee.ToString().Contains("IFaceGVMethod1"))
-            {
-                //                        _stack.Push(thisEntry); // this is a newobj so this needs to be on the stack at the end
             }
 
             //            var extraPush = false;
@@ -1892,6 +1887,7 @@ namespace Internal.IL
             //            }
             // todo: try to remove this as its already done higher up
             var canonMethod = callee.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            var canonMethod2 = callee.GetCanonMethodTarget(CanonicalFormKind.Universal);
 
             string canonCalleeName = _compilation.NameMangler.GetMangledMethodName(canonMethod).ToString();
             TypeDesc owningType = callee.OwningType;
@@ -1909,16 +1905,22 @@ namespace Internal.IL
             }
             if ((canonMethod.IsFinal || canonMethod.OwningType.IsSealed()) && !delegateInvoke)
             {
-                var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
+//                var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
                 if (canonMethod != null)
                 {
-                    if (isUnboxingStub)
-                        hasHiddenParam = canonMethod.IsSharedByGenericInstantiations &&
-                                         (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic);
+                    var isSpecialUnboxingThunk = _compilation.NodeFactory.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(canonMethod);
+
+                    if (isSpecialUnboxingThunk)
+                    {
+                        hasHiddenParam = false;
+                    }
                     else
+                    {
                         hasHiddenParam = canonMethod.RequiresInstArg();
+                        AddMethodReference(canonMethod);
+                    }
                 }
-                AddMethodReference(canonMethod);
+                else AddMethodReference(canonMethod);
                 return GetOrCreateLLVMFunction(canonCalleeName, canonMethod.Signature, hasHiddenParam);
             }
 
@@ -1987,16 +1989,21 @@ namespace Internal.IL
             else
             {
                 // TODO refactor with same logic above
-                var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
                 if (canonMethod != null)
                 {
-                    if (isUnboxingStub)
+                    var isSpecialUnboxingThunk = _compilation.NodeFactory.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(canonMethod);
+
+                    //TODO do we ever hit the true branch
+                    if (isSpecialUnboxingThunk)
                         hasHiddenParam = canonMethod.IsSharedByGenericInstantiations &&
                                          (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic);
                     else
+                    {
                         hasHiddenParam = canonMethod.RequiresInstArg();
+                        AddMethodReference(canonMethod);
+                    }
                 }
-                AddMethodReference(canonMethod);
+                else AddMethodReference(canonMethod); // TOOD: delete this as its not used
                 return GetOrCreateLLVMFunction(canonCalleeName, canonMethod.Signature, hasHiddenParam);
             }
         }
@@ -2024,10 +2031,7 @@ namespace Internal.IL
 
             LLVMValueRef slot = GetOrCreateMethodSlot(method, callee);
             var pointerSize = method.Context.Target.PointerSize;
-            if (method.ToString().Contains("Array.Resize<__Canon>(__Canon[]&,int32)"))
-            {
 
-            }
 
             LLVMTypeRef llvmSignature = GetLLVMSignatureForMethod(method.Signature, hasHiddenParam);
             LLVMValueRef functionPtr;
@@ -2072,6 +2076,11 @@ namespace Internal.IL
                 var eeType = LLVM.BuildLoad(_builder, rawObjectPtr, "ldEEType");
                 var slotPtr = LLVM.BuildGEP(_builder, eeType, new LLVMValueRef[] { slot }, "__getslot__");
                 functionPtr = LLVM.BuildLoad(_builder, slotPtr, "ld__getslot__");
+                if (method.ToString().Contains("ToString"))
+                {
+                    PrintInt32(BuildConstInt32(96));
+                    PrintIntPtr(rawObjectPtr);
+                }
             }
 
             return functionPtr;
@@ -2181,7 +2190,7 @@ namespace Internal.IL
 
             if (hasHiddenParam)
             {
-                signatureTypes.Add(LLVM.PointerType(LLVM.Int32Type(), 0)); // Shadow stack pointer
+                signatureTypes.Add(LLVM.PointerType(LLVM.Int8Type(), 0)); // *EEType
             }
 
             // Intentionally skipping the 'this' pointer since it could always be a GC reference
@@ -2577,7 +2586,8 @@ namespace Internal.IL
 
             if (hiddenParam.Pointer != IntPtr.Zero)
             {
-                llvmArgs.Add(CastIfNecessary(hiddenParam, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0)));
+                //TODO try to get rid of this cast.
+                llvmArgs.Add(CastIfNecessary(hiddenParam, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
             }
 
             // argument offset on the shadow stack
@@ -4864,11 +4874,9 @@ namespace Internal.IL
                 _spilledExpressions.Add(newEntry);
 
                 if (entry is ExpressionEntry)
-                    StoreTemp(entryIndex, ((ExpressionEntry)entry).RawLLVMValue);
+                    addressValue = StoreTemp(entryIndex, ((ExpressionEntry)entry).RawLLVMValue);
                 else
-                    StoreTemp(entryIndex, entry.ValueForStackKind(entry.Kind, _builder, false));
-
-                addressValue = LoadVarAddress(entryIndex, LocalVarKind.Temp, out TypeDesc type);
+                    addressValue = StoreTemp(entryIndex, entry.ValueForStackKind(entry.Kind, _builder, false));
             }
 
             return new AddressExpressionEntry(StackValueKind.NativeInt, "address_of", addressValue, entry.Type.MakePointerType());

@@ -9,7 +9,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-
+using Internal.NativeFormat;
 using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
@@ -107,10 +107,77 @@ namespace System.Runtime
             {
                 result = InternalCalls.RhpNewFast(ptrEEType);
             }
+            X3.PrintLine("box ref data ptr");
+            void* ptr = Unsafe.AsPointer(ref data);
+            X3.PrintInt((int)ptr);
+            X3.PrintLine("box ref offset ");
+            X3.PrintInt(dataOffset);
+            var withOffset = Unsafe.AsPointer(ref Unsafe.Add(ref data, dataOffset));
+            X3.PrintInt((int)withOffset);
+//            if ((int)ptr2 != 0)
+//            {
+//                var i = *(int*)ptr2;
+//                X3.PrintUint(i);
+//            }
+
             InternalCalls.RhpBox(result, ref Unsafe.Add(ref data, dataOffset));
             return result;
         }
 
+        internal class X3
+        {
+            [DllImport("*")]
+            internal static unsafe extern int printf(byte* str, byte* unused);
+            private static unsafe void PrintString(string s)
+            {
+                int length = s.Length;
+                fixed (char* curChar = s)
+                {
+                    for (int i = 0; i < length; i++)
+                    {
+                        TwoByteStr curCharStr = new TwoByteStr();
+                        curCharStr.first = (byte)(*(curChar + i));
+                        printf((byte*)&curCharStr, null);
+                    }
+                }
+            }
+
+            internal static void PrintLine(string s)
+            {
+                PrintString(s);
+                PrintString("\n");
+            }
+
+            public static byte[] GetBytes(int value)
+            {
+                byte[] bytes = new byte[sizeof(int)];
+                Unsafe.As<byte, int>(ref bytes[0]) = value;
+                return bytes;
+            }
+
+            public unsafe static void PrintInt(int s)
+            {
+                byte[] intBytes = GetBytes(s);
+                for (var i = 0; i < 4; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    var nib = (intBytes[3 - i] & 0xf0) >> 4;
+                    curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
+                    printf((byte*)&curCharStr, null);
+                    nib = (intBytes[3 - i] & 0xf);
+                    curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
+                    printf((byte*)&curCharStr, null);
+                }
+                PrintString("\n");
+            }
+
+            public struct TwoByteStr
+            {
+                public byte first;
+                public byte second;
+            }
+
+        }
         [RuntimeExport("RhBoxAny")]
         public static unsafe object RhBoxAny(ref byte data, EETypePtr pEEType)
         {

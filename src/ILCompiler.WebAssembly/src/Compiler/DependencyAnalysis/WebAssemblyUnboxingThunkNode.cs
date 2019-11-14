@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -9,18 +10,18 @@ namespace ILCompiler.DependencyAnalysis
         public WebAssemblyUnboxingThunkNode(MethodDesc method)
             : base(method)
         {
-            if (method.ToString().Contains("KeyValuePair") && method.ToString().Contains("Unbox"))
-            {
-
-            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            return new DependencyListEntry[] {
-                new DependencyListEntry(factory.MethodEntrypoint(Method), "Target of unboxing") };
+            var dependencies = new DependencyList();
+
+            foreach (Object node in _dependencies)
+                dependencies.Add(node, "Wasm code ");
+
+            return dependencies;
         }
 
         int ISortableNode.ClassCode => -18942467;

@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Internal.NativeFormat;
 
 namespace System
 {
@@ -79,6 +80,8 @@ namespace System
 
         public override string ToString()
         {
+            X2.PrintLine("int32 to string");
+            X2.PrintUint(m_value);
             return Number.FormatInt32(m_value, null, null);
         }
 

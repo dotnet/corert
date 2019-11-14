@@ -73,6 +73,11 @@ namespace ILCompiler
                     methodCodeNodeNeedingCode = (WebAssemblyMethodCodeNode)dependencyMethod.CanonicalMethodNode;
                 }
 
+                if (methodCodeNodeNeedingCode.Method.ToString().Contains("KeyValuePair") &&
+                    methodCodeNodeNeedingCode.Method.ToString().Contains("ToString"))
+                {
+
+                }
                 // We might have already compiled this method.
                 if (methodCodeNodeNeedingCode.StaticDependenciesAreComputed)
                     continue;

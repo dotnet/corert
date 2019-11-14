@@ -354,6 +354,9 @@ internal static class Program
         object o = (Int32)1;
         string virtCallRes = o.ToString();
         PrintLine(virtCallRes);
+        var i = (int)o;
+        PrintLine("i");
+        PrintLine(i.ToString());
         EndTest(virtCallRes == "1");
     }
 

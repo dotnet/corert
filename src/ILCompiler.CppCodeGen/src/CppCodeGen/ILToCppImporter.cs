@@ -974,6 +974,12 @@ namespace Internal.IL
 
         private void ImportLoadVar(int index, bool argument)
         {
+            if (_method.ToString().Contains("Int32") &&
+                !_method.ToString().Contains("Constant") &&
+                _method.ToString().Contains("ToString"))
+            {
+
+            }
             string name = GetVarName(index, argument);
 
             TypeDesc type = GetVarType(index, argument);
@@ -1295,7 +1301,18 @@ namespace Internal.IL
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
 
-
+            if (_method.ToString().Contains("KeyValuePair") &&
+                _method.ToString().Contains("ToString")
+                && method.ToString().Contains("ToString"))
+            {
+                //                PrintInt32(BuildConstInt32(512));
+                //                LLVMValueRef invokeOpenInstanceThunkAddr = WebAssemblyObjectWriter.InvokeOpenInstanceThunk;
+                //                //return addressOfAddress;
+                //                //                var sym = LLVM.BuildLoad(builder, addressOfAddress,
+                //                //                    "LoadAddressOfSymbolNode");
+                //
+                //                PrintIntPtr(invokeOpenInstanceThunkAddr);
+            }
             if (method.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(method, runtimeDeterminedMethod))

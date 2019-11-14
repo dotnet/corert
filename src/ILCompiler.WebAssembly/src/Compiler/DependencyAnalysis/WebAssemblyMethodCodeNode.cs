@@ -21,20 +21,20 @@ namespace ILCompiler.DependencyAnalysis
         protected WebAssemblyMethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
-//            if (method.IsConstructor && method.ToString() == "[S.P.CoreLib]System.Collections.Generic.Dictionary`2<string,object>..ctor(int32,IEqualityComparer`1<string>)")
-//            {
-//
-//            }
-//            if (method.ToString().Contains("Array") && method.ToString().Contains("IndexOf"))
-//            {
-//
-//            }
+            //            if (method.IsConstructor && method.ToString() == "[S.P.CoreLib]System.Collections.Generic.Dictionary`2<string,object>..ctor(int32,IEqualityComparer`1<string>)")
+            //            {
+            //
+            //            }
+            if (method.ToString().Contains("KeyValuePair") && method.ToString().Contains("ToString"))
+            {
+
+            }
             _method = method;
         }
 
         public override bool Matched()
         {
-            return _method.ToString().Contains("[S.P.CoreLib]System.EETypePtr.EETypePtrOf<DefType[]>()");
+            return this is WebAssemblyUnboxingThunkNode;
         }
 
         public void SetDependencies(IEnumerable<Object> dependencies)
@@ -75,11 +75,11 @@ namespace ILCompiler.DependencyAnalysis
         public WebAssemblyMethodBodyNode(MethodDesc method)
             : base(method)
         {
-//            if (method.ToString().Contains("StackDelegate") &&
-//                method.ToString().Contains("Invoke"))
-//            {
-//
-//            }
+            if (method.ToString().Contains("KeyValuePair") &&
+                method.ToString().Contains("ToString"))
+            {
+
+            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -102,7 +102,11 @@ namespace ILCompiler.DependencyAnalysis
             //            {
             //
             //            }
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
+            var owningType = _method.OwningType;
+//            if (!(owningType.GetTypeDefinition() is INonEmittableType))
+//            {
+                CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
+//            }
 
             return dependencies;
         }

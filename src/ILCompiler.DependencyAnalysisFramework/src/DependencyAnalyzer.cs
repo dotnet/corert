@@ -276,7 +276,7 @@ namespace ILCompiler.DependencyAnalysisFramework
                 {
                     if (node.Matched())
                     {
-
+                            
                     }
                     Debug.Assert(node.StaticDependenciesAreComputed);
                     GetStaticDependenciesImpl(node);
