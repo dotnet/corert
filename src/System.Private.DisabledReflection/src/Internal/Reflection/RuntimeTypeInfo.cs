@@ -9,10 +9,11 @@ using System.Reflection;
 
 using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
+using Internal.Reflection.Core.NonPortable;
 
 namespace Internal.Reflection
 {
-    internal sealed class RuntimeTypeInfo : TypeInfo
+    internal sealed class RuntimeTypeInfo : TypeInfo, IRuntimeImplemented
     {
         private readonly RuntimeTypeHandle _typeHandle;
 
@@ -21,12 +22,17 @@ namespace Internal.Reflection
             _typeHandle = typeHandle;
         }
 
+        private bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
+
         public override RuntimeTypeHandle TypeHandle => _typeHandle;
-        public override string Namespace => throw new NotSupportedException(SR.Reflection_Disabled);
+
+        public override string Name => DoNotThrowForNames ? RuntimeAugments.GetLastResortString(_typeHandle) : throw new NotSupportedException(SR.Reflection_Disabled);
+
+        public override string Namespace => DoNotThrowForNames ? "" : throw new NotSupportedException(SR.Reflection_Disabled);
+
+        public override string FullName => Name;
 
         public override string AssemblyQualifiedName => throw new NotSupportedException(SR.Reflection_Disabled);
-
-        public override string FullName => throw new NotSupportedException(SR.Reflection_Disabled);
 
         public override Assembly Assembly => throw new NotSupportedException(SR.Reflection_Disabled);
 
@@ -48,8 +54,6 @@ namespace Internal.Reflection
                 return null;
             }
         }
-
-        public override string Name => throw new NotSupportedException(SR.Reflection_Disabled);
 
         public override bool IsByRefLike => RuntimeAugments.IsByRefLike(_typeHandle);
 
@@ -170,6 +174,32 @@ namespace Internal.Reflection
         internal static RuntimeTypeInfo GetRuntimeTypeInfo(RuntimeTypeHandle typeHandle)
         {
             return RuntimeTypeTable.Table.GetOrAdd(new RuntimeTypeHandleKey(typeHandle));
+        }
+
+        public override Type MakeArrayType()
+        {
+            // We support enough of MakeArrayType to make enum operations work
+            if (IsPrimitive)
+            {
+                if (this == typeof(sbyte))
+                    return typeof(sbyte[]);
+                else if (this == typeof(byte))
+                    return typeof(byte[]);
+                else if (this == typeof(short))
+                    return typeof(short[]);
+                else if (this == typeof(ushort))
+                    return typeof(ushort[]);
+                else if (this == typeof(int))
+                    return typeof(int[]);
+                else if (this == typeof(uint))
+                    return typeof(uint[]);
+                else if (this == typeof(long))
+                    return typeof(long[]);
+                else if (this == typeof(ulong))
+                    return typeof(ulong[]);
+            }
+
+            return base.MakeArrayType();
         }
 
         private sealed class RuntimeTypeTable : ConcurrentUnifierW<RuntimeTypeHandleKey, RuntimeTypeInfo>

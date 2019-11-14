@@ -439,23 +439,6 @@ namespace Internal.Runtime.Augments
 
         public static Type GetEnumUnderlyingType(RuntimeTypeHandle enumTypeHandle)
         {
-#if PROJECTN
-            // RHBind doesn't emit CorElementType on generic type definitions, so this only works for
-            // open generics outside ProjectN. When we fix this, also remove the N-specific exclusion in EETypePtr.IsEnum.
-            if (enumTypeHandle.ToEETypePtr().IsGenericTypeDefinition)
-            {
-                Type enumType = Type.GetTypeFromHandle(enumTypeHandle);
-                FieldInfo[] candidates = enumType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-                if (candidates.Length == 0)
-                    throw RuntimeAugments.Callbacks.CreateMissingMetadataException(enumType); // Most likely cause.
-
-                if (candidates.Length > 1)
-                    throw new BadImageFormatException();
-
-                return candidates[0].FieldType;
-            }
-#endif
-
             Debug.Assert(enumTypeHandle.ToEETypePtr().IsEnum);
 
             RuntimeImports.RhCorElementType corElementType = enumTypeHandle.ToEETypePtr().CorElementType;
@@ -552,7 +535,7 @@ namespace Internal.Runtime.Augments
 
         public static bool IsInstanceOfInterface(object obj, RuntimeTypeHandle interfaceTypeHandle)
         {
-            return (null != RuntimeImports.IsInstanceOfInterface(obj, interfaceTypeHandle.ToEETypePtr()));
+            return (null != RuntimeImports.IsInstanceOfInterface(interfaceTypeHandle.ToEETypePtr(), obj));
         }
 
         //
@@ -652,21 +635,8 @@ namespace Internal.Runtime.Augments
         [Intrinsic]
         public static RuntimeTypeHandle GetCanonType(CanonTypeKind kind)
         {
-#if PROJECTN
-            switch (kind)
-            {
-                case CanonTypeKind.NormalCanon:
-                    return typeof(System.__Canon).TypeHandle;
-                case CanonTypeKind.UniversalCanon:
-                    return typeof(System.__UniversalCanon).TypeHandle;
-                default:
-                    Debug.Assert(false);
-                    return default(RuntimeTypeHandle);
-            }
-#else
             // Compiler needs to expand this. This is not expressible in IL.
             throw new NotSupportedException();
-#endif
         }
 
         public static RuntimeTypeHandle GetGenericDefinition(RuntimeTypeHandle typeHandle)
@@ -1091,6 +1061,7 @@ namespace Internal.Runtime.Augments
                 int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
                 // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
                 void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
+                Buffer.ZeroMemory((byte*)region, (nuint)cbBufferAligned);
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T>(pfnTargetToInvoke, region, ref context);
@@ -1128,6 +1099,7 @@ namespace Internal.Runtime.Augments
                 int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
                 // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
                 void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
+                Buffer.ZeroMemory((byte*)region, (nuint)cbBufferAligned);
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T, U>(pfnTargetToInvoke, region, ref context, ref context2);

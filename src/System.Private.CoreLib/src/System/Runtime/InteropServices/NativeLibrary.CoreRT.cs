@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -162,10 +163,7 @@ namespace System.Runtime.InteropServices
 
         private static void FreeLib(IntPtr handle)
         {
-            // FreeLibrary doesn't throw if the input is null.
-            // This avoids further null propagation/check while freeing resources (ex: in finally blocks)
-            if (handle == IntPtr.Zero)
-                return;
+            Debug.Assert(handle != IntPtr.Zero);
 
 #if !PLATFORM_UNIX
             bool result = Interop.mincore.FreeLibrary(handle);

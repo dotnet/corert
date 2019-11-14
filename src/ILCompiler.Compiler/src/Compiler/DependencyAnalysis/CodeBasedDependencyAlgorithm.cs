@@ -23,33 +23,20 @@ namespace ILCompiler.DependencyAnalysis
                 if (dependencies == null)
                     dependencies = new DependencyList();
 
-                // The fact we need to exclude Project N is likely a bug in Project N metadata manager
-                if (factory.Target.Abi != TargetAbi.ProjectN)
-                    dependencies.Add(factory.MaximallyConstructableType(method.OwningType), "Reflection invoke");
+                dependencies.Add(factory.MaximallyConstructableType(method.OwningType), "Reflection invoke");
 
-                if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method)
-                    && ((factory.Target.Abi != TargetAbi.ProjectN) || ProjectNDependencyBehavior.EnableFullAnalysis || !method.IsCanonicalMethod(CanonicalFormKind.Any)))
+                if (factory.MetadataManager.HasReflectionInvokeStubForInvokableMethod(method))
                 {
                     MethodDesc canonInvokeStub = factory.MetadataManager.GetCanonicalReflectionInvokeStub(method);
                     if (canonInvokeStub.IsSharedByGenericInstantiations)
                     {
-                        dependencies.Add(new DependencyListEntry(factory.MetadataManager.DynamicInvokeTemplateData, "Reflection invoke template data"));
-                        factory.MetadataManager.DynamicInvokeTemplateData.AddDependenciesDueToInvokeTemplatePresence(ref dependencies, factory, canonInvokeStub);
+                        dependencies.Add(new DependencyListEntry(factory.DynamicInvokeTemplate(canonInvokeStub), "Reflection invoke"));
                     }
                     else
                         dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(canonInvokeStub), "Reflection invoke"));
                 }
 
-                bool skipUnboxingStubDependency = false;
-                if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
-                {
-                    // ProjectN compilation currently computes the presence of these stubs independent from dependency analysis here
-                    // TODO: fix that issue and remove this odd treatment of unboxing stubs
-                    if (!method.HasInstantiation && method.OwningType.IsValueType && method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any) && !method.Signature.IsStatic)
-                        skipUnboxingStubDependency = true;
-                }
-
-                if (method.OwningType.IsValueType && !method.Signature.IsStatic && !skipUnboxingStubDependency)
+                if (method.OwningType.IsValueType && !method.Signature.IsStatic)
                     dependencies.Add(new DependencyListEntry(factory.ExactCallableAddress(method, isUnboxingStub: true), "Reflection unboxing stub"));
 
                 // If the method is defined in a different module than this one, a metadata token isn't known for performing the reference
@@ -74,25 +61,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, method);
 
-            if (method.HasInstantiation)
-            {
-                ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
-                GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
-            }
-            else
-            {
-                TypeDesc owningTemplateType = method.OwningType;
-
-                // Unboxing and Instantiating stubs use a different type as their template
-                if (factory.TypeSystemContext.IsSpecialUnboxingThunk(method))
-                    owningTemplateType = factory.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(method).OwningType;
-
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningTemplateType);
-            }
-
             factory.InteropStubManager.AddDependeciesDueToPInvoke(ref dependencies, factory, method);
 
-            if (method.IsIntrinsic && factory.Target.Abi != TargetAbi.ProjectN && factory.MetadataManager.SupportsReflection)
+            if (method.IsIntrinsic)
             {
                 if (method.OwningType is MetadataType owningType)
                 {

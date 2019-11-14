@@ -475,7 +475,7 @@ NESTED_END RhpCallFinallyFunclet, _TEXT
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
 
-        PROLOG_PUSH "{r4-r11,lr}"
+        PROLOG_PUSH "{r2,r4-r11,lr}"
         PROLOG_VPUSH {d8-d15}
 
         ldr         r12, [r2, #OFFSETOF__REGDISPLAY__pR11]
@@ -496,6 +496,6 @@ NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         // R0 contains the result of the filter execution
 
         EPILOG_VPOP {d8-d15}
-        EPILOG_POP  "{r4-r11,pc}"
+        EPILOG_POP  "{r2,r4-r11,pc}"
 
 NESTED_END RhpCallFilterFunclet, _TEXT

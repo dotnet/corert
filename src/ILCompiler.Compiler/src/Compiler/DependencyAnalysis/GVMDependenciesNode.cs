@@ -84,6 +84,8 @@ namespace ILCompiler.DependencyAnalysis
                         }
 
                         dependencies.Add(context.MethodGenericDictionary(instantiatedMethod), "GVM Dependency - Dictionary");
+                        dependencies.Add(context.NativeLayout.TemplateMethodEntry(canonMethodTarget), "GVM Dependency - Template entry");
+                        dependencies.Add(context.NativeLayout.TemplateMethodLayout(canonMethodTarget), "GVM Dependency - Template");
                     }
                 }
             }
@@ -116,12 +118,6 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(_method.IsVirtual && _method.HasInstantiation);
 
             List<CombinedDependencyListEntry> dynamicDependencies = new List<CombinedDependencyListEntry>();
-
-            // Disable dependence tracking for ProjectN
-            if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
-            {
-                return dynamicDependencies;
-            }
 
             for (int i = firstNode; i < markedNodes.Count; i++)
             {

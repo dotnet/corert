@@ -51,7 +51,28 @@ namespace Internal.JitInterface
         {
             _methodCodeNode = methodCodeNodeNeedingCode;
 
-            CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+            try
+            {
+                CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+            }
+            finally
+            {
+                CompileMethodCleanup();
+            }
+        }
+
+        private CORINFO_RUNTIME_LOOKUP_KIND GetLookupKindFromContextSource(GenericContextSource contextSource)
+        {
+            switch (contextSource)
+            {
+                case GenericContextSource.MethodParameter:
+                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_METHODPARAM;
+                case GenericContextSource.TypeParameter:
+                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_CLASSPARAM;
+                default:
+                    Debug.Assert(contextSource == GenericContextSource.ThisObject);
+                    return CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_THISOBJ;
+            }
         }
 
         private void ComputeLookup(ref CORINFO_RESOLVED_TOKEN pResolvedToken, object entity, ReadyToRunHelperId helperId, ref CORINFO_LOOKUP lookup)
@@ -317,6 +338,9 @@ namespace Internal.JitInterface
                     return _compilation.NodeFactory.ExternSymbol("RhpNewArrayAlign8");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC:
                     return _compilation.NodeFactory.ExternSymbol("RhpNewArray");
+
+                case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
+                    return _compilation.NodeFactory.ExternSymbol("RhpStackProbe");
 
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:
                     id = ReadyToRunHelper.LMul;
@@ -759,7 +783,17 @@ namespace Internal.JitInterface
                     IEnumerable<ILSequencePoint> ilSequencePoints = debugInfo.GetSequencePoints();
                     if (ilSequencePoints != null)
                     {
-                        SetSequencePoints(ilSequencePoints);
+                        try
+                        {
+                            SetSequencePoints(ilSequencePoints);
+                        }
+                        catch (BadImageFormatException)
+                        {
+                            // Roslyn had a bug where it was generating bad sequence points:
+                            // https://github.com/dotnet/roslyn/issues/20118
+                            // Do not crash the compiler.
+                            _compilation.Logger.Writer.WriteLine($"Warning: ignoring debug info for {methodCodeNodeNeedingCode.Method.ToString()}");
+                        }
                     }
                 }
 
@@ -1442,5 +1476,188 @@ namespace Internal.JitInterface
                 return result;
             }
         }
+
+        private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
+        {
+            MethodDesc methodDesc = HandleToObject(method);
+            int pointerSize = _compilation.TypeSystemContext.Target.PointerSize;
+            offsetOfIndirection = (uint)CORINFO_VIRTUALCALL_NO_CHUNK.Value;
+            isRelative = false;
+
+            // Normalize to the slot defining method. We don't have slot information for the overrides.
+            methodDesc = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDesc);
+            Debug.Assert(!methodDesc.CanMethodBeInSealedVTable());
+
+            int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, methodDesc, methodDesc.OwningType);
+            Debug.Assert(slot != -1);
+
+            offsetAfterIndirection = (uint)(EETypeNode.GetVTableOffset(pointerSize) + slot * pointerSize);
+        }
+
+        private void expandRawHandleIntrinsic(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_GENERICHANDLE_RESULT pResult)
+        {
+            // Resolved token as a potentially RuntimeDetermined object.
+            MethodDesc method = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+
+            switch (method.Name)
+            {
+                case "EETypePtrOf":
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, ref pResult.lookup);
+                    break;
+                case "DefaultConstructorOf":
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, ref pResult.lookup);
+                    break;
+            }
+        }
+
+        private uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            return getMethodAttribsInternal(HandleToObject(ftn));
+        }
+
+        private void* getMethodSync(CORINFO_METHOD_STRUCT_* ftn, ref void* ppIndirection)
+        {
+            MethodDesc method = HandleToObject(ftn);
+            TypeDesc type = method.OwningType;
+            ISymbolNode methodSync = _compilation.NodeFactory.NecessaryTypeSymbol(type);
+
+            void* result = (void*)ObjectToHandle(methodSync);
+
+            if (methodSync.RepresentsIndirectionCell)
+            {
+                ppIndirection = result;
+                return null;
+            }
+            else
+            {
+                ppIndirection = null;
+                return result;
+            }
+        }
+
+        private HRESULT allocMethodBlockCounts(uint count, ref BlockCounts* pBlockCounts)
+        {
+            throw new NotImplementedException("allocMethodBlockCounts");
+        }
+
+        private HRESULT getMethodBlockCounts(CORINFO_METHOD_STRUCT_* ftnHnd, ref uint pCount, ref BlockCounts* pBlockCounts, ref uint pNumRuns)
+        { throw new NotImplementedException("getBBProfileData"); }
+
+        private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
+        {
+            MethodDesc md = HandleToObject(method);
+
+            string externName = md.GetPInvokeMethodMetadata().Name ?? md.Name;
+            Debug.Assert(externName != null);
+
+            pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol(externName));
+        }
+
+        private void getGSCookie(IntPtr* pCookieVal, IntPtr** ppCookieVal)
+        {
+            // TODO: fully implement GS cookies
+
+            if (pCookieVal != null)
+            {
+                if (PointerSize == 4)
+                {
+                    *pCookieVal = (IntPtr)0x3F796857;
+                }
+                else
+                {
+                    *pCookieVal = (IntPtr)0x216D6F6D202C6948;
+                }
+                *ppCookieVal = null;
+            }
+            else
+            {
+                throw new NotImplementedException("getGSCookie");
+            }
+        }
+
+        private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
+        {
+            // calli is covered by convertPInvokeCalliToCall
+            if (handle == null)
+            {
+#if DEBUG
+                MethodSignature methodSignature = (MethodSignature)HandleToObject((IntPtr)callSiteSig->pSig);
+
+                MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(methodSignature);
+                Debug.Assert(!IsPInvokeStubRequired(stub));
+#endif
+
+                return false;
+            }
+
+            MethodDesc method = HandleToObject(handle);
+
+            if (method.IsRawPInvoke())
+                return false;
+
+            // We could have given back the PInvoke stub IL to the JIT and let it inline it, without
+            // checking whether there is any stub required. Save the JIT from doing the inlining by checking upfront.
+            return IsPInvokeStubRequired(method);
+        }
+
+        private bool convertPInvokeCalliToCall(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool mustConvert)
+        {
+            var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+            if (methodIL.OwningMethod.IsPInvoke)
+            {
+                return false;
+            }
+
+            MethodSignature signature = (MethodSignature)methodIL.GetObject((int)pResolvedToken.token);
+
+            CorInfoCallConv callConv = (CorInfoCallConv)(signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask);
+            if (callConv != CorInfoCallConv.CORINFO_CALLCONV_C &&
+                callConv != CorInfoCallConv.CORINFO_CALLCONV_STDCALL &&
+                callConv != CorInfoCallConv.CORINFO_CALLCONV_THISCALL &&
+                callConv != CorInfoCallConv.CORINFO_CALLCONV_FASTCALL)
+            {
+                return false;
+            }
+
+            MethodDesc stub = _compilation.PInvokeILProvider.GetCalliStub(signature);
+            if (!mustConvert && !IsPInvokeStubRequired(stub))
+                return false;
+
+            pResolvedToken.hMethod = ObjectToHandle(stub);
+            pResolvedToken.hClass = ObjectToHandle(stub.OwningType);
+            return true;
+        }
+
+        private bool IsPInvokeStubRequired(MethodDesc method)
+        {
+            return ((Internal.IL.Stubs.PInvokeILStubMethodIL)_compilation.GetMethodIL(method))?.IsStubRequired ?? false;
+        }
+
+        private int SizeOfPInvokeTransitionFrame
+        {
+            get
+            {
+                // struct PInvokeTransitionFrame:
+                // #ifdef _TARGET_ARM_
+                //  m_ChainPointer
+                // #endif
+                //  m_RIP
+                //  m_FramePointer
+                //  m_pThread
+                //  m_Flags + align (no align for ARM64 that has 64 bit m_Flags)
+                //  m_PreserverRegs - RSP
+                //      No need to save other preserved regs because of the JIT ensures that there are
+                //      no live GC references in callee saved registers around the PInvoke callsite.
+                int size = 5 * this.PointerSize;
+
+                if (_compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.ARM)
+                    size += this.PointerSize; // m_ChainPointer
+
+                return size;
+            }
+        }
+
+        private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
+        { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
     }
 }

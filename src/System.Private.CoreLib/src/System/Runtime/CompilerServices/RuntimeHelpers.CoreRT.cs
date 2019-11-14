@@ -153,13 +153,23 @@ namespace System.Runtime.CompilerServices
 
         public static int OffsetToStringData
         {
-            get
-            {
+            // This offset is baked in by string indexer intrinsic, so there is no harm
+            // in getting it baked in here as well.
+            [System.Runtime.Versioning.NonVersionable]
+            get =>
                 // Number of bytes from the address pointed to by a reference to
-                // a String to the first 16-bit character in the String.  
+                // a String to the first 16-bit character in the String.  Skip
+                // over the MethodTable pointer, & String
+                // length.  Of course, the String reference points to the memory
+                // after the sync block, so don't count that.
                 // This property allows C#'s fixed statement to work on Strings.
-                return string.FIRST_CHAR_OFFSET;
-            }
+                // On 64 bit platforms, this should be 12 (8+4) and on 32 bit 8 (4+4).
+#if BIT64
+                12;
+#else // 32
+                8;
+#endif // BIT64
+
         }
 
         [ThreadStatic]
@@ -226,23 +236,9 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsBitwiseEquatable<T>()
         {
-            return
-                typeof(T) == typeof(bool) ||
-                typeof(T) == typeof(byte) ||
-                typeof(T) == typeof(sbyte) ||
-#if FEATURE_UTF8STRING
-                typeof(T) == typeof(Char8) ||
-#endif
-                typeof(T) == typeof(char) ||
-                typeof(T) == typeof(short) ||
-                typeof(T) == typeof(ushort) ||
-                typeof(T) == typeof(int) ||
-                typeof(T) == typeof(uint) ||
-                typeof(T) == typeof(long) ||
-                typeof(T) == typeof(ulong) ||
-                typeof(T) == typeof(IntPtr) ||
-                typeof(T) == typeof(UIntPtr) ||
-                typeof(T) == typeof(Rune);
+            // Only reachable for universal shared code - the compiler replaces this otherwise.
+            // Returning false is conservative.
+            return false;
         }
 
         // Returns true iff the object has a component size;
@@ -266,30 +262,6 @@ namespace System.Runtime.CompilerServices
         {
             if (d == null)
                 throw new ArgumentNullException(nameof(d));
-        }
-
-        public static void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object userData)
-        {
-            if (code == null)
-                throw new ArgumentNullException(nameof(code));
-            if (backoutCode == null)
-                throw new ArgumentNullException(nameof(backoutCode));
-
-            bool exceptionThrown = false;
-
-            try
-            {
-                code(userData);
-            }
-            catch
-            {
-                exceptionThrown = true;
-                throw;
-            }
-            finally
-            {
-                backoutCode(userData, exceptionThrown);
-            }
         }
 
         private static object GetUninitializedObjectInternal(Type type)

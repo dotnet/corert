@@ -19,31 +19,10 @@ namespace System.Runtime
             public IntPtr OsHandle;
         }
 
-        public bool IsTypeManager
-        {
-            get
-            {
-                unsafe
-                {
-                    return (((int)(byte*)_handleValue) & 0x1) == 0x1;
-                }
-            }
-        }
-
-        private IntPtr AsOsModuleIntPtr
-        {
-            get
-            {
-                Debug.Assert(!IsTypeManager);
-                return _handleValue;
-            }
-        }
-
         private unsafe TypeManager* AsTypeManagerPtr
         {
             get
             {
-                Debug.Assert(IsTypeManager);
                 unsafe
                 {
                     return (TypeManager*)(((byte*)(void*)_handleValue) - 1);
@@ -55,10 +34,7 @@ namespace System.Runtime
         {
             get
             {
-                if (IsTypeManager)
-                    return AsTypeManagerPtr->OsHandle;
-                else
-                    return AsOsModuleIntPtr;
+                return AsTypeManagerPtr->OsHandle;
             }
         }
 

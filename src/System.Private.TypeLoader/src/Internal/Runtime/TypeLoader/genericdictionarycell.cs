@@ -755,17 +755,7 @@ namespace Internal.Runtime.TypeLoader
                         Debug.Assert(!Method.IsCanonicalMethod(CanonicalFormKind.Universal));
 
                         bool methodRequestedIsCanonical = Method.IsCanonicalMethod(CanonicalFormKind.Specific);
-                        MethodDesc canonAlikeForm;
-#if PROJECTN
-                        if (methodRequestedIsCanonical)
-                        {
-                            canonAlikeForm = Method.ReplaceTypesInConstructionOfMethod(Method.Context.CanonTypeArray, Method.Context.CanonAlikeTypeArray);
-                        }
-                        else
-#endif
-                        {
-                            canonAlikeForm = Method;
-                        }
+                        MethodDesc canonAlikeForm = Method;
                         foreach (TypeDesc t in canonAlikeForm.Instantiation)
                         {
                             builder.PrepareType(t);

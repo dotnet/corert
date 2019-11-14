@@ -17,7 +17,6 @@ using Internal.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
-using Internal.Reflection.Execution;
 using Internal.TypeSystem;
 using Internal.TypeSystem.NativeFormat;
 
@@ -49,8 +48,6 @@ namespace Internal.Runtime.TypeLoader
 
         public override bool CompareMethodSignatures(RuntimeSignature signature1, RuntimeSignature signature2)
         {
-            X2.PrintLine("Callbacks");
-            X2.PrintUint((int)signature1.NativeLayoutOffset);
             return TypeLoaderEnvironment.Instance.CompareMethodSignatures(signature1, signature2);
         }
 
@@ -121,7 +118,7 @@ namespace Internal.Runtime.TypeLoader
         [ThreadStatic]
         private static bool t_isReentrant;
 
-        public static TypeLoaderEnvironment Instance { get; private set; }
+        public static TypeLoaderEnvironment Instance { get; } = new TypeLoaderEnvironment();
 
         /// <summary>
         /// List of loaded binary modules is typically used to locate / process various metadata blobs
@@ -139,10 +136,7 @@ namespace Internal.Runtime.TypeLoader
         // Eager initialization called from LibraryInitializer for the assembly.
         internal static void Initialize()
         {
-            Instance = new TypeLoaderEnvironment();
             RuntimeAugments.InitializeLookups(new Callbacks());
-            NoStaticsData = (IntPtr)1;
-            AssemblyBinderImplementation.PrintLine("TL Init End");
         }
 
         public TypeLoaderEnvironment()
@@ -670,53 +664,7 @@ namespace Internal.Runtime.TypeLoader
         public static unsafe bool TryGetTargetOfUnboxingAndInstantiatingStub(IntPtr maybeInstantiatingAndUnboxingStub, out IntPtr targetMethod)
         {
             targetMethod = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(maybeInstantiatingAndUnboxingStub);
-            if (targetMethod != IntPtr.Zero)
-            {
-                return true;
-            }
-
-            // TODO: The rest of the code in this function is specific to ProjectN only. When we kill the binder, get rid of this
-            // linear search code (the only API that should be used for the lookup is the one above)
-
-            // Get module
-            IntPtr associatedModule = RuntimeAugments.GetOSModuleFromPointer(maybeInstantiatingAndUnboxingStub);
-            if (associatedModule == IntPtr.Zero)
-            {
-                return false;
-            }
-
-            // Module having a type manager means we are not in ProjectN mode. Bail out earlier.
-            foreach (TypeManagerHandle handle in ModuleList.Enumerate())
-            {
-                if (handle.OsModuleBase == associatedModule && handle.IsTypeManager)
-                {
-                    return false;
-                }
-            }
-
-            // Get UnboxingAndInstantiatingTable
-            UnboxingAndInstantiatingStubMapEntry* pBlob;
-            uint cbBlob;
-
-            if (!RuntimeAugments.FindBlob(new TypeManagerHandle(associatedModule), (int)ReflectionMapBlob.UnboxingAndInstantiatingStubMap, (IntPtr)(&pBlob), (IntPtr)(&cbBlob)))
-            {
-                return false;
-            }
-
-            uint cStubs = cbBlob / (uint)sizeof(UnboxingAndInstantiatingStubMapEntry);
-
-            for (uint i = 0; i < cStubs; ++i)
-            {
-                if (RvaToFunctionPointer(new TypeManagerHandle(associatedModule), pBlob[i].StubMethodRva) == maybeInstantiatingAndUnboxingStub)
-                {
-                    // We found a match, create pointer from RVA and move on.
-                    targetMethod = RvaToFunctionPointer(new TypeManagerHandle(associatedModule), pBlob[i].MethodRva);
-                    return true;
-                }
-            }
-
-            // Stub not found.
-            return false;
+            return (targetMethod != IntPtr.Zero);
         }
 
         public bool TryComputeHasInstantiationDeterminedSize(RuntimeTypeHandle typeHandle, out bool hasInstantiationDeterminedSize)

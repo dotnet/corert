@@ -14,6 +14,25 @@ namespace ILCompiler
 
     public enum ReadyToRunHelper
     {
+        Invalid                     = 0x00,
+
+        // Not a real helper - handle to current module passed to delay load helpers.
+        Module                      = 0x01,
+        GSCookie                    = 0x02,
+
+        //
+        // Delay load helpers
+        //
+
+        // All delay load helpers use custom calling convention:
+        // - scratch register - address of indirection cell. 0 = address is inferred from callsite.
+        // - stack - section index, module handle
+        DelayLoad_MethodCall        = 0x08,
+
+        DelayLoad_Helper            = 0x10,
+        DelayLoad_Helper_Obj        = 0x11,
+        DelayLoad_Helper_ObjObj     = 0x12,
+
         // Exception handling helpers
         Throw                       = 0x20,
         Rethrow                     = 0x21,
@@ -22,12 +41,6 @@ namespace ILCompiler
         FailFast                    = 0x24,
         ThrowNullRef                = 0x25,
         ThrowDivZero                = 0x26,
-        ThrowArgumentOutOfRange     = 0x27,
-        ThrowArgument               = 0x28,
-        ThrowPlatformNotSupported   = 0x29,
-        ThrowNotImplemented         = 0x2A,
-
-        DebugBreak                  = 0x2F,
 
         // Write barriers
         WriteBarrier                = 0x30,
@@ -41,14 +54,20 @@ namespace ILCompiler
         MemSet                      = 0x40,
         MemCpy                      = 0x41,
 
+        // P/Invoke support
+        PInvokeBegin                = 0x42,
+        PInvokeEnd                  = 0x43,
+
         // Get string handle lazily
         GetString                   = 0x50,
+
+        // Used by /Tuning for Profile optimizations
+        LogMethodEnter = 0x51,
 
         // Reflection helpers
         GetRuntimeTypeHandle        = 0x54,
         GetRuntimeMethodHandle      = 0x55,
         GetRuntimeFieldHandle       = 0x56,
-        GetRuntimeType              = 0x57,
 
         Box                         = 0x58,
         Box_Nullable                = 0x59,
@@ -56,8 +75,6 @@ namespace ILCompiler
         Unbox_Nullable              = 0x5B,
         NewMultiDimArr              = 0x5C,
         NewMultiDimArr_NonVarArg    = 0x5D,
-
-        AreTypesEquivalent          = 0x5E,
 
         // Helpers used with generic handle lookup cases
         NewObject                   = 0x60,
@@ -69,12 +86,6 @@ namespace ILCompiler
         GenericGcTlsBase            = 0x66,
         GenericNonGcTlsBase         = 0x67,
         VirtualFuncPtr              = 0x68,
-        CheckCastClass              = 0x69,
-        CheckInstanceClass          = 0x6A,
-        CheckCastArray              = 0x6B,
-        CheckInstanceArray          = 0x6C,
-        CheckCastInterface          = 0x6D,
-        CheckInstanceInterface      = 0x6E,
 
         // Long mul/div/shift ops
         LMul                        = 0xC0,
@@ -112,27 +123,13 @@ namespace ILCompiler
         DblRound                    = 0xE2,
         FltRound                    = 0xE3,
 
-        // P/Invoke support
-        PInvokeBegin                = 0xF0,
-        PInvokeEnd                  = 0xF1,
-
-        // P/Invoke support
-        ReversePInvokeEnter         = 0xF2,
-        ReversePInvokeExit          = 0xF3,
+        // Personality rountines
+        PersonalityRoutine          = 0xF0,
+        PersonalityRoutineFilterFunclet = 0xF1,
 
         // Synchronized methods
         MonitorEnter                = 0xF8,
         MonitorExit                 = 0xF9,
-        MonitorEnterStatic          = 0xFA,
-        MonitorExitStatic           = 0xFB,
-
-        // GVM lookup helper
-        GVMLookupForSlot            = 0x100,
-
-        // TypedReference
-        TypeHandleToRuntimeType     = 0x110,
-        GetRefAny                   = 0x111,
-        TypeHandleToRuntimeTypeHandle = 0x112,
 
         // JIT32 x86-specific write barriers
         WriteBarrier_EAX            = 0x100,
@@ -150,5 +147,49 @@ namespace ILCompiler
 
         // JIT32 x86-specific exception handling
         EndCatch                    = 0x110,
+
+        StackProbe                  = 0x111,
+
+        // **********************************************************************************************
+        //
+        // These are not actually part of the R2R file format. We have them here because it's convenient.
+        //
+        // **********************************************************************************************
+
+        // Marker to be used in asserts.
+        FirstFakeHelper,
+
+        ThrowArgumentOutOfRange,
+        ThrowArgument,
+        ThrowPlatformNotSupported,
+        ThrowNotImplemented,
+
+        DebugBreak,
+
+        GetRuntimeType,
+
+        AreTypesEquivalent,
+
+        CheckCastClass,
+        CheckInstanceClass,
+        CheckCastArray,
+        CheckInstanceArray,
+        CheckCastInterface,
+        CheckInstanceInterface,
+
+        // P/Invoke support
+        ReversePInvokeEnter,
+        ReversePInvokeExit,
+
+        MonitorEnterStatic,
+        MonitorExitStatic,
+
+        // GVM lookup helper
+        GVMLookupForSlot,
+
+        // TypedReference
+        TypeHandleToRuntimeType,
+        GetRefAny,
+        TypeHandleToRuntimeTypeHandle,
     }
 }

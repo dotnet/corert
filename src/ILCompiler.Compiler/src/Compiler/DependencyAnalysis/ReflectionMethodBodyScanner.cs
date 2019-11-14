@@ -37,6 +37,7 @@ namespace ILCompiler.DependencyAnalysis
             // * Enum.GetValues(typeof(Foo)) - this is very common and we need to make sure Foo[] is compiled.
             // * Type.GetType("Foo, Bar").GetMethod("Blah") - framework uses this to work around layering problems.
             // * typeof(Foo<>).MakeGenericType(arg).GetMethod("Blah") - used in e.g. LINQ expressions implementation
+            // * Marshal.SizeOf(typeof(Foo)) - very common and we need to make sure interop data is generated
 
             while (reader.HasNext)
             {
@@ -67,6 +68,45 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        /// <summary>
+        /// Subset of <see cref="Scan(ref DependencyList, NodeFactory, MethodIL)"/> that only deals with Marshal.SizeOf.
+        /// </summary>
+        public static void ScanMarshalOnly(ref DependencyList list, NodeFactory factory, MethodIL methodIL)
+        {
+            ILReader reader = new ILReader(methodIL.GetILBytes());
+
+            Tracker tracker = new Tracker(methodIL);
+
+            while (reader.HasNext)
+            {
+                ILOpcode opcode = reader.ReadILOpcode();
+                switch (opcode)
+                {
+                    case ILOpcode.ldtoken:
+                        tracker.TrackLdTokenToken(reader.ReadILToken());
+                        break;
+
+                    case ILOpcode.call:
+                        var method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
+                        if (method != null && method.Name == "SizeOf" && IsMarshalSizeOf(method))
+                        {
+                            TypeDesc type = tracker.GetLastType();
+                            if (IsTypeEligibleForMarshalSizeOfTracking(type))
+                            {
+                                list = list ?? new DependencyList();
+
+                                list.Add(factory.StructMarshallingData((DefType)type), "Marshal.SizeOf");
+                            }
+                        }
+                        break;
+
+                    default:
+                        reader.Skip(opcode);
+                        break;
+                }
+            }
+        }
+
         private static void HandleCall(ref DependencyList list, NodeFactory factory, MethodIL methodIL, MethodDesc methodCalled, ref Tracker tracker)
         {
             switch (methodCalled.Name)
@@ -77,6 +117,9 @@ namespace ILCompiler.DependencyAnalysis
                         TypeDesc type = tracker.GetLastType();
                         if (type != null && type.IsEnum && !type.IsGenericDefinition /* generic enums! */)
                         {
+                            // Type could be something weird like MyEnum<object, __Canon> - normalize it
+                            type = type.NormalizeInstantiation();
+
                             list = list ?? new DependencyList();
                             list.Add(factory.ConstructedTypeSymbol(type.MakeArrayType()), "Enum.GetValues");
                         }
@@ -124,6 +167,11 @@ namespace ILCompiler.DependencyAnalysis
                                 list = list ?? new DependencyList();
                                 list.Add(factory.MaximallyConstructableType(type), "Type.GetMethod");
                             }
+                            else
+                            {
+                                // Type could be something weird like SomeType<object, __Canon> - normalize it
+                                type = type.NormalizeInstantiation();
+                            }
 
                             MethodDesc reflectedMethod = type.GetMethod(name, null);
                             if (reflectedMethod != null
@@ -157,29 +205,29 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
                     break;
-                case "SizeOf" when methodCalled.OwningType.IsSystemRuntimeInteropServicesMarshal() && !methodCalled.HasInstantiation
-                    && methodCalled.Signature.Length == 1 && methodCalled.Signature[0].IsSystemType():
+                case "SizeOf" when IsMarshalSizeOf(methodCalled):
                     {
                         TypeDesc type = tracker.GetLastType();
-                        if (type != null && !type.IsGenericDefinition && !type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        if (IsTypeEligibleForMarshalSizeOfTracking(type))
                         {
                             list = list ?? new DependencyList();
 
-                            MethodDesc marshalSizeOfGeneric = methodCalled.OwningType.GetKnownMethod(
-                                "SizeOf", new MethodSignature(MethodSignatureFlags.Static, 1, methodCalled.Context.GetWellKnownType(WellKnownType.Int32), TypeDesc.EmptyTypes));
-                            marshalSizeOfGeneric = marshalSizeOfGeneric.MakeInstantiatedMethod(type);
-
-                            // InteropManager is looking for the following method bodies or dictionaries to decide marshalling info need.
-                            // We should ideally model these as separate entities in the dependency graph and add those entities instead.
-                            // Fixable after https://github.com/dotnet/corert/issues/6063 is fixed.
-                            if (marshalSizeOfGeneric.GetCanonMethodTarget(CanonicalFormKind.Specific) != marshalSizeOfGeneric)
-                                list.Add(factory.MethodGenericDictionary(marshalSizeOfGeneric), "Marshal.SizeOf");
-                            else
-                                list.Add(factory.MethodEntrypoint(marshalSizeOfGeneric), "Marshal.SizeOf");
+                            list.Add(factory.StructMarshallingData((DefType)type), "Marshal.SizeOf");
                         }
                     }
                     break;
             }
+        }
+
+        private static bool IsMarshalSizeOf(MethodDesc methodCalled)
+        {
+            return methodCalled.OwningType.IsSystemRuntimeInteropServicesMarshal() && !methodCalled.HasInstantiation
+                    && methodCalled.Signature.Length == 1 && methodCalled.Signature[0].IsSystemType();
+        }
+
+        private static bool IsTypeEligibleForMarshalSizeOfTracking(TypeDesc type)
+        {
+            return type != null && !type.IsGenericDefinition && !type.IsCanonicalSubtype(CanonicalFormKind.Any) && type.IsDefType;
         }
 
         private static bool ResolveType(string name, ModuleDesc callingModule, out TypeDesc type, out ModuleDesc referenceModule)
@@ -242,10 +290,10 @@ namespace ILCompiler.DependencyAnalysis
             // Resolve type in the assembly
             type = referenceModule.GetType(typeNamespace.ToString(), typeName.ToString(), false);
             
-            // If it didn't resolve and wasn't assembly-qualified, we also try mscorlib
+            // If it didn't resolve and wasn't assembly-qualified, we also try core library
             if (type == null && assemblyName.Length == 0)
             {
-                referenceModule = context.ResolveAssembly(new AssemblyName("mscorlib"), false);
+                referenceModule = context.SystemModule;
                 type = referenceModule.GetType(typeNamespace.ToString(), typeName.ToString(), false);
             }
             

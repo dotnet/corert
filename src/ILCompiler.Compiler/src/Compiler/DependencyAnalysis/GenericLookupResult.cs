@@ -230,9 +230,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
-            // We are getting a constructed type symbol because this might be something passed to newobj.
+            // We are getting a maximally constructable type symbol because this might be something passed to newobj.
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.ConstructedTypeSymbol(instantiatedType);
+            return factory.MaximallyConstructableType(instantiatedType);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -728,9 +728,6 @@ namespace ILCompiler.DependencyAnalysis
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
         {
             LookupResultType lookupResult = LookupResultType.Method;
-            if (_isUnboxingThunk && ProjectNDependencyBehavior.EnableFullAnalysis)
-                lookupResult = LookupResultType.UnboxingMethod;
-
             writer.WriteData(LookupResultReferenceType(factory), lookupResult, _method);
         }
 
@@ -1281,10 +1278,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
-            UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
-            Debug.Assert(utcNodeFactory != null);
-            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return utcNodeFactory.TypeThreadStaticsIndexSymbol((MetadataType)instantiatedType);
+            throw new NotImplementedException();
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -1340,11 +1334,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
-            UtcNodeFactory utcNodeFactory = factory as UtcNodeFactory;
-            Debug.Assert(utcNodeFactory != null);
-            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            Debug.Assert(instantiatedType is MetadataType);
-            return utcNodeFactory.TypeThreadStaticsOffsetSymbol((MetadataType)instantiatedType);
+            throw new NotImplementedException();
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

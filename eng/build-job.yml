@@ -89,11 +89,6 @@ jobs:
         displayName: Run simple CoreRT tests in the MultiModule mode
         enabled: ${{ eq(parameters.osGroup, 'Windows_NT') }}
 
-    - ${{ if contains(parameters.testScenarios, 'ReadyToRun') }}:
-      - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)coreclr ReadyToRun $(testParameterPrefix)mode ReadyToRun
-        displayName: Run basic ReadyToRun tests
-        enabled: ${{ and(eq(parameters.buildConfig, 'Debug'), eq(parameters.osGroup, 'Windows_NT')) }}
-
     - ${{ if contains(parameters.testScenarios, 'CoreCLR') }}:
       - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)multimodule $(testParameterPrefix)coreclr $(coreCLRTestSet)
         displayName: Run CoreCLR $(coreCLRTestSet) tests

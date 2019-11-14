@@ -475,7 +475,7 @@ namespace Internal.StackTraceMetadata
 
             public Handle GetMethodVariable(int index)
             {
-                return _typeContext is GenericParameterHandleCollection ?
+                return _methodContext is GenericParameterHandleCollection ?
                     GetHandleAt((GenericParameterHandleCollection)_methodContext, index) :
                     GetHandleAt((HandleCollection)_methodContext, index);
             }

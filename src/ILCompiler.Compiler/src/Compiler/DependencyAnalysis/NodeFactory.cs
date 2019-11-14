@@ -269,6 +269,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeGVMEntriesNode(type);
             });
 
+            _dynamicInvokeTemplates = new NodeCache<MethodDesc, DynamicInvokeTemplateNode>(method =>
+            {
+                return new DynamicInvokeTemplateNode(method);
+            });
+
             _reflectableMethods = new NodeCache<MethodDesc, ReflectableMethodNode>(method =>
             {
                 return new ReflectableMethodNode(method);
@@ -286,12 +291,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return new ShadowConcreteMethodNode(methodKey.Method, MethodEntrypoint(canonMethod));
                 }
-            });
-
-            _runtimeDeterminedMethods = new NodeCache<MethodDesc, IMethodNode>(method =>
-            {
-                return new RuntimeDeterminedMethodNode(method,
-                    MethodEntrypoint(method.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             });
 
             _virtMethods = new NodeCache<MethodDesc, VirtualMethodUseNode>((MethodDesc method) =>
@@ -365,9 +364,14 @@ namespace ILCompiler.DependencyAnalysis
                 return EagerCctorTable.NewNode(MethodEntrypoint(method));
             });
 
-            _namedJumpStubNodes = new NodeCache<Tuple<string, ISymbolNode>, NamedJumpStubNode>((Tuple<string, ISymbolNode> id) =>
+            _delegateMarshalingDataNodes = new NodeCache<DefType, DelegateMarshallingDataNode>(type =>
             {
-                return new NamedJumpStubNode(id.Item1, id.Item2);
+                return new DelegateMarshallingDataNode(type);
+            });
+
+            _structMarshalingDataNodes = new NodeCache<DefType, StructMarshallingDataNode>(type =>
+            {
+                return new StructMarshallingDataNode(type);
             });
 
             _vTableNodes = new NodeCache<TypeDesc, VTableSliceNode>((TypeDesc type ) =>
@@ -820,16 +824,16 @@ namespace ILCompiler.DependencyAnalysis
             return _reflectableMethods.GetOrAdd(method);
         }
 
+        private NodeCache<MethodDesc, DynamicInvokeTemplateNode> _dynamicInvokeTemplates;
+        internal DynamicInvokeTemplateNode DynamicInvokeTemplate(MethodDesc method)
+        {
+            return _dynamicInvokeTemplates.GetOrAdd(method);
+        }
+
         private NodeCache<MethodKey, IMethodNode> _shadowConcreteMethods;
         public IMethodNode ShadowConcreteMethod(MethodDesc method, bool isUnboxingStub = false)
         {
             return _shadowConcreteMethods.GetOrAdd(new MethodKey(method, isUnboxingStub));
-        }
-
-        private NodeCache<MethodDesc, IMethodNode> _runtimeDeterminedMethods;
-        public IMethodNode RuntimeDeterminedMethod(MethodDesc method)
-        {
-            return _runtimeDeterminedMethods.GetOrAdd(method);
         }
 
         private static readonly string[][] s_helperEntrypointNames = new string[][] {
@@ -1017,13 +1021,20 @@ namespace ILCompiler.DependencyAnalysis
             return ReadOnlyDataBlob(symbolName, stringBytes, 1);
         }
 
-        private NodeCache<Tuple<string, ISymbolNode>, NamedJumpStubNode> _namedJumpStubNodes;
+        private NodeCache<DefType, DelegateMarshallingDataNode> _delegateMarshalingDataNodes;
 
-        public ISymbolNode NamedJumpStub(string name, ISymbolNode target)
+        public DelegateMarshallingDataNode DelegateMarshallingData(DefType type)
         {
-            return _namedJumpStubNodes.GetOrAdd(new Tuple<string, ISymbolNode>(name, target));
+            return _delegateMarshalingDataNodes.GetOrAdd(type);
         }
-        
+
+        private NodeCache<DefType, StructMarshallingDataNode> _structMarshalingDataNodes;
+
+        public StructMarshallingDataNode StructMarshallingData(DefType type)
+        {
+            return _structMarshalingDataNodes.GetOrAdd(type);
+        }
+
         /// <summary>
         /// Returns alternative symbol name that object writer should produce for given symbols
         /// in addition to the regular one.

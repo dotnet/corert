@@ -8,7 +8,7 @@
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
   </ItemGroup>
 
@@ -27,7 +27,7 @@
     <Compile Include="..\..\Common\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" >
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs" Condition="'$(IsProjectNLibrary)' != 'true'">
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
       <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
     </Compile>
   </ItemGroup>

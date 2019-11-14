@@ -39,7 +39,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="methodAddress">Resolved method address</param>
         /// <param name="unboxingStubAddress">Resolved unboxing stub address</param>
         /// <returns>true when the resolution succeeded, false when not</returns>
-        internal static bool TryGetMethodAddressFromMethodDesc(
+        public static bool TryGetMethodAddressFromMethodDesc(
             MethodDesc method,
             out IntPtr methodAddress,
             out IntPtr unboxingStubAddress,
@@ -49,9 +49,6 @@ namespace Internal.Runtime.TypeLoader
             unboxingStubAddress = IntPtr.Zero;
             foundAddressType = MethodAddressType.None;
 
-#if SUPPORTS_R2R_LOADING
-            TryGetCodeTableEntry(method, out methodAddress, out unboxingStubAddress, out foundAddressType);
-#endif
 #if SUPPORT_DYNAMIC_CODE
             if (foundAddressType == MethodAddressType.None)
                 MethodEntrypointStubs.TryGetMethodEntrypoint(method, out methodAddress, out unboxingStubAddress, out foundAddressType);

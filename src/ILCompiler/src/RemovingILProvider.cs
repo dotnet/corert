@@ -143,6 +143,24 @@ namespace ILCompiler
                         return RemoveAction.ConvertToThrow;
                     }
 
+                    // We remove this one explicitly because it ends up calling EnumCalendarInfoExEx on Windows
+                    // and brings in delegate reverse p/invoke support into the app.
+                    if (method.Name == "GetCalendars" &&
+                        method.Signature.Length == 3 &&
+                        mdType.Name == "CalendarData" && mdType.Namespace == "System.Globalization")
+                    {
+                        return RemoveAction.ConvertToThrow;
+                    }
+
+                    // We remove this one explicitly because it ends up calling EnumTimeFormatsEx on Windows
+                    // and brings in delegate reverse p/invoke support into the app.
+                    if ((method.Name == "GetTimeFormats" || method.Name == "GetShortTimeFormats") &&
+                        method.Signature.Length == 0 &&
+                        mdType.Name == "CultureData" && mdType.Namespace == "System.Globalization")
+                    {
+                        return RemoveAction.ConvertToThrow;
+                    }
+
                     if (method.Signature.Length == 1 &&
                         method.Name == "GetCalendarInstanceRare" &&
                         mdType.Name == "CultureInfo" && mdType.Namespace == "System.Globalization")

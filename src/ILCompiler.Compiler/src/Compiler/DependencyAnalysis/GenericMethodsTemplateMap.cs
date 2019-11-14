@@ -57,9 +57,13 @@ namespace ILCompiler.DependencyAnalysis
                 if (!IsEligibleToBeATemplate(method))
                     continue;
 
+                var methodEntryNode = factory.NativeLayout.TemplateMethodEntry(method);
+
+                if (!methodEntryNode.Marked)
+                    continue;
 
                 // Method entry
-                Vertex methodEntry = factory.NativeLayout.TemplateMethodEntry(method).SavedVertex;
+                Vertex methodEntry = methodEntryNode.SavedVertex;
 
                 // Method's native layout info
                 Vertex nativeLayout = factory.NativeLayout.TemplateMethodLayout(method).SavedVertex;
@@ -71,10 +75,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Add to the hash table, hashed by the containing type's hashcode
                 uint hashCode = (uint)method.GetHashCode();
-                if (method.ToString().Contains("InvokeRetOII"))
-                {
-
-                }
                 hashtable.Append(hashCode, nativeSection.Place(entry));
             }
 
@@ -88,9 +88,6 @@ namespace ILCompiler.DependencyAnalysis
         public static void GetTemplateMethodDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             if (!IsEligibleToBeATemplate(method))
-                return;
-
-            if (!factory.MetadataManager.SupportsReflection)
                 return;
 
             dependencies = dependencies ?? new DependencyList();

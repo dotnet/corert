@@ -14,7 +14,6 @@ set CoreRT_RunCoreFXTests=
 set CoreRT_CoreCLRTargetsFile=
 set CoreRT_TestLogFileName=testResults.xml
 set CoreRT_TestName=*
-set CoreRT_GCStressLevel=
 set CoreRT_SingleThreaded=
 
 :ArgLoop
@@ -42,7 +41,6 @@ if /i "%1" == "/coreclr"  (
     )
 
     if /i "!SelectedTests!" == "Top200" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\Top200.CoreCLR.issues.targets&&goto :ExtRepoTestsOk
-    if /i "!SelectedTests!" == "ReadyToRun" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\ReadyToRun.CoreCLR.issues.targets&&goto :ExtRepoTestsOk
     if /i "!SelectedTests!" == "KnownGood" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\CoreCLR.issues.targets&&goto :ExtRepoTestsOk
     if /i "!SelectedTests!" == "Interop" set CoreRT_CoreCLRTargetsFile=%CoreRT_TestRoot%\Interop.CoreCLR.issues.targets&&goto :ExtRepoTestsOk
 
@@ -62,9 +60,6 @@ if /i "%1" == "/multimodule" (set CoreRT_MultiFileConfiguration=MultiModule&shif
 if /i "%1" == "/singlethread" (set CoreRT_SingleThreaded=true&shift&goto ArgLoop)
 if /i "%1" == "/determinism" (set CoreRT_DeterminismMode=true&shift&goto ArgLoop)
 if /i "%1" == "/nocleanup" (set CoreRT_NoCleanup=true&shift&goto ArgLoop)
-if /i "%1" == "/r2rframework" (set CoreRT_R2RFramework=true&shift&goto ArgLoop)
-if /i "%1" == "/user2rframework" (set CoreRT_UseR2RFramework=true&shift&goto ArgLoop)
-if /i "%1" == "/gcstresslevel" (set CoreRT_GCStressLevel=%2&shift&shift&goto ArgLoop)
 echo Invalid command line argument: %1
 goto :Usage
 
@@ -72,7 +67,7 @@ goto :Usage
 echo %ThisScript% [arch] [flavor] [/mode] [/runtest] [/coreclr ^<subset^>]
 echo     arch          : x64 / x86 / arm / wasm
 echo     flavor        : debug / release
-echo     /mode         : Optionally restrict to a single code generator. Specify cpp/ryujit/wasm/readytorun. Default: all
+echo     /mode         : Optionally restrict to a single code generator. Specify cpp/ryujit/wasm. Default: all
 echo     /test         : Run a single test by folder name (ie, BasicThreading)
 echo     /runtest      : Should just compile or run compiled binary? Specify: true/false. Default: true.
 echo     /coreclr      : Download and run the CoreCLR repo tests
@@ -85,15 +80,10 @@ echo     /determinism  : Compile the test twice with randomized dependency node 
 echo                      compiler determinism in multi-threaded compilation.
 echo     /nocleanup    : Do not delete compiled test artifacts after running each test
 echo.
-echo     --- CPAOT-specific flags ---
-echo       /r2rframework : Create ready-to-run images for the CoreCLR framework assemblies
-echo       /gcstresslevel: GC stress level to use for testing
-echo.
 echo     --- CoreCLR Subset ---
 echo        Top200     : Runs broad coverage / CI validation (~200 tests).
 echo        KnownGood  : Runs tests known to pass on CoreRT (~6000 tests).
 echo        Interop    : Runs only the interop tests (~43 tests).
-echo        ReadyToRun : Runs tests known to pass using CoreCLR Ready To Run (~23 tests).
 echo        All        : Runs all tests. There will be many failures (~7000 tests).
 exit /b 2
 
@@ -110,29 +100,6 @@ if /i "%CoreRT_TestCompileMode%"=="jit" (
 if "%CoreRT_MultiFileConfiguration%"=="MultiModule" (
     set CoreRT_TestCompileMode=ryujit
 )
-
-set CoreRT_CoreCLRRuntimeDir=%CoreRT_TestRoot%..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\CoreClrRuntime
-set CoreRT_ReadyToRunTestHarness=%CoreRT_TestRoot%src\tools\ReadyToRun.TestHarness\bin\%CoreRT_BuildArch%\%CoreRT_BuildType%\netcoreapp2.1\ReadyToRun.TestHarness.dll
-
-rem When using pre-built R2R framework, switch the CoreCLRRuntime folder to its "native" subfolder
-rem where we copy over the CoreCLRRuntime folder and emit the R2R versions of the framework assemblies.
-if /i "%CoreRT_UseR2RFramework%" == "true" (set CoreRT_CoreCLRRuntimeDir=!CoreRT_CoreCLRRuntimeDir!\native)
-
-if not exist %CoreRT_CoreCLRRuntimeDir% goto :BuildTests
-if not exist %CoreRT_ReadyToRunTestHarness% goto :BuildTests
-goto :SkipBuildTests
-
-:BuildTests
-REM The test build handles restoring external dependencies such as CoreCLR runtime and its test host
-REM Trigger the test build so it will build but not run tests before we run them here
-call %CoreRT_TestRoot%..\buildscripts\build-tests.cmd %CoreRT_BuildType% %CoreRT_BuildArch% buildtests
-
-IF ERRORLEVEL 1 (
-    echo Tests will not be run due to build-tests.cmd failing with error code !ErrorLevel!
-    exit /b !ErrorLevel!
-)
-
-:SkipBuildTests
 
 call %CoreRT_TestRoot%testenv.cmd
 
@@ -162,9 +129,6 @@ call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %CoreRT_HostArch%
 
-:: Eventually we'll always want to compile the framework with r2r before running tests.
-:: During bringup, it's an opt-in separate step.
-if /i "%CoreRT_R2RFramework%"=="true" goto :TestExtRepoCoreCLRFramework
 if /i "%CoreRT_RunCoreCLRTests%"=="true" goto :TestExtRepoCoreCLR
 if /i "%CoreRT_RunCoreFXTests%"=="true" goto :TestExtRepoCoreFX
 
@@ -183,8 +147,6 @@ set /a __JitTotalTests=0
 set /a __JitPassedTests=0
 set /a __WasmTotalTests=0
 set /a __WasmPassedTests=0
-set /a __ReadyToRunTotalTests=0
-set /a __ReadyToRunPassedTests=0
 for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%') do (
     set __SourceFolder=%%a
     set __SourceFileName=%%~na
@@ -199,48 +161,26 @@ for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%'
     if NOT "!__SourceFileProj!" == "" (
         if /i not "%CoreRT_TestCompileMode%" == "cpp" (
             if /i not "%CoreRT_TestCompileMode%" == "wasm" (
-                if /i not "%CoreRT_TestCompileMode%" == "readytorun" (
-                    if not exist "!__SourceFolder!\no_ryujit" (
-                        set __Mode=Jit
-                        call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-                        set /a __JitTotalTests=!__JitTotalTests!+1
-                    )
+                if not exist "!__SourceFolder!\no_ryujit" (
+                    set __Mode=Jit
+                    call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                    set /a __JitTotalTests=!__JitTotalTests!+1
                 )
             )
         )
         if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
             if /i not "%CoreRT_TestCompileMode%" == "wasm" (
-                if /i not "%CoreRT_TestCompileMode%" == "readytorun" (
-                    if not exist "!__SourceFolder!\no_cpp" (
-                        set __Mode=Cpp
-                        call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-                        set /a __CppTotalTests=!__CppTotalTests!+1
-                    )
+                if not exist "!__SourceFolder!\no_cpp" (
+                    set __Mode=Cpp
+                    call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                    set /a __CppTotalTests=!__CppTotalTests!+1
                 )
             )
             if /i not "%CoreRT_TestCompileMode%" == "cpp" (
-                if /i not "%CoreRT_TestCompileMode%" == "readytorun" (
-                    if exist "!__SourceFolder!\wasm" (
-                        set __Mode=wasm
-                        call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-                        set /a __WasmTotalTests=!__WasmTotalTests!+1
-                    )
-                )
-            )
-            if /i not "%CoreRT_TestCompileMode%" == "cpp" (
-                if /i not "%CoreRT_TestCompileMode%" == "wasm" (
-                    if exist "!__SourceFolder!\readytorun" (
-                        set __Mode=readytorun
-                        if exist "!__SourceFolder!\publish" (
-                            if /i "%CoreRT_BuildType%" == "debug" (
-                                call :PublishProject !__SourceFolder! !__SourceFileName!
-                                set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
-                            )
-                        ) else (
-                            call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
-                            set /a __ReadyToRunTotalTests=!__ReadyToRunTotalTests!+1
-                        )
-                    )
+                if exist "!__SourceFolder!\wasm" (
+                    set __Mode=wasm
+                    call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
+                    set /a __WasmTotalTests=!__WasmTotalTests!+1
                 )
             )
         )
@@ -249,10 +189,9 @@ for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%'
 set /a __CppFailedTests=%__CppTotalTests%-%__CppPassedTests%
 set /a __JitFailedTests=%__JitTotalTests%-%__JitPassedTests%
 set /a __WasmFailedTests=%__WasmTotalTests%-%__WasmPassedTests%
-set /a __ReadyToRunFailedTests=%__ReadyToRunTotalTests%-%__ReadyToRunPassedTests%
-set /a __TotalTests=%__JitTotalTests%+%__CppTotalTests%+%__WasmTotalTests%+%__ReadyToRunTotalTests%
-set /a __PassedTests=%__JitPassedTests%+%__CppPassedTests%+%__WasmPassedTests%+%__ReadyToRunPassedTests%
-set /a __FailedTests=%__JitFailedTests%+%__CppFailedTests%+%__WasmFailedTests%+%__ReadyToRunFailedTests%
+set /a __TotalTests=%__JitTotalTests%+%__CppTotalTests%+%__WasmTotalTests%
+set /a __PassedTests=%__JitPassedTests%+%__CppPassedTests%+%__WasmPassedTests%
+set /a __FailedTests=%__JitFailedTests%+%__CppFailedTests%+%__WasmFailedTests%
 
 echo ^<assemblies^>  > %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
 echo ^<assembly name="ILCompiler" total="%__TotalTests%" passed="%__PassedTests%" failed="%__FailedTests%" skipped="0"^>  >> %__CoreRTTestBinDir%\%CoreRT_TestLogFileName%
@@ -266,7 +205,6 @@ echo.
 set __JitStatusPassed=1
 set __CppStatusPassed=1
 set __WasmStatusPassed=1
-set __ReadyToRunStatusPassed=1
 
 if /i not "%CoreRT_TestCompileMode%" == "cpp" (
     set __JitStatusPassed=0
@@ -290,17 +228,9 @@ if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
     call :PassFail !__WasmStatusPassed! "WASM - TOTAL: %__WasmTotalTests% PASSED: %__WasmPassedTests%"
 )
 
-if /i not "%CoreRT_TestCompileMode%" == "ryujit" (
-    set __ReadyToRunStatusPassed=0
-    if %__ReadyToRunTotalTests% EQU %__ReadyToRunPassedTests% (set __ReadyToRunStatusPassed=1)
-    if %__ReadyToRunTotalTests% EQU 0 (set __ReadyToRunStatusPassed=1)
-    call :PassFail !__ReadyToRunStatusPassed! "ReadyToRun - TOTAL: %__ReadyToRunTotalTests% PASSED: %__ReadyToRunPassedTests%"
-)
-
 if not !__JitStatusPassed! EQU 1 (exit /b 1)
 if not !__CppStatusPassed! EQU 1 (exit /b 1)
 if not !__WasmStatusPassed! EQU 1 (exit /b 1)
-if not !__ReadyToRunStatusPassed! EQU 1 (exit /b 1)
 exit /b 0
 
 :PassFail
@@ -338,8 +268,6 @@ goto :eof
         )
     ) else if /i "%__Mode%" == "wasm" (
         set extraArgs=!extraArgs! /p:NativeCodeGen=wasm
-    ) else if /i "%__Mode%" == "readytorun" (
-        set extraArgs=!extraArgs! /p:NativeCodeGen=readytorun
     ) else (
         if /i "%CoreRT_MultiFileConfiguration%" == "MultiModule" (
             set extraArgs=!extraArgs! "/p:IlcMultiModule=true"
@@ -391,15 +319,10 @@ goto :eof
             set __Extension=html
         )
 
-        set __ExtraTestRunArgs=
-        if /i "%__Mode%"=="readytorun" (
-            set __ExtraTestRunArgs="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarness% %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe
-        )
-
         if "!__SavedErrorLevel!"=="0" (
             echo.
             echo Running test !__SourceFileName!
-            call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\native !__SourceFileName!.!__Extension! !__ExtraTestRunArgs!
+            call !__SourceFile!.cmd !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\native !__SourceFileName!.!__Extension!
             set __SavedErrorLevel=!ErrorLevel!
         )
     )
@@ -416,44 +339,6 @@ goto :eof
         echo ^</test^> >> %__CoreRTTestBinDir%\testResults.tmp
     )
     goto :eof
-
-:PublishProject
-    echo.
-    set __SourceFolder=%~1
-    set __SourceFileName=%2
-
-    if exist "!__SourceFolder!\bin" rmdir /s /q !__SourceFolder!\bin
-    if exist "!__SourceFolder!\obj" rmdir /s /q !__SourceFolder!\obj
-
-    :: Compute publish RID
-    if /i "%CoreRT_BuildArch%" == "x86" (
-        set Publish_Rid=win-x86
-    ) else if /i "%CoreRT_BuildArch%" == "x64" (
-        set Publish_Rid=win-x64
-    ) else if /i "%CoreRT_BuildArch%" == "arm" (
-        set Publish_Rid=win-x64
-    ) else (
-        echo CoreRT_BuildArch is %CoreRT_BuildArch%. Check that we support that for ready-to-run
-        exit /b 1
-    )
-
-    ::
-    :: Publish test as a self-contained app
-    ::
-    echo Publishing !__SourceFolder! %Publish_Rid%
-    echo "%CoreRT_CliDir%\dotnet.exe" publish "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" !__SourceFolder! -r %Publish_Rid% --self-contained
-    "%CoreRT_CliDir%\dotnet.exe" publish "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:Platform=%CoreRT_BuildArch%" !__SourceFolder! -r %Publish_Rid% --self-contained
-    set __SavedErrorLevel=!ErrorLevel!
-    if not "!__SavedErrorLevel!"=="0" (goto :RecordTestResult)
-    
-    ::
-    :: Execute the app host entrypoint
-    ::
-    echo Running test !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\netcoreapp2.1\%Publish_Rid%\publish\!__SourceFileName!.exe
-    !__SourceFolder!\bin\%CoreRT_BuildType%\%CoreRT_BuildArch%\netcoreapp2.1\%Publish_Rid%\publish\!__SourceFileName!.exe
-    set __SavedErrorLevel=!ErrorLevel!
-
-    goto :RecordTestResult
 
 :DeleteFile
     if exist %1 del %1
@@ -537,23 +422,6 @@ goto :eof
     echo CoreCLR tests restored from %TESTS_REMOTE_URL% > %TESTS_SEMAPHORE%
     exit /b 0
 
-:TestExtRepoCoreCLRFramework
-    echo Running external tests
-    if "%CoreRT_TestExtRepo_CoreCLR%" == "" (
-        set CoreRT_TestExtRepo_CoreCLR=%CoreRT_TestRoot%\..\tests_downloaded\CoreCLR
-        call :RestoreCoreCLRTests
-        if errorlevel 1 (
-            exit /b 1
-        )
-    )
-
-    if not exist "%CoreRT_TestExtRepo_CoreCLR%" ((call :Fail "%CoreRT_TestExtRepo_CoreCLR% does not exist") & exit /b 1)
-
-    set NativeCodeGen=readytorun
-
-    call %CoreRT_TestRoot%\CoreCLR\compile-framework.cmd
-    exit /b %ErrorLevel%
-
 :TestExtRepoCoreCLR
     :: Omit the exclude parameter to CoreCLR's test harness if we're running all tests
     set CoreCLRExcludeText=-test_filter_path
@@ -578,11 +446,6 @@ goto :eof
         echo Compiling framework library
         echo "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /t:CreateLib %CoreRT_TestRoot%\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj
         "%CoreRT_CliDir%\dotnet.exe" msbuild /m /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:OSGroup=%CoreRT_BuildOS%" "/p:Platform=%CoreRT_BuildArch%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%CoreRT_TestRoot%..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /t:CreateLib %CoreRT_TestRoot%\..\src\BuildIntegration\BuildFrameworkNativeObjects.proj
-    )
-
-    if /i "%CoreRT_TestCompileMode%" == "readytorun" (
-        set NativeCodeGen=readytorun
-        set IlcMultiModule=
     )
 
     echo.

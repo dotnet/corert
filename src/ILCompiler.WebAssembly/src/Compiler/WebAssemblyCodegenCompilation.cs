@@ -27,10 +27,9 @@ namespace ILCompiler
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
-            PInvokeILEmitterConfiguration pinvokePolicy,
             Logger logger,
             WebAssemblyCodegenConfigProvider options)
-            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), ilProvider, debugInformationProvider, null, pinvokePolicy, logger)
+            : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), ilProvider, debugInformationProvider, null, logger)
         {
             NodeFactory = nodeFactory;
             Module = LLVM.ModuleCreateWithName("netscripten");

@@ -98,7 +98,7 @@ LOCAL_LABEL(\BASENAME\()_UpdateShadowHeap_Done_\REFREG):
     // the byte if it hasn't already been done since writes are expensive and impact scaling.
     shr     rdi, 11
     add     rdi, [C_VAR(g_card_table)]
-    cmp     byte ptr [rdi], 0FFh
+    cmp     byte ptr [rdi], 0x0FF
     jne     LOCAL_LABEL(\BASENAME\()_UpdateCardTable_\REFREG)
 
 LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG):
@@ -106,7 +106,7 @@ LOCAL_LABEL(\BASENAME\()_NoBarrierRequired_\REFREG):
 
 // We get here if it's necessary to update the card table.
 LOCAL_LABEL(\BASENAME\()_UpdateCardTable_\REFREG):
-    mov     byte ptr [rdi], 0FFh
+    mov     byte ptr [rdi], 0x0FF
     ret
 
 .endm
@@ -262,8 +262,8 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
 
     // move current rdi value into rcx and then increment the pointers
     mov     rcx, rdi
-    add     rsi, 8h
-    add     rdi, 8h
+    add     rsi, 0x8
+    add     rdi, 0x8
 
     // We have a location on the GC heap being updated with a reference to an ephemeral object so we must
     // track this write. The location address is translated into an offset in the card table bitmap. We set
@@ -271,18 +271,18 @@ LEAF_ENTRY RhpByRefAssignRef, _TEXT
     // the byte if it hasn't already been done since writes are expensive and impact scaling.
     shr     rcx, 11
     add     rcx, [C_VAR(g_card_table)]
-    cmp     byte ptr [rcx], 0FFh
+    cmp     byte ptr [rcx], 0x0FF
     jne     LOCAL_LABEL(RhpByRefAssignRef_UpdateCardTable)
     ret
 
 // We get here if it's necessary to update the card table.
 LOCAL_LABEL(RhpByRefAssignRef_UpdateCardTable):
-    mov     byte ptr [rcx], 0FFh
+    mov     byte ptr [rcx], 0x0FF
     ret
 
 LOCAL_LABEL(RhpByRefAssignRef_NotInHeap):
     // Increment the pointers before leaving
-    add     rdi, 8h
-    add     rsi, 8h
+    add     rdi, 0x8
+    add     rsi, 0x8
     ret
 LEAF_END RhpByRefAssignRef, _TEXT

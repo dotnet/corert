@@ -10,11 +10,18 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public struct ObjectDataBuilder : Internal.Runtime.ITargetBinaryWriter
+    public struct ObjectDataBuilder
+#if !READYTORUN
+        : Internal.Runtime.ITargetBinaryWriter
+#endif
     {
-        public ObjectDataBuilder(NodeFactory factory, bool relocsOnly)
+        public ObjectDataBuilder(NodeFactory factory, bool relocsOnly) : this(factory.Target, relocsOnly)
         {
-            _target = factory.Target;
+        }
+
+        public ObjectDataBuilder(TargetDetails target, bool relocsOnly)
+        {
+            _target = target;
             _data = new ArrayBuilder<byte>();
             _relocs = new ArrayBuilder<Relocation>();
             Alignment = 1;
@@ -76,6 +83,12 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public void EmitShort(short emit)
+        {
+            EmitByte((byte)(emit & 0xFF));
+            EmitByte((byte)((emit >> 8) & 0xFF));
+        }
+
+        public void EmitUShort(ushort emit)
         {
             EmitByte((byte)(emit & 0xFF));
             EmitByte((byte)((emit >> 8) & 0xFF));
@@ -263,6 +276,15 @@ namespace ILCompiler.DependencyAnalysis
             _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
         }
 
+        public void EmitUInt(Reservation reservation, uint emit)
+        {
+            int offset = ReturnReservationTicket(reservation);
+            _data[offset] = (byte)(emit & 0xFF);
+            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
+            _data[offset + 2] = (byte)((emit >> 16) & 0xFF);
+            _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
+        }
+
         public void EmitReloc(ISymbolNode symbol, RelocType relocType, int delta = 0)
         {
 #if DEBUG
@@ -328,6 +350,16 @@ namespace ILCompiler.DependencyAnalysis
         public void AddSymbol(ISymbolDefinitionNode node)
         {
             _definedSymbols.Add(node);
+        }
+
+        public void PadAlignment(int align)
+        {
+            Debug.Assert((align == 2) || (align == 4) || (align == 8) || (align == 16));
+            int misalignment = _data.Count & (align - 1);
+            if (misalignment != 0)
+            {
+                EmitZeros(align - misalignment);
+            }
         }
     }
 }

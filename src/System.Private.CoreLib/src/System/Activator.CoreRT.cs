@@ -58,10 +58,6 @@ namespace System
 
                 try
                 {
-#if PROJECTN
-                    t = CreateInstanceIntrinsic<T>();
-                    DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-#else
                     t = (T)(RuntimeImports.RhNewObject(eetype));
 
                     // Run the default constructor. If the default constructor was missing, codegen
@@ -70,7 +66,6 @@ namespace System
                     IntPtr defaultConstructor = DefaultConstructorOf<T>();
                     RawCalliHelper.Call(defaultConstructor, t);
                     DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-#endif
                 }
                 catch (Exception e)
                 {
@@ -94,9 +89,6 @@ namespace System
 
             return t;
         }
-
-        [Intrinsic]
-        private extern static T CreateInstanceIntrinsic<T>();
 
         [Intrinsic]
         private static IntPtr DefaultConstructorOf<T>()

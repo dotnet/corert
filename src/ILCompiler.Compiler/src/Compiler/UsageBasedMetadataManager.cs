@@ -35,6 +35,8 @@ namespace ILCompiler
         private readonly List<MethodDesc> _methodsWithMetadata = new List<MethodDesc>();
         private readonly List<MetadataType> _typesWithMetadata = new List<MetadataType>();
 
+        private readonly HashSet<ModuleDesc> _rootAllAssembliesExaminedModules = new HashSet<ModuleDesc>();
+
         private readonly MetadataType _serializationInfoType;
 
         public UsageBasedMetadataManager(
@@ -191,6 +193,27 @@ namespace ILCompiler
                 }
             }
 
+            // If the option was specified to root types and methods in all user assemblies, do that.
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.FullUserAssemblyRooting) != 0)
+            {
+                if (type is MetadataType metadataType &&
+                    !_rootAllAssembliesExaminedModules.Contains(metadataType.Module))
+                {
+                    _rootAllAssembliesExaminedModules.Add(metadataType.Module);
+
+                    if (metadataType.Module is Internal.TypeSystem.Ecma.EcmaModule ecmaModule &&
+                        !FrameworkStringResourceBlockingPolicy.IsFrameworkAssembly(ecmaModule))
+                    {
+                        dependencies = dependencies ?? new DependencyList();
+                        var rootProvider = new RootingServiceProvider(factory, dependencies.Add);
+                        foreach (TypeDesc t in ecmaModule.GetAllTypes())
+                        {
+                            RootingHelpers.TryRootType(rootProvider, t, "RD.XML root");
+                        }
+                    }
+                }
+            }
+
             // If a type is marked [Serializable], make sure a couple things are also included.
             if (type.IsSerializable && !type.IsGenericDefinition)
             {
@@ -297,9 +320,21 @@ namespace ILCompiler
                 dependencies = dependencies ?? new DependencyList();
                 dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "LDTOKEN method");
             }
+
+            // Since this is typically used for LINQ expressions, let's also make sure there's runnable code
+            // for this available, unless this is ldtoken of something we can't generate code for
+            // (ldtoken of an uninstantiated generic method - F# makes this).
+            if (!method.IsGenericMethodDefinition)
+            {
+                var deps = dependencies ?? new DependencyList();
+                RootingHelpers.TryRootMethod(
+                    new RootingServiceProvider(
+                        factory, (o, reason) => deps.Add((DependencyNodeCore<NodeFactory>)o, reason)), method, "LDTOKEN method");
+                dependencies = deps;
+            }
         }
 
-        protected override void GetDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        protected override void GetDependenciesDueToMethodCodePresenceInternal(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             if ((_generationOptions & UsageBasedMetadataGenerationOptions.ILScanning) != 0)
             {
@@ -573,5 +608,11 @@ namespace ILCompiler
         /// Scan IL for common reflection patterns to find additional compilation roots.
         /// </summary>
         ILScanning = 4,
+
+        /// <summary>
+        /// Specifies that all types and methods in user assemblies should be considered dynamically
+        /// used.
+        /// </summary>
+        FullUserAssemblyRooting = 8,
     }
 }

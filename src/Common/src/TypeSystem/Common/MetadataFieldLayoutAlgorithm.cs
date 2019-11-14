@@ -165,7 +165,7 @@ namespace Internal.TypeSystem
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }
-            else if (type.IsSequentialLayout || type.Context.Target.Abi == TargetAbi.ProjectN || type.Context.Target.Abi == TargetAbi.CppCodegen)
+            else if (type.IsSequentialLayout || type.Context.Target.Abi == TargetAbi.CppCodegen)
             {
                 return ComputeSequentialFieldLayout(type, numInstanceFields);
             }
@@ -297,7 +297,7 @@ namespace Internal.TypeSystem
         {
         }
 
-        private static ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields)
+        protected static ComputedInstanceFieldLayout ComputeExplicitFieldLayout(MetadataType type, int numInstanceFields)
         {
             // Instance slice size is the total size of instance not including the base type.
             // It is calculated as the field whose offset and size add to the greatest value.
@@ -327,7 +327,15 @@ namespace Internal.TypeSystem
 
                 // GC pointers MUST be aligned.
                 // We treat byref-like structs as GC pointers too.
-                if (!computedOffset.IsIndeterminate && (fieldType.IsGCPointer || fieldType.IsByRefLike))
+                bool needsToBeAligned =
+                    !computedOffset.IsIndeterminate
+                    &&
+                    (
+                        fieldType.IsGCPointer
+                        || fieldType.IsByRefLike
+                        || (fieldType.IsValueType && ((DefType)fieldType).ContainsGCPointers)
+                    );
+                if (needsToBeAligned)
                 {
                     int offsetModulo = computedOffset.AsInt % type.Context.Target.PointerSize;
                     if (offsetModulo != 0)

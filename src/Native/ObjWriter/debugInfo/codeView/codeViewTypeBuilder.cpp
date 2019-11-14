@@ -16,8 +16,20 @@
 UserDefinedCodeViewTypesBuilder::UserDefinedCodeViewTypesBuilder()
     : Allocator(), TypeTable(Allocator)
 {
+    // We pretend that the EEType pointer in System.Object is VTable shape.
+    // We use the same "Vtable" for all types because the vtable shape debug
+    // record is not expressive enough to capture our vtable shape (where the
+    // vtable slots don't start at the beginning of the vtable).
     VFTableShapeRecord vfTableShape(TypeRecordKind::VFTableShape);
     ClassVTableTypeIndex = TypeTable.writeKnownType(vfTableShape);
+
+    PointerRecord ptrToVfTableShape(ClassVTableTypeIndex,
+        TargetPointerSize == 8 ? PointerKind::Near64 : PointerKind::Near32,
+        PointerMode::LValueReference,
+        PointerOptions::None,
+        0);
+
+    VFuncTabTypeIndex = TypeTable.writeKnownType(ptrToVfTableShape);
 }
 
 void UserDefinedCodeViewTypesBuilder::EmitCodeViewMagicVersion() {
@@ -90,18 +102,7 @@ unsigned UserDefinedCodeViewTypesBuilder::GetClassTypeIndex(
       ClassDescriptor.IsStruct ? TypeRecordKind::Struct : TypeRecordKind::Class;
   ClassOptions CO = ClassOptions::ForwardReference | GetCommonClassOptions();
 
-  TypeIndex FieldListIndex = TypeIndex();
-  uint16_t memberCount = 0;
-
-  if (!ClassDescriptor.IsStruct) {
-    FieldListRecordBuilder FLBR(TypeTable);
-    FLBR.begin();
-    memberCount++;
-    AddClassVTShape(FLBR);
-    FieldListIndex = FLBR.end(true);
-  }
-
-  ClassRecord CR(Kind, memberCount, CO, FieldListIndex, TypeIndex(), TypeIndex(), 0,
+  ClassRecord CR(Kind, 0, CO, TypeIndex(), TypeIndex(), TypeIndex(), 0,
                  ClassDescriptor.Name, StringRef());
   TypeIndex FwdDeclTI = TypeTable.writeKnownType(CR);
   return FwdDeclTI.getIndex();
@@ -117,14 +118,13 @@ unsigned UserDefinedCodeViewTypesBuilder::GetCompleteClassTypeIndex(
   FLBR.begin();
 
   uint16_t memberCount = 0;
-  if (!ClassDescriptor.IsStruct) {
-    memberCount++;
-    AddClassVTShape(FLBR);
-  }
-
   if (ClassDescriptor.BaseClassId != 0) {
     memberCount++;
     AddBaseClass(FLBR, ClassDescriptor.BaseClassId);
+  }
+  else if (!ClassDescriptor.IsStruct) {
+    memberCount++;
+    AddClassVTShape(FLBR);
   }
 
   for (int i = 0; i < ClassFieldsDescriptor.FieldsCount; ++i) {
@@ -170,8 +170,6 @@ unsigned UserDefinedCodeViewTypesBuilder::GetArrayTypeIndex(
 
   assert(ClassDescriptor.BaseClassId != 0);
 
-  AddClassVTShape(FLBR);
-  FieldsCount++;
   AddBaseClass(FLBR, ClassDescriptor.BaseClassId);
   FieldsCount++;
   Offset += TargetPointerSize;
@@ -314,7 +312,7 @@ void UserDefinedCodeViewTypesBuilder::AddBaseClass(FieldListRecordBuilder &FLBR,
 }
 
 void UserDefinedCodeViewTypesBuilder::AddClassVTShape(FieldListRecordBuilder &FLBR) {
-  VFPtrRecord VfPtr(ClassVTableTypeIndex);
+  VFPtrRecord VfPtr(VFuncTabTypeIndex);
   FLBR.writeMemberType(VfPtr);
 }
 

@@ -27,19 +27,11 @@ rd /s /q %TestFolder%\native
 :: The CoreCLR test system configures the VS environment as 32-bit by default,
 :: so override if we're doing a 64-bit test run
 ::
-if /i not "%NativeCodeGen%" == "readytorun" (
-    if "%CoreRT_BuildArch%" == "x64" (
-        call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x64
-    )
+if "%CoreRT_BuildArch%" == "x64" (
+    call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x64
 )
 
-set ExtraArgs=
-if /i "%NativeCodeGen%" == "readytorun" (
-    echo READY TO RUN MODE
-    set ExtraArgs="/t:CopyNative"
-)
-
-set MsBuildCommandLine=msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true "/p:CoreRT_CoreCLRRuntimeDir=%CoreRT_CoreCLRRuntimeDir%" %ExtraArgs% %TestFolder%\Test.csproj
+set MsBuildCommandLine=msbuild /ConsoleLoggerParameters:ForceNoAlign "/p:IlcPath=%CoreRT_ToolchainDir%" "/p:Configuration=%CoreRT_BuildType%" "/p:RepoLocalBuild=true" "/p:FrameworkLibPath=%~dp0..\..\bin\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\lib" "/p:FrameworkObjPath=%~dp0..\..\bin\obj\%CoreRT_BuildOS%.%CoreRT_BuildArch%.%CoreRT_BuildType%\Framework" /p:DisableFrameworkLibGeneration=true "/p:CoreRT_CoreCLRRuntimeDir=%CoreRT_CoreCLRRuntimeDir%" %TestFolder%\Test.csproj
 echo %MsBuildCommandLine%
 %MsBuildCommandLine%
 if errorlevel 1 (
@@ -55,33 +47,17 @@ copy %TestFolder%\*.dll %TestFolder%\native\
 shift
 shift
 
-:: Typically arguments on the command line are separated by spaces. The R2R test harness uses System.CommandLine which uses
-:: a comma to separate multiple arguments in an argument list.
-set "Delimiter="
-set "DelimiterTemplate= "
-if /i "%NativeCodeGen%" == "readytorun" (
-    set "Delimiter=--testargs "
-    set "DelimiterTemplate= --testargs "
-)
-
 set TestParameters=
 :GetNextParameter
 if "%1"=="" goto :RunTest
 set "TestParameters=%TestParameters%%Delimiter%%1"
-set "Delimiter=%DelimiterTemplate%"
+set "Delimiter= "
 shift
 goto :GetNextParameter
 
 :RunTest
 
-set CoreRunCommandLine="%CoreRT_CliDir%\dotnet.exe" %CoreRT_ReadyToRunTestHarness% --corerun %CoreRT_CoreCLRRuntimeDir%\CoreRun.exe --in %TestFolder%native\%TestFileName%.exe --noetl %TestParameters%
-
-if /i "%NativeCodeGen%" == "readytorun" (
-    echo %CoreRunCommandLine%
-    %CoreRunCommandLine%
-) else (
-    %TestFolder%\native\%TestExecutable% %TestParameters%
-)
+%TestFolder%\native\%TestExecutable% %TestParameters%
 
 set TestExitCode=!ERRORLEVEL!
 

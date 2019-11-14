@@ -915,13 +915,16 @@ namespace ILCompiler.CppCodeGen
             sb.Append(");");
         }
 
-        private String GetCodeForDelegate(TypeDesc delegateType)
+        private String GetCodeForDelegate(TypeDesc delegateType, bool generateTypeDef)
         {
             var sb = new CppGenerationBuffer();
 
             MethodDesc method = delegateType.GetKnownMethod("Invoke", null);
 
-            AppendSlotTypeDef(sb, method);
+            if (generateTypeDef)
+            {
+                AppendSlotTypeDef(sb, method);
+            }
 
             sb.AppendLine();
             sb.Append("static __slot__");
@@ -1747,8 +1750,11 @@ namespace ILCompiler.CppCodeGen
 
                 IReadOnlyList<MethodDesc> virtualSlots = _compilation.NodeFactory.VTable(closestDefType).Slots;
 
+                MethodDesc delegateInvoke = nodeType.IsDelegate ? nodeType.GetKnownMethod("Invoke", null) : null;
+                bool generateTypeDef = true;
                 foreach (MethodDesc slot in virtualSlots)
                 {
+                    generateTypeDef = generateTypeDef && (slot != delegateInvoke);
                     typeDefinitions.AppendLine();
                     int slotNumber = VirtualMethodSlotHelper.GetVirtualMethodSlot(_compilation.NodeFactory, slot, closestDefType);
                     typeDefinitions.Append(GetCodeForVirtualMethod(slot, slotNumber));
@@ -1757,7 +1763,7 @@ namespace ILCompiler.CppCodeGen
                 if (nodeType.IsDelegate)
                 {
                     typeDefinitions.AppendLine();
-                    typeDefinitions.Append(GetCodeForDelegate(nodeType));
+                    typeDefinitions.Append(GetCodeForDelegate(nodeType, generateTypeDef));
                 }
             }
 

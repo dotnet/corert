@@ -402,6 +402,7 @@ namespace Internal.IL
                 case ILOpcode.beq:
                 case ILOpcode.ceq:
                     op = "==";
+                    unsigned = op1.Kind == StackValueKind.ByRef ^ op2.Kind == StackValueKind.ByRef;
                     break;
                 case ILOpcode.bge:
                     op = ">=";
@@ -419,6 +420,7 @@ namespace Internal.IL
                     break;
                 case ILOpcode.bne_un:
                     op = "!=";
+                    unsigned = op1.Kind == StackValueKind.ByRef ^ op2.Kind == StackValueKind.ByRef;
                     break;
                 case ILOpcode.bge_un:
                     if (kind == StackValueKind.Float)
@@ -1041,8 +1043,6 @@ namespace Internal.IL
 
             Append(opcode == ILOpcode.isinst ? "__isinst" : "__castclass");
             Append("(");
-            Append(value);
-            Append(", ");
             if (_method.ToString() == "[S.P.CoreLib]System.Collections.Generic.Dictionary`2<string,object>..ctor(int32,IEqualityComparer`1<string>)")
             {
 
@@ -1057,13 +1057,16 @@ namespace Internal.IL
                 Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedType));
                 Append("(");
                 Append(GetGenericContext());
-                Append("))");
+                Append(")");
             }
             else
             {
                 Append(_writer.GetCppTypeName(runtimeDeterminedType));
-                Append("::__getMethodTable())");
+                Append("::__getMethodTable()");
             }
+            Append(", ");
+            Append(value);
+            Append(")");
             AppendSemicolon();
         }
 
@@ -3041,7 +3044,7 @@ namespace Internal.IL
                         }
 
                         if (c < 0x20)
-                            escaped.Append("\\X" + ((int)c).ToStringInvariant("X2"));
+                            escaped.Append("\\x" + ((int)c).ToStringInvariant("X2"));
                         else
                             escaped.Append(c);
                         break;

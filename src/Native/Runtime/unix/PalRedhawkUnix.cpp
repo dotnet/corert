@@ -129,9 +129,7 @@ static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
 
 static uint32_t g_dwPALCapabilities;
-static UInt32 g_cLogicalCpus = 0;
-static size_t g_cbLargestOnDieCache = 0;
-static size_t g_cbLargestOnDieCacheAdjusted = 0;
+static UInt32 g_cNumProcs = 0;
 
 // HACK: the gcenv.h declares OS_PAGE_SIZE as a call instead of a constant, but we need a constant
 #undef OS_PAGE_SIZE
@@ -143,7 +141,7 @@ static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)))
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
-extern bool PalQueryProcessorTopology();
+bool QueryLogicalProcessorCount();
 bool InitializeFlushProcessWriteBuffers();
 
 extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
@@ -419,7 +417,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 {
     g_dwPALCapabilities = GetCurrentProcessorNumberCapability;
 
-    if (!PalQueryProcessorTopology())
+    if (!QueryLogicalProcessorCount())
         return false;
 
 #if HAVE_MACH_ABSOLUTE_TIME
@@ -740,84 +738,20 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
     write(STDERR_FILENO, message, sizeof(message));
 }
 
-#ifdef __linux__
-size_t
-GetLogicalProcessorCacheSizeFromOS()
-{
-    size_t cacheSize = 0;
-
-#ifdef _SC_LEVEL1_DCACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL1_DCACHE_SIZE));
-#endif
-#ifdef _SC_LEVEL2_CACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL2_CACHE_SIZE));
-#endif
-#ifdef _SC_LEVEL3_CACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL3_CACHE_SIZE));
-#endif
-#ifdef _SC_LEVEL4_CACHE_SIZE
-    cacheSize = max(cacheSize, sysconf(_SC_LEVEL4_CACHE_SIZE));
-#endif
-    return cacheSize;
-}
-#endif
-
-bool QueryCacheSize()
-{
-    bool success = true;
-    g_cbLargestOnDieCache = 0;
-
-#ifdef __linux__
-
-    g_cbLargestOnDieCache = GetLogicalProcessorCacheSizeFromOS();
-
-#elif HAVE_SYSCTL
-
-    int64_t g_cbLargestOnDieCache;
-    size_t sz = sizeof(g_cbLargestOnDieCache);
-
-    if (sysctlbyname("hw.l3cachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
-    {
-        // No L3 cache, try the L2 one
-        if (sysctlbyname("hw.l2cachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
-        {
-            // No L2 cache, try the L1 one
-            if (sysctlbyname("hw.l1dcachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
-            {
-                ASSERT_UNCONDITIONALLY("sysctl failed to get cache size\n");
-                return false;
-            }
-        }
-    }
-
-#elif defined(_WASM_)
-    // Processor cache size not available on WebAssembly, but we can't start up without it, so pick the same default as the GC does
-    success = true;
-    g_cbLargestOnDieCache = 256 * 1024;
-#else
-#error Do not know how to get cache size on this platform
-#endif // __linux__
-
-    // TODO: implement adjusted cache size
-    g_cbLargestOnDieCacheAdjusted = g_cbLargestOnDieCache;
-
-    return success;
-}
-
 bool QueryLogicalProcessorCount()
 {
 #if HAVE_SYSCONF
-    g_cLogicalCpus = sysconf(SYSCONF_GET_NUMPROCS);
-    if (g_cLogicalCpus < 1)
+    g_cNumProcs = sysconf(SYSCONF_GET_NUMPROCS);
+    if (g_cNumProcs < 1)
     {
         ASSERT_UNCONDITIONALLY("sysconf failed for " SYSCONF_GET_NUMPROCS_NAME "\n");
         return false;
     }
 #elif HAVE_SYSCTL
-    size_t sz = sizeof(g_cLogicalCpus);
+    size_t sz = sizeof(g_cNumProcs);
 
     int st = 0;
-    if (sysctlbyname("hw.logicalcpu_max", &g_cLogicalCpus, &sz, NULL, 0) != 0)
+    if (sysctlbyname("hw.logicalcpu_max", &g_cNumProcs, &sz, NULL, 0) != 0)
     {
         ASSERT_UNCONDITIONALLY("sysctl failed for hw.logicalcpu_max\n");
         return false;
@@ -826,29 +760,6 @@ bool QueryLogicalProcessorCount()
 #endif // HAVE_SYSCONF
 
     return true;
-}
-
-// Method used to initialize the above values.
-bool PalQueryProcessorTopology()
-{
-    if (!QueryLogicalProcessorCount())
-    {
-        return false;
-    }
-
-    return QueryCacheSize();
-}
-
-// Functions called by the GC to obtain our cached values for number of logical processors and cache size.
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetLogicalCpuCount()
-{
-    return g_cLogicalCpus;
-}
-
-REDHAWK_PALEXPORT size_t REDHAWK_PALAPI PalGetLargestOnDieCacheSize(UInt32_BOOL bTrueSize)
-{
-    return bTrueSize ? g_cbLargestOnDieCache
-        : g_cbLargestOnDieCacheAdjusted;
 }
 
 static int W32toUnixAccessControl(uint32_t flProtect)
@@ -1126,9 +1037,7 @@ extern "C" Int32 _stricmp(const char *string1, const char *string2)
 
 REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 {
-    // The concept of process CPU affinity is going away and so CoreSystem obsoletes the APIs used to
-    // fetch this information. Instead we'll just return total cpu count.
-    return PalGetLogicalCpuCount();
+    return g_cNumProcs;
 }
 
 //Reads the entire contents of the file into the specified buffer, buff
@@ -1229,17 +1138,14 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut,
 #endif // defined(_WASM_)
 }
 
-GCSystemInfo g_SystemInfo;
-
-uint32_t g_pageSizeUnixInl = 0;
+GCSystemInfo g_RhSystemInfo;
 
 // Initialize the g_SystemInfo
 bool InitializeSystemInfo()
 {
     long pagesize = getpagesize();
-    g_SystemInfo.dwPageSize = pagesize;
-    g_SystemInfo.dwAllocationGranularity = pagesize;
-    g_pageSizeUnixInl = pagesize;
+    g_RhSystemInfo.dwPageSize = pagesize;
+    g_RhSystemInfo.dwAllocationGranularity = pagesize;
 
     int nrcpus = 0;
 
@@ -1264,7 +1170,7 @@ bool InitializeSystemInfo()
     }
 #endif // HAVE_SYSCONF
 
-    g_SystemInfo.dwNumberOfProcessors = nrcpus;
+    g_RhSystemInfo.dwNumberOfProcessors = nrcpus;
 
     return true;
 }
@@ -1369,550 +1275,6 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
     // Fallback in case we don't know how to get integer thread id on the current platform
     return (uint64_t)pthread_self();
 #endif
-}
-
-static AffinitySet g_processAffinitySet;
-
-static LARGE_INTEGER g_performanceFrequency;
-
-// Initialize the interface implementation
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::Initialize()
-{
-    if (!::QueryPerformanceFrequency(&g_performanceFrequency))
-    {
-        return false;
-    }
-
-    for (size_t i = 0; i < g_cLogicalCpus; i++)
-    {
-        g_processAffinitySet.Add(i);
-    }
-
-    return true;
-}
-
-// Shutdown the interface implementation
-void GCToOSInterface::Shutdown()
-{
-}
-
-// Get numeric id of the current thread if possible on the 
-// current platform. It is indended for logging purposes only.
-// Return:
-//  Numeric id of the current thread or 0 if the 
-uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
-{
-    return PalGetCurrentThreadIdForLogging();
-}
-
-// Get id of the process
-uint32_t GCToOSInterface::GetCurrentProcessId()
-{
-    return ::GetCurrentProcessId();
-}
-
-// Set ideal processor for the current thread
-// Parameters:
-//  srcProcNo - processor number the thread currently runs on
-//  dstProcNo - processor number the thread should be migrated to
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t dstProcNo)
-{
-    // There is no way to set a thread ideal processor on Unix, so do nothing.
-    return true;
-}
-
-// Get the number of the current processor
-uint32_t GCToOSInterface::GetCurrentProcessorNumber()
-{
-    return PalGetCurrentProcessorNumber();
-}
-
-// Check if the OS supports getting current processor number
-bool GCToOSInterface::CanGetCurrentProcessorNumber()
-{
-    return HAVE_SCHED_GETCPU;
-}
-
-// Flush write buffers of processors that are executing threads of the current process
-void GCToOSInterface::FlushProcessWriteBuffers()
-{
-    return ::FlushProcessWriteBuffers();
-}
-
-// Break into a debugger
-void GCToOSInterface::DebugBreak()
-{
-    __debugbreak();
-}
-
-// Causes the calling thread to sleep for the specified number of milliseconds
-// Parameters:
-//  sleepMSec   - time to sleep before switching to another thread
-void GCToOSInterface::Sleep(uint32_t sleepMSec)
-{
-    PalSleep(sleepMSec);
-}
-
-// Causes the calling thread to yield execution to another thread that is ready to run on the current processor.
-// Parameters:
-//  switchCount - number of times the YieldThread was called in a loop
-void GCToOSInterface::YieldThread(uint32_t switchCount)
-{
-    PalSwitchToThread();
-}
-
-// Reserve virtual memory range.
-// Parameters:
-//  size      - size of the virtual memory range
-//  alignment - requested memory alignment, 0 means no specific alignment requested
-//  flags     - flags to control special settings like write watching
-// Return:
-//  Starting virtual address of the reserved range
-static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag = 0)
-{
-    ASSERT_MSG(!(flags & VirtualReserveFlags::WriteWatch), "WriteWatch not supported on Unix");
-
-    if (alignment == 0)
-    {
-        alignment = OS_PAGE_SIZE;
-    }
-
-    size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
-
-    void* pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE | hugePagesFlag, -1, 0);
-
-    if (pRetVal != NULL)
-    {
-        void * pAlignedRetVal = (void *)(((size_t)pRetVal + (alignment - 1)) & ~(alignment - 1));
-        size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
-        if (startPadding != 0)
-        {
-            int ret = munmap(pRetVal, startPadding);
-            ASSERT(ret == 0);
-        }
-
-        size_t endPadding = alignedSize - (startPadding + size);
-        if (endPadding != 0)
-        {
-            int ret = munmap((void *)((size_t)pAlignedRetVal + size), endPadding);
-            ASSERT(ret == 0);
-        }
-
-        pRetVal = pAlignedRetVal;
-    }
-
-    return pRetVal;
-}
-
-// Reserve virtual memory range.
-// Parameters:
-//  size      - size of the virtual memory range
-//  alignment - requested memory alignment, 0 means no specific alignment requested
-//  flags     - flags to control special settings like write watching
-// Return:
-//  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
-{
-    return VirtualReserveInner(size, alignment, flags);
-}
-
-// Release virtual memory range previously reserved using VirtualReserve
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualRelease(void* address, size_t size)
-{
-    int ret = munmap(address, size);
-
-    return (ret == 0);
-}
-
-// Commit virtual memory range.
-// Parameters:
-//  size      - size of the virtual memory range
-// Return:
-//  Starting virtual address of the committed range
-void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
-{
-#if HAVE_MAP_HUGETLB
-    uint32_t largePagesFlag = MAP_HUGETLB;
-#else
-    uint32_t largePagesFlag = 0;
-#endif
-
-    void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag);
-    if (VirtualCommit(pRetVal, size, NUMA_NODE_UNDEFINED))
-    {
-        return pRetVal;
-    }
-
-    return nullptr;
-}
-
-// Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
-{
-    UNREFERENCED_PARAMETER(node); // TODO: Numa support
-    return mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
-}
-
-// Decomit virtual memory range.
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
-{
-    // TODO: This can fail, however the GC does not handle the failure gracefully
-    // Explicitly calling mmap instead of mprotect here makes it
-    // that much more clear to the operating system that we no
-    // longer need these pages. Also, GC depends on re-commited pages to
-    // be zeroed-out.
-    return mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != NULL;
-}
-
-// Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
-// longer of interest, but it should not be decommitted.
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-//  unlock  - true if the memory range should also be unlocked
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
-{
-    // UNIXTODO: Implement this
-    return true;
-}
-
-// Check if the OS supports write watching
-bool GCToOSInterface::SupportsWriteWatch()
-{
-    return PalHasCapability(WriteWatchCapability);
-}
-
-// Reset the write tracking state for the specified virtual memory range.
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-void GCToOSInterface::ResetWriteWatch(void* address, size_t size)
-{
-}
-
-// Retrieve addresses of the pages that are written to in a region of virtual memory
-// Parameters:
-//  resetState         - true indicates to reset the write tracking state
-//  address            - starting virtual address
-//  size               - size of the virtual memory range
-//  pageAddresses      - buffer that receives an array of page addresses in the memory region
-//  pageAddressesCount - on input, size of the lpAddresses array, in array elements
-//                       on output, the number of page addresses that are returned in the array.
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size, void** pageAddresses, uintptr_t* pageAddressesCount)
-{
-    return false;
-}
-
-// Get size of the largest cache on the processor die
-// Parameters:
-//  trueSize - true to return true cache size, false to return scaled up size based on
-//             the processor architecture
-// Return:
-//  Size of the cache
-size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
-{
-    // UNIXTODO: implement this
-    return 0;
-}
-
-// Sets the calling thread's affinity to only run on the processor specified
-// Parameters:
-//  procNo - The requested processor for the calling thread.
-// Return:
-//  true if setting the affinity was successful, false otherwise.
-bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
-{
-    // UNIXTODO: implement this
-    return false;
-}
-
-// Boosts the calling thread's thread priority to a level higher than the default
-// for new threads.
-// Parameters:
-//  None.
-// Return:
-//  true if the priority boost was successful, false otherwise.
-bool GCToOSInterface::BoostThreadPriority()
-{
-    // UNIXTODO: implement this
-    return false;
-}
-
-// Set the set of processors enabled for GC threads for the current process based on config specified affinity mask and set
-// Parameters:
-//  configAffinityMask - mask specified by the GCHeapAffinitizeMask config
-//  configAffinitySet  - affinity set specified by the GCHeapAffinitizeRanges config
-// Return:
-//  set of enabled processors
-const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffinityMask, const AffinitySet* configAffinitySet)
-{
-    if (!configAffinitySet->IsEmpty())
-    {
-        // Update the process affinity set using the configured set
-        for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
-        {
-            if (g_processAffinitySet.Contains(i) && !configAffinitySet->Contains(i))
-            {
-                g_processAffinitySet.Remove(i);
-            }
-        }
-    }
-
-    return &g_processAffinitySet;
-}
-
-// Get number of processors assigned to the current process
-// Return:
-//  The number of processors
-uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
-{
-    return ::PalGetProcessCpuCount();
-}
-
-// Return the size of the user-mode portion of the virtual address space of this process.
-// Return:
-//  non zero if it has succeeded, 0 if it has failed
-size_t GCToOSInterface::GetVirtualMemoryLimit()
-{
-#ifdef BIT64
-    // There is no API to get the total virtual address space size on
-    // Unix, so we use a constant value representing 128TB, which is
-    // the approximate size of total user virtual address space on
-    // the currently supported Unix systems.
-    static const uint64_t _128TB = (1ull << 47);
-    return _128TB;
-#else
-    return (size_t)-1;
-#endif
-}
-
-// Get the physical memory that this process can use.
-// Return:
-//  non zero if it has succeeded, 0 if it has failed
-// Remarks:
-//  If a process runs with a restricted memory limit, it returns the limit. If there's no limit 
-//  specified, it returns amount of actual physical memory.
-uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
-{
-    // TODO: implement is_restricted
-    if (is_restricted)
-        * is_restricted = false;
-
-    int64_t physical_memory = 0;
-
-    // Get the physical memory size
-#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    // Get the Physical memory size
-    physical_memory = sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGE_SIZE);
-#elif HAVE_SYSCTL
-    int mib[2];
-    size_t length;
-
-    // Get the Physical memory size
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
-    length = sizeof(int64_t);
-    int rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
-    if (rc != 0)
-    {
-        ASSERT_UNCONDITIONALLY("sysctl failed for HW_MEMSIZE\n");
-    }
-#elif // HAVE_SYSINFO
-    // TODO: implement getting memory details via sysinfo. On Linux, it provides swap file details that
-    // we can use to fill in the xxxPageFile members.
-
-#endif // HAVE_SYSCONF
-
-    return physical_memory;
-}
-
-// Get memory status
-// Parameters:
-//  memory_load - A number between 0 and 100 that specifies the approximate percentage of physical memory
-//      that is in use (0 indicates no memory use and 100 indicates full memory use).
-//  available_physical - The amount of physical memory currently available, in bytes.
-//  available_page_file - The maximum amount of memory the current process can commit, in bytes.
-void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file)
-{
-    if (memory_load != nullptr || available_physical != nullptr)
-    {
-        uint64_t total = GetPhysicalMemoryLimit();
-
-        uint64_t available = 0;
-        uint32_t load = 0;
-
-        // Get the physical memory in use - from it, we can get the physical memory available.
-        // We do this only when we have the total physical memory available.
-        if (total > 0)
-        {
-#ifndef __APPLE__
-            available = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
-            uint64_t used = total - available;
-            load = (uint32_t)((used * 100) / total);
-#else
-            mach_port_t mach_port = mach_host_self();
-            vm_size_t page_size;
-            if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
-            {
-                vm_statistics_data_t vm_stats;
-                mach_msg_type_number_t count = sizeof(vm_stats) / sizeof(natural_t);
-                if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
-                {
-                    available = (uint64_t)vm_stats.free_count * (uint64_t)page_size;
-                    uint64_t used = ((uint64_t)vm_stats.active_count + (uint64_t)vm_stats.inactive_count + (uint64_t)vm_stats.wire_count) *  (uint64_t)page_size;
-                    load = (uint32_t)((used * 100) / total);
-                }
-            }
-            mach_port_deallocate(mach_task_self(), mach_port);
-#endif // __APPLE__
-        }
-
-        if (memory_load != nullptr)
-            *memory_load = load;
-        if (available_physical != nullptr)
-            *available_physical = available;
-    }
-
-    if (available_page_file != nullptr)
-        *available_page_file = 0;
-}
-
-// Get a high precision performance counter
-// Return:
-//  The counter value
-int64_t GCToOSInterface::QueryPerformanceCounter()
-{
-    LARGE_INTEGER ts;
-    if (!::QueryPerformanceCounter(&ts))
-    {
-        ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
-        abort();
-    }
-
-    return ts.QuadPart;
-}
-
-// Get a frequency of the high precision performance counter
-// Return:
-//  The counter frequency
-int64_t GCToOSInterface::QueryPerformanceFrequency()
-{
-    return g_performanceFrequency.QuadPart;
-}
-
-// Get a time stamp with a low precision
-// Return:
-//  Time stamp in milliseconds
-uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
-{
-    return PalGetTickCount();
-}
-
-// Parameters of the GC thread stub
-struct GCThreadStubParam
-{
-    GCThreadFunction GCThreadFunction;
-    void* GCThreadParam;
-};
-
-// GC thread stub to convert GC thread function to an OS specific thread function
-static void* GCThreadStub(void* param)
-{
-    GCThreadStubParam *stubParam = (GCThreadStubParam*)param;
-    GCThreadFunction function = stubParam->GCThreadFunction;
-    void* threadParam = stubParam->GCThreadParam;
-
-    delete stubParam;
-
-    function(threadParam);
-
-    return NULL;
-}
-
-uint32_t GCToOSInterface::GetTotalProcessorCount()
-{
-    // TODO: CPUGroupInfo support
-    return g_SystemInfo.dwNumberOfProcessors;
-}
-
-// TODO: Numa support
-bool GCToOSInterface::CanEnableGCNumaAware()
-{
-    return false;
-}
-
-// Get processor number and optionally its NUMA node number for the specified heap number
-// Parameters:
-//  heap_number - heap number to get the result for
-//  proc_no     - set to the selected processor number
-//  node_no     - set to the NUMA node of the selected processor or to NUMA_NODE_UNDEFINED
-// Return:
-//  true if it succeeded
-bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_no, uint16_t* node_no)
-{
-    // TODO
-    return false;
-}
-
-// Parse the config string describing affinitization ranges and update the passed in affinitySet accordingly
-// Parameters:
-//  config_string - string describing the affinitization range, platform specific
-//  start_index  - the range start index extracted from the config_string
-//  end_index    - the range end index extracted from the config_string, equal to the start_index if only an index and not a range was passed in
-// Return:
-//  true if the configString was successfully parsed, false if it was not correct
-bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_string, size_t* start_index, size_t* end_index)
-{
-    return ParseIndexOrRange(config_string, start_index, end_index);
-}
-
-// Initialize the critical section
-void CLRCriticalSection::Initialize()
-{
-    int st = pthread_mutex_init(&m_cs.mutex, NULL);
-    ASSERT(st == 0);
-}
-
-// Destroy the critical section
-void CLRCriticalSection::Destroy()
-{
-    int st = pthread_mutex_destroy(&m_cs.mutex);
-    ASSERT(st == 0);
-}
-
-// Enter the critical section. Blocks until the section can be entered.
-void CLRCriticalSection::Enter()
-{
-    pthread_mutex_lock(&m_cs.mutex);
-}
-
-// Leave the critical section
-void CLRCriticalSection::Leave()
-{
-    pthread_mutex_unlock(&m_cs.mutex);
 }
 
 #if defined(_X86_) || defined(_AMD64_)

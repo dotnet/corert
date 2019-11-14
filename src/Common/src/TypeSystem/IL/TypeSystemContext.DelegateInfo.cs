@@ -12,10 +12,6 @@ namespace Internal.TypeSystem
     {
         private class DelegateInfoHashtable : LockFreeReaderHashtable<TypeDesc, DelegateInfo>
         {
-            private enum CoreLibSupportLevel { Unknown, Supported, Unsupported }
-
-            private CoreLibSupportLevel _supportLevel;
-
             protected override int GetKeyHashCode(TypeDesc key)
             {
                 return key.GetHashCode();
@@ -34,18 +30,7 @@ namespace Internal.TypeSystem
             }
             protected override DelegateInfo CreateValueFromKey(TypeDesc key)
             {
-                if (_supportLevel == CoreLibSupportLevel.Unknown)
-                {
-                    // Check if the core library supports dynamic invoke.
-                    _supportLevel = DelegateInfo.SupportsDynamicInvoke(key.Context) ?
-                        CoreLibSupportLevel.Supported : CoreLibSupportLevel.Unsupported;
-                }
-
-                DelegateFeature supportedFeatures = _supportLevel == CoreLibSupportLevel.Supported ?
-                    DelegateFeature.DynamicInvoke | DelegateFeature.ObjectArrayThunk : 0;
-
-
-                return new DelegateInfo(key, supportedFeatures);
+                return key.Context.CreateDelegateInfo(key);
             }
         }
 
@@ -54,6 +39,15 @@ namespace Internal.TypeSystem
         public DelegateInfo GetDelegateInfo(TypeDesc delegateType)
         {
             return _delegateInfoHashtable.GetOrCreateValue(delegateType);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="DelegateInfo"/> for a given delegate type.
+        /// </summary>
+        protected virtual DelegateInfo CreateDelegateInfo(TypeDesc key)
+        {
+            // Type system contexts that support creating delegate infos need to override.
+            throw new NotSupportedException();
         }
     }
 }

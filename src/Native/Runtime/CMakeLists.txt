@@ -125,6 +125,7 @@ if(WIN32)
   list(APPEND COMMON_RUNTIME_SOURCES
     windows/PalRedhawkCommon.cpp
     windows/PalRedhawkMinWin.cpp
+    ../gc/windows/gcenv.windows.cpp
     eventtrace.cpp
     rheventtrace.cpp
   )
@@ -149,6 +150,12 @@ if(WIN32)
 else()
 
   include_directories(unix)
+  
+  include(CheckIncludeFiles)
+  include(CheckLibraryExists)
+  
+  include(../gc/unix/configure.cmake)
+  
   if(NOT CLR_CMAKE_PLATFORM_ARCH_WASM)
     include_directories(../libunwind/include)
   else()
@@ -166,6 +173,9 @@ else()
 
   list(APPEND COMMON_RUNTIME_SOURCES
     unix/PalRedhawkUnix.cpp
+    ../gc/unix/gcenv.unix.cpp
+    ../gc/unix/events.cpp
+    ../gc/unix/cgroup.cpp
   )
 
   list(APPEND FULL_RUNTIME_SOURCES
@@ -208,6 +218,7 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/CallingConventionConverterHelpers.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
+  ${ARCH_SOURCES_DIR}/MiscStubs.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/PInvoke.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/InteropThunksHelpers.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}

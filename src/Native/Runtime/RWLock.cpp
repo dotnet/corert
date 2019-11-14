@@ -176,7 +176,7 @@ void ReaderWriterLock::AcquireReadLockWorker()
             if (TryAcquireReadLock())
                 return;
 
-            if (g_SystemInfo.dwNumberOfProcessors <= 1)
+            if (g_RhSystemInfo.dwNumberOfProcessors <= 1)
                 break;
 
             // Delay by approximately 2*i clock cycles (Pentium III).
@@ -242,7 +242,7 @@ void ReaderWriterLock::AcquireWriteLock()
                 RedhawkGCInterface::WaitForGCCompletion();
             }
 
-            if (g_SystemInfo.dwNumberOfProcessors <= 1)
+            if (g_RhSystemInfo.dwNumberOfProcessors <= 1)
             {
                 break;
             }

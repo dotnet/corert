@@ -8,6 +8,7 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using Internal.IL;
 
 namespace ILCompiler
 {
@@ -16,9 +17,9 @@ namespace ILCompiler
     /// </summary>
     public sealed class EmptyInteropStubManager : InteropStubManager
     {
-        public EmptyInteropStubManager(CompilationModuleGroup compilationModuleGroup, CompilerTypeSystemContext typeSystemContext, InteropStateManager interopStateManager) :
-            base(compilationModuleGroup, typeSystemContext, interopStateManager)
+        public override PInvokeILProvider CreatePInvokeILProvider()
         {
+            return null;
         }
 
         public override void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
@@ -30,10 +31,6 @@ namespace ILCompiler
         }
  
         public override void AddMarshalAPIsGenericDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-        }
-
-        public override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
         {
         }
     }

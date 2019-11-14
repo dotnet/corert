@@ -14,6 +14,8 @@ using Internal.TypeSystem.Ecma;
 
 using Internal.CommandLine;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     internal class Program
@@ -26,8 +28,6 @@ namespace ILCompiler
         private string _outputFilePath;
         private bool _isCppCodegen;
         private bool _isWasmCodegen;
-        private bool _isReadyToRunCodeGen;
-        private bool _isInputVersionBubble;
         private bool _isVerbose;
 
         private string _dgmlLogFileName;
@@ -57,6 +57,7 @@ namespace ILCompiler
         private bool _completeTypesMetadata;
         private bool _scanReflection;
         private bool _methodBodyFolding;
+        private bool _singleThreaded;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -158,8 +159,6 @@ namespace ILCompiler
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
                 syntax.DefineOption("cpp", ref _isCppCodegen, "Compile for C++ code-generation");
                 syntax.DefineOption("wasm", ref _isWasmCodegen, "Compile for WebAssembly code-generation");
-                syntax.DefineOption("readytorun", ref _isReadyToRunCodeGen, "Compile for ready-to-run code-generation");
-                syntax.DefineOption("inputbubble", ref _isInputVersionBubble, "True when the entire input forms a version bubble (default = per-assembly bubble)");
                 syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
                 syntax.DefineOption("exportsfile", ref _exportsFile, "File to write exported method definitions");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
@@ -189,6 +188,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
                 syntax.DefineOptionList("removefeature", ref _removedFeatures, "Framework features to remove");
+                syntax.DefineOption("singlethreaded", ref _singleThreaded, "Run compilation on a single thread");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -305,6 +305,8 @@ namespace ILCompiler
             if (_isWasmCodegen)
                 _targetArchitecture = TargetArchitecture.Wasm32;
 
+            bool supportsReflection = !_disableReflection && _systemModuleName == DefaultSystemModule;
+
             //
             // Initialize type system context
             //
@@ -316,9 +318,8 @@ namespace ILCompiler
             var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
             var targetAbi = _isCppCodegen ? TargetAbi.CppCodegen : TargetAbi.CoreRT;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
-            CompilerTypeSystemContext typeSystemContext = (_isReadyToRunCodeGen
-                ? new ReadyToRunCompilerContext(targetDetails, genericsMode)
-                : new CompilerTypeSystemContext(targetDetails, genericsMode));
+            CompilerTypeSystemContext typeSystemContext = 
+                new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0);
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
@@ -385,57 +386,16 @@ namespace ILCompiler
                     if (module == typeSystemContext.SystemModule)
                         systemModuleIsInputModule = true;
 
-                    if (!_isReadyToRunCodeGen)
-                        compilationRoots.Add(new ExportedMethodsRootProvider(module));
+                    compilationRoots.Add(new ExportedMethodsRootProvider(module));
                 }
 
-                if (entrypointModule != null && !_isReadyToRunCodeGen)
+                if (entrypointModule != null)
                 {
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
                 }
 
-                if (_isReadyToRunCodeGen)
-                {
-                    List<EcmaModule> inputModules = new List<EcmaModule>();
-
-                    foreach (var inputFile in typeSystemContext.InputFilePaths)
-                    {
-                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-                        compilationRoots.Add(new ReadyToRunRootProvider(module));
-                        inputModules.Add(module);
-
-                        if (!_isInputVersionBubble)
-                        {
-                            break;
-                        }
-                    }
-
-
-                    List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>();
-                    if (_isInputVersionBubble)
-                    {
-                        // In large version bubble mode add reference paths to the compilation group
-                        foreach (string referenceFile in _referenceFilePaths.Values)
-                        {
-                            try
-                            {
-                                // Currently SimpleTest.targets has no easy way to filter out non-managed assemblies
-                                // from the reference list.
-                                EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
-                                versionBubbleModules.Add(module);
-                            }
-                            catch (TypeSystemException.BadImageFormatException ex)
-                            {
-                                Console.WriteLine("Warning: cannot open reference assembly '{0}': {1}", referenceFile, ex.Message);
-                            }
-                        }
-                    }
-
-                    compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                        typeSystemContext, inputModules, versionBubbleModules);
-                }
-                else if (_multiFile)
+                if (_multiFile)
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
 
@@ -461,9 +421,6 @@ namespace ILCompiler
                     if (!systemModuleIsInputModule)
                         compilationRoots.Add(new ExportedMethodsRootProvider((EcmaModule)typeSystemContext.SystemModule));
                     compilationGroup = new SingleFileCompilationModuleGroup();
-
-                    if (_rootAllApplicationAssemblies)
-                        compilationRoots.Add(new ApplicationAssemblyRootProvider(typeSystemContext));
                 }
 
                 if (_nativeLib)
@@ -489,16 +446,6 @@ namespace ILCompiler
             CompilationBuilder builder;
             if (_isWasmCodegen)
                 builder = new WebAssemblyCodegenCompilationBuilder(typeSystemContext, compilationGroup);
-            else if (_isReadyToRunCodeGen)
-            {
-                string inputFilePath = "";
-                foreach (var input in typeSystemContext.InputFilePaths)
-                {
-                    inputFilePath = input.Value;
-                    break;
-                }
-                builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
-            }
             else if (_isCppCodegen)
                 builder = new CppCodegenCompilationBuilder(typeSystemContext, compilationGroup);
             else
@@ -507,8 +454,11 @@ namespace ILCompiler
             string compilationUnitPrefix = _multiFile ? System.IO.Path.GetFileNameWithoutExtension(_outputFilePath) : "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
+            PInvokeILEmitterConfiguration pinvokePolicy;
             if (!_isCppCodegen && !_isWasmCodegen)
-                builder.UsePInvokePolicy(new ConfigurablePInvokePolicy(typeSystemContext.Target));
+                pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target);
+            else
+                pinvokePolicy = new DirectPInvokePolicy();
 
             RemovedFeature removedFeatures = 0;
             foreach (string feature in _removedFeatures)
@@ -525,7 +475,7 @@ namespace ILCompiler
                     removedFeatures |= RemovedFeature.CurlHandler;
             }
 
-            ILProvider ilProvider = _isReadyToRunCodeGen ? (ILProvider)new ReadyToRunILProvider() : new CoreRTILProvider();
+            ILProvider ilProvider = new CoreRTILProvider();
 
             if (removedFeatures != 0)
                 ilProvider = new RemovingILProvider(ilProvider, removedFeatures);
@@ -545,17 +495,13 @@ namespace ILCompiler
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
             if (_scanReflection)
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ILScanning;
+            if (_rootAllApplicationAssemblies)
+                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.FullUserAssemblyRooting;
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            bool supportsReflection = !_disableReflection && !_isReadyToRunCodeGen && _systemModuleName == DefaultSystemModule;
-
             MetadataManager metadataManager;
-            if (_isReadyToRunCodeGen)
-            {
-                metadataManager = new ReadyToRunTableManager(typeSystemContext);
-            }
-            else if (supportsReflection)
+            if (supportsReflection)
             {
                 metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,
@@ -570,8 +516,11 @@ namespace ILCompiler
             }
             else
             {
-                metadataManager = new EmptyMetadataManager(typeSystemContext);
+                metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy, ilProvider);
             }
+
+            InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
+            InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy);
 
             // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
             // We don't do this for CppCodegen and Wasm, because those codegens are behind.
@@ -579,7 +528,7 @@ namespace ILCompiler
             // fixable by using a CompilationGroup for the scanner that has a bigger worldview, but
             // let's cross that bridge when we get there).
             bool useScanner = _useScanner ||
-                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_isReadyToRunCodeGen && !_multiFile);
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_isWasmCodegen && !_multiFile);
 
             useScanner &= !_noScanner;
 
@@ -590,7 +539,9 @@ namespace ILCompiler
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots)
-                    .UseMetadataManager(metadataManager);
+                    .UseMetadataManager(metadataManager)
+                    .UseSingleThread(enable: _singleThreaded)
+                    .UseInteropStubManager(interopStubManager);
 
                 if (_scanDgmlLogFileName != null)
                     scannerBuilder.UseDependencyTracking(_generateFullScanDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
@@ -600,7 +551,17 @@ namespace ILCompiler
                 scanResults = scanner.Scan();
 
                 if (metadataManager is UsageBasedMetadataManager usageBasedManager)
+                {
                     metadataManager = usageBasedManager.ToAnalysisBasedMetadataManager();
+                }
+                else
+                {
+                    // MetadataManager collects a bunch of state (e.g. list of compiled method bodies) that we need to reset.
+                    Debug.Assert(metadataManager is EmptyMetadataManager);
+                    metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy, ilProvider);
+                }
+
+                interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
             }
 
             var logger = new Logger(Console.Out, _isVerbose);
@@ -613,11 +574,14 @@ namespace ILCompiler
                 DependencyTrackingLevel.None : (_generateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
             compilationRoots.Add(metadataManager);
+            compilationRoots.Add(interopStubManager);
 
             builder
                 .UseBackendOptions(_codegenOptions)
-                .UseMethodBodyFolding(_methodBodyFolding)
+                .UseMethodBodyFolding(enable: _methodBodyFolding)
+                .UseSingleThread(enable: _singleThreaded)
                 .UseMetadataManager(metadataManager)
+                .UseInteropStubManager(interopStubManager)
                 .UseLogger(logger)
                 .UseDependencyTracking(trackingLevel)
                 .UseCompilationRoots(compilationRoots)

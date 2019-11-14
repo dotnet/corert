@@ -1587,18 +1587,18 @@ namespace Internal.IL
                 //todo refactor argument creation with else below
                 arguments = new StackEntry[]
                             {
-                                _stack.Pop(),
                                 new ExpressionEntry(StackValueKind.ValueType, "eeType", typeHandle,
                                     _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"))
+                                _stack.Pop(),
                             };
             }
             else
             {
                 arguments = new StackEntry[]
                                 {
-                                    _stack.Pop(),
                                     new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(type, true),
                                         _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"))
+                                    _stack.Pop(),
                                 };
             }
 

@@ -65,16 +65,9 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
-            if (factory.Target.Abi != TargetAbi.ProjectN)
-            {
-                dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
-                if (_preInitFieldInfos != null)
-                    dependencyList.Add(factory.GCStaticsPreInitDataNode(_type), "PreInitData node");
-            }
-            else
-            {
-                dependencyList.Add(((UtcNodeFactory)factory).TypeGCStaticDescSymbol(_type), "GC Desc");
-            }
+            dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
+            if (_preInitFieldInfos != null)
+                dependencyList.Add(factory.GCStaticsPreInitDataNode(_type), "PreInitData node");
 
             dependencyList.Add(factory.GCStaticIndirection(_type), "GC statics indirection");
             EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);

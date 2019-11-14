@@ -1,0 +1,15 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="Internal\*.cs" />
+    <Compile Remove="partial_universal_generics.cs" />
+    <Compile Remove="universal_generics.cs" />
+    <Compile Remove="UniversalConstrainedCalls.cs" />
+    <Compile Remove="fieldlayout.cs" />
+    <Compile Remove="B279085.cs" />
+
+    <RdXmlFile Include="rd.xml" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
+</Project>

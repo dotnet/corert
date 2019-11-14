@@ -196,26 +196,8 @@ int BulkTypeEventLogger::LogSingleType(EEType * pEEType)
     // Determine this EEType's module.
     RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
 
-    ULONGLONG osModuleHandle = 0;
-#if PROJECTN
-    if (!pEEType->HasTypeManager())
-    {
-        Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(pEEType);
-        if (pModule == NULL)
-            pModule = pRuntimeInstance->FindModuleByDataAddress(pEEType);
-        if (pModule != NULL)
-        {
-            osModuleHandle = (ULONGLONG) pModule->GetOsModuleHandle();
-        }
+    ULONGLONG osModuleHandle = (ULONGLONG) pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
 
-        // In case of dynamic types - the osModuleHandle could be 0 - they will be safely
-        // skipped by the profiler
-    }
-    else
-#endif
-    {
-        osModuleHandle = (ULONGLONG) pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
-    }
     pVal->fixedSizedData.ModuleID = osModuleHandle;
 
     if (pEEType->IsParameterizedType())

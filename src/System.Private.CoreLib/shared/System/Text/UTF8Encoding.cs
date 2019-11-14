@@ -10,7 +10,6 @@
 // The fast loops attempts to blaze through as fast as possible with optimistic range checks,
 // processing multiple characters at a time, and falling back to the slow loop for all special cases.
 
-using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -31,7 +30,7 @@ namespace System.Text
     // used mostly to distinguish UTF-8 text from other encodings, and doesn't
     // switch the byte orderings.
 
-    public class UTF8Encoding : Encoding
+    public partial class UTF8Encoding : Encoding
     {
         /*
             bytes   bits    UTF-8 representation
@@ -48,13 +47,15 @@ namespace System.Text
 
         private const int UTF8_CODEPAGE = 65001;
 
-        // Allow for de-virtualization (see https://github.com/dotnet/coreclr/pull/9230)
-        internal sealed class UTF8EncodingSealed : UTF8Encoding
-        {
-            public UTF8EncodingSealed(bool encoderShouldEmitUTF8Identifier) : base(encoderShouldEmitUTF8Identifier) { }
+        /// <summary>
+        /// Transcoding to UTF-8 bytes from UTF-16 input chars will result in a maximum 3:1 expansion.
+        /// </summary>
+        /// <remarks>
+        /// Supplementary code points are expanded to UTF-8 from UTF-16 at a 4:2 ratio,
+        /// so 3:1 is still the correct value for maximum expansion.
+        /// </remarks>
+        private const int MaxUtf8BytesPerChar = 3;
 
-            public override ReadOnlySpan<byte> Preamble => _emitUTF8Identifier ? PreambleSpan : default;
-        }
 
         // Used by Encoding.UTF8 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
@@ -64,7 +65,7 @@ namespace System.Text
 
         // Yes, the idea of emitting U+FEFF as a UTF-8 identifier has made it into
         // the standard.
-        internal readonly bool _emitUTF8Identifier = false;
+        private readonly bool _emitUTF8Identifier = false;
 
         private readonly bool _isThrowException = false;
 
@@ -138,7 +139,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException((index < 0) ? ExceptionArgument.index : ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (chars!.Length - index < count) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (chars.Length - index < count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.chars, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
@@ -165,7 +166,7 @@ namespace System.Text
 
             fixed (char* pChars = chars)
             {
-                return GetByteCountCommon(pChars, chars!.Length); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                return GetByteCountCommon(pChars, chars.Length);
             }
         }
 
@@ -275,12 +276,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (s!.Length - charIndex < charCount) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (s.Length - charIndex < charCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s, ExceptionResource.ArgumentOutOfRange_IndexCount);
             }
 
-            if ((uint)byteIndex > bytes!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if ((uint)byteIndex > bytes.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
             }
@@ -325,12 +326,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (chars!.Length - charIndex < charCount) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (chars.Length - charIndex < charCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.chars, ExceptionResource.ArgumentOutOfRange_IndexCount);
             }
 
-            if ((uint)byteIndex > bytes!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if ((uint)byteIndex > bytes.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
             }
@@ -443,7 +444,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException((index < 0) ? ExceptionArgument.index : ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (bytes!.Length - index < count) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (bytes.Length - index < count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
@@ -510,12 +511,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (bytes!.Length - byteIndex < byteCount) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (bytes.Length - byteIndex < byteCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            if ((uint)charIndex > (uint)chars!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if ((uint)charIndex > (uint)chars.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_Index);
             }
@@ -532,7 +533,7 @@ namespace System.Text
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
         [CLSCompliant(false)]
-        public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
+        public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
             // Validate Parameters
 
@@ -672,7 +673,7 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (bytes!.Length - index < count) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (bytes.Length - index < count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
@@ -787,8 +788,7 @@ namespace System.Text
             if (EncoderFallback.MaxCharCount > 1)
                 byteCount *= EncoderFallback.MaxCharCount;
 
-            // Max 3 bytes per char.  (4 bytes per 2 chars for surrogates)
-            byteCount *= 3;
+            byteCount *= MaxUtf8BytesPerChar;
 
             if (byteCount > 0x7fffffff)
                 throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GetByteCountOverflow);
@@ -850,7 +850,7 @@ namespace System.Text
 
         public override int GetHashCode()
         {
-            //Not great distribution, but this is relatively unlikely to be used as the key in a hashtable.
+            // Not great distribution, but this is relatively unlikely to be used as the key in a hashtable.
             return this.EncoderFallback.GetHashCode() + this.DecoderFallback.GetHashCode() +
                    UTF8_CODEPAGE + (_emitUTF8Identifier ? 1 : 0);
         }

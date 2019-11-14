@@ -1009,6 +1009,15 @@ internal class ReflectionTest
 
         enum Mine { One }
 
+        class PartialCanonTestType<T, U>
+        {
+            public int TestMethod() => 42;
+        }
+
+        static int TestPartialCanon<T>()
+        {
+            return (int)typeof(PartialCanonTestType<object, T>).GetMethod("TestMethod").Invoke(new PartialCanonTestType<object, T>(), Array.Empty<object>());
+        }
 
         public static void Run()
         {
@@ -1063,7 +1072,14 @@ internal class ReflectionTest
                 mi.Invoke(null, Array.Empty<object>());
             }
 
+            Console.WriteLine("Partial canonical types");
+            {
+                if (TestPartialCanon<string>() != 42)
+                    throw new Exception("PartialCanon");
+            }
+
 #if !MULTIMODULE_BUILD
+#if !CODEGEN_CPP // https://github.com/dotnet/corert/issues/7799
             Console.WriteLine("Search through a forwarder");
             {
                 Type t = Type.GetType("System.Collections.Generic.List`1, System.Collections", throwOnError: false);
@@ -1077,6 +1093,7 @@ internal class ReflectionTest
                 if (t == null)
                     throw new Exception("SuppressIldasmAttribute");
             }
+#endif
 #endif
 
             Console.WriteLine("Enum.GetValues");

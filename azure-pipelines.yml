@@ -30,7 +30,6 @@ jobs:
 ##   Debug   ----------> Inner  -----------------> simple CoreRT test (single file & multimodule)
 ##                             \ ----------------> CoreCLR Top200
 ##                             \-----------------> CoreFX
-##                             \-----------------> CoreCLR ReadyToRun
 ##
 ##
 ##           \---------> Outer  -----------------> simple CoreRT test (single file & multimodule)
@@ -68,7 +67,7 @@ jobs:
     buildConfig: debug
     jobParameters:
       timeoutInMinutes: 180
-      testScenarios: 'Simple, ReadyToRun, CoreCLR'
+      testScenarios: 'Simple, CoreCLR'
 
 #
 # Release build and tests

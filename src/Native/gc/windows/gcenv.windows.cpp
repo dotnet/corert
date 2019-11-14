@@ -37,6 +37,7 @@ typedef BOOL (WINAPI *PQUERY_INFORMATION_JOB_OBJECT)(HANDLE jobHandle, JOBOBJECT
 namespace {
 
 static bool g_fEnableGCNumaAware;
+static uint32_t g_nNodes;
 
 class GroupProcNo
 {
@@ -44,7 +45,7 @@ class GroupProcNo
 
 public:
 
-    static const uint16_t NoGroup = 0x3ff;
+    static const uint16_t NoGroup = 0;
 
     GroupProcNo(uint16_t groupProc) : m_groupProc(groupProc)
     {
@@ -91,6 +92,7 @@ void InitNumaNodeInfo()
     if (!GetNumaHighestNodeNumber(&highest) || (highest == 0))
         return;
 
+    g_nNodes = highest + 1;
     g_fEnableGCNumaAware = true;
     return;
 }
@@ -623,6 +625,8 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
     GroupProcNo srcGroupProcNo(srcProcNo);
     GroupProcNo dstGroupProcNo(dstProcNo);
 
+    PROCESSOR_NUMBER proc;
+
     if (CanEnableGCCPUGroups())
     {
         if (srcGroupProcNo.GetGroup() != dstGroupProcNo.GetGroup())
@@ -631,15 +635,7 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
             //group. DO NOT MOVE THREADS ACROSS CPU GROUPS
             return true;
         }
-    }
 
-#if !defined(FEATURE_CORESYSTEM)
-    SetThreadIdealProcessor(GetCurrentThread(), (DWORD)dstGroupProcNo.GetProcIndex());
-#else
-    PROCESSOR_NUMBER proc;
-
-    if (dstGroupProcNo.GetGroup() != GroupProcNo::NoGroup)
-    {
         proc.Group = (WORD)dstGroupProcNo.GetGroup();
         proc.Number = (BYTE)dstGroupProcNo.GetProcIndex();
         proc.Reserved = 0;
@@ -654,7 +650,21 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
             success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, &proc);
         }
     }
-#endif
+
+    return success;
+}
+
+bool GCToOSInterface::GetCurrentThreadIdealProc(uint16_t* procNo)
+{
+    PROCESSOR_NUMBER proc;
+
+    bool success = GetThreadIdealProcessorEx (GetCurrentThread (), &proc);
+
+    if (success)
+    {
+        GroupProcNo groupProcNo(proc.Group, proc.Number);
+        *procNo = groupProcNo.GetCombinedValue();
+    }
 
     return success;
 }
@@ -663,7 +673,12 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
 uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 {
     assert(GCToOSInterface::CanGetCurrentProcessorNumber());
-    return ::GetCurrentProcessorNumber();
+
+    PROCESSOR_NUMBER proc_no_cpu_group;
+    GetCurrentProcessorNumberEx(&proc_no_cpu_group);
+
+    GroupProcNo groupProcNo(proc_no_cpu_group.Group, proc_no_cpu_group.Number);
+    return groupProcNo.GetCombinedValue();
 }
 
 // Check if the OS supports getting current processor number
@@ -713,17 +728,26 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 //  size      - size of the virtual memory range
 //  alignment - requested memory alignment, 0 means no specific alignment requested
 //  flags     - flags to control special settings like write watching
+//  node      - the NUMA node to reserve memory on
 // Return:
 //  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
+void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags, uint16_t node)
 {
     // Windows already ensures 64kb alignment on VirtualAlloc. The current CLR
     // implementation ignores it on Windows, other than making some sanity checks on it.
     UNREFERENCED_PARAMETER(alignment);
     assert((alignment & (alignment - 1)) == 0);
     assert(alignment <= 0x10000);
-    DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
-    return ::VirtualAlloc(nullptr, size, memFlags, PAGE_READWRITE);
+
+    if (node == NUMA_NODE_UNDEFINED)
+    {
+        DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
+        return ::VirtualAlloc (nullptr, size, memFlags, PAGE_READWRITE);
+    }
+    else
+    {
+        return ::VirtualAllocExNuma (::GetCurrentProcess (), NULL, size, MEM_RESERVE, PAGE_READWRITE, node);
+    }
 }
 
 // Release virtual memory range previously reserved using VirtualReserve
@@ -866,132 +890,27 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
 //  Size of the cache
 size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 {
-    static size_t maxSize;
-    static size_t maxTrueSize;
+    static volatile size_t s_maxSize;
+    static volatile size_t s_maxTrueSize;
 
-    if (maxSize)
-    {
-        // maxSize and maxTrueSize cached
-        if (trueSize)
-        {
-            return maxTrueSize;
-        }
-        else
-        {
-            return maxSize;
-        }
-    }
+    size_t size = trueSize ? s_maxTrueSize : s_maxSize;
+    if (size != 0)
+        return size;
 
-#ifdef _X86_
-    int dwBuffer[4];
+    size_t maxSize, maxTrueSize;
 
-    __cpuid(dwBuffer, 0);
-
-    int maxCpuId = dwBuffer[0];
-
-    if (dwBuffer[1] == 'uneG') 
-    {
-        if (dwBuffer[3] == 'Ieni') 
-        {
-            if (dwBuffer[2] == 'letn') 
-            {
-                maxTrueSize = GetLogicalProcessorCacheSizeFromOS(); //use OS API for cache enumeration on LH and above
-#ifdef BIT64
-                if (maxCpuId >= 2)
-                {
-                    // If we're running on a Prescott or greater core, EM64T tests
-                    // show that starting with a gen0 larger than LLC improves performance.
-                    // Thus, start with a gen0 size that is larger than the cache.  The value of
-                    // 3 is a reasonable tradeoff between workingset and performance.
-                    maxSize = maxTrueSize * 3;
-                }
-                else
-#endif
-                {
-                    maxSize = maxTrueSize;
-                }
-            }
-        }
-    }
-
-    if (dwBuffer[1] == 'htuA') {
-        if (dwBuffer[3] == 'itne') {
-            if (dwBuffer[2] == 'DMAc') {
-                __cpuid(dwBuffer, 0x80000000);
-                if (dwBuffer[0] >= 0x80000006)
-                {
-                    __cpuid(dwBuffer, 0x80000006);
-
-                    DWORD dwL2CacheBits = dwBuffer[2];
-                    DWORD dwL3CacheBits = dwBuffer[3];
-
-                    maxTrueSize = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
-                            
-                    __cpuid(dwBuffer, 0x1);
-                    DWORD dwBaseFamily = (dwBuffer[0] & (0xF << 8)) >> 8;
-                    DWORD dwExtFamily  = (dwBuffer[0] & (0xFF << 20)) >> 20;
-                    DWORD dwFamily = dwBaseFamily >= 0xF ? dwBaseFamily + dwExtFamily : dwBaseFamily;
-
-                    if (dwFamily >= 0x10)
-                    {
-                        BOOL bSkipAMDL3 = FALSE;
-
-                        if (dwFamily == 0x10)   // are we running on a Barcelona (Family 10h) processor?
-                        {
-                            // check model
-                            DWORD dwBaseModel = (dwBuffer[0] & (0xF << 4)) >> 4 ;
-                            DWORD dwExtModel  = (dwBuffer[0] & (0xF << 16)) >> 16;
-                            DWORD dwModel = dwBaseFamily >= 0xF ? (dwExtModel << 4) | dwBaseModel : dwBaseModel;
-
-                            switch (dwModel)
-                            {
-                                case 0x2:
-                                    // 65nm parts do not benefit from larger Gen0
-                                    bSkipAMDL3 = TRUE;
-                                    break;
-
-                                case 0x4:
-                                default:
-                                    bSkipAMDL3 = FALSE;
-                            }
-                        }
-
-                        if (!bSkipAMDL3)
-                        {
-                            // 45nm Greyhound parts (and future parts based on newer northbridge) benefit
-                            // from increased gen0 size, taking L3 into account
-                            __cpuid(dwBuffer, 0x80000008);
-                            DWORD dwNumberOfCores = (dwBuffer[2] & (0xFF)) + 1;     // NC is in ECX bits 7-0
-
-                            DWORD dwL3CacheSize = (size_t)((dwL3CacheBits >> 18) * 512 * 1024);  // L3 size in EDX bits 31-18 * 512KB
-                            // L3 is shared between cores
-                            dwL3CacheSize = dwL3CacheSize / dwNumberOfCores;
-                            maxTrueSize += dwL3CacheSize;       // due to exclusive caches, add L3 size (possibly zero) to L2
-                                                                // L1 is too small to worry about, so ignore it
-                        }
-                    }
-
-
-                    maxSize = maxTrueSize;
-                }
-            }
-        }
-    }
-
-#else
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
-#endif
 
 #if defined(_ARM64_)
     // Bigger gen0 size helps arm64 targets
     maxSize = maxTrueSize * 3;
 #endif
 
+    s_maxSize = maxSize;
+    s_maxTrueSize = maxTrueSize;
+
     //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
-    if (trueSize)
-        return maxTrueSize;
-    else
-        return maxSize;
+    return trueSize ? maxTrueSize : maxSize;
 }
 
 // Sets the calling thread's affinity to only run on the processor specified
@@ -1003,7 +922,7 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
     GroupProcNo groupProcNo(procNo);
 
-    if (groupProcNo.GetGroup() != GroupProcNo::NoGroup)
+    if (CanEnableGCCPUGroups())
     {
         GROUP_AFFINITY ga;
         ga.Group = (WORD)groupProcNo.GetGroup();
@@ -1284,6 +1203,57 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 bool GCToOSInterface::CanEnableGCNumaAware()
 {
     return g_fEnableGCNumaAware;
+}
+
+bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per_node)
+{
+    if (g_fEnableGCNumaAware)
+    {
+        DWORD currentProcsOnNode = 0;
+        for (uint32_t i = 0; i < g_nNodes; i++)
+        {
+            GROUP_AFFINITY processorMask;
+            if (GetNumaNodeProcessorMaskEx(i, &processorMask))
+            {
+                DWORD procsOnNode = 0;
+                uintptr_t mask = (uintptr_t)processorMask.Mask;
+                while (mask)
+                {
+                    procsOnNode++;
+                    mask &= mask - 1;
+                }
+
+                currentProcsOnNode = max(currentProcsOnNode, procsOnNode);
+            }
+            *max_procs_per_node = currentProcsOnNode;
+            *total_nodes = g_nNodes;
+        }
+        return true;
+    }
+
+    return false;
+}
+
+bool GCToOSInterface::CanEnableGCCPUGroups()
+{
+    return g_fEnableGCCPUGroups;
+}
+
+bool GCToOSInterface::GetCPUGroupInfo(uint16_t* total_groups, uint32_t* max_procs_per_group)
+{
+    if (g_fEnableGCCPUGroups)
+    {
+        *total_groups = (uint16_t)g_nGroups;
+        DWORD currentProcsInGroup = 0;
+        for (WORD i = 0; i < g_nGroups; i++)
+        {
+            currentProcsInGroup = max(currentProcsInGroup, g_CPUGroupInfoArray[i].nr_active);
+        }
+        *max_procs_per_group = currentProcsInGroup;
+        return true;
+    }
+
+    return false;
 }
 
 // Get processor number and optionally its NUMA node number for the specified heap number

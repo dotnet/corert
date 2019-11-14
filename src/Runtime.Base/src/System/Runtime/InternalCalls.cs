@@ -210,11 +210,6 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetArrayBaseType")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe EEType* RhpGetArrayBaseType(EEType* pEEType);
-
         [RuntimeImport(Redhawk.BaseName, "RhpHasDispatchMap")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]

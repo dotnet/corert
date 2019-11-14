@@ -45,7 +45,6 @@ namespace ILCompiler
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             DevirtualizationManager devirtualizationManager,
-            PInvokeILEmitterConfiguration pInvokeConfiguration,
             Logger logger)
         {
             _dependencyGraph = dependencyGraph;
@@ -57,7 +56,7 @@ namespace ILCompiler
             _dependencyGraph.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
             NodeFactory.AttachToDependencyGraph(_dependencyGraph);
 
-            var rootingService = new RootingServiceProvider(dependencyGraph, nodeFactory);
+            var rootingService = new RootingServiceProvider(nodeFactory, _dependencyGraph.AddRoot);
             foreach (var rootProvider in compilationRoots)
                 rootProvider.AddCompilationRoots(rootingService);
 
@@ -66,9 +65,9 @@ namespace ILCompiler
             _assemblyGetExecutingAssemblyMethodThunks = new AssemblyGetExecutingAssemblyMethodThunkCache(globalModuleGeneratedType);
             _methodBaseGetCurrentMethodThunks = new MethodBaseGetCurrentMethodThunkCache();
 
-            if (!(nodeFactory.InteropStubManager is EmptyInteropStubManager))
+            PInvokeILProvider = _nodeFactory.InteropStubManager.CreatePInvokeILProvider();
+            if (PInvokeILProvider != null)
             {
-                PInvokeILProvider = new PInvokeILProvider(pInvokeConfiguration, nodeFactory.InteropStubManager.InteropStateManager);
                 ilProvider = new CombinedILProvider(ilProvider, PInvokeILProvider);
             }
 
@@ -413,115 +412,6 @@ namespace ILCompiler
             return new CompilationResults(_dependencyGraph, _nodeFactory);
         }
 
-        private class RootingServiceProvider : IRootingServiceProvider
-        {
-            private DependencyAnalyzerBase<NodeFactory> _graph;
-            private NodeFactory _factory;
-
-            public RootingServiceProvider(DependencyAnalyzerBase<NodeFactory> graph, NodeFactory factory)
-            {
-                _graph = graph;
-                _factory = factory;
-            }
-
-            public void AddCompilationRoot(MethodDesc method, string reason, string exportName = null)
-            {
-                MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
-                _graph.AddRoot(methodEntryPoint, reason);
-
-                if (exportName != null)
-                    _factory.NodeAliases.Add(methodEntryPoint, exportName);
-
-                if (canonMethod != method && method.HasInstantiation)
-                    _graph.AddRoot(_factory.MethodGenericDictionary(method), reason);
-            }
-
-            public void AddCompilationRoot(TypeDesc type, string reason)
-            {
-                _graph.AddRoot(_factory.MaximallyConstructableType(type), reason);
-            }
-
-            public void RootThreadStaticBaseForType(TypeDesc type, string reason)
-            {
-                Debug.Assert(!type.IsGenericDefinition);
-
-                MetadataType metadataType = type as MetadataType;
-                if (metadataType != null && metadataType.ThreadGcStaticFieldSize.AsInt > 0)
-                {
-                    _graph.AddRoot(_factory.TypeThreadStaticIndex(metadataType), reason);
-
-                    // Also explicitly root the non-gc base if we have a lazy cctor
-                    if(_factory.TypeSystemContext.HasLazyStaticConstructor(type))
-                        _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
-                }
-            }
-
-            public void RootGCStaticBaseForType(TypeDesc type, string reason)
-            {
-                Debug.Assert(!type.IsGenericDefinition);
-
-                MetadataType metadataType = type as MetadataType;
-                if (metadataType != null && metadataType.GCStaticFieldSize.AsInt > 0)
-                {
-                    _graph.AddRoot(_factory.TypeGCStaticsSymbol(metadataType), reason);
-
-                    // Also explicitly root the non-gc base if we have a lazy cctor
-                    if (_factory.TypeSystemContext.HasLazyStaticConstructor(type))
-                        _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
-                }
-            }
-
-            public void RootNonGCStaticBaseForType(TypeDesc type, string reason)
-            {
-                Debug.Assert(!type.IsGenericDefinition);
-
-                MetadataType metadataType = type as MetadataType;
-                if (metadataType != null && (metadataType.NonGCStaticFieldSize.AsInt > 0 || _factory.TypeSystemContext.HasLazyStaticConstructor(type)))
-                {
-                    _graph.AddRoot(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
-                }
-            }
-
-            public void RootVirtualMethodForReflection(MethodDesc method, string reason)
-            {
-                Debug.Assert(method.IsVirtual);
-
-                if (method.HasInstantiation)
-                {
-                    _graph.AddRoot(_factory.GVMDependencies(method), reason);
-                }
-                else
-                {
-                    // Virtual method use is tracked on the slot defining method only.
-                    MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
-                    if (!_factory.VTable(slotDefiningMethod.OwningType).HasFixedSlots)
-                        _graph.AddRoot(_factory.VirtualMethodUse(slotDefiningMethod), reason);
-                }
-
-                if (method.IsAbstract)
-                {
-                    _graph.AddRoot(_factory.ReflectableMethod(method), reason);
-                }
-            }
-
-            public void RootModuleMetadata(ModuleDesc module, string reason)
-            {
-                // RootModuleMetadata is kind of a hack - this is pretty much only used to force include
-                // type forwarders from assemblies metadata generator would normally not look at.
-                // This will go away when the temporary RD.XML parser goes away.
-                if (_factory.MetadataManager is UsageBasedMetadataManager)
-                    _graph.AddRoot(_factory.ModuleMetadata(module), reason);
-            }
-
-            public void RootReadOnlyDataBlob(byte[] data, int alignment, string reason, string exportName)
-            {
-                var blob = _factory.ReadOnlyDataBlob("__readonlydata_" + exportName, data, alignment);
-                _graph.AddRoot(blob, reason);
-                _factory.NodeAliases.Add(blob, exportName);
-            }
-        }
-
         private sealed class ILCache : LockFreeReaderHashtable<MethodDesc, ILCache.MethodILData>
         {
             public ILProvider ILProvider { get; }
@@ -590,7 +480,7 @@ namespace ILCompiler
     public class CompilationResults
     {
         private readonly DependencyAnalyzerBase<NodeFactory> _graph;
-        private readonly NodeFactory _factory;
+        protected readonly NodeFactory _factory;
 
         protected ImmutableArray<DependencyNodeCore<NodeFactory>> MarkedNodes
         {

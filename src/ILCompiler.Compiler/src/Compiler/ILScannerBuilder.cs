@@ -19,7 +19,6 @@ namespace ILCompiler
         private readonly CompilationModuleGroup _compilationGroup;
         private readonly NameMangler _nameMangler;
         private readonly ILProvider _ilProvider;
-        private readonly PInvokeILEmitterConfiguration _pinvokePolicy;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
@@ -27,15 +26,16 @@ namespace ILCompiler
         private DependencyTrackingLevel _dependencyTrackingLevel = DependencyTrackingLevel.None;
         private IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         private MetadataManager _metadataManager;
+        private InteropStubManager _interopStubManager = new EmptyInteropStubManager();
+        private bool _singleThreaded;
 
-        internal ILScannerBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler mangler, ILProvider ilProvider, PInvokeILEmitterConfiguration pinvokePolicy)
+        internal ILScannerBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler mangler, ILProvider ilProvider)
         {
             _context = context;
             _compilationGroup = compilationGroup;
             _nameMangler = mangler;
             _metadataManager = new EmptyMetadataManager(context);
             _ilProvider = ilProvider;
-            _pinvokePolicy = pinvokePolicy;
         }
 
         public ILScannerBuilder UseDependencyTracking(DependencyTrackingLevel trackingLevel)
@@ -56,13 +56,24 @@ namespace ILCompiler
             return this;
         }
 
+        public ILScannerBuilder UseInteropStubManager(InteropStubManager interopStubManager)
+        {
+            _interopStubManager = interopStubManager;
+            return this;
+        }
+
+        public ILScannerBuilder UseSingleThread(bool enable)
+        {
+            _singleThreaded = enable;
+            return this;
+        }
+
         public IILScanner ToILScanner()
         {
-            var interopStubManager = new CompilerGeneratedInteropStubManager(_compilationGroup, _context, new InteropStateManager(_context.GeneratedAssembly));
-            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, interopStubManager, _nameMangler);
+            var nodeFactory = new ILScanNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler);
             DependencyAnalyzerBase<NodeFactory> graph = _dependencyTrackingLevel.CreateDependencyGraph(nodeFactory);
 
-            return new ILScanner(graph, nodeFactory, _compilationRoots, _ilProvider, new NullDebugInformationProvider(), _pinvokePolicy, _logger);
+            return new ILScanner(graph, nodeFactory, _compilationRoots, _ilProvider, new NullDebugInformationProvider(), _logger, _singleThreaded);
         }
     }
 }

@@ -57,16 +57,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (!IsEligibleToHaveATemplate(type))
                     continue;
 
-                if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
-                {
-                    // If the type does not have fully constructed type, don't track its dependencies.
-                    // TODO: Remove the workaround once we stop using the STS dependency analysis.
-                    IDependencyNode node = factory.MaximallyConstructableType(type);
-
-                    if (!node.Marked)
-                        continue;
-                }
-
                 // Type's native layout info
                 NativeLayoutTemplateTypeLayoutVertexNode templateNode = factory.NativeLayout.TemplateTypeLayout(type);
 
@@ -94,23 +84,10 @@ namespace ILCompiler.DependencyAnalysis
         
         public static void GetTemplateTypeDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
-            if (!factory.MetadataManager.SupportsReflection)
-                return;
-
             TypeDesc templateType = ConvertArrayOfTToRegularArray(factory, type);
 
             if (!IsEligibleToHaveATemplate(templateType))
                 return;
-
-            if ((factory.Target.Abi == TargetAbi.ProjectN) && !ProjectNDependencyBehavior.EnableFullAnalysis)
-            {
-                // If the type does not have fully constructed type, don't track its dependencies.
-                // TODO: Remove the workaround once we stop using the STS dependency analysis.
-                IDependencyNode node = factory.MaximallyConstructableType(templateType);
-
-                if (!node.Marked)
-                    return;
-            }
 
             dependencies = dependencies ?? new DependencyList();
             dependencies.Add(new DependencyListEntry(factory.NecessaryTypeSymbol(templateType), "Template type"));

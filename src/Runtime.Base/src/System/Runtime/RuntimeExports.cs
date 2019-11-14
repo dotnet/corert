@@ -184,7 +184,7 @@ namespace System.Runtime
             }
             else
             {
-                if (o != null && (TypeCast.IsInstanceOf(o, ptrUnboxToEEType) == null))
+                if (o != null && (TypeCast.IsInstanceOf(ptrUnboxToEEType, o) == null))
                 {
                     throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
                 }

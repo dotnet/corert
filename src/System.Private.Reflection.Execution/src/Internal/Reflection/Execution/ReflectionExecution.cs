@@ -93,6 +93,10 @@ namespace Internal.Reflection.Execution
             typeHandle = default(TypeDefinitionHandle);
             methodHandle = default(MethodHandle);
 
+            // If ExecutionEnvironment is null, reflection must be disabled.
+            if (ExecutionEnvironment == null)
+                return false;
+
             RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
             if (!ExecutionEnvironment.TryGetMethodForStartAddress(methodStartAddress,
                 ref declaringTypeHandle, out QMethodDefinition qMethodDefinition))

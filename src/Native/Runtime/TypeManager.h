@@ -80,8 +80,6 @@ struct TypeManagerHandle
 
     void *_value;
 
-    bool IsTypeManager();
     TypeManager* AsTypeManager();
-    HANDLE AsOsModule();
 };
 

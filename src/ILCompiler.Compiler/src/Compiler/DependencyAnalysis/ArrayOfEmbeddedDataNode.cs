@@ -53,12 +53,21 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
 
         protected IEnumerable<TEmbedded> NodesList =>  _nestedNodesList;
+        private TEmbedded _nextElementToEncode;
+        public TEmbedded NextElementToEncode => _nextElementToEncode;
 
         protected virtual void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
             int index = 0;
-            foreach (TEmbedded node in NodesList)
+            _nextElementToEncode = null;
+            for (int i = 0; i < _nestedNodesList.Count; i++)
             {
+                TEmbedded node = _nestedNodesList[i];
+                if ((i + 1) < _nestedNodesList.Count)
+                    _nextElementToEncode = _nestedNodesList[i + 1];
+                else
+                    _nextElementToEncode = null;
+
                 if (!relocsOnly)
                 {
                     node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);

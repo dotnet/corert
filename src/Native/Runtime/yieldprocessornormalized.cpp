@@ -13,7 +13,7 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "Volatile.h"
+#include "volatile.h"
 #include "yieldprocessornormalized.h"
 
 #define ULONGLONG int64_t

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 
+using Internal.IL;
 using Internal.TypeSystem;
 
 using Xunit;
@@ -18,7 +19,7 @@ namespace ILCompiler.Compiler.Tests
         public DevirtualizationTests()
         {
             var target = new TargetDetails(TargetArchitecture.X64, TargetOS.Windows, TargetAbi.CoreRT);
-            _context = new CompilerTypeSystemContext(target, SharedGenericsMode.CanonicalReferenceTypes);
+            _context = new CompilerTypeSystemContext(target, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All);
 
             _context.InputFilePaths = new Dictionary<string, string> {
                 { "Test.CoreLib", @"Test.CoreLib.dll" },

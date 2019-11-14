@@ -33,6 +33,14 @@ namespace System.Runtime.Loader
             return Default;
         }
 
+        public void SetProfileOptimizationRoot(string directoryPath)
+        {
+        }
+
+        public void StartProfileOptimization(string profile)
+        {
+        }
+
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
             throw new PlatformNotSupportedException();
@@ -41,11 +49,6 @@ namespace System.Runtime.Loader
         internal Assembly InternalLoad(byte[] arrAssembly, byte[] arrSymbols)
         {
             return ReflectionAugments.ReflectionCoreCallbacks.Load(arrAssembly, arrSymbols);
-        }
-
-        private static IntPtr InternalLoadUnmanagedDllFromPath(string unmanagedDllPath)
-        {
-            return InteropServices.NativeLibrary.Load(unmanagedDllPath);
         }
 
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)

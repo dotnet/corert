@@ -43,14 +43,8 @@ namespace System.Runtime
             AllowSizeEquivalence = 2,
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOfClass2")]
-        public static unsafe object IsInstanceOfClass2(void* pvTargetType, object obj)
-        {
-            return IsInstanceOfClass(obj, pvTargetType);
-        }
-
         [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
-        public static unsafe object IsInstanceOfClass(object obj, void* pvTargetType)
+        public static unsafe object IsInstanceOfClass(void* pvTargetType, object obj)
         {
             if (obj == null)
             {
@@ -159,20 +153,14 @@ namespace System.Runtime
             }
         }
 
-        [RuntimeExport("RhTypeCast_CheckCastClass2")]
-        public static unsafe object CheckCastClass2(void* pvTargetEEType, object obj)
-        {
-            return CheckCastClass(obj, pvTargetEEType);
-        }
-
         [RuntimeExport("RhTypeCast_CheckCastClass")]
-        public static unsafe object CheckCastClass(object obj, void* pvTargetEEType)
+        public static unsafe object CheckCastClass(void* pvTargetEEType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)
                 return null;
 
-            object result = IsInstanceOfClass(obj, pvTargetEEType);
+            object result = IsInstanceOfClass(pvTargetEEType, obj);
 
             if (result == null)
             {
@@ -202,14 +190,8 @@ namespace System.Runtime
             throw obj.EEType->GetClasslibException(ExceptionIDs.InvalidCast);
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOfArray2")]
-        public static unsafe object IsInstanceOfArray2(void* pvTargetType, object obj)
-        {
-            return IsInstanceOfArray(obj, pvTargetType);
-        }
-
         [RuntimeExport("RhTypeCast_IsInstanceOfArray")]
-        public static unsafe object IsInstanceOfArray(object obj, void* pvTargetType)
+        public static unsafe object IsInstanceOfArray(void* pvTargetType, object obj)
         {
             if (obj == null)
             {
@@ -256,20 +238,14 @@ namespace System.Runtime
             return null;
         }
 
-        [RuntimeExport("RhTypeCast_CheckCastArray2")]
-        public static unsafe object CheckCastArray2(void* pvTargetEEType, object obj)
-        {
-            return CheckCastArray(obj, pvTargetEEType);
-        }
-
         [RuntimeExport("RhTypeCast_CheckCastArray")]
-        public static unsafe object CheckCastArray(object obj, void* pvTargetEEType)
+        public static unsafe object CheckCastArray(void* pvTargetEEType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)
                 return null;
 
-            object result = IsInstanceOfArray(obj, pvTargetEEType);
+            object result = IsInstanceOfArray(pvTargetEEType, obj);
 
             if (result == null)
             {
@@ -282,14 +258,8 @@ namespace System.Runtime
             return result;
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOfInterface2")]
-        public static unsafe object IsInstanceOfInterface2(void* pvTargetType, object obj)
-        {
-            return IsInstanceOfInterface(obj, pvTargetType);
-        }
-
         [RuntimeExport("RhTypeCast_IsInstanceOfInterface")]
-        public static unsafe object IsInstanceOfInterface(object obj, void* pvTargetType)
+        public static unsafe object IsInstanceOfInterface(void* pvTargetType, object obj)
         {
             if (obj == null)
             {
@@ -766,14 +736,8 @@ namespace System.Runtime
             return false;
         }
 
-        [RuntimeExport("RhTypeCast_CheckCastInterface2")]
-        public static unsafe object CheckCastInterface2(void* pvTargetEEType, object obj)
-        {
-            return CheckCastInterface(obj, pvTargetEEType);
-        }
-
         [RuntimeExport("RhTypeCast_CheckCastInterface")]
-        public static unsafe object CheckCastInterface(object obj, void* pvTargetEEType)
+        public static unsafe object CheckCastInterface(void* pvTargetEEType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -993,44 +957,48 @@ namespace System.Runtime
             return false;
         }
 
-        [RuntimeExport("RhTypeCast_IsInstanceOf2")]  // Helper with RyuJIT calling convention
-        public static unsafe object IsInstanceOf2(void* pvTargetType, object obj)
-        {
-            return IsInstanceOf(obj, pvTargetType);
-        }
-
         // this is necessary for shared generic code - Foo<T> may be executing
         // for T being an interface, an array or a class
         [RuntimeExport("RhTypeCast_IsInstanceOf")]
-        public static unsafe object IsInstanceOf(object obj, void* pvTargetType)
+        public static unsafe object IsInstanceOf(void* pvTargetType, object obj)
         {
             // @TODO: consider using the cache directly, but beware of ICastable in the interface case
             EEType* pTargetType = (EEType*)pvTargetType;
             if (pTargetType->IsArray)
-                return IsInstanceOfArray(obj, pvTargetType);
+                return IsInstanceOfArray(pvTargetType, obj);
             else if (pTargetType->IsInterface)
-                return IsInstanceOfInterface(obj, pvTargetType);
+                return IsInstanceOfInterface(pvTargetType, obj);
+            else if (pTargetType->IsParameterizedType)
+                return null; // We handled arrays above so this is for pointers and byrefs only.
             else
-                return IsInstanceOfClass(obj, pvTargetType);
-        }
-
-        [RuntimeExport("RhTypeCast_CheckCast2")] // Helper with RyuJIT calling convention
-        public static unsafe object CheckCast2(void* pvTargetType, object obj)
-        {
-            return CheckCast(obj, pvTargetType);
+                return IsInstanceOfClass(pvTargetType, obj);
         }
 
         [RuntimeExport("RhTypeCast_CheckCast")]
-        public static unsafe object CheckCast(object obj, void* pvTargetType)
+        public static unsafe object CheckCast(void* pvTargetType, object obj)
         {
             // @TODO: consider using the cache directly, but beware of ICastable in the interface case
             EEType* pTargetType = (EEType*)pvTargetType;
             if (pTargetType->IsArray)
-                return CheckCastArray(obj, pvTargetType);
+                return CheckCastArray(pvTargetType, obj);
             else if (pTargetType->IsInterface)
-                return CheckCastInterface(obj, pvTargetType);
+                return CheckCastInterface(pvTargetType, obj);
+            else if (pTargetType->IsParameterizedType)
+                return CheckCastNonArrayParameterizedType(pvTargetType, obj);
             else
-                return CheckCastClass(obj, pvTargetType);
+                return CheckCastClass(pvTargetType, obj);
+        }
+
+        private static unsafe object CheckCastNonArrayParameterizedType(void* pvTargetType, object obj)
+        {
+            // a null value can be cast to anything
+            if (obj == null)
+            {
+                return null;
+            }
+
+            // Parameterized types are not boxable, so nothing can be an instance of these.
+            throw ((EEType*)pvTargetType)->GetClasslibException(ExceptionIDs.InvalidCast);
         }
 
         // Returns true of the two types are equivalent primitive types. Used by array casts.

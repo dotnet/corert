@@ -18,7 +18,7 @@
     <DefineConstants>ECMA_METADATA_SUPPORT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <!-- Setup the right references -->
-  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <ItemGroup>
     <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
@@ -79,7 +79,10 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeTargetNativeMethod.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\StructMarshallingThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\TypeGetTypeMethodThunk.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\InterlockedIntrinsics.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\UnsafeIntrinsics.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\VolatileIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\Marshaller.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalHelpers.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalUtils.cs" />
@@ -153,6 +156,7 @@
     <Compile Include="$(JitInterfaceBasePath)\MemoryHelper.cs" />
     <Compile Include="$(JitInterfaceBasePath)\TypeString.cs" />
     <Compile Include="$(JitInterfaceBasePath)\UnboxingMethodDesc.cs" />
+    <Compile Include="$(JitInterfaceBasePath)\SystemVStructClassificator.cs" />
     <Compile Include="$(TypeLoaderBasePath)\Internal\TypeSystem\PInvokeTargetNativeMethod.Runtime.cs" />
     <Compile Include="Internal\Runtime\JitSupport\RyuJitExecutionStrategy.cs" />
     <Compile Include="Internal\Runtime\JitSupport\VirtualMethodSlotHelper.cs" />

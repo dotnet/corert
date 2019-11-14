@@ -88,25 +88,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void GetVirtualInvokeMapDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (!factory.MetadataManager.SupportsReflection)
-                return;
-
             if (NeedsVirtualInvokeInfo(method))
             {
                 dependencies = dependencies ?? new DependencyList();
 
-                if (factory.Target.Abi == TargetAbi.ProjectN)
-                {
-                    dependencies.Add(
-                        factory.NecessaryTypeSymbol(method.OwningType.GetTypeDefinition()),
-                        "Reflection virtual invoke owning type");
-                }
-                else
-                {
-                    dependencies.Add(
-                        factory.NecessaryTypeSymbol(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)),
-                        "Reflection virtual invoke owning type");
-                }
+                dependencies.Add(
+                    factory.NecessaryTypeSymbol(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                    "Reflection virtual invoke owning type");
 
                 NativeLayoutMethodNameAndSignatureVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
                 NativeLayoutPlacedSignatureVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
@@ -158,9 +146,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 //
-                // When working with the ProjectN ABI, the entries in the map are based on the definition types. All
-                // instantiations of these definition types will have the same vtable method entries.
-                // On CoreRT, the vtable entries for each instantiated type might not necessarily exist.
+                // The vtable entries for each instantiated type might not necessarily exist.
                 // Example 1: 
                 //      If there's a call to Foo<string>.Method1 and a call to Foo<int>.Method2, Foo<string> will
                 //      not have Method2 in its vtable and Foo<int> will not have Method1.
@@ -171,18 +157,8 @@ namespace ILCompiler.DependencyAnalysis
                 // For this reason, the entries that we write to the map in CoreRT will be based on the canonical form
                 // of the method's containing type instead of the open type definition.
                 //
-                // Similarly, given that we use the open type definition for ProjectN, the slot numbers ignore dictionary
-                // entries in the vtable, and computing the correct slot number in the presence of dictionary entries is 
-                // done at runtime. When working with the CoreRT ABI, the correct slot numbers will be written to the map,
-                // and no adjustments will be performed at runtime.
-                //
 
-                TypeDesc containingTypeKey;
-
-                if (factory.Target.Abi == TargetAbi.ProjectN)
-                    containingTypeKey = method.OwningType.GetTypeDefinition();
-                else
-                    containingTypeKey = method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                TypeDesc containingTypeKey = method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
 
                 HashSet<TypeDesc> cache;
                 if (!methodsEmitted.TryGetValue(mappingEntry.MetadataHandle, out cache))
@@ -218,7 +194,7 @@ namespace ILCompiler.DependencyAnalysis
                 else
                 {
                     // Get the declaring method for slot on the instantiated declaring type
-                    int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, declaringMethodForSlot, declaringMethodForSlot.OwningType, factory.Target.Abi != TargetAbi.ProjectN);
+                    int slot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, declaringMethodForSlot, declaringMethodForSlot.OwningType, true);
                     Debug.Assert(slot != -1);
 
                     vertex = writer.GetTuple(

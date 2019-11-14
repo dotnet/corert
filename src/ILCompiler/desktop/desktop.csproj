@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>desktop</RootNamespace>
     <AssemblyName>desktop</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
@@ -73,9 +73,6 @@
     <Compile Include="..\src\RemovingILProvider.cs">
       <Link>RemovingILProvider.cs</Link>
     </Compile>
-    <Compile Include="..\src\ApplicationAssemblyRootProvider.cs">
-      <Link>ApplicationAssemblyRootProvider.cs</Link>
-    </Compile>
     <Compile Include="..\src\ConfigurablePInvokePolicy.cs">
       <Link>ConfigurablePInvokePolicy.cs</Link>
     </Compile>
@@ -108,9 +105,6 @@
     <ProjectReference Include="..\..\ILCompiler.WebAssembly\src\ILCompiler.WebAssembly.csproj">
       <Project>{5d796936-ccc1-4e9d-b1a9-36a5aba9b499}</Project>
       <Name>ILCompiler.WebAssembly</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\ILCompiler.ReadyToRun\src\ILCompiler.ReadyToRun.csproj">
-      <Name>ILCompiler.ReadyToRun</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

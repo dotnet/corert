@@ -2,6 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if MULTIMODULE_BUILD && !DEBUG
+// Some tests won't work if we're using optimizing codegen, but scanner doesn't run.
+// This currently happens in optimized multi-obj builds.
+#define OPTIMIZED_MODE_WITHOUT_SCANNER
+#endif
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -126,8 +132,13 @@ namespace PInvokeTests
 
         delegate int Delegate_Int_AggressiveInlining(int a, int b, int c, int d, int e, int f, int g, int h, int i, int j);
         [DllImport("*", CallingConvention = CallingConvention.StdCall, EntryPoint = "ReversePInvoke_Int")]
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+        [MethodImpl(MethodImplOptions.NoInlining)]
+#else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
         static extern bool ReversePInvoke_Int_AggressiveInlining(Delegate_Int_AggressiveInlining del);
+
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet=CharSet.Ansi)]
         delegate bool Delegate_String(string s);
@@ -835,21 +846,26 @@ namespace PInvokeTests
             ThrowIfNotEquals(true, ss.f1 == 2 && ss.f2 == 11.0 && ss.f3.Equals("Ifmmp"), "LayoutClassPtr marshalling scenario1 failed.");
         }
 
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-        private static void Issue6063Workaround()
+        private static void Workaround()
         {
-            // https://github.com/dotnet/corert/issues/6063
             // Ensure there's a standalone method body for these two - this method is marked NoOptimization+NoInlining.
             Marshal.SizeOf<SequentialClass>();
             Marshal.SizeOf<SequentialStruct>();
         }
-        
+#endif
+
         private static void TestAsAny()
         {
             if (String.Empty.Length > 0)
             {
                 // Make sure we saw these types being used in marshalling
-                Issue6063Workaround();
+                Marshal.SizeOf<SequentialClass>();
+                Marshal.SizeOf<SequentialStruct>();
+#if OPTIMIZED_MODE_WITHOUT_SCANNER
+                Workaround();
+#endif
             }
 
             SequentialClass sc = new SequentialClass();

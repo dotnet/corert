@@ -661,7 +661,7 @@ EventDataDescCreate(_Out_ EVENT_DATA_DESCRIPTOR * EventDataDescriptor, _In_opt_ 
 }
 #endif // _EVNTPROV_H_
 
-extern GCSystemInfo g_SystemInfo;
+extern GCSystemInfo g_RhSystemInfo;
 
 #ifdef PLATFORM_UNIX
 #define REDHAWK_PALIMPORT extern "C"
@@ -821,9 +821,6 @@ REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ PalHijack
 #ifdef FEATURE_ETW
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor);
 #endif
-
-REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalGetLogicalCpuCount();
-REDHAWK_PALIMPORT size_t REDHAWK_PALAPI PalGetLargestOnDieCacheSize(UInt32_BOOL bTrueSize);
 
 REDHAWK_PALIMPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer);
 

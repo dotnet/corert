@@ -276,7 +276,7 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent, bool fireDebugEvent)
 
         if (keepWaiting)
         {
-            if (PalSwitchToThread() == 0 && g_SystemInfo.dwNumberOfProcessors > 1)
+            if (PalSwitchToThread() == 0 && g_RhSystemInfo.dwNumberOfProcessors > 1)
             {
                 // No threads are scheduled on this processor.  Perhaps we're waiting for a thread
                 // that's scheduled on another processor.  If so, let's give it a little time

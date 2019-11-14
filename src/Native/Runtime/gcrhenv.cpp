@@ -48,7 +48,7 @@
 #include "GCMemoryHelpers.h"
 
 #include "holder.h"
-#include "Volatile.h"
+#include "volatile.h"
 
 #ifdef FEATURE_ETW
     #ifndef _INC_WINDOWS
@@ -160,7 +160,7 @@ CrstStatic g_SuspendEELock;
 EEType g_FreeObjectEEType;
 
 // static 
-bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
+bool RedhawkGCInterface::InitializeSubsystems()
 {
     g_pConfig->Construct();
 
@@ -188,9 +188,8 @@ bool RedhawkGCInterface::InitializeSubsystems(GCType gcType)
     if (!g_SuspendEELock.InitNoThrow(CrstSuspendEE))
         return false;
 
-    // Set the GC heap type.
-    bool fUseServerGC = (gcType == GCType_Server);
-    g_heap_type = (fUseServerGC && PalGetLogicalCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
+    // TODO: This should use the logical CPU count adjusted for process affinity and cgroup limits
+    g_heap_type = (g_pRhConfig->GetUseServerGC() && PalGetProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
 
     HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
     if (FAILED(hr))
@@ -1630,209 +1629,3 @@ ProfilingScanContext::ProfilingScanContext(BOOL fProfilerPinnedParam)
 #endif
 }
 #endif // defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
-
-#if !defined(DACCESS_COMPILE)
-// An implementatino of GCEvent that delegates to
-// a CLREvent, which in turn delegates to the PAL. This event
-// is also host-aware.
-class GCEvent::Impl
-{
-private:
-    CLREventStatic m_event;
-
-public:
-    Impl() = default;
-
-    bool IsValid()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return !!m_event.IsValid();
-    }
-
-    void CloseEvent()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        assert(m_event.IsValid());
-        m_event.CloseEvent();
-    }
-
-    void Set()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        assert(m_event.IsValid());
-        m_event.Set();
-    }
-
-    void Reset()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        assert(m_event.IsValid());
-        m_event.Reset();
-    }
-
-    uint32_t Wait(uint32_t timeout, bool alertable)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        assert(m_event.IsValid());
-        return m_event.Wait(timeout, alertable);
-    }
-
-    bool CreateAutoEvent(bool initialState)
-    {
-        CONTRACTL{
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-
-        return !!m_event.CreateAutoEventNoThrow(initialState);
-    }
-
-    bool CreateManualEvent(bool initialState)
-    {
-        CONTRACTL{
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-
-        return !!m_event.CreateManualEventNoThrow(initialState);
-    }
-
-    bool CreateOSAutoEvent(bool initialState)
-    {
-        CONTRACTL{
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-
-        return !!m_event.CreateOSAutoEventNoThrow(initialState);
-    }
-
-    bool CreateOSManualEvent(bool initialState)
-    {
-        CONTRACTL{
-            NOTHROW;
-            GC_NOTRIGGER;
-        } CONTRACTL_END;
-
-        return !!m_event.CreateOSManualEventNoThrow(initialState);
-    }
-};
-
-GCEvent::GCEvent()
-    : m_impl(nullptr)
-{
-}
-
-void GCEvent::CloseEvent()
-{
-    WRAPPER_NO_CONTRACT;
-
-    assert(m_impl != nullptr);
-    m_impl->CloseEvent();
-}
-
-void GCEvent::Set()
-{
-    WRAPPER_NO_CONTRACT;
-
-    assert(m_impl != nullptr);
-    m_impl->Set();
-}
-
-void GCEvent::Reset()
-{
-    WRAPPER_NO_CONTRACT;
-
-    assert(m_impl != nullptr);
-    m_impl->Reset();
-}
-
-uint32_t GCEvent::Wait(uint32_t timeout, bool alertable)
-{
-    WRAPPER_NO_CONTRACT;
-
-    assert(m_impl != nullptr);
-    return m_impl->Wait(timeout, alertable);
-}
-
-bool GCEvent::CreateManualEventNoThrow(bool initialState)
-{
-    CONTRACTL{
-      NOTHROW;
-      GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    assert(m_impl == nullptr);
-    NewHolder<GCEvent::Impl> event = new (nothrow) GCEvent::Impl();
-    if (!event)
-    {
-        return false;
-    }
-
-    event->CreateManualEvent(initialState);
-    m_impl = event.Extract();
-    return true;
-}
-
-bool GCEvent::CreateAutoEventNoThrow(bool initialState)
-{
-    CONTRACTL{
-      NOTHROW;
-      GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    assert(m_impl == nullptr);
-    NewHolder<GCEvent::Impl> event = new (nothrow) GCEvent::Impl();
-    if (!event)
-    {
-        return false;
-    }
-
-    event->CreateAutoEvent(initialState);
-    m_impl = event.Extract();
-    return IsValid();
-}
-
-bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
-{
-    CONTRACTL{
-      NOTHROW;
-      GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    assert(m_impl == nullptr);
-    NewHolder<GCEvent::Impl> event = new (nothrow) GCEvent::Impl();
-    if (!event)
-    {
-        return false;
-    }
-
-    event->CreateOSAutoEvent(initialState);
-    m_impl = event.Extract();
-    return IsValid();
-}
-
-bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
-{
-    CONTRACTL{
-      NOTHROW;
-      GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    assert(m_impl == nullptr);
-    NewHolder<GCEvent::Impl> event = new (nothrow) GCEvent::Impl();
-    if (!event)
-    {
-        return false;
-    }
-
-    event->CreateOSManualEvent(initialState);
-    m_impl = event.Extract();
-    return IsValid();
-}
-#endif // !defined(DACCESS_COMPILE)

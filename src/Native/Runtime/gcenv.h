@@ -43,7 +43,7 @@
 #include "module.h"
 #include "RuntimeInstance.h"
 #include "eetype.inl"
-#include "Volatile.h"
+#include "volatile.h"
 
 #include "gcenv.inl"
 

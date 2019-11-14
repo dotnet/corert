@@ -1,18 +1,21 @@
 ﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" Condition="'$(IsProjectNLibrary)' != 'true'" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>ILCompiler.Compiler</RootNamespace>
     <AssemblyName>ILCompiler.Compiler</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard1.6</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
       <Version>4.3.0</Version>
     </PackageReference>
+    <PackageReference Include="System.Threading.ThreadPool">
+      <Version>4.0.10</Version>
+    </PackageReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsProjectNLibrary)' != 'true'">
+  <ItemGroup>
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
     <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
@@ -73,6 +76,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\GetCanonTypeIntrinsic.cs">
       <Link>IL\Stubs\GetCanonTypeIntrinsic.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\InterlockedIntrinsics.cs" Link="IL\Stubs\InterlockedIntrinsics.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\MethodBaseGetCurrentMethodThunk.cs">
       <Link>IL\Stubs\MethodBaseGetCurrentMethodThunk.cs</Link>
     </Compile>
@@ -88,6 +92,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\MethodBaseGetCurrentMethodThunk.Sorting.cs">
       <Link>IL\Stubs\MethodBaseGetCurrentMethodThunk.Sorting.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\RuntimeHelpersIntrinsics.cs" Link="IL\Stubs\RuntimeHelpersIntrinsics.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeGetTypeMethodThunk.cs">
       <Link>IL\Stubs\TypeGetTypeMethodThunk.cs</Link>
     </Compile>
@@ -97,15 +102,22 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
       <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
     </Compile>
+    <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\CodeGenerationFailedException.cs" />
+    <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
+    <Compile Include="Compiler\CompilationModuleGroup.Aot.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.BoxedTypes.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.Validation.cs" />
     <Compile Include="Compiler\DebugInformationProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DefaultConstructorMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DynamicInvokeTemplateNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsWithIndirectionImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IndirectionExtensions.cs" />
@@ -116,6 +128,7 @@
     <Compile Include="Compiler\DependencyAnalysis\MrtProcessedImportAddressTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionMethodBodyScanner.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RuntimeDecodableJumpStub.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\StructMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugILImagesSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugManagedNativeDictionaryInfoSection.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WindowsDebugMergedAssemblyRecordsSection.cs" />
@@ -131,10 +144,7 @@
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ILScanNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\IMethodBodyNodeWithFuncletSymbols.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ISymbolNodeWithFuncletId.cs" />
 	<Compile Include="Compiler\DependencyAnalysis\ISymbolNodeWithDebugInfo.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\LoopHijackFlagNode.cs" />
     <Compile Include="Compiler\DevirtualizationManager.cs" />
     <Compile Include="Compiler\DictionaryLayoutProvider.cs" />
     <Compile Include="Compiler\DirectPInvokePolicy.cs" />
@@ -170,7 +180,6 @@
     <Compile Include="Compiler\ILStreamReader.cs" />
     <Compile Include="Compiler\LibraryInitializers.cs" />
     <Compile Include="Compiler\ICompilationRootProvider.cs" />
-    <Compile Include="Compiler\ComparerCompilationRootProvider.cs" />
     <Compile Include="Compiler\Compilation.cs" />
     <Compile Include="Compiler\CompilationBuilder.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.cs" />
@@ -216,16 +225,13 @@
     <Compile Include="Compiler\DependencyAnalysis\IndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionVirtualInvokeMapNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\RuntimeDeterminedMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ShadowConcreteMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericDictionaryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericLookupResult.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedEETypeSymbolNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ImportedStaticsNode.cs" />    
-    <Compile Include="Compiler\DependencyAnalysis\ImportedThreadStaticsNode.cs" />    
-    <Compile Include="Compiler\DependencyAnalysis\NonExternMethodSymbolNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ImportedStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeMethodFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\PInvokeModuleFixupNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ResourceDataNode.cs" />
@@ -260,14 +266,12 @@
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\GCStaticDescNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StaticsInfoHashtableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithDebugInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IExportableSymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ISymbolNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\JumpStubNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\NamedJumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.GenericLookups.cs" />
     <Compile Include="Compiler\DependencyAnalysis\NodeFactory.NativeLayout.cs" />
@@ -282,17 +286,12 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsIndexNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsOffsetNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeThreadStaticIndexNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\UtcThreadStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TypeMetadataMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\UnboxingStubNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\UtcNodeFactory.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SealedVTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StackTraceMethodMappingNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\StackTraceEmbeddedMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64Emitter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64JumpStubNode.cs" />
@@ -340,8 +339,9 @@
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\ExportsFileWriter.cs" />
-    <Compile Include="Compiler\PrecomputedMetadataManager.cs" />
     <Compile Include="Compiler\ReadyToRun.cs" />
+    <Compile Include="Compiler\RootingHelpers.cs" />
+    <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />
     <Compile Include="Compiler\SingleFileCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
@@ -351,14 +351,12 @@
     <Compile Include="Compiler\TypeExtensions.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
     <Compile Include="Compiler\CoreRTNameMangler.cs" />
+    <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />
     <Compile Include="Compiler\UserDefinedTypeDescriptor.cs" />
     <Compile Include="Compiler\UniversalGenericsRootProvider.cs" />
     <Compile Include="Compiler\UnixNodeMangler.cs" />
-    <Compile Include="Compiler\UtcNameMangler.cs" />
-    <Compile Include="Compiler\UtcNodeMangler.cs" />
     <Compile Include="Compiler\SimdHelper.cs" />
-    <Compile Include="Compiler\UtcStackTraceEmissionPolicy.cs" />
     <Compile Include="Compiler\VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
@@ -422,6 +420,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\UnsafeIntrinsics.cs">
       <Link>IL\Stubs\UnsafeIntrinsics.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\VolatileIntrinsics.cs">
+      <Link>IL\Stubs\VolatileIntrinsics.cs</Link>
+    </Compile>
     <Compile Include="..\..\JitInterface\src\CorInfoTypes.VarInfo.cs">
       <Link>JitInterface\CorInfoTypes.VarInfo.cs</Link>
     </Compile>
@@ -438,5 +439,5 @@
       <Link>TypeSystem\TypesDebugInfoWriter\DebugInfoWriter.cs</Link>
     </Compile>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" Condition="'$(IsProjectNLibrary)' != 'true'" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

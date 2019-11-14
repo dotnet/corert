@@ -24,11 +24,6 @@ namespace System
     [DebuggerDisplay("Target method(s) = {GetTargetMethodsDescriptionForDebugger()}")]
     public abstract partial class Delegate : ICloneable, ISerializable
     {
-#if PROJECTN
-        // Required by IL2IL transforms
-        internal Delegate() { }
-#endif
-
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
         protected Delegate(object target, string method)
         {
@@ -76,14 +71,20 @@ namespace System
         // If the thunk does not exist, the function will return IntPtr.Zero.
         protected virtual IntPtr GetThunk(int whichThunk)
         {
-#if DEBUG
+#if PROJECTN
             // The GetThunk function should be overriden on all delegate types, except for universal
             // canonical delegates which use calling convention converter thunks to marshal arguments
             // for the delegate call. If we execute this version of GetThunk, we can at least assert
             // that the current delegate type is a generic type.
             Debug.Assert(this.EETypePtr.IsGeneric);
-#endif
             return TypeLoaderExports.GetDelegateThunk(this, whichThunk);
+#else
+            // CoreRT doesn't support Universal Shared Code right now, so let's make this method return null for now.
+            // When CoreRT adds USG support we'll probably want to do some level of IL switching here so that
+            // we don't have this static call into type loader when USG is not enabled at compile time.
+            // The static call hurts size in our minimal targets.
+            return IntPtr.Zero;
+#endif
         }
 
         //
@@ -388,9 +389,7 @@ namespace System
             else
             {
                 IntPtr invokeThunk = this.GetThunk(DelegateInvokeThunk);
-#if PROJECTN
-                object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, this, invokeThunk, IntPtr.Zero, this, args, binderBundle: null, wrapInTargetInvocationException: true);
-#else
+
                 IntPtr genericDictionary = IntPtr.Zero;
                 if (FunctionPointerOps.IsGenericMethodPointer(invokeThunk))
                 {
@@ -403,7 +402,6 @@ namespace System
                 }
 
                 object result = InvokeUtils.CallDynamicInvokeMethod(this.m_firstParameter, this.m_functionPointer, null, invokeThunk, genericDictionary, this, args, binderBundle: null, wrapInTargetInvocationException: true, invokeMethodHelperIsThisCall: false);
-#endif
                 DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 return result;
             }

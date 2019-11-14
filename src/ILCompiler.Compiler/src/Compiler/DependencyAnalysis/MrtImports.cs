@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class MrtImportedThreadStaticOffsetSymbolNode : MrtImportWithTypeSymbol
     {
         public MrtImportedThreadStaticOffsetSymbolNode(TypeDesc type) : base(type) { }
-        protected override sealed string GetNonImportedName(NameMangler nameMangler) => ThreadStaticsOffsetNode.GetMangledName(nameMangler, Type);
+        protected override sealed string GetNonImportedName(NameMangler nameMangler) => throw new NotImplementedException();
         public override int ClassCode => 1944978231;
     }
 

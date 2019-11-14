@@ -1,8 +1,6 @@
 <Project 
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <DeployAppHost>false</DeployAppHost>
-
     <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
     <!-- Define the name of the runtime specific compiler package to import -->
     <RuntimeIlcPackageName Condition="'$(RuntimeIdentifier)' != ''">runtime.$(RuntimeIdentifier).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>

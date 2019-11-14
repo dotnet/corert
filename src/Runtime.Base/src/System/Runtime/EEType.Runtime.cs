@@ -26,16 +26,8 @@ namespace Internal.Runtime
             fixed (EEType* pThis = &this)
             {
                 IntPtr pGetArrayEEType = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(new IntPtr(pThis), ClassLibFunctionId.GetSystemArrayEEType);
-                if (pGetArrayEEType != IntPtr.Zero)
-                    return (EEType*)CalliIntrinsics.Call<IntPtr>(pGetArrayEEType);
+                return (EEType*)CalliIntrinsics.Call<IntPtr>(pGetArrayEEType);
             }
-#if PROJECTN
-            fixed (EEType* pThis = &this)
-                return InternalCalls.RhpGetArrayBaseType(pThis);
-#else
-            EH.FallbackFailFast(RhFailFastReason.InternalError, null);
-            return null;
-#endif
         }
 
         internal Exception GetClasslibException(ExceptionIDs id)

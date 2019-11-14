@@ -657,17 +657,18 @@ namespace System
 
         public static GCMemoryInfo GetGCMemoryInfo()
         {
-            RuntimeImports.RhGetMemoryInfo(out uint highMemLoadThreshold,
-                                           out ulong totalPhysicalMem,
-                                           out uint lastRecordedMemLoad,
-                                           out UIntPtr lastRecordedHeapSize,
-                                           out UIntPtr lastRecordedFragmentation);
+            RuntimeImports.RhGetMemoryInfo(out ulong highMemLoadThresholdBytes,
+                                           out ulong totalAvailableMemoryBytes,
+                                           out ulong lastRecordedMemLoadBytes,
+                                           out uint _,
+                                           out UIntPtr lastRecordedHeapSizeBytes,
+                                           out UIntPtr lastRecordedFragmentationBytes);
 
-            return new GCMemoryInfo((long)((double)highMemLoadThreshold / 100 * totalPhysicalMem),
-                                    (long)((double)lastRecordedMemLoad / 100 * totalPhysicalMem),
-                                    (long)totalPhysicalMem,
-                                    (long)(ulong)lastRecordedHeapSize,
-                                    (long)(ulong)lastRecordedFragmentation);
+            return new GCMemoryInfo(highMemoryLoadThresholdBytes: (long)highMemLoadThresholdBytes,
+                                    memoryLoadBytes: (long)lastRecordedMemLoadBytes,
+                                    totalAvailableMemoryBytes: (long)totalAvailableMemoryBytes,
+                                    heapSizeBytes: (long)(ulong)lastRecordedHeapSizeBytes,
+                                    fragmentedBytes: (long)(ulong)lastRecordedFragmentationBytes);
         }
 
         internal static ulong GetSegmentSize()
@@ -675,6 +676,7 @@ namespace System
             return RuntimeImports.RhGetGCSegmentSize();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
         internal static unsafe T[] AllocateUninitializedArray<T>(int length)
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -682,32 +684,29 @@ namespace System
                 return new T[length];
             }
 
-            if (length < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, 0, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-#if DEBUG
-            // in DEBUG arrays of any length can be created uninitialized
-#else
-            // otherwise small arrays are allocated using `new[]` as that is generally faster.
-            //
-            // The threshold was derived from various simulations. 
-            // As it turned out the threshold depends on overal pattern of all allocations and is typically in 200-300 byte range.
-            // The gradient around the number is shallow (there is no perf cliff) and the exact value of the threshold does not matter a lot.
-            // So it is 256 bytes including array header.
-            if (Unsafe.SizeOf<T>() * length < 256 - 3 * IntPtr.Size)
+            // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
+#if !DEBUG
+            // small arrays are allocated using `new[]` as that is generally faster.
+            if (length < 2048 / Unsafe.SizeOf<T>())
             {
                 return new T[length];
             }
 #endif
+            // kept outside of the small arrays hot path to have inlining without big size growth
+            return AllocateNewUninitializedArray(length);
 
-            var pEEType = EETypePtr.EETypePtrOf<T[]>();
+            T[] AllocateNewUninitializedArray(int length)
+            {
+                if (length < 0)
+                    throw new OverflowException();
 
-            T[] array = null;
-            RuntimeImports.RhAllocateUninitializedArray(pEEType.RawValue, (uint)length, Unsafe.AsPointer(ref array));
+                T[] array = null;
+                RuntimeImports.RhAllocateUninitializedArray(EETypePtr.EETypePtrOf<T[]>().RawValue, (uint)length, Unsafe.AsPointer(ref array));
+                if (array == null)
+                    throw new OutOfMemoryException();
 
-            if (array == null)
-                throw new OutOfMemoryException();
-
-            return array;
+                return array;
+            }
         }
     }
 }

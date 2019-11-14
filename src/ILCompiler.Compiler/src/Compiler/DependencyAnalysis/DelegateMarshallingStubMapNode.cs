@@ -15,13 +15,15 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal sealed class DelegateMarshallingStubMapNode : ObjectNode, ISymbolDefinitionNode
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
-        private ExternalReferencesTableNode _externalReferences;
+        private readonly ObjectAndOffsetSymbolNode _endSymbol;
+        private readonly ExternalReferencesTableNode _externalReferences;
+        private readonly InteropStateManager _interopStateManager;
 
-        public DelegateMarshallingStubMapNode(ExternalReferencesTableNode externalReferences)
+        public DelegateMarshallingStubMapNode(ExternalReferencesTableNode externalReferences, InteropStateManager interopStateManager)
         {
             _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__delegate_marshalling_stub_map_End", true);
             _externalReferences = externalReferences;
+            _interopStateManager = interopStateManager;
         }
 
         public ISymbolDefinitionNode EndSymbol => _endSymbol;
@@ -51,13 +53,12 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapHashTable);
 
-            foreach (var delegateEntry in ((CompilerGeneratedInteropStubManager)factory.InteropStubManager).GetDelegateMarshallingThunks())
+            foreach (var delegateType in factory.MetadataManager.GetTypesWithDelegateMarshalling())
             {
-                var delegateType = delegateEntry.DelegateType;
                 Vertex thunks= writer.GetTuple(
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.OpenStaticDelegateMarshallingThunk))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.ClosedDelegateMarshallingThunk))),
-                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(delegateEntry.DelegateCreationThunk)))
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetOpenStaticDelegateMarshallingThunk(delegateType)))),
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetClosedDelegateMarshallingThunk(delegateType)))),
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetForwardDelegateCreationThunk(delegateType))))
                     );
 
                 Vertex vertex = writer.GetTuple(

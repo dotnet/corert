@@ -97,10 +97,8 @@ namespace System.Runtime
             RhWaitForPendingFinalizers(allowReentrantWait ? 1 : 0);
         }
 
-#if !PROJECTN
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
         internal static extern void RhInitializeFinalizerThread();
-#endif
 
         // Get maximum GC generation number.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -209,12 +207,13 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetMemoryInfo")]
-        internal static extern void RhGetMemoryInfo(out uint highMemLoadThreshold,
-                                                    out ulong totalPhysicalMem,
-                                                    out uint lastRecordedMemLoad,
+        internal static extern void RhGetMemoryInfo(out ulong highMemLoadThresholdBytes,
+                                                    out ulong totalAvailableMemoryBytes,
+                                                    out ulong lastRecordedMemLoadBytes,
+                                                    out uint lastRecordedMemLoadPct,
                                                     // The next two are size_t
-                                                    out UIntPtr lastRecordedHeapSize,
-                                                    out UIntPtr lastRecordedFragmentation);
+                                                    out UIntPtr lastRecordedHeapSizeBytes,
+                                                    out UIntPtr lastRecordedFragmentationBytes);
 
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
         internal static unsafe extern void RhAllocateUninitializedArray(IntPtr pArrayEEType, uint numElements, void* pResult);
@@ -340,15 +339,15 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOf")]
-        internal static extern object IsInstanceOf(object obj, EETypePtr pTargetType);
+        internal static extern object IsInstanceOf(EETypePtr pTargetType, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfClass")]
-        internal static extern object IsInstanceOfClass(object obj, EETypePtr pTargetType);
+        internal static extern object IsInstanceOfClass(EETypePtr pTargetType, object obj);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_IsInstanceOfInterface")]
-        internal static extern object IsInstanceOfInterface(object obj, EETypePtr pTargetType);
+        internal static extern object IsInstanceOfInterface(EETypePtr pTargetType, object obj);
 
         //
         // calls to runtime for allocation
@@ -586,7 +585,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticFieldAddress")]
         internal static extern unsafe byte* RhGetThreadStaticFieldAddress(EETypePtr pEEType, int threadStaticsBlockOffset, int fieldOffset);
 
-#if !PROJECTN
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
         internal static unsafe extern object[] RhGetThreadStaticStorageForModule(int moduleIndex);
@@ -598,7 +596,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentNativeThreadId")]
         internal static unsafe extern IntPtr RhCurrentNativeThreadId();
-#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCurrentOSThreadId")]
@@ -759,7 +756,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpEtwExceptionThrown")]
         internal extern static unsafe void RhpEtwExceptionThrown(char* exceptionTypeName, char* exceptionMessage, IntPtr faultingIP, long hresult);
 
-#if !PROJECTN
         //
         // Interlocked helpers
         //
@@ -790,26 +786,18 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
         internal extern static void MemoryBarrier();
-#endif // !PROJECTN
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "fabs")]
         internal static extern double fabs(double x);
 
-#if PROJECTN
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "fabsf")]
-        internal static extern float fabsf(float x);
-#else
         [Intrinsic]
         internal static float fabsf(float x)
         {
             // fabsf is not a real export for some architectures
             return (float)fabs(x);
         }
-#endif
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1086,21 +1074,6 @@ namespace System.Runtime
 
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
         internal static extern unsafe void memset(byte* mem, int value, nuint size);
-
-        // Non-inlinable wrapper around the PInvoke that avoids poluting the fast path with P/Invoke prolog/epilog.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal unsafe static void RhZeroMemory(ref byte b, nuint byteLength)
-        {
-            fixed (byte* bytePointer = &b)
-            {
-                memset(bytePointer, 0, byteLength);
-            }
-        }
-
-        internal unsafe static void RhZeroMemory(IntPtr p, UIntPtr byteLength)
-        {
-            memset((byte*)p, 0, (nuint)byteLength);
-        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpArrayCopy")]

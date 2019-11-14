@@ -215,11 +215,14 @@ COOP_PINVOKE_HELPER(Int64, RhGetAllocatedBytesForCurrentThread, ())
     return currentAllocated;
 }
 
-COOP_PINVOKE_HELPER(void, RhGetMemoryInfo, (UInt32* highMemLoadThreshold, UInt64* totalPhysicalMem, UInt32* lastRecordedMemLoad, size_t* lastRecordedHeapSize, size_t* lastRecordedFragmentation))
+COOP_PINVOKE_HELPER(void, RhGetMemoryInfo, (
+    UInt64* highMemLoadThresholdBytes, UInt64* totalAvailableMemoryBytes,
+    UInt64* lastRecordedMemLoadBytes, UInt32* lastRecordedMemLoadPct,
+    size_t* lastRecordedHeapSizeBytes, size_t* lastRecordedFragmentationBytes))
 {
-    return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(highMemLoadThreshold, totalPhysicalMem,
-                                                       lastRecordedMemLoad,
-                                                       lastRecordedHeapSize, lastRecordedFragmentation);
+    return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(highMemLoadThresholdBytes, totalAvailableMemoryBytes,
+                                                       lastRecordedMemLoadBytes, lastRecordedMemLoadPct,
+                                                       lastRecordedHeapSizeBytes, lastRecordedFragmentationBytes);
 }
 
 COOP_PINVOKE_HELPER(Int64, RhGetTotalAllocatedBytes, ())

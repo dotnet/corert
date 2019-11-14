@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Internal.Runtime.Augments;
 
 namespace System.Threading
 {

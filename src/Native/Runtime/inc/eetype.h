@@ -483,25 +483,8 @@ public:
 #endif
     }
 
-#ifdef PROJECTN
-    //
-    // PROJX-TODO
-    // Needed while we exist in a world where some things are built using CoreRT and some built using 
-    // the traditional .NET Native tool chain.
-    //
-    bool HasTypeManager()
-    {
-#if defined(EETYPE_TYPE_MANAGER)
-        return m_ppTypeManager != nullptr;
-#else
-        return false;
-#endif
-    }
-#endif // PROJECTN
-
 #ifndef BINDER
     DispatchMap *GetDispatchMap();
-
 #endif // !BINDER
 
     // Used only by GC initialization, this initializes the EEType used to mark free entries in the GC heap.

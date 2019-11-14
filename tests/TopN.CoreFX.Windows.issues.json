@@ -1017,6 +1017,22 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Tests.UriMethodTests.EscapeUriString_HighSurrogatePair",
+                    "reason": "Outdated"
+                },
+                {
+                    "name": "System.Tests.UriMethodTests.EscapeDataString_HighSurrogatePair",
+                    "reason": "Outdated"
+                },
+                {
+                    "name": "System.Tests.UriMethodTests.EscapeUriString_Invalid",
+                    "reason": "Outdated"
+                },
+                {
+                    "name": "System.Tests.UriMethodTests.EscapeDataString_Invalid",
+                    "reason": "Outdated"
+                },
+                {
                     "name": "System.Text.Tests.StringBuilderTests.AppendFormat",
                     "reason": "Outdated"
                 },

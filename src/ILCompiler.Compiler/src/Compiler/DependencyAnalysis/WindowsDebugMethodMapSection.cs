@@ -94,12 +94,6 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (IMethodBodyNode emitted in emittedMethods)
             {
-                NonExternMethodSymbolNode methodNode = emitted as NonExternMethodSymbolNode;
-                if (methodNode != null && !methodNode.HasCompiledBody)
-                {
-                    continue;
-                }
-
                 if (!(emitted.Method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod))
                 {
                     continue;
@@ -159,18 +153,19 @@ namespace ILCompiler.DependencyAnalysis
             methodRVAToTokenMap.WriteDWORD(methodDataOrOffsetToMethodData);
             entryCount++;
 
-            IMethodBodyNodeWithFuncletSymbols funcletSymbolsNode = method as IMethodBodyNodeWithFuncletSymbols;
+            throw new NotImplementedException();
+            //IMethodBodyNodeWithFuncletSymbols funcletSymbolsNode = method as IMethodBodyNodeWithFuncletSymbols;
 
-            if (funcletSymbolsNode != null)
-            {
-                foreach (ISymbolNode funclet in funcletSymbolsNode.FuncletSymbols)
-                {
-                    debugRelocations.Add(new Relocation(RelocType.IMAGE_REL_BASED_ADDR32NB, checked((int)methodRVAToTokenMap.Size()), funclet));
-                    methodRVAToTokenMap.WriteDWORD(0);
-                    methodRVAToTokenMap.WriteDWORD(methodDataOrOffsetToMethodData);
-                    entryCount++;
-                }
-            }
+            //if (funcletSymbolsNode != null)
+            //{
+            //    foreach (ISymbolNode funclet in funcletSymbolsNode.FuncletSymbols)
+            //    {
+            //        debugRelocations.Add(new Relocation(RelocType.IMAGE_REL_BASED_ADDR32NB, checked((int)methodRVAToTokenMap.Size()), funclet));
+            //        methodRVAToTokenMap.WriteDWORD(0);
+            //        methodRVAToTokenMap.WriteDWORD(methodDataOrOffsetToMethodData);
+            //        entryCount++;
+            //    }
+            //}
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
