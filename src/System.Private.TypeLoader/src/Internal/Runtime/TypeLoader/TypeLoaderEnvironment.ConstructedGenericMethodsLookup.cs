@@ -312,8 +312,8 @@ namespace Internal.Runtime.TypeLoader
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
             {
-                X2.PrintLine("got a module, lookuphashcode");
-                X2.PrintUint(lookupHashcode);
+//                X2.PrintLine("got a module, lookuphashcode");
+//                X2.PrintUint(lookupHashcode);
                 if (!GetHashtableFromBlob(module, ReflectionMapBlob.ExactMethodInstantiationsHashtable, out hashtable, out externalReferencesLookup))
                     continue;
 
@@ -322,19 +322,19 @@ namespace Internal.Runtime.TypeLoader
                 NativeParser entryParser;
                 while (!(entryParser = enumerator.GetNext()).IsNull)
                 {
-                    X2.PrintLine("GetNext");
+//                    X2.PrintLine("GetNext");
 
                     if (!lookupData.MatchParsedEntry(ref entryParser, ref externalReferencesLookup, module.Handle))
                         continue;
 
                     // We found a match
-                    X2.PrintLine("found a match for entryParser");
+//                    X2.PrintLine("found a match for entryParser");
                     var x = entryParser.GetUnsigned();
-                    X2.PrintUint((int)x);
+//                    X2.PrintUint((int)x);
 
                     result = externalReferencesLookup.GetIntPtrFromIndex(x);
-                    X2.PrintLine("GetIntPtrFromIndex");
-                    X2.PrintUint(result.ToInt32());
+//                    X2.PrintLine("GetIntPtrFromIndex");
+//                    X2.PrintUint(result.ToInt32());
 
                     return true;
                 }

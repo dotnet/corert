@@ -86,6 +86,8 @@ namespace Internal.Runtime.CompilerServices
                 uint index = 0;
                 if (!s_genericFunctionPointerDictionary.TryGetValue(key, out index))
                 {
+                    X2.PrintLine("Capture new index value");
+
                     // Capture new index value
                     index = s_genericFunctionPointerNextIndex;
 
@@ -95,6 +97,10 @@ namespace Internal.Runtime.CompilerServices
                     // Generate new chunk if existing chunks are insufficient
                     if (s_genericFunctionPointerCollection.Count <= newChunkIndex)
                     {
+                        X2.PrintLine("s_genericFunctionPointerCollection.Count <= newChunkIndex");
+                        X2.PrintUint((int)index);
+                        X2.PrintUint(newChunkIndex);
+                        X2.PrintUint((int)newSubChunkIndex);
                         System.Diagnostics.Debug.Assert(newSubChunkIndex == 0);
 
                         // New generic descriptors are allocated on the native heap and not tracked in the GC.
@@ -104,6 +110,10 @@ namespace Internal.Runtime.CompilerServices
                     }
 
                     RuntimeGeneratedGenericMethodDescriptor* newDescriptor = &((RuntimeGeneratedGenericMethodDescriptor*)s_genericFunctionPointerCollection[newChunkIndex])[newSubChunkIndex];
+
+                    X2.PrintLine("newDescriptor setting");
+                    X2.PrintUint(canonFunctionPointer.ToInt32());
+                    X2.PrintUint(instantiationArgument.ToInt32());
 
                     newDescriptor->Set(canonFunctionPointer, instantiationArgument);
 
@@ -119,6 +129,9 @@ namespace Internal.Runtime.CompilerServices
                 RuntimeGeneratedGenericMethodDescriptor* genericRuntimeFunctionPointer = &((RuntimeGeneratedGenericMethodDescriptor*)s_genericFunctionPointerCollection[chunkIndex])[subChunkIndex];
 
                 GenericMethodDescriptor* genericFunctionPointer = &genericRuntimeFunctionPointer->Descriptor;
+                X2.PrintLine("got genericFunctionPointer with values");
+                X2.PrintUint((genericFunctionPointer->MethodFunctionPointer).ToInt32());
+                X2.PrintUint((genericFunctionPointer->InstantiationArgument).ToInt32());
                 System.Diagnostics.Debug.Assert(canonFunctionPointer == genericFunctionPointer->MethodFunctionPointer);
                 System.Diagnostics.Debug.Assert(instantiationArgument == genericFunctionPointer->InstantiationArgument);
 

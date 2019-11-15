@@ -1301,9 +1301,9 @@ namespace Internal.IL
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
 
-            if (_method.ToString().Contains("KeyValuePair") &&
-                _method.ToString().Contains("ToString")
-                && method.ToString().Contains("ToString"))
+            if (_method.ToString().Contains("TestWithGenClass") &&
+                _method.ToString().Contains("Canon")
+                && method.ToString().Contains("IMethod1"))
             {
                 //                PrintInt32(BuildConstInt32(512));
                 //                LLVMValueRef invokeOpenInstanceThunkAddr = WebAssemblyObjectWriter.InvokeOpenInstanceThunk;

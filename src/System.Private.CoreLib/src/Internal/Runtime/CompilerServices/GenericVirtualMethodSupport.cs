@@ -38,10 +38,19 @@ namespace Internal.Runtime.CompilerServices
                 RuntimeSignature methodSignature = methodNameAndSignature.Signature;
                 if (RuntimeAugments.TypeLoaderCallbacks.TryGetGenericVirtualTargetForTypeAndSlot(handle, ref declaringType, genericArguments, ref methodName, ref methodSignature, out functionPointer, out genericDictionary, out slotChanged))
                 {
+                    X2.PrintLine("TryGetGenericVirtualTargetForTypeAndSlot true ");
+                    X2.PrintUint(functionPointer.ToInt32());
+
                     methodNameAndSignature = new MethodNameAndSignature(methodName, methodSignature);
 
                     if (!slotChanged)
-                        resolution = FunctionPointerOps.GetGenericMethodFunctionPointer(functionPointer, genericDictionary);
+                    {
+                        resolution =
+                            FunctionPointerOps.GetGenericMethodFunctionPointer(functionPointer, genericDictionary);
+                        X2.PrintLine("TryGetGenericVirtualTargetForTypeAndSlot !slotChanged ");
+                        X2.PrintUint(functionPointer.ToInt32());
+                        X2.PrintUint(resolution.ToInt32());
+                    }
                     break;
                 }
 

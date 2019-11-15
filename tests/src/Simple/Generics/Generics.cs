@@ -1303,8 +1303,12 @@ class Program
 
         private static void TestWithGenClass<T>(object o)
         {
+            Console.WriteLine("TestWithGenClass");
             GenBase<T> b = o as GenBase<T>;
+            Console.WriteLine("cast object to GenBase<T>");
             var res = b.GMethod1<int>(1, 2);
+            Console.WriteLine("called GenBase");
+
             WriteLineWithVerification(res, s_GMethod1);
 
             IFoo<string> ifoo1 = o as IFoo<string>;
@@ -1336,54 +1340,54 @@ class Program
 
         public static void Run()
         {
+//            {
+//                s_GMethod1 = "Base.GMethod1<System.Int32>(1,2)";
+//                s_IFooString = "Base.IMethod1<System.Int32>(3,4)";
+//                s_IFooObject = "Base.IMethod1<System.Int32>(5,6)";
+//                s_IFooInt = "Base.IMethod1<System.Int32>(7,8)";
+//                TestWithClass(new Base());
+//                Console.WriteLine("====================");
+//
+//
+//                s_GMethod1 = "Derived.GMethod1<System.Int32>(1,2)";
+//                s_IFooString = "Derived.IFoo<string>.IMethod1<System.Int32>(3,4)";
+//                s_IFooObject = "Derived.IFoo<string>.IMethod1<System.Int32>(5,6)";
+//                s_IFooInt = "Base.IMethod1<System.Int32>(7,8)";
+//                TestWithClass(new Derived());
+//                Console.WriteLine("====================");
+//
+//
+//                s_GMethod1 = "Derived.GMethod1<System.Int32>(1,2)";
+//                s_IFooString = "Derived.IFoo<string>.IMethod1<System.Int32>(3,4)";
+//                s_IFooObject = "Derived.IFoo<string>.IMethod1<System.Int32>(5,6)";
+//                s_IFooInt = "SuperDerived.IFoo<int>.IMethod1<System.Int32>(7,8)";
+//                TestWithClass(new SuperDerived());
+//                Console.WriteLine("====================");
+//            }
+//
             {
-                s_GMethod1 = "Base.GMethod1<System.Int32>(1,2)";
-                s_IFooString = "Base.IMethod1<System.Int32>(3,4)";
-                s_IFooObject = "Base.IMethod1<System.Int32>(5,6)";
-                s_IFooInt = "Base.IMethod1<System.Int32>(7,8)";
-                TestWithClass(new Base());
-                Console.WriteLine("====================");
+//                s_GMethod1 = "GenBase<System.Byte>.GMethod1<System.Int32>(1,2)";
+//                s_IFooString = "GenBase<System.Byte>.IMethod1<System.Int32>(3,4)";
+//                s_IFooObject = "GenBase<System.Byte>.IMethod1<System.Int32>(5,6)";
+//                s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
+//                TestWithGenClass<byte>(new GenBase<byte>());
+//                Console.WriteLine("====================");
 
 
-                s_GMethod1 = "Derived.GMethod1<System.Int32>(1,2)";
-                s_IFooString = "Derived.IFoo<string>.IMethod1<System.Int32>(3,4)";
-                s_IFooObject = "Derived.IFoo<string>.IMethod1<System.Int32>(5,6)";
-                s_IFooInt = "Base.IMethod1<System.Int32>(7,8)";
-                TestWithClass(new Derived());
-                Console.WriteLine("====================");
-
-
-                s_GMethod1 = "Derived.GMethod1<System.Int32>(1,2)";
-                s_IFooString = "Derived.IFoo<string>.IMethod1<System.Int32>(3,4)";
-                s_IFooObject = "Derived.IFoo<string>.IMethod1<System.Int32>(5,6)";
-                s_IFooInt = "SuperDerived.IFoo<int>.IMethod1<System.Int32>(7,8)";
-                TestWithClass(new SuperDerived());
-                Console.WriteLine("====================");
-            }
-
-            {
-                s_GMethod1 = "GenBase<System.Byte>.GMethod1<System.Int32>(1,2)";
-                s_IFooString = "GenBase<System.Byte>.IMethod1<System.Int32>(3,4)";
-                s_IFooObject = "GenBase<System.Byte>.IMethod1<System.Int32>(5,6)";
-                s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
-                TestWithGenClass<byte>(new GenBase<byte>());
-                Console.WriteLine("====================");
-
-
-                s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
-                s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
-                s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
-                s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
-                TestWithGenClass<byte>(new GenDerived<byte>());
-                Console.WriteLine("====================");
-
-
-                s_GMethod1 = "GenDerived<System.String>.GMethod1<System.Int32>(1,2)";
-                s_IFooString = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(3,4)";
-                s_IFooObject = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(5,6)";
-                s_IFooInt = "GenBase<System.String>.IMethod1<System.Int32>(7,8)";
-                TestWithGenClass<String>(new GenDerived<String>());
-                Console.WriteLine("====================");
+//                s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
+//                s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
+//                s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
+//                s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
+//                TestWithGenClass<byte>(new GenDerived<byte>());
+//                Console.WriteLine("====================");
+//
+//
+//                s_GMethod1 = "GenDerived<System.String>.GMethod1<System.Int32>(1,2)";
+//                s_IFooString = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(3,4)";
+//                s_IFooObject = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(5,6)";
+//                s_IFooInt = "GenBase<System.String>.IMethod1<System.Int32>(7,8)";
+//                TestWithGenClass<String>(new GenDerived<String>());
+//                Console.WriteLine("====================");
 
 
                 s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";

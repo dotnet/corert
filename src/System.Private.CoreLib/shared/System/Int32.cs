@@ -80,8 +80,6 @@ namespace System
 
         public override string ToString()
         {
-            X2.PrintLine("int32 to string");
-            X2.PrintUint(m_value);
             return Number.FormatInt32(m_value, null, null);
         }
 

@@ -472,7 +472,7 @@ namespace Internal.NativeFormat
         public uint GetUnsigned()
         {
             uint value;
-            X2.PrintUint((int)_offset);
+//            X2.PrintUint((int)_offset);
             _offset = _reader.DecodeUnsigned(_offset, out value);
             return value;
         }
