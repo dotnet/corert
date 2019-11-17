@@ -179,14 +179,18 @@ namespace System
 
             if (firstParameter == null)
                 throw new ArgumentException(SR.Arg_DlgtNullInst);
+            X2.PrintUint(functionPointer.ToInt32());
 
             if (!FunctionPointerOps.IsGenericMethodPointer(functionPointer))
             {
+                X2.PrintLine("!Generic");
+
                 m_functionPointer = functionPointer;
                 m_firstParameter = firstParameter;
             }
             else
             {
+                X2.PrintLine("Generic");
                 m_firstParameter = this;
                 m_functionPointer = GetThunk(ClosedInstanceThunkOverGenericMethod);
                 m_extraFunctionPointerOrData = functionPointer;

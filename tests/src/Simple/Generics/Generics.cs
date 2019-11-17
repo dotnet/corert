@@ -1263,66 +1263,66 @@ class Program
             public string ICovariantGVM<U>() { return String.Format("Covariant<{0}>.ICovariantGVM<{1}>", typeof(T).Name, typeof(U).Name); }
         }
 
-        static string s_GMethod1;
-        static string s_IFooString;
-        static string s_IFooObject;
-        static string s_IFooInt;
+//        static string s_GMethod1;
+//        static string s_IFooString;
+//        static string s_IFooObject;
+//        static string s_IFooInt;
 
         static int s_NumErrors = 0;
 
-        private static void TestWithStruct(IFoo<string> ifooStr, IFoo<object> ifooObj, IFoo<int> ifooInt)
-        {
-            var res = ifooStr.IMethod1<int>(1, 2);
-            WriteLineWithVerification(res, s_IFooString);
-
-            res = ifooObj.IMethod1<int>(3, 4);
-            WriteLineWithVerification(res, s_IFooObject);
-
-            res = ifooInt.IMethod1<int>(5, 6);
-            WriteLineWithVerification(res, s_IFooInt);
-        }
-
-        private static void TestWithClass(object o)
-        {
-            Base b = o as Base;
-            var res = b.GMethod1<int>(1, 2);
-            WriteLineWithVerification(res, s_GMethod1);
-
-            IFoo<string> ifoo1 = o as IFoo<string>;
-            res = ifoo1.IMethod1<int>(3, 4);
-            WriteLineWithVerification(res, s_IFooString);
-
-            IFoo<object> ifoo2 = o as IFoo<object>;
-            res = ifoo2.IMethod1<int>(5, 6);
-            WriteLineWithVerification(res, s_IFooObject);
-
-            IFoo<int> ifoo3 = o as IFoo<int>;
-            res = ifoo3.IMethod1<int>(7, 8);
-            WriteLineWithVerification(res, s_IFooInt);
-        }
-
-        private static void TestWithGenClass<T>(object o)
-        {
-            Console.WriteLine("TestWithGenClass");
-            GenBase<T> b = o as GenBase<T>;
-            Console.WriteLine("cast object to GenBase<T>");
-            var res = b.GMethod1<int>(1, 2);
-            Console.WriteLine("called GenBase");
-
-            WriteLineWithVerification(res, s_GMethod1);
-
-            IFoo<string> ifoo1 = o as IFoo<string>;
-            res = ifoo1.IMethod1<int>(3, 4);
-            WriteLineWithVerification(res, s_IFooString);
-
-            IFoo<object> ifoo2 = o as IFoo<object>;
-            res = ifoo2.IMethod1<int>(5, 6);
-            WriteLineWithVerification(res, s_IFooObject);
-
-            IFoo<int> ifoo3 = o as IFoo<int>;
-            res = ifoo3.IMethod1<int>(7, 8);
-            WriteLineWithVerification(res, s_IFooInt);
-        }
+//        private static void TestWithStruct(IFoo<string> ifooStr, IFoo<object> ifooObj, IFoo<int> ifooInt)
+//        {
+//            var res = ifooStr.IMethod1<int>(1, 2);
+//            WriteLineWithVerification(res, s_IFooString);
+//
+//            res = ifooObj.IMethod1<int>(3, 4);
+//            WriteLineWithVerification(res, s_IFooObject);
+//
+//            res = ifooInt.IMethod1<int>(5, 6);
+//            WriteLineWithVerification(res, s_IFooInt);
+//        }
+//
+//        private static void TestWithClass(object o)
+//        {
+//            Base b = o as Base;
+//            var res = b.GMethod1<int>(1, 2);
+//            WriteLineWithVerification(res, s_GMethod1);
+//
+//            IFoo<string> ifoo1 = o as IFoo<string>;
+//            res = ifoo1.IMethod1<int>(3, 4);
+//            WriteLineWithVerification(res, s_IFooString);
+//
+//            IFoo<object> ifoo2 = o as IFoo<object>;
+//            res = ifoo2.IMethod1<int>(5, 6);
+//            WriteLineWithVerification(res, s_IFooObject);
+//
+//            IFoo<int> ifoo3 = o as IFoo<int>;
+//            res = ifoo3.IMethod1<int>(7, 8);
+//            WriteLineWithVerification(res, s_IFooInt);
+//        }
+//
+//        private static void TestWithGenClass<T>(object o)
+//        {
+//            Console.WriteLine("TestWithGenClass");
+//            GenBase<T> b = o as GenBase<T>;
+//            Console.WriteLine("cast object to GenBase<T>");
+//            var res = b.GMethod1<int>(1, 2);
+//            Console.WriteLine("called GenBase");
+//
+//            WriteLineWithVerification(res, s_GMethod1);
+//
+//            IFoo<string> ifoo1 = o as IFoo<string>;
+//            res = ifoo1.IMethod1<int>(3, 4);
+//            WriteLineWithVerification(res, s_IFooString);
+//
+//            IFoo<object> ifoo2 = o as IFoo<object>;
+//            res = ifoo2.IMethod1<int>(5, 6);
+//            WriteLineWithVerification(res, s_IFooObject);
+//
+//            IFoo<int> ifoo3 = o as IFoo<int>;
+//            res = ifoo3.IMethod1<int>(7, 8);
+//            WriteLineWithVerification(res, s_IFooInt);
+//        }
 
         private static void WriteLineWithVerification(string actual, string expected)
         {
@@ -1390,35 +1390,35 @@ class Program
 //                Console.WriteLine("====================");
 
 
-                s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
-                s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
-                s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
-                s_IFooInt = "GenSuperDerived<System.Byte>.IFoo<int>.IMethod1<System.Int32>(7,8)";
-                TestWithGenClass<byte>(new GenSuperDerived<byte>());
-                Console.WriteLine("====================");
+//                s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
+//                s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
+//                s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
+//                s_IFooInt = "GenSuperDerived<System.Byte>.IFoo<int>.IMethod1<System.Int32>(7,8)";
+//                TestWithGenClass<byte>(new GenSuperDerived<byte>());
+//                Console.WriteLine("====================");
             }
 
-            {
-                s_IFooString = "MyStruct1.IFoo<string>.IMethod1<System.Int32>(1,2)";
-                s_IFooObject = "MyStruct1.IFoo<string>.IMethod1<System.Int32>(3,4)";
-                s_IFooInt = "MyStruct1.IFoo<int>.IMethod1<System.Int32>(5,6)";
-                TestWithStruct(new MyStruct1(), new MyStruct1(), new MyStruct1());
-                Console.WriteLine("====================");
-
-
-                s_IFooString = "MyStruct2.IFoo<string>.IMethod1<System.Int32>(1,2)";
-                s_IFooObject = "MyStruct2.IFoo<string>.IMethod1<System.Int32>(3,4)";
-                s_IFooInt = "MyStruct2.IMethod1<System.Int32>(5,6)";
-                TestWithStruct(new MyStruct2(), new MyStruct2(), new MyStruct2());
-                Console.WriteLine("====================");
-
-
-                s_IFooString = "MyStruct3.IMethod1<System.Int32>(1,2)";
-                s_IFooObject = "MyStruct3.IMethod1<System.Int32>(3,4)";
-                s_IFooInt = "MyStruct3.IFoo<int>.IMethod1<System.Int32>(5,6)";
-                TestWithStruct(new MyStruct3(), new MyStruct3(), new MyStruct3());
-                Console.WriteLine("====================");
-            }
+//            {
+//                s_IFooString = "MyStruct1.IFoo<string>.IMethod1<System.Int32>(1,2)";
+//                s_IFooObject = "MyStruct1.IFoo<string>.IMethod1<System.Int32>(3,4)";
+//                s_IFooInt = "MyStruct1.IFoo<int>.IMethod1<System.Int32>(5,6)";
+//                TestWithStruct(new MyStruct1(), new MyStruct1(), new MyStruct1());
+//                Console.WriteLine("====================");
+//
+//
+//                s_IFooString = "MyStruct2.IFoo<string>.IMethod1<System.Int32>(1,2)";
+//                s_IFooObject = "MyStruct2.IFoo<string>.IMethod1<System.Int32>(3,4)";
+//                s_IFooInt = "MyStruct2.IMethod1<System.Int32>(5,6)";
+//                TestWithStruct(new MyStruct2(), new MyStruct2(), new MyStruct2());
+//                Console.WriteLine("====================");
+//
+//
+//                s_IFooString = "MyStruct3.IMethod1<System.Int32>(1,2)";
+//                s_IFooObject = "MyStruct3.IMethod1<System.Int32>(3,4)";
+//                s_IFooInt = "MyStruct3.IFoo<int>.IMethod1<System.Int32>(5,6)";
+//                TestWithStruct(new MyStruct3(), new MyStruct3(), new MyStruct3());
+//                Console.WriteLine("====================");
+//            }
 
             {
                 string res = ((IFace<string>)new AnotherDerivedClass<string>()).IFaceGVMethod1<string>("string1", "string2");
@@ -1517,11 +1517,16 @@ class Program
             Func<int, string> a = foo.Frob<Atom>;
             if (a(123) != "Atom123")
                 throw new Exception();
-
+            Console.WriteLine("before RunShared");
             RunShared<Atom>(new FooShared());
 
+            Console.WriteLine("before Derived().Validate");
             new Derived().Validate("hello");
+            Console.WriteLine("before Derived().ValidateShared");
+
             new Derived().ValidateShared<object>("ola");
+            Console.WriteLine("End Run");
+
         }
     }
 

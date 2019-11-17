@@ -1652,18 +1652,7 @@ namespace Internal.IL
             //            {
             //
             //            }
-            if (_method.ToString().Contains("TestWithGenClass") &&
-                _method.ToString().Contains("Canon")
-                && callee.ToString().Contains("GMethod1"))
-            {
-//                PrintInt32(BuildConstInt32(512));
-//                LLVMValueRef invokeOpenInstanceThunkAddr = WebAssemblyObjectWriter.InvokeOpenInstanceThunk;
-//                //return addressOfAddress;
-//                //                var sym = LLVM.BuildLoad(builder, addressOfAddress,
-//                //                    "LoadAddressOfSymbolNode");
-//
-//                PrintIntPtr(invokeOpenInstanceThunkAddr);
-            }
+
 
             //            var extraPush = false;
             if (callee.IsIntrinsic)
@@ -1682,6 +1671,17 @@ namespace Internal.IL
 
             if (opcode == ILOpcode.newobj)
             {
+                if (_method.ToString().Contains("Run")
+                    && _method.ToString().Contains("TestGvmDelegates"))
+                {
+                    //                PrintInt32(BuildConstInt32(512));
+                    //                LLVMValueRef invokeOpenInstanceThunkAddr = WebAssemblyObjectWriter.InvokeOpenInstanceThunk;
+                    //                //return addressOfAddress;
+                    //                //                var sym = LLVM.BuildLoad(builder, addressOfAddress,
+                    //                //                    "LoadAddressOfSymbolNode");
+                    //
+                    //                PrintIntPtr(invokeOpenInstanceThunkAddr);
+                }
                 TypeDesc newType = callee.OwningType;
                 if (newType.IsArray)
                 {
@@ -1775,7 +1775,7 @@ namespace Internal.IL
             {
                 FunctionPointerEntry functionPointer = ((FunctionPointerEntry)_stack.Peek());
                 TypeDesc canonDelegateType = callee.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(canonDelegateType, functionPointer.Method, functionPointer.IsVirtual);
+                DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(canonDelegateType, functionPointer.Method, followVirtualDispatch: false);
                 callee = delegateInfo.Constructor.Method;
 //                if (_method.ToString().Contains("AsyncStateMachineBox") &&
 //                    _method.ToString().Contains("AsyncTaskMethodBuilder")
@@ -1880,11 +1880,13 @@ namespace Internal.IL
 
         private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, StackEntry thisPointer, bool isCallVirt,
             TypeDesc constrainedType, MethodDesc runtimeDeterminedMethod, out bool hasHiddenParam, out bool isGvm,
-            out LLVMValueRef dictPtrPtrStore)
+            out LLVMValueRef dictPtrPtrStore,
+            out LLVMValueRef fatFunctionPtr)
         {
             hasHiddenParam = false;
             isGvm = false;
             dictPtrPtrStore = default(LLVMValueRef);
+            fatFunctionPtr = default(LLVMValueRef);
             //            if (callee.ToString().Contains("Unsafe") && callee.ToString().Contains("As"))
             //            {
             //
@@ -1988,7 +1990,7 @@ namespace Internal.IL
                     !canonMethod.OwningType.IsSealed())
                 {
                     isGvm = true;
-                    return GetCallableGenericVirtualMethod(thisPointer, canonMethod, callee, runtimeDeterminedMethod, out dictPtrPtrStore);
+                    return GetCallableGenericVirtualMethod(thisPointer, canonMethod, callee, runtimeDeterminedMethod, out dictPtrPtrStore, out fatFunctionPtr);
                 }
                 return GetCallableVirtualMethod(thisPointer, runtimeDeterminedMethod, callee, hasHiddenParam, constrainedType);
             }
@@ -2092,7 +2094,8 @@ namespace Internal.IL
             return functionPtr;
         }
 
-        private LLVMValueRef GetCallableGenericVirtualMethod(StackEntry objectPtr, MethodDesc canonMethod, MethodDesc callee, MethodDesc runtimeDeterminedMethod, out LLVMValueRef dictPtrPtrStore)
+        private LLVMValueRef GetCallableGenericVirtualMethod(StackEntry objectPtr, MethodDesc canonMethod, MethodDesc callee, MethodDesc runtimeDeterminedMethod, out LLVMValueRef dictPtrPtrStore,
+            out LLVMValueRef fatFunctionPtr)
         {
             // this will only have a non-zero pointer the the GVM ptr is fat.
             dictPtrPtrStore = LLVM.BuildAlloca(_builder,
@@ -2141,8 +2144,9 @@ namespace Internal.IL
             var gvmPtr = CallRuntime(_compilation.TypeSystemContext, "TypeLoaderExports", "GVMLookupForSlot", lookupSlotArgs);
             var slotRef = gvmPtr.ValueAsType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
             PrintInt32(BuildConstInt32(1));
-            PrintIntPtr(slotRef);
+//            PrintIntPtr(slotRef);
 
+            fatFunctionPtr = slotRef; // TODO: remove one of these variables
             var fatBranch = LLVM.AppendBasicBlock(_currentFunclet, "then");
             var notFatBranch = LLVM.AppendBasicBlock(_currentFunclet, "else");
             var endifBlock = LLVM.AppendBasicBlock(_currentFunclet, "endif");
@@ -2163,7 +2167,7 @@ namespace Internal.IL
             var loadFuncPtr = LLVM.BuildLoad(_builder,
                 CastIfNecessary(_builder, gep, LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), 0)),
                 "loadFuncPtr");
-            PrintIntPtr(loadFuncPtr);
+//            PrintIntPtr(loadFuncPtr);
             LLVM.BuildStore(_builder, loadFuncPtr, functionPtrRef);
             var dictPtrPtr = LLVM.BuildGEP(_builder,
                 CastIfNecessary(_builder, gep,
@@ -2477,7 +2481,18 @@ namespace Internal.IL
             }
             else
             {
-                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore);
+                if (opcode == ILOpcode.callvirt && canonMethod.HasInstantiation && canonMethod.IsVirtual &&
+                    !canonMethod.IsFinal &&
+                    !canonMethod.OwningType.IsSealed())
+                {
+                    if (!signature.IsStatic)
+                    {
+                        PrintInt32(BuildConstInt32(18));
+                        PrintIntPtr(argumentValues[0]
+                            .ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder));
+                    }
+                }
+                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
             }
 
             LLVMValueRef returnAddress;
@@ -2677,15 +2692,20 @@ namespace Internal.IL
                 LLVM.BuildCondBr(_builder, eqZ, notFatBranch, fatBranch); // TODO: phi?
                 // then
                 LLVM.PositionBuilderAtEnd(_builder, notFatBranch);
-                PrintInt32(BuildConstInt32(16));
+                // if going to print things in here, need to adjust the shadowstack or it will overwrite whats done above
+//                PrintInt32(BuildConstInt32(16));
                 // we generated the fn as though it was for this branch
                 var notFatReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
                 LLVM.BuildBr(_builder, endifBlock);
                 
                 // else
                 LLVM.PositionBuilderAtEnd(_builder, fatBranch);
-                PrintInt32(BuildConstInt32(17));
-
+//                PrintInt32(BuildConstInt32(17));
+//                if (!signature.IsStatic)
+//                {
+//                    PrintIntPtr(argumentValues[0].ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder));
+//                }
+//                PrintInt32(BuildConstInt32(17));
                 var fnWithDict = LLVM.BuildCast(_builder, LLVMOpcode.LLVMBitCast, fn, LLVM.PointerType(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, true), 0), "fnWithDict");
                 var dictDereffed = LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, dict, "l1"), "l2");
 //                PrintIntPtr(dict);
@@ -2739,7 +2759,7 @@ namespace Internal.IL
             }
             else
             {
-                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore);
+                fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
             }
 
             LLVMValueRef shadowStack = LLVM.BuildGEP(builder, baseShadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) }, String.Empty);
@@ -3208,14 +3228,22 @@ namespace Internal.IL
             LLVMValueRef targetLLVMFunction = default(LLVMValueRef);
             bool hasHiddenParam = false;
             bool isGvm; // TODO in line declarations?
-            LLVMValueRef dictPtrPtrStore; // TODO in line declarations?
+            LLVMValueRef dictPtrPtrStore; // TODO in line declarations? - remove as we have the fatFunctionPtr
+            LLVMValueRef fatFunctionPtr;
 
             if (opCode == ILOpcode.ldvirtftn)
             {
                 StackEntry thisPointer = _stack.Pop();
                 if (runtimeDeterminedMethod.IsVirtual)
                 {
-                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore);
+                    //TODO: remove the llvm if from LLVMFunctionForMethod and move to outside as its not needed for LdFtn
+                    // we want the fat function ptr here
+
+                    targetLLVMFunction = LLVMFunctionForMethod(method, thisPointer, true, null, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore, out fatFunctionPtr);
+                    if (isGvm)
+                    {
+                        targetLLVMFunction = fatFunctionPtr;
+                    }
                 }
                 else
                 {
@@ -4026,7 +4054,7 @@ namespace Internal.IL
                 AddMethodReference(helper);
                 //TODO: this can be tidied up; variables moved closer to usage...
                 bool hasHiddenParam;
-                var fn = LLVMFunctionForMethod(helper, null/* static method */, false /* not virt */, _constrainedType, helper, out hasHiddenParam, out bool isGvm, out LLVMValueRef dictPtrPtrStore);
+                var fn = LLVMFunctionForMethod(helper, null/* static method */, false /* not virt */, _constrainedType, helper, out hasHiddenParam, out bool isGvm, out LLVMValueRef dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
 
                 if (typeDesc.IsRuntimeDeterminedSubtype)
                 {
@@ -4473,10 +4501,10 @@ namespace Internal.IL
             var classConstCtx = LLVM.BuildGEP(_builder,
                 LLVM.BuildBitCast(_builder, staticBaseValueRef, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
                     "ptr8"), new LLVMValueRef[] { BuildConstInt32(-8) }, "backToClassCtx");
-            PrintInt32(BuildConstInt32(32));
+//            PrintInt32(BuildConstInt32(32));
             StackEntry classConstructionContext = new AddressExpressionEntry(StackValueKind.NativeInt, "classConstructionContext", classConstCtx,
                 GetWellKnownType(WellKnownType.IntPtr));
-            PrintIntPtr(staticBaseValueRef);
+//            PrintIntPtr(staticBaseValueRef);
             StackEntry staticBaseEntry = new AddressExpressionEntry(StackValueKind.NativeInt, "staticBase", staticBaseValueRef,
                 GetWellKnownType(WellKnownType.IntPtr));
 
@@ -4723,7 +4751,7 @@ namespace Internal.IL
                     asInt
                 }, string.Empty);
             
-//            var loaded = LLVM.BuildLoad(_builder, ptr32, "loadptr");
+//            var loaded = LLVM.BuildLoad(_builder, CastIfNecessary(_builder, ptr32, LLVMTypeRef.Int32Type(), "loadedasint"), "loadptr");
 //            var loadedasInt = CastIfNecessary(_builder, loaded, LLVMTypeRef.Int32Type(), "loadedasint");
 //            LLVM.BuildCall(_builder,
 //                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",

@@ -98,9 +98,6 @@ namespace Internal.Runtime.CompilerServices
                     if (s_genericFunctionPointerCollection.Count <= newChunkIndex)
                     {
                         X2.PrintLine("s_genericFunctionPointerCollection.Count <= newChunkIndex");
-                        X2.PrintUint((int)index);
-                        X2.PrintUint(newChunkIndex);
-                        X2.PrintUint((int)newSubChunkIndex);
                         System.Diagnostics.Debug.Assert(newSubChunkIndex == 0);
 
                         // New generic descriptors are allocated on the native heap and not tracked in the GC.
@@ -110,10 +107,6 @@ namespace Internal.Runtime.CompilerServices
                     }
 
                     RuntimeGeneratedGenericMethodDescriptor* newDescriptor = &((RuntimeGeneratedGenericMethodDescriptor*)s_genericFunctionPointerCollection[newChunkIndex])[newSubChunkIndex];
-
-                    X2.PrintLine("newDescriptor setting");
-                    X2.PrintUint(canonFunctionPointer.ToInt32());
-                    X2.PrintUint(instantiationArgument.ToInt32());
 
                     newDescriptor->Set(canonFunctionPointer, instantiationArgument);
 
