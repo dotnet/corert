@@ -67,7 +67,7 @@ namespace Internal.IL
         /// <summary>
         /// Offset by which fat function pointers are shifted to distinguish them
         /// from real function pointers.
-        /// </summary>
+        /// </summary> // TODO : cant we delete this and FatFunctionPointerConstants.Offset
         internal const uint FatFunctionPointerOffset = 0x40000000;
 
         List<LLVMValueRef> _exceptionFunclets;
@@ -3253,9 +3253,9 @@ namespace Internal.IL
             else
             {
                 if (_method.ToString()
-                        .Contains("StackDelegate")
+                        .Contains("Validate")
                     && _method.ToString()
-                        .Contains("GetThunk"))
+                        .Contains("Derived"))
                 {
                     if (runtimeDeterminedMethod.ToString().Contains("InvokeOpenStaticThunk"))
                     {
@@ -3300,7 +3300,8 @@ namespace Internal.IL
                     else
                     {
                         var fatFunctionSymbol = GetAndAddFatFunctionPointer(runtimeDeterminedMethod);
-                        targetLLVMFunction = LLVM.BuildGEP(_builder, LoadAddressOfSymbolNode(fatFunctionSymbol), new[] { BuildConstInt32(2) },
+                        //TODO: use bit operator, this is a 32* so a gep with the Offset will do +32*4
+                        targetLLVMFunction = LLVM.BuildGEP(_builder, LoadAddressOfSymbolNode(fatFunctionSymbol), new[] { BuildConstInt32((int)FatFunctionPointerOffset / 4) },
                             "fatGep");
                     }
                 }

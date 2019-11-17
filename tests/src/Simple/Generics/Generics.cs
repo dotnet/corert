@@ -1496,7 +1496,7 @@ class Program
                 Func<string, string> f = Frob<string>;
                 if (f(s) != typeof(string).Name + ": Derived: " + s)
                     throw new Exception();
-
+                Console.WriteLine("Validate first f passed");
                 f = base.Frob<string>;
                 if (f(s) != typeof(string).Name + ": Base: " + s)
                     throw new Exception();

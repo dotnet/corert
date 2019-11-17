@@ -10,6 +10,7 @@ namespace Internal.Runtime
         /// Offset by which fat function pointers are shifted to distinguish them
         /// from real function pointers.
         /// </summary>
+        //TODO: #if and set to MSB for WASM or maybe leave as 2 and do some <<2/>>2 when storing/retrieving.
         public const int Offset = 0x40000000;
     }
 
