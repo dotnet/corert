@@ -172,7 +172,7 @@ namespace System
         }
 
         // This function is known to the IL Transformer.
-        protected void InitializeClosedInstanceSlow(object firstParameter, IntPtr functionPointer)
+        protected unsafe void InitializeClosedInstanceSlow(object firstParameter, IntPtr functionPointer)
         {
             X2.PrintLine("InitializeClosedInstanceSlow");
             // This method is like InitializeClosedInstance, but it handles ALL cases. In particular, it handles generic method with fun function pointers.
@@ -195,6 +195,8 @@ namespace System
                 m_functionPointer = GetThunk(ClosedInstanceThunkOverGenericMethod);
                 m_extraFunctionPointerOrData = functionPointer;
                 m_helperObject = firstParameter;
+                var descPtr = FunctionPointerOps.ConvertToGenericDescriptor(functionPointer);
+                X2.PrintUint(descPtr->_MethodDictionaryPointerPointer->ToInt32());
             }
         }
 

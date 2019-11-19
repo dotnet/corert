@@ -126,7 +126,7 @@ namespace Internal.IL
             // Get the runtime determined method IL so that this works right in shared code
             // and tokens in shared code resolve to runtime determined types.
             MethodIL uninstantiatiedMethodIL = methodIL.GetMethodILDefinition();
-            if (method.ToString().Contains("ClassConstructorRunner"))
+            if (method.ToString().Contains("MakeGenString"))
             {
 
             }
@@ -1301,17 +1301,9 @@ namespace Internal.IL
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
 
-            if (_method.ToString().Contains("TestWithGenClass") &&
-                _method.ToString().Contains("Canon")
-                && method.ToString().Contains("IMethod1"))
+            if (method.ToString().Contains("MakeGenString"))
             {
-                //                PrintInt32(BuildConstInt32(512));
-                //                LLVMValueRef invokeOpenInstanceThunkAddr = WebAssemblyObjectWriter.InvokeOpenInstanceThunk;
-                //                //return addressOfAddress;
-                //                //                var sym = LLVM.BuildLoad(builder, addressOfAddress,
-                //                //                    "LoadAddressOfSymbolNode");
-                //
-                //                PrintIntPtr(invokeOpenInstanceThunkAddr);
+
             }
             if (method.IsIntrinsic)
             {
@@ -1401,6 +1393,11 @@ namespace Internal.IL
                     }
                     else if (owningType.IsDelegate)
                     {
+                        if (_method.ToString().Contains("TestDelegateToCanonMethods") &&
+                            _method.ToString().Contains("Run"))
+                            //                    && callee.ToString().Contains("OpenStatic"))
+                        {
+                        }
                         TypeDesc canonDelegateType = owningType.ConvertToCanonForm(CanonicalFormKind.Specific);
                         LdFtnTokenEntry ldFtnTokenEntry = (LdFtnTokenEntry)_stack.Peek();
                         delegateInfo = _compilation.GetDelegateCtor(canonDelegateType, ldFtnTokenEntry.LdToken, followVirtualDispatch: false);
@@ -3501,12 +3498,15 @@ namespace Internal.IL
             WellKnownType ldtokenKind;
             string name;
             StackEntry value;
-            if (_method.ToString().Contains("EETypePtrOf"))
-            {
-
-            }
             if (ldtokenValue is TypeDesc)
             {
+                if (_method.ToString().Contains("TestDelegateToCanonMethods") &&
+                    _method.ToString().Contains("_Canon") &&
+                    _method.ToString().Contains("MakeString") &&
+                    _method.ToString().Contains("GenStruct"))
+                {
+
+                }
                 ldtokenKind = WellKnownType.RuntimeTypeHandle;
                 TypeDesc type = (TypeDesc)ldtokenValue;
 

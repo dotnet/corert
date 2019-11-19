@@ -286,7 +286,7 @@ namespace ILCompiler.DependencyAnalysis
         public MethodGenericDictionaryNode(MethodDesc owningMethod, NodeFactory factory)
             : base(factory)
         {
-            Debug.Assert(!owningMethod.IsSharedByGenericInstantiations);
+             Debug.Assert(!owningMethod.IsSharedByGenericInstantiations);
             Debug.Assert(owningMethod.HasInstantiation);
             Debug.Assert(owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific) != owningMethod);
 

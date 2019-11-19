@@ -15,7 +15,7 @@ class Program
 {
     static int Main()
     {
-#if !CODEGEN_WASM
+//#if !CODEGEN_WASM
         TestDictionaryDependencyTracking.Run();
         TestStaticBaseLookups.Run();
         TestInitThisClass.Run();
@@ -29,7 +29,7 @@ class Program
         TestConstrainedMethodCalls.Run();
         TestInstantiatingUnboxingStubs.Run();
         TestNameManglingCollisionRegression.Run();
-#endif
+//#endif
         TestSimpleGVMScenarios.Run();
         TestGvmDelegates.Run();
 #if !CODEGEN_WASM
@@ -348,6 +348,10 @@ class Program
 
             public string MakeGenString<U>()
             {
+                Console.WriteLine("MakeGenString<U>");
+                Console.WriteLine(typeof(T).Name);
+                Console.WriteLine(typeof(U).Name);
+                Console.WriteLine(X.ToString());
                 // Use a constructed type that is not used elsewhere
                 return typeof(T[,,]).GetElementType().Name + ", " +
                     typeof(U[,,,]).GetElementType().Name + ": " + X.ToString();
@@ -394,54 +398,61 @@ class Program
 
         public static void Run()
         {
-            // Delegate to a shared nongeneric reference type instance method
-            {
-                GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
-                Func<string> f = g.MakeString;
-                if (f() != "Foo: 42")
-                    throw new Exception();
-            }
+            Console.WriteLine("TestDelegateToCanonMethods Run");
+//            // Delegate to a shared nongeneric reference type instance method
+//            {
+//                GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
+//                Func<string> f = g.MakeString;
+//                if (f() != "Foo: 42")
+//                    throw new Exception();
+//            }
+//
+//            Console.WriteLine("TestDelegateToCanonMethods GenClass<int>");
+//            // Delegate to a unshared nongeneric reference type instance method
+//            {
+//                GenClass<int> g = new GenClass<int>(85);
+//                Func<string> f = g.MakeString;
+//                if (f() != "Int32: 85")
+//                    throw new Exception();
+//            }
+//
+//            Console.WriteLine("TestDelegateToCanonMethods GenClass<Foo> MakeGenString");
+//            // Delegate to a shared generic reference type instance method
+//            {
+//                GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
+//                Func<string> f = g.MakeGenString<Foo>;
+//                if (f() != "Foo, Foo: 42")
+//                    throw new Exception();
+//            }
+//
+//            Console.WriteLine("TestDelegateToCanonMethods GenClass<int> MakeGenString");
+//            // Delegate to a unshared generic reference type instance method
+//            {
+//                GenClass<int> g = new GenClass<int>(85);
+//                Func<string> f = g.MakeGenString<int>;
+//                if (f() != "Int32, Int32: 85")
+//                    throw new Exception();
+//            }
+//
+//            Console.WriteLine("TestDelegateToCanonMethods GenStruct<Bar> MakeString");
+//            // Delegate to a shared nongeneric value type instance method
+//            {
+//                GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
+//                Func<string> f = g.MakeString;
+//                if (f() != "Bar: 42")
+//                    throw new Exception();
+//            }
+//
+//            Console.WriteLine("TestDelegateToCanonMethods GenStruct<int> MakeString");
+//            // Delegate to a unshared nongeneric value type instance method
+//            {
+//                GenStruct<int> g = new GenStruct<int>(85);
+//                Func<string> f = g.MakeString;
+//                if (f() != "Int32: 85")
+//                    throw new Exception();
+//            }
 
-            // Delegate to a unshared nongeneric reference type instance method
-            {
-                GenClass<int> g = new GenClass<int>(85);
-                Func<string> f = g.MakeString;
-                if (f() != "Int32: 85")
-                    throw new Exception();
-            }
-
-            // Delegate to a shared generic reference type instance method
-            {
-                GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
-                Func<string> f = g.MakeGenString<Foo>;
-                if (f() != "Foo, Foo: 42")
-                    throw new Exception();
-            }
-
-            // Delegate to a unshared generic reference type instance method
-            {
-                GenClass<int> g = new GenClass<int>(85);
-                Func<string> f = g.MakeGenString<int>;
-                if (f() != "Int32, Int32: 85")
-                    throw new Exception();
-            }
-
-            // Delegate to a shared nongeneric value type instance method
-            {
-                GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
-                Func<string> f = g.MakeString;
-                if (f() != "Bar: 42")
-                    throw new Exception();
-            }
-
-            // Delegate to a unshared nongeneric value type instance method
-            {
-                GenStruct<int> g = new GenStruct<int>(85);
-                Func<string> f = g.MakeString;
-                if (f() != "Int32: 85")
-                    throw new Exception();
-            }
-
+            Console.WriteLine("TestDelegateToCanonMethods GenStruct<Bar> MakeGenString");
             // Delegate to a shared generic value type instance method
             {
                 GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
@@ -450,17 +461,20 @@ class Program
                     throw new Exception();
             }
 
-            // Delegate to a unshared generic value type instance method
-            {
-                GenStruct<int> g = new GenStruct<int>(85);
-                Func<string> f = g.MakeGenString<int>;
-                if (f() != "Int32, Int32: 85")
-                    throw new Exception();
-            }
-
-            // Now the same from shared code
-            RunReferenceTypeShared<FooShared>(new FooShared(42));
-            RunValueTypeShared<BarShared>(new BarShared(42));
+//            Console.WriteLine("TestDelegateToCanonMethods GenStruct<int> MakeGenString");
+//            // Delegate to a unshared generic value type instance method
+//            {
+//                GenStruct<int> g = new GenStruct<int>(85);
+//                Func<string> f = g.MakeGenString<int>;
+//                if (f() != "Int32, Int32: 85")
+//                    throw new Exception();
+//            }
+//
+//            Console.WriteLine("TestDelegateToCanonMethodsRunReferenceTypeShared<FooShared>");
+//            // Now the same from shared code
+//            RunReferenceTypeShared<FooShared>(new FooShared(42));
+//            Console.WriteLine("TestDelegateToCanonMethods RunValueTypeShared<BarShared>");
+//            RunValueTypeShared<BarShared>(new BarShared(42));
         }
     }
 
@@ -969,24 +983,24 @@ class Program
             // This will set the field to a value from non-shared code
             TypeWithThreadStaticField<object>.X = 42;
 
-            // Now read the value from shared code
-            if (TypeWithThreadStaticField<object>.Read() != 42)
-                throw new Exception();
-
-            // Set the value from shared code
-            TypeWithThreadStaticField<string>.Write(112);
-
-            // Now read the value from non-shared code
-            if (TypeWithThreadStaticField<string>.X != 112)
-                throw new Exception();
-
-            // Check that the storage locations for string and object instantiations differ
-            if (TypeWithThreadStaticField<object>.Read() != 42)
-                throw new Exception();
-
-            // Make sure we run the cctor
-            if (ReadFromBeforeFieldInitType<object>() != 1985)
-                throw new Exception();
+//            // Now read the value from shared code
+//            if (TypeWithThreadStaticField<object>.Read() != 42)
+//                throw new Exception();
+//
+//            // Set the value from shared code
+//            TypeWithThreadStaticField<string>.Write(112);
+//
+//            // Now read the value from non-shared code
+//            if (TypeWithThreadStaticField<string>.X != 112)
+//                throw new Exception();
+//
+//            // Check that the storage locations for string and object instantiations differ
+//            if (TypeWithThreadStaticField<object>.Read() != 42)
+//                throw new Exception();
+//
+//            // Make sure we run the cctor
+//            if (ReadFromBeforeFieldInitType<object>() != 1985)
+//                throw new Exception();
         }
     }
 
@@ -1263,66 +1277,66 @@ class Program
             public string ICovariantGVM<U>() { return String.Format("Covariant<{0}>.ICovariantGVM<{1}>", typeof(T).Name, typeof(U).Name); }
         }
 
-//        static string s_GMethod1;
-//        static string s_IFooString;
-//        static string s_IFooObject;
-//        static string s_IFooInt;
+        static string s_GMethod1;
+        static string s_IFooString;
+        static string s_IFooObject;
+        static string s_IFooInt;
 
         static int s_NumErrors = 0;
 
-//        private static void TestWithStruct(IFoo<string> ifooStr, IFoo<object> ifooObj, IFoo<int> ifooInt)
-//        {
-//            var res = ifooStr.IMethod1<int>(1, 2);
-//            WriteLineWithVerification(res, s_IFooString);
-//
-//            res = ifooObj.IMethod1<int>(3, 4);
-//            WriteLineWithVerification(res, s_IFooObject);
-//
-//            res = ifooInt.IMethod1<int>(5, 6);
-//            WriteLineWithVerification(res, s_IFooInt);
-//        }
-//
-//        private static void TestWithClass(object o)
-//        {
-//            Base b = o as Base;
-//            var res = b.GMethod1<int>(1, 2);
-//            WriteLineWithVerification(res, s_GMethod1);
-//
-//            IFoo<string> ifoo1 = o as IFoo<string>;
-//            res = ifoo1.IMethod1<int>(3, 4);
-//            WriteLineWithVerification(res, s_IFooString);
-//
-//            IFoo<object> ifoo2 = o as IFoo<object>;
-//            res = ifoo2.IMethod1<int>(5, 6);
-//            WriteLineWithVerification(res, s_IFooObject);
-//
-//            IFoo<int> ifoo3 = o as IFoo<int>;
-//            res = ifoo3.IMethod1<int>(7, 8);
-//            WriteLineWithVerification(res, s_IFooInt);
-//        }
-//
-//        private static void TestWithGenClass<T>(object o)
-//        {
-//            Console.WriteLine("TestWithGenClass");
-//            GenBase<T> b = o as GenBase<T>;
-//            Console.WriteLine("cast object to GenBase<T>");
-//            var res = b.GMethod1<int>(1, 2);
-//            Console.WriteLine("called GenBase");
-//
-//            WriteLineWithVerification(res, s_GMethod1);
-//
-//            IFoo<string> ifoo1 = o as IFoo<string>;
-//            res = ifoo1.IMethod1<int>(3, 4);
-//            WriteLineWithVerification(res, s_IFooString);
-//
-//            IFoo<object> ifoo2 = o as IFoo<object>;
-//            res = ifoo2.IMethod1<int>(5, 6);
-//            WriteLineWithVerification(res, s_IFooObject);
-//
-//            IFoo<int> ifoo3 = o as IFoo<int>;
-//            res = ifoo3.IMethod1<int>(7, 8);
-//            WriteLineWithVerification(res, s_IFooInt);
-//        }
+        private static void TestWithStruct(IFoo<string> ifooStr, IFoo<object> ifooObj, IFoo<int> ifooInt)
+        {
+            var res = ifooStr.IMethod1<int>(1, 2);
+            WriteLineWithVerification(res, s_IFooString);
+
+            res = ifooObj.IMethod1<int>(3, 4);
+            WriteLineWithVerification(res, s_IFooObject);
+
+            res = ifooInt.IMethod1<int>(5, 6);
+            WriteLineWithVerification(res, s_IFooInt);
+        }
+
+        private static void TestWithClass(object o)
+        {
+            Base b = o as Base;
+            var res = b.GMethod1<int>(1, 2);
+            WriteLineWithVerification(res, s_GMethod1);
+
+            IFoo<string> ifoo1 = o as IFoo<string>;
+            res = ifoo1.IMethod1<int>(3, 4);
+            WriteLineWithVerification(res, s_IFooString);
+
+            IFoo<object> ifoo2 = o as IFoo<object>;
+            res = ifoo2.IMethod1<int>(5, 6);
+            WriteLineWithVerification(res, s_IFooObject);
+
+            IFoo<int> ifoo3 = o as IFoo<int>;
+            res = ifoo3.IMethod1<int>(7, 8);
+            WriteLineWithVerification(res, s_IFooInt);
+        }
+
+        private static void TestWithGenClass<T>(object o)
+        {
+            Console.WriteLine("TestWithGenClass");
+            GenBase<T> b = o as GenBase<T>;
+            Console.WriteLine("cast object to GenBase<T>");
+            var res = b.GMethod1<int>(1, 2);
+            Console.WriteLine("called GenBase");
+
+            WriteLineWithVerification(res, s_GMethod1);
+
+            IFoo<string> ifoo1 = o as IFoo<string>;
+            res = ifoo1.IMethod1<int>(3, 4);
+            WriteLineWithVerification(res, s_IFooString);
+
+            IFoo<object> ifoo2 = o as IFoo<object>;
+            res = ifoo2.IMethod1<int>(5, 6);
+            WriteLineWithVerification(res, s_IFooObject);
+
+            IFoo<int> ifoo3 = o as IFoo<int>;
+            res = ifoo3.IMethod1<int>(7, 8);
+            WriteLineWithVerification(res, s_IFooInt);
+        }
 
         private static void WriteLineWithVerification(string actual, string expected)
         {
@@ -1340,85 +1354,85 @@ class Program
 
         public static void Run()
         {
-//            {
-//                s_GMethod1 = "Base.GMethod1<System.Int32>(1,2)";
-//                s_IFooString = "Base.IMethod1<System.Int32>(3,4)";
-//                s_IFooObject = "Base.IMethod1<System.Int32>(5,6)";
-//                s_IFooInt = "Base.IMethod1<System.Int32>(7,8)";
-//                TestWithClass(new Base());
-//                Console.WriteLine("====================");
-//
-//
-//                s_GMethod1 = "Derived.GMethod1<System.Int32>(1,2)";
-//                s_IFooString = "Derived.IFoo<string>.IMethod1<System.Int32>(3,4)";
-//                s_IFooObject = "Derived.IFoo<string>.IMethod1<System.Int32>(5,6)";
-//                s_IFooInt = "Base.IMethod1<System.Int32>(7,8)";
-//                TestWithClass(new Derived());
-//                Console.WriteLine("====================");
-//
-//
-//                s_GMethod1 = "Derived.GMethod1<System.Int32>(1,2)";
-//                s_IFooString = "Derived.IFoo<string>.IMethod1<System.Int32>(3,4)";
-//                s_IFooObject = "Derived.IFoo<string>.IMethod1<System.Int32>(5,6)";
-//                s_IFooInt = "SuperDerived.IFoo<int>.IMethod1<System.Int32>(7,8)";
-//                TestWithClass(new SuperDerived());
-//                Console.WriteLine("====================");
-//            }
-//
             {
-//                s_GMethod1 = "GenBase<System.Byte>.GMethod1<System.Int32>(1,2)";
-//                s_IFooString = "GenBase<System.Byte>.IMethod1<System.Int32>(3,4)";
-//                s_IFooObject = "GenBase<System.Byte>.IMethod1<System.Int32>(5,6)";
-//                s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
-//                TestWithGenClass<byte>(new GenBase<byte>());
-//                Console.WriteLine("====================");
+                s_GMethod1 = "Base.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "Base.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "Base.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "Base.IMethod1<System.Int32>(7,8)";
+                TestWithClass(new Base());
+                Console.WriteLine("====================");
 
 
-//                s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
-//                s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
-//                s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
-//                s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
-//                TestWithGenClass<byte>(new GenDerived<byte>());
-//                Console.WriteLine("====================");
-//
-//
-//                s_GMethod1 = "GenDerived<System.String>.GMethod1<System.Int32>(1,2)";
-//                s_IFooString = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(3,4)";
-//                s_IFooObject = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(5,6)";
-//                s_IFooInt = "GenBase<System.String>.IMethod1<System.Int32>(7,8)";
-//                TestWithGenClass<String>(new GenDerived<String>());
-//                Console.WriteLine("====================");
+                s_GMethod1 = "Derived.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "Derived.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "Derived.IFoo<string>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "Base.IMethod1<System.Int32>(7,8)";
+                TestWithClass(new Derived());
+                Console.WriteLine("====================");
 
 
-//                s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
-//                s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
-//                s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
-//                s_IFooInt = "GenSuperDerived<System.Byte>.IFoo<int>.IMethod1<System.Int32>(7,8)";
-//                TestWithGenClass<byte>(new GenSuperDerived<byte>());
-//                Console.WriteLine("====================");
+                s_GMethod1 = "Derived.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "Derived.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "Derived.IFoo<string>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "SuperDerived.IFoo<int>.IMethod1<System.Int32>(7,8)";
+                TestWithClass(new SuperDerived());
+                Console.WriteLine("====================");
             }
 
-//            {
-//                s_IFooString = "MyStruct1.IFoo<string>.IMethod1<System.Int32>(1,2)";
-//                s_IFooObject = "MyStruct1.IFoo<string>.IMethod1<System.Int32>(3,4)";
-//                s_IFooInt = "MyStruct1.IFoo<int>.IMethod1<System.Int32>(5,6)";
-//                TestWithStruct(new MyStruct1(), new MyStruct1(), new MyStruct1());
-//                Console.WriteLine("====================");
-//
-//
-//                s_IFooString = "MyStruct2.IFoo<string>.IMethod1<System.Int32>(1,2)";
-//                s_IFooObject = "MyStruct2.IFoo<string>.IMethod1<System.Int32>(3,4)";
-//                s_IFooInt = "MyStruct2.IMethod1<System.Int32>(5,6)";
-//                TestWithStruct(new MyStruct2(), new MyStruct2(), new MyStruct2());
-//                Console.WriteLine("====================");
-//
-//
-//                s_IFooString = "MyStruct3.IMethod1<System.Int32>(1,2)";
-//                s_IFooObject = "MyStruct3.IMethod1<System.Int32>(3,4)";
-//                s_IFooInt = "MyStruct3.IFoo<int>.IMethod1<System.Int32>(5,6)";
-//                TestWithStruct(new MyStruct3(), new MyStruct3(), new MyStruct3());
-//                Console.WriteLine("====================");
-//            }
+            {
+                s_GMethod1 = "GenBase<System.Byte>.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "GenBase<System.Byte>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "GenBase<System.Byte>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
+                TestWithGenClass<byte>(new GenBase<byte>());
+                Console.WriteLine("====================");
+
+
+                s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "GenBase<System.Byte>.IMethod1<System.Int32>(7,8)";
+                TestWithGenClass<byte>(new GenDerived<byte>());
+                Console.WriteLine("====================");
+
+
+                s_GMethod1 = "GenDerived<System.String>.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "GenDerived<System.String>.IFoo<string>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "GenBase<System.String>.IMethod1<System.Int32>(7,8)";
+                TestWithGenClass<String>(new GenDerived<String>());
+                Console.WriteLine("====================");
+
+
+                s_GMethod1 = "GenDerived<System.Byte>.GMethod1<System.Int32>(1,2)";
+                s_IFooString = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooObject = "GenDerived<System.Byte>.IFoo<string>.IMethod1<System.Int32>(5,6)";
+                s_IFooInt = "GenSuperDerived<System.Byte>.IFoo<int>.IMethod1<System.Int32>(7,8)";
+                TestWithGenClass<byte>(new GenSuperDerived<byte>());
+                Console.WriteLine("====================");
+            }
+
+            {
+                s_IFooString = "MyStruct1.IFoo<string>.IMethod1<System.Int32>(1,2)";
+                s_IFooObject = "MyStruct1.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooInt = "MyStruct1.IFoo<int>.IMethod1<System.Int32>(5,6)";
+                TestWithStruct(new MyStruct1(), new MyStruct1(), new MyStruct1());
+                Console.WriteLine("====================");
+
+
+                s_IFooString = "MyStruct2.IFoo<string>.IMethod1<System.Int32>(1,2)";
+                s_IFooObject = "MyStruct2.IFoo<string>.IMethod1<System.Int32>(3,4)";
+                s_IFooInt = "MyStruct2.IMethod1<System.Int32>(5,6)";
+                TestWithStruct(new MyStruct2(), new MyStruct2(), new MyStruct2());
+                Console.WriteLine("====================");
+
+
+                s_IFooString = "MyStruct3.IMethod1<System.Int32>(1,2)";
+                s_IFooObject = "MyStruct3.IMethod1<System.Int32>(3,4)";
+                s_IFooInt = "MyStruct3.IFoo<int>.IMethod1<System.Int32>(5,6)";
+                TestWithStruct(new MyStruct3(), new MyStruct3(), new MyStruct3());
+                Console.WriteLine("====================");
+            }
 
             {
                 string res = ((IFace<string>)new AnotherDerivedClass<string>()).IFaceGVMethod1<string>("string1", "string2");
@@ -1496,7 +1510,6 @@ class Program
                 Func<string, string> f = Frob<string>;
                 if (f(s) != typeof(string).Name + ": Derived: " + s)
                     throw new Exception();
-                Console.WriteLine("Validate first f passed");
                 f = base.Frob<string>;
                 if (f(s) != typeof(string).Name + ": Base: " + s)
                     throw new Exception();
@@ -1517,16 +1530,10 @@ class Program
             Func<int, string> a = foo.Frob<Atom>;
             if (a(123) != "Atom123")
                 throw new Exception();
-            Console.WriteLine("before RunShared");
             RunShared<Atom>(new FooShared());
 
-            Console.WriteLine("before Derived().Validate");
             new Derived().Validate("hello");
-            Console.WriteLine("before Derived().ValidateShared");
-
             new Derived().ValidateShared<object>("ola");
-            Console.WriteLine("End Run");
-
         }
     }
 
