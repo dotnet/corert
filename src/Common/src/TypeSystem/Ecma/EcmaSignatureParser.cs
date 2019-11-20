@@ -405,7 +405,7 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert(_reader.RemainingBytes != 0);
 
             NativeTypeKind type = (NativeTypeKind)_reader.ReadByte();
-            NativeTypeKind arraySubType = NativeTypeKind.Invalid;
+            NativeTypeKind arraySubType = NativeTypeKind.Default;
             uint? paramNum = null, numElem = null;
 
             switch (type)
@@ -456,6 +456,24 @@ namespace Internal.TypeSystem.Ecma
                         if (_reader.RemainingBytes != 0)
                         {
                             numElem = (uint)_reader.ReadCompressedInteger();
+                        }
+                    }
+                    break;
+                case NativeTypeKind.SafeArray:
+                    {
+                        // There's nobody to consume SafeArrays, so let's just parse the data
+                        // to avoid asserting later.
+
+                        // Get optional VARTYPE for the element
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            _reader.ReadCompressedInteger();
+                        }
+
+                        // VARTYPE can be followed by optional type name
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            _reader.ReadSerializedString();
                         }
                     }
                     break;

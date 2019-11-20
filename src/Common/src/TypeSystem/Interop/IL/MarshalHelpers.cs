@@ -86,7 +86,7 @@ namespace Internal.TypeSystem.Interop
                 bool isArrayElement = false)
         {
             TypeSystemContext context = type.Context;
-            NativeTypeKind nativeType = NativeTypeKind.Invalid;
+            NativeTypeKind nativeType = NativeTypeKind.Default;
             if (marshalAs != null)
             {
                 nativeType = isArrayElement ? marshalAs.ArraySubType : marshalAs.Type;
@@ -266,7 +266,7 @@ namespace Internal.TypeSystem.Interop
                 type = type.GetParameterType();
             }
             TypeSystemContext context = type.Context;
-            NativeTypeKind nativeType = NativeTypeKind.Invalid;
+            NativeTypeKind nativeType = NativeTypeKind.Default;
             bool isField = marshallerType == MarshallerType.Field;
 
             if (marshalAs != null)
@@ -290,7 +290,7 @@ namespace Internal.TypeSystem.Interop
                     case TypeFlags.Boolean:
                         switch (nativeType)
                         {
-                            case NativeTypeKind.Invalid:
+                            case NativeTypeKind.Default:
                             case NativeTypeKind.Boolean:
                                 return MarshallerKind.Bool;
 
@@ -313,7 +313,7 @@ namespace Internal.TypeSystem.Interop
                             case NativeTypeKind.U2:
                                 return MarshallerKind.UnicodeChar;
 
-                            case NativeTypeKind.Invalid:
+                            case NativeTypeKind.Default:
                                 if (isAnsi)
                                     return MarshallerKind.AnsiChar;
                                 else
@@ -324,47 +324,47 @@ namespace Internal.TypeSystem.Interop
 
                     case TypeFlags.SByte:
                     case TypeFlags.Byte:
-                        if (nativeType == NativeTypeKind.I1 || nativeType == NativeTypeKind.U1 || nativeType == NativeTypeKind.Invalid)
+                        if (nativeType == NativeTypeKind.I1 || nativeType == NativeTypeKind.U1 || nativeType == NativeTypeKind.Default)
                             return MarshallerKind.BlittableValue;
                         else
                             return MarshallerKind.Invalid;
 
                     case TypeFlags.Int16:
                     case TypeFlags.UInt16:
-                        if (nativeType == NativeTypeKind.I2 || nativeType == NativeTypeKind.U2 || nativeType == NativeTypeKind.Invalid)
+                        if (nativeType == NativeTypeKind.I2 || nativeType == NativeTypeKind.U2 || nativeType == NativeTypeKind.Default)
                             return MarshallerKind.BlittableValue;
                         else
                             return MarshallerKind.Invalid;
 
                     case TypeFlags.Int32:
                     case TypeFlags.UInt32:
-                        if (nativeType == NativeTypeKind.I4 || nativeType == NativeTypeKind.U4 || nativeType == NativeTypeKind.Invalid)
+                        if (nativeType == NativeTypeKind.I4 || nativeType == NativeTypeKind.U4 || nativeType == NativeTypeKind.Default)
                             return MarshallerKind.BlittableValue;
                         else
                             return MarshallerKind.Invalid;
 
                     case TypeFlags.Int64:
                     case TypeFlags.UInt64:
-                        if (nativeType == NativeTypeKind.I8 || nativeType == NativeTypeKind.U8 || nativeType == NativeTypeKind.Invalid)
+                        if (nativeType == NativeTypeKind.I8 || nativeType == NativeTypeKind.U8 || nativeType == NativeTypeKind.Default)
                             return MarshallerKind.BlittableValue;
                         else
                             return MarshallerKind.Invalid;
 
                     case TypeFlags.IntPtr:
                     case TypeFlags.UIntPtr:
-                        if (nativeType == NativeTypeKind.Invalid)
+                        if (nativeType == NativeTypeKind.Default)
                             return MarshallerKind.BlittableValue;
                         else
                             return MarshallerKind.Invalid;
 
                     case TypeFlags.Single:
-                        if (nativeType == NativeTypeKind.R4 || nativeType == NativeTypeKind.Invalid)
+                        if (nativeType == NativeTypeKind.R4 || nativeType == NativeTypeKind.Default)
                             return MarshallerKind.BlittableValue;
                         else
                             return MarshallerKind.Invalid;
 
                     case TypeFlags.Double:
-                        if (nativeType == NativeTypeKind.R8 || nativeType == NativeTypeKind.Invalid)
+                        if (nativeType == NativeTypeKind.R8 || nativeType == NativeTypeKind.Default)
                             return MarshallerKind.BlittableValue;
                         else
                             return MarshallerKind.Invalid;
@@ -380,7 +380,7 @@ namespace Internal.TypeSystem.Interop
 
                 if (InteropTypes.IsSystemDateTime(context, type))
                 {
-                    if (nativeType == NativeTypeKind.Invalid ||
+                    if (nativeType == NativeTypeKind.Default ||
                         nativeType == NativeTypeKind.Struct)
                         return MarshallerKind.OleDateTime;
                     else
@@ -388,7 +388,7 @@ namespace Internal.TypeSystem.Interop
                 }
                 else if (InteropTypes.IsHandleRef(context, type))
                 {
-                    if (nativeType == NativeTypeKind.Invalid)
+                    if (nativeType == NativeTypeKind.Default)
                         return MarshallerKind.HandleRef;
                     else
                         return MarshallerKind.Invalid;
@@ -396,7 +396,7 @@ namespace Internal.TypeSystem.Interop
 
                 switch (nativeType)
                 {
-                    case NativeTypeKind.Invalid:
+                    case NativeTypeKind.Default:
                     case NativeTypeKind.Struct:
                         if (InteropTypes.IsSystemDecimal(context, type))
                             return MarshallerKind.Decimal;
@@ -439,7 +439,7 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsSzArray)
             {
-                if (nativeType == NativeTypeKind.Invalid)
+                if (nativeType == NativeTypeKind.Default)
                     nativeType = NativeTypeKind.Array;
 
                 switch (nativeType)
@@ -494,14 +494,14 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsPointer || type.IsFunctionPointer)
             {
-                if (nativeType == NativeTypeKind.Invalid)
+                if (nativeType == NativeTypeKind.Default)
                     return MarshallerKind.BlittableValue;
                 else
                     return MarshallerKind.Invalid;
             }
             else if (type.IsDelegate)
             {
-                if (nativeType == NativeTypeKind.Invalid || nativeType == NativeTypeKind.Func)
+                if (nativeType == NativeTypeKind.Default || nativeType == NativeTypeKind.Func)
                     return MarshallerKind.FunctionPointer;
                 else
                     return MarshallerKind.Invalid;
@@ -534,7 +534,7 @@ namespace Internal.TypeSystem.Interop
                             return MarshallerKind.ByValUnicodeString;
                         }
 
-                    case NativeTypeKind.Invalid:
+                    case NativeTypeKind.Default:
                         if (isAnsi)
                             return MarshallerKind.AnsiString;
                         else
@@ -555,7 +555,7 @@ namespace Internal.TypeSystem.Interop
             {
                 switch (nativeType)
                 {
-                    case NativeTypeKind.Invalid:
+                    case NativeTypeKind.Default:
                         if (isAnsi)
                         {
                             return MarshallerKind.AnsiStringBuilder;
@@ -576,23 +576,23 @@ namespace Internal.TypeSystem.Interop
             }
             else if (InteropTypes.IsSafeHandle(context, type))
             {
-                if (nativeType == NativeTypeKind.Invalid)
+                if (nativeType == NativeTypeKind.Default)
                     return MarshallerKind.SafeHandle;
                 else
                     return MarshallerKind.Invalid;
             }
             else if (InteropTypes.IsCriticalHandle(context, type))
             {
-                if (nativeType == NativeTypeKind.Invalid)
+                if (nativeType == NativeTypeKind.Default)
                     return MarshallerKind.CriticalHandle;
                 else
                     return MarshallerKind.Invalid;
             }
             else if (type is MetadataType mdType && mdType.HasLayout())
             {
-                if (!isField && nativeType == NativeTypeKind.Invalid || nativeType == NativeTypeKind.LPStruct)
+                if (!isField && nativeType == NativeTypeKind.Default || nativeType == NativeTypeKind.LPStruct)
                     return MarshallerKind.LayoutClassPtr;
-                else if (isField && (nativeType == NativeTypeKind.Invalid || nativeType == NativeTypeKind.Struct))
+                else if (isField && (nativeType == NativeTypeKind.Default || nativeType == NativeTypeKind.Struct))
                     return MarshallerKind.LayoutClass;
                 else
                     return MarshallerKind.Invalid;
@@ -607,7 +607,7 @@ namespace Internal.TypeSystem.Interop
                    bool isAnsi)
         {
             TypeDesc elementType = arrayType.ElementType;
-            NativeTypeKind nativeType = NativeTypeKind.Invalid;
+            NativeTypeKind nativeType = NativeTypeKind.Default;
             TypeSystemContext context = arrayType.Context;
 
             if (marshalAs != null)
@@ -641,7 +641,7 @@ namespace Internal.TypeSystem.Interop
                             case NativeTypeKind.I1:
                             case NativeTypeKind.U1:
                                 return MarshallerKind.CBool;
-                            case NativeTypeKind.Invalid:
+                            case NativeTypeKind.Default:
                             default:
                                 return MarshallerKind.Bool;
                         }
@@ -676,7 +676,7 @@ namespace Internal.TypeSystem.Interop
                 {
                     switch (nativeType)
                     {
-                        case NativeTypeKind.Invalid:
+                        case NativeTypeKind.Default:
                         case NativeTypeKind.Struct:
                             return MarshallerKind.Decimal;
 
@@ -691,7 +691,7 @@ namespace Internal.TypeSystem.Interop
                 {
                     switch (nativeType)
                     {
-                        case NativeTypeKind.Invalid:
+                        case NativeTypeKind.Default:
                         case NativeTypeKind.Struct:
                             return MarshallerKind.BlittableValue;
 
@@ -704,7 +704,7 @@ namespace Internal.TypeSystem.Interop
                 }
                 else if (InteropTypes.IsSystemDateTime(context, elementType))
                 {
-                    if (nativeType == NativeTypeKind.Invalid ||
+                    if (nativeType == NativeTypeKind.Default ||
                         nativeType == NativeTypeKind.Struct)
                     {
                         return MarshallerKind.OleDateTime;
@@ -716,7 +716,7 @@ namespace Internal.TypeSystem.Interop
                 }
                 else if (InteropTypes.IsHandleRef(context, elementType))
                 {
-                    if (nativeType == NativeTypeKind.Invalid)
+                    if (nativeType == NativeTypeKind.Default)
                         return MarshallerKind.HandleRef;
                     else
                         return MarshallerKind.Invalid;
@@ -727,7 +727,7 @@ namespace Internal.TypeSystem.Interop
                     {
                         switch (nativeType)
                         {
-                            case NativeTypeKind.Invalid:
+                            case NativeTypeKind.Default:
                             case NativeTypeKind.Struct:
                                 return MarshallerKind.BlittableStruct;
 
@@ -744,7 +744,7 @@ namespace Internal.TypeSystem.Interop
             }
             else if (elementType.IsPointer || elementType.IsFunctionPointer)
             {
-                if (nativeType == NativeTypeKind.Invalid)
+                if (nativeType == NativeTypeKind.Default)
                     return MarshallerKind.BlittableValue;
                 else
                     return MarshallerKind.Invalid;
@@ -753,7 +753,7 @@ namespace Internal.TypeSystem.Interop
             {
                 switch (nativeType)
                 {
-                    case NativeTypeKind.Invalid:
+                    case NativeTypeKind.Default:
                         if (isAnsi)
                             return MarshallerKind.AnsiString;
                         else
@@ -768,7 +768,7 @@ namespace Internal.TypeSystem.Interop
             }
             // else if (elementType.IsObject)
             // {
-            //    if (nativeType == NativeTypeKind.Invalid)
+            //    if (nativeType == NativeTypeKind.Default)
             //        return MarshallerKind.Variant;
             //    else
             //        return MarshallerKind.Invalid;
