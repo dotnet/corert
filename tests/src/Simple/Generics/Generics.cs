@@ -399,58 +399,58 @@ class Program
         public static void Run()
         {
             Console.WriteLine("TestDelegateToCanonMethods Run");
-//            // Delegate to a shared nongeneric reference type instance method
-//            {
-//                GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
-//                Func<string> f = g.MakeString;
-//                if (f() != "Foo: 42")
-//                    throw new Exception();
-//            }
-//
-//            Console.WriteLine("TestDelegateToCanonMethods GenClass<int>");
-//            // Delegate to a unshared nongeneric reference type instance method
-//            {
-//                GenClass<int> g = new GenClass<int>(85);
-//                Func<string> f = g.MakeString;
-//                if (f() != "Int32: 85")
-//                    throw new Exception();
-//            }
-//
-//            Console.WriteLine("TestDelegateToCanonMethods GenClass<Foo> MakeGenString");
-//            // Delegate to a shared generic reference type instance method
-//            {
-//                GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
-//                Func<string> f = g.MakeGenString<Foo>;
-//                if (f() != "Foo, Foo: 42")
-//                    throw new Exception();
-//            }
-//
-//            Console.WriteLine("TestDelegateToCanonMethods GenClass<int> MakeGenString");
-//            // Delegate to a unshared generic reference type instance method
-//            {
-//                GenClass<int> g = new GenClass<int>(85);
-//                Func<string> f = g.MakeGenString<int>;
-//                if (f() != "Int32, Int32: 85")
-//                    throw new Exception();
-//            }
-//
-//            Console.WriteLine("TestDelegateToCanonMethods GenStruct<Bar> MakeString");
-//            // Delegate to a shared nongeneric value type instance method
-//            {
-//                GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
-//                Func<string> f = g.MakeString;
-//                if (f() != "Bar: 42")
-//                    throw new Exception();
-//            }
-//
-//            Console.WriteLine("TestDelegateToCanonMethods GenStruct<int> MakeString");
-//            // Delegate to a unshared nongeneric value type instance method
-//            {
-//                GenStruct<int> g = new GenStruct<int>(85);
-//                Func<string> f = g.MakeString;
-//                if (f() != "Int32: 85")
-//                    throw new Exception();
-//            }
+            // Delegate to a shared nongeneric reference type instance method
+            {
+                GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
+                Func<string> f = g.MakeString;
+                if (f() != "Foo: 42")
+                    throw new Exception();
+            }
+
+            Console.WriteLine("TestDelegateToCanonMethods GenClass<int>");
+            // Delegate to a unshared nongeneric reference type instance method
+            {
+                GenClass<int> g = new GenClass<int>(85);
+                Func<string> f = g.MakeString;
+                if (f() != "Int32: 85")
+                    throw new Exception();
+            }
+
+            Console.WriteLine("TestDelegateToCanonMethods GenClass<Foo> MakeGenString");
+            // Delegate to a shared generic reference type instance method
+            {
+                GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
+                Func<string> f = g.MakeGenString<Foo>;
+                if (f() != "Foo, Foo: 42")
+                    throw new Exception();
+            }
+
+            Console.WriteLine("TestDelegateToCanonMethods GenClass<int> MakeGenString");
+            // Delegate to a unshared generic reference type instance method
+            {
+                GenClass<int> g = new GenClass<int>(85);
+                Func<string> f = g.MakeGenString<int>;
+                if (f() != "Int32, Int32: 85")
+                    throw new Exception();
+            }
+
+            Console.WriteLine("TestDelegateToCanonMethods GenStruct<Bar> MakeString");
+            // Delegate to a shared nongeneric value type instance method
+            {
+                GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
+                Func<string> f = g.MakeString;
+                if (f() != "Bar: 42")
+                    throw new Exception();
+            }
+
+            Console.WriteLine("TestDelegateToCanonMethods GenStruct<int> MakeString");
+            // Delegate to a unshared nongeneric value type instance method
+            {
+                GenStruct<int> g = new GenStruct<int>(85);
+                Func<string> f = g.MakeString;
+                if (f() != "Int32: 85")
+                    throw new Exception();
+            }
 
             Console.WriteLine("TestDelegateToCanonMethods GenStruct<Bar> MakeGenString");
             // Delegate to a shared generic value type instance method
@@ -461,20 +461,20 @@ class Program
                     throw new Exception();
             }
 
-//            Console.WriteLine("TestDelegateToCanonMethods GenStruct<int> MakeGenString");
-//            // Delegate to a unshared generic value type instance method
-//            {
-//                GenStruct<int> g = new GenStruct<int>(85);
-//                Func<string> f = g.MakeGenString<int>;
-//                if (f() != "Int32, Int32: 85")
-//                    throw new Exception();
-//            }
-//
-//            Console.WriteLine("TestDelegateToCanonMethodsRunReferenceTypeShared<FooShared>");
-//            // Now the same from shared code
-//            RunReferenceTypeShared<FooShared>(new FooShared(42));
-//            Console.WriteLine("TestDelegateToCanonMethods RunValueTypeShared<BarShared>");
-//            RunValueTypeShared<BarShared>(new BarShared(42));
+            Console.WriteLine("TestDelegateToCanonMethods GenStruct<int> MakeGenString");
+            // Delegate to a unshared generic value type instance method
+            {
+                GenStruct<int> g = new GenStruct<int>(85);
+                Func<string> f = g.MakeGenString<int>;
+                if (f() != "Int32, Int32: 85")
+                    throw new Exception();
+            }
+
+            Console.WriteLine("TestDelegateToCanonMethodsRunReferenceTypeShared<FooShared>");
+            // Now the same from shared code
+            RunReferenceTypeShared<FooShared>(new FooShared(42));
+            Console.WriteLine("TestDelegateToCanonMethods RunValueTypeShared<BarShared>");
+            RunValueTypeShared<BarShared>(new BarShared(42));
         }
     }
 

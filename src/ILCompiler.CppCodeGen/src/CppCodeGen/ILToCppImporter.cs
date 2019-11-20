@@ -126,10 +126,6 @@ namespace Internal.IL
             // Get the runtime determined method IL so that this works right in shared code
             // and tokens in shared code resolve to runtime determined types.
             MethodIL uninstantiatiedMethodIL = methodIL.GetMethodILDefinition();
-            if (method.ToString().Contains("MakeGenString"))
-            {
-
-            }
             if (methodIL != uninstantiatiedMethodIL)
             {
                 MethodDesc sharedMethod = method.GetSharedRuntimeFormMethodTarget();
@@ -138,11 +134,6 @@ namespace Internal.IL
             else
             {
                 _methodIL = methodIL;
-            }
-
-            if (_method.ToString().Contains("CheckStaticClassConstructionReturnNonGCStaticBase"))
-            {
-
             }
 
             _ilBytes = methodIL.GetILBytes();
@@ -1301,10 +1292,10 @@ namespace Internal.IL
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
 
-            if (method.ToString().Contains("MakeGenString"))
-            {
-
-            }
+//            if (_method.ToString().Contains("RunReferenceTypeShared"))
+//            {
+//
+//            }
             if (method.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(method, runtimeDeterminedMethod))
@@ -2261,7 +2252,7 @@ namespace Internal.IL
             MethodDesc method = ((MethodDesc)_canonMethodIL.GetObject(token));
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (method.ToString().Contains("TestGvmDelegates") && method.ToString().Contains("IFoo.Frob"))
+            if (_method.ToString().Contains("TestDelegateFatFunctionPointers"))
             {
 
             }

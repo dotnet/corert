@@ -3270,35 +3270,9 @@ namespace Internal.IL
             }
             else
             {
-                if (_method.ToString()
-                        .Contains("Validate")
-                    && _method.ToString()
-                        .Contains("Derived"))
+                if (_method.ToString().Contains("TestDelegateFatFunctionPointers"))
                 {
-                    if (runtimeDeterminedMethod.ToString().Contains("InvokeOpenStaticThunk"))
-                    {
-                        PrintInt32(BuildConstInt32(33));
-                    }
-                    else if (runtimeDeterminedMethod.ToString().Contains("InvokeClosedStaticThunk"))
-                    {
-                        PrintInt32(BuildConstInt32(34));
-                    }
-                    else if (runtimeDeterminedMethod.ToString().Contains("InvokeInstanceClosedOverGenericMethodThunk"))
-                    {
-                        PrintInt32(BuildConstInt32(35));
-                    }
-                    else if (runtimeDeterminedMethod.ToString().Contains("InvokeMulticastThunk"))
-                    {
-                        PrintInt32(BuildConstInt32(36));
-                    }
-                    else if (runtimeDeterminedMethod.ToString().Contains("InvokeObjectArrayThunk"))
-                    {
-                        PrintInt32(BuildConstInt32(37));
-                    }
-                    else if (runtimeDeterminedMethod.ToString().Contains("InvokeOpenInstanceThunk"))
-                    {
-                        PrintInt32(BuildConstInt32(38));
-                    }
+
                 }
                 if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic))
                 {
@@ -3311,16 +3285,19 @@ namespace Internal.IL
                         var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodEntry, runtimeDeterminedMethod, out helper);
                         targetLLVMFunction = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
                         {
-                    GetShadowStack(),
+                            GetShadowStack(),
                             GetGenericContext()
                         }, "getHelper");
+                        if (!(canonMethod.IsVirtual && !canonMethod.IsFinal && !canonMethod.OwningType.IsSealed()))
+                        {
+                            // fat function pointer
+                            targetLLVMFunction = MakeFatPointer(_builder, targetLLVMFunction);
+                        }
                     }
                     else
                     {
                         var fatFunctionSymbol = GetAndAddFatFunctionPointer(runtimeDeterminedMethod);
-                        //TODO: use bit operator, this is a 32* so a gep with the Offset will do +32*4
-                        targetLLVMFunction = LLVM.BuildGEP(_builder, LoadAddressOfSymbolNode(fatFunctionSymbol), new[] { BuildConstInt32((int)FatFunctionPointerOffset / 4) },
-                            "fatGep");
+                        targetLLVMFunction = MakeFatPointer(_builder, LoadAddressOfSymbolNode(fatFunctionSymbol));
                     }
                 }
                 else AddMethodReference(canonMethod);
@@ -3364,6 +3341,13 @@ namespace Internal.IL
 
             var entry = new FunctionPointerEntry("ldftn", runtimeDeterminedMethod, targetLLVMFunction, GetWellKnownType(WellKnownType.IntPtr), opCode == ILOpcode.ldvirtftn);
             _stack.Push(entry);
+        }
+
+        //TODO: refactor other cases to use this, make static? cast to i8*?
+        LLVMValueRef MakeFatPointer(LLVMBuilderRef builder, LLVMValueRef targetLlvmFunction)
+        {
+            var asInt = LLVM.BuildPtrToInt(builder, targetLlvmFunction, LLVMTypeRef.Int32Type(), "toInt");
+            return LLVM.BuildBinOp(_builder, LLVMOpcode.LLVMOr, asInt, LLVM.ConstInt(LLVM.Int32Type(), FatFunctionPointerOffset, LLVMMisc.False), "makeFat");
         }
 
         ISymbolNode GetAndAddFatFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
