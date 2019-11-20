@@ -198,10 +198,11 @@ namespace ILCompiler.DependencyAnalysis
 
             EmitDebugMetadata();
 
+            var res = LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMReturnStatusAction, out string unused);
+
 #if DEBUG
             LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out string unused2);
 #endif //DEBUG
-            LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);
 
             LLVM.WriteBitcodeToFile(Module, _objectFilePath);
 
@@ -1170,6 +1171,8 @@ namespace ILCompiler.DependencyAnalysis
                         MethodDesc constructor = target.Constructor.Method;
 //                        PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 49, false), LLVM.GetParam(helperFunc, 0));
 //                        PrintIntPtr(builder, resVar, LLVM.GetParam(helperFunc, 0));
+                        var paramCOunt = LLVM.GetParams(helperFunc);
+                        var fatPtr = ILImporter.MakeFatPointer(builder, LLVM.GetParam(helperFunc, 2));
 //                        var fatFunction = LLVM.BuildGEP(builder, resVar,
 //                            new LLVMValueRef[]
 //                            {
@@ -1178,7 +1181,7 @@ namespace ILCompiler.DependencyAnalysis
 //                            "fatPointer");
 //                        PrintIntPtr(builder, fatFunction, LLVM.GetParam(helperFunc, 0));
 
-                        importer.OutputCodeForDelegateCtorInit(builder, helperFunc, constructor, LLVM.GetParam(helperFunc, 3));
+                        importer.OutputCodeForDelegateCtorInit(builder, helperFunc, constructor, fatPtr);
 
 //                        sb.Append("::");
 //                        sb.Append(GetCppMethodDeclarationName(constructor.OwningType, GetCppMethodName(constructor)));
@@ -1473,17 +1476,28 @@ namespace Internal.IL
             MethodDesc constructor,
             LLVMValueRef fatFunction)
         {
-            StackEntry[] argValues = new StackEntry [constructor.Signature.Length + 1];  // for Delegate * _this
+            StackEntry[] argValues = new StackEntry [constructor.Signature.Length + 1]; // for delegate this
             var shadowStack = LLVM.GetFirstParam(helperFunc);
             argValues[0] = new LoadExpressionEntry(StackValueKind.ObjRef, "this", shadowStack, GetWellKnownType(WellKnownType.Object));
             for (var i = 0; i < constructor.Signature.Length; i++)
             {
-                var argRef = LoadVarAddress(i + 1, LocalVarKind.Argument, out TypeDesc type);
-                var loadArg = LLVM.BuildLoad(builder, argRef, "arg" + i + 1);
-                argValues[i + 1] = new ExpressionEntry(GetStackValueKind(constructor.Signature[i]), "arg" + i + 1, loadArg, 
-                    constructor.Signature[i]);
+                if (i == 1)
+                {
+                    argValues[i + 1] = new ExpressionEntry(StackValueKind.Int32, "arg" + (i + 1), 
+                        LLVM.BuildIntToPtr(builder, fatFunction, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "toPtr"), 
+                        GetWellKnownType(WellKnownType.IntPtr));
+                }
+                else
+                {
+                    var argRef = LoadVarAddress(i + 1, LocalVarKind.Argument, out TypeDesc type);
+                    var ptrPtr = LLVM.BuildPointerCast(builder, argRef,
+                        LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), 0), "ptrPtr");
+                    var loadArg = LLVM.BuildLoad(builder, ptrPtr, "arg" + (i + 1));
+                    argValues[i + 1] = new ExpressionEntry(GetStackValueKind(constructor.Signature[i]), "arg" + i + 1, loadArg,
+                        constructor.Signature[i]);
+                }
             }
-//            argValues[3] = new ExpressionEntry(StackValueKind.NativeInt, "arg3", fatFunction, GetWellKnownType(WellKnownType.Int32));
+//            //TODO: this is only used in one place so inline 
             HandleCall(constructor, constructor.Signature, constructor, constructor.Signature, argValues, null);
         }
     }

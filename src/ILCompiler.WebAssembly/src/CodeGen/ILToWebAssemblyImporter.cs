@@ -1652,7 +1652,9 @@ namespace Internal.IL
             MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             MethodDesc callee = (MethodDesc)_canonMethodIL.GetObject(token);
 
-            if (callee.ToString().Contains("MakeGenString"))
+            if (_method.ToString().Contains("InitializeClosedInstanceSlow") && _method.ToString().Contains("RunReferenceTypeShared") &&
+                _method.ToString().Contains("Canon>") &&
+                callee.ToString().Contains("InitializeClosedInstanceSlow"))
             {
             
             }
@@ -2532,6 +2534,13 @@ namespace Internal.IL
                             .ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder));
                     }
                 }
+                if (_method != null && _method.ToString().Contains("MakeGenString") && _method.ToString().Contains("GenClass") &&
+                    _method.ToString().Contains("Canon>") &&
+                    callee.ToString().Contains("ToString"))
+                {
+                    PrintInt32(BuildConstInt32(69));
+                    PrintInt32(argumentValues[0].ValueAsInt32(_builder, false));
+                }
                 fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
             }
 
@@ -3341,13 +3350,6 @@ namespace Internal.IL
 
             var entry = new FunctionPointerEntry("ldftn", runtimeDeterminedMethod, targetLLVMFunction, GetWellKnownType(WellKnownType.IntPtr), opCode == ILOpcode.ldvirtftn);
             _stack.Push(entry);
-        }
-
-        //TODO: refactor other cases to use this, make static? cast to i8*?
-        LLVMValueRef MakeFatPointer(LLVMBuilderRef builder, LLVMValueRef targetLlvmFunction)
-        {
-            var asInt = LLVM.BuildPtrToInt(builder, targetLlvmFunction, LLVMTypeRef.Int32Type(), "toInt");
-            return LLVM.BuildBinOp(_builder, LLVMOpcode.LLVMOr, asInt, LLVM.ConstInt(LLVM.Int32Type(), FatFunctionPointerOffset, LLVMMisc.False), "makeFat");
         }
 
         ISymbolNode GetAndAddFatFunctionPointer(MethodDesc method, bool isUnboxingStub = false)

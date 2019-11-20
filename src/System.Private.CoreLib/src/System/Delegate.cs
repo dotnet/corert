@@ -195,6 +195,7 @@ namespace System
                 m_functionPointer = GetThunk(ClosedInstanceThunkOverGenericMethod);
                 m_extraFunctionPointerOrData = functionPointer;
                 m_helperObject = firstParameter;
+                X2.PrintLine(firstParameter.ToString());
                 var descPtr = FunctionPointerOps.ConvertToGenericDescriptor(functionPointer);
                 X2.PrintUint(descPtr->_MethodDictionaryPointerPointer->ToInt32());
             }

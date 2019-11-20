@@ -325,6 +325,10 @@ class Program
 
             public string MakeGenString<U>()
             {
+                Console.WriteLine("MakeGenString<U>");
+                Console.WriteLine(this.ToString());
+                Console.WriteLine(typeof(T).Name);
+                Console.WriteLine(typeof(U).Name);
                 // Use a constructed type that is not used elsewhere
                 return typeof(T[,,]).GetElementType().Name + ", " +
                     typeof(U[,,,]).GetElementType().Name + ": " + X.ToString();
