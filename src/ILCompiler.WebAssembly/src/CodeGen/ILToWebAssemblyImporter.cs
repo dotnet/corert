@@ -1964,8 +1964,7 @@ namespace Internal.IL
                     if (directMethod == null)
                     {
                         TypeDesc objectType = thisByRef.Type;
-                        var eeTypeDesc =
-                            _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                        var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
                         argumentValues[0] = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhBox",
                             new StackEntry[]
                             {
