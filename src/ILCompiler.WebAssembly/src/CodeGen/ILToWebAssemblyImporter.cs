@@ -1533,6 +1533,9 @@ namespace Internal.IL
                 return;
             }
 
+            TypeDesc localConstrainedType = _constrainedType;
+            _constrainedType = null;
+
             if (opcode == ILOpcode.newobj)
             {
                 TypeDesc newType = callee.OwningType;
@@ -1595,6 +1598,15 @@ namespace Internal.IL
                     }
                 }
             }
+            else
+            {
+                // !newobj
+                if (opcode == ILOpcode.callvirt && localConstrainedType != null)
+                {
+                    if (localConstrainedType.IsRuntimeDeterminedSubtype)
+                        localConstrainedType = localConstrainedType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                }
+            }
 
             if (opcode == ILOpcode.newobj && callee.OwningType.IsDelegate)
             {
@@ -1607,8 +1619,6 @@ namespace Internal.IL
                 }
             }
 
-            TypeDesc localConstrainedType = _constrainedType;
-            _constrainedType = null;
             HandleCall(callee, callee.Signature, opcode, localConstrainedType);
         }
 
@@ -1945,6 +1955,26 @@ namespace Internal.IL
                 {
                     TypeDesc objectType = thisByRef.Type.GetParameterType();
                     argumentValues[0] = new LoadExpressionEntry(StackValueKind.ObjRef, "thisPtr", thisByRef.ValueAsType(objectType, _builder), objectType);
+                }
+                else if (opcode == ILOpcode.callvirt)
+                {
+                    bool forceUseRuntimeLookup;
+                    MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(callee.OwningType, callee, out forceUseRuntimeLookup);
+
+                    if (directMethod == null)
+                    {
+                        TypeDesc objectType = thisByRef.Type;
+                        var eeTypeDesc =
+                            _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                        argumentValues[0] = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhBox",
+                            new StackEntry[]
+                            {
+                                new LoadExpressionEntry(StackValueKind.ValueType, "eeType",
+                                    GetEETypePointerForTypeDesc(constrainedType, true), eeTypeDesc),
+                                argumentValues[0],
+                            });
+                    }
+                    //TODO can we switch to an ILOpcode.call as cpp does?
                 }
             }
 
