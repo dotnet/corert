@@ -326,7 +326,7 @@ class Program
             public string MakeGenString<U>()
             {
                 Console.WriteLine("MakeGenString<U>");
-                Console.WriteLine(this.ToString());
+//                Console.WriteLine(this.ToString());
                 Console.WriteLine(typeof(T).Name);
                 Console.WriteLine(typeof(U).Name);
                 // Use a constructed type that is not used elsewhere
@@ -353,6 +353,7 @@ class Program
             public string MakeGenString<U>()
             {
                 Console.WriteLine("MakeGenString<U>");
+                Console.WriteLine(this.ToString());
                 Console.WriteLine(typeof(T).Name);
                 Console.WriteLine(typeof(U).Name);
                 Console.WriteLine(X.ToString());

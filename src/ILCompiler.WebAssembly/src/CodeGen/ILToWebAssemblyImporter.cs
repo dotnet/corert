@@ -2121,11 +2121,11 @@ namespace Internal.IL
                 var eeType = LLVM.BuildLoad(_builder, rawObjectPtr, "ldEEType");
                 var slotPtr = LLVM.BuildGEP(_builder, eeType, new LLVMValueRef[] { slot }, "__getslot__");
                 functionPtr = LLVM.BuildLoad(_builder, slotPtr, "ld__getslot__");
-                if (method.ToString().Contains("ToString"))
-                {
-                    PrintInt32(BuildConstInt32(96));
-                    PrintIntPtr(rawObjectPtr);
-                }
+//                if (method.ToString().Contains("ToString"))
+//                {
+//                    PrintInt32(BuildConstInt32(96));
+//                    PrintIntPtr(rawObjectPtr);
+//                }
             }
 
             return functionPtr;
@@ -2523,24 +2523,13 @@ namespace Internal.IL
             }
             else
             {
-                if (opcode == ILOpcode.callvirt && canonMethod.HasInstantiation && canonMethod.IsVirtual &&
-                    !canonMethod.IsFinal &&
-                    !canonMethod.OwningType.IsSealed())
-                {
-                    if (!signature.IsStatic)
-                    {
-                        PrintInt32(BuildConstInt32(18));
-                        PrintIntPtr(argumentValues[0]
-                            .ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder));
-                    }
-                }
-                if (_method != null && _method.ToString().Contains("MakeGenString") && _method.ToString().Contains("GenClass") &&
-                    _method.ToString().Contains("Canon>") &&
-                    callee.ToString().Contains("ToString"))
-                {
-                    PrintInt32(BuildConstInt32(69));
-                    PrintInt32(argumentValues[0].ValueAsInt32(_builder, false));
-                }
+//                if (_method != null && _method.ToString().Contains("MakeGenString") && _method.ToString().Contains("GenStruct") &&
+//                    _method.ToString().Contains("Canon>") &&
+//                    callee.ToString().Contains("ToString"))
+//                {
+//                    PrintInt32(BuildConstInt32(69));
+//                    PrintInt32(argumentValues[0].ValueAsInt32(_builder, false));
+//                }
                 fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
             }
 
