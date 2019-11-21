@@ -116,9 +116,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
       <Link>Internal\TypeSystem\Ecma\CachingMetadataStringDecoder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelStack.cs">
-      <Link>Internal\TypeSystem\Ecma\LowLevelStack.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\CustomAttributeTypeProvider.cs">
       <Link>Internal\TypeSystem\Ecma\CustomAttributeTypeProvider.cs</Link>
     </Compile>

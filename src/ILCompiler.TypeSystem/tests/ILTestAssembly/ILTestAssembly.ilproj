@@ -15,7 +15,6 @@
     <Compile Include="InstanceFieldLayout.il" />
     <Compile Include="StaticFieldLayout.il" />
     <Compile Include="VirtualFunctionOverride.il" />
-    <Compile Include="Signature.il" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
