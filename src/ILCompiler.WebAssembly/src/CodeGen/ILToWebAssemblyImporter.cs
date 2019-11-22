@@ -2481,6 +2481,7 @@ namespace Internal.IL
 
         private void HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), LLVMValueRef hiddenRef = default(LLVMValueRef))
         {
+            bool resolvedConstraint = false;  // Not used yet, but will need for IsArrayAddressMethod and the generic lookup
             var canonMethod = callee?.GetCanonMethodTarget(CanonicalFormKind.Specific);
             var canonMethodSignature = canonMethod?.Signature;
 
@@ -2491,7 +2492,6 @@ namespace Internal.IL
             {
                 argumentValues[argumentValues.Length - i - 1] = _stack.Pop();
             }
-
             if (constrainedType != null)
             {
                 if (signature.IsStatic)
@@ -2530,15 +2530,22 @@ namespace Internal.IL
                                 argumentValues[0],
                             });
                     }
+                    else
+                    {
+                        callee = directMethod;
+                        opcode = ILOpcode.call;
+                        resolvedConstraint = true;
+                    }
                     //TODO can we switch to an ILOpcode.call as cpp does?
                 }
             }
             //TODO: refactor generic logic out here
-            PushNonNull(HandleCall(callee, signature, canonMethod, canonMethodSignature, argumentValues, runtimeDeterminedMethod, opcode, constrainedType, calliTarget, hiddenRef));
+            PushNonNull(HandleCall(callee, signature, canonMethod, canonMethodSignature, argumentValues, runtimeDeterminedMethod, opcode, constrainedType, calliTarget, hiddenRef, resolvedConstraint: resolvedConstraint));
         }
 
         // TODO: rename hiddenRef param
-        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc canonMethod, MethodSignature canonSignature, StackEntry[] argumentValues, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), LLVMValueRef hiddenRef = default(LLVMValueRef), TypeDesc forcedReturnType = null)
+        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc canonMethod, MethodSignature canonSignature, StackEntry[] argumentValues, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), LLVMValueRef hiddenRef = default(LLVMValueRef), bool resolvedConstraint = false, TypeDesc forcedReturnType = null)
+            LLVMValueRef calliTarget = default(LLVMValueRef), bool resolvedConstraint = false, TypeDesc forcedReturnType = null)
         {
             //TODO: refactor so this is a simple call llvm method from the MethodDesc/Sig
             LLVMValueRef fn;
