@@ -1927,6 +1927,7 @@ namespace Internal.IL
 
         private void HandleCall(MethodDesc callee, MethodSignature signature, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef))
         {
+            bool resolvedConstraint = false;  // Not used yet, but will need for IsArrayAddressMethod and the generic lookup
             var parameterCount = signature.Length + (signature.IsStatic ? 0 : 1);
             // The last argument is the top of the stack. We need to reverse them and store starting at the first argument
             StackEntry[] argumentValues = new StackEntry[parameterCount];
@@ -1934,7 +1935,6 @@ namespace Internal.IL
             {
                 argumentValues[argumentValues.Length - i - 1] = _stack.Pop();
             }
-
             if (constrainedType != null)
             {
                 if (signature.IsStatic)
@@ -1973,14 +1973,22 @@ namespace Internal.IL
                                 argumentValues[0],
                             });
                     }
+                    else
+                    {
+                        callee = directMethod;
+                        opcode = ILOpcode.call;
+                        resolvedConstraint = true;
+                    }
                     //TODO can we switch to an ILOpcode.call as cpp does?
                 }
             }
 
-            PushNonNull(HandleCall(callee, signature, argumentValues, opcode, constrainedType, calliTarget));
+            PushNonNull(HandleCall(callee, signature, argumentValues, opcode, constrainedType, calliTarget, resolvedConstraint: resolvedConstraint));
         }
 
-        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
+        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues,
+            ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null,
+            LLVMValueRef calliTarget = default(LLVMValueRef), bool resolvedConstraint = false, TypeDesc forcedReturnType = null)
         {
             LLVMValueRef fn;
             if (opcode == ILOpcode.calli)
