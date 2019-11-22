@@ -123,6 +123,10 @@ namespace Internal.IL
 
             _canonMethodIL = methodIL;
 
+            if (method.ToString().Contains("EETypePtrOf"))
+            {
+
+            }
             // Get the runtime determined method IL so that this works right in shared code
             // and tokens in shared code resolve to runtime determined types.
             MethodIL uninstantiatiedMethodIL = methodIL.GetMethodILDefinition();
@@ -1292,13 +1296,19 @@ namespace Internal.IL
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
 
-            if (method.ToString().Contains("TestConstrainedMethodCalls") &&
-                method.ToString().Contains("_Canon") &&
-                method.ToString().Contains("Foo") &&
-                method.ToString().Contains("Frob"))
+            // Program+TestConstrainedMethodCalls+IFoo`1<System.__Canon>.Frob(object)}
+            if (method.ToString().Contains("EETypePtrOf")
+            )
             {
 
             }
+//            if (method.ToString().Contains("GetValueInternal") &&
+//                _method.ToString().Contains("EETypePtrOf") &&
+//                _method.ToString().Contains("bool")
+//            )
+//            {
+//
+//            }
             if (method.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(method, runtimeDeterminedMethod))

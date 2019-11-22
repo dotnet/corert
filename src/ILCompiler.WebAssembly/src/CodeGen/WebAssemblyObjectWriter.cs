@@ -1172,7 +1172,7 @@ namespace ILCompiler.DependencyAnalysis
 //                        PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 49, false), LLVM.GetParam(helperFunc, 0));
 //                        PrintIntPtr(builder, resVar, LLVM.GetParam(helperFunc, 0));
                         var paramCOunt = LLVM.GetParams(helperFunc);
-                        var fatPtr = ILImporter.MakeFatPointer(builder, LLVM.GetParam(helperFunc, 2));
+                        var fatPtr = ILImporter.MakeFatPointer(builder, resVar);
 //                        var fatFunction = LLVM.BuildGEP(builder, resVar,
 //                            new LLVMValueRef[]
 //                            {
