@@ -1650,9 +1650,12 @@ namespace Internal.IL
         {
             MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             MethodDesc callee = (MethodDesc)_canonMethodIL.GetObject(token);
-
-            if (_method.ToString().Contains("RunValueTypeShared")
-                )
+            if (callee.ToString().Contains("Frob")
+                &&
+                _method.ToString().Contains("TestConstrainedMethod")
+                &&
+                _method.ToString().Contains("DoFrob")
+            )
             {
 
             }
@@ -1787,11 +1790,7 @@ namespace Internal.IL
             else
             {
                 // !newobj
-                if (opcode == ILOpcode.callvirt && localConstrainedType != null)
-                {
-                    if (localConstrainedType.IsRuntimeDeterminedSubtype)
-                        localConstrainedType = localConstrainedType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                }
+
             }
 
             var suppressHandleCall = false;
@@ -2509,18 +2508,22 @@ namespace Internal.IL
                 }
                 else if (opcode == ILOpcode.callvirt)
                 {
+                    var canonConstrainedType = constrainedType;
+                    if (constrainedType.IsRuntimeDeterminedSubtype)
+                        canonConstrainedType = constrainedType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                    
                     bool forceUseRuntimeLookup;
-                    MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(callee.OwningType, callee, out forceUseRuntimeLookup);
+                    var constrainedClosestDefType = canonConstrainedType.GetClosestDefType();
+                    MethodDesc directMethod = constrainedClosestDefType.TryResolveConstraintMethodApprox(callee.OwningType, callee, out forceUseRuntimeLookup);
 
                     if (directMethod == null)
                     {
-                        TypeDesc objectType = thisByRef.Type;
                         MetadataType eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
                         argumentValues[0] = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhBox",
                             new StackEntry[]
                             {
                                 new LoadExpressionEntry(StackValueKind.ValueType, "eeType",
-                                    GetEETypePointerForTypeDesc(constrainedType, true), eeTypeDesc),
+                                    GetEETypePointerForTypeDesc(constrainedClosestDefType, true), eeTypeDesc),
                                 argumentValues[0],
                             });
                     }

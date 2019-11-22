@@ -1297,7 +1297,11 @@ namespace Internal.IL
 
 
             // Program+TestConstrainedMethodCalls+IFoo`1<System.__Canon>.Frob(object)}
-            if (method.ToString().Contains("EETypePtrOf")
+            if (method.ToString().Contains("Frob")
+            &&
+            _method.ToString().Contains("TestConstrainedMethod")
+            &&
+            _method.ToString().Contains("DoFrob")
             )
             {
 
