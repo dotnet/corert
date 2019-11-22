@@ -1979,7 +1979,6 @@ namespace Internal.IL
                         opcode = ILOpcode.call;
                         resolvedConstraint = true;
                     }
-                    //TODO can we switch to an ILOpcode.call as cpp does?
                 }
             }
 
