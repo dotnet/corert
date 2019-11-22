@@ -1292,10 +1292,13 @@ namespace Internal.IL
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
 
-//            if (_method.ToString().Contains("RunReferenceTypeShared"))
-//            {
-//
-//            }
+            if (method.ToString().Contains("TestConstrainedMethodCalls") &&
+                method.ToString().Contains("_Canon") &&
+                method.ToString().Contains("Foo") &&
+                method.ToString().Contains("Frob"))
+            {
+
+            }
             if (method.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(method, runtimeDeterminedMethod))
