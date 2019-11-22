@@ -413,18 +413,20 @@ namespace Internal.IL
 
         private LLVMValueRef CreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParameter)
         {
+            if (mangledName.ToString().Contains("TestConstrainedMethodCalls") &&
+                mangledName.ToString().Contains("_Canon") &&
+                mangledName.ToString().Contains("Foo") &&
+                mangledName.ToString().Contains("Frob"))
+            {
+
+            }
+
             return LLVM.AddFunction(Module, mangledName, GetLLVMSignatureForMethod(signature, hasHiddenParameter));
         }
 
         private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParam)
         {
-            if (mangledName.ToString().Contains("TestDelegateToCanonMethods") &&
-                mangledName.ToString().Contains("_Canon") &&
-                mangledName.ToString().Contains("MakeString") &&
-                mangledName.ToString().Contains("GenStruct"))
-            {
 
-            }
             LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
 
             if (llvmFunction.Pointer == IntPtr.Zero)
@@ -1921,8 +1923,6 @@ namespace Internal.IL
 
             if (!suppressHandleCall)
             {
-                TypeDesc localConstrainedType = _constrainedType;
-                _constrainedType = null;
                 HandleCall(callee, callee.Signature, runtimeDeterminedMethod, opcode, localConstrainedType);
             }
         }
@@ -4720,10 +4720,15 @@ namespace Internal.IL
             PushNonNull(CallRuntime(_compilation.TypeSystemContext, InternalCalls, "RhpNewArray", arguments, runtimeDeterminedArrayType));
         }
 
+        static int i2 = 0;
         LLVMValueRef GetGenericContext(TypeDesc constrainedType = null)
         {
             Debug.Assert(_method.IsSharedByGenericInstantiations);
+            if (i2 == 190)
+            {
 
+            }
+            Debug.WriteLine(i2++);
             if (_method.AcquiresInstMethodTableFromThis())
             {
                 LLVMValueRef typedAddress;
@@ -4739,6 +4744,8 @@ namespace Internal.IL
                 //                }
                 //                else
                 //                {
+
+
                 typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
                     LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0), 0));
                 thisPtr = LLVM.BuildLoad(_builder, typedAddress, "loadThis");
