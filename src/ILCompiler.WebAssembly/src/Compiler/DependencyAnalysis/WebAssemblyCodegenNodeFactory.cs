@@ -34,6 +34,13 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
+            if (method.IsInternalCall)
+            {
+                if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
+                {
+                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
+                }
+            }
             if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
                 return new WebAssemblyMethodBodyNode(method);
@@ -63,8 +70,8 @@ namespace ILCompiler.DependencyAnalysis
                 // for the generic context anyway.
                 //TODO:
               //return new WebAssemblyUnboxingThunkNode(method);
-                //return new WebAssemblyMethodBodyNode(TypeSystemContext.GetSpecialUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
-                return new WebAssemblyUnboxingThunkNode(TypeSystemContext.GetSpecialUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
+                return new WebAssemblyMethodBodyNode(TypeSystemContext.GetSpecialUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
+                //return new WebAssemblyUnboxingThunkNode(TypeSystemContext.GetSpecialUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
             }
             else
             {

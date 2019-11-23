@@ -771,7 +771,8 @@ namespace Internal.IL
         {
             var s = _method.ToString();
             Console.WriteLine(s);
-            if (s.Contains("GMethod1"))
+            if (s.ToString().Contains("IsInst") &&
+                s.ToString().Contains("TestInstantiatingUnboxingStubs"))
             {
 
             }
@@ -1297,22 +1298,22 @@ namespace Internal.IL
 
 
             // Program+TestConstrainedMethodCalls+IFoo`1<System.__Canon>.Frob(object)}
-            if (method.ToString().Contains("Frob")
-            &&
-            _method.ToString().Contains("TestConstrainedMethod")
-            &&
-            _method.ToString().Contains("DoFrob")
+            if (method.ToString().Contains("IsInst")
+                &&
+                _method.ToString().Contains("IsInst_Unbox")
+                //                &&
+                //                _method.ToString().Contains("IsInst")
             )
             {
 
             }
-//            if (method.ToString().Contains("GetValueInternal") &&
-//                _method.ToString().Contains("EETypePtrOf") &&
-//                _method.ToString().Contains("bool")
-//            )
-//            {
-//
-//            }
+            //            if (method.ToString().Contains("GetValueInternal") &&
+            //                _method.ToString().Contains("EETypePtrOf") &&
+            //                _method.ToString().Contains("bool")
+            //            )
+            //            {
+            //
+            //            }
             if (method.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(method, runtimeDeterminedMethod))

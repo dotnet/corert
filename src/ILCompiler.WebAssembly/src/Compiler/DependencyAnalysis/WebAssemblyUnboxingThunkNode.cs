@@ -10,6 +10,10 @@ namespace ILCompiler.DependencyAnalysis
         public WebAssemblyUnboxingThunkNode(MethodDesc method)
             : base(method)
         {
+            if (method.ToString().Contains("IsInst"))
+            {
+
+            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

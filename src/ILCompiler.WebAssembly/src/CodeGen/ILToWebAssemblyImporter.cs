@@ -125,10 +125,12 @@ namespace Internal.IL
             }
 
             _canonMethodIL = methodIL;
-//            if (method.ToString().Contains("EETypePtrOf"))
-//            {
-//
-//            }
+            if (method.ToString().Contains("TestInstantiatingUnboxingStubs") &&
+                method.ToString().EndsWith("IsInst") 
+                )
+            {
+
+            }
             // Get the runtime determined method IL so that this works right in shared code
             // and tokens in shared code resolve to runtime determined types.
             MethodIL uninstantiatiedMethodIL = methodIL.GetMethodILDefinition();
@@ -410,10 +412,9 @@ namespace Internal.IL
 
         private LLVMValueRef CreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParameter)
         {
-            if (mangledName.ToString().Contains("TestConstrainedMethodCalls") &&
-                mangledName.ToString().Contains("_Canon") &&
-                mangledName.ToString().Contains("Foo") &&
-                mangledName.ToString().Contains("Frob"))
+            if (mangledName.Contains(
+                "<Boxed>Generics_Program_TestInstantiatingUnboxingStubs_Foo_1<System___Canon>__<unbox>Generics_Program_TestInstantiatingUnboxingStubs_Foo_1__IsInst")
+            )
             {
 
             }
@@ -439,6 +440,12 @@ namespace Internal.IL
 
             if (llvmFunction.Pointer == IntPtr.Zero)
             {
+                if (mangledName.Contains(
+                    "<Boxed>Generics_Program_TestInstantiatingUnboxingStubs_Foo_1<System___Canon>__<unbox>Generics_Program_TestInstantiatingUnboxingStubs_Foo_1__IsInst")
+                )
+                {
+
+                }
                 return LLVM.AddFunction(Module, mangledName, functionType);
             }
             return llvmFunction;
@@ -1650,11 +1657,11 @@ namespace Internal.IL
         {
             MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             MethodDesc callee = (MethodDesc)_canonMethodIL.GetObject(token);
-            if (callee.ToString().Contains("Frob")
+            if (callee.ToString().Contains("IsInst")
                 &&
-                _method.ToString().Contains("TestConstrainedMethod")
-                &&
-                _method.ToString().Contains("DoFrob")
+                _method.ToString().Contains("IsInst_Unbox")
+//                &&
+//                _method.ToString().Contains("IsInst")
             )
             {
 
@@ -1963,6 +1970,12 @@ namespace Internal.IL
                     if (isSpecialUnboxingThunk)
                     {
                         hasHiddenParam = false;
+                        if (canonMethod.ToString().Contains("KeyValuePair"))
+                        {
+
+                        }
+                        AddMethodReference(canonMethod);
+//                        else if(canonMethod.ToString().Contains("IsInst")) AddMethodReference(canonMethod); // TODO move to higher scope
                     }
                     else
                     {

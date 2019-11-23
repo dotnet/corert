@@ -1263,6 +1263,13 @@ namespace ILCompiler.DependencyAnalysis
 
             if (llvmFunction.Pointer == IntPtr.Zero)
             {
+                if (mangledName.Contains(
+                    "<Boxed>Generics_Program_TestInstantiatingUnboxingStubs_Foo_1<System___Canon>__<unbox>Generics_Program_TestInstantiatingUnboxingStubs_Foo_1__IsInst")
+                )
+                {
+
+                }
+
                 return LLVM.AddFunction(Module, mangledName, functionType);
             }
             return llvmFunction;

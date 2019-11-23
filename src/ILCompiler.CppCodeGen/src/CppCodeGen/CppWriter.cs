@@ -643,6 +643,11 @@ namespace ILCompiler.CppCodeGen
                 return;
             }
 
+            if (method.ToString().Contains("IsInst") &&
+                method.ToString().Contains("TestInstantiatingUnboxingStubs"))
+            {
+
+            }
             var methodIL = _compilation.GetMethodIL(method);
             if (methodIL == null)
                 return;
