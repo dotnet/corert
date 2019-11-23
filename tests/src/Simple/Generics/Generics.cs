@@ -15,7 +15,6 @@ class Program
 {
     static int Main()
     {
-//#if !CODEGEN_WASM
         TestDictionaryDependencyTracking.Run();
         TestStaticBaseLookups.Run();
         TestInitThisClass.Run();
@@ -29,16 +28,15 @@ class Program
         TestConstrainedMethodCalls.Run();
         TestInstantiatingUnboxingStubs.Run();
         TestNameManglingCollisionRegression.Run();
-//#endif
         TestSimpleGVMScenarios.Run();
         TestGvmDelegates.Run();
         TestGvmDependencies.Run();
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
-#if !CODEGEN_WASM
         TestReflectionInvoke.Run();
         TestFieldAccess.Run();
         TestDevirtualization.Run();
+#if !CODEGEN_WASM
 #endif
 #if !CODEGEN_CPP && !CODEGEN_WASM
         TestNullableCasting.Run();
