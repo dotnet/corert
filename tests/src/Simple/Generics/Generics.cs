@@ -32,10 +32,10 @@ class Program
 //#endif
         TestSimpleGVMScenarios.Run();
         TestGvmDelegates.Run();
-#if !CODEGEN_WASM
         TestGvmDependencies.Run();
         TestInterfaceVTableTracking.Run();
         TestClassVTableTracking.Run();
+#if !CODEGEN_WASM
         TestReflectionInvoke.Run();
         TestFieldAccess.Run();
         TestDevirtualization.Run();
