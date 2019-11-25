@@ -258,6 +258,8 @@ internal static class Program
         }
 
         TestConstrainedClassCalls();
+        
+        TestConstrainedStructCalls();
 
         TestValueTypeElementIndexing();
 
@@ -554,6 +556,21 @@ internal static class Program
         StartTest("Generic GetHashCode for unsealed class test");
         EndTest(hashCodeOfUnsealedViaGeneric == 82);
     }
+
+    static void TestConstrainedStructCalls()
+    {
+        StartTest("Constrained struct callvirt test");
+        EndTest("Program+ConstrainedStructTest" == new ConstrainedStructTest().ThisToString());
+    }
+
+    struct ConstrainedStructTest
+    {
+        internal string ThisToString()
+        {
+            return this.ToString();
+        }
+    }
+
 
     static uint GenericGetData<T>(T obj) where T : MyBase
     {

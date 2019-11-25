@@ -1533,6 +1533,9 @@ namespace Internal.IL
                 return;
             }
 
+            TypeDesc localConstrainedType = _constrainedType;
+            _constrainedType = null;
+
             if (opcode == ILOpcode.newobj)
             {
                 TypeDesc newType = callee.OwningType;
@@ -1595,6 +1598,15 @@ namespace Internal.IL
                     }
                 }
             }
+            else
+            {
+                // !newobj
+                if (opcode == ILOpcode.callvirt && localConstrainedType != null)
+                {
+                    if (localConstrainedType.IsRuntimeDeterminedSubtype)
+                        localConstrainedType = localConstrainedType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                }
+            }
 
             if (opcode == ILOpcode.newobj && callee.OwningType.IsDelegate)
             {
@@ -1607,8 +1619,6 @@ namespace Internal.IL
                 }
             }
 
-            TypeDesc localConstrainedType = _constrainedType;
-            _constrainedType = null;
             HandleCall(callee, callee.Signature, opcode, localConstrainedType);
         }
 
@@ -1917,6 +1927,7 @@ namespace Internal.IL
 
         private void HandleCall(MethodDesc callee, MethodSignature signature, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef))
         {
+            bool resolvedConstraint = false;  // Not used yet, but will need for IsArrayAddressMethod and the generic lookup
             var parameterCount = signature.Length + (signature.IsStatic ? 0 : 1);
             // The last argument is the top of the stack. We need to reverse them and store starting at the first argument
             StackEntry[] argumentValues = new StackEntry[parameterCount];
@@ -1924,7 +1935,6 @@ namespace Internal.IL
             {
                 argumentValues[argumentValues.Length - i - 1] = _stack.Pop();
             }
-
             if (constrainedType != null)
             {
                 if (signature.IsStatic)
@@ -1946,12 +1956,38 @@ namespace Internal.IL
                     TypeDesc objectType = thisByRef.Type.GetParameterType();
                     argumentValues[0] = new LoadExpressionEntry(StackValueKind.ObjRef, "thisPtr", thisByRef.ValueAsType(objectType, _builder), objectType);
                 }
+                else if (opcode == ILOpcode.callvirt)
+                {
+                    bool forceUseRuntimeLookup;
+                    MethodDesc directMethod = constrainedType.TryResolveConstraintMethodApprox(callee.OwningType, callee, out forceUseRuntimeLookup);
+
+                    if (directMethod == null)
+                    {
+                        TypeDesc objectType = thisByRef.Type;
+                        var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                        argumentValues[0] = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhBox",
+                            new StackEntry[]
+                            {
+                                new LoadExpressionEntry(StackValueKind.ValueType, "eeType",
+                                    GetEETypePointerForTypeDesc(constrainedType, true), eeTypeDesc),
+                                argumentValues[0],
+                            });
+                    }
+                    else
+                    {
+                        callee = directMethod;
+                        opcode = ILOpcode.call;
+                        resolvedConstraint = true;
+                    }
+                }
             }
 
-            PushNonNull(HandleCall(callee, signature, argumentValues, opcode, constrainedType, calliTarget));
+            PushNonNull(HandleCall(callee, signature, argumentValues, opcode, constrainedType, calliTarget, resolvedConstraint: resolvedConstraint));
         }
 
-        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), TypeDesc forcedReturnType = null)
+        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, StackEntry[] argumentValues,
+            ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null,
+            LLVMValueRef calliTarget = default(LLVMValueRef), bool resolvedConstraint = false, TypeDesc forcedReturnType = null)
         {
             LLVMValueRef fn;
             if (opcode == ILOpcode.calli)
