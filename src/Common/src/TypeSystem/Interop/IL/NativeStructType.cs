@@ -160,8 +160,7 @@ namespace Internal.TypeSystem.Interop
         private void CalculateFields()
         {
             bool isSequential = ManagedStructType.IsSequentialLayout;
-            MarshalAsDescriptor[] marshalAsDescriptors = ManagedStructType.GetFieldMarshalAsDescriptors();
-            bool isAnsi = ((MetadataType)ManagedStructType).PInvokeStringFormat == PInvokeStringFormat.AnsiClass;
+            bool isAnsi = ManagedStructType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass;
 
             int numFields = 0;
             foreach (FieldDesc field in ManagedStructType.GetFields())
@@ -188,7 +187,7 @@ namespace Internal.TypeSystem.Interop
                 TypeDesc nativeType;
                 try
                 {
-                    nativeType = MarshalHelpers.GetNativeStructFieldType(managedType, marshalAsDescriptors[index], _interopStateManager, isAnsi);
+                    nativeType = MarshalHelpers.GetNativeStructFieldType(managedType, field.GetMarshalAsDescriptor(), _interopStateManager, isAnsi);
                 }
                 catch (NotSupportedException)
                 {

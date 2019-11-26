@@ -225,6 +225,9 @@ namespace Internal.IL.Stubs
 
         private void EmitPInvokeCall(PInvokeILCodeStreams ilCodeStreams)
         {
+            if (!_importMetadata.Flags.PreserveSig)
+                throw new NotSupportedException();
+
             ILEmitter emitter = ilCodeStreams.Emitter;
             ILCodeStream fnptrLoadStream = ilCodeStreams.FunctionPointerLoadStream;
             ILCodeStream callsiteSetupCodeStream = ilCodeStreams.CallsiteSetupCodeStream;
@@ -315,7 +318,15 @@ namespace Internal.IL.Stubs
         {
             PInvokeILCodeStreams pInvokeILCodeStreams = new PInvokeILCodeStreams();
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;
+            ILCodeStream marshallingCodestream = pInvokeILCodeStreams.MarshallingCodeStream;
             ILCodeStream unmarshallingCodestream = pInvokeILCodeStreams.UnmarshallingCodestream;
+            ILCodeStream cleanupCodestream = pInvokeILCodeStreams.CleanupCodeStream;
+
+            // Marshalling is wrapped in a finally block to guarantee cleanup
+            ILExceptionRegionBuilder tryFinally = emitter.NewFinallyRegion();
+
+            marshallingCodestream.BeginTry(tryFinally);
+            cleanupCodestream.BeginHandler(tryFinally);
 
             // Marshal the arguments
             for (int i = 0; i < _marshallers.Length; i++)
@@ -337,8 +348,17 @@ namespace Internal.IL.Stubs
                     break;
             }
 
-            _marshallers[0].LoadReturnValue(unmarshallingCodestream);
-            unmarshallingCodestream.Emit(ILOpcode.ret);
+            ILCodeLabel lReturn = emitter.NewCodeLabel();
+            unmarshallingCodestream.Emit(ILOpcode.leave, lReturn);
+            unmarshallingCodestream.EndTry(tryFinally);
+
+            cleanupCodestream.Emit(ILOpcode.endfinally);
+            cleanupCodestream.EndHandler(tryFinally);
+
+            cleanupCodestream.EmitLabel(lReturn);
+
+            _marshallers[0].LoadReturnValue(cleanupCodestream);
+            cleanupCodestream.Emit(ILOpcode.ret);
 
             return new PInvokeILStubMethodIL((ILStubMethodIL)emitter.Link(_targetMethod), IsStubRequired());
         }
@@ -388,47 +408,17 @@ namespace Internal.IL.Stubs
                 return true;
             }
 
+            if (!_flags.PreserveSig)
+            {
+                return true;
+            }
+
             for (int i = 0; i < _marshallers.Length; i++)
             {
                 if (_marshallers[i].IsMarshallingRequired())
                     return true;
             }
             return false;
-        }
-    }
-
-    internal sealed class PInvokeILCodeStreams
-    {
-        public ILEmitter Emitter { get; }
-        public ILCodeStream FunctionPointerLoadStream { get; }
-        public ILCodeStream MarshallingCodeStream { get; }
-        public ILCodeStream CallsiteSetupCodeStream { get; }
-        public ILCodeStream ReturnValueMarshallingCodeStream { get; }
-        public ILCodeStream UnmarshallingCodestream { get; }
-        public PInvokeILCodeStreams()
-        {
-            Emitter = new ILEmitter();
-
-            // We have 4 code streams:
-            // - _marshallingCodeStream is used to convert each argument into a native type and 
-            // store that into the local
-            // - callsiteSetupCodeStream is used to used to load each previously generated local
-            // and call the actual target native method.
-            // - _returnValueMarshallingCodeStream is used to convert the native return value 
-            // to managed one.
-            // - _unmarshallingCodestream is used to propagate [out] native arguments values to 
-            // managed ones.
-            FunctionPointerLoadStream = Emitter.NewCodeStream();
-            MarshallingCodeStream = Emitter.NewCodeStream();
-            CallsiteSetupCodeStream = Emitter.NewCodeStream();
-            ReturnValueMarshallingCodeStream = Emitter.NewCodeStream();
-            UnmarshallingCodestream = Emitter.NewCodeStream();
-        }
-
-        public PInvokeILCodeStreams(ILEmitter emitter, ILCodeStream codeStream)
-        {
-            Emitter = emitter;
-            MarshallingCodeStream = codeStream;
         }
     }
 
