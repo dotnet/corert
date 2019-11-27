@@ -1067,13 +1067,18 @@ internal static class Program
     internal static void TestBoxSingle()
     {
         StartTest("Test box single");
-        float f = 1.1f;
-        object o = f;
-        EndTest(1.1f == (float)o);
+        var fi = typeof(ClassWithFloat).GetField("F");
+        fi.SetValue(null, 1.1f);
+        EndTest(1.1f == ClassWithFloat.F);
     }
 
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
+}
+
+public class ClassWithFloat
+{
+    public static float F;
 }
 
 public struct TwoByteStr
