@@ -3495,6 +3495,7 @@ namespace Internal.IL
                     GetWellKnownType(WellKnownType.Single));
             }
             StackEntry valueAddress = TakeAddressOf(toBoxValue);
+            var eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
             if (type.IsValueType)
             {
                 var arguments = new StackEntry[] { eeTypeEntry, valueAddress };
