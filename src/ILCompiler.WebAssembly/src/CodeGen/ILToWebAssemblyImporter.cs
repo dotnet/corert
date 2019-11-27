@@ -970,7 +970,7 @@ namespace Internal.IL
             return CastIfNecessary(_builder, source, valueType, name, unsigned);
         }
 
-        internal static LLVMValueRef CastIfNecessary(LLVMBuilderRef builder, LLVMValueRef source, LLVMTypeRef valueType, string name = null, bool unsigned = true)
+        internal static LLVMValueRef CastIfNecessary(LLVMBuilderRef builder, LLVMValueRef source, LLVMTypeRef valueType, string name = null, bool unsigned = false)
         {
             LLVMTypeRef sourceType = LLVM.TypeOf(source);
             if (sourceType.Pointer == valueType.Pointer)
