@@ -3486,8 +3486,15 @@ namespace Internal.IL
             TypeDesc type = ResolveTypeToken(token);
             LLVMValueRef eeType = GetEETypePointerForTypeDesc(type, true);
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-            var valueAddress = TakeAddressOf(_stack.Pop());
-            var eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
+            var toBoxValue = _stack.Pop();
+            if (toBoxValue.Type == GetWellKnownType(WellKnownType.Single))
+            {
+                var doubleToBox = toBoxValue.ValueAsType(LLVMTypeRef.DoubleType(), _builder);
+                var singleToBox = LLVM.BuildFPTrunc(_builder, doubleToBox, LLVMTypeRef.FloatType(), "trunc");
+                toBoxValue = new ExpressionEntry(StackValueKind.Float, "singleToBox", singleToBox,
+                    GetWellKnownType(WellKnownType.Single));
+            }
+            StackEntry valueAddress = TakeAddressOf(toBoxValue);
             if (type.IsValueType)
             {
                 var arguments = new StackEntry[] { eeTypeEntry, valueAddress };
