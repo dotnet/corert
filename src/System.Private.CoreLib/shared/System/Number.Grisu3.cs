@@ -477,20 +477,8 @@ namespace System
                 // and boundaryMinus/Plus (a power of 2) and to compute scaledBoundaryMinus/Plus by subtracting/adding
                 // from scaledW. However, the code becomes much less readable and the speed enhancements are not terrific.
 
-                if (boundaryMinus.f > boundaryPlus.f)
-                {
-                    X2.PrintLine("boundaryMinus.f > boundaryPlus.f");
-                    X2.PrintLine(boundaryMinus.f.ToString());
-                    X2.PrintLine(boundaryPlus.f.ToString());
-                }
                 DiyFp scaledBoundaryMinus = boundaryMinus.Multiply(in tenMk);
                 DiyFp scaledBoundaryPlus = boundaryPlus.Multiply(in tenMk);
-                if (scaledBoundaryMinus.f > scaledBoundaryPlus.f)
-                {
-                    X2.PrintLine("scaledBoundaryMinus.f > scaledBoundaryPlus.f");
-                    X2.PrintLine(scaledBoundaryMinus.f.ToString());
-                    X2.PrintLine(scaledBoundaryPlus.f.ToString());
-                }
 
                 // DigitGen will generate the digits of scaledW. Therefore, we have:
                 //      v == (double)(scaledW * 10^-mk)

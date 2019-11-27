@@ -315,6 +315,8 @@ internal static class Program
 
         TestUlongUintMultiply();
 
+        TestBoxSingle();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -1123,6 +1125,14 @@ internal static class Program
         uint b = 2;
         ulong f = ((ulong)a * b);
         EndTest(f == 0x100000000);
+    }
+
+    internal static void TestBoxSingle()
+    {
+        StartTest("Test box single");
+        float f = 1.1f;
+        object o = f;
+        EndTest(1.1f == (float)o);
     }
 
     [DllImport("*")]

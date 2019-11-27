@@ -2508,18 +2508,11 @@ namespace System
         private static uint ExtractFractionAndBiasedExponent(float value, out int exponent)
         {
             uint bits = (uint)(BitConverter.SingleToInt32Bits(value));
-            X2.PrintLine("bits");
-            X2.PrintUint(unchecked((int)bits));
             uint fraction = (bits & 0x7FFFFF);
-            X2.PrintLine("fraction");
-            X2.PrintUint(unchecked((int)fraction));
             exponent = ((int)(bits >> 23) & 0xFF);
-            X2.PrintLine("exponent");
-            X2.PrintUint(exponent);
 
             if (exponent != 0)
             {
-                X2.PrintLine("exponent != 0");
                 // For normalized value, according to https://en.wikipedia.org/wiki/Single-precision_floating-point_format
                 // value = 1.fraction * 2^(exp - 127)
                 //       = (1 + mantissa / 2^23) * 2^(exp - 127)
@@ -2528,11 +2521,7 @@ namespace System
                 // So f = (2^23 + mantissa), e = exp - 150;
 
                 fraction |= (1U << 23);
-                X2.PrintLine("fraction| 2^23");
-                X2.PrintUint(unchecked((int)fraction));
                 exponent -= 150;
-                X2.PrintLine("exponent - 150");
-                X2.PrintUint(exponent);
             }
             else
             {

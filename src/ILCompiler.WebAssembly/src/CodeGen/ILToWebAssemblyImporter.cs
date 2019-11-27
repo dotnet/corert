@@ -4680,7 +4680,7 @@ namespace Internal.IL
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
             if (this._method.ToString()
                 .Contains(
-                    "TestBox"))
+                    "TestBoxSingle"))
             {
             
             }
@@ -4702,7 +4702,16 @@ namespace Internal.IL
                 eeType = GetEETypePointerForTypeDesc(type, true);
                 eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
             }
-            var valueAddress = TakeAddressOf(_stack.Pop());
+            var toBoxValue = _stack.Pop();
+            StackEntry valueAddress;
+            if (toBoxValue.Type == GetWellKnownType(WellKnownType.Single))
+            {
+                var doubleToBox = toBoxValue.ValueAsType(LLVMTypeRef.DoubleType(), _builder);
+                var singleToBox = LLVM.BuildFPTrunc(_builder, doubleToBox, LLVMTypeRef.FloatType(), "trunc");
+                toBoxValue = new ExpressionEntry(StackValueKind.Float, "singleToBox", singleToBox,
+                    GetWellKnownType(WellKnownType.Single));
+            }
+            valueAddress = TakeAddressOf(toBoxValue);
             if (type.IsValueType)
             {
                 var arguments = new StackEntry[] { eeTypeEntry, valueAddress };

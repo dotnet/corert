@@ -1767,10 +1767,21 @@ class Program
 
             fi = fooDynamicOfClassType.GetDeclaredField("s_floatField");
             fi2 = fooDynamicOfClassType2.GetDeclaredField("s_floatField");
+            Console.WriteLine("setting1.1");
             fi.SetValue(null, 1.1f);
+            Console.WriteLine("setting1.1 done");
+
             fi2.SetValue(null, 2.2f);
             Console.WriteLine("Verify single ");
             Console.WriteLine((1.1f).ToString());
+            Console.WriteLine("Verify single direct static get");
+            Console.WriteLine(Foo<ClassType>.s_floatField.ToString());
+
+            Console.WriteLine("Verify single direct static setting directlty");
+
+            Foo<ClassType>.s_floatField = 1.1f;
+            Console.WriteLine(Foo<ClassType>.s_floatField.ToString());
+
             Verify(1.1f, (float)fi.GetValue(null));
             Verify(2.2f, (float)fi2.GetValue(null));
 
