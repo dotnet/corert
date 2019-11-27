@@ -310,10 +310,10 @@ See the LICENSE file in the project root for more information.
       <EmccArgs Condition="'$(Configuration)'=='Debug'">$(EmccArgs) -g3</EmccArgs>
     </PropertyGroup>
     
-    <Exec Command="&quot;$(EMSCRIPTEN)\emcc.bat&quot; $(EmccArgs)" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' != '' and '$(OS)' == 'Windows_NT'" />
-    <Exec Command="&quot;$(EMSCRIPTEN)/emcc&quot; $(EmccArgs)" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' != '' and '$(OS)' != 'Windows_NT'" />
-    <Message Text="Emscripten not found, not linking WebAssembly. To enable WebAssembly linking, install Emscripten and ensure the EMSCRIPTEN environment variable points to the directory containing emcc.bat"
-             Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSCRIPTEN)' == ''" />
+    <Exec Command="&quot;$(EMSDK)/fastcomp/emscripten/emcc.bat&quot; $(EmccArgs)" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSDK)' != '' and '$(OS)' == 'Windows_NT'" />
+    <Exec Command="&quot;$(EMSDK)/fastcomp/emscripten/emcc&quot; $(EmccArgs)" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSDK)' != '' and '$(OS)' != 'Windows_NT'" />
+    <Message Text="Emscripten not found, not linking WebAssembly. To enable WebAssembly linking, install Emscripten and ensure the EMSDK environment variable points to the directory containing fastcomp/emscripten/emcc.bat"
+             Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSDK)' == ''" />
   </Target>
 
   <Target Name="CreateLib"

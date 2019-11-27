@@ -875,12 +875,12 @@ namespace Internal.IL
             LLVM.BuildStore(_builder, value.ValueAsType(targetType, _builder), typedStoreLocation);
         }
 
-        private LLVMValueRef CastIfNecessary(LLVMValueRef source, LLVMTypeRef valueType, string name = null)
+        private LLVMValueRef CastIfNecessary(LLVMValueRef source, LLVMTypeRef valueType, string name = null, bool unsigned = false)
         {
-            return CastIfNecessary(_builder, source, valueType, name);
+            return CastIfNecessary(_builder, source, valueType, name, unsigned);
         }
 
-        internal static LLVMValueRef CastIfNecessary(LLVMBuilderRef builder, LLVMValueRef source, LLVMTypeRef valueType, string name = null)
+        internal static LLVMValueRef CastIfNecessary(LLVMBuilderRef builder, LLVMValueRef source, LLVMTypeRef valueType, string name = null, bool unsigned = false)
         {
             LLVMTypeRef sourceType = LLVM.TypeOf(source);
             if (sourceType.Pointer == valueType.Pointer)
@@ -934,7 +934,10 @@ namespace Internal.IL
             else if (toStoreKind == valueTypeKind && toStoreKind == LLVMTypeKind.LLVMIntegerTypeKind)
             {
                 Debug.Assert(toStoreKind != LLVMTypeKind.LLVMPointerTypeKind && valueTypeKind != LLVMTypeKind.LLVMPointerTypeKind);
-                typedToStore = LLVM.BuildIntCast(builder, source, valueType, "CastInt" + (name ?? ""));
+                // when extending unsigned ints do fill left with 0s, zext
+                typedToStore = unsigned && sourceType.GetIntTypeWidth() < valueType.GetIntTypeWidth()
+                    ? LLVM.BuildZExt(builder, source, valueType, "CastZInt" + (name ?? ""))
+                    : LLVM.BuildIntCast(builder, source, valueType, "CastInt" + (name ?? ""));
             }
             else if (toStoreKind == LLVMTypeKind.LLVMIntegerTypeKind && (valueTypeKind == LLVMTypeKind.LLVMDoubleTypeKind || valueTypeKind == LLVMTypeKind.LLVMFloatTypeKind))
             {
@@ -3000,7 +3003,7 @@ namespace Internal.IL
 
             // Load the value and then convert it instead of using ValueAsType to avoid loading the incorrect size
             LLVMValueRef loadedValue = value.ValueAsType(value.Type, _builder);
-            LLVMValueRef converted = CastIfNecessary(loadedValue, GetLLVMTypeForTypeDesc(destType), value.Name());
+            LLVMValueRef converted = CastIfNecessary(loadedValue, GetLLVMTypeForTypeDesc(destType), value.Name(), wellKnownType == WellKnownType.UInt64 /* unsigned is always false, so check for the type explicitly */);
             PushExpression(GetStackValueKind(destType), "conv", converted, destType);
         }
 

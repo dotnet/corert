@@ -304,6 +304,8 @@ internal static class Program
 
         TestSByteExtend();
 
+        TestUlongUintMultiply();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -1049,6 +1051,15 @@ internal static class Program
 
         StartTest("Negative SByte br"); 
         EndTest(ILHelpers.ILHelpersTest.BneSbyteExtend());
+    }
+
+    internal static void TestUlongUintMultiply()
+    {
+        StartTest("Test ulong/int multiplication");
+        uint a = 0x80000000;
+        uint b = 2;
+        ulong f = ((ulong)a * b);
+        EndTest(f == 0x100000000);
     }
 
     [DllImport("*")]
