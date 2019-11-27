@@ -1024,7 +1024,8 @@ namespace Internal.IL
             else if (toStoreKind == valueTypeKind && toStoreKind == LLVMTypeKind.LLVMIntegerTypeKind)
             {
                 Debug.Assert(toStoreKind != LLVMTypeKind.LLVMPointerTypeKind && valueTypeKind != LLVMTypeKind.LLVMPointerTypeKind);
-                typedToStore = unsigned
+                // when extending unsigned ints do fill left with 0s, zext
+                typedToStore = unsigned && sourceType.GetIntTypeWidth() < valueType.GetIntTypeWidth()
                     ? LLVM.BuildZExt(builder, source, valueType, "CastZInt" + (name ?? ""))
                     : LLVM.BuildIntCast(builder, source, valueType, "CastInt" + (name ?? ""));
             }
