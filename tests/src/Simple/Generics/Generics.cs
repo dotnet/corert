@@ -36,13 +36,13 @@ class Program
         TestReflectionInvoke.Run();
         TestFieldAccess.Run();
         TestDevirtualization.Run();
+#if !CODEGEN_CPP 
 #if !CODEGEN_WASM
-#endif
-#if !CODEGEN_CPP && !CODEGEN_WASM
         TestNullableCasting.Run();
         TestVariantCasting.Run();
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
+#endif
         TestByRefLikeVTables.Run();
 #endif
         return 100;

@@ -4684,6 +4684,7 @@ namespace Internal.IL
             {
             
             }
+            bool truncDouble = type.Equals(GetWellKnownType(WellKnownType.Single));
             if (type.IsRuntimeDeterminedSubtype)
             {
                 var runtimeDeterminedType = type;
@@ -4704,7 +4705,7 @@ namespace Internal.IL
             }
             var toBoxValue = _stack.Pop();
             StackEntry valueAddress;
-            if (toBoxValue.Type == GetWellKnownType(WellKnownType.Single))
+            if (truncDouble)
             {
                 var doubleToBox = toBoxValue.ValueAsType(LLVMTypeRef.DoubleType(), _builder);
                 var singleToBox = LLVM.BuildFPTrunc(_builder, doubleToBox, LLVMTypeRef.FloatType(), "trunc");
