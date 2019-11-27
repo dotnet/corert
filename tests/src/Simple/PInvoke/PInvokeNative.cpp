@@ -336,6 +336,14 @@ DLL_EXPORT bool __stdcall ReversePInvoke_String(StringFuncPtr fnPtr)
     return fnPtr(str);
 }
 
+typedef bool(__stdcall *OutStringFuncPtr) (char **);
+DLL_EXPORT bool __stdcall ReversePInvoke_OutString(OutStringFuncPtr fnPtr)
+{
+    char *pResult;
+    fnPtr(&pResult);
+    return strcmp(pResult, "Hello there!") == 0;
+}
+
 typedef bool(__stdcall *ArrayFuncPtr) (int *, size_t sz);
 DLL_EXPORT bool __stdcall ReversePInvoke_Array(ArrayFuncPtr fnPtr)
 {
