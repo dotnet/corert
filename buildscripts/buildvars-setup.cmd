@@ -94,7 +94,7 @@ if "%__BuildArch%"=="wasm" (
 )
 
 :CheckPrereqsEmscripten
-if not defined EMSCRIPTEN (
+if not defined EMSDK (
     echo Emscripten is a prerequisite to build for WebAssembly.
     echo See: https://github.com/dotnet/corert/blob/master/Documentation/how-to-build-WebAssembly.md
     exit /b 1
