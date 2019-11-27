@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 using Internal.TypeSystem;
-using Internal.TypeSystem.Interop;
-using Debug = System.Diagnostics.Debug;
-using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL.Stubs
 {
@@ -21,6 +16,14 @@ namespace Internal.IL.Stubs
         private readonly MethodDesc _declMethod;
         private readonly MethodSignature _signature;
         
+        public MethodDesc Target
+        {
+            get
+            {
+                return _declMethod;
+            }
+        }
+
         public PInvokeTargetNativeMethod(MethodDesc declMethod, MethodSignature signature)
         {
             _declMethod = declMethod;
