@@ -192,8 +192,7 @@ namespace Internal.IL
 
             try
             {
-//                if (_method.ToString() ==
-//                    "[HelloWasm]Stack`1+StackDelegate<System.__Canon>.InvokeOpenStaticThunk(__Canon[])")
+//                if (_method.ToString().Contains("IntPtr") && _method.ToString().Contains("EETypePtrOf"))
 //                {
 //
 //                }
@@ -417,6 +416,10 @@ namespace Internal.IL
 
         private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParam)
         {
+            if (mangledName.ToString().Contains("P_CoreLib_System_EETypePtr__EETypePtrOf<IntPtr>"))
+            {
+
+            }
 
             LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
 
@@ -429,6 +432,11 @@ namespace Internal.IL
 
         private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, LLVMTypeRef functionType)
         {
+            if (mangledName.ToString().Contains("P_CoreLib_System_EETypePtr__EETypePtrOf<IntPtr>"))
+            {
+            
+            }
+
             LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
 
             if (llvmFunction.Pointer == IntPtr.Zero)
@@ -957,12 +965,12 @@ namespace Internal.IL
             LLVM.BuildStore(_builder, value.ValueAsType(targetType, _builder), typedStoreLocation);
         }
 
-        private LLVMValueRef CastIfNecessary(LLVMValueRef source, LLVMTypeRef valueType, string name = null)
+        private LLVMValueRef CastIfNecessary(LLVMValueRef source, LLVMTypeRef valueType, string name = null, bool unsigned = false)
         {
-            return CastIfNecessary(_builder, source, valueType, name);
+            return CastIfNecessary(_builder, source, valueType, name, unsigned);
         }
 
-        internal static LLVMValueRef CastIfNecessary(LLVMBuilderRef builder, LLVMValueRef source, LLVMTypeRef valueType, string name = null)
+        internal static LLVMValueRef CastIfNecessary(LLVMBuilderRef builder, LLVMValueRef source, LLVMTypeRef valueType, string name = null, bool unsigned = true)
         {
             LLVMTypeRef sourceType = LLVM.TypeOf(source);
             if (sourceType.Pointer == valueType.Pointer)
@@ -1016,7 +1024,9 @@ namespace Internal.IL
             else if (toStoreKind == valueTypeKind && toStoreKind == LLVMTypeKind.LLVMIntegerTypeKind)
             {
                 Debug.Assert(toStoreKind != LLVMTypeKind.LLVMPointerTypeKind && valueTypeKind != LLVMTypeKind.LLVMPointerTypeKind);
-                typedToStore = LLVM.BuildIntCast(builder, source, valueType, "CastInt" + (name ?? ""));
+                typedToStore = unsigned
+                    ? LLVM.BuildZExt(builder, source, valueType, "CastZInt" + (name ?? ""))
+                    : LLVM.BuildIntCast(builder, source, valueType, "CastInt" + (name ?? ""));
             }
             else if (toStoreKind == LLVMTypeKind.LLVMIntegerTypeKind && (valueTypeKind == LLVMTypeKind.LLVMDoubleTypeKind || valueTypeKind == LLVMTypeKind.LLVMFloatTypeKind))
             {
@@ -1645,15 +1655,15 @@ namespace Internal.IL
         {
             MethodDesc runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             MethodDesc callee = (MethodDesc)_canonMethodIL.GetObject(token);
-//            if (callee.ToString().Contains("IsInst")
-//                &&
-//                _method.ToString().Contains("IsInst_Unbox")
-////                &&
-////                _method.ToString().Contains("IsInst")
-//            )
-//            {
-//
-//            }
+            if (/*callee.ToString().Contains("GetRuntimeTypeHandle")
+                &&*/
+                _method.ToString().Contains("EETypePtrOf")
+                &&
+                _method.ToString().Contains("IntPtr")
+            )
+            {
+
+            }
             //            if (callee.ToString().Contains("Array") && callee.ToString().Contains("IndexOf"))
             //            {
             //
@@ -2479,8 +2489,7 @@ namespace Internal.IL
                         }
                         else
                         {
-                            // TODO: should this be a loadExpression?
-                            PushExpression(StackValueKind.Int32, "eeType", GetEETypePointerForTypeDesc(typeOfEEType, true), GetWellKnownType(WellKnownType.IntPtr));
+                            PushLoadExpression(StackValueKind.Int32, "eeType", GetEETypePointerForTypeDesc(typeOfEEType, true), GetWellKnownType(WellKnownType.IntPtr));
                         }
                         return true;
                     }
@@ -3979,7 +3988,7 @@ namespace Internal.IL
 
             // Load the value and then convert it instead of using ValueAsType to avoid loading the incorrect size
             LLVMValueRef loadedValue = value.ValueAsType(value.Type, _builder);
-            LLVMValueRef converted = CastIfNecessary(loadedValue, GetLLVMTypeForTypeDesc(destType), value.Name());
+            LLVMValueRef converted = CastIfNecessary(loadedValue, GetLLVMTypeForTypeDesc(destType), value.Name(), unsigned);
             PushExpression(GetStackValueKind(destType), "conv", converted, destType);
         }
 
@@ -4148,7 +4157,12 @@ namespace Internal.IL
                 }
                 else
                 {
-                    PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(ldtokenValue as TypeDesc, false), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"));
+                    if (ConstructedEETypeNode.CreationAllowed(typeDesc))
+                    {
+                        var typeSymbol = _compilation.NodeFactory.ConstructedTypeSymbol(typeDesc);
+                        _dependencies.Add(typeSymbol);
+                    }
+                    PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(typeDesc, false), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"));
                     HandleCall(helper, helper.Signature, helper);
                     var callExp = _stack.Pop();
                     _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, callExp.ValueAsInt32(_builder, false), GetWellKnownType(ldtokenKind)));

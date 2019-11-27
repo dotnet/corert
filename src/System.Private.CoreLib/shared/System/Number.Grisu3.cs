@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using Internal.NativeFormat;
 
 namespace System
 {
@@ -370,6 +371,8 @@ namespace System
                 if (requestedDigits == -1)
                 {
                     DiyFp w = DiyFp.CreateAndGetBoundaries(v, out DiyFp boundaryMinus, out DiyFp boundaryPlus).Normalize();
+                    X2.PrintLine("TryRunSingle minus.f");
+                    X2.PrintLine(boundaryMinus.f.ToString());
                     result = TryRunShortest(in boundaryMinus, in w, in boundaryPlus, number.Digits, out length, out decimalExponent);
                 }
                 else
@@ -474,8 +477,20 @@ namespace System
                 // and boundaryMinus/Plus (a power of 2) and to compute scaledBoundaryMinus/Plus by subtracting/adding
                 // from scaledW. However, the code becomes much less readable and the speed enhancements are not terrific.
 
+                if (boundaryMinus.f > boundaryPlus.f)
+                {
+                    X2.PrintLine("boundaryMinus.f > boundaryPlus.f");
+                    X2.PrintLine(boundaryMinus.f.ToString());
+                    X2.PrintLine(boundaryPlus.f.ToString());
+                }
                 DiyFp scaledBoundaryMinus = boundaryMinus.Multiply(in tenMk);
                 DiyFp scaledBoundaryPlus = boundaryPlus.Multiply(in tenMk);
+                if (scaledBoundaryMinus.f > scaledBoundaryPlus.f)
+                {
+                    X2.PrintLine("scaledBoundaryMinus.f > scaledBoundaryPlus.f");
+                    X2.PrintLine(scaledBoundaryMinus.f.ToString());
+                    X2.PrintLine(scaledBoundaryPlus.f.ToString());
+                }
 
                 // DigitGen will generate the digits of scaledW. Therefore, we have:
                 //      v == (double)(scaledW * 10^-mk)
@@ -714,13 +729,21 @@ namespace System
             // However we have to pay attention to low, high and w's imprecision.
             private static bool TryDigitGenShortest(in DiyFp low, in DiyFp w, in DiyFp high, Span<byte> buffer, out int length, out int kappa)
             {
+                X2.PrintLine("TryDigitGenShortest");
                 Debug.Assert(low.e == w.e);
+                X2.PrintLine("TryDigitGenShortest 1");
                 Debug.Assert(w.e == high.e);
+                X2.PrintLine("TryDigitGenShortest 2");
+                X2.PrintLine(low.f.ToString());
+                X2.PrintLine(high.f.ToString());
 
                 Debug.Assert((low.f + 1) <= (high.f - 1));
+                X2.PrintLine("TryDigitGenShortest 3");
 
                 Debug.Assert(MinimalTargetExponent <= w.e);
+                X2.PrintLine("TryDigitGenShortest 4");
                 Debug.Assert(w.e <= MaximalTargetExponent);
+                X2.PrintLine("TryDigitGenShortest 5");
 
                 // low, w, and high are imprecise, but by less than one ulp (unit in the last place).
                 //

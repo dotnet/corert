@@ -12,7 +12,8 @@
 ===========================================================*/
 
 using System.Runtime;
-
+using Internal.NativeFormat;
+using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 
@@ -124,6 +125,8 @@ namespace System
             if (numFields == UseFastHelper)
                 return FastGetValueTypeHashCodeHelper(this.EETypePtr, ref this.GetRawData());
 
+            X2.PrintLine("GetHashCodeImpl");
+            X2.PrintLine(this.ToString());
             return RegularGetValueTypeHashCode(this.EETypePtr, ref this.GetRawData(), numFields);
         }
 
@@ -143,32 +146,49 @@ namespace System
             return hashCode;
         }
 
-        private int RegularGetValueTypeHashCode(EETypePtr type, ref byte data, int numFields)
+        private unsafe int RegularGetValueTypeHashCode(EETypePtr type, ref byte data, int numFields)
         {
             int hashCode = 0;
+            X2.PrintLine("RegularGetValueTypeHashCode");
 
             // We only take the hashcode for the first non-null field. That's what the CLR does.
             for (int i = 0; i < numFields; i++)
             {
                 int fieldOffset = __GetFieldHelper(i, out EETypePtr fieldType);
-                ref byte fieldData = ref Unsafe.Add(ref data, fieldOffset);
+                X2.PrintLine("RegularGetValueTypeHashCode fieldType RawValue");
+                X2.PrintUint(fieldType.RawValue.ToInt32());
+                X2.PrintUint( Unsafe.Read<int>(fieldType.ToPointer()));
+                var eeType = *fieldType.ToPointer();
+                X2.PrintLine("eeType");
+                X2.PrintLine(eeType.ToString());
+                X2.PrintUint(eeType.IsValueType ? 1 : 0);
+                X2.PrintLine("flags");
+                X2.PrintUint(eeType.Flags);
 
+
+                ref byte fieldData = ref Unsafe.Add(ref data, fieldOffset);
+                X2.PrintUint(new IntPtr(Unsafe.AsPointer(ref data)).ToInt32());
+                X2.PrintUint(fieldOffset);
                 Debug.Assert(!fieldType.IsPointer);
 
                 if (fieldType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4)
                 {
+                X2.PrintLine("RegularGetValueTypeHashCode if");
                     hashCode = Unsafe.Read<float>(ref fieldData).GetHashCode();
                 }
                 else if (fieldType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8)
                 {
+                    X2.PrintLine("RegularGetValueTypeHashCode else if1");
                     hashCode = Unsafe.Read<double>(ref fieldData).GetHashCode();
                 }
                 else if (fieldType.IsPrimitive)
                 {
+                    X2.PrintLine("RegularGetValueTypeHashCode else if2");
                     hashCode = FastGetValueTypeHashCodeHelper(fieldType, ref fieldData);
                 }
                 else if (fieldType.IsValueType)
                 {
+                    X2.PrintLine("RegularGetValueTypeHashCode else if3");
                     // We have no option but to box since this value type could have
                     // GC pointers (we could find out if we want though), or fields of type Double/Single (we can't
                     // really find out). Double/Single have weird requirements around -0.0 and +0.0.
@@ -181,13 +201,18 @@ namespace System
                 }
                 else
                 {
+                    X2.PrintLine("RegularGetValueTypeHashCode else ");
+                X2.PrintUint(new IntPtr(Unsafe.AsPointer(ref fieldData)).ToInt32());
                     object fieldValue = Unsafe.Read<object>(ref fieldData);
+                    X2.PrintLine("RegularGetValueTypeHashCode read ");
                     if (fieldValue != null)
                     {
+                        X2.PrintLine("RegularGetValueTypeHashCode read not null");
                         hashCode = fieldValue.GetHashCode();
                     }
                     else
                     {
+                        X2.PrintLine("RegularGetValueTypeHashCode read null");
                         // null object reference, try next
                         continue;
                     }

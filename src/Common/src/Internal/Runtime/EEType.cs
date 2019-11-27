@@ -693,10 +693,66 @@ namespace Internal.Runtime
             }
         }
 
+        [DllImport("*")]
+        internal static unsafe extern int printf(byte* str, byte* unused);
+        private static unsafe void PrintString(string s)
+        {
+            int length = s.Length;
+            fixed (char* curChar = s)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    TwoByteStr curCharStr = new TwoByteStr();
+                    curCharStr.first = (byte)(*(curChar + i));
+                    printf((byte*)&curCharStr, null);
+                }
+            }
+        }
+
+        internal static void PrintLine(string s)
+        {
+            PrintString(s);
+            PrintString("\n");
+        }
+        public static byte[] GetBytes(int value)
+        {
+            byte[] bytes = new byte[sizeof(int)];
+            Unsafe.As<byte, int>(ref bytes[0]) = value;
+            return bytes;
+        }
+        public unsafe static void PrintUint(int s)
+        {
+            byte[] intBytes = GetBytes(s);
+            for (var i = 0; i < 4; i++)
+            {
+                TwoByteStr curCharStr = new TwoByteStr();
+                var nib = (intBytes[3 - i] & 0xf0) >> 4;
+                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
+                printf((byte*)&curCharStr, null);
+                nib = (intBytes[3 - i] & 0xf);
+                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
+                printf((byte*)&curCharStr, null);
+            }
+            PrintString("\n");
+        }
+
+        public struct TwoByteStr
+        {
+            public byte first;
+            public byte second;
+        }
+
+        public static bool Print;
+
         internal bool IsValueType
         {
             get
             {
+//                if (Print)
+//                {
+//                    PrintLine("IsValueType");
+//                    PrintUint((int)_usFlags);
+//                }
                 return ((_usFlags & (ushort)EETypeFlags.ValueTypeFlag) != 0);
             }
         }

@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using Internal.NativeFormat;
 
 namespace System
 {
@@ -82,23 +83,49 @@ namespace System
                 // signficant 64-bits are only used for rounding the most significant
                 // 64-bits.
 
+                X2.PrintLine("Multiply f:");
+                X2.PrintLine(f.ToString());
+
                 uint a = (uint)(f >> 32);
+                X2.PrintLine("Multiply a:");
+                X2.PrintLine(a.ToString());
                 uint b = (uint)(f);
+                X2.PrintLine("Multiply b:");
+                X2.PrintLine(b.ToString());
 
                 uint c = (uint)(other.f >> 32);
+                X2.PrintLine("Multiply c:");
+                X2.PrintLine(c.ToString());
                 uint d = (uint)(other.f);
+                X2.PrintLine("Multiply d:");
+                X2.PrintLine(d.ToString());
 
                 ulong ac = ((ulong)(a) * c);
+                X2.PrintLine("Multiply ac:");
+                X2.PrintLine(ac.ToString());
                 ulong bc = ((ulong)(b) * c);
+                X2.PrintLine("Multiply bc:");
+                X2.PrintLine(bc.ToString());
                 ulong ad = ((ulong)(a) * d);
+                X2.PrintLine("Multiply ad:");
+                X2.PrintLine(ad.ToString());
                 ulong bd = ((ulong)(b) * d);
+                X2.PrintLine("Multiply bd:");
+                X2.PrintLine(bd.ToString());
 
                 ulong tmp = (bd >> 32) + (uint)(ad) + (uint)(bc);
+                X2.PrintLine("Multiply tmp:");
+                X2.PrintLine(tmp.ToString());
 
                 // By adding (1UL << 31) to tmp, we round the final result.
                 // Halfway cases will be rounded up.
 
                 tmp += (1U << 31);
+                X2.PrintLine("Multiply tmp += 1 <<31:");
+                X2.PrintLine(tmp.ToString());
+                ulong ul = ac + (ad >> 32) + (bc >> 32) + (tmp >> 32);
+                X2.PrintLine("Multiply ul:");
+                X2.PrintLine(ul.ToString());
 
                 return new DiyFp(ac + (ad >> 32) + (bc >> 32) + (tmp >> 32), e + other.e + SignificandSize);
             }
@@ -128,6 +155,10 @@ namespace System
 
             private void GetBoundaries(int implicitBitIndex, out DiyFp mMinus, out DiyFp mPlus)
             {
+                X2.PrintLine("GetBoundaries f");
+                X2.PrintLine(f.ToString());
+                X2.PrintLine("GetBoundaries e");
+                X2.PrintUint(e);
                 mPlus = new DiyFp((f << 1) + 1, e - 1).Normalize();
 
                 // The boundary is closer if the sigificand is of the form:
@@ -141,15 +172,25 @@ namespace System
 
                 // We deviate from the reference implementation by just checking if the significand has only the implicit bit set.
                 // In this scenario, we know that all the explicit bits are 0 and that the unbiased exponent is non-zero.
+                X2.PrintLine("GetBoundaries mplus e");
+                X2.PrintUint(mPlus.e);
                 if (f == (1UL << implicitBitIndex))
                 {
+                    X2.PrintLine("GetBoundaries 1UL << implicitBitIndex");
+
                     mMinus = new DiyFp((f << 2) - 1, e - 2);
                 }
                 else
                 {
+                    X2.PrintLine("GetBoundaries else 1UL << implicitBitIndex");
+
                     mMinus = new DiyFp((f << 1) - 1, e - 1);
                 }
 
+                X2.PrintLine("GetBoundaries");
+                X2.PrintLine(mMinus.f.ToString());
+                X2.PrintUint(mMinus.e);
+                X2.PrintUint(mPlus.e);
                 mMinus = new DiyFp(mMinus.f << (mMinus.e - mPlus.e), mPlus.e);
             }
         }

@@ -575,7 +575,7 @@ namespace Internal.IL
                         ImportConvert(WellKnownType.UInt32, false, false);
                         break;
                     case ILOpcode.conv_u8:
-                        ImportConvert(WellKnownType.UInt64, false, false);
+                        ImportConvert(WellKnownType.UInt64, false, true);
                         break;
                     case ILOpcode.callvirt:
                         ImportCall(opCode, ReadILToken());
