@@ -250,6 +250,10 @@ namespace System.Runtime.CompilerServices
             return obj.EETypePtr.ComponentSize != 0;
         }
 
+        [Intrinsic]
+        internal static ref byte GetRawSzArrayData(this Array array) =>
+            ref array.GetRawSzArrayData();
+
         public static void PrepareMethod(RuntimeMethodHandle method)
         {
         }

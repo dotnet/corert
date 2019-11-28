@@ -133,11 +133,6 @@ namespace Internal.Runtime.CompilerHelpers
             return buffer;
         }
 
-        public static unsafe string UnicodeBufferToString(char* buffer)
-        {
-            return new string(buffer);
-        }
-
         public static unsafe byte* AllocMemoryForAnsiStringBuilder(StringBuilder sb)
         {
             if (sb == null)
@@ -394,16 +389,6 @@ namespace Internal.Runtime.CompilerHelpers
         internal unsafe static void CoTaskMemFree(void* p)
         {
             PInvokeMarshal.CoTaskMemFree((IntPtr)p);
-        }
-
-        public static IntPtr GetFunctionPointerForDelegate(Delegate del)
-        {
-            return PInvokeMarshal.GetFunctionPointerForDelegate(del);
-        }
-
-        public static Delegate GetDelegateForFunctionPointer(IntPtr ptr, RuntimeTypeHandle delegateType)
-        {
-            return PInvokeMarshal.GetDelegateForFunctionPointer(ptr, delegateType);
         }
 
         /// <summary>

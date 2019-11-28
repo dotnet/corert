@@ -472,11 +472,17 @@
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalHelpers.cs">
       <Link>Interop\IL\MarshalHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalHelpers.Aot.cs">
+      <Link>Interop\IL\MarshalHelpers.Aot.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\MarshalUtils.cs">
       <Link>Interop\IL\MarshalUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\Marshaller.cs">
       <Link>Interop\IL\Marshaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\Marshaller.Aot.cs">
+      <Link>Interop\IL\Marshaller.Aot.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\IL\NativeStructType.Sorting.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.Sorting.cs</Link>
@@ -486,6 +492,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeILEmitter.cs">
       <Link>IL\Stubs\PInvokeILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeILCodeStreams.cs">
+      <Link>IL\Stubs\PInvokeILCodeStreams.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.cs">
       <Link>IL\Stubs\PInvokeTargetNativeMethod.cs</Link>
@@ -585,6 +594,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\InteropStateManager.cs">
       <Link>TypeSystem\Interop\InteropStateManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\FieldDesc.Interop.cs">
+      <Link>TypeSystem\Interop\FieldDesc.Interop.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\InstantiatedType.Interop.cs">
       <Link>TypeSystem\Interop\InstantiatedType.Interop.cs</Link>

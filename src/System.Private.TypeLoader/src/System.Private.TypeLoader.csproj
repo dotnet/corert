@@ -161,6 +161,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>Internal\TypeSystem\Common\LocalVariableDefinition.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\FieldDesc.Interop.cs">
+      <Link>Internal\TypeSystem\Interop\FieldDesc.Interop.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDesc.Interop.cs">
       <Link>Internal\TypeSystem\Interop\MethodDesc.Interop.cs</Link>
     </Compile>

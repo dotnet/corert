@@ -295,7 +295,7 @@ namespace Internal.TypeSystem.Ecma
             Debug.Assert(_reader.RemainingBytes != 0);
 
             NativeTypeKind type = (NativeTypeKind)_reader.ReadByte();
-            NativeTypeKind arraySubType = NativeTypeKind.Invalid;
+            NativeTypeKind arraySubType = NativeTypeKind.Default;
             uint? paramNum = null, numElem = null;
 
             switch (type)
@@ -347,6 +347,42 @@ namespace Internal.TypeSystem.Ecma
                         {
                             numElem = (uint)_reader.ReadCompressedInteger();
                         }
+                    }
+                    break;
+                case NativeTypeKind.SafeArray:
+                    {
+                        // There's nobody to consume SafeArrays, so let's just parse the data
+                        // to avoid asserting later.
+
+                        // Get optional VARTYPE for the element
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            _reader.ReadCompressedInteger();
+                        }
+
+                        // VARTYPE can be followed by optional type name
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            _reader.ReadSerializedString();
+                        }
+                    }
+                    break;
+                case NativeTypeKind.CustomMarshaler:
+                    {
+                        // There's nobody to consume CustomMarshaller, so let's just parse the data
+                        // to avoid asserting later.
+
+                        // Read typelib guid
+                        _reader.ReadSerializedString();
+
+                        // Read native type name
+                        _reader.ReadSerializedString();
+
+                        // Read managed marshaler name
+                        _reader.ReadSerializedString();
+
+                        // Read cookie
+                        _reader.ReadSerializedString();
                     }
                     break;
                 default:
