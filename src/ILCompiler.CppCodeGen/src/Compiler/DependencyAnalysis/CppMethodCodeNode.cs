@@ -22,18 +22,7 @@ namespace ILCompiler.DependencyAnalysis
         public CppMethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
-//            if (method.ToString().Contains("StackDelegate"))
-//            {
-//
-//            }
             _method = method;
-        }
-
-        public override bool Matched()
-        {
-            return _method.ToString()
-                .Contains(
-                    "[S.P.TypeLoader]System.Collections.Generic.ArrayBuilder`1<System.__Canon>.__GetFieldHelper(int32,EETypePtr&)");
         }
 
         public void SetCode(string methodCode, IEnumerable<Object> dependencies)
@@ -81,13 +70,6 @@ namespace ILCompiler.DependencyAnalysis
             foreach (Object node in _dependencies)
                 dependencies.Add(node, "CPP code ");
 
-            foreach (TypeDesc type in _method.OwningType.Instantiation)
-            {
-                if (type is RuntimeDeterminedType)
-                {
-
-                }
-            }
             // Raw p/invoke methods are special - these wouldn't show up as method bodies for other codegens
             // and the rest of the system doesn't expect to see them here.
             if (!_method.IsRawPInvoke())

@@ -123,10 +123,6 @@ namespace Internal.IL
 
             _canonMethodIL = methodIL;
 
-            if (method.ToString().Contains("EETypePtrOf"))
-            {
-
-            }
             // Get the runtime determined method IL so that this works right in shared code
             // and tokens in shared code resolve to runtime determined types.
             MethodIL uninstantiatiedMethodIL = methodIL.GetMethodILDefinition();
@@ -214,10 +210,6 @@ namespace Internal.IL
             else
             {
                 Debug.Assert(_method.RequiresInstMethodTableArg() || _method.AcquiresInstMethodTableFromThis());
-                if (_method.ToString().Contains("KeyValuePair") && _method.ToString().Contains("Unbox"))
-                {
-
-                }
                 return _nodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArgument, _method.OwningType);
             }
         }
@@ -557,7 +549,6 @@ namespace Internal.IL
         private string GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArgument)
         {
             ISymbolNode node = GetGenericLookupHelper(helperId, helperArgument);
-
             _dependencies.Add(node);
 
             return _writer.GetCppReadyToRunGenericHelperNodeName(_nodeFactory, node as ReadyToRunGenericHelperNode);
@@ -769,14 +760,6 @@ namespace Internal.IL
 
         public void Compile(CppMethodCodeNode methodCodeNodeNeedingCode)
         {
-            var s = _method.ToString();
-            Console.WriteLine(s);
-            if (s.ToString().Contains("IsInst") &&
-                s.ToString().Contains("TestInstantiatingUnboxingStubs"))
-            {
-
-            }
-
             FindBasicBlocks();
             for (int i = 0; i < methodCodeNodeNeedingCode.Method.Signature.Length; i++)
             {
@@ -970,12 +953,6 @@ namespace Internal.IL
 
         private void ImportLoadVar(int index, bool argument)
         {
-            if (_method.ToString().Contains("Int32") &&
-                !_method.ToString().Contains("Constant") &&
-                _method.ToString().Contains("ToString"))
-            {
-
-            }
             string name = GetVarName(index, argument);
 
             TypeDesc type = GetVarType(index, argument);
@@ -1045,16 +1022,8 @@ namespace Internal.IL
 
             Append(opcode == ILOpcode.isinst ? "__isinst" : "__castclass");
             Append("(");
-            if (_method.ToString() == "[S.P.CoreLib]System.Collections.Generic.Dictionary`2<string,object>..ctor(int32,IEqualityComparer`1<string>)")
-            {
-
-            }
             if (runtimeDeterminedType.IsRuntimeDeterminedSubtype)
             {
-                if (_method.IsConstructor)
-                {
-
-                }
                 Append("(MethodTable *)");
                 Append(GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedType));
                 Append("(");
@@ -1296,24 +1265,6 @@ namespace Internal.IL
             var runtimeDeterminedMethod = (MethodDesc)_methodIL.GetObject(token);
             var method = (MethodDesc)_canonMethodIL.GetObject(token);
 
-
-            // Program+TestConstrainedMethodCalls+IFoo`1<System.__Canon>.Frob(object)}
-            if (method.ToString().Contains("IsInst")
-                &&
-                _method.ToString().Contains("IsInst_Unbox")
-                //                &&
-                //                _method.ToString().Contains("IsInst")
-            )
-            {
-
-            }
-            //            if (method.ToString().Contains("GetValueInternal") &&
-            //                _method.ToString().Contains("EETypePtrOf") &&
-            //                _method.ToString().Contains("bool")
-            //            )
-            //            {
-            //
-            //            }
             if (method.IsIntrinsic)
             {
                 if (ImportIntrinsicCall(method, runtimeDeterminedMethod))
@@ -1332,10 +1283,7 @@ namespace Internal.IL
                 Append("__pinvoke(&__piframe)");
                 AppendSemicolon();
             }
-            if (method.ToString().Contains("GenBase") && method.ToString().Contains("GMethod1"))
-            {
 
-            }
             TypeDesc constrained = null;
             bool resolvedConstraint = false;
             if (opcode != ILOpcode.newobj)
@@ -1402,11 +1350,6 @@ namespace Internal.IL
                     }
                     else if (owningType.IsDelegate)
                     {
-                        if (_method.ToString().Contains("TestDelegateToCanonMethods") &&
-                            _method.ToString().Contains("Run"))
-                            //                    && callee.ToString().Contains("OpenStatic"))
-                        {
-                        }
                         TypeDesc canonDelegateType = owningType.ConvertToCanonForm(CanonicalFormKind.Specific);
                         LdFtnTokenEntry ldFtnTokenEntry = (LdFtnTokenEntry)_stack.Peek();
                         delegateInfo = _compilation.GetDelegateCtor(canonDelegateType, ldFtnTokenEntry.LdToken, followVirtualDispatch: false);
@@ -2138,7 +2081,6 @@ namespace Internal.IL
                     thisArgument = thisArgument.MakeByRefType();
             }
 
-
             TypeDesc retType = methodSignature.ReturnType;
             StackValueKind retKind = StackValueKind.Unknown;
 
@@ -2270,10 +2212,6 @@ namespace Internal.IL
             MethodDesc method = ((MethodDesc)_canonMethodIL.GetObject(token));
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (_method.ToString().Contains("TestDelegateFatFunctionPointers"))
-            {
-
-            }
             if (opCode == ILOpcode.ldvirtftn && canonMethod.IsVirtual && !canonMethod.HasInstantiation && canonMethod.OwningType.IsInterface)
             {
                 AddVirtualMethodReference(canonMethod);
@@ -2361,6 +2299,7 @@ namespace Internal.IL
                     }
 
                     PushTemp(entry);
+
                     if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic))
                     {
                         if (exactContextNeedsRuntimeLookup)
@@ -2721,16 +2660,6 @@ namespace Internal.IL
             TypeDesc runtimeDeterminedOwningType = runtimeDeterminedField.OwningType;
 
             TypeDesc owningType = _writer.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
-            if (_method.ToString()
-                .Contains(
-                    "[S.P.Reflection.Core]System.Reflection.Runtime.TypeInfos.RuntimeTypeInfo+TypeComponentsCache.GetQueriedMembers<__Canon>(string,bool)")
-            )
-            {
-                if (field.ToString().Contains("[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<System.__Canon>.MemberTypeIndex"))
-                {
-
-                }
-            }
             TypeDesc fieldType = _writer.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             // TODO: Is this valid combination?
@@ -2743,10 +2672,7 @@ namespace Internal.IL
             StackValueKind kind = GetStackValueKind(fieldType);
             PushTemp(kind, fieldType);
             AppendCastIfNecessary(kind, fieldType);
-            if (field.Name == "Value" && owningType.ToString() == "[S.P.CoreLib]System.Array+EmptyArray`1<System.__Canon>")
-            {
 
-            }
             if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
             {
                 AddTypeReference(fieldType, false);
@@ -2900,16 +2826,7 @@ namespace Internal.IL
 
             if (!runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
                 TriggerCctor(runtimeDeterminedField.OwningType);
-            if (_method.ToString()
-                .Contains(
-                    "[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<System.__Canon>..cctor()")
-            )
-            {
-                if (field.ToString().Contains("[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<System.__Canon>.MemberTypeIndex"))
-                {
 
-                }
-            }
             if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype && field.IsStatic)
             {
                 Append("*(");
@@ -3097,12 +3014,7 @@ namespace Internal.IL
         private void ImportBox(int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
-            if (this._method.ToString()
-                .Contains(
-                    "System.Threading.Interlocked.CompareExchange<__Canon>(__Canon&,__Canon,__Canon)"))
-            {
 
-            }
             if (type.IsValueType)
             {
                 if (type.IsNullable)
@@ -3254,11 +3166,6 @@ namespace Internal.IL
 
         private void ImportNewArray(int token)
         {
-            if (_methodIL.ToString().Contains("Generic.LowLevelList") &&
-                _methodIL.ToString().Contains("cctor"))
-            {
-
-            }
             TypeDesc runtimeDeterminedType = (TypeDesc)_methodIL.GetObject(token);
             TypeDesc runtimeDeterminedArrayType = runtimeDeterminedType.MakeArrayType();
             TypeDesc type = (TypeDesc)_canonMethodIL.GetObject(token);
@@ -3509,13 +3416,6 @@ namespace Internal.IL
             StackEntry value;
             if (ldtokenValue is TypeDesc)
             {
-                if (_method.ToString().Contains("TestDelegateToCanonMethods") &&
-                    _method.ToString().Contains("_Canon") &&
-                    _method.ToString().Contains("MakeString") &&
-                    _method.ToString().Contains("GenStruct"))
-                {
-
-                }
                 ldtokenKind = WellKnownType.RuntimeTypeHandle;
                 TypeDesc type = (TypeDesc)ldtokenValue;
 
@@ -3769,10 +3669,6 @@ namespace Internal.IL
 
             if (field.IsStatic)
             {
-                if (field.Name == "Empty" && owningType.ToString() == "[S.P.CoreLib]System.Array`1+ArrayEnumerator<System.__Canon>")
-                {
-
-                }
                 var metadataType = owningType as MetadataType;
 
                 Object node;

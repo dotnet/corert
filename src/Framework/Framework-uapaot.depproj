@@ -16,6 +16,11 @@
     <PackageReference Include="Microsoft.Private.CoreFx.UAP">
       <Version>$(CoreFxUapVersion)</Version>
     </PackageReference>
+
+    <!-- Grab UAP System.Text.Json because it doesn't rely on Reflection.Emit -->
+    <PackageReference Include="System.Text.Json">
+      <Version>4.6.0</Version>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +35,9 @@
     <FileToInclude Include="System.Linq" />
 
     <FileToInclude Include="System.Private.Reflection.Metadata.Ecma335" />
+
+    <!-- Grab UAP System.Text.Json because it doesn't rely on Reflection.Emit -->
+    <FileToInclude Include="System.Text.Json" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

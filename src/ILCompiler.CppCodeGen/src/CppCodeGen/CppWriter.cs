@@ -461,7 +461,7 @@ namespace ILCompiler.CppCodeGen
                 return sb.ToString().Replace("::", "_");
             }
 
-            return node.GetMangledName(factory.NameMangler).Replace("::", "_");
+            return node.GetMangledName(factory.NameMangler).Replace("::", "_");;
         }
 
         private string GetCppFatFunctionPointerNameForMethod(MethodDesc method,
@@ -643,11 +643,6 @@ namespace ILCompiler.CppCodeGen
                 return;
             }
 
-//            if (method.ToString().Contains("IsInst") &&
-//                method.ToString().Contains("TestInstantiatingUnboxingStubs"))
-//            {
-//
-//            }
             var methodIL = _compilation.GetMethodIL(method);
             if (methodIL == null)
                 return;
@@ -1944,11 +1939,6 @@ namespace ILCompiler.CppCodeGen
             sb.Append("(");
             sb.Append("void *");
             sb.Append(argNames[0]);
-
-            if (mangledName == "__GenericLookupFromDict__System_Private_CoreLib_System_Threading_Interlocked_CompareExchange_4_A__System___Canon_V__MethodDictionary_As_0_A__T_System___Canon___System_Private_CoreLib_System_Object_V_")
-            {
-
-            }
 
             if (node.Id == ReadyToRunHelperId.DelegateCtor)
             {

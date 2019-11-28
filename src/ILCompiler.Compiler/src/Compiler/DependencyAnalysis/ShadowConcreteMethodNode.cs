@@ -50,17 +50,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(canonicalMethod.Method.IsSharedByGenericInstantiations);
             Debug.Assert(canonicalMethod.Method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
             Method = method;
-            if (Matched())
-            {
-
-            }
             CanonicalMethodNode = canonicalMethod;
-        }
-
-
-        public override bool Matched()
-        {
-            return Method.ToString().Contains("[S.P.TypeLoader]System.Collections.Generic.ArrayBuilder`1<Internal.TypeSystem.DefType>.__GetFieldHelper(int32,EETypePtr&)");
         }
 
         public ISymbolNode NodeForLinkage(NodeFactory factory)
@@ -70,10 +60,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            if (this.Method.ToString().Contains("Unsafe.As"))
-            {
-
-            }
             DependencyList dependencies = new DependencyList();
 
             // Make sure the canonical body gets generated

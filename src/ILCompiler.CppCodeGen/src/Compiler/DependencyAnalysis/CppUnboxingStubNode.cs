@@ -18,10 +18,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(method.OwningType.IsValueType && !method.Signature.IsStatic);
             Method = method;
-            if (Method.ToString().Contains("IsInst"))
-            {
-
-            }
         }
 
         public MethodDesc Method { get; }

@@ -32,31 +32,6 @@ namespace ILCompiler.DependencyAnalysis
             _target = target;
 
             _lookupSignature = GetLookupSignature(factory, helperId, target);
-            if (_dictionaryOwner.ToString()
-                .Contains(
-                    "S.P.CoreLib]System.Threading.Interlocked.CompareExchange<__Canon>(__Canon&,__Canon,__Canon"))
-            {
-
-            if (_lookupSignature.ToString()
-                    .Contains(
-                        "TypeHandle: T_System.__Canon")
-            )
-            {
-                if (_lookupSignature is TypeNonGCStaticBaseGenericLookupResult)
-                {
-                    if (this is ReadyToRunGenericLookupFromDictionaryNode)
-                    {
-                        if (((TypeNonGCStaticBaseGenericLookupResult)_lookupSignature).IsMatch())
-                        {
-
-                        }
-
-                    }
-
-                }
-            }
-            }
-
         }
 
         public static GenericLookupResult GetLookupSignature(NodeFactory factory, ReadyToRunHelperId id, object target)
@@ -106,12 +81,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             DictionaryLayoutNode layout = factory.GenericDictionaryLayout(_dictionaryOwner);
 
-            if (DictionaryOwner.ToString()
-                .Contains(
-                    "S.P.CoreLib]System.Threading.Interlocked.CompareExchange<__Canon>(__Canon&,__Canon,__Canon"))
-            {
-
-            }
             if (layout.HasUnfixedSlots)
             {
                 // When the helper call gets marked, ensure the generic layout for the associated dictionaries
@@ -142,10 +111,7 @@ namespace ILCompiler.DependencyAnalysis
                         // If the type has a lazy static constructor, we also need the non-GC static base
                         // because that's where the class constructor context is.
                         TypeDesc type = (TypeDesc)_target;
-//                        if (type.ToString().Contains("EmptyArray") && type.ToString().Contains("T_System.__Canon"))
-//                        {
-//
-//                        }
+
                         if (factory.TypeSystemContext.HasLazyStaticConstructor(type))
                         {
                             result.Add(
@@ -175,21 +141,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
                     break;
             }
-            if (_lookupSignature.ToString()
-                .Contains(
-                    "[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<M_System.__Canon>")
-            && lookupContext.TypeInstantiation.Length == 0
-            )
-            {
-                if (_lookupSignature is TypeNonGCStaticBaseGenericLookupResult)
-                {
-                    if (((TypeNonGCStaticBaseGenericLookupResult)_lookupSignature).IsMatch())
-                    {
 
-                    }
-
-                }
-            }
             // All generic lookups depend on the thing they point to
             result.Add(new DependencyListEntry(
                         _lookupSignature.GetTarget(factory, lookupContext),
@@ -321,15 +273,6 @@ namespace ILCompiler.DependencyAnalysis
         public ReadyToRunGenericLookupFromDictionaryNode(NodeFactory factory, ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
             : base(factory, helperId, target, dictionaryOwner)
         {
-            if (dictionaryOwner.ToString().Contains("Array"))
-            {
-
-            }
-//            TypeDesc type = dictionaryOwner as TypeDesc;
-//            if (type != null)
-//            {
-//                Debug.Assert(type.IsCanonicalSubtype(CanonicalFormKind.Any));
-//            }
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

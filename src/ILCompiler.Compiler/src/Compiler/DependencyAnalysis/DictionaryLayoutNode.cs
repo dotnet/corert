@@ -260,10 +260,6 @@ namespace ILCompiler.DependencyAnalysis
         public override void EnsureEntry(GenericLookupResult entry)
         {
             Debug.Assert(_layout == null, "Trying to add entry but layout already computed");
-            if (this.OwningMethodOrType.ToString().Contains("CoreLib]System.Threading.Interlocked.CompareExchange<__Canon>(__Canon&,__Canon,__Ca"))
-            {
-
-            }
             _entries.AddOrGetExisting(entry);
         }
 
