@@ -9,7 +9,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using Internal.NativeFormat;
+
 using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
@@ -107,7 +107,6 @@ namespace System.Runtime
             {
                 result = InternalCalls.RhpNewFast(ptrEEType);
             }
-
             InternalCalls.RhpBox(result, ref Unsafe.Add(ref data, dataOffset));
             return result;
         }

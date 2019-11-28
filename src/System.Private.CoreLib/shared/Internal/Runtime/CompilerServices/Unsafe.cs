@@ -114,8 +114,7 @@ namespace Internal.Runtime.CompilerServices
             typeof(T).ToString(); // Type token used by the actual method body
             throw new PlatformNotSupportedException();
 #else
-            var offset = (IntPtr)(elementOffset * (nint)SizeOf<T>());
-            return ref AddByteOffset(ref source, offset);
+            return ref AddByteOffset(ref source, (IntPtr)(elementOffset * (nint)SizeOf<T>()));
 #endif
         }
 

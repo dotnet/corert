@@ -21,20 +21,7 @@ namespace ILCompiler.DependencyAnalysis
         protected WebAssemblyMethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
-            //            if (method.IsConstructor && method.ToString() == "[S.P.CoreLib]System.Collections.Generic.Dictionary`2<string,object>..ctor(int32,IEqualityComparer`1<string>)")
-            //            {
-            //
-            //            }
-            if (method.ToString().Contains("KeyValuePair") && method.ToString().Contains("ToString"))
-            {
-
-            }
             _method = method;
-        }
-
-        public override bool Matched()
-        {
-            return this is WebAssemblyUnboxingThunkNode;
         }
 
         public void SetDependencies(IEnumerable<Object> dependencies)

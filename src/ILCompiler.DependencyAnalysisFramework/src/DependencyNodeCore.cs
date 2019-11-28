@@ -155,10 +155,5 @@ namespace ILCompiler.DependencyAnalysisFramework
         {
             return GetName(context);
         }
-
-        public virtual  bool Matched()
-        {
-            return false;
-        }
     }
 }

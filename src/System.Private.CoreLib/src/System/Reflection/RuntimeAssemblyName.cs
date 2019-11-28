@@ -50,32 +50,11 @@ namespace System.Reflection
         // Optional public key (if Flags.PublicKey == true) or public key token.
         public byte[] PublicKeyOrToken { get; }
 
-        internal static unsafe void PrintString(string s)
-        {
-//            int length = s.Length;
-//            fixed (char* curChar = s)
-//            {
-//                for (int i = 0; i < length; i++)
-//                {
-//                    SR.TwoByteStr curCharStr = new SR.TwoByteStr();
-//                    curCharStr.first = (byte)(*(curChar + i));
-//                    X.printf((byte*)&curCharStr, null);
-//                }
-//            }
-        }
-
-        internal static void PrintLine(string s)
-        {
-            PrintString(s);
-            PrintString("\n");
-        }
-
         // Equality - this compares every bit of data in the RuntimeAssemblyName which is acceptable for use as keys in a cache
         // where semantic duplication is permissible. This method is *not* meant to define ref->def binding rules or 
         // assembly binding unification rules.
         public bool Equals(RuntimeAssemblyName other)
         {
-            PrintLine("In Equals!");
             if (other == null)
                 return false;
             if (!this.Name.Equals(other.Name))

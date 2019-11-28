@@ -123,12 +123,6 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
         ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
     }
 
-    if(numElements > 1000)
-    {printf("big elements\n");
-        ASSERT_UNCONDITIONALLY("BE");  // TODO: Throw overflow
-    }
-
-
     size_t size;
 #ifndef BIT64
     // if the element count is <= 0x10000, no overflow is possible because the component size is
@@ -148,19 +142,6 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     else
 #endif // !BIT64
     {
-	    //printf("basesize\n");
-	    //printf("%d\n", pArrayEEType->get_BaseSize());
-	    if(pArrayEEType->get_BaseSize() == 0)
-	    {
-
-        ASSERT_UNCONDITIONALLY("basesize is 0");  // TODO: Throw OOM
-
-	    }
-	    if(pArrayEEType->get_BaseSize() > 10000)
-	    {
-	    printf("bogus basesize\n");
-        ASSERT_UNCONDITIONALLY("BB");  // TODO: Throw OOM
-	    }
         size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
         size = ALIGN_UP(size, sizeof(UIntNative));
     }
@@ -174,11 +155,6 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
         pObject->set_EEType(pArrayEEType);
         pObject->InitArrayLength((UInt32)numElements);
         return pObject;
-    }
-
-    //printf("alloc array size\n");
-    if(size > 1000)
-    {printf("big\n");
     }
 
     pObject = (Array *)RhpGcAlloc(pArrayEEType, 0, size, NULL);

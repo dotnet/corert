@@ -7,7 +7,7 @@ using System.Runtime;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using Internal.NativeFormat;
+
 using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -145,16 +145,14 @@ namespace System
             if (!(srcEEType.IsPrimitive && dstEEType.IsPrimitive))
             {
                 dstObject = null;
-                throw new Exception();
-//                return CreateChangeTypeException(srcEEType, dstEEType, semantics);
+                return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
             RuntimeImports.RhCorElementType dstCorElementType = dstEEType.CorElementType;
             if (!srcEEType.CorElementTypeInfo.CanWidenTo(dstCorElementType))
             {
                 dstObject = null;
-                throw new Exception();
-//                return CreateChangeTypeArgumentException(srcEEType, dstEEType);
+                return CreateChangeTypeArgumentException(srcEEType, dstEEType);
             }
 
             switch (dstCorElementType)

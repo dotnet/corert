@@ -184,10 +184,6 @@ namespace ILCompiler
 
             if (methodNode != null)
             {
-                if (methodNode.Method.ToString().Contains("_Unbox"))
-                {
-
-                }
                 _methodsGenerated.Add(methodNode.Method);
                 return;
             }
@@ -195,10 +191,6 @@ namespace ILCompiler
             var reflectableMethodNode = obj as ReflectableMethodNode;
             if (reflectableMethodNode != null)
             {
-                if (reflectableMethodNode.Method.ToString().Contains("_Unbox"))
-                {
-
-                }
                 _methodsGenerated.Add(reflectableMethodNode.Method);
             }
 
