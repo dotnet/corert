@@ -787,7 +787,6 @@ class Program
 
             {
                 MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(string));
-
                 if (!(bool)mi.Invoke(o, new object[] { 123, "hello" }))
                     s_NumErrors++;
 
@@ -808,7 +807,6 @@ class Program
 
             // VirtualInvokeMap testing
             {
-
                 // Rooting some methods to make them reflectable
                 new BaseClass<string>().Method1("string");
                 new BaseClass<string>().Method2("string");
@@ -846,11 +844,8 @@ class Program
                 MethodInfo unusedMethod = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("VirtualButNotUsedVirtuallyMethod");
                 MethodInfo gvm1 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod1").MakeGenericMethod(typeof(string));
                 MethodInfo gvm2 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod2").MakeGenericMethod(typeof(string));
-                Console.WriteLine("before VirtualInvokeMap a22");
                 MethodInfo gvm3 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod3").MakeGenericMethod(typeof(string));
-                Console.WriteLine("before VirtualInvokeMap a23");
                 MethodInfo gvm4 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod4").MakeGenericMethod(typeof(string));
-                Console.WriteLine("before VirtualInvokeMap a3");
                 Verify("BaseClass.Method1", m1.Invoke(new BaseClass<string>(), new[] { "" }));
                 Verify("BaseClass.Method2", m2.Invoke(new BaseClass<string>(), new[] { "" }));
                 Verify("BaseClass.Method3", m3.Invoke(new BaseClass<string>(), new[] { "" }));
@@ -880,11 +875,8 @@ class Program
                 m1 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("Method1");
                 m2 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("Method2");
                 m3 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("Method3");
-                Console.WriteLine("before VirtualInvokeMap a4");
                 gvm1 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("GVMethod1").MakeGenericMethod(typeof(string));
-                Console.WriteLine("before VirtualInvokeMap a5");
                 gvm2 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("GVMethod2").MakeGenericMethod(typeof(string));
-                Console.WriteLine("before VirtualInvokeMap a6");
                 gvm3 = typeof(DerivedClass1<string>).GetTypeInfo().GetDeclaredMethod("GVMethod3").MakeGenericMethod(typeof(string));
                 Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass1<string>(), new[] { "" }));
                 Verify("DerivedClass1.Method2", m2.Invoke(new DerivedClass1<string>(), new[] { "" }));
@@ -899,8 +891,6 @@ class Program
                 Verify("DerivedClass1.GVMethod2", gvm2.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
                 Verify("DerivedClass2.GVMethod3", gvm3.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
 
-                Console.WriteLine("before VirtualInvokeMap 2");
-
                 m3 = typeof(DerivedClass2<string>).GetTypeInfo().GetDeclaredMethod("Method3");
                 m4 = typeof(DerivedClass2<string>).GetTypeInfo().GetDeclaredMethod("Method4");
                 gvm3 = typeof(DerivedClass2<string>).GetTypeInfo().GetDeclaredMethod("GVMethod3").MakeGenericMethod(typeof(string));
@@ -909,7 +899,6 @@ class Program
                 Verify("DerivedClass2.Method4", m4.Invoke(new DerivedClass2<string>(), new[] { "" }));
                 Verify("DerivedClass2.GVMethod3", gvm3.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
                 Verify("DerivedClass2.GVMethod4", gvm4.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
-                Console.WriteLine("before VirtualInvokeMap 3");
 
                 // BaseClass<int>.Method1 has the same slot as BaseClass<float>.Method3 on CoreRT, because vtable entries
                 // get populated on demand (the first type won't get a Method3 entry, and the latter won't get a Method1 entry)
@@ -919,7 +908,6 @@ class Program
                 Verify("BaseClass.Method1", m1.Invoke(new BaseClass<int>(), new object[] { (int)1 }));
                 Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass1<int>(), new object[] { (int)1 }));
                 Verify("DerivedClass1.Method1", m1.Invoke(new DerivedClass2<int>(), new object[] { (int)1 }));
-                Console.WriteLine("before VirtualInvokeMap 4");
 
                 new BaseClass<float>().Method3(1);
                 m3 = typeof(BaseClass<float>).GetTypeInfo().GetDeclaredMethod("Method3");
@@ -927,12 +915,8 @@ class Program
                 Verify("BaseClass.Method3", m3.Invoke(new DerivedClass1<float>(), new object[] { 1.1f }));
                 Verify("BaseClass.Method3", m3.Invoke(new DerivedClass2<float>(), new object[] { 1.1f }));
 
-
                 m1 = typeof(IFace<string>).GetTypeInfo().GetDeclaredMethod("IFaceMethod1");
-                Console.WriteLine("before IFaceGVMethod1 make generic");
-
                 gvm1 = typeof(IFace<string>).GetTypeInfo().GetDeclaredMethod("IFaceGVMethod1").MakeGenericMethod(typeof(string));
-                Console.WriteLine("after IFaceGVMethod1 make generic");
                 Verify("BaseClass.IFaceMethod1", m1.Invoke(new BaseClass<string>(), new[] { "" }));
                 Verify("BaseClass.IFaceGVMethod1", gvm1.Invoke(new BaseClass<string>(), new[] { "", "" }));
                 Verify("DerivedClass1.IFaceMethod1", m1.Invoke(new DerivedClass1<string>(), new[] { "" }));
@@ -1317,12 +1301,8 @@ class Program
 
         private static void TestWithGenClass<T>(object o)
         {
-            Console.WriteLine("TestWithGenClass");
             GenBase<T> b = o as GenBase<T>;
-            Console.WriteLine("cast object to GenBase<T>");
             var res = b.GMethod1<int>(1, 2);
-            Console.WriteLine("called GenBase");
-
             WriteLineWithVerification(res, s_GMethod1);
 
             IFoo<string> ifoo1 = o as IFoo<string>;
@@ -1510,6 +1490,7 @@ class Program
                 Func<string, string> f = Frob<string>;
                 if (f(s) != typeof(string).Name + ": Derived: " + s)
                     throw new Exception();
+
                 f = base.Frob<string>;
                 if (f(s) != typeof(string).Name + ": Base: " + s)
                     throw new Exception();
@@ -1530,6 +1511,7 @@ class Program
             Func<int, string> a = foo.Frob<Atom>;
             if (a(123) != "Atom123")
                 throw new Exception();
+
             RunShared<Atom>(new FooShared());
 
             new Derived().Validate("hello");
@@ -1733,27 +1715,13 @@ class Program
             FieldInfo fi2 = fooDynamicOfClassType2.GetDeclaredField("s_intField");
             fi.SetValue(null, 1111);
             fi2.SetValue(null, 2222);
-            Console.WriteLine("Verify ints ");
             Verify(1111, (int)fi.GetValue(null));
             Verify(2222, (int)fi2.GetValue(null));
 
             fi = fooDynamicOfClassType.GetDeclaredField("s_floatField");
             fi2 = fooDynamicOfClassType2.GetDeclaredField("s_floatField");
-            Console.WriteLine("setting1.1");
             fi.SetValue(null, 1.1f);
-            Console.WriteLine("setting1.1 done");
-
             fi2.SetValue(null, 2.2f);
-            Console.WriteLine("Verify single ");
-            Console.WriteLine((1.1f).ToString());
-            Console.WriteLine("Verify single direct static get");
-            Console.WriteLine(Foo<ClassType>.s_floatField.ToString());
-
-            Console.WriteLine("Verify single direct static setting directlty");
-
-            Foo<ClassType>.s_floatField = 1.1f;
-            Console.WriteLine(Foo<ClassType>.s_floatField.ToString());
-
             Verify(1.1f, (float)fi.GetValue(null));
             Verify(2.2f, (float)fi2.GetValue(null));
 
