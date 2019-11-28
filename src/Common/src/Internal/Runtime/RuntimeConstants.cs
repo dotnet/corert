@@ -10,8 +10,13 @@ namespace Internal.Runtime
         /// Offset by which fat function pointers are shifted to distinguish them
         /// from real function pointers.
         /// </summary>
-        //TODO: #if and set to MSB for WASM or maybe leave as 2 and do some <<2/>>2 when storing/retrieving.
-        public const int Offset = 0x40000000;
+#if WASM
+        // WebAssembly uses index tables, not addresses.  This is going to be contentious I imagine as it is baked into Ilc and hence an Ilc for x64 will not be able to compile Wasm.  Comments welcome.
+        public const int Offset = 1 << 31;
+#else
+        public const int Offset = 1 << 31;
+//        public const int Offset = 2;
+#endif
     }
 
     internal static class IndirectionConstants
