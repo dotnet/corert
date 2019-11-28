@@ -323,10 +323,6 @@ class Program
 
             public string MakeGenString<U>()
             {
-                Console.WriteLine("MakeGenString<U>");
-//                Console.WriteLine(this.ToString());
-                Console.WriteLine(typeof(T).Name);
-                Console.WriteLine(typeof(U).Name);
                 // Use a constructed type that is not used elsewhere
                 return typeof(T[,,]).GetElementType().Name + ", " +
                     typeof(U[,,,]).GetElementType().Name + ": " + X.ToString();
@@ -350,11 +346,6 @@ class Program
 
             public string MakeGenString<U>()
             {
-                Console.WriteLine("MakeGenString<U>");
-                Console.WriteLine(this.ToString());
-                Console.WriteLine(typeof(T).Name);
-                Console.WriteLine(typeof(U).Name);
-                Console.WriteLine(X.ToString());
                 // Use a constructed type that is not used elsewhere
                 return typeof(T[,,]).GetElementType().Name + ", " +
                     typeof(U[,,,]).GetElementType().Name + ": " + X.ToString();
@@ -401,7 +392,6 @@ class Program
 
         public static void Run()
         {
-            Console.WriteLine("TestDelegateToCanonMethods Run");
             // Delegate to a shared nongeneric reference type instance method
             {
                 GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
@@ -410,7 +400,6 @@ class Program
                     throw new Exception();
             }
 
-            Console.WriteLine("TestDelegateToCanonMethods GenClass<int>");
             // Delegate to a unshared nongeneric reference type instance method
             {
                 GenClass<int> g = new GenClass<int>(85);
@@ -419,7 +408,6 @@ class Program
                     throw new Exception();
             }
 
-            Console.WriteLine("TestDelegateToCanonMethods GenClass<Foo> MakeGenString");
             // Delegate to a shared generic reference type instance method
             {
                 GenClass<Foo> g = new GenClass<Foo>(new Foo(42));
@@ -428,7 +416,6 @@ class Program
                     throw new Exception();
             }
 
-            Console.WriteLine("TestDelegateToCanonMethods GenClass<int> MakeGenString");
             // Delegate to a unshared generic reference type instance method
             {
                 GenClass<int> g = new GenClass<int>(85);
@@ -437,7 +424,6 @@ class Program
                     throw new Exception();
             }
 
-            Console.WriteLine("TestDelegateToCanonMethods GenStruct<Bar> MakeString");
             // Delegate to a shared nongeneric value type instance method
             {
                 GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
@@ -446,7 +432,6 @@ class Program
                     throw new Exception();
             }
 
-            Console.WriteLine("TestDelegateToCanonMethods GenStruct<int> MakeString");
             // Delegate to a unshared nongeneric value type instance method
             {
                 GenStruct<int> g = new GenStruct<int>(85);
@@ -455,7 +440,6 @@ class Program
                     throw new Exception();
             }
 
-            Console.WriteLine("TestDelegateToCanonMethods GenStruct<Bar> MakeGenString");
             // Delegate to a shared generic value type instance method
             {
                 GenStruct<Bar> g = new GenStruct<Bar>(new Bar(42));
@@ -464,7 +448,6 @@ class Program
                     throw new Exception();
             }
 
-            Console.WriteLine("TestDelegateToCanonMethods GenStruct<int> MakeGenString");
             // Delegate to a unshared generic value type instance method
             {
                 GenStruct<int> g = new GenStruct<int>(85);
@@ -473,10 +456,8 @@ class Program
                     throw new Exception();
             }
 
-            Console.WriteLine("TestDelegateToCanonMethodsRunReferenceTypeShared<FooShared>");
             // Now the same from shared code
             RunReferenceTypeShared<FooShared>(new FooShared(42));
-            Console.WriteLine("TestDelegateToCanonMethods RunValueTypeShared<BarShared>");
             RunValueTypeShared<BarShared>(new BarShared(42));
         }
     }
@@ -805,9 +786,7 @@ class Program
             object o = new Foo<string>();
 
             {
-                Console.WriteLine("before make generic");
                 MethodInfo mi = typeof(Foo<string>).GetTypeInfo().GetDeclaredMethod("SetAndCheck").MakeGenericMethod(typeof(string));
-                Console.WriteLine("After make generic");
 
                 if (!(bool)mi.Invoke(o, new object[] { 123, "hello" }))
                     s_NumErrors++;
@@ -829,7 +808,6 @@ class Program
 
             // VirtualInvokeMap testing
             {
-                Console.WriteLine("before VirtualInvokeMap");
 
                 // Rooting some methods to make them reflectable
                 new BaseClass<string>().Method1("string");
@@ -860,19 +838,13 @@ class Program
                 Func<IFace<string>> f = () => new BaseClass<string>(); // Hack to prevent devirtualization
                 f().IFaceMethod1("string");
                 ((IFace<string>)new BaseClass<string>()).IFaceGVMethod1<string>("string1", "string2");
-                Console.WriteLine("before VirtualInvokeMap a1");
 
                 MethodInfo m1 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method1");
                 MethodInfo m2 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method2");
                 MethodInfo m3 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method3");
                 MethodInfo m4 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("Method4");
                 MethodInfo unusedMethod = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("VirtualButNotUsedVirtuallyMethod");
-                Console.WriteLine("before VirtualInvokeMap a2");
-                var mi = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod1");
-                Console.WriteLine("before VirtualInvokeMap a2");
-                Console.WriteLine(mi.ToString());
                 MethodInfo gvm1 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod1").MakeGenericMethod(typeof(string));
-                Console.WriteLine("before VirtualInvokeMap a21");
                 MethodInfo gvm2 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod2").MakeGenericMethod(typeof(string));
                 Console.WriteLine("before VirtualInvokeMap a22");
                 MethodInfo gvm3 = typeof(BaseClass<string>).GetTypeInfo().GetDeclaredMethod("GVMethod3").MakeGenericMethod(typeof(string));
@@ -1011,24 +983,24 @@ class Program
             // This will set the field to a value from non-shared code
             TypeWithThreadStaticField<object>.X = 42;
 
-//            // Now read the value from shared code
-//            if (TypeWithThreadStaticField<object>.Read() != 42)
-//                throw new Exception();
-//
-//            // Set the value from shared code
-//            TypeWithThreadStaticField<string>.Write(112);
-//
-//            // Now read the value from non-shared code
-//            if (TypeWithThreadStaticField<string>.X != 112)
-//                throw new Exception();
-//
-//            // Check that the storage locations for string and object instantiations differ
-//            if (TypeWithThreadStaticField<object>.Read() != 42)
-//                throw new Exception();
-//
-//            // Make sure we run the cctor
-//            if (ReadFromBeforeFieldInitType<object>() != 1985)
-//                throw new Exception();
+            // Now read the value from shared code
+            if (TypeWithThreadStaticField<object>.Read() != 42)
+                throw new Exception();
+
+            // Set the value from shared code
+            TypeWithThreadStaticField<string>.Write(112);
+
+            // Now read the value from non-shared code
+            if (TypeWithThreadStaticField<string>.X != 112)
+                throw new Exception();
+
+            // Check that the storage locations for string and object instantiations differ
+            if (TypeWithThreadStaticField<object>.Read() != 42)
+                throw new Exception();
+
+            // Make sure we run the cctor
+            if (ReadFromBeforeFieldInitType<object>() != 1985)
+                throw new Exception();
         }
     }
 

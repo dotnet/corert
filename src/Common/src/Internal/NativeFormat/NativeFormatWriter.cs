@@ -411,6 +411,7 @@ namespace Internal.NativeFormat
             Debug.Assert(vertex._offset == Vertex.NotPlaced);
             vertex._offset = Vertex.Unified;
             _unifier.Add(vertex, vertex);
+
             return vertex;
         }
 
@@ -736,9 +737,7 @@ namespace Internal.NativeFormat
         {
             writer.WriteUnsigned((uint)_elements.Count);
             foreach (var elem in _elements)
-            {
                 elem.Save(writer);
-            }
         }
 
         public override bool Equals(object obj)
@@ -954,12 +953,12 @@ namespace Internal.NativeFormat
         }
     }
 
-//#if NATIVEFORMAT_PUBLICWRITER
-//    public
-//#else
-//    internal
-//#endif
-    public class MethodSignature : Vertex
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class MethodSignature : Vertex
     {
         private uint _flags;
         private uint _fptrReferenceId;

@@ -1156,6 +1156,11 @@ namespace ILCompiler.DependencyAnalysis
                             var threadStaticBase = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "tsGep", helperFunc);
                             importer.OutputCodeForTriggerCctor(target, threadStaticBase);
                         }
+                        else
+                        {
+                            //TODO move this outside the else as probably always want to do it
+                            resVar = importer.OutputCodeForGetThreadStaticBaseForType(resVar).ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), builder);
+                        }
                     }
                     break;
             

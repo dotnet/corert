@@ -4329,16 +4329,20 @@ namespace Internal.IL
                         if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
                         {
                             LLVMValueRef helper;
-                            node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetThreadStaticBase, runtimeDeterminedOwningType, out helper); // TODO GetThreadNonGcStaticBase?
+                            node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetThreadStaticBase, runtimeDeterminedOwningType, out helper);// TODO refactor with gc/non gc cases?
                             staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
                             {
-                    GetShadowStack(),
+                                GetShadowStack(),
                                 GetGenericContext()
                             }, "getHelper");
+//                            var ptrPtr = LLVM.BuildPointerCast(_builder, staticBase,
+//                                LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), 0),
+//                                "ptrPtr");
+//                            //TODO other static cases need this deref?
+//                            staticBase = LLVM.BuildLoad(_builder, ptrPtr, "staticBase");
                         }
                         else
                         {
-                            // TODO: We need the right thread static per thread
                             ExpressionEntry returnExp;
                             var c = runtimeDeterminedOwningType.IsCanonicalSubtype(CanonicalFormKind.Specific);
                             node = TriggerCctorWithThreadStaticStorage((MetadataType)runtimeDeterminedOwningType, needsCctorCheck, out returnExp);
@@ -5039,5 +5043,24 @@ namespace Internal.IL
             return _method.ToString();
         }
 
+        //TOOD refactor with cctor
+        public ExpressionEntry OutputCodeForGetThreadStaticBaseForType(LLVMValueRef threadStaticIndex)
+        {
+            var threadStaticIndexPtr = LLVM.BuildPointerCast(_builder, threadStaticIndex,
+                LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), 0), "tsiPtr");
+            LLVMValueRef typeTlsIndexPtr =
+                LLVM.BuildGEP(_builder, threadStaticIndexPtr, new LLVMValueRef[] { BuildConstInt32(1) }, "typeTlsIndexPtr"); // index is the second field after the ptr.
+
+            StackEntry typeManagerSlotEntry = new LoadExpressionEntry(StackValueKind.ValueType, "typeManagerSlot", threadStaticIndexPtr, GetWellKnownType(WellKnownType.Int32));
+            StackEntry tlsIndexExpressionEntry = new LoadExpressionEntry(StackValueKind.ValueType, "typeTlsIndex", typeTlsIndexPtr, GetWellKnownType(WellKnownType.Int32));
+
+            var expressionEntry = CallRuntime("Internal.Runtime", _compilation.TypeSystemContext, ThreadStatics,
+                "GetThreadStaticBaseForType", new StackEntry[]
+                {
+                    typeManagerSlotEntry, 
+                    tlsIndexExpressionEntry
+                });
+            return expressionEntry;
+        }
     }
 }
