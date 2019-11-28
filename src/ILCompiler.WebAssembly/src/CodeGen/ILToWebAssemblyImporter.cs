@@ -1520,18 +1520,11 @@ namespace Internal.IL
                 var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, type, out helper);
                 _dependencies.Add(node);
 
-                //TODO refactor call to shadow stack & helper
-                var typeHandle = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                {
-                    GetShadowStack(),
-                    GetGenericContext()
-                }, "getHelper");
-
                 //todo refactor argument creation with else below
                 arguments = new StackEntry[]
                             {
-                                new ExpressionEntry(StackValueKind.ValueType, "eeType", typeHandle,
-                                    _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr")),
+                                new ExpressionEntry(StackValueKind.ValueType, "eeType", CallGenericHelper(helper),
+                                    GetEETypePtrTypeDesc()),
                                 _stack.Pop()
                             };
             }
@@ -1540,12 +1533,21 @@ namespace Internal.IL
                 arguments = new StackEntry[]
                                 {
                                     new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(type, true),
-                                        _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr")),
+                                        GetEETypePtrTypeDesc()),
                                     _stack.Pop()
                                 };
             }
 
             _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, type));
+        }
+
+        LLVMValueRef CallGenericHelper(LLVMValueRef helper)
+        {
+            return LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
+            {
+                GetShadowStack(),
+                GetGenericContext()
+            }, "getHelper");
         }
 
         private void ImportLoadNull()
@@ -1625,11 +1627,7 @@ namespace Internal.IL
                     {
                             LLVMValueRef helper;
                             var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType, out helper);
-                            var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                            {
-                                GetShadowStack(),
-                                GetGenericContext()
-                            }, "getHelper");
+                            var typeRef = CallGenericHelper(helper);
                             arguments[0] = new ExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc);
                     }
                     MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", "ArrayHelpers");
@@ -1650,7 +1648,6 @@ namespace Internal.IL
                     if (callee.Signature.Length > _stack.Length)
                         throw new InvalidProgramException();
 
-                    StackEntry newObjResult;
                     if (newType.IsValueType)
                     {
                         // Allocate a slot on the shadow stack for the value type
@@ -1667,30 +1664,24 @@ namespace Internal.IL
                     }
                     else
                     {
+                        StackEntry newObjResult;
                         TypeDesc typeToAlloc;
                         var runtimeDeterminedRetType = runtimeDeterminedMethod.OwningType;
 
+                        var eeTypePtrTypeDesc = GetEETypePtrTypeDesc();
                         if (runtimeDeterminedRetType.IsRuntimeDeterminedSubtype)
                         {
-                            // TODO: refactore with AllocateObject?
-                            var method = (MethodDesc)_canonMethodIL.GetObject(token);
-
                             typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
                             LLVMValueRef helper;
                             var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeToAlloc, out helper);
-                            var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                            {
-                    GetShadowStack(),
-                                GetGenericContext()
-                            }, "getHelper");
-                            var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-                            var arguments = new StackEntry[] { new ExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
-                            newObjResult = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments);
+                            var typeRef = CallGenericHelper(helper);
+                            newObjResult = AllocateObject(new ExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypePtrTypeDesc));
                         }
                         else
                         {
                             typeToAlloc = callee.OwningType;
-                            newObjResult = AllocateObject(typeToAlloc);
+                            MetadataType metadataType = (MetadataType)typeToAlloc;
+                            newObjResult = AllocateObject(new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(metadataType, true), eeTypePtrTypeDesc), typeToAlloc);
                         }
 
                         //one for the real result and one to be consumed by ctor
@@ -1954,22 +1945,17 @@ namespace Internal.IL
                 if (method.OwningType.IsRuntimeDeterminedSubtype)
                 {
                     LLVMValueRef helper;
+                    // TODO: refactor the GetGeneric.... into CallGenericHelper?
                     var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, method.OwningType, out helper);
-                    var genericContext = GetGenericContext(constrainedType);
-                    var hiddenParam = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                    {
-                        GetShadowStack(),
-                        genericContext
-                    }, "getHelper");
-                    var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                    var eeTypeDesc = GetEETypePtrTypeDesc();
                     //TODO interfaceEEType can be refactored out
                     eeTypeExpression = CallRuntime("System", _compilation.TypeSystemContext, "Object", "get_EEType",
                         new[] { new ExpressionEntry(StackValueKind.ObjRef, "thisPointer", thisPointer) });
-                    interfaceEEType = new ExpressionEntry(StackValueKind.ValueType, "interfaceEEType", hiddenParam, eeTypeDesc);
+                    interfaceEEType = new ExpressionEntry(StackValueKind.ValueType, "interfaceEEType", CallGenericHelper(helper), eeTypeDesc);
                 }
                 else
                 {
-                    var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+                    var eeTypeDesc = GetEETypePtrTypeDesc();
                     interfaceEEType = new LoadExpressionEntry(StackValueKind.ValueType, "interfaceEEType", GetEETypePointerForTypeDesc(method.OwningType, true), eeTypeDesc);
                     eeTypeExpression = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", thisPointer, eeTypeDesc);
                 }
@@ -2121,13 +2107,15 @@ namespace Internal.IL
             return LLVM.FunctionType(llvmReturnType, signatureTypes.ToArray(), false);
         }
 
-        private ExpressionEntry AllocateObject(TypeDesc type)
+        private ExpressionEntry AllocateObject(StackEntry eeType, TypeDesc forcedReturnType = null)
         {
-            MetadataType metadataType = (MetadataType)type;
-            var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-            var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(metadataType, true), eeTypeDesc) };
             //TODO: call GetNewObjectHelperForType from JitHelper.cs (needs refactoring)
-            return CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments, type);
+            return CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", new StackEntry[] { eeType }, forcedReturnType);
+        }
+
+        MetadataType GetEETypePtrTypeDesc()
+        {
+            return _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
         }
 
         private static LLVMValueRef BuildConstInt1(int number)
@@ -2293,13 +2281,8 @@ namespace Internal.IL
                         {
                             LLVMValueRef helper;
                             var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeOfEEType, out helper);
-                            var typeHandlerRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                            {
-                                GetShadowStack(),
-                                GetGenericContext()
-                            }, "getHelper");
+                            var typeHandlerRef = CallGenericHelper(helper);
                             PushExpression(StackValueKind.Int32, "eeType", typeHandlerRef, GetWellKnownType(WellKnownType.IntPtr));
-
                             _dependencies.Add(node);
                         }
                         else
@@ -2358,12 +2341,11 @@ namespace Internal.IL
 
                     if (directMethod == null)
                     {
-                        MetadataType eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
                         argumentValues[0] = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhBox",
                             new StackEntry[]
                             {
                                 new LoadExpressionEntry(StackValueKind.ValueType, "eeType",
-                                    GetEETypePointerForTypeDesc(constrainedClosestDefType, true), eeTypeDesc),
+                                    GetEETypePointerForTypeDesc(constrainedClosestDefType, true), GetEETypePtrTypeDesc()),
                                 argumentValues[0],
                             });
                     }
@@ -2447,18 +2429,14 @@ namespace Internal.IL
                                 LLVMValueRef helper;
                                 var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodDictionary,
                                     runtimeDeterminedMethod, out helper);
-                                var genericContext = GetGenericContext();
-                                hiddenParam = LLVM.BuildCall(_builder, helper,
-                                    new LLVMValueRef[] { GetShadowStack(), genericContext }, "getHelper");
+                                hiddenParam = CallGenericHelper(helper);
                             }
                             else
                             {
                                 LLVMValueRef helper;
                                 var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle,
                                     runtimeDeterminedMethod.OwningType, out helper);
-                                var genericContext = GetGenericContext();
-                                hiddenParam = LLVM.BuildCall(_builder, helper,
-                                    new LLVMValueRef[] { GetShadowStack(), genericContext }, "getHelper");
+                                hiddenParam = CallGenericHelper(helper);
                             }
                         }
                         else
@@ -2471,9 +2449,7 @@ namespace Internal.IL
                                     LLVMValueRef helper;
                                     ISymbolNode node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle,
                                         constrainedType, out helper);
-                                    LLVMValueRef genericContext = GetGenericContext();
-                                    hiddenParam = LLVM.BuildCall(_builder, helper,
-                                        new LLVMValueRef[] { GetShadowStack(), genericContext }, "getHelper");
+                                    hiddenParam = CallGenericHelper(helper);
                                 }
                                 else
                                 {
@@ -3069,11 +3045,7 @@ namespace Internal.IL
                     {
                         LLVMValueRef helper;
                         var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodEntry, runtimeDeterminedMethod, out helper);
-                        targetLLVMFunction = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                        {
-                            GetShadowStack(),
-                            GetGenericContext()
-                        }, "getHelper");
+                        targetLLVMFunction = CallGenericHelper(helper);
                         if (!(canonMethod.IsVirtual && !canonMethod.IsFinal && !canonMethod.OwningType.IsSealed()))
                         {
                             // fat function pointer
@@ -3715,17 +3687,13 @@ namespace Internal.IL
         {
             TypeDesc type = ResolveTypeToken(token);
             LLVMValueRef eeType;
-            var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+            var eeTypeDesc = GetEETypePtrTypeDesc();
             ExpressionEntry eeTypeExp;
             if (type.IsRuntimeDeterminedSubtype)
             {
                 LLVMValueRef helper;
                 var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, type, out helper); // TODO GetThreadNonGcStaticBase?
-                eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                {
-                    GetShadowStack(),
-                    GetGenericContext()
-                }, "getHelper");
+                eeType = CallGenericHelper(helper);
                 eeTypeExp = new ExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc);
             }
             else
@@ -3804,12 +3772,7 @@ namespace Internal.IL
                 {
                     LLVMValueRef helperRef;
                     var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeDesc, out helperRef);
-                    var genericContext = GetGenericContext();
-                    var hiddenParam = LLVM.BuildCall(_builder, helperRef, new LLVMValueRef[]
-                    {
-                        GetShadowStack(),
-                        genericContext
-                    }, "getHelper");
+                    var hiddenParam = CallGenericHelper(helperRef);
                     var handleRef = LLVM.BuildCall(_builder, fn, new LLVMValueRef[]
                     {
                         GetShadowStack(),
@@ -3824,7 +3787,7 @@ namespace Internal.IL
                         var typeSymbol = _compilation.NodeFactory.ConstructedTypeSymbol(typeDesc);
                         _dependencies.Add(typeSymbol);
                     }
-                    PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(typeDesc, false), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"));
+                    PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(typeDesc, false), GetEETypePtrTypeDesc());
                     HandleCall(helper, helper.Signature, helper);
                     var callExp = _stack.Pop();
                     _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, callExp.ValueAsInt32(_builder, false), GetWellKnownType(ldtokenKind)));
@@ -3941,8 +3904,7 @@ namespace Internal.IL
                 LLVM.PositionBuilderAtEnd(builder, throwBlock);
                 MetadataType nullRefType = _compilation.NodeFactory.TypeSystemContext.SystemModule.GetType("System", "NullReferenceException");
 
-                var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-                var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(nullRefType, true), eeTypeDesc) };
+                var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(nullRefType, true), GetEETypePtrTypeDesc()) };
 
                 MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime", RuntimeExport);
                 MethodDesc helperMethod = helperType.GetKnownMethod("RhNewObject", null);
@@ -4037,11 +3999,7 @@ namespace Internal.IL
                         {
                             LLVMValueRef helper;
                             node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetThreadStaticBase, runtimeDeterminedOwningType, out helper);// TODO refactor with gc/non gc cases?
-                            staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                            {
-                                GetShadowStack(),
-                                GetGenericContext()
-                            }, "getHelper");
+                            staticBase = CallGenericHelper(helper);
                         }
                         else
                         {
@@ -4061,11 +4019,7 @@ namespace Internal.IL
                                 DefType helperArg = owningType.ConvertToSharedRuntimeDeterminedForm();
                                 LLVMValueRef helper;
                                 node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetGCStaticBase, runtimeDeterminedOwningType, out helper);
-                                staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                                {
-                                    GetShadowStack(),
-                                    GetGenericContext()
-                                }, "getHelper");
+                                staticBase = CallGenericHelper(helper);
                             }
                             else
                             {
@@ -4081,11 +4035,7 @@ namespace Internal.IL
                                 needsCctorCheck = false; // no cctor for canonical types
                                 LLVMValueRef helper;
                                 node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetNonGCStaticBase, runtimeDeterminedOwningType, out helper);
-                                staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                                {
-                                    GetShadowStack(),
-                                    GetGenericContext()
-                                }, "getHelper");
+                                staticBase = CallGenericHelper(helper);
                             }
                             else
                             {
@@ -4303,13 +4253,7 @@ namespace Internal.IL
             LLVMValueRef eeType;
             TypeDesc type = ResolveTypeToken(token);
             StackEntry eeTypeEntry;
-            var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-            if (this._method.ToString()
-                .Contains(
-                    "TestBoxSingle"))
-            {
-            
-            }
+            var eeTypeDesc = GetEETypePtrTypeDesc();
             bool truncDouble = type.Equals(GetWellKnownType(WellKnownType.Single));
             if (type.IsRuntimeDeterminedSubtype)
             {
@@ -4317,11 +4261,7 @@ namespace Internal.IL
                 type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
                 LLVMValueRef helper;
                 var typeRef = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedType, out helper);
-                eeType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                {
-                    GetShadowStack(),
-                    GetGenericContext()
-                }, "getHelper");
+                eeType = CallGenericHelper(helper);
                 eeTypeEntry = new ExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
             }
             else
@@ -4389,12 +4329,7 @@ namespace Internal.IL
                 LLVMValueRef helper;
                 //TODO refactor this across the class
                 var typeRef = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedArrayType, out helper);
-                var genericContext = GetGenericContext();
-                var lookedUpType = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
-                {
-                    GetShadowStack(),
-                    genericContext
-                }, "getGenCtx");
+                var lookedUpType = CallGenericHelper(helper);
                 arguments = new StackEntry[] { new ExpressionEntry(StackValueKind.ValueType, "eeType", lookedUpType, eeTypeDesc), sizeOfArray };
             }
             else
@@ -4405,7 +4340,7 @@ namespace Internal.IL
             PushNonNull(CallRuntime(_compilation.TypeSystemContext, InternalCalls, "RhpNewArray", arguments, runtimeDeterminedArrayType));
         }
 
-        LLVMValueRef GetGenericContext(TypeDesc constrainedType = null)
+        LLVMValueRef GetGenericContext()
         {
             Debug.Assert(_method.IsSharedByGenericInstantiations);
             if (_method.AcquiresInstMethodTableFromThis())
