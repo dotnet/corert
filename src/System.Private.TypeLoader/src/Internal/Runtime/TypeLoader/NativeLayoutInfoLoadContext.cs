@@ -171,19 +171,13 @@ namespace Internal.Runtime.TypeLoader
 
         internal MethodDesc GetMethod(ref NativeParser parser, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)
         {
-//            X2.PrintLine("GetMethod");
             MethodFlags flags = (MethodFlags)parser.GetUnsigned();
 
             IntPtr functionPointer = IntPtr.Zero;
             if ((flags & MethodFlags.HasFunctionPointer) != 0)
-            {
-//                X2.PrintLine("GetMethod HasFunctionPointer");
                 functionPointer = GetExternalReferencePointer(parser.GetUnsigned());
-            }
-            DefType containingType = (DefType)GetType(ref parser);
-//            X2.PrintLine("containing Type");
-//            X2.PrintLine(containingType.Name);
 
+            DefType containingType = (DefType)GetType(ref parser);
             MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignature(ref parser, _module.Handle, out methodNameSig, out methodSig);
 
             bool unboxingStub = (flags & MethodFlags.IsUnboxingStub) != 0;
@@ -193,8 +187,6 @@ namespace Internal.Runtime.TypeLoader
             {
                 TypeDesc[] typeArguments = GetTypeSequence(ref parser);
                 Debug.Assert(typeArguments.Length > 0);
-
-                X2.PrintLine(nameAndSignature.Name);
                 retVal = this._typeSystemContext.ResolveGenericMethodInstantiation(unboxingStub, containingType, nameAndSignature, new Instantiation(typeArguments), functionPointer, (flags & MethodFlags.FunctionPointerIsUSG) != 0);
             }
             else

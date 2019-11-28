@@ -8,10 +8,8 @@
 // ---------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Internal.NativeFormat
 {
@@ -31,8 +29,6 @@ namespace Internal.NativeFormat
             uint value = 0;
 
             uint val = *stream;
-//            X2.PrintLine("first byte");
-//            X2.PrintUint((int)val);
             if ((val & 1) == 0)
             {
                 value = (val >> 1);
@@ -219,55 +215,6 @@ namespace Internal.NativeFormat
         }
     }
 
-    internal class X2
-    {
-        [DllImport("*")]
-        internal static unsafe extern int printf(byte* str, byte* unused);
-        private static unsafe void PrintString(string s)
-        {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    TwoByteStr curCharStr = new TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    printf((byte*)&curCharStr, null);
-                }
-            }
-        }
-
-        internal static void PrintLine(string s)
-        {
-            PrintString(s);
-            PrintString("\n");
-        }
-
-        public unsafe static void PrintUint(int s)
-        {
-            byte[] intBytes = BitConverter.GetBytes(s);
-            for (var i = 0; i < 4; i++)
-            {
-                TwoByteStr curCharStr = new TwoByteStr();
-                var nib = (intBytes[3 - i] & 0xf0) >> 4;
-                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
-                printf((byte*)&curCharStr, null);
-                nib = (intBytes[3 - i] & 0xf);
-                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
-                printf((byte*)&curCharStr, null);
-            }
-            PrintString("\n");
-        }
-
-        public struct TwoByteStr
-        {
-            public byte first;
-            public byte second;
-        }
-
-    }
-
-
     internal unsafe partial class NativeReader
     {
         private readonly byte* _base;
@@ -315,10 +262,6 @@ namespace Internal.NativeFormat
 
         private uint EnsureOffsetInRange(uint offset, uint lookAhead)
         {
-//            X2.PrintLine("EnsureOffsetInRange");
-//            X2.PrintUint((int)offset);
-//            X2.PrintUint((int)lookAhead);
-//            X2.PrintUint((int)_size);
             if ((int)offset < 0 || offset + lookAhead >= _size)
                 ThrowBadImageFormatException();
             return offset;
@@ -368,9 +311,6 @@ namespace Internal.NativeFormat
 
         public uint DecodeUnsigned(uint offset, out uint value)
         {
-//            X2.PrintUint((int)offset);
-//            X2.PrintLine("DecodeUnsigned base");
-//            X2.PrintUint((int)_base);
             EnsureOffsetInRange(offset, 0);
 
             byte* data = _base + offset;
@@ -452,8 +392,6 @@ namespace Internal.NativeFormat
             {
                 Debug.Assert(value < _reader.Size);
                 _offset = value;
-//                X2.PrintLine("SETTING offset");
-//            X2.PrintUint((int)_offset);
             }
         }
 
@@ -472,7 +410,6 @@ namespace Internal.NativeFormat
         public uint GetUnsigned()
         {
             uint value;
-//            X2.PrintUint((int)_offset);
             _offset = _reader.DecodeUnsigned(_offset, out value);
             return value;
         }
@@ -496,15 +433,9 @@ namespace Internal.NativeFormat
             uint pos = _offset;
 
             int delta;
-//            X2.PrintLine("GetRelativeOffset offset before decodeSigned");
-//            X2.PrintUint((int)_offset);
-
             _offset = _reader.DecodeSigned(_offset, out delta);
-//            X2.PrintLine("GetRelativeOffset");
-//                X2.PrintUint((int)_offset);
-//                X2.PrintUint((int)delta);
-//                X2.PrintUint((int)(pos + (uint)delta));
-                return pos + (uint)delta;
+
+            return pos + (uint)delta;
         }
 
         public void SkipInteger()

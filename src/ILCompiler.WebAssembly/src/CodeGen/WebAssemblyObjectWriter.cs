@@ -1076,12 +1076,6 @@ namespace ILCompiler.DependencyAnalysis
                 if (mangledName.Contains(
                     "_GenericLookupFromDict_<Boxed>Generics_Program_TestDelegateToCanonMethods_GenStruct_1<System___Canon>__<unbox>Generics_Program_TestDelegateToCanonMethods_GenStruct_1__MakeGenString"))
                 {
-                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 10, false), LLVM.GetParam(helperFunc, 0));
-                PrintIntPtr(builder, ptr8, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
-                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // should be the generic context, i.e. the *methodtable from GetGenericContext
-                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 11, false), LLVM.GetParam(helperFunc, 0));
-                PrintIntPtr(builder, ctx, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0), 
-                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0))); // should be the generic dict symbol
                 
 //                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 12, false), LLVM.GetParam(helperFunc, 0));
 //                PrintIntPtr(builder, GenericDict, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
@@ -1263,72 +1257,12 @@ namespace ILCompiler.DependencyAnalysis
 
             if (llvmFunction.Pointer == IntPtr.Zero)
             {
-                if (mangledName.Contains(
-                    "<Boxed>Generics_Program_TestInstantiatingUnboxingStubs_Foo_1<System___Canon>__<unbox>Generics_Program_TestInstantiatingUnboxingStubs_Foo_1__IsInst")
-                )
-                {
-
-                }
-
                 return LLVM.AddFunction(Module, mangledName, functionType);
             }
             return llvmFunction;
         }
 
-        void PrintIntPtr(LLVMBuilderRef _builder, LLVMValueRef ptr, LLVMValueRef shadowStack)
-        {
-            var asInt = LLVM.BuildPointerCast(_builder, ptr, LLVMTypeRef.Int32Type(), "asint");
-            
-            LLVM.BuildCall(_builder,
-                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
-                    LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
-                        {
-                            LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
-                            LLVMTypeRef.Int32Type()
-                        },
-                        false)),
-                new LLVMValueRef[]
-                {
-                    ILImporter.CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
-                    asInt
-                }, string.Empty);
 
-//                        var ptr32 = LLVM.BuildIntToPtr(_builder, asInt, LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "inttoptr");
-//                        var loaded = LLVM.BuildLoad(_builder, ptr32, "loadedasint2");
-//                        LLVM.BuildCall(_builder,
-//                            GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
-//                                LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
-//                                    {
-//                                        LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
-//                                        LLVMTypeRef.Int32Type()
-//                                    },
-//                                    false)),
-//                            new LLVMValueRef[]
-//                            {
-//                                ILImporter.CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
-//                                loaded
-//                            }, string.Empty);
-        }
-
-        void PrintInt32(LLVMBuilderRef _builder, LLVMValueRef ptr, LLVMValueRef shadowStack)
-        {
-            LLVM.BuildCall(_builder,
-                GetOrCreateLLVMFunction("S_P_TypeLoader_System_Collections_Generic_X__PrintUint",
-                    LLVM.FunctionType(LLVMTypeRef.VoidType(), new[]
-                        {
-                            LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
-                            LLVMTypeRef.Int32Type()
-                        },
-                        false)),
-                new LLVMValueRef[]
-                {
-                    ILImporter.CastIfNecessary(_builder, shadowStack, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)),
-                    ptr
-                }, string.Empty);
-        }
-
-
-        static ulong no = 256;
         private LLVMValueRef OutputCodeForDictionaryLookup(LLVMBuilderRef builder, NodeFactory factory,
             ReadyToRunGenericHelperNode node, GenericLookupResult lookup, LLVMValueRef ctx, string gepName,
             LLVMValueRef helperFunc, bool print = false
@@ -1351,11 +1285,6 @@ namespace ILCompiler.DependencyAnalysis
 //                    ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
 //                        LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
 
-                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), no++, false), LLVM.GetParam(helperFunc, 0));
-                PrintIntPtr(builder, ctx, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
-                    LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
-                PrintIntPtr(builder, retRef, ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
-                    LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
 
 //                PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 15, false), LLVM.GetParam(helperFunc, 0));
 //                LLVMValueRef addressOfAddress = InvokeOpenInstanceThunk;
@@ -1383,13 +1312,6 @@ namespace ILCompiler.DependencyAnalysis
                 case GenericLookupResultReferenceType.Indirect:
                     var ptrPtr = LLVM.BuildBitCast(builder, retRef, LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), 0), "ptrPtr");
                     retRef = LLVM.BuildLoad(builder, ptrPtr, "indLoad");
-                    if (print)
-                    {
-                        PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 17, false), LLVM.GetParam(helperFunc, 0));
-                        PrintIntPtr(builder, retRef,
-                            ILImporter.CastIfNecessary(builder, LLVM.GetParam(helperFunc, 0),
-                                LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
-                    }
                     break;
 
                 case GenericLookupResultReferenceType.ConditionalIndirect:

@@ -432,14 +432,11 @@ namespace System
                     {
                         if (dynamicInvokeHelperGenericDictionary != IntPtr.Zero)
                         {
-                            X2.PrintLine("!Zero");
                             result = CalliIntrinsics.Call(dynamicInvokeHelperMethod, dynamicInvokeHelperGenericDictionary, thisPtr, methodToCall, ref argSetupState, methodToCallIsThisCall);
                             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                         }
                         else
                         {
-                            X2.PrintLine("==Zero");
-
                             result = CalliIntrinsics.Call(dynamicInvokeHelperMethod, thisPtr, methodToCall, ref argSetupState, methodToCallIsThisCall);
                             DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                         }

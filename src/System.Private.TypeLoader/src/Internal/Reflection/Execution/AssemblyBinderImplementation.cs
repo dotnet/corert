@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 
 using System.Reflection.Runtime.General;
-using System.Runtime.InteropServices;
+
 using Internal.Reflection.Core;
 using Internal.Runtime.TypeLoader;
 
@@ -28,10 +28,6 @@ namespace Internal.Reflection.Execution
     {
         private AssemblyBinderImplementation()
         {
-            PrintLine("ABI ctor ll type");
-            new LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup>().PrintTypeHandle();
-            PrintLine("ABI ctor ll type2");
-            new LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup>().PrintTypeHandle();
             _scopeGroups = new KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[0];
             ModuleList.AddModuleRegistrationCallback(RegisterModule);
         }
@@ -250,9 +246,6 @@ namespace Internal.Reflection.Execution
         /// <param name="moduleInfo">Module to register</param>
         private void RegisterModule(ModuleInfo moduleInfo)
         {
-            PrintLine("ABI RegisterModule ll type");
-            new LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup>().PrintTypeHandle();
-
             NativeFormatModuleInfo nativeFormatModuleInfo = moduleInfo as NativeFormatModuleInfo;
 
             if (nativeFormatModuleInfo == null)
@@ -287,42 +280,12 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        [DllImport("*")]
-        private static unsafe extern int printf(byte* str, byte* unused);
-        private static unsafe void PrintString(string s)
-        {
-//            int length = s.Length;
-//            fixed (char* curChar = s)
-//            {
-//                for (int i = 0; i < length; i++)
-//                {
-//                    SR.TwoByteStr curCharStr = new SR.TwoByteStr();
-//                    curCharStr.first = (byte)(*(curChar + i));
-//                    printf((byte*)&curCharStr, null);
-//                }
-//            }
-        }
-
-        internal static void PrintLine(string s)
-        {
-            PrintString(s);
-            PrintString("\n");
-        }
-
         private void AddScopesFromReaderToGroups(LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> groups, MetadataReader reader)
         {
-            PrintLine("AddScopesFromReaderToGroups");
-            var ran = new RuntimeAssemblyName("something", new Version(1, 1), "en-GB", AssemblyNameFlags.None, null);
-            var x = ran.GetHashCode();
-            PrintLine("AddScopesFromReaderToGroups called  RuntimeAssemblyName GetHashCode");
-
             foreach (ScopeDefinitionHandle scopeDefinitionHandle in reader.ScopeDefinitions)
             {
                 RuntimeAssemblyName defName = scopeDefinitionHandle.ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
                 ScopeDefinitionGroup scopeDefinitionGroup;
-                PrintLine("defName");
-                PrintLine(defName.Name);
-
                 if (groups.TryGetValue(defName, out scopeDefinitionGroup))
                 {
                     scopeDefinitionGroup.AddOverflowScope(new QScopeDefinition(reader, scopeDefinitionHandle));

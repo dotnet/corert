@@ -5,63 +5,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Threading;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
-    internal class X
-    {
-        [DllImport("*")]
-        internal static unsafe extern int printf(byte* str, byte* unused);
-        private static unsafe void PrintString(string s)
-        {
-            int length = s.Length;
-            fixed (char* curChar = s)
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    TwoByteStr curCharStr = new TwoByteStr();
-                    curCharStr.first = (byte)(*(curChar + i));
-                    printf((byte*)&curCharStr, null);
-                }
-            }
-        }
-
-        internal static void PrintLine(string s)
-        {
-//            PrintString(s);
-//            PrintString("\n");
-        }
-
-        public unsafe static void PrintUint(int s)
-        {
-            byte[] intBytes = BitConverter.GetBytes(s);
-            for (var i = 0; i < 4; i++)
-            {
-                TwoByteStr curCharStr = new TwoByteStr();
-                var nib = (intBytes[3 - i] & 0xf0) >> 4;
-                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
-                printf((byte*)&curCharStr, null);
-                nib = (intBytes[3 - i] & 0xf);
-                curCharStr.first = (byte)((nib <= 9 ? '0' : 'A') + (nib <= 9 ? nib : nib - 10));
-                printf((byte*)&curCharStr, null);
-            }
-            PrintString("\n");
-        }
-
-        public struct TwoByteStr
-        {
-            public byte first;
-            public byte second;
-        }
-
-    }
-
-
-
     /*============================================================
     **
     ** Class:  LowLevelDictionary<TKey, TValue>
@@ -89,9 +35,6 @@ namespace System.Collections.Generic
 
         public LowLevelDictionary(int capacity)
         {
-            PrintLine("Capacity");
-            PrintLine(capacity.ToString());
-            X.PrintUint(1234);
             Clear(capacity);
         }
 
@@ -129,55 +72,8 @@ namespace System.Collections.Generic
             }
         }
 
-
-        internal static unsafe void PrintString(string s)
-        {
-//            int length = s.Length;
-//            fixed (char* curChar = s)
-//            {
-//                for (int i = 0; i < length; i++)
-//                {
-//                    SR.TwoByteStr curCharStr = new SR.TwoByteStr();
-//                    curCharStr.first = (byte)(*(curChar + i));
-//                    X.printf((byte*)&curCharStr, null);
-//                }
-//            }
-        }
-
-        internal static void PrintLine(string s)
-        {
-            PrintString(s);
-            PrintString("\n");
-        }
-
-        private unsafe void PrintPointer(object o)
-        {
-            var ptr = Unsafe.AsPointer(ref o);
-            var intPtr = (IntPtr*)ptr;
-            var address = *intPtr;
-            PrintLine(address.ToInt32().ToString());
-        }
-
         public bool TryGetValue(TKey key, out TValue value)
         {
-            PrintLine("TryGetValue");
-            var ran = new RuntimeAssemblyName("something", new Version(1, 1), "en-GB", AssemblyNameFlags.None, null);
-            var x = ran.GetHashCode();
-            PrintPointer(ran);
-            PrintLine("TryGetValue called  RuntimeAssemblyName GetHashCode");
-
-            PrintPointer(key);
-            var ran2 = key as RuntimeAssemblyName;
-            if (ran2 != null)
-            {
-                PrintLine("TryGetValue key is RAN");
-                PrintLine(ran2.Name);
-            }
-            x = ran.GetHashCode();
-            PrintLine("TryGetValue ran.GetHashCode called 2 ");
-            int h = key.GetHashCode();
-            PrintLine("TryGetValue key.GetHashCode called ");
-
             value = default(TValue);
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -206,13 +102,6 @@ namespace System.Collections.Generic
             _version++;
             _buckets = new Entry[capacity];
             _numEntries = 0;
-        }
-        
-        public void PrintTypeHandle()
-        {
-            var t = this.GetTypeHandle().Value;
-            PrintLine(t.ToInt32().ToString());
-            PrintLine("lld type ptr ^^^:");
         }
 
         public bool Remove(TKey key)
@@ -256,22 +145,12 @@ namespace System.Collections.Generic
 
         private Entry Find(TKey key)
         {
-            PrintLine("Find");
-            int h = key.GetHashCode();
-            PrintLine("Find key.GetHashCode called ");
-
             int bucket = GetBucket(key);
-            PrintLine("got bucket");
             Entry entry = _buckets[bucket];
             while (entry != null)
             {
-//                X.PrintUint(0); // need a reference
-                PrintLine("getting m_key");
-                var k = entry.m_key;
-                PrintLine("trying equals");
-                if (key.Equals(k))
+                if (key.Equals(entry.m_key))
                     return entry;
-                PrintLine("getting next");
 
                 entry = entry.m_next;
             }
@@ -325,13 +204,7 @@ namespace System.Collections.Generic
 
         private int GetBucket(TKey key, int numBuckets = 0)
         {
-//            PrintLine("GetBucket");
-//            var ran = new RuntimeAssemblyName("something", new Version(1, 1), "en-GB", AssemblyNameFlags.None, null);
-//            var x = ran.GetHashCode();
-//            PrintLine("GetBucket called  RuntimeAssemblyName GetHashCode");
             int h = key.GetHashCode();
-//            PrintLine("GetBucket key called  RuntimeAssemblyName GetHashCode");
-
             h &= 0x7fffffff;
             return (h % (numBuckets == 0 ? _buckets.Length : numBuckets));
         }

@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.NativeFormat;
 
 namespace System.Runtime
 {
@@ -178,22 +177,10 @@ namespace System.Runtime
             Entry entry = LookupInCache(s_cache, obj.m_pEEType, *(IntPtr*)&slot);
             if (entry == null)
             {
-                X2.PrintLine("GVMLookupForSlot CacheMiss");
-
                 entry = CacheMiss(obj.m_pEEType, *(IntPtr*)&slot,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        =>
-                    {
-                        if (signature == IntPtr.Zero)
-                        {
-                            throw new Exception("signature is null");
-                        }
-                        return Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(
-                            new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature);
-                    });
+                        => Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
             }
-            X2.PrintLine("GVMLookupForSlot");
-            X2.PrintUint(entry.Result.ToInt32());
             return entry.Result;
         }
 

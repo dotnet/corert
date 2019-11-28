@@ -27,10 +27,6 @@ namespace Internal.NativeFormat
         {
             if (_buffer.Length == _size)
                 Array.Resize(ref _buffer, 2 * _buffer.Length);
-            if (_size == 25236 && b == 24)
-            {
-
-            }
             _buffer[_size++] = b;
         }
 
@@ -74,10 +70,6 @@ namespace Internal.NativeFormat
         //
         public void WriteUnsigned(uint d)
         {
-            if (d == 0x229)
-            {
-
-            }
             if (d < 128)
             {
                 WriteByte((byte)(d * 2 + 0));

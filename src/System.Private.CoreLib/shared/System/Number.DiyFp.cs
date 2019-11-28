@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using Internal.NativeFormat;
 
 namespace System
 {
@@ -100,7 +99,6 @@ namespace System
                 // Halfway cases will be rounded up.
 
                 tmp += (1U << 31);
-                ulong ul = ac + (ad >> 32) + (bc >> 32) + (tmp >> 32);
 
                 return new DiyFp(ac + (ad >> 32) + (bc >> 32) + (tmp >> 32), e + other.e + SignificandSize);
             }

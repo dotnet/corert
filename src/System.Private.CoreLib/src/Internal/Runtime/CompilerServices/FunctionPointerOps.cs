@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
@@ -71,12 +70,9 @@ namespace Internal.Runtime.CompilerServices
 
         public static unsafe IntPtr GetGenericMethodFunctionPointer(IntPtr canonFunctionPointer, IntPtr instantiationArgument)
         {
-            X2.PrintLine("GetGenericMethodFunctionPointer");
             if (instantiationArgument == IntPtr.Zero)
-            {
-            X2.PrintLine("canonFunctionPointer");
                 return canonFunctionPointer;
-            }
+
             lock (s_genericFunctionPointerDictionary)
             {
                 GenericMethodDescriptorInfo key;
@@ -86,8 +82,6 @@ namespace Internal.Runtime.CompilerServices
                 uint index = 0;
                 if (!s_genericFunctionPointerDictionary.TryGetValue(key, out index))
                 {
-                    X2.PrintLine("Capture new index value");
-
                     // Capture new index value
                     index = s_genericFunctionPointerNextIndex;
 
@@ -97,7 +91,6 @@ namespace Internal.Runtime.CompilerServices
                     // Generate new chunk if existing chunks are insufficient
                     if (s_genericFunctionPointerCollection.Count <= newChunkIndex)
                     {
-                        X2.PrintLine("s_genericFunctionPointerCollection.Count <= newChunkIndex");
                         System.Diagnostics.Debug.Assert(newSubChunkIndex == 0);
 
                         // New generic descriptors are allocated on the native heap and not tracked in the GC.
@@ -122,14 +115,9 @@ namespace Internal.Runtime.CompilerServices
                 RuntimeGeneratedGenericMethodDescriptor* genericRuntimeFunctionPointer = &((RuntimeGeneratedGenericMethodDescriptor*)s_genericFunctionPointerCollection[chunkIndex])[subChunkIndex];
 
                 GenericMethodDescriptor* genericFunctionPointer = &genericRuntimeFunctionPointer->Descriptor;
-                X2.PrintLine("got genericFunctionPointer with values");
-                X2.PrintUint((genericFunctionPointer->MethodFunctionPointer).ToInt32());
-                X2.PrintUint((genericFunctionPointer->InstantiationArgument).ToInt32());
                 System.Diagnostics.Debug.Assert(canonFunctionPointer == genericFunctionPointer->MethodFunctionPointer);
                 System.Diagnostics.Debug.Assert(instantiationArgument == genericFunctionPointer->InstantiationArgument);
 
-                X2.PrintLine("returning fat");
-                X2.PrintUint(new IntPtr((byte*)genericFunctionPointer).ToInt32());
                 return (IntPtr)((byte*)genericFunctionPointer + FatFunctionPointerConstants.Offset);
             }
         }
@@ -143,7 +131,6 @@ namespace Internal.Runtime.CompilerServices
             if ((functionPointer.ToInt32() & FatFunctionPointerConstants.Offset) == FatFunctionPointerConstants.Offset)
 #endif
             {
-                X.PrintLine("IsGenericMethodPointer");
                 return true;
             }
             return false;

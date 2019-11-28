@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using Internal.NativeFormat;
 
 namespace System
 {
@@ -371,8 +370,6 @@ namespace System
                 if (requestedDigits == -1)
                 {
                     DiyFp w = DiyFp.CreateAndGetBoundaries(v, out DiyFp boundaryMinus, out DiyFp boundaryPlus).Normalize();
-                    X2.PrintLine("TryRunSingle minus.f");
-                    X2.PrintLine(boundaryMinus.f.ToString());
                     result = TryRunShortest(in boundaryMinus, in w, in boundaryPlus, number.Digits, out length, out decimalExponent);
                 }
                 else
@@ -717,21 +714,13 @@ namespace System
             // However we have to pay attention to low, high and w's imprecision.
             private static bool TryDigitGenShortest(in DiyFp low, in DiyFp w, in DiyFp high, Span<byte> buffer, out int length, out int kappa)
             {
-                X2.PrintLine("TryDigitGenShortest");
                 Debug.Assert(low.e == w.e);
-                X2.PrintLine("TryDigitGenShortest 1");
                 Debug.Assert(w.e == high.e);
-                X2.PrintLine("TryDigitGenShortest 2");
-                X2.PrintLine(low.f.ToString());
-                X2.PrintLine(high.f.ToString());
 
                 Debug.Assert((low.f + 1) <= (high.f - 1));
-                X2.PrintLine("TryDigitGenShortest 3");
 
                 Debug.Assert(MinimalTargetExponent <= w.e);
-                X2.PrintLine("TryDigitGenShortest 4");
                 Debug.Assert(w.e <= MaximalTargetExponent);
-                X2.PrintLine("TryDigitGenShortest 5");
 
                 // low, w, and high are imprecise, but by less than one ulp (unit in the last place).
                 //
