@@ -37,13 +37,7 @@ namespace ILCompiler
             Options = options;
             DIBuilder = LLVMPInvokes.LLVMCreateDIBuilder(Module);
             DebugMetadataMap = new Dictionary<string, DebugMetadata>();
-//            var v = LLVM.CreateBuilder();
-//            TypePointer = LLVM.BuildGlobalString(v, "Type pointer", "typPointerStr");
-//            EEPointer = LLVM.BuildGlobalString(v, "EE pointer", "eePointerStr");
         }
-
-        public LLVMValueRef TypePointer;
-        public LLVMValueRef EEPointer;
 
         private static IEnumerable<ICompilationRootProvider> GetCompilationRoots(IEnumerable<ICompilationRootProvider> existingRoots, NodeFactory factory)
         {
@@ -73,11 +67,6 @@ namespace ILCompiler
                     methodCodeNodeNeedingCode = (WebAssemblyMethodCodeNode)dependencyMethod.CanonicalMethodNode;
                 }
 
-                if (methodCodeNodeNeedingCode.Method.ToString().Contains("KeyValuePair") &&
-                    methodCodeNodeNeedingCode.Method.ToString().Contains("ToString"))
-                {
-
-                }
                 // We might have already compiled this method.
                 if (methodCodeNodeNeedingCode.StaticDependenciesAreComputed)
                     continue;

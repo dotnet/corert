@@ -28,10 +28,6 @@ internal static class Program
         TestSByteExtend(); 
         TestMetaData();
 
-
-        TestSimplestSharedGeneric();
-//        TestSimpleGVMScenarios.Run();
-        
         Add(1, 2);
         PrintLine("Hello from C#!");
         int tempInt = 0;
@@ -364,27 +360,6 @@ internal static class Program
         PrintLine("i");
         PrintLine(i.ToString());
         EndTest(virtCallRes == "1");
-    }
-
-    private static void TestSimplestSharedGeneric()
-    {
-        StartTest("Simple shared generic");
-
-        var gs = new Generic<string>();
-        gs.Frob("a string");
-
-        var go = new Generic<object>();
-        go.Frob(new object());
-
-        PassTest();
-    }
-
-    class Generic<T>
-    {
-        public void Frob(T x)
-        {
-            x.ToString();
-        }
     }
 
     private static int StaticDelegateTarget()
@@ -1528,8 +1503,6 @@ class FieldStatics
         return X == 17 && Y == 347 && S1 == "first string" && S2 == "a different string";
     }
 }
-
-
 
 namespace System.Runtime.InteropServices
 {

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using ILCompiler;
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -18,7 +17,6 @@ using LLVMSharp;
 using ILCompiler.CodeGen;
 using ILCompiler.DependencyAnalysis;
 using Internal.IL;
-using Internal.IL.Stubs;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -36,22 +34,14 @@ namespace ILCompiler.DependencyAnalysis
 
             if (symbol is ObjectNode)
             {
-
-
                 ISymbolDefinitionNode symbolDefNode = (ISymbolDefinitionNode)symbol;
                 var symbolName = _nodeFactory.GetSymbolAlternateName(symbolDefNode) ?? symbol.GetMangledName(nameMangler);
-
                 if (symbolDefNode.Offset == 0)
                 {
                     return symbolName;
                 }
                 else
                 {
-                    if (symbolName == "__EEType___Array<S_P_StackTraceMetadata_Internal_StackTraceMetadata_StackTraceMetadata_PerModuleMethodNameResolver>")
-                    {
-                        var x = symbol.ToString();
-
-                    }
                     return symbolName + "___REALBASE";
                 }
             }
@@ -92,11 +82,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             string symbolAddressGlobalName = symbol.GetMangledName(nameMangler) + "___SYMBOL";
-            return GetOrAddGlobalSymbol(module, symbolAddressGlobalName);
-        }
-
-        public static LLVMValueRef GetOrAddGlobalSymbol(LLVMModuleRef module, string symbolAddressGlobalName)
-        {
             LLVMValueRef symbolAddress;
             if (s_symbolValues.TryGetValue(symbolAddressGlobalName, out symbolAddress))
             {
@@ -198,11 +183,10 @@ namespace ILCompiler.DependencyAnalysis
 
             EmitDebugMetadata();
 
-            var res = LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMReturnStatusAction, out string unused);
-
 #if DEBUG
             LLVM.PrintModuleToFile(Module, Path.ChangeExtension(_objectFilePath, ".txt"), out string unused2);
 #endif //DEBUG
+            var res = LLVM.VerifyModule(Module, LLVMVerifierFailureAction.LLVMAbortProcessAction, out string unused);
 
             LLVM.WriteBitcodeToFile(Module, _objectFilePath);
 
@@ -480,10 +464,6 @@ namespace ILCompiler.DependencyAnalysis
                     _currentObjectData.Append(BitConverter.GetBytes((ushort)value));
                     break;
                 case 4:
-                    if (value == 0x001F9E1A)
-                    {
-
-                    }
                     _currentObjectData.Append(BitConverter.GetBytes((uint)value));
                     break;
                 case 8:
@@ -773,10 +753,7 @@ namespace ILCompiler.DependencyAnalysis
                     ObjectNode node = depNode as ObjectNode;
                     if (node == null)
                         continue;
-                    if (node is NativeLayoutSignatureNode)
-                    {
-
-                    }
+                    
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
 
@@ -807,7 +784,6 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
 #endif
-
    
                     ObjectNodeSection section = node.Section;
                     if (objectWriter.ShouldShareSymbol(node))
@@ -854,10 +830,6 @@ namespace ILCompiler.DependencyAnalysis
                                 fixed (void* location = &nodeContents.Data[i])
                                 {
                                     delta = Relocation.ReadValue(reloc.RelocType, location);
-                                    if (delta == 0x001F9E1A)
-                                    {
-
-                                    }
                                 }
                             }
                             ISymbolNode symbolToWrite = reloc.Target;
@@ -966,7 +938,6 @@ namespace ILCompiler.DependencyAnalysis
                     retType = LLVMTypeRef.VoidType();
                     break;
                 default:
-                    // was void *
                     retType = LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0);
                     break;
             }
@@ -995,11 +966,9 @@ namespace ILCompiler.DependencyAnalysis
                         argType = delegateCtor.Signature[i - (isStatic ? 0 : 1)];
                     }
                     args.Add(ILImporter.GetLLVMTypeForTypeDesc(argType));
-//                    argRefs.Add();
                 }
             }
 
-//            var helperSignature = LLVM.FunctionType(retType, args.ToArray(), false);
             var mangledName = node.GetMangledName(factory.NameMangler); //TODO: inline
 
             LLVMValueRef helperFunc = LLVM.GetNamedFunction(Module, mangledName);
@@ -1008,7 +977,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 throw new Exception("if the function is requested here, it should have been created earlier");
             }
-//            var helperFunc = LLVM.AddFunction(Module, mangledName, helperSignature);
             var helperBlock = LLVM.AppendBasicBlock(helperFunc, "genericHelper");
             LLVM.PositionBuilderAtEnd(builder, helperBlock);
             var importer = new ILImporter(builder, compilation, Module, helperFunc, delegateCtor);
@@ -1033,8 +1001,6 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-
-
                 ctx = LLVM.GetParam(helperFunc, 1);
                 ctx = LLVM.BuildPointerCast(builder, ctx, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "castCtx");
                 gepName = "paramGep";
@@ -1058,12 +1024,6 @@ namespace ILCompiler.DependencyAnalysis
                                     LLVM.ConstInt(LLVM.Int32Type(), (ulong)0 /* TODO: what is this */,
                                         LLVMMisc.False)
                                 }, "sizeofctx");
-//                            sb.Append(resVarName);
-//                            sb.Append(" = ");
-//                            sb.Append("(char*)");
-//                            sb.Append(resVarName);
-//                            sb.Append(" - sizeof(StaticClassConstructionContext);");
-//                            sb.AppendLine();
                         }
                     }
                     break;
@@ -1108,34 +1068,8 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
                         MethodDesc constructor = target.Constructor.Method;
-//                        PrintInt32(builder, LLVM.ConstInt(LLVMTypeRef.Int32Type(), 49, false), LLVM.GetParam(helperFunc, 0));
-//                        PrintIntPtr(builder, resVar, LLVM.GetParam(helperFunc, 0));
-                        var paramCOunt = LLVM.GetParams(helperFunc);
                         var fatPtr = ILImporter.MakeFatPointer(builder, resVar);
-//                        var fatFunction = LLVM.BuildGEP(builder, resVar,
-//                            new LLVMValueRef[]
-//                            {
-//                                LLVM.ConstInt(LLVMTypeRef.Int32Type(), ILImporter.FatFunctionPointerOffset, false)
-//                            },
-//                            "fatPointer");
-//                        PrintIntPtr(builder, fatFunction, LLVM.GetParam(helperFunc, 0));
-
                         importer.OutputCodeForDelegateCtorInit(builder, helperFunc, constructor, fatPtr);
-
-//                        sb.Append("::");
-//                        sb.Append(GetCppMethodDeclarationName(constructor.OwningType, GetCppMethodName(constructor)));
-//                        sb.Append("(");
-//            
-//                        for (int i = 1; i < argNames.Count; i++)
-//                        {
-//                            sb.Append(argNames[i]);
-//            
-//                            if (i != argNames.Count - 1)
-//                                sb.Append(", ");
-//                        }
-//            
-//                        sb.Append(");");
-//                        sb.AppendLine();
                     }
                     break;
             
@@ -1154,59 +1088,21 @@ namespace ILCompiler.DependencyAnalysis
 
             if (node.Id != ReadyToRunHelperId.DelegateCtor)
             {
-                //                sb.Append(retType);
-                //                sb.Append(" ");
-                //                sb.Append(retVarName);
-                //                sb.Append(" = ");
-                //
                 if (node.Id == ReadyToRunHelperId.MethodHandle)
                 {
                     LLVM.BuildRet(builder, resVar);
-                    //                    sb.Append("{");
-                    //                    sb.Append("(intptr_t)");
-                    //                    sb.Append(resVarName);
-                    //                    sb.Append("};");
                 }
                 else
                 {
                     //TODO: are these the same types for wasm
                     LLVM.BuildRet(builder, resVar);
-                    //                    sb.Append(resVarName);
-                    //                    sb.Append(";");
                 }
             }
-
-            //
-                //                sb.AppendLine();
-                //
-                //                sb.Append("return ");
-                //                sb.Append(retVarName);
-                //                sb.Append(";");
-                //            }
-                //
-                //            sb.Exdent();
-                //            sb.AppendLine();
-                //            sb.Append("}");
-                //            sb.AppendLine();
-                //
-                //            return sb.ToString();
              else
             {
                 LLVM.BuildRetVoid(builder);
             }
         }
-
-        private LLVMValueRef GetOrCreateLLVMFunction(string mangledName, LLVMTypeRef functionType)
-        {
-            LLVMValueRef llvmFunction = LLVM.GetNamedFunction(Module, mangledName);
-
-            if (llvmFunction.Pointer == IntPtr.Zero)
-            {
-                return LLVM.AddFunction(Module, mangledName, functionType);
-            }
-            return llvmFunction;
-        }
-
 
         private LLVMValueRef OutputCodeForDictionaryLookup(LLVMBuilderRef builder, NodeFactory factory,
             ReadyToRunGenericHelperNode node, GenericLookupResult lookup, LLVMValueRef ctx, string gepName,
@@ -1298,20 +1194,9 @@ namespace Internal.IL
         internal ExpressionEntry OutputCodeForTriggerCctor(TypeDesc type, LLVMValueRef staticBaseValueRef)
         {
             IMethodNode helperNode = (IMethodNode)_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
-//            PrintInt32(BuildConstInt32(65));
-//            PrintIntPtr(staticBaseValueRef);
             //TODO: remove the out param?
             ExpressionEntry returnExp;
-            ExpressionEntry returnExp2 = TriggerCctorReturnStaticBase((MetadataType)helperNode.Method.OwningType, staticBaseValueRef, helperNode.Method.Name, out returnExp);
-//            sb.Append(GetCppMethodDeclarationName(helperNode.Method.OwningType, GetCppMethodName(helperNode.Method), false));
-//            sb.Append("((::System_Private_CoreLib::System::Runtime::CompilerServices::StaticClassConstructionContext*)((char*)");
-//            sb.Append(staticsBaseVarName);
-//            sb.Append(" - sizeof(StaticClassConstructionContext)), (intptr_t)");
-//            sb.Append(staticsBaseVarName);
-//            sb.Append(");");
-//
-//            sb.AppendLine();
-            return returnExp2;
+            return TriggerCctorReturnStaticBase((MetadataType)helperNode.Method.OwningType, staticBaseValueRef, helperNode.Method.Name, out returnExp);
         }
 
         public void OutputCodeForDelegateCtorInit(LLVMBuilderRef builder, LLVMValueRef helperFunc,

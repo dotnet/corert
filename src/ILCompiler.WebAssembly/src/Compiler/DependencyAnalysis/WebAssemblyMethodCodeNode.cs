@@ -62,11 +62,6 @@ namespace ILCompiler.DependencyAnalysis
         public WebAssemblyMethodBodyNode(MethodDesc method)
             : base(method)
         {
-            if (method.ToString().Contains("KeyValuePair") &&
-                method.ToString().Contains("ToString"))
-            {
-
-            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -78,22 +73,7 @@ namespace ILCompiler.DependencyAnalysis
             foreach (Object node in _dependencies)
                 dependencies.Add(node, "Wasm code ");
 
-            foreach (TypeDesc type in _method.OwningType.Instantiation)
-            {
-                if (type is RuntimeDeterminedType)
-                {
-
-                }
-            }
-            //            if ( is RuntimeDeterminedType)
-            //            {
-            //
-            //            }
-            var owningType = _method.OwningType;
-//            if (!(owningType.GetTypeDefinition() is INonEmittableType))
-//            {
-                CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
-//            }
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref dependencies, factory, _method);
 
             return dependencies;
         }

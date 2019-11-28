@@ -58,25 +58,17 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
-            // cpp approach
-            //            return new WebAssemblyUnboxingThunkNode(method);
-
-            // this is the RyuJit approach
             if (method.IsCanonicalMethod(CanonicalFormKind.Specific) && !method.HasInstantiation)
             {
                 // Unboxing stubs to canonical instance methods need a special unboxing stub that unboxes
                 // 'this' and also provides an instantiation argument (we do a calling convention conversion).
                 // We don't do this for generic instance methods though because they don't use the EEType
                 // for the generic context anyway.
-                //TODO:
-              //return new WebAssemblyUnboxingThunkNode(method);
                 return new WebAssemblyMethodBodyNode(TypeSystemContext.GetSpecialUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
-                //return new WebAssemblyUnboxingThunkNode(TypeSystemContext.GetSpecialUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
             }
             else
             {
                 // Otherwise we just unbox 'this' and don't touch anything else.
-//                return new WebAssemblyUnboxingThunkNode(method, Target);
                 return new WebAssemblyUnboxingThunkNode(TypeSystemContext.GetUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
             }
         }

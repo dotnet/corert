@@ -1912,22 +1912,10 @@ namespace Internal.IL
                 }
                 return GetCallableVirtualMethod(thisPointer, runtimeDeterminedMethod, callee, hasHiddenParam, constrainedType);
             }
-            else
-            {
-                // TODO refactor with same logic above
-                var isSpecialUnboxingThunk = _compilation.NodeFactory.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(canonMethod);
 
-                //TODO do we ever hit the true branch
-                if (isSpecialUnboxingThunk)
-                    hasHiddenParam = canonMethod.IsSharedByGenericInstantiations &&
-                                     (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic);
-                else
-                {
-                    hasHiddenParam = canonMethod.RequiresInstArg();
-                    AddMethodReference(canonMethod);
-                }
-                return GetOrCreateLLVMFunction(canonCalleeName, canonMethod.Signature, hasHiddenParam);
-            }
+            hasHiddenParam = canonMethod.RequiresInstArg();
+            AddMethodReference(canonMethod);
+            return GetOrCreateLLVMFunction(canonCalleeName, canonMethod.Signature, hasHiddenParam);
         }
 
         private ISymbolNode GetMethodGenericDictionaryNode(MethodDesc method)
@@ -2410,13 +2398,6 @@ namespace Internal.IL
             }
             else
             {
-//                if (_method != null && _method.ToString().Contains("MakeGenString") && _method.ToString().Contains("GenStruct") &&
-//                    _method.ToString().Contains("Canon>") &&
-//                    callee.ToString().Contains("ToString"))
-//                {
-//                    PrintInt32(BuildConstInt32(69));
-//                    PrintInt32(argumentValues[0].ValueAsInt32(_builder, false));
-//                }
                 fn = LLVMFunctionForMethod(callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
             }
 
@@ -2443,9 +2424,9 @@ namespace Internal.IL
             var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), "castshadowstack");
             llvmArgs.Add(castShadowStack);
 
-            bool exactContextNeedsRuntimeLookup = false;
             if (opcode != ILOpcode.calli)
             {
+                bool exactContextNeedsRuntimeLookup;
                 if (callee.HasInstantiation)
                 {
                     exactContextNeedsRuntimeLookup = callee.IsSharedByGenericInstantiations && !_isUnboxingThunk;
@@ -2454,7 +2435,6 @@ namespace Internal.IL
                 {
                     exactContextNeedsRuntimeLookup = callee.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any);
                 }
-
 
                 if (hasHiddenParam)
                 {
@@ -2527,24 +2507,8 @@ namespace Internal.IL
                             hiddenParam = LoadAddressOfSymbolNode(owningTypeSymbol);
                         }
                     }
-                    //                var method = (MethodDesc)_canonMethodIL.GetObject(token);
-                    //
-                    //                typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
-                    //                LLVMValueRef helper;
-                    //                var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, typeToAlloc, out helper);
-                    //                var typeRef = LLVM.BuildCall(_builder, helper, new LLVMValueRef[] { }, "getHelper");
-                    //                var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-                    //                var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypeDesc) };
-                    //                newObjResult = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", arguments);
                 }
             }
-
-            //            if (canonMethod != null && canonMethod.ToString().Contains("Interlocked")
-            //                && canonMethod.ToString().Contains("CompareExchange")
-            //                && canonMethod.ToString().Contains("Canon"))
-            //            {
-            //
-            //            }
 
             if (needsReturnSlot)
             {
@@ -2553,7 +2517,6 @@ namespace Internal.IL
 
             // for GVM, the hidden param is added conditionally at runtime.
             if (!isGvm && hiddenParam.Pointer != IntPtr.Zero) // TODO why do we have a hiddenParam when isGvm == true or do we?
-//            if (hiddenParam.Pointer != IntPtr.Zero) // TODO why do we have a hiddenParam when isGvm == true?
             {
                 //TODO try to get rid of this cast.
                 llvmArgs.Add(CastIfNecessary(hiddenParam, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
@@ -2616,24 +2579,13 @@ namespace Internal.IL
                 LLVM.BuildCondBr(_builder, eqZ, notFatBranch, fatBranch); // TODO: phi?
                 // then
                 LLVM.PositionBuilderAtEnd(_builder, notFatBranch);
-                // if going to print things in here, need to adjust the shadowstack or it will overwrite whats done above
-//                PrintInt32(BuildConstInt32(16));
-                // we generated the fn as though it was for this branch
                 var notFatReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
                 LLVM.BuildBr(_builder, endifBlock);
                 
                 // else
                 LLVM.PositionBuilderAtEnd(_builder, fatBranch);
-//                PrintInt32(BuildConstInt32(17));
-//                if (!signature.IsStatic)
-//                {
-//                    PrintIntPtr(argumentValues[0].ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder));
-//                }
-//                PrintInt32(BuildConstInt32(17));
                 var fnWithDict = LLVM.BuildCast(_builder, LLVMOpcode.LLVMBitCast, fn, LLVM.PointerType(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, true), 0), "fnWithDict");
                 var dictDereffed = LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, dict, "l1"), "l2");
-//                PrintIntPtr(dict);
-//                PrintIntPtr(dictDereffed);
                 llvmArgs.Insert(needsReturnSlot ? 2 : 1, dictDereffed);
                 var fatReturn = LLVM.BuildCall(_builder, fnWithDict, llvmArgs.ToArray(), string.Empty);
                 LLVM.BuildBr(_builder, endifBlock);
@@ -2653,14 +2605,7 @@ namespace Internal.IL
 
             if (!returnType.IsVoid)
             {
-                if (needsReturnSlot)
-                {
-                    return returnSlot;
-                }
-                else
-                {
-                    return new ExpressionEntry(GetStackValueKind(returnType), callee?.Name + "_return", llvmReturn, returnType);
-                }
+                return needsReturnSlot ? returnSlot : new ExpressionEntry(GetStackValueKind(returnType), callee?.Name + "_return", llvmReturn, returnType);
             }
             else
             {
@@ -3004,15 +2949,12 @@ namespace Internal.IL
 
         private void ImportCalli(int token)
         {
-            bool print = false;
             //TODO wasm creates FatPointer for InvokeRet... but cpp does not, why?
-            var m = this._method.ToString();
             MethodSignature methodSignature = (MethodSignature)_canonMethodIL.GetObject(token);
 
             var noHiddenParamSig = GetLLVMSignatureForMethod(methodSignature, false);
             var hddenParamSig = GetLLVMSignatureForMethod(methodSignature, true);
             var target = ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(noHiddenParamSig, 0), _builder);
-            //            PrintIntPtr(target);
 
             var functionPtrAsInt = LLVM.BuildPtrToInt(_builder, target, LLVMTypeRef.Int32Type(), "ptrToInt");
             var andResRef = LLVM.BuildBinOp(_builder, LLVMOpcode.LLVMAnd, functionPtrAsInt, LLVM.ConstInt(LLVM.Int32Type(), FatFunctionPointerOffset, LLVMMisc.False), "andFatCheck");
@@ -3024,7 +2966,6 @@ namespace Internal.IL
             LLVM.PositionBuilderAtEnd(_builder, notFatBranch);
 
             // non fat branch
-
             var parameterCount = methodSignature.Length + (methodSignature.IsStatic ? 0 : 1);
             StackEntry[] stackCopy = new StackEntry[parameterCount];
             for (int i = 0; i < stackCopy.Length; i++)
@@ -3049,37 +2990,21 @@ namespace Internal.IL
             LLVM.PositionBuilderAtEnd(_builder, fatBranch);
 
             // fat branch
-
-            if (print)
-            {
-
-            }
-            //            for (int i = 0; i < stackCopy.Length; i++)
-            //            {
-            //                _stack.Push(stackCopy[stackCopy.Length - i - 1]);
-            //            }
-            //            HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: target);
             var minusOffset = LLVM.BuildAnd(_builder,
                             CastIfNecessary(_builder, target, LLVMTypeRef.Int32Type()),
                             BuildConstInt32(0x3fffffff), "minusFatOffset");
             var minusOffsetPtr = LLVM.BuildIntToPtr(_builder, minusOffset,
                 LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "ptr");
             var hiddenRefAddr = LLVM.BuildGEP(_builder, minusOffsetPtr, new[] { BuildConstInt32(_pointerSize) }, "fatArgPtr");
-//            PrintIntPtr(hiddenRefAddr);
             var hiddenRefPtrPtr = LLVM.BuildPointerCast(_builder, hiddenRefAddr, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), 0), 0), "hiddenRefPtr");
             var hiddenRef = LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, hiddenRefPtrPtr, "hiddenRefPtr"), "hiddenRef");
-//            PrintIntPtr(hiddenRef);
 
             for (int i = 0; i < stackCopy.Length; i++)
             {
                 _stack.Push(stackCopy[stackCopy.Length - i - 1]);
             }
             var funcPtrPtrWithHidden = LLVM.BuildPointerCast(_builder, minusOffsetPtr, LLVM.PointerType(LLVM.PointerType(hddenParamSig, 0), 0), "hiddenFuncPtr");
-//            PrintIntPtr(funcPtrPtrWithHidden);
             var funcWithHidden = LLVM.BuildLoad(_builder, funcPtrPtrWithHidden, "funcPtr");
-//            PrintIntPtr(funcWithHidden);
-            //                        var funcWithHidden2 = LLVM.BuildLoad(_builder, funcWithHidden, "funcPtr");
-            //                        PrintIntPtr(funcWithHidden2);
             HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: funcWithHidden, hiddenRef: hiddenRef);
             StackEntry fatRes = null;
             if (hasRes)
@@ -3135,10 +3060,6 @@ namespace Internal.IL
             }
             else
             {
-                if (_method.ToString().Contains("TestDelegateFatFunctionPointers"))
-                {
-
-                }
                 if (canonMethod.IsSharedByGenericInstantiations && (canonMethod.HasInstantiation || canonMethod.Signature.IsStatic))
                 {
                     var exactContextNeedsRuntimeLookup = method.HasInstantiation
@@ -3189,18 +3110,9 @@ namespace Internal.IL
                 }
                 else
                 {
-                    var isUnboxingStub = false; // TODO : write test for this and if it passes, then delete?
-                    Debug.Assert(!hasHiddenParam); // remove this when we understand why there are 2 checks
-                    if (isUnboxingStub)
-                        hasHiddenParam = runtimeDeterminedMethod.IsSharedByGenericInstantiations &&
-                                         (runtimeDeterminedMethod.HasInstantiation || runtimeDeterminedMethod.Signature.IsStatic);
-                    else
-                        hasHiddenParam = canonMethod.RequiresInstArg();
+                    Debug.Assert(!hasHiddenParam); // TODO: remove this when we understand why there are 2 checks
+                    hasHiddenParam = canonMethod.RequiresInstArg();
                     targetLLVMFunction = GetOrCreateLLVMFunction(_compilation.NameMangler.GetMangledMethodName(canonMethod).ToString(), runtimeDeterminedMethod.Signature, hasHiddenParam);
-//                    if (canonMethod.RequiresInstArg())
-//                    {
-//
-//                    }
                 }
             }
 
@@ -3210,41 +3122,13 @@ namespace Internal.IL
 
         ISymbolNode GetAndAddFatFunctionPointer(MethodDesc method, bool isUnboxingStub = false)
         {
-            foreach (var instType in method.Instantiation)
-            {
-                if (TypeCannotHaveEEType(instType))
-                {
-
-                }
-            }
             ISymbolNode node = _compilation.NodeFactory.FatFunctionPointer(method, isUnboxingStub);
             _dependencies.Add(node);
             return node;
         }
-        private static bool TypeCannotHaveEEType(TypeDesc type)
-        {
-            if (type.GetTypeDefinition() is INonEmittableType)
-                return true;
 
-            if (type.IsRuntimeDeterminedSubtype)
-                return true;
-
-            if (type.IsSignatureVariable)
-                return true;
-
-            if (type.IsGenericParameter)
-                return true;
-
-            return false;
-        }
         private void ImportLoadInt(long value, StackValueKind kind)
         {
-            if (this._method.ToString()
-                .Contains(
-                    "TestBox"))
-            {
-
-            }
             switch (kind)
             {
                 case StackValueKind.Int32:
@@ -4118,25 +4002,19 @@ namespace Internal.IL
 
         private LLVMValueRef GetFieldAddress(FieldDesc runtimeDeterminedField, FieldDesc field, bool isStatic)
         {
-            //            if (_method.ToString().Contains("CoreLib") &&
-            //                _method.ToString().Contains("SR..cctor"))
-            //            {
-            //
-            //            }
             if (field.IsStatic)
             {
                 //pop unused value
                 if (!isStatic)
                     _stack.Pop();
 
-                ISymbolNode node = null;
+                ISymbolNode node;
                 MetadataType owningType = (MetadataType)_compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
                 LLVMValueRef staticBase;
                 int fieldOffset;
                 // If the type is non-BeforeFieldInit, this is handled before calling any methods on it
                 //TODO : this seems to call into the cctor if the cctor itself accesses static fields. e.g. SR.  Try a test with an ++ in the cctor
                 bool needsCctorCheck = (owningType.IsBeforeFieldInit || (!owningType.IsBeforeFieldInit && owningType != _thisType)) && _compilation.TypeSystemContext.HasLazyStaticConstructor(owningType);
-                //                TypeDesc owningType = _writer.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
 
                 if (field.HasRva)
                 {
@@ -4164,11 +4042,6 @@ namespace Internal.IL
                                 GetShadowStack(),
                                 GetGenericContext()
                             }, "getHelper");
-//                            var ptrPtr = LLVM.BuildPointerCast(_builder, staticBase,
-//                                LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), 0),
-//                                "ptrPtr");
-//                            //TODO other static cases need this deref?
-//                            staticBase = LLVM.BuildLoad(_builder, ptrPtr, "staticBase");
                         }
                         else
                         {
@@ -4180,25 +4053,6 @@ namespace Internal.IL
                     }
                     else
                     {
-                        //                        if (field.Name == "Value" && owningType.ToString() == "[S.P.CoreLib]System.Array+EmptyArray`1<System.__Canon>")
-                        //                        {
-                        //                            MetadataType owningType2 = (MetadataType)_compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
-                        //
-                        //                        }
-                        //                        if (field.Name == "Empty" && owningType.ToString() == "[S.P.CoreLib]System.Array`1+ArrayEnumerator<System.__Canon>")
-                        //                        {
-                        //                            MetadataType owningType2 = (MetadataType)_compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
-                        //                        }
-                        if (_method.ToString()
-                            .Contains(
-                                "[S.P.Reflection.Core]System.Reflection.Runtime.TypeInfos.RuntimeTypeInfo+TypeComponentsCache.GetQueriedMembers<__Canon>(string,bool)")
-                        )
-                        {
-                            if (field.ToString().Contains("[S.P.Reflection.Core]System.Reflection.Runtime.BindingFlagSupport.MemberPolicies`1<System.__Canon>.MemberTypeIndex"))
-                            {
-
-                            }
-                        }
                         if (field.HasGCStaticBase)
                         {
                             if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
@@ -4209,7 +4063,7 @@ namespace Internal.IL
                                 node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetGCStaticBase, runtimeDeterminedOwningType, out helper);
                                 staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
                                 {
-                    GetShadowStack(),
+                                    GetShadowStack(),
                                     GetGenericContext()
                                 }, "getHelper");
                             }
@@ -4225,12 +4079,11 @@ namespace Internal.IL
                             if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
                             {
                                 needsCctorCheck = false; // no cctor for canonical types
-                                                         //                                DefType helperArg = runtimeDeterminedOwningType;
                                 LLVMValueRef helper;
                                 node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.GetNonGCStaticBase, runtimeDeterminedOwningType, out helper);
                                 staticBase = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
                                 {
-                    GetShadowStack(),
+                                    GetShadowStack(),
                                     GetGenericContext()
                                 }, "getHelper");
                             }
@@ -4262,19 +4115,13 @@ namespace Internal.IL
             }
         }
 
-        static int tl = 0;
-
         //TODO: change param to i8* to remove cast in callee and in method
-        /// define i8* @"__GenericLookupFromDict_<Boxed>Generics_Program_TestDelegateToCanonMethods_GenStruct_1<System___Canon>__<unbox>Generics_Program_TestDelegateToCanonMethods_GenStruct_1__MakeGenString<System___Canon>_MethodDictionary_Generics_Program_TestDelegateToCanonMethods_GenStruct_1<T_System___Canon>__MakeGenString<U_System___Canon>"(i8*, i32*) {
-        //genericHelper:
-        //%castCtx = bitcast i32* %1 to i8*
         ISymbolNode GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArg, out LLVMValueRef helper, IEnumerable<LLVMTypeRef> additionalArgs = null)
         {
             ISymbolNode node;
             var retType = helperId == ReadyToRunHelperId.DelegateCtor
                 ? LLVMTypeRef.VoidType()
                 : LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0);
-            //in cpp the non DelegateCtor take a void * as arg
             var helperArgs = new List<LLVMTypeRef>
             {
                 LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
@@ -4293,8 +4140,6 @@ namespace Internal.IL
                 node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArg, _method.OwningType);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
                     LLVMTypeRef.FunctionType(retType, helperArgs.ToArray(), false));
-                //                if(tl < 2) _dependencies.Add(node); // second one is a problem
-                tl++;
             }
             // cpp backend relies on a lazy static constructor to get this node added during the dependency generation. 
             // If left to when the code is written that uses the helper then its too late.
@@ -4541,11 +4386,6 @@ namespace Internal.IL
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime", "EEType").MakePointerType();
             if (runtimeDeterminedArrayType.IsRuntimeDeterminedSubtype)
             {
-                if (_mangledName ==
-                    "S_P_CoreLib_Internal_TypeSystem_LockFreeReaderHashtable_2<IntPtr__System___Canon>___ctor")
-                {
-                    //                    _compilation.NodeFactory.ConstructedTypeSymbol(_compilation.TypeSystemContext.GetArrayType(_compilation.TypeSystemContext.ty))
-                }
                 LLVMValueRef helper;
                 //TODO refactor this across the class
                 var typeRef = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.TypeHandle, runtimeDeterminedArrayType, out helper);
@@ -4565,55 +4405,20 @@ namespace Internal.IL
             PushNonNull(CallRuntime(_compilation.TypeSystemContext, InternalCalls, "RhpNewArray", arguments, runtimeDeterminedArrayType));
         }
 
-        static int i2 = 0;
         LLVMValueRef GetGenericContext(TypeDesc constrainedType = null)
         {
             Debug.Assert(_method.IsSharedByGenericInstantiations);
-            if (i2 == 190)
-            {
-
-            }
-            Debug.WriteLine(i2++);
             if (_method.AcquiresInstMethodTableFromThis())
             {
                 LLVMValueRef typedAddress;
                 LLVMValueRef thisPtr;
-                //                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 0, false));
                 //TODO this is for interface calls, can it be simplified
-                //                if (constrainedType != null && !constrainedType.IsValueType)
-                //                {
-                //                    typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
-                //                        LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0), 0), 0));
-                //                    thisPtr = LLVM.BuildLoad(_builder, typedAddress, "loadThis");
-                ////                    thisPtr = LLVM.BuildLoad(_builder, thisPtr, "loadConstrainedThis");
-                //                }
-                //                else
-                //                {
-
 
                 typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
                     LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0), 0));
                 thisPtr = LLVM.BuildLoad(_builder, typedAddress, "loadThis");
-                //                }
-                //                PrintIntPtr(thisPtr);
-                //                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 1, false));
 
-                var methodTablePtrRef = LLVM.BuildLoad(_builder, thisPtr, "methodTablePtrRef");
-                //                PrintIntPtr(methodTablePtrRef);
-
-                LLVMValueRef symbolAddress = WebAssemblyObjectWriter.GetOrAddGlobalSymbol(Module,
-                    "__EEType_S_P_TypeLoader_System_Collections_Generic_LowLevelDictionaryWithIEnumerable_2<S_P_CoreLib_System_Reflection_RuntimeAssemblyName__S_P_TypeLoader_Internal_Reflection_Execution_AssemblyBinderImplementation_ScopeDefinitionGroup>___SYMBOL");
-                //                PrintInt32(LLVM.ConstInt(LLVMTypeRef.Int32Type(), 2, false));
-                //                PrintIntPtr(symbolAddress);
-
-                return methodTablePtrRef;
-                // this fails at S_P_TypeLoader_Internal_Runtime_CompilerHelpers_LibraryInitializer__InitializeLibrary
-                //                LLVMValueRef typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
-                //                    LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0));
-                //                return LLVM.BuildLoad(_builder, typedAddress, "loadThis");
-                // this doesn't get as far
-                //                return CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
-                //                    LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), "typeFromThis");
+                return LLVM.BuildLoad(_builder, thisPtr, "methodTablePtrRef");
             }
             return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0) /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "HiddenArg");
         }
@@ -4745,7 +4550,6 @@ namespace Internal.IL
         }
 
         private const string RuntimeExport = "RuntimeExports";
-        private const string RuntimeImport = "RuntimeImports";
         private const string InternalCalls = "InternalCalls";
         private const string TypeCast = "TypeCast";
         private const string DispatchResolve = "DispatchResolve";
