@@ -4,17 +4,12 @@
 #include "dlfcn.h"
 #define __stdcall
 #endif
-
 #include "stdio.h"
-
 #ifdef _WIN32
 #define __symLoad GetProcAddress
 #else
 #define __symLoad dlsym
 #endif
-
-
-
 int handleErrors(void *handle, int cond)
 {
 
@@ -47,60 +42,67 @@ int handleErrors(void *handle, int cond)
     return 0;
 }
 
+int callSumFunc(char *path, char *funcName, int a, int b)
+{
+//Call sum function defined in C# shared library
+#ifdef _WIN32
+    HINSTANCE handle = LoadLibrary(path);
+#else
+    void *handle = dlopen(path, RTLD_LAZY);
+#endif
 
+    if (handleErrors(handle, 0))
+    {
+        return 0;
+    } //Error loading library
 
+    typedef int(__stdcall * myFunc)();
 
-int callSumFunc(char* path,char* funcName,int a,int b) {
-    //Call sum function defined in C# shared library
-    #ifdef _WIN32
-        HINSTANCE handle = LoadLibrary(path);
-    #else
-        void *handle = dlopen(path, RTLD_LAZY);
-    #endif
+    dlerror();
+    myFunc MyImport = __symLoad(handle, funcName);
 
-    if(handleErrors(handle,0)) {return 0;} //Error loading library
+    if (handleErrors(handle, 1))
+    {
+        return 0;
+    } //Error loading symbol
 
-    typedef int (__stdcall *myFunc)();
-    
-    dlerror(); 
-	myFunc MyImport = __symLoad(handle, funcName);
-
-    if (handleErrors(handle,1)) { return 0;} //Error loading symbol 
-
-
-    int result = MyImport(a,b);
+    int result = MyImport(a, b);
     dlclose(handle);
     return result;
-
 }
 
-char* callSumStringFunc(char* path,char* funcName,char* a,char* b) {
+char *callSumStringFunc(char *path, char *funcName, char *a, char *b)
+{
 
-    /* Library loading */
-    #ifdef _WIN32
-        HINSTANCE handle = LoadLibrary(path);
-    #else
-        void *handle = dlopen(path, RTLD_LAZY);
-    #endif
+/* Library loading */
+#ifdef _WIN32
+    HINSTANCE handle = LoadLibrary(path);
+#else
+    void *handle = dlopen(path, RTLD_LAZY);
+#endif
 
-    if(handleErrors(handle,0)) {return 0;} //Erro loading library
-
+    if (handleErrors(handle, 0))
+    {
+        return 0;
+    } //Error loading library
 
     /*Declare a typedef*/
-    typedef char* (__stdcall *myFunc)();
-    
-    dlerror(); 
+    typedef char *(__stdcall * myFunc)();
+
+    dlerror();
 
     /* Import Symbol named funcName */
-	myFunc MyImport = __symLoad(handle, funcName);
+    myFunc MyImport = __symLoad(handle, funcName);
 
-    if (handleErrors(handle,1)) { return 0;} //Error loading symbol 
+    if (handleErrors(handle, 1))
+    {
+        return 0;
+    } //Error loading symbol
 
     /* The C# function will return a pointer */
-    char* result = MyImport(a,b);
+    char *result = MyImport(a, b);
 
     dlclose(handle);
-    
-    return result;
 
+    return result;
 }
