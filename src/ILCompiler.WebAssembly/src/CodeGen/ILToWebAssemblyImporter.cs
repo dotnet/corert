@@ -1789,12 +1789,11 @@ namespace Internal.IL
         }
 
         private LLVMValueRef LLVMFunctionForMethod(MethodDesc callee, MethodDesc canonMethod, StackEntry thisPointer, bool isCallVirt,
-            TypeDesc constrainedType, MethodDesc runtimeDeterminedMethod, out bool hasHiddenParam, out bool isGvm,
+            TypeDesc constrainedType, MethodDesc runtimeDeterminedMethod, out bool hasHiddenParam, 
             out LLVMValueRef dictPtrPtrStore,
             out LLVMValueRef fatFunctionPtr)
         {
             hasHiddenParam = false;
-            isGvm = false;
             dictPtrPtrStore = default(LLVMValueRef);
             fatFunctionPtr = default(LLVMValueRef);
 
@@ -1862,7 +1861,6 @@ namespace Internal.IL
                 }
                 if (canonMethod.HasInstantiation && !canonMethod.IsFinal && !canonMethod.OwningType.IsSealed())
                 {
-                    isGvm = true;
                     return GetCallableGenericVirtualMethod(thisPointer, canonMethod, callee, runtimeDeterminedMethod, out dictPtrPtrStore, out fatFunctionPtr);
                 }
                 return GetCallableVirtualMethod(thisPointer, callee, runtimeDeterminedMethod);
@@ -2313,7 +2311,6 @@ namespace Internal.IL
             LLVMValueRef fn;
             bool hasHiddenParam;
             LLVMValueRef hiddenParam = default;
-            bool isGvm = false;
             LLVMValueRef dictPtrPtrStore = default;
             LLVMValueRef fatFunctionPtr = default;
             if (opcode == ILOpcode.calli)
@@ -2324,7 +2321,7 @@ namespace Internal.IL
             }
             else
             {
-                fn = LLVMFunctionForMethod(callee, canonMethod, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore, out fatFunctionPtr);
+                fn = LLVMFunctionForMethod(callee, canonMethod, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out dictPtrPtrStore, out fatFunctionPtr);
             }
 
             int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
@@ -2352,7 +2349,7 @@ namespace Internal.IL
             }
 
             // for GVM, the hidden param is added conditionally at runtime.
-            if (opcode != ILOpcode.calli && !isGvm)
+            if (opcode != ILOpcode.calli && fatFunctionPtr.Pointer == IntPtr.Zero)
             {
                 bool exactContextNeedsRuntimeLookup;
                 if (callee.HasInstantiation)
@@ -2516,7 +2513,6 @@ namespace Internal.IL
             LLVMValueRef castReturnAddress, MethodDesc runtimeDeterminedMethod)
         {
             bool hasHiddenParam = false;
-            bool isGvm = false;
             LLVMValueRef fn;
             LLVMValueRef dictPtrPtrStore;
             if (opcode == ILOpcode.calli)
@@ -2525,7 +2521,7 @@ namespace Internal.IL
             }
             else
             {
-                fn = LLVMFunctionForMethod(callee, callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
+                fn = LLVMFunctionForMethod(callee, callee, signature.IsStatic ? null : argumentValues[0], opcode == ILOpcode.callvirt, constrainedType, runtimeDeterminedMethod, out hasHiddenParam, out dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
             }
 
             LLVMValueRef shadowStack = LLVM.BuildGEP(builder, baseShadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) }, String.Empty);
@@ -2932,7 +2928,6 @@ namespace Internal.IL
             MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             LLVMValueRef targetLLVMFunction = default(LLVMValueRef);
             bool hasHiddenParam = false;
-            bool isGvm; // TODO in line declarations?
             LLVMValueRef dictPtrPtrStore; // TODO in line declarations? - remove as we have the fatFunctionPtr
             LLVMValueRef fatFunctionPtr;
 
@@ -2942,7 +2937,7 @@ namespace Internal.IL
                 if (runtimeDeterminedMethod.IsVirtual)
                 {
                     // we want the fat function ptr here
-                    targetLLVMFunction = LLVMFunctionForMethod(method, canonMethod, thisPointer, true, null, runtimeDeterminedMethod, out hasHiddenParam, out isGvm, out dictPtrPtrStore, out fatFunctionPtr);
+                    targetLLVMFunction = LLVMFunctionForMethod(method, canonMethod, thisPointer, true, null, runtimeDeterminedMethod, out hasHiddenParam, out dictPtrPtrStore, out fatFunctionPtr);
                     if (fatFunctionPtr.Pointer != IntPtr.Zero)
                     {
                         targetLLVMFunction = fatFunctionPtr;
@@ -3674,7 +3669,7 @@ namespace Internal.IL
                 AddMethodReference(helper);
                 //TODO: this can be tidied up; variables moved closer to usage...
                 bool hasHiddenParam;
-                var fn = LLVMFunctionForMethod(helper, helper, null/* static method */, false /* not virt */, _constrainedType, helper, out hasHiddenParam, out bool isGvm, out LLVMValueRef dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
+                var fn = LLVMFunctionForMethod(helper, helper, null/* static method */, false /* not virt */, _constrainedType, helper, out hasHiddenParam, out LLVMValueRef dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
 
                 if (typeDesc.IsRuntimeDeterminedSubtype)
                 {
