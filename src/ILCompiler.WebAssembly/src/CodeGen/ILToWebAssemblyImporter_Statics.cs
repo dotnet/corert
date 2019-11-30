@@ -123,6 +123,13 @@ namespace Internal.IL
             return LLVM.BuildBinOp(builder, LLVMOpcode.LLVMOr, asInt, LLVM.ConstInt(LLVM.Int32Type(), FatFunctionPointerOffset, LLVMMisc.False), "makeFat");
         }
 
+        private static LLVMValueRef RemoveFatOffset(LLVMBuilderRef builder, LLVMValueRef fatFunctionRef)
+        {
+            return LLVM.BuildAnd(builder,
+                CastIfNecessary(builder, fatFunctionRef, LLVMTypeRef.Int32Type()),
+                BuildConstUInt32(~FatFunctionPointerOffset), "minusFatOffset");
+        }
+
         private static IList<string> GetParameterNamesForMethod(MethodDesc method)
         {
             // TODO: The uses of this method need revision. The right way to get to this info is from

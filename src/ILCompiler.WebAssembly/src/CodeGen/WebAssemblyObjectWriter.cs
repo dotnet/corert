@@ -1225,7 +1225,7 @@ namespace Internal.IL
                 }
             }
 //            //TODO: this is only used in one place so inline 
-            HandleCall(constructor, constructor.Signature, constructor, constructor.Signature, argValues, null);
+            HandleCall(constructor, constructor.Signature, constructor, argValues, null);
         }
     }
 }
