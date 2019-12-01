@@ -1111,11 +1111,7 @@ namespace Internal.IL
             {
                 _signature = delegateCtor.Signature;
                 _argSlots = new LLVMValueRef[_signature.Length];
-                int signatureIndex = 1;
-                if (true) // hidden param after shadow stack pointer and return slot if present  TODO: can this ever be false?
-                {
-                    signatureIndex++;
-                }
+                int signatureIndex = 2; // past hidden param
                 int thisOffset = 0;
                 if (!_signature.IsStatic)
                 {
@@ -1145,12 +1141,10 @@ namespace Internal.IL
             _exceptionRegions = new ExceptionRegion[0];
         }
 
-        internal ExpressionEntry OutputCodeForTriggerCctor(TypeDesc type, LLVMValueRef staticBaseValueRef)
+        internal void OutputCodeForTriggerCctor(TypeDesc type, LLVMValueRef staticBaseValueRef)
         {
             IMethodNode helperNode = (IMethodNode)_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
-            //TODO: remove the out param?
-            ExpressionEntry returnExp;
-            return TriggerCctorReturnStaticBase((MetadataType)helperNode.Method.OwningType, staticBaseValueRef, helperNode.Method.Name, out returnExp);
+            TriggerCctor((MetadataType)helperNode.Method.OwningType, staticBaseValueRef, helperNode.Method.Name);
         }
 
         public void OutputCodeForDelegateCtorInit(LLVMBuilderRef builder, LLVMValueRef helperFunc,
@@ -1178,7 +1172,6 @@ namespace Internal.IL
                         constructor.Signature[i]);
                 }
             }
-//            //TODO: this is only used in one place so inline 
             HandleCall(constructor, constructor.Signature, constructor, argValues, null);
         }
     }

@@ -3931,7 +3931,6 @@ namespace Internal.IL
             }
         }
 
-        //TODO: change param to i8* to remove cast in callee and in method
         ISymbolNode GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArg, out LLVMValueRef helper, IEnumerable<LLVMTypeRef> additionalArgs = null)
         {
             ISymbolNode node;
@@ -4027,12 +4026,8 @@ namespace Internal.IL
             }
         }
 
-        private ExpressionEntry TriggerCctorReturnStaticBase(MetadataType type, LLVMValueRef staticBaseValueRef, string runnerMethodName, out ExpressionEntry returnExp)
+        private void TriggerCctor(MetadataType type, LLVMValueRef staticBaseValueRef, string runnerMethodName)
         {
-            //TODO: is this necessary and what is the type?
-            ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
-            _dependencies.Add(classConstructionContextSymbol);
-
             var classConstCtx = LLVM.BuildGEP(_builder,
                 LLVM.BuildBitCast(_builder, staticBaseValueRef, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
                     "ptr8"), new LLVMValueRef[] { BuildConstInt32(-8) }, "backToClassCtx");
@@ -4041,12 +4036,11 @@ namespace Internal.IL
             StackEntry staticBaseEntry = new AddressExpressionEntry(StackValueKind.NativeInt, "staticBase", staticBaseValueRef,
                 GetWellKnownType(WellKnownType.IntPtr));
 
-            returnExp = CallRuntime("System.Runtime.CompilerServices", _compilation.TypeSystemContext, ClassConstructorRunner, runnerMethodName, new StackEntry[]
+            CallRuntime("System.Runtime.CompilerServices", _compilation.TypeSystemContext, ClassConstructorRunner, runnerMethodName, new StackEntry[]
                                                                          {
                                                                              classConstructionContext,
                                                                              staticBaseEntry
                                                                          });
-            return returnExp;
         }
 
         private void ImportLoadField(int token, bool isStatic)
