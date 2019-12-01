@@ -970,10 +970,9 @@ namespace ILCompiler.DependencyAnalysis
                 // Load the dictionary pointer from the VTable
                 int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
                 var slotGep = LLVM.BuildGEP(builder, LLVM.GetParam(helperFunc, 1), new[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)slotOffset, LLVMMisc.False)}, "slotGep");
-                var slotGep32 = LLVM.BuildPointerCast(builder, slotGep,
-                    LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), 0), "slotGep32");
-                ctx = LLVM.BuildLoad(builder, slotGep32, "dictGep");
-                ctx = LLVM.BuildIntToPtr(builder, ctx, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "castCtx");
+                var slotGepPtrPtr = LLVM.BuildPointerCast(builder, slotGep,
+                    LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), 0), "slotGepPtrPtr");
+                ctx = LLVM.BuildLoad(builder, slotGepPtrPtr, "dictGep");
                 gepName = "typeNodeGep";
             }
             else
@@ -1003,8 +1002,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         var ptrPtrPtr = LLVM.BuildBitCast(builder, resVar, LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), 0), 0), "ptrPtrPtr");
 
-                        resVar = LLVM.BuildLoad(builder, ptrPtrPtr, "ind1");
-                        resVar = LLVM.BuildLoad(builder, resVar, "ind2");
+                        resVar = LLVM.BuildLoad(builder, LLVM.BuildLoad(builder, ptrPtrPtr, "ind1"), "ind2");
             
                         if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
