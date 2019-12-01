@@ -7,6 +7,8 @@ _Note_:
 
 # Building ILCompiler in Visual Studio 2017 #
 
+_INFO: Make sure you run the scrips using x64 Native Tools Command Prompt for VS 2019_
+
 First, build your repo by issuing the following command at repo root, by default this builds Debug x64:
 
 ```
