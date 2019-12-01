@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            // this code for this node is written out in ....
+            // this code for this node is written out in WebAssemblyObjectWriter.GetCodeForReadyToRunGenericHelper
             return new ObjectData(new byte[0], new Relocation[0], 1, new ISymbolDefinitionNode[0]);
         }
     }

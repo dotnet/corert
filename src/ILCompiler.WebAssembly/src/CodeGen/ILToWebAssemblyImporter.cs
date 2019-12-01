@@ -3854,7 +3854,7 @@ namespace Internal.IL
 
                 if (field.HasRva)
                 {
-                    node = (ISymbolNode)_compilation.GetFieldRvaData(field);
+                    node = _compilation.GetFieldRvaData(field);
                     staticBase = LoadAddressOfSymbolNode(node);
                     fieldOffset = 0;
                     // Run static constructor if necessary
@@ -3871,12 +3871,11 @@ namespace Internal.IL
                     {
                         if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
                         {
-                            staticBase = CallGenericHelper(ReadyToRunHelperId.GetThreadStaticBase, runtimeDeterminedOwningType); // TODO refactor with gc/non gc cases?
+                            staticBase = CallGenericHelper(ReadyToRunHelperId.GetThreadStaticBase, runtimeDeterminedOwningType);
                         }
                         else
                         {
                             ExpressionEntry returnExp;
-                            var c = runtimeDeterminedOwningType.IsCanonicalSubtype(CanonicalFormKind.Specific);
                             node = TriggerCctorWithThreadStaticStorage((MetadataType)runtimeDeterminedOwningType, needsCctorCheck, out returnExp);
                             staticBase = returnExp.ValueAsType(returnExp.Type, _builder);
                         }
@@ -3942,7 +3941,7 @@ namespace Internal.IL
             var helperArgs = new List<LLVMTypeRef>
             {
                 LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
-                LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0),
+                LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
             };
             if (additionalArgs != null) helperArgs.AddRange(additionalArgs);
             if (_method.RequiresInstMethodDescArg())
@@ -4208,15 +4207,14 @@ namespace Internal.IL
             {
                 LLVMValueRef typedAddress;
                 LLVMValueRef thisPtr;
-                //TODO this is for interface calls, can it be simplified
-
+                
                 typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
-                    LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int32Type(), 0), 0), 0));
+                    LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), 0), 0));
                 thisPtr = LLVM.BuildLoad(_builder, typedAddress, "loadThis");
 
                 return LLVM.BuildLoad(_builder, thisPtr, "methodTablePtrRef");
             }
-            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0) /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "HiddenArg");
+            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0) /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "HiddenArg");
         }
 
         private LLVMValueRef ArrayBaseSize()

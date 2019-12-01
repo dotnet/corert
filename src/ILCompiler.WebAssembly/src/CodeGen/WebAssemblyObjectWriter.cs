@@ -926,24 +926,7 @@ namespace ILCompiler.DependencyAnalysis
         private void GetCodeForReadyToRunGenericHelper(WebAssemblyCodegenCompilation compilation, ReadyToRunGenericHelperNode node, NodeFactory factory)
         {
             LLVMBuilderRef builder = LLVM.CreateBuilder();
-            // cheat a bit as want to reuse some of the instance methods in ILImporter
-            //TODO, whats the signature?
-            LLVMTypeRef retType;
-            switch (node.Id)
-            {
-                case ReadyToRunHelperId.MethodHandle:
-                    retType = LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0);
-                    break;
-                case ReadyToRunHelperId.DelegateCtor:
-                    retType = LLVMTypeRef.VoidType();
-                    break;
-                default:
-                    retType = LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0);
-                    break;
-            }
-
-            var args = new List<LLVMTypeRef>(); // TODO: delete?
-            var argRefs = new List<LLVMValueRef>();
+            var args = new List<LLVMTypeRef>();
             MethodDesc delegateCtor = null;
             if (node.Id == ReadyToRunHelperId.DelegateCtor)
             {
@@ -951,9 +934,7 @@ namespace ILCompiler.DependencyAnalysis
                 delegateCtor = target.Constructor.Method;
                 bool isStatic = delegateCtor.Signature.IsStatic;
                 int argCount = delegateCtor.Signature.Length;
-                if (!isStatic)
-                    argCount++;
-                int startIdx = args.Count;
+                if (!isStatic) argCount++;
                 for (int i = 0; i < argCount; i++)
                 {
                     TypeDesc argType;
@@ -969,9 +950,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            var mangledName = node.GetMangledName(factory.NameMangler); //TODO: inline
-
-            LLVMValueRef helperFunc = LLVM.GetNamedFunction(Module, mangledName);
+            LLVMValueRef helperFunc = LLVM.GetNamedFunction(Module, node.GetMangledName(factory.NameMangler));
 
             if (helperFunc.Pointer == IntPtr.Zero)
             {
@@ -990,11 +969,9 @@ namespace ILCompiler.DependencyAnalysis
                 int pointerSize = factory.Target.PointerSize;
                 // Load the dictionary pointer from the VTable
                 int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
-                var ptr8 = LLVM.BuildPointerCast(builder, LLVM.GetParam(helperFunc, 1),
-                    LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "ptr8");
-                var slotGep = LLVM.BuildGEP(builder, ptr8, new[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)slotOffset, LLVMMisc.False)}, "slotGep");
+                var slotGep = LLVM.BuildGEP(builder, LLVM.GetParam(helperFunc, 1), new[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)slotOffset, LLVMMisc.False)}, "slotGep");
                 var slotGep32 = LLVM.BuildPointerCast(builder, slotGep,
-                    LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), "slotGep32");
+                    LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), 0), "slotGep32");
                 ctx = LLVM.BuildLoad(builder, slotGep32, "dictGep");
                 ctx = LLVM.BuildIntToPtr(builder, ctx, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "castCtx");
                 gepName = "typeNodeGep";
@@ -1002,11 +979,10 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 ctx = LLVM.GetParam(helperFunc, 1);
-                ctx = LLVM.BuildPointerCast(builder, ctx, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "castCtx");
                 gepName = "paramGep";
             }
 
-            LLVMValueRef resVar = OutputCodeForDictionaryLookup(builder, factory, node, node.LookupSignature, ctx, gepName, helperFunc);
+            LLVMValueRef resVar = OutputCodeForDictionaryLookup(builder, factory, node, node.LookupSignature, ctx, gepName);
             
             switch (node.Id)
             {
@@ -1017,13 +993,6 @@ namespace ILCompiler.DependencyAnalysis
                         if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
                             importer.OutputCodeForTriggerCctor(target, resVar);
-
-                            resVar = LLVM.BuildGEP(builder, resVar,
-                                new LLVMValueRef[]
-                                {
-                                    LLVM.ConstInt(LLVM.Int32Type(), (ulong)0 /* TODO: what is this */,
-                                        LLVMMisc.False)
-                                }, "sizeofctx");
                         }
                     }
                     break;
@@ -1040,7 +1009,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
-                            var nonGcStaticsBase = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "lazyGep", helperFunc);
+                            var nonGcStaticsBase = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "lazyGep");
                             importer.OutputCodeForTriggerCctor(target, nonGcStaticsBase);
                         }
                     }
@@ -1053,14 +1022,10 @@ namespace ILCompiler.DependencyAnalysis
                         if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
                         {
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
-                            var threadStaticBase = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "tsGep", helperFunc);
+                            var threadStaticBase = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "tsGep");
                             importer.OutputCodeForTriggerCctor(target, threadStaticBase);
                         }
-                        else
-                        {
-                            //TODO move this outside the else as probably always want to do it
-                            resVar = importer.OutputCodeForGetThreadStaticBaseForType(resVar).ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), builder);
-                        }
+                        resVar = importer.OutputCodeForGetThreadStaticBaseForType(resVar).ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), builder);
                     }
                     break;
             
@@ -1088,15 +1053,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (node.Id != ReadyToRunHelperId.DelegateCtor)
             {
-                if (node.Id == ReadyToRunHelperId.MethodHandle)
-                {
-                    LLVM.BuildRet(builder, resVar);
-                }
-                else
-                {
-                    //TODO: are these the same types for wasm
-                    LLVM.BuildRet(builder, resVar);
-                }
+                LLVM.BuildRet(builder, resVar);
             }
              else
             {
@@ -1105,8 +1062,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private LLVMValueRef OutputCodeForDictionaryLookup(LLVMBuilderRef builder, NodeFactory factory,
-            ReadyToRunGenericHelperNode node, GenericLookupResult lookup, LLVMValueRef ctx, string gepName,
-            LLVMValueRef helperFunc)
+            ReadyToRunGenericHelperNode node, GenericLookupResult lookup, LLVMValueRef ctx, string gepName)
         {
             // Find the generic dictionary slot
             int dictionarySlot = factory.GenericDictionaryLayout(node.DictionaryOwner).GetSlotForEntry(lookup);
