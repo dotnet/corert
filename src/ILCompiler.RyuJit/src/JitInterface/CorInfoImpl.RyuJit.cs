@@ -1365,7 +1365,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            pResult->_secureDelegateInvoke = 0;
+            pResult->_wrapperDelegateInvoke = 0;
         }
 
         private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
