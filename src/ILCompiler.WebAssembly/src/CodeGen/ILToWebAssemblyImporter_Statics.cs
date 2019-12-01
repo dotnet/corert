@@ -116,7 +116,6 @@ namespace Internal.IL
         static LLVMValueRef DoNothingFunction = default(LLVMValueRef);
         static LLVMValueRef NullRefFunction = default(LLVMValueRef);
 
-        //TODO: refactor other cases to use this, cast to i8*?
         internal static LLVMValueRef MakeFatPointer(LLVMBuilderRef builder, LLVMValueRef targetLlvmFunction)
         {
             var asInt = LLVM.BuildPtrToInt(builder, targetLlvmFunction, LLVMTypeRef.Int32Type(), "toInt");

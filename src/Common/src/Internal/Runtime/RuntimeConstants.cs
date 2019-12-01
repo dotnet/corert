@@ -11,11 +11,10 @@ namespace Internal.Runtime
         /// from real function pointers.
         /// </summary>
 #if WASM
-        // WebAssembly uses index tables, not addresses.  This is going to be contentious I imagine as it is baked into Ilc and hence an Ilc for x64 will not be able to compile Wasm.  Comments welcome.
+        // WebAssembly uses index tables, not addresses for function pointers.  This is going to be contentious it is baked into Ilc and hence an Ilc for x64 will not be able to compile Wasm and vice versa.  Alternative ways round this?.
         public const int Offset = 1 << 31;
 #else
-        public const int Offset = 1 << 31;
-//        public const int Offset = 2;
+        public const int Offset = 2;
 #endif
     }
 

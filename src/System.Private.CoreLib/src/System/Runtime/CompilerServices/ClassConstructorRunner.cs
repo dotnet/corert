@@ -489,8 +489,6 @@ namespace System.Runtime.CompilerServices
         {
             s_cctorArrays = new Cctor[10][];
             s_cctorGlobalLock = new Lock();
-            s_cctorArraysCount = 0;
-            s_count = 0;
         }
 
         [Conditional("ENABLE_NOISY_CCTOR_LOG")]
