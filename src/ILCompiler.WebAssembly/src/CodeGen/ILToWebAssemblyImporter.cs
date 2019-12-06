@@ -552,7 +552,7 @@ namespace Internal.IL
 
         private void EndImportingBasicBlock(BasicBlock basicBlock)
         {
-            var terminator = (_currentEndIfBlock.Pointer != IntPtr.Zero ? _currentEndIfBlock : basicBlock.Block).Terminator;
+            var terminator = (_currentEndIfBlock.Handle != IntPtr.Zero ? _currentEndIfBlock : basicBlock.Block).Terminator;
             if (terminator.Handle == IntPtr.Zero)
             {
                 if (_basicBlocks.Length > _currentOffset)
@@ -1022,7 +1022,7 @@ CreateDebugLocation();
             {
                 Debug.Assert(toStoreKind != LLVMTypeKind.LLVMPointerTypeKind && valueTypeKind != LLVMTypeKind.LLVMPointerTypeKind);
                 // when extending unsigned ints do fill left with 0s, zext
-                typedToStore = unsigned && sourceType.GetIntTypeWidth() < valueType.GetIntTypeWidth()
+                typedToStore = unsigned && sourceType.IntWidth < valueType.IntWidth
                     ? builder.BuildZExt(source, valueType, "CastZInt" + (name ?? ""))
                     : builder.BuildIntCast(source, valueType, "CastInt" + (name ?? ""));
             }
@@ -1596,7 +1596,7 @@ CreateDebugLocation();
         LLVMValueRef CallGenericHelper(ReadyToRunHelperId helperId, object helperArg)
         {
             _dependencies.Add(GetGenericLookupHelperAndAddReference(helperId, helperArg, out LLVMValueRef helper));
-            return LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
+            return _builder.BuildCall(helper, new LLVMValueRef[]
             {
                 GetShadowStack(),
                 GetGenericContext()
@@ -1776,9 +1776,9 @@ CreateDebugLocation();
                     // pass this (delegate obj) as first param
                     LLVMTypeRef llvmTypeRefForThis = GetLLVMTypeForTypeDesc(thisEntry.Type);
                     curOffset = PadOffset(thisEntry.Type, curOffset);
-                    LLVMValueRef thisAddr = LLVM.BuildGEP(_builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "thisLoc");
-                    LLVMValueRef llvmValueRefForThis = thisEntry.ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
-                    LLVM.BuildStore(_builder, llvmValueRefForThis, CastIfNecessary(_builder, thisAddr, LLVM.PointerType(llvmTypeRefForThis, 0), "thisCast"));
+                    LLVMValueRef thisAddr = _builder.BuildGEP(shadowStack, new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)curOffset, false) }, "thisLoc");
+                    LLVMValueRef llvmValueRefForThis = thisEntry.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder);
+                    _builder.BuildStore(llvmValueRefForThis, CastIfNecessary(_builder, thisAddr, LLVMTypeRef.CreatePointer(llvmTypeRefForThis, 0), "thisCast"));
                     curOffset = PadNextOffset(GetWellKnownType(WellKnownType.Object), curOffset);
 
                     List<LLVMValueRef> helperParams = new List<LLVMValueRef>
@@ -1800,17 +1800,17 @@ CreateDebugLocation();
                         }
                         else
                         {
-                            LLVMValueRef llvmValueRefForArg = argStackEntry.ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
+                            LLVMValueRef llvmValueRefForArg = argStackEntry.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder);
                             curOffset = PadOffset(argTypeDesc, curOffset);
-                            LLVMValueRef argAddr = LLVM.BuildGEP(_builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "arg" + i);
-                            LLVM.BuildStore(_builder, llvmValueRefForArg, CastIfNecessary(_builder, argAddr, LLVM.PointerType(llvmTypeRefForArg, 0), $"parameter{i}_"));
+                            LLVMValueRef argAddr = _builder.BuildGEP(shadowStack, new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)curOffset, false) }, "arg" + i);
+                            _builder.BuildStore(llvmValueRefForArg, CastIfNecessary(_builder, argAddr, LLVMTypeRef.CreatePointer(llvmTypeRefForArg, 0), $"parameter{i}_"));
                             curOffset = PadNextOffset(argTypeDesc, curOffset);
                         }
                     }
 
                     var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo, out helper,
                         additionalTypes);
-                    LLVM.BuildCall(_builder, helper, helperParams.ToArray(), string.Empty);
+                    _builder.BuildCall(helper, helperParams.ToArray(), string.Empty);
                     return;
                 }
                 if (!functionPointer.IsVirtual && delegateTargetMethod.OwningType.IsValueType &&
@@ -1824,8 +1824,8 @@ CreateDebugLocation();
                     if (delegateTargetMethod != canonDelegateTargetMethod)
                     {
                         var funcRef = LoadAddressOfSymbolNode(targetNode);
-                        var toInt = LLVM.BuildPtrToInt(_builder, funcRef, LLVMTypeRef.Int32Type(), "toInt");
-                        var withOffset = LLVM.BuildOr(_builder, toInt, BuildConstUInt32(FatFunctionPointerOffset), "withOffset");
+                        var toInt = _builder.BuildPtrToInt(funcRef, LLVMTypeRef.Int32, "toInt");
+                        var withOffset = _builder.BuildOr(toInt, BuildConstUInt32(FatFunctionPointerOffset), "withOffset");
                         PushExpression(StackValueKind.NativeInt, "fatthunk", withOffset);
                     }
                     else
@@ -1990,8 +1990,7 @@ CreateDebugLocation();
             out LLVMValueRef slotRef)
         {
             // this will only have a non-zero pointer the the GVM ptr is fat.
-            dictPtrPtrStore = LLVM.BuildAlloca(_builder,
-                LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), 0), 0),
+            dictPtrPtrStore = _builder.BuildAlloca(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0),
                 "dictPtrPtrStore");
 
             _dependencies.Add(_compilation.NodeFactory.GVMDependencies(canonMethod));
@@ -2010,7 +2009,7 @@ CreateDebugLocation();
                 LLVMValueRef helper;
                 var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.MethodHandle, runtimeDeterminedMethod, out helper);
                 _dependencies.Add(node);
-                runtimeMethodHandle = LLVM.BuildCall(_builder, helper, new LLVMValueRef[]
+                runtimeMethodHandle = _builder.BuildCall(helper, new LLVMValueRef[]
                 {
                     GetShadowStack(),
                     GetGenericContext()
@@ -2029,43 +2028,43 @@ CreateDebugLocation();
                 new ExpressionEntry(StackValueKind.ObjRef, "rmh", runtimeMethodHandle, GetWellKnownType(WellKnownType.Object))
             };
             var gvmPtr = CallRuntime(_compilation.TypeSystemContext, "TypeLoaderExports", "GVMLookupForSlot", lookupSlotArgs);
-            slotRef = gvmPtr.ValueAsType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
+            slotRef = gvmPtr.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder);
 
-            var fatBranch = LLVM.AppendBasicBlock(_currentFunclet, "then");
-            var notFatBranch = LLVM.AppendBasicBlock(_currentFunclet, "else");
-            var endifBlock = LLVM.AppendBasicBlock(_currentFunclet, "endif");
+            var fatBranch = _currentFunclet.AppendBasicBlock("then");
+            var notFatBranch = _currentFunclet.AppendBasicBlock("else");
+            var endifBlock = _currentFunclet.AppendBasicBlock("endif");
             // if
-            var andResRef = LLVM.BuildAnd(_builder, CastIfNecessary(_builder, slotRef, LLVMTypeRef.Int32Type()), LLVM.ConstInt(LLVM.Int32Type(), FatFunctionPointerOffset, LLVMMisc.False), "andPtrOffset");
-            var eqz = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, andResRef, BuildConstInt32(0), "eqz");
-            LLVM.BuildCondBr(_builder, eqz, notFatBranch, fatBranch);
+            var andResRef = _builder.BuildAnd(CastIfNecessary(_builder, slotRef, LLVMTypeRef.Int32), LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, FatFunctionPointerOffset, false), "andPtrOffset");
+            var eqz = _builder.BuildICmp(LLVMIntPredicate.LLVMIntEQ, andResRef, BuildConstInt32(0), "eqz");
+            _builder.BuildCondBr(eqz, notFatBranch, fatBranch);
 
             // fat
-            LLVM.PositionBuilderAtEnd(_builder, fatBranch);
+            _builder.PositionAtEnd(fatBranch);
             var gep = RemoveFatOffset(_builder, slotRef);
-            var loadFuncPtr = LLVM.BuildLoad(_builder,
-                CastIfNecessary(_builder, gep, LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), 0)),
+            var loadFuncPtr = _builder.BuildLoad(
+                CastIfNecessary(_builder, gep, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0)),
                 "loadFuncPtr");
-            var dictPtrPtr = LLVM.BuildGEP(_builder,
+            var dictPtrPtr = _builder.BuildGEP(
                 CastIfNecessary(_builder, gep,
-                    LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), 0), 0), "castDictPtrPtr"),
+                    LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0), "castDictPtrPtr"),
                 new [] {BuildConstInt32(1)}, "dictPtrPtr");
-            LLVM.BuildStore(_builder, dictPtrPtr, dictPtrPtrStore);
-            LLVM.BuildBr(_builder, endifBlock);
+            _builder.BuildStore(dictPtrPtr, dictPtrPtrStore);
+            _builder.BuildBr(endifBlock);
 
             // not fat
-            LLVM.PositionBuilderAtEnd(_builder, notFatBranch);
+            _builder.PositionAtEnd(notFatBranch);
             // store null to indicate the GVM call needs no hidden param at run time
-            LLVM.BuildStore(_builder, LLVM.ConstPointerNull(LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), 0), 0)), dictPtrPtrStore);
-            LLVM.BuildBr(_builder, endifBlock);
+            _builder.BuildStore(LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0)), dictPtrPtrStore);
+            _builder.BuildBr(endifBlock);
 
             // end if
-            LLVM.PositionBuilderAtEnd(_builder, endifBlock);
-            var loadPtr = LLVM.BuildPhi(_builder, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "fatNotFatPhi");
-            LLVM.AddIncoming(loadPtr, new LLVMValueRef[] { loadFuncPtr, slotRef },
+            _builder.PositionAtEnd(endifBlock);
+            var loadPtr = _builder.BuildPhi(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "fatNotFatPhi");
+            loadPtr.AddIncoming(new LLVMValueRef[] { loadFuncPtr, slotRef },
                 new LLVMBasicBlockRef[] { fatBranch, notFatBranch }, 2);
 
             // dont know the type for sure, but will generate for no hidden dict param and change if necessary before calling.
-            var asFunc = CastIfNecessary(_builder, loadPtr, LLVM.PointerType(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, false), 0) , "castToFunc");
+            var asFunc = CastIfNecessary(_builder, loadPtr, LLVMTypeRef.CreatePointer(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, false), 0) , "castToFunc");
             return asFunc;
         }
 
@@ -2094,7 +2093,7 @@ CreateDebugLocation();
 
             if (hasHiddenParam)
             {
-                signatureTypes.Add(LLVM.PointerType(LLVM.Int8Type(), 0)); // *EEType
+                signatureTypes.Add(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)); // *EEType
             }
 
             // Intentionally skipping the 'this' pointer since it could always be a GC reference
@@ -2144,7 +2143,7 @@ CreateDebugLocation();
 
         private static LLVMValueRef BuildConstUInt32(uint number)
         {
-            return LLVM.ConstInt(LLVM.Int32Type(), number, LLVMMisc.False);
+            return LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, number, false);
         }
 
         private static LLVMValueRef BuildConstInt64(long number)
@@ -2377,10 +2376,10 @@ CreateDebugLocation();
             }
 
             int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
-            LLVMValueRef shadowStack = LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_currentFunclet),
-                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
+            LLVMValueRef shadowStack = _builder.BuildGEP(_currentFunclet.GetParam(0),
+                new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)offset, false) },
                 String.Empty);
-            var castShadowStack = LLVM.BuildPointerCast(_builder, shadowStack, LLVM.PointerType(LLVM.Int8Type(), 0), "castshadowstack");
+            var castShadowStack = _builder.BuildPointerCast(shadowStack, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "castshadowstack");
             List<LLVMValueRef> llvmArgs = new List<LLVMValueRef>
             {
                 castShadowStack
@@ -2396,12 +2395,12 @@ CreateDebugLocation();
                 returnSlot = new SpilledExpressionEntry(GetStackValueKind(returnType), callee?.Name + "_return", returnType, returnIndex, this);
                 _spilledExpressions.Add(returnSlot);
                 LLVMValueRef returnAddress = LoadVarAddress(returnIndex, LocalVarKind.Temp, out TypeDesc unused);
-                LLVMValueRef castReturnAddress = _builder.BuildPointerCast(returnAddress, LLVM.PointerType(LLVM.Int8Type(), 0), callee?.Name + "_castreturn");
+                LLVMValueRef castReturnAddress = _builder.BuildPointerCast(returnAddress, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), callee?.Name + "_castreturn");
                 llvmArgs.Add(castReturnAddress);
             }
 
             // for GVM, the hidden param is added conditionally at runtime.
-            if (opcode != ILOpcode.calli && fatFunctionPtr.Pointer == IntPtr.Zero)
+            if (opcode != ILOpcode.calli && fatFunctionPtr.Handle == IntPtr.Zero)
             {
                 bool exactContextNeedsRuntimeLookup;
                 if (callee.HasInstantiation)
@@ -2447,7 +2446,7 @@ CreateDebugLocation();
                     {
                         if (_isUnboxingThunk && _method.RequiresInstArg())
                         {
-                            hiddenParam = LLVM.GetParam(_currentFunclet, (uint)(1 + (NeedsReturnStackSlot(_signature) ? 1 : 0)));
+                            hiddenParam = _currentFunclet.GetParam((uint)(1 + (NeedsReturnStackSlot(_signature) ? 1 : 0)));
                         }
                         else if (canonMethod.RequiresInstMethodDescArg())
                         {
@@ -2463,9 +2462,9 @@ CreateDebugLocation();
                 }
             }
 
-            if (hiddenParam.Pointer != IntPtr.Zero) 
+            if (hiddenParam.Handle != IntPtr.Zero) 
             {
-                llvmArgs.Add(CastIfNecessary(hiddenParam, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0)));
+                llvmArgs.Add(CastIfNecessary(hiddenParam, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)));
             }
 
             // argument offset on the shadow stack
@@ -2512,40 +2511,40 @@ CreateDebugLocation();
                 }
             }
             LLVMValueRef llvmReturn = default;
-            if (fatFunctionPtr.Pointer != IntPtr.Zero) // indicates GVM
+            if (fatFunctionPtr.Handle != IntPtr.Zero) // indicates GVM
             {
                 // conditional call depending on if the function was fat/the dict hidden param is needed
                 // TODO: not sure this is always conditional, maybe there is some optimisation that can be done to not inject this conditional logic depending on the caller/callee
-                LLVMValueRef dict = LLVM.BuildLoad(_builder, dictPtrPtrStore, "dictPtrPtr");
-                LLVMValueRef dictAsInt = LLVM.BuildPtrToInt(_builder, dict, LLVMTypeRef.Int32Type(), "toInt");
-                LLVMValueRef eqZ = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, dictAsInt, BuildConstInt32(0), "eqz");
-                var notFatBranch = LLVM.AppendBasicBlock(_currentFunclet, "notFat");
-                var fatBranch = LLVM.AppendBasicBlock(_currentFunclet, "fat");
-                var endifBlock = LLVM.AppendBasicBlock(_currentFunclet, "endif");
-                LLVM.BuildCondBr(_builder, eqZ, notFatBranch, fatBranch); 
+                LLVMValueRef dict = _builder.BuildLoad( dictPtrPtrStore, "dictPtrPtr");
+                LLVMValueRef dictAsInt = _builder.BuildPtrToInt(dict, LLVMTypeRef.Int32, "toInt");
+                LLVMValueRef eqZ = _builder.BuildICmp(LLVMIntPredicate.LLVMIntEQ, dictAsInt, BuildConstInt32(0), "eqz");
+                var notFatBranch = _currentFunclet.AppendBasicBlock("notFat");
+                var fatBranch = _currentFunclet.AppendBasicBlock("fat");
+                var endifBlock = _currentFunclet.AppendBasicBlock("endif");
+                _builder.BuildCondBr(eqZ, notFatBranch, fatBranch);
                 // then
-                LLVM.PositionBuilderAtEnd(_builder, notFatBranch);
-                var notFatReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
-                LLVM.BuildBr(_builder, endifBlock);
-                
+                _builder.PositionAtEnd(notFatBranch);
+                var notFatReturn = _builder.BuildCall( fn, llvmArgs.ToArray(), string.Empty);
+                _builder.BuildBr(endifBlock);
+
                 // else
-                LLVM.PositionBuilderAtEnd(_builder, fatBranch);
-                var fnWithDict = LLVM.BuildCast(_builder, LLVMOpcode.LLVMBitCast, fn, LLVM.PointerType(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, true), 0), "fnWithDict");
-                var dictDereffed = LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, dict, "l1"), "l2");
+                _builder.PositionAtEnd(fatBranch);
+                var fnWithDict = _builder.BuildCast(LLVMOpcode.LLVMBitCast, fn, LLVMTypeRef.CreatePointer(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, true), 0), "fnWithDict");
+                var dictDereffed = _builder.BuildLoad( _builder.BuildLoad( dict, "l1"), "l2");
                 llvmArgs.Insert(needsReturnSlot ? 2 : 1, dictDereffed);
-                var fatReturn = LLVM.BuildCall(_builder, fnWithDict, llvmArgs.ToArray(), string.Empty);
-                LLVM.BuildBr(_builder, endifBlock);
-                
+                var fatReturn = _builder.BuildCall( fnWithDict, llvmArgs.ToArray(), string.Empty);
+                _builder.BuildBr(endifBlock);
+
                 // endif
-                LLVM.PositionBuilderAtEnd(_builder, endifBlock);
+                _builder.PositionAtEnd(endifBlock);
                 if (!returnType.IsVoid && !needsReturnSlot)
                 {
-                    llvmReturn = LLVM.BuildPhi(_builder, GetLLVMTypeForTypeDesc(returnType), "callReturnPhi");
-                    LLVM.AddIncoming(llvmReturn, new LLVMValueRef[] { notFatReturn, fatReturn },
+                    llvmReturn = _builder.BuildPhi(GetLLVMTypeForTypeDesc(returnType), "callReturnPhi");
+                    llvmReturn.AddIncoming(new LLVMValueRef[] { notFatReturn, fatReturn },
                         new LLVMBasicBlockRef[] { notFatBranch, fatBranch }, 2);
                 }
             }
-            else llvmReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
+            else llvmReturn = _builder.BuildCall( fn, llvmArgs.ToArray(), string.Empty);
 
             if (!returnType.IsVoid)
             {
@@ -2765,7 +2764,7 @@ CreateDebugLocation();
                     s_shadowStackTop = Module.AddGlobal(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "t_pShadowStackTop");
                     s_shadowStackTop.Linkage = LLVMLinkage.LLVMInternalLinkage;
                     s_shadowStackTop.Initializer = LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0));
-                    s_shadowStackTop.ThreadLocalMode = LLVMThreadLocalMode.LLVMLocalDynamicTLSMode;
+                    s_shadowStackTop.ThreadLocalMode = LLVMThreadLocalMode.LLVMLocalDynamicTLSModel;
                 }
                 return s_shadowStackTop;
             }
@@ -2891,16 +2890,16 @@ CreateDebugLocation();
             }
             var noHiddenParamSig = GetLLVMSignatureForMethod(methodSignature, false);
             var hddenParamSig = GetLLVMSignatureForMethod(methodSignature, true);
-            var target = ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(noHiddenParamSig, 0), _builder);
+            var target = ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVMTypeRef.CreatePointer(noHiddenParamSig, 0), _builder);
 
-            var functionPtrAsInt = LLVM.BuildPtrToInt(_builder, target, LLVMTypeRef.Int32Type(), "ptrToInt");
-            var andResRef = LLVM.BuildBinOp(_builder, LLVMOpcode.LLVMAnd, functionPtrAsInt, LLVM.ConstInt(LLVM.Int32Type(), FatFunctionPointerOffset, LLVMMisc.False), "andFatCheck");
-            var boolConv = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, andResRef, BuildConstInt32(0), "bitConv");
-            var fatBranch = LLVM.AppendBasicBlock(_currentFunclet, "fat");
-            var notFatBranch = LLVM.AppendBasicBlock(_currentFunclet, "notFat");
-            var endif = LLVM.AppendBasicBlock(_currentFunclet, "endif");
-            LLVM.BuildCondBr(_builder, boolConv, notFatBranch, fatBranch);
-            LLVM.PositionBuilderAtEnd(_builder, notFatBranch);
+            var functionPtrAsInt = _builder.BuildPtrToInt(target, LLVMTypeRef.Int32, "ptrToInt");
+            var andResRef = _builder.BuildBinOp(LLVMOpcode.LLVMAnd, functionPtrAsInt, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, FatFunctionPointerOffset, false), "andFatCheck");
+            var boolConv = _builder.BuildICmp(LLVMIntPredicate.LLVMIntEQ, andResRef, BuildConstInt32(0), "bitConv");
+            var fatBranch = _currentFunclet.AppendBasicBlock( "fat");
+            var notFatBranch = _currentFunclet.AppendBasicBlock( "notFat");
+            var endif = _currentFunclet.AppendBasicBlock( "endif");
+            _builder.BuildCondBr(boolConv, notFatBranch, fatBranch);
+            _builder.PositionAtEnd(notFatBranch);
 
             // non fat branch
             var parameterCount = methodSignature.Length + (methodSignature.IsStatic ? 0 : 1);
@@ -2922,23 +2921,23 @@ CreateDebugLocation();
                 StackEntry nonFatRes = _stack.Pop();
                 nonFatResRef = nonFatRes.ValueAsType(methodSignature.ReturnType, _builder);
             }
-            LLVM.BuildBr(_builder, endif);
-            LLVM.PositionBuilderAtEnd(_builder, fatBranch);
+            _builder.BuildBr(endif);
+            _builder.PositionAtEnd(fatBranch);
 
             // fat branch
             var minusOffset = RemoveFatOffset(_builder, target);
-            var minusOffsetPtr = LLVM.BuildIntToPtr(_builder, minusOffset,
-                LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "ptr");
-            var hiddenRefAddr = LLVM.BuildGEP(_builder, minusOffsetPtr, new[] { BuildConstInt32(_pointerSize) }, "fatArgPtr");
-            var hiddenRefPtrPtr = LLVM.BuildPointerCast(_builder, hiddenRefAddr, LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), 0), 0), "hiddenRefPtr");
-            var hiddenRef = LLVM.BuildLoad(_builder, LLVM.BuildLoad(_builder, hiddenRefPtrPtr, "hiddenRefPtr"), "hiddenRef");
+            var minusOffsetPtr = _builder.BuildIntToPtr(minusOffset,
+                LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "ptr");
+            var hiddenRefAddr = _builder.BuildGEP( minusOffsetPtr, new[] { BuildConstInt32(_pointerSize) }, "fatArgPtr");
+            var hiddenRefPtrPtr = _builder.BuildPointerCast(hiddenRefAddr, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0), "hiddenRefPtr");
+            var hiddenRef = _builder.BuildLoad( _builder.BuildLoad( hiddenRefPtrPtr, "hiddenRefPtr"), "hiddenRef");
 
             for (int i = 0; i < stackCopy.Length; i++)
             {
                 _stack.Push(stackCopy[stackCopy.Length - i - 1]);
             }
-            var funcPtrPtrWithHidden = LLVM.BuildPointerCast(_builder, minusOffsetPtr, LLVM.PointerType(LLVM.PointerType(hddenParamSig, 0), 0), "hiddenFuncPtr");
-            var funcWithHidden = LLVM.BuildLoad(_builder, funcPtrPtrWithHidden, "funcPtr");
+            var funcPtrPtrWithHidden = _builder.BuildPointerCast(minusOffsetPtr, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(hddenParamSig, 0), 0), "hiddenFuncPtr");
+            var funcWithHidden = _builder.BuildLoad( funcPtrPtrWithHidden, "funcPtr");
             HandleCall(null, methodSignature, null, ILOpcode.calli, calliTarget: funcWithHidden, hiddenRef: hiddenRef);
             StackEntry fatRes = null;
             if (hasRes)
@@ -2946,14 +2945,14 @@ CreateDebugLocation();
                 fatRes = _stack.Pop();
                 fatResRef = fatRes.ValueAsType(methodSignature.ReturnType, _builder);
             }
-            LLVM.BuildBr(_builder, endif);
-            LLVM.PositionBuilderAtEnd(_builder, endif);
+            _builder.BuildBr(endif);
+            _builder.PositionAtEnd(endif);
 
             // choose the right return value
             if (hasRes)
             {
-                var phi = LLVM.BuildPhi(_builder, GetLLVMTypeForTypeDesc(methodSignature.ReturnType), "phi");
-                LLVM.AddIncoming(phi, new LLVMValueRef[] { fatResRef, nonFatResRef },
+                var phi = _builder.BuildPhi(GetLLVMTypeForTypeDesc(methodSignature.ReturnType), "phi");
+                phi.AddIncoming(new LLVMValueRef[] { fatResRef, nonFatResRef },
                     new LLVMBasicBlockRef[] { fatBranch, notFatBranch }, 2);
                 PushExpression(fatRes.Kind, "phi", phi, fatRes.Type);
             }
@@ -2976,7 +2975,7 @@ CreateDebugLocation();
                     // we want the fat function ptr here
                     LLVMValueRef fatFunctionPtr;
                     targetLLVMFunction = LLVMFunctionForMethod(method, canonMethod, thisPointer, true, null, runtimeDeterminedMethod, out hasHiddenParam, out LLVMValueRef dictPtrPtrStore, out fatFunctionPtr);
-                    if (fatFunctionPtr.Pointer != IntPtr.Zero)
+                    if (fatFunctionPtr.Handle != IntPtr.Zero)
                     {
                         targetLLVMFunction = fatFunctionPtr;
                     }
@@ -3026,7 +3025,7 @@ CreateDebugLocation();
                     {
                         llvmParams[i] = GetLLVMTypeForTypeDesc(runtimeDeterminedMethod.Signature[i]);
                     }
-                    LLVMTypeRef thunkSig = GetLLVMTypeForTypeDesc(runtimeDeterminedMethod.Signature.ReturnType).CreateFunction(llvmParams, false);
+                    LLVMTypeRef thunkSig = LLVMTypeRef.CreateFunction(GetLLVMTypeForTypeDesc(runtimeDeterminedMethod.Signature.ReturnType), llvmParams, false);
 
                     targetLLVMFunction = GetOrCreateLLVMFunction(mangledName, thunkSig);
                 }
@@ -3675,8 +3674,8 @@ CreateDebugLocation();
         LLVMValueRef GetShadowStack()
         {
             int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
-            return LLVM.BuildGEP(_builder, LLVM.GetFirstParam(_currentFunclet),
-                new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (uint)offset, LLVMMisc.False) },
+            return _builder.BuildGEP(_currentFunclet.GetParam(0),
+                new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)offset, false) },
                 String.Empty);
         }
 
@@ -3707,7 +3706,7 @@ CreateDebugLocation();
                 if (typeDesc.IsRuntimeDeterminedSubtype)
                 {
                     var hiddenParam = CallGenericHelper(ReadyToRunHelperId.TypeHandle, typeDesc);
-                    var handleRef = LLVM.BuildCall(_builder, fn, new LLVMValueRef[]
+                    var handleRef = _builder.BuildCall( fn, new LLVMValueRef[]
                     {
                         GetShadowStack(),
                         hiddenParam
@@ -3842,13 +3841,13 @@ CreateDebugLocation();
                 MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime", RuntimeExport);
                 MethodDesc helperMethod = helperType.GetKnownMethod("RhNewObject", null);
                 var resultAddress = builder.BuildIntCast(builder.BuildAlloca(LLVMTypeRef.Int32, "resultAddress"), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "castResultAddress");
-                HandleDirectCall(helperMethod, helperMethod.Signature, arguments, null, default(LLVMValueRef), 0, LLVM.GetParam(NullRefFunction, 0), builder, true, resultAddress, helperMethod);
+                HandleDirectCall(helperMethod, helperMethod.Signature, arguments, null, default(LLVMValueRef), 0, NullRefFunction.GetParam(0), builder, true, resultAddress, helperMethod);
 
                 var exceptionEntry = new ExpressionEntry(GetStackValueKind(nullRefType), "RhNewObject_return", resultAddress, nullRefType);
 
                 var ctorDef = nullRefType.GetDefaultConstructor();
 
-                var constructedExceptionObject = HandleDirectCall(ctorDef, ctorDef.Signature, new StackEntry[] { exceptionEntry }, null, default(LLVMValueRef), 0, LLVM.GetParam(NullRefFunction, 0), builder, false, default(LLVMValueRef), ctorDef);
+                var constructedExceptionObject = HandleDirectCall(ctorDef, ctorDef.Signature, new StackEntry[] { exceptionEntry }, null, default(LLVMValueRef), 0, NullRefFunction.GetParam(0), builder, false, default(LLVMValueRef), ctorDef);
 
                 EmitTrapCall(builder);
                 builder.PositionAtEnd(retBlock);
@@ -3952,7 +3951,7 @@ CreateDebugLocation();
                             {
                                 node = _compilation.NodeFactory.TypeGCStaticsSymbol(owningType);
                                 LLVMValueRef basePtrPtr = LoadAddressOfSymbolNode(node);
-                                staticBase = _builder.BuildLoad(_builder.BuildLoad(_builder.BuildPointerCast(basePtrPtr, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVM.Int8Type(), 0), 0), 0), "castBasePtrPtr"), "basePtr"), "base");
+                                staticBase = _builder.BuildLoad(_builder.BuildLoad(_builder.BuildPointerCast(basePtrPtr, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0), "castBasePtrPtr"), "basePtr"), "base");
                             }
                         }
                         else
@@ -3994,26 +3993,26 @@ CreateDebugLocation();
         {
             ISymbolNode node;
             var retType = helperId == ReadyToRunHelperId.DelegateCtor
-                ? LLVMTypeRef.VoidType()
-                : LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0);
+                ? LLVMTypeRef.Void
+                : LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
             var helperArgs = new List<LLVMTypeRef>
             {
-                LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
-                LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+                LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
+                LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
             };
             if (additionalArgs != null) helperArgs.AddRange(additionalArgs);
             if (_method.RequiresInstMethodDescArg())
             {
                 node = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArg, _method);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
-                    LLVMTypeRef.FunctionType(retType, helperArgs.ToArray(), false));
+                    LLVMTypeRef.CreateFunction(retType, helperArgs.ToArray(), false));
             }
             else
             {
                  Debug.Assert(_method.RequiresInstMethodTableArg() || _method.AcquiresInstMethodTableFromThis());
                 node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArg, _method.OwningType);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
-                    LLVMTypeRef.FunctionType(retType, helperArgs.ToArray(), false));
+                    LLVMTypeRef.CreateFunction(retType, helperArgs.ToArray(), false));
             }
             // cpp backend relies on a lazy static constructor to get this node added during the dependency generation. 
             // If left to when the code is written that uses the helper then its too late.
@@ -4087,8 +4086,8 @@ CreateDebugLocation();
 
         private void TriggerCctor(MetadataType type, LLVMValueRef staticBaseValueRef, string runnerMethodName)
         {
-            var classConstCtx = LLVM.BuildGEP(_builder,
-                LLVM.BuildBitCast(_builder, staticBaseValueRef, LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0),
+            var classConstCtx = _builder.BuildGEP(
+                _builder.BuildBitCast(staticBaseValueRef, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
                     "ptr8"), new LLVMValueRef[] { BuildConstInt32(-8) }, "backToClassCtx");
             StackEntry classConstructionContext = new AddressExpressionEntry(StackValueKind.NativeInt, "classConstructionContext", classConstCtx,
                 GetWellKnownType(WellKnownType.IntPtr));
@@ -4189,8 +4188,8 @@ CreateDebugLocation();
             StackEntry valueAddress;
             if (truncDouble)
             {
-                var doubleToBox = toBoxValue.ValueAsType(LLVMTypeRef.DoubleType(), _builder);
-                var singleToBox = LLVM.BuildFPTrunc(_builder, doubleToBox, LLVMTypeRef.FloatType(), "trunc");
+                var doubleToBox = toBoxValue.ValueAsType(LLVMTypeRef.Double, _builder);
+                var singleToBox = _builder.BuildFPTrunc(doubleToBox, LLVMTypeRef.Float, "trunc");
                 toBoxValue = new ExpressionEntry(StackValueKind.Float, "singleToBox", singleToBox,
                     GetWellKnownType(WellKnownType.Single));
             }
@@ -4261,13 +4260,13 @@ CreateDebugLocation();
                 LLVMValueRef typedAddress;
                 LLVMValueRef thisPtr;
                 
-                typedAddress = CastIfNecessary(_builder, LLVM.GetFirstParam(_currentFunclet),
-                    LLVM.PointerType(LLVM.PointerType(LLVM.PointerType(LLVMTypeRef.Int8Type(), 0), 0), 0));
-                thisPtr = LLVM.BuildLoad(_builder, typedAddress, "loadThis");
+                typedAddress = CastIfNecessary(_builder, _currentFunclet.GetParam(0),
+                    LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0));
+                thisPtr = _builder.BuildLoad( typedAddress, "loadThis");
 
-                return LLVM.BuildLoad(_builder, thisPtr, "methodTablePtrRef");
+                return _builder.BuildLoad( thisPtr, "methodTablePtrRef");
             }
-            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0) /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "HiddenArg");
+            return CastIfNecessary(_builder, _llvmFunction.GetParam(1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0) /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "HiddenArg");
         }
 
         private LLVMValueRef ArrayBaseSize()
@@ -4526,10 +4525,10 @@ CreateDebugLocation();
         //TOOD refactor with cctor
         public ExpressionEntry OutputCodeForGetThreadStaticBaseForType(LLVMValueRef threadStaticIndex)
         {
-            var threadStaticIndexPtr = LLVM.BuildPointerCast(_builder, threadStaticIndex,
-                LLVMTypeRef.PointerType(LLVMTypeRef.PointerType(LLVMTypeRef.Int32Type(), 0), 0), "tsiPtr");
+            var threadStaticIndexPtr = _builder.BuildPointerCast(threadStaticIndex,
+                LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0), 0), "tsiPtr");
             LLVMValueRef typeTlsIndexPtr =
-                LLVM.BuildGEP(_builder, threadStaticIndexPtr, new LLVMValueRef[] { BuildConstInt32(1) }, "typeTlsIndexPtr"); // index is the second field after the ptr.
+                _builder.BuildGEP( threadStaticIndexPtr, new LLVMValueRef[] { BuildConstInt32(1) }, "typeTlsIndexPtr"); // index is the second field after the ptr.
 
             StackEntry typeManagerSlotEntry = new LoadExpressionEntry(StackValueKind.ValueType, "typeManagerSlot", threadStaticIndexPtr, GetWellKnownType(WellKnownType.Int32));
             StackEntry tlsIndexExpressionEntry = new LoadExpressionEntry(StackValueKind.ValueType, "typeTlsIndex", typeTlsIndexPtr, GetWellKnownType(WellKnownType.Int32));

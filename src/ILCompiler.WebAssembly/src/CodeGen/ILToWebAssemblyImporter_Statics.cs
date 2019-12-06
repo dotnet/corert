@@ -117,14 +117,14 @@ namespace Internal.IL
 
         internal static LLVMValueRef MakeFatPointer(LLVMBuilderRef builder, LLVMValueRef targetLlvmFunction)
         {
-            var asInt = LLVM.BuildPtrToInt(builder, targetLlvmFunction, LLVMTypeRef.Int32Type(), "toInt");
-            return LLVM.BuildBinOp(builder, LLVMOpcode.LLVMOr, asInt, LLVM.ConstInt(LLVM.Int32Type(), FatFunctionPointerOffset, LLVMMisc.False), "makeFat");
+            var asInt = builder.BuildPtrToInt(targetLlvmFunction, LLVMTypeRef.Int32, "toInt");
+            return builder.BuildBinOp(LLVMOpcode.LLVMOr, asInt, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, FatFunctionPointerOffset, false), "makeFat");
         }
 
         private static LLVMValueRef RemoveFatOffset(LLVMBuilderRef builder, LLVMValueRef fatFunctionRef)
         {
-            return LLVM.BuildAnd(builder,
-                CastIfNecessary(builder, fatFunctionRef, LLVMTypeRef.Int32Type()),
+            return builder.BuildAnd(
+                CastIfNecessary(builder, fatFunctionRef, LLVMTypeRef.Int32),
                 BuildConstUInt32(~FatFunctionPointerOffset), "minusFatOffset");
         }
 
