@@ -272,7 +272,7 @@
 
   <PropertyGroup>
     <!-- Also update init-tools.cmd and init-tools.sh -->
-    <RoslynVersion>3.3.0-beta2-19367-02</RoslynVersion>
+    <RoslynVersion>3.3.1</RoslynVersion>
     <RoslynPackageName>Microsoft.Net.Compilers.Toolset</RoslynPackageName>
     <RoslynPackageDir>$(PackagesDir)/$(RoslynPackageName.ToLower())/$(RoslynVersion)/</RoslynPackageDir>
     <RoslynPropsFile>$(RoslynPackageDir)build/$(RoslynPackageName).props</RoslynPropsFile>

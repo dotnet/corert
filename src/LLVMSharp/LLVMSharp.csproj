@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk/3.0.100">
+
+  <PropertyGroup>
+    <IncludeContentInPack>false</IncludeContentInPack>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="libLLVM" Version="9.0.0" />
+    <PackageReference Include="System.Memory" Version="4.5.0" />
+  </ItemGroup>
+
+</Project>

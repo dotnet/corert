@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using LLVMSharp;
+using LLVMSharp.Interop;
 
 namespace ILCompiler.WebAssembly
 {

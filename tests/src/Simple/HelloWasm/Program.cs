@@ -1075,14 +1075,16 @@ internal static class Program
         }
 
         StartTest("Negative SByte br"); 
-        if (s == -1) // this only creates the bne opcode, which it is testing, in Release mode.
-        {
-            PassTest();
-        }
-        else
-        {
-            FailTest();
-        }
+        EndTest(ILHelpers.ILHelpersTest.BneSbyteExtend());
+    }
+
+    internal static void TestUlongUintMultiply()
+    {
+        StartTest("Test ulong/int multiplication");
+        uint a = 0x80000000;
+        uint b = 2;
+        ulong f = ((ulong)a * b);
+        EndTest(f == 0x100000000);
     }
 
     public static void TestSharedDelegate()

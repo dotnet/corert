@@ -55,7 +55,7 @@ IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
 call "!VS%__VSProductVersion%COMNTOOLS!\VsDevCmd.bat"
 echo Commencing build of managed components for %__BuildOS%.%__BuildArch%.%__BuildType%
 echo.
-"%__DotNetCliPath%\dotnet.exe" msbuild /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\build.proj" %__ExtraMsBuildParams% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:NuPkgRid=%__NugetRuntimeId% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%"
+"%__DotNetCliPath%\dotnet.exe" msbuild /ConsoleLoggerParameters:ForceNoAlign "%__ProjectDir%\build.proj" %__ExtraMsBuildParams% /p:RepoPath="%__ProjectDir%" /p:RepoLocalBuild="true" /p:NuPkgRid=%__NugetRuntimeId% /nologo /maxcpucount /verbosity:minimal /nodeReuse:false /fileloggerparameters:Verbosity=normal;LogFile="%__BuildLog%" /nodeReuse:false
 IF NOT ERRORLEVEL 1 (
   findstr /ir /c:".*Warning(s)" /c:".*Error(s)" /c:"Time Elapsed.*" "%__BuildLog%"
   goto AfterILCompilerBuild

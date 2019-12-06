@@ -84,7 +84,7 @@ if not [%INIT_TOOLS_ERRORLEVEL%]==[0] (
 :: Restore a custom RoslynToolset since we can't trivially update the BuildTools dependency in CoreRT
 echo Configurating RoslynToolset...
 :: Also update BUILD_TOOLS_SEMAPHORE, init-tools.sh, and dir.props
-set ROSLYNCOMPILERS_VERSION=3.3.0-beta2-19367-02
+set ROSLYNCOMPILERS_VERSION=3.3.1
 set DEFAULT_RESTORE_ARGS=--no-cache --packages "%PACKAGES_DIR%"
 set INIT_TOOLS_RESTORE_ARGS=%DEFAULT_RESTORE_ARGS% --source https://dotnet.myget.org/F/roslyn/api/v3/index.json --source https://api.nuget.org/v3/index.json %INIT_TOOLS_RESTORE_ARGS%
 set MSBUILD_PROJECT_CONTENT= ^

@@ -9,7 +9,7 @@ using Internal.IL;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-using LLVMSharp;
+using LLVMSharp.Interop;
 using ILCompiler.WebAssembly;
 
 namespace ILCompiler
@@ -32,10 +32,12 @@ namespace ILCompiler
             : base(dependencyGraph, nodeFactory, GetCompilationRoots(roots, nodeFactory), ilProvider, debugInformationProvider, null, logger)
         {
             NodeFactory = nodeFactory;
-            Module = LLVM.ModuleCreateWithName("netscripten");
-            LLVM.SetTarget(Module, "asmjs-unknown-emscripten");
+            LLVMModuleRef m = LLVMModuleRef.CreateWithName("netscripten");
+            m.Target = "asmjs-unknown-emscripten";
+            Module = m; 
+
             Options = options;
-            DIBuilder = LLVMPInvokes.LLVMCreateDIBuilder(Module);
+            DIBuilder = Module.CreateDIBuilder();
             DebugMetadataMap = new Dictionary<string, DebugMetadata>();
         }
 
