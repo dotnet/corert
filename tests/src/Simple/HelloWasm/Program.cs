@@ -313,6 +313,8 @@ internal static class Program
 
         TestBoxSingle();
 
+        TestGvmCallInIf(new GenDerived<string>(), "hello");
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -882,6 +884,25 @@ internal static class Program
 
         return result;
     }
+
+    class GenBase<A> 
+    {
+        public virtual string GMethod1<T>(T t1, T t2) { return "GenBase<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+    }
+    class GenDerived<A> : GenBase<A>
+    {
+        public override string GMethod1<T>(T t1, T t2) { return "GenDerived<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+    }
+
+    private static void TestGvmCallInIf<T>(GenBase<T> g, T p)
+    {
+        var i = 1;
+        if (i == 1)
+        {
+            g.GMethod1(p, p);
+        }
+    }
+
 
     private static void TestCallToGenericInterfaceMethod()
     {

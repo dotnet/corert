@@ -60,7 +60,6 @@ namespace Internal.IL
         private MethodDebugInformation _debugInformation;
         private LLVMMetadataRef _debugFunction;
         private TypeDesc _constrainedType = null;
-        private LLVMBasicBlockRef _currentEndIfBlock;
         /// <summary>
         /// Offset by which fat function pointers are shifted to distinguish them
         /// from real function pointers.  Keep in line with FatFunctionPointerConstants
@@ -95,6 +94,8 @@ namespace Internal.IL
             public bool HandlerStart;
 
             public LLVMBasicBlockRef Block;
+            public LLVMBasicBlockRef LastInternalIf;
+            public LLVMBasicBlockRef LastBlock => LastInternalIf.Pointer == IntPtr.Zero ? Block : LastInternalIf;
         }
 
         private class ExceptionRegion
@@ -554,7 +555,7 @@ namespace Internal.IL
 
         private void EndImportingBasicBlock(BasicBlock basicBlock)
         {
-            var terminator = (_currentEndIfBlock.Pointer != IntPtr.Zero ? _currentEndIfBlock : basicBlock.Block).GetBasicBlockTerminator();
+            var terminator = basicBlock.LastBlock.GetBasicBlockTerminator();
             if (terminator.Pointer == IntPtr.Zero)
             {
                 if (_basicBlocks.Length > _currentOffset)
@@ -2485,6 +2486,7 @@ namespace Internal.IL
                     LLVM.AddIncoming(llvmReturn, new LLVMValueRef[] { notFatReturn, fatReturn },
                         new LLVMBasicBlockRef[] { notFatBranch, fatBranch }, 2);
                 }
+                _currentBasicBlock.LastInternalIf = endifBlock;
             }
             else llvmReturn = LLVM.BuildCall(_builder, fn, llvmArgs.ToArray(), string.Empty);
 
@@ -2898,7 +2900,7 @@ namespace Internal.IL
                     new LLVMBasicBlockRef[] { fatBranch, notFatBranch }, 2);
                 PushExpression(fatRes.Kind, "phi", phi, fatRes.Type);
             }
-            _currentEndIfBlock = endif;// we do this so that ending the BasicBlock acts on the endif, not the original block which now terminates in the CondBr
+            _currentBasicBlock.LastInternalIf = endif;
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
