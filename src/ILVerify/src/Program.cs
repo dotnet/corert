@@ -256,7 +256,7 @@ namespace ILVerify
                     bool first = true;
                     for (int i = 0; i < method.Signature.Length; i++)
                     {
-                        Internal.TypeSystem.TypeDesc parameter = method.Signature[0];
+                        Internal.TypeSystem.TypeDesc parameter = method.Signature[i];
                         if (first)
                         {
                             first = false;
