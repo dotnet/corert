@@ -376,11 +376,14 @@ namespace Internal.TypeSystem
             if (value == null)
                 throw new ArgumentNullException();
 
-            if (Interlocked.CompareExchange(ref _entryInProcessOfWritingSentinel, value, null) == null)
+            if (_entryInProcessOfWritingSentinel == null)
             {
-                // First value was added as the sentinel
-                addedValue = true;
-                return value;
+                if (Interlocked.CompareExchange(ref _entryInProcessOfWritingSentinel, value, null) == null)
+                {
+                    // First value was added as the sentinel
+                    addedValue = true;
+                    return value;
+                }
             }
 
             // Optimistically check to see if adding this value may require an expansion. If so, expand
@@ -489,22 +492,15 @@ namespace Internal.TypeSystem
             // replaced by expansion. If it has, we need to restart and write to the new array.
             if (Interlocked.CompareExchange(ref _newHashTable, hashTableLocal, hashTableLocal) != hashTableLocal)
             {
-                if (!TryWriteAbortNullToLocation(hashTableLocal, tableIndex))
-                {
-                    // Indicates that the overwrite of the sentinel didn't work. That shouldn't be possible, so failfast
-                    Environment.FailFast("Unable to overwrite sentinel with null");
-                }
+                WriteAbortNullToLocation(hashTableLocal, tableIndex);
+
                 // Pulse the lock so we don't spin during an expansion
                 lock(this) { }
                 Interlocked.Decrement(ref _reserve);
                 return null;
             }
 
-            if (!TryWriteValueToLocation(value, hashTableLocal, tableIndex))
-            {
-                // Indicates that the overwrite of the sentinel didn't work. That shouldn't be possible, so failfast
-                Environment.FailFast("Unable to overwrite sentinel with value");
-            }
+            WriteValueToLocation(value, hashTableLocal, tableIndex);
 
             // If the write succeeded, increment _count
             Interlocked.Increment(ref _count);
@@ -533,17 +529,12 @@ namespace Internal.TypeSystem
         /// entry that can be in the table at this point
         /// </summary>
         /// <returns>True if the value was successfully written</returns>
-        private bool TryWriteValueToLocation(TValue value, TValue[] hashTableLocal, int tableIndex)
+        private void WriteValueToLocation(TValue value, TValue[] hashTableLocal, int tableIndex)
         {
             // Add to hash, use a volatile write to ensure that
             // the contents of the value are fully published to all
             // threads before adding to the hashtable
-            if (Interlocked.CompareExchange(ref hashTableLocal[tableIndex], value, _entryInProcessOfWritingSentinel) == _entryInProcessOfWritingSentinel)
-            {
-                return true;
-            }
-
-            return false;
+            Volatile.Write(ref hashTableLocal[tableIndex], value);
         }
 
         /// <summary>
@@ -551,17 +542,12 @@ namespace Internal.TypeSystem
         /// entry that can be in the table at this point
         /// </summary>
         /// <returns>True if the value was successfully written</returns>
-        private bool TryWriteAbortNullToLocation(TValue[] hashTableLocal, int tableIndex)
+        private void WriteAbortNullToLocation(TValue[] hashTableLocal, int tableIndex)
         {
             // Add to hash, use a volatile write to ensure that
             // the contents of the value are fully published to all
             // threads before adding to the hashtable
-            if (Interlocked.CompareExchange(ref hashTableLocal[tableIndex], null, _entryInProcessOfWritingSentinel) == _entryInProcessOfWritingSentinel)
-            {
-                return true;
-            }
-
-            return false;
+            Volatile.Write(ref hashTableLocal[tableIndex], null);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -705,16 +691,17 @@ namespace Internal.TypeSystem
             public bool MoveNext()
             {
                 if (_sentinel != null)
-                    
-                if ((_hashtableContentsToEnumerate != null) && (_index < _hashtableContentsToEnumerate.Length))
                 {
-                    for (; _index < _hashtableContentsToEnumerate.Length; _index++)
+                    if ((_hashtableContentsToEnumerate != null) && (_index < _hashtableContentsToEnumerate.Length))
                     {
-                        if (_hashtableContentsToEnumerate[_index] != null)
+                        for (; _index < _hashtableContentsToEnumerate.Length; _index++)
                         {
-                            _current = _hashtableContentsToEnumerate[_index];
-                            _index++;
-                            return true;
+                            if ((_hashtableContentsToEnumerate[_index] != null) && (_hashtableContentsToEnumerate[_index] != _sentinel))
+                            {
+                                _current = _hashtableContentsToEnumerate[_index];
+                                _index++;
+                                return true;
+                            }
                         }
                     }
                 }
