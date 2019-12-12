@@ -471,8 +471,8 @@ namespace ILCompiler
                     removedFeatures |= RemovedFeature.Globalization;
                 else if (feature == "Comparers")
                     removedFeatures |= RemovedFeature.Comparers;
-                else if (feature == "CurlHandler")
-                    removedFeatures |= RemovedFeature.CurlHandler;
+                else if (feature == "SerializationGuard")
+                    removedFeatures |= RemovedFeature.SerializationGuard;
             }
 
             ILProvider ilProvider = new CoreRTILProvider();

@@ -210,6 +210,9 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:FrameworkStrings" />
       <IlcArg Condition="$(IlcInvariantGlobalization) == 'true'" Include="--removefeature:Globalization" />
 
+      <!-- Workaround for https://github.com/dotnet/corefx/issues/36723 -->
+      <IlcArg Include="--removefeature:SerializationGuard" />
+
       <!-- Hitting a race conditions somewhere: https://github.com/dotnet/corert/issues/7852 -->
       <IlcArg Include="--singlethreaded" />
       
