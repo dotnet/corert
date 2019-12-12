@@ -212,9 +212,6 @@ See the LICENSE file in the project root for more information.
 
       <!-- Workaround for https://github.com/dotnet/corefx/issues/36723 -->
       <IlcArg Include="--removefeature:SerializationGuard" />
-
-      <!-- Hitting a race conditions somewhere: https://github.com/dotnet/corert/issues/7852 -->
-      <IlcArg Include="--singlethreaded" />
       
       <!-- Comparers don't currently work with reflection disabled. https://github.com/dotnet/corert/pull/7208 -->
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:Comparers" />
