@@ -30,6 +30,7 @@ namespace ILVerify
         private Dictionary<string, string> _referenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // map of simple name to file path
         private IReadOnlyList<Regex> _includePatterns = Array.Empty<Regex>();
         private IReadOnlyList<Regex> _excludePatterns = Array.Empty<Regex>();
+        private IReadOnlyList<Regex> _ignoreErrorPatterns = Array.Empty<Regex>();
 
         private Verifier _verifier;
 
@@ -58,8 +59,10 @@ namespace ILVerify
             IReadOnlyList<string> referenceFiles = Array.Empty<string>();
             IReadOnlyList<string> includePatterns = Array.Empty<string>();
             IReadOnlyList<string> excludePatterns = Array.Empty<string>();
+            IReadOnlyList<string> ignoreErrorPatterns = Array.Empty<string>();
             string includeFile = string.Empty;
             string excludeFile = string.Empty;
+            string ignoreErrorFile = string.Empty;
 
             AssemblyName name = typeof(Program).GetTypeInfo().Assembly.GetName();
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
@@ -77,6 +80,8 @@ namespace ILVerify
                 syntax.DefineOption("include-file", ref includeFile, "Same as --include, but the regular expression(s) are declared line by line in the specified file.");
                 syntax.DefineOptionList("e|exclude", ref excludePatterns, "Skip methods/types/namespaces, which match the given regular expression(s)");
                 syntax.DefineOption("exclude-file", ref excludeFile, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.");
+                syntax.DefineOptionList("g|ignore-error", ref ignoreErrorPatterns, "Ignore errors, which match the given regular expression(s)");
+                syntax.DefineOption("ignore-error-file", ref ignoreErrorFile, "Same as --ignore-error, but the regular expression(s) are declared line by line in the specified file.");
                 syntax.DefineOption("statistics", ref _printStatistics, "Print verification statistics");
                 syntax.DefineOption("v|verbose", ref _verbose, "Verbose output");
                 syntax.DefineOption("t|tokens", ref _includeMetadataTokensInErrorMessages, "Include metadata tokens in error messages");
@@ -106,6 +111,14 @@ namespace ILVerify
             }
             _excludePatterns = StringPatternsToRegexList(excludePatterns);
 
+            if (!string.IsNullOrEmpty(ignoreErrorFile))
+            {
+                if (ignoreErrorPatterns.Count > 0)
+                    WriteLine("[Warning] --ignore-error-file takes precedence over --ignore-error");
+                ignoreErrorPatterns = File.ReadAllLines(ignoreErrorFile);
+            }
+            _ignoreErrorPatterns = StringPatternsToRegexList(ignoreErrorPatterns);
+
             if (_verbose)
             {
                 WriteLine();
@@ -123,6 +136,10 @@ namespace ILVerify
                 WriteLine();
                 foreach (var pattern in _excludePatterns)
                     WriteLine($"Using exclude pattern '{pattern}'");
+
+                WriteLine();
+                foreach (var pattern in _ignoreErrorPatterns)
+                    WriteLine($"Using ignore error pattern '{pattern}'");
             }
 
             return argSyntax;
@@ -143,12 +160,21 @@ namespace ILVerify
             _verifier = new Verifier(this, GetVerifierOptions());
             _verifier.SetSystemModuleName(_systemModule);
 
+            int numErrors = 0;
+
             foreach (var kvp in _inputFilePaths)
             {
-                VerifyAssembly(new AssemblyName(kvp.Key), kvp.Value);
+                numErrors += VerifyAssembly(new AssemblyName(kvp.Key), kvp.Value);
             }
 
-            return 0;
+            if (numErrors > 0)
+            {
+                return 2;
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         private VerifierOptions GetVerifierOptions()
@@ -158,7 +184,16 @@ namespace ILVerify
 
         private void PrintVerifyMethodsResult(VerificationResult result, EcmaModule module, string pathOrModuleName)
         {
-            Write("[IL]: Error: ");
+            Write("[IL]: Error [");
+            if (result.Code != VerifierError.None)
+            {
+                Write(result.Code);
+            }
+            else
+            {
+                Write(result.ExceptionID);
+            }
+            Write("]: ");
 
             Write("[");
             Write(pathOrModuleName);
@@ -167,6 +202,9 @@ namespace ILVerify
             MetadataReader metadataReader = module.MetadataReader;
 
             TypeDefinition typeDef = metadataReader.GetTypeDefinition(metadataReader.GetMethodDefinition(result.Method).GetDeclaringType());
+            string typeNamespace = metadataReader.GetString(typeDef.Namespace);
+            Write(typeNamespace);
+            Write(".");
             string typeName = metadataReader.GetString(typeDef.Name);
             Write(typeName);
 
@@ -211,38 +249,43 @@ namespace ILVerify
         {
             Write(method.Name);
             Write("(");
-
-            if (method.Signature.Length > 0)
+            try
             {
-                bool first = true;
-                for(int i = 0; i < method.Signature.Length; i++)
+                if (method.Signature.Length > 0)
                 {
-                    Internal.TypeSystem.TypeDesc parameter = method.Signature[0];
-                    if (first)
+                    bool first = true;
+                    for (int i = 0; i < method.Signature.Length; i++)
                     {
-                        first = false;
-                    }
-                    else
-                    {
-                        Write(", ");
-                    }
+                        Internal.TypeSystem.TypeDesc parameter = method.Signature[i];
+                        if (first)
+                        {
+                            first = false;
+                        }
+                        else
+                        {
+                            Write(", ");
+                        }
 
-                    Write(parameter.ToString());
+                        Write(parameter.ToString());
+                    }
                 }
             }
-
+            catch 
+            {
+                Write("Error while getting method signature");
+            }
             Write(")");
         }
 
-        private void VerifyAssembly(AssemblyName name, string path)
+        private int VerifyAssembly(AssemblyName name, string path)
         {
             PEReader peReader = Resolve(name.Name);
             EcmaModule module = _verifier.GetModule(peReader);
 
-            VerifyAssembly(peReader, module, path);
+            return VerifyAssembly(peReader, module, path);
         }
 
-        private void VerifyAssembly(PEReader peReader, EcmaModule module, string path)
+        private int VerifyAssembly(PEReader peReader, EcmaModule module, string path)
         {
             int numErrors = 0;
             int verifiedMethodCounter = 0;
@@ -266,6 +309,8 @@ namespace ILVerify
                 WriteLine($"Methods found: {methodCounter}");
                 WriteLine($"Methods verified: {verifiedMethodCounter}");
             }
+
+            return numErrors;
         }
 
         private void VerifyMethods(PEReader peReader, EcmaModule module, string path, ref int numErrors, ref int verifiedMethodCounter, ref int methodCounter)
@@ -292,8 +337,19 @@ namespace ILVerify
                     var results = _verifier.Verify(peReader, methodHandle);
                     foreach (var result in results)
                     {
-                        PrintVerifyMethodsResult(result, module, path);
-                        numErrors++;
+                        if (ShouldIgnoreVerificationResult(result))
+                        {
+                            if (_verbose)
+                            {
+                                Write("Ignoring ");
+                                PrintVerifyMethodsResult(result, module, path);
+                            }
+                        }
+                        else
+                        {
+                            PrintVerifyMethodsResult(result, module, path);
+                            numErrors++;
+                        }
                     }
 
                     verifiedMethodCounter++;
@@ -322,8 +378,19 @@ namespace ILVerify
                     var results = _verifier.Verify(peReader, typeHandle);
                     foreach (VerificationResult result in results)
                     {
-                        Console.WriteLine(result.Message, result.Args);
-                        numErrors++;
+                        if (ShouldIgnoreVerificationResult(result))
+                        {
+                            if (_verbose)
+                            {
+                                Write("Ignoring ");
+                                Console.WriteLine(result.Message, result.Args);
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine(result.Message, result.Args);
+                            numErrors++;
+                        }
                     }
 
                     typeCounter++;
@@ -392,6 +459,22 @@ namespace ILVerify
             return true;
         }
 
+        private bool ShouldIgnoreVerificationResult(VerificationResult result)
+        {
+            var error = result.Code.ToStringInvariant();
+            if (result.Code == VerifierError.None && result.ExceptionID != null)
+            {
+                error = result.ExceptionID?.ToStringInvariant();
+            }
+
+            if (_ignoreErrorPatterns.Any(p => p.IsMatch(error)))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         protected override PEReader ResolveCore(string simpleName)
         {
             string path = null;
@@ -412,7 +495,7 @@ namespace ILVerify
             catch (Exception e)
             {
                 Console.Error.WriteLine("Error: " + e.Message);
-                return 1;
+                return 3;
             }
         }
     }

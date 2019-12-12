@@ -27,9 +27,7 @@ namespace System.Threading
 
         private ApartmentState _initialApartmentState = ApartmentState.Unknown;
 
-#if !PROJECTN
         private volatile static bool s_comInitializedOnFinalizerThread;
-#endif
 
         private void PlatformSpecificInitialize()
         {
@@ -302,9 +300,7 @@ namespace System.Threading
             // Prevent re-initialization of COM model on finalizer thread
             t_comState |= ComState.Locked;
 
-#if !PROJECTN
             s_comInitializedOnFinalizerThread = true;
-#endif
         }
 
         private static void InitializeCom(ApartmentState state = ApartmentState.MTA)
@@ -484,6 +480,7 @@ namespace System.Threading
             Locked = 2,
         }
 
+        // TODO: Use GetCurrentProcessorNumberEx for NUMA
         private static int ComputeCurrentProcessorId() => (int)Interop.mincore.GetCurrentProcessorNumber();
     }
 }

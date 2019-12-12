@@ -1072,7 +1072,7 @@ internal static class Program
         EndTest(1.1f == ClassWithFloat.F);
     }
 
-    [DllImport("*")]
+  [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
 

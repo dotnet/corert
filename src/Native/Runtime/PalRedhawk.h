@@ -694,13 +694,6 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
 // Given a mask of capabilities return true if all of them are supported by the current PAL.
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability);
 
-#ifndef APP_LOCAL_RUNTIME
-// Have to define this manually because Win32 doesn't always define this API (and the automatic inclusion
-// above will generate direct forwarding entries to the OS libraries on Win32). Use the capability interface
-// defined above to determine whether this API is callable on your platform.
-REDHAWK_PALIMPORT UInt32 REDHAWK_PALAPI PalGetCurrentProcessorNumber();
-#endif
-
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ UInt8 ** ppLowerBound, _Out_ UInt8 ** ppUpperBound);
 

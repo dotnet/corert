@@ -40,6 +40,21 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "PInvokeMarshal");
         }
 
+        public static MetadataType GetMarshal(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Marshal");
+        }
+
+        public static MetadataType GetRuntimeHelpers(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers");
+        }
+
+        public static MetadataType GetStubHelpers(TypeSystemContext context)
+        {
+            return context.SystemModule.GetKnownType("System.StubHelpers", "StubHelpers");
+        }
+
         public static MetadataType GetNativeFunctionPointerWrapper(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "NativeFunctionPointerWrapper");
@@ -86,6 +101,41 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemGuid(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "Guid");
+        }
+
+        public static bool IsSystemArgIterator(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "ArgIterator");
+        }
+
+        public static bool IsSystemByReference(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "ByReference`1");
+        }
+
+        public static bool IsSystemNullable(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "Nullable`1");
+        }
+
+        public static bool IsSystemRuntimeIntrinsicsVector64T(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector64`1");
+        }
+
+        public static bool IsSystemRuntimeIntrinsicsVector128T(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector128`1");
+        }
+
+        public static bool IsSystemRuntimeIntrinsicsVector256T(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector256`1");
+        }
+
+        public static bool IsSystemNumericsVectorT(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Numerics", "Vector`1");
         }
 
         private static bool IsOrDerivesFromType(TypeDesc type, MetadataType targetType)

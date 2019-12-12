@@ -926,7 +926,7 @@ namespace Internal.JitInterface
         public uint offsetOfDelegateFirstTarget;
 
         // Secure delegate offsets
-        public uint offsetOfSecureDelegateIndirectCell;
+        public uint offsetOfWrapperDelegateIndirectCell;
 
         // Remoting offsets
         public uint offsetOfTransparentProxyRP;
@@ -1103,8 +1103,8 @@ namespace Internal.JitInterface
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP instParamLookup;
 
-        public uint _secureDelegateInvoke;
-        public bool secureDelegateInvoke { get { return _secureDelegateInvoke != 0; } set { _secureDelegateInvoke = value ? (byte)1 : (byte)0; } }
+        public uint _wrapperDelegateInvoke;
+        public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
     }
 
 

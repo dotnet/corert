@@ -74,6 +74,7 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\EETypePtrOfIntrinsic.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\GetCanonTypeIntrinsic.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\DelegateMethodILEmitter.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeILCodeStreams.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeILEmitter.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeLazyFixupField.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\PInvokeTargetNativeMethod.cs" />
@@ -84,7 +85,9 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\VolatileIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\Marshaller.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\Marshaller.Aot.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalHelpers.cs" />
+    <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalHelpers.Aot.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\MarshalUtils.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\NativeStructType.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\PInvokeDelegateWrapper.cs" />

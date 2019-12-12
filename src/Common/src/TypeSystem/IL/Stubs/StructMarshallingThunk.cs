@@ -130,8 +130,16 @@ namespace Internal.IL.Stubs
         private Marshaller[] InitializeMarshallers()
         {
             Debug.Assert(_interopStateManager != null);
-            MarshalAsDescriptor[] marshalAsDescriptors = ((MetadataType)ManagedType).GetFieldMarshalAsDescriptors();
-            Marshaller[] marshallers = new Marshaller[marshalAsDescriptors.Length];
+
+            int numInstanceFields = 0;
+            foreach (var field in ManagedType.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+                numInstanceFields++;
+            }
+
+            Marshaller[] marshallers = new Marshaller[numInstanceFields];
 
             PInvokeFlags flags = new PInvokeFlags();
             if (ManagedType.PInvokeStringFormat == PInvokeStringFormat.UnicodeClass || ManagedType.PInvokeStringFormat == PInvokeStringFormat.AutoClass)
@@ -154,7 +162,7 @@ namespace Internal.IL.Stubs
 
                 marshallers[index] = Marshaller.CreateMarshaller(field.FieldType,
                                                                     MarshallerType.Field,
-                                                                    marshalAsDescriptors[index],
+                                                                    field.GetMarshalAsDescriptor(),
                                                                     (ThunkType == StructMarshallingThunkType.NativeToManaged) ? MarshalDirection.Reverse : MarshalDirection.Forward,
                                                                     marshallers,
                                                                     _interopStateManager,

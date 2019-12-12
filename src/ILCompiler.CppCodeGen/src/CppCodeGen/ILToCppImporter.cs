@@ -3140,7 +3140,7 @@ namespace Internal.IL
                 var r = _exceptionRegions[i];
 
                 if (r.ILRegion.Kind == ILExceptionRegionKind.Finally &&
-                    IsOffsetContained(offset - 1, r.ILRegion.HandlerOffset, r.ILRegion.HandlerLength))
+                    IsOffsetContained(offset, r.ILRegion.HandlerOffset, r.ILRegion.HandlerLength))
                 {
                     if (candidate == -1 ||
                         _exceptionRegions[candidate].ILRegion.HandlerOffset < _exceptionRegions[i].ILRegion.HandlerOffset)

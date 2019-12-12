@@ -415,7 +415,7 @@ void ConfigureSignals()
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 {
-    g_dwPALCapabilities = GetCurrentProcessorNumberCapability;
+    g_dwPALCapabilities = 0;
 
     if (!QueryLogicalProcessorCount())
         return false;
@@ -507,17 +507,6 @@ extern "C" bool PalDetachThread(void* thread)
         g_threadExitCallback();
     }
     return true;
-}
-
-REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
-{
-#if HAVE_SCHED_GETCPU
-    int processorNumber = sched_getcpu();
-    ASSERT(processorNumber != -1);
-    return processorNumber;
-#else //HAVE_SCHED_GETCPU
-    return 0;
-#endif //HAVE_SCHED_GETCPU
 }
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)

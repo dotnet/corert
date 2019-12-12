@@ -146,6 +146,11 @@ namespace PInvokeTests
         static extern bool ReversePInvoke_String(Delegate_String del);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
+        delegate bool Delegate_OutString([MarshalAs(0x30)] out string s);
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool ReversePInvoke_OutString(Delegate_OutString del);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Ansi)]
         delegate bool Delegate_Array([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] int[] array, IntPtr sz);
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool ReversePInvoke_Array(Delegate_Array del);
@@ -592,6 +597,13 @@ namespace PInvokeTests
 
             Delegate_String ds = new Delegate_String((new ClosedDelegateCLass()).GetString);
             ThrowIfNotEquals(true, ReversePInvoke_String(ds), "Delegate marshalling failed.");
+
+            Delegate_OutString dos = new Delegate_OutString((out string x) =>
+            {
+                x = "Hello there!";
+                return true;
+            });
+            ThrowIfNotEquals(true, ReversePInvoke_OutString(dos), "Delegate string out marshalling failed.");
 
             Delegate_Array da = new Delegate_Array((new ClosedDelegateCLass()).CheckArray);
             ThrowIfNotEquals(true, ReversePInvoke_Array(da), "Delegate array marshalling failed.");

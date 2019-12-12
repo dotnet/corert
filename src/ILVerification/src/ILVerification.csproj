@@ -289,6 +289,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDesc.Interop.cs">
       <Link>Interop\MethodDesc.Interop.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Interop\FieldDesc.Interop.cs">
+      <Link>Interop\FieldDesc.Interop.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MarshalAsDescriptor.cs">
       <Link>TypeSystem\Interop\MarshalAsDescriptor.cs</Link>
     </Compile>
