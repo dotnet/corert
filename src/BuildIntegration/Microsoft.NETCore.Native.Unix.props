@@ -60,8 +60,6 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <ItemGroup>
-      <!-- Workaround for https://github.com/dotnet/corert/issues/7000 -->
-      <IlcArg Include="--removefeature:CurlHandler" />
       <!-- libicu loader in System.Globalization.Native is not compatible with static linking -->
       <IlcArg Include="--removefeature:Globalization" Condition="'$(StaticallyLinked)' == 'true'" />
     </ItemGroup>

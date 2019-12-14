@@ -495,50 +495,67 @@ namespace System.Globalization
             ref char charA = ref strA;
             ref char charB = ref strB;
 
-            // in InvariantMode we support all range and not only the ascii characters.
-            char maxChar = (GlobalizationMode.Invariant ? (char)0xFFFF : (char)0x7F);
-
-            while (length != 0 && charA <= maxChar && charB <= maxChar)
+            if (GlobalizationMode.Invariant)
             {
-                // Ordinal equals or lowercase equals if the result ends up in the a-z range
-                if (charA == charB ||
-                    ((charA | 0x20) == (charB | 0x20) &&
-                        (uint)((charA | 0x20) - 'a') <= (uint)('z' - 'a')))
+                while (length != 0)
                 {
+                    // Ordinal equals or lowercase equals if the result ends up in the a-z range
+                    if (charA != charB &&
+                        ((charA | 0x20) != (charB | 0x20) ||
+                            (uint)((charA | 0x20) - 'a') <= (uint)('z' - 'a')))
+                    {
+                        goto Diff;
+                    }
+
                     length--;
                     charA = ref Unsafe.Add(ref charA, 1);
                     charB = ref Unsafe.Add(ref charB, 1);
                 }
-                else
-                {
-                    int currentA = charA;
-                    int currentB = charB;
 
-                    // Uppercase both chars if needed
-                    if ((uint)(charA - 'a') <= 'z' - 'a')
-                    {
-                        currentA -= 0x20;
-                    }
-                    if ((uint)(charB - 'a') <= 'z' - 'a')
-                    {
-                        currentB -= 0x20;
-                    }
-
-                    // Return the (case-insensitive) difference between them.
-                    return currentA - currentB;
-                }
-            }
-
-            if (length == 0)
-            {
                 return lengthA - lengthB;
             }
+            else
+            {
+                while (length != 0 && charA <= (char)0x7F && charB <= (char)0x7F)
+                {
+                    // Ordinal equals or lowercase equals if the result ends up in the a-z range
+                    if (charA != charB &&
+                        ((charA | 0x20) != (charB | 0x20) ||
+                            (uint)((charA | 0x20) - 'a') <= (uint)('z' - 'a')))
+                    {
+                        goto Diff;
+                    }
 
-            Debug.Assert(!GlobalizationMode.Invariant);
+                    length--;
+                    charA = ref Unsafe.Add(ref charA, 1);
+                    charB = ref Unsafe.Add(ref charB, 1);
+                }
 
-            range -= length;
+                if (length == 0)
+                {
+                    return lengthA - lengthB;
+                }
 
-            return CompareStringOrdinalIgnoreCase(ref charA, lengthA - range, ref charB, lengthB - range);
+                range -= length;
+                return CompareStringOrdinalIgnoreCase(ref charA, lengthA - range, ref charB, lengthB - range);
+            }
+
+        Diff:
+            int currentA = charA;
+            int currentB = charB;
+
+            // Uppercase both chars if needed
+            if ((uint)(charA - 'a') <= 'z' - 'a')
+            {
+                currentA -= 0x20;
+            }
+            if ((uint)(charB - 'a') <= 'z' - 'a')
+            {
+                currentB -= 0x20;
+            }
+
+            // Return the (case-insensitive) difference between them.
+            return currentA - currentB;
         }
 
         internal static bool EqualsOrdinalIgnoreCase(ref char charA, ref char charB, int length)

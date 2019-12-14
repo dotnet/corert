@@ -3,7 +3,7 @@
 ## Build WebAssembly on Windows ##
 
 1. Install Emscripten by following the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html). 
-2. Follow the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#updating-the-sdk) to update Emscripten to the latest version.
+2. Follow the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#updating-the-sdk) to update Emscripten to fastcomp 1.38.45 ```./emsdk install 1.38.45-fastcomp``` followed by ```./emsdk activate 1.38.45-fastcomp```
 3. Install [Firefox](https://www.getfirefox.com) (for testing).
 3. Get CoreRT set up by following the [Visual Studio instructions](how-to-build-and-run-ilcompiler-in-visual-studio.md).
 4. Build the WebAssembly runtime by running ```build.cmd wasm``` from the repo root.
@@ -37,7 +37,5 @@ This is Windows only for now.
 
 # Useful tips #
 * To manually make ILC compile to WebAssembly, add ```--wasm``` to the command line.
-* To debug C# source, add ```-g4``` to the emcc command line and change ```-s WASM=1``` to ```-s WASM=0```. This will generate a JavaScript source map that browser debuggers and Visual Studio Code can work with. Using Visual Studio Code's Chrome debugger works particularly well.
 * Add ```-g3``` to the emcc command line to generate more debuggable output and a .wast file with the text form of the WebAssembly.
-* Change ```-s WASM=1``` to ```-s WASM=0``` in the emcc command line to generate asm.js. Browser debuggers currently work better with asm.js and it's often a bit more readable than wast.
 * Add ```-O2 --llvm-lto 2``` to the emcc command line to enable optimizations. This makes the generated WebAssembly as much as 75% smaller as well as more efficient.

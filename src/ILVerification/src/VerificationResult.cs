@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection.Metadata;
+using Internal.TypeSystem;
 
 namespace ILVerify
 {
     public class VerificationResult
     {
         public VerifierError Code { get; internal set; }
+        public ExceptionStringID? ExceptionID { get; internal set; }
         public TypeDefinitionHandle Type { get; internal set; }
         public MethodDefinitionHandle Method { get; internal set; }
         public string Message { get; internal set; }

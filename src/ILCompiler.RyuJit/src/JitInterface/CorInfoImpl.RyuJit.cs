@@ -1365,7 +1365,7 @@ namespace Internal.JitInterface
                 }
             }
 
-            pResult->_secureDelegateInvoke = 0;
+            pResult->_wrapperDelegateInvoke = 0;
         }
 
         private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult)
@@ -1630,7 +1630,11 @@ namespace Internal.JitInterface
 
         private bool IsPInvokeStubRequired(MethodDesc method)
         {
-            return ((Internal.IL.Stubs.PInvokeILStubMethodIL)_compilation.GetMethodIL(method))?.IsStubRequired ?? false;
+            if (_compilation.GetMethodIL(method) is Internal.IL.Stubs.PInvokeILStubMethodIL stub)
+                return stub.IsStubRequired;
+
+            // This path is taken for PInvokes replaced by RemovingILProvider
+            return true;
         }
 
         private int SizeOfPInvokeTransitionFrame

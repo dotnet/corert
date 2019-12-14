@@ -33,6 +33,8 @@ using libunwind::Registers_x86_64;
 using libunwind::Registers_arm;
 #elif defined(_TARGET_ARM64_)
 using libunwind::Registers_arm64;
+#elif defined(_TARGET_X86_)
+using libunwind::Registers_x86;
 #else
 #error "Unwinding is not implemented for this architecture yet."
 #endif
@@ -214,6 +216,124 @@ struct Registers_REGDISPLAY : REGDISPLAY
 };
 
 #endif // _TARGET_AMD64_
+#if defined(_TARGET_X86_)
+struct Registers_REGDISPLAY : REGDISPLAY
+{
+    static int  getArch() { return libunwind::REGISTERS_X86; }
+
+    inline uint64_t getRegister(int regNum) const
+    {
+        switch (regNum)
+        {
+        case UNW_REG_IP:
+            return IP;
+        case UNW_REG_SP:
+            return SP;
+        case UNW_X86_EAX:
+            return *pRax;
+        case UNW_X86_EDX:
+            return *pRdx;
+        case UNW_X86_ECX:
+            return *pRcx;
+        case UNW_X86_EBX:
+            return *pRbx;
+        case UNW_X86_ESI:
+            return *pRsi;
+        case UNW_X86_EDI:
+            return *pRdi;
+        case UNW_X86_EBP:
+            return *pRbp;
+        case UNW_X86_ESP:
+            return SP;
+        }
+
+        // Unsupported register requested
+        abort();
+    }
+
+    inline void setRegister(int regNum, uint64_t value, uint64_t location)
+    {
+        switch (regNum)
+        {
+        case UNW_REG_IP:
+            IP = value;
+            pIP = (PTR_PCODE)location;
+            return;
+        case UNW_REG_SP:
+            SP = value;
+            return;
+        case UNW_X86_EAX:
+            pRax = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_EDX:
+            pRdx = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_ECX:
+            pRcx = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_EBX:
+            pRbx = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_ESI:
+            pRsi = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_EDI:
+            pRdi = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_EBP:
+            pRbp = (PTR_UIntNative)location;
+            return;
+        case UNW_X86_ESP:
+            SP = value;
+            return;
+        }
+
+        // Unsupported x86_64 register
+        abort();
+    }
+
+    // N/A for x86
+    inline bool validFloatRegister(int) { return false; }
+    inline bool validVectorRegister(int) { return false; }
+
+    inline static int  lastDwarfRegNum() { return 16; }
+
+    inline bool validRegister(int regNum) const
+    {
+        if (regNum == UNW_REG_IP)
+            return true;
+        if (regNum == UNW_REG_SP)
+            return true;
+        if (regNum < 0)
+            return false;
+        if (regNum > 15)
+            return false;
+        return true;
+    }
+
+    // N/A for x86
+    inline double getFloatRegister(int) const { abort(); }
+    inline   void setFloatRegister(int, double) { abort(); }
+    inline double getVectorRegister(int) const { abort(); }
+    inline   void setVectorRegister(int, ...) { abort(); }
+
+    void      setSP(uint64_t value, uint64_t location) { SP = value; }
+
+    uint64_t  getIP() const { return IP; }
+
+    void      setIP(uint64_t value, uint64_t location)
+    {
+        IP = value;
+        pIP = (PTR_PCODE)location;
+    }
+
+    uint64_t  getEBP() const { return *pRbp; }
+    void      setEBP(uint64_t value, uint64_t location) { pRbp = (PTR_UIntNative)location; }
+    uint64_t  getEBX() const { return *pRbx; }
+    void      setEBX(uint64_t value, uint64_t location) { pRbx = (PTR_UIntNative)location; }
+};
+
+#endif // _TARGET_X86_
 #if defined(_TARGET_ARM_)
 
 class Registers_arm_rt: public libunwind::Registers_arm {
@@ -589,6 +709,8 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     libunwind::UnwindCursor<LocalAddressSpace, Registers_arm_rt> uc(_addressSpace, regs);
 #elif defined(_TARGET_ARM64_)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64_rt> uc(_addressSpace, regs);
+#elif defined(_X86_)
+    libunwind::UnwindCursor<LocalAddressSpace, Registers_x86> uc(_addressSpace, regs);
 #else
     #error "Unwinding is not implemented for this architecture yet."
 #endif

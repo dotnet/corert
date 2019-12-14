@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -18,6 +19,7 @@ namespace Internal.TypeSystem
     /// It must be possible to perform an equality check between a key and a value.
     /// It must be possible to perform an equality check between a value and a value.
     /// A LockFreeReaderKeyValueComparer must be provided to perform these operations.
+    /// This hashtable may not store a pointer to null or (void*)1
     /// </summary>
     abstract public class LockFreeReaderHashtableOfPointers<TKey, TValue>
     {
@@ -171,7 +173,8 @@ namespace Internal.TypeSystem
             int hashCode = GetKeyHashCode(key);
             int tableIndex = HashInt1(hashCode) & mask;
 
-            if (hashTableLocal[tableIndex] == IntPtr.Zero)
+            IntPtr examineEntry = hashTableLocal[tableIndex];
+            if ((examineEntry == IntPtr.Zero) || (examineEntry == new IntPtr(1)))
             {
                 value = default(TValue);
                 return false;
@@ -186,8 +189,9 @@ namespace Internal.TypeSystem
 
             int hash2 = HashInt2(hashCode);
             tableIndex = (tableIndex + hash2) & mask;
+            examineEntry = hashTableLocal[tableIndex];
 
-            while (hashTableLocal[tableIndex] != IntPtr.Zero)
+            while ((examineEntry != IntPtr.Zero) && (examineEntry != new IntPtr(1)))
             {
                 valTemp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
                 if (CompareKeyToValue(key, valTemp))
@@ -196,9 +200,34 @@ namespace Internal.TypeSystem
                     return true;
                 }
                 tableIndex = (tableIndex + hash2) & mask;
+                examineEntry = hashTableLocal[tableIndex];
             }
             value = default(TValue);
             return false;
+        }
+
+        /// <summary>
+        /// Spin and wait for a sentinel to disappear.
+        /// </summary>
+        /// <param name="hashtable"></param>
+        /// <param name="tableIndex"></param>
+        /// <returns>The value that replaced the sentinel, or null</returns>
+        IntPtr WaitForSentinelInHashtableToDisappear(IntPtr[] hashtable, int tableIndex)
+        {
+            IntPtr value = Volatile.Read(ref hashtable[tableIndex]);
+            while (true)
+            {
+                for (int i = 0; (i < 10000) && value == new IntPtr(1); i++)
+                {
+                    value = Volatile.Read(ref hashtable[tableIndex]);
+                }
+                if (value != new IntPtr(1))
+                    break;
+
+                Task.Delay(1).Wait();
+            }
+
+            return value;
         }
 
         /// <summary>
@@ -225,11 +254,17 @@ namespace Internal.TypeSystem
                     newSize = minimumUsefulSize;
 
                 IntPtr[] newHashTable = new IntPtr[newSize];
-                _newHashTable = newHashTable;
+                Interlocked.Exchange(ref _newHashTable, newHashTable);
 
                 int mask = newHashTable.Length - 1;
-                foreach (IntPtr ptrValue in _hashtable)
+                for (int iEntry = 0; iEntry < _hashtable.Length; iEntry++)
                 {
+                    IntPtr ptrValue = _hashtable[iEntry];
+                    if (ptrValue == new IntPtr(1))
+                    {
+                        // Entry is in the process of writing a value
+                        ptrValue = WaitForSentinelInHashtableToDisappear(oldHashtable, iEntry);
+                    }
                     if (ptrValue == IntPtr.Zero)
                         continue;
 
@@ -326,6 +361,16 @@ namespace Internal.TypeSystem
             return result;
         }
 
+        IntPtr VolatileReadNonSentinelFromHashtable(IntPtr[] hashTable, int tableIndex)
+        {
+            IntPtr examineEntry = Volatile.Read(ref hashTable[tableIndex]);
+
+            if (examineEntry == new IntPtr(1))
+                examineEntry = WaitForSentinelInHashtableToDisappear(hashTable, tableIndex);
+
+            return examineEntry;
+        }
+
         /// <summary>
         /// Attemps to add a value to the hashtable, or find a value which is already present in the hashtable.
         /// In some cases, this will fail due to contention with other additions and must be retried.
@@ -350,9 +395,10 @@ namespace Internal.TypeSystem
             int tableIndex = HashInt1(hashCode) & mask;
 
             // Find an empty spot, starting with the initial tableIndex
-            if (hashTableLocal[tableIndex] != IntPtr.Zero)
+            IntPtr examineEntry = VolatileReadNonSentinelFromHashtable(hashTableLocal, tableIndex);
+            if (examineEntry != IntPtr.Zero)
             {
-                TValue valTmp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
+                TValue valTmp = ConvertIntPtrToValue(examineEntry);
                 if (CompareValueToValue(value, valTmp))
                 {
                     // Value is already present in hash, do not add
@@ -363,10 +409,10 @@ namespace Internal.TypeSystem
 
                 int hash2 = HashInt2(hashCode);
                 tableIndex = (tableIndex + hash2) & mask;
-
-                while (hashTableLocal[tableIndex] != IntPtr.Zero)
+                examineEntry = VolatileReadNonSentinelFromHashtable(hashTableLocal, tableIndex);
+                while (examineEntry != IntPtr.Zero)
                 {
-                    valTmp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
+                    valTmp = ConvertIntPtrToValue(examineEntry);
                     if (CompareValueToValue(value, valTmp))
                     {
                         // Value is already present in hash, do not add
@@ -375,6 +421,7 @@ namespace Internal.TypeSystem
                         return true;
                     }
                     tableIndex = (tableIndex + hash2) & mask;
+                    examineEntry = VolatileReadNonSentinelFromHashtable(hashTableLocal, tableIndex);
                 }
             }
 
@@ -390,7 +437,7 @@ namespace Internal.TypeSystem
 
             // We've probed to find an empty spot, add to hash
             IntPtr ptrValue = ConvertValueToIntPtr(value);
-            if (!TryWriteValueToLocation(ptrValue, hashTableLocal, tableIndex))
+            if (!TryWriteSentinelToLocation(hashTableLocal, tableIndex))
             {
                 Interlocked.Decrement(ref _reserve);
                 return false;
@@ -400,11 +447,14 @@ namespace Internal.TypeSystem
             // replaced by expansion. If it has, we need to restart and write to the new array.
             if (_newHashTable != hashTableLocal)
             {
+                WriteAbortNullToLocation(hashTableLocal, tableIndex);
                 // Pulse the lock so we don't spin during an expansion
                 lock(this) { }
                 Interlocked.Decrement(ref _reserve);
                 return false;
             }
+
+            WriteValueToLocation(ptrValue, hashTableLocal, tableIndex);
 
             // If the write succeeded, increment _count
             Interlocked.Increment(ref _count);
@@ -413,20 +463,43 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Attampts to write a value into the table. May fail if another value has been added.
+        /// Attampts to write the Sentinel into the table. May fail if another value has been added.
         /// </summary>
         /// <returns>True if the value was successfully written</returns>
-        private bool TryWriteValueToLocation(IntPtr value, IntPtr[] hashTableLocal, int tableIndex)
+        private bool TryWriteSentinelToLocation(IntPtr[] hashTableLocal, int tableIndex)
         {
-            // Add to hash, use a volatile write to ensure that
-            // the contents of the value are fully published to all
-            // threads before adding to the hashtable
-            if (Interlocked.CompareExchange(ref hashTableLocal[tableIndex], value, IntPtr.Zero) == IntPtr.Zero)
+            // Add to hash, use a CompareExchange to ensure that
+            // the sentinel is are fully communicated to all threads
+            if (Interlocked.CompareExchange(ref hashTableLocal[tableIndex], new IntPtr(1), IntPtr.Zero) == IntPtr.Zero)
             {
                 return true;
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Writes the value into the table. Must only be used to overwrite a sentinel.
+        /// </summary>
+        /// <returns>True if the value was successfully written</returns>
+        private void WriteValueToLocation(IntPtr value, IntPtr[] hashTableLocal, int tableIndex)
+        {
+            // Add to hash, use a volatile write to ensure that
+            // the contents of the value are fully published to all
+            // threads before adding to the hashtable
+            Volatile.Write(ref hashTableLocal[tableIndex], value);
+        }
+
+        /// <summary>
+        /// Abandons the sentinel. Must only be used to overwrite a sentinel.
+        /// </summary>
+        /// <returns>True if the value was successfully written</returns>
+        private void WriteAbortNullToLocation(IntPtr[] hashTableLocal, int tableIndex)
+        {
+            // Abandon sentinel, use a volatile write to ensure that
+            // the contents of the value are fully published to all
+            // threads before continuing.
+            Volatile.Write(ref hashTableLocal[tableIndex], IntPtr.Zero);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -481,23 +554,25 @@ namespace Internal.TypeSystem
             int hashCode = GetValueHashCode(value);
             int tableIndex = HashInt1(hashCode) & mask;
 
-            if (hashTableLocal[tableIndex] == IntPtr.Zero)
+            IntPtr examineEntry = hashTableLocal[tableIndex];
+            if ((examineEntry == IntPtr.Zero) || (examineEntry == new IntPtr(1)))
                 return default(TValue);
 
-            TValue valTmp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
+            TValue valTmp = ConvertIntPtrToValue(examineEntry);
             if (CompareValueToValue(value, valTmp))
                 return valTmp;
 
             int hash2 = HashInt2(hashCode);
             tableIndex = (tableIndex + hash2) & mask;
-
-            while (hashTableLocal[tableIndex] != IntPtr.Zero)
+            examineEntry = hashTableLocal[tableIndex];
+            while (examineEntry != IntPtr.Zero)
             {
-                valTmp = ConvertIntPtrToValue(hashTableLocal[tableIndex]);
+                valTmp = ConvertIntPtrToValue(examineEntry);
                 if (CompareValueToValue(value, valTmp))
                     return valTmp;
 
                 tableIndex = (tableIndex + hash2) & mask;
+                examineEntry = hashTableLocal[tableIndex];
             }
 
             return default(TValue);
@@ -550,9 +625,10 @@ namespace Internal.TypeSystem
                 {
                     for (; _index < _hashtableContentsToEnumerate.Length; _index++)
                     {
-                        if (_hashtableContentsToEnumerate[_index] != IntPtr.Zero)
+                        IntPtr examineEntry = Volatile.Read(ref _hashtableContentsToEnumerate[_index]);
+                        if ((examineEntry != IntPtr.Zero) && (examineEntry != new IntPtr(1)))
                         {
-                            _current = _hashtable.ConvertIntPtrToValue(_hashtableContentsToEnumerate[_index]);
+                            _current = _hashtable.ConvertIntPtrToValue(examineEntry);
                             _index++;
                             return true;
                         }

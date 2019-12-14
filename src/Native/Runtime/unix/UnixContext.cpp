@@ -270,6 +270,10 @@ static void RegDisplayToUnwindCursor(REGDISPLAY* regDisplay, unw_cursor_t *curso
     ASSIGN_REG_PTR(UNW_ARM64_X26, X26)
     ASSIGN_REG_PTR(UNW_ARM64_X27, X27)
     ASSIGN_REG_PTR(UNW_ARM64_X28, X28)
+#elif defined(_X86_)
+    ASSIGN_REG(UNW_REG_SP, SP)
+    ASSIGN_REG_PTR(UNW_X86_EBP, Rbp)
+    ASSIGN_REG_PTR(UNW_X86_EBX, Rbx)
 #endif
 
 #undef ASSIGN_REG
@@ -300,6 +304,8 @@ bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
 #elif _ARM64_
     ((uint32_t*)(unwContext.data))[32] = ip;
 #elif _WASM_
+    ASSERT(false);
+#elif _X86_
     ASSERT(false);
 #else
     #error "GetUnwindProcInfo is not supported on this arch yet."
@@ -342,6 +348,8 @@ bool InitializeUnwindContextAndCursor(REGDISPLAY* regDisplay, unw_cursor_t* curs
     ((uint32_t*)(unwContext->data))[15] = regDisplay->IP;
 #elif _ARM64_
     ((uint32_t*)(unwContext->data))[32] = regDisplay->IP;
+#elif _X86_
+    ASSERT(false);
 #else
     #error "InitializeUnwindContextAndCursor is not supported on this arch yet."
 #endif
