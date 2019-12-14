@@ -35,10 +35,10 @@ namespace ILCompiler
             var libraryOrApplication = _documentRoot.Elements().Single();
 
             if (libraryOrApplication.Name.LocalName != "Library" && libraryOrApplication.Name.LocalName != "Application")
-                throw new Exception();
+                throw new NotSupportedException($"{libraryOrApplication.Name.LocalName} is not a supported top level Runtime Directive. Supported top level Runtime Directives are \"Library\" and \"Application\".");
 
             if (libraryOrApplication.Attributes().Any())
-                throw new NotSupportedException();
+                throw new NotSupportedException($"The {libraryOrApplication.Name.LocalName} Runtime Directive does not support any attributes");
 
             foreach (var element in libraryOrApplication.Elements())
             {
@@ -49,7 +49,7 @@ namespace ILCompiler
                         break;
 
                     default:
-                        throw new NotSupportedException();
+                        throw new NotSupportedException($"\"{element.Name.LocalName}\" is not a supported Runtime Directive.");
                 }
             }
         }
@@ -58,7 +58,7 @@ namespace ILCompiler
         {
             var assemblyNameAttribute = assemblyElement.Attribute("Name");
             if (assemblyNameAttribute == null)
-                throw new Exception();
+                throw new Exception("The \"Name\" attribute is required on the \"Assembly\" Runtime Directive.");
 
             ModuleDesc assembly = _context.ResolveAssembly(new AssemblyName(assemblyNameAttribute.Value));
 
@@ -68,7 +68,7 @@ namespace ILCompiler
             if (dynamicDegreeAttribute != null)
             {
                 if (dynamicDegreeAttribute.Value != "Required All")
-                    throw new NotSupportedException();
+                    throw new NotSupportedException($"\"{dynamicDegreeAttribute.Value}\" is not a supported value for the \"Dynamic\" attribute of the \"Assembly\" Runtime Directive. Supported values are \"Required All\".");
 
                 foreach (TypeDesc type in ((EcmaModule)assembly).GetAllTypes())
                 {
@@ -84,7 +84,7 @@ namespace ILCompiler
                         ProcessTypeDirective(rootProvider, assembly, element);
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw new NotSupportedException($"\"{element.Name.LocalName}\" is not a supported Runtime Directive.");
                 }
             }
         }
@@ -93,7 +93,8 @@ namespace ILCompiler
         {
             var typeNameAttribute = typeElement.Attribute("Name");
             if (typeNameAttribute == null)
-                throw new Exception();
+                throw new Exception("The \"Name\" attribute is required on the \"Type\" Runtime Directive.");
+
             string typeName = typeNameAttribute.Value;
             TypeDesc type = containingModule.GetTypeByCustomAttributeTypeName(typeName);
 
@@ -101,7 +102,7 @@ namespace ILCompiler
             if (dynamicDegreeAttribute != null)
             {
                 if (dynamicDegreeAttribute.Value != "Required All")
-                    throw new NotSupportedException();
+                    throw new NotSupportedException($"\"{dynamicDegreeAttribute.Value}\" is not a supported value for the \"Dynamic\" attribute of the \"Type\" Runtime Directive. Supported values are \"Required All\".");
 
                 RootingHelpers.RootType(rootProvider, type, "RD.XML root");
             }
@@ -114,7 +115,7 @@ namespace ILCompiler
                         ProcessMethodDirective(rootProvider, containingModule, type, element);
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw new NotSupportedException($"\"{element.Name.LocalName}\" is not a supported Runtime Directive.");
                 }
             }
         }
@@ -123,7 +124,8 @@ namespace ILCompiler
         {
             var methodNameAttribute = methodElement.Attribute("Name");
             if (methodNameAttribute == null)
-                throw new Exception();
+                throw new Exception("The \"Name\" attribute is required on the \"Method\" Runtime Directive.");
+
             string methodName = methodNameAttribute.Value;
             MethodDesc method = containingType.GetMethod(methodName, null);
 
@@ -137,12 +139,12 @@ namespace ILCompiler
                         instArgs.Add(containingModule.GetTypeByCustomAttributeTypeName(instArgName));
                         break;
                     default:
-                        throw new NotSupportedException();
+                        throw new NotSupportedException($"\"{element.Name.LocalName}\" is not a supported Runtime Directive.");
                 }
             }
 
             if (instArgs.Count != method.Instantiation.Length)
-                throw new Exception();
+                throw new Exception($"Could not instantiate Method {method} specified by a Runtime Directive. Method takes {method.Instantiation.Length} generic argument(s) but {instArgs.Count} were provided.");
 
             if (instArgs.Count > 0)
             {
