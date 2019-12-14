@@ -167,6 +167,12 @@ namespace ILCompiler
                     {
                         return RemoveAction.ConvertToThrow;
                     }
+
+                    // Make sure that there are no ICU dependencies left
+                    if (method.IsPInvoke && method.GetPInvokeMethodMetadata().Module == "System.Globalization.Native")
+                    {
+                        return RemoveAction.ConvertToThrow;
+                    }
                 }
             }
 
