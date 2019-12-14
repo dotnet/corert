@@ -1,15 +1,8 @@
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="Current">
-  <PropertyGroup>
-    <FileUpgradeFlags>40</FileUpgradeFlags>
-    <UpgradeBackupLocation>E:\GitHub\corert\tests\src\Simple\Generics\Backup\</UpgradeBackupLocation>
-    <OldToolsVersion>2.0</OldToolsVersion>
-  </PropertyGroup>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Compile Include="*.cs" />
     <IlcArg Include="--usesharedgenerics" />
   </ItemGroup>
-    <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
-    <DefineConstants>PLATFORM_WINDOWS;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
 </Project>
