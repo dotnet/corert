@@ -9,7 +9,6 @@ using Internal.TypeSystem;
 using Internal.NativeFormat;
 
 using InvokeTableFlags = Internal.Runtime.InvokeTableFlags;
-using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {

@@ -4,20 +4,6 @@
 
 namespace Internal.Runtime
 {
-    internal static class FatFunctionPointerConstants
-    {
-        /// <summary>
-        /// Offset by which fat function pointers are shifted to distinguish them
-        /// from real function pointers.
-        /// </summary>
-#if WASM
-        // WebAssembly uses index tables, not addresses for function pointers.  This is going to be contentious it is baked into Ilc and hence an Ilc for x64 will not be able to compile Wasm and vice versa.  Alternative ways round this?.
-        public const int Offset = 1 << 31;
-#else
-        public const int Offset = 2;
-#endif
-    }
-
     internal static class IndirectionConstants
     {
         /// <summary>
