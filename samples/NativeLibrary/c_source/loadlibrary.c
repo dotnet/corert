@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 #ifdef _WIN32
 #include "windows.h"
 #else
@@ -10,33 +14,38 @@
 #else
 #define __symLoad dlsym
 #endif
+#ifdef _WIN32
+#define _LibClose FreeLibrary
+#else
+#define _LibClose dlclose
+#endif
+
 int handleErrors(void *handle, int cond)
 {
 
     switch (cond)
     {
-    case 0:
-    {
-        if (!handle)
-        {
+        case 0:
+        {   
+            if (!handle)
+            {
 
-            printf("Unable to load library, err: %s", dlerror());
-            dlclose(handle);
-            return 1;
-        }
-    };
+                printf("Unable to load library, err: %s", dlerror());
+                _LibClose(handle);
+                return 1;
+            }
+        };
 
-    case 1:
-    {
-        const char *dlsym_error = dlerror();
-        if (dlsym_error)
+        case 1:
         {
-            printf("Unable to load symbol,err: %s", dlerror());
-            dlclose(handle);
-            return 1;
-        }
-    };
-    break;
+            const char *dlsym_error = dlerror();
+            if (dlsym_error)
+            {
+                printf("Unable to load symbol,err: %s", dlerror());
+                _LibClose(handle);
+                return 1;
+            }
+        };
     };
 
     return 0;
@@ -67,19 +76,18 @@ int callSumFunc(char *path, char *funcName, int a, int b)
     } //Error loading symbol
 
     int result = MyImport(a, b);
-    dlclose(handle);
+    _LibClose(handle);
     return result;
 }
 
 char *callSumStringFunc(char *path, char *funcName, char *a, char *b)
 {
-
-/* Library loading */
-#ifdef _WIN32
-    HINSTANCE handle = LoadLibrary(path);
-#else
-    void *handle = dlopen(path, RTLD_LAZY);
-#endif
+    /* Library loading */
+    #ifdef _WIN32
+        HINSTANCE handle = LoadLibrary(path);
+    #else
+        void *handle = dlopen(path, RTLD_LAZY);
+    #endif
 
     if (handleErrors(handle, 0))
     {
@@ -89,8 +97,6 @@ char *callSumStringFunc(char *path, char *funcName, char *a, char *b)
     /*Declare a typedef*/
     typedef char *(__stdcall * myFunc)();
 
-    dlerror();
-
     /* Import Symbol named funcName */
     myFunc MyImport = __symLoad(handle, funcName);
 
@@ -98,11 +104,10 @@ char *callSumStringFunc(char *path, char *funcName, char *a, char *b)
     {
         return 0;
     } //Error loading symbol
-
+    
     /* The C# function will return a pointer */
     char *result = MyImport(a, b);
 
-    dlclose(handle);
-
+    _LibClose(handle);
     return result;
 }
