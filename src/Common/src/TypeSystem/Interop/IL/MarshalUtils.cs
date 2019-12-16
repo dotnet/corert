@@ -43,7 +43,6 @@ namespace Internal.TypeSystem.Interop
                     continue;
                 }
 
-#if READYTORUN
                 if (!field.FieldType.IsValueType)
                 {
                     // Types with fields of non-value types cannot be blittable
@@ -51,7 +50,6 @@ namespace Internal.TypeSystem.Interop
                     // the case of classes with pointer members to the class itself.
                     return false;
                 }
-#endif
 
                 MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
                     field.FieldType,
