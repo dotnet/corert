@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+/*
+On unix make sure to compile using -ldl flag.
+*/
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>

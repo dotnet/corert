@@ -6,7 +6,6 @@
 #include "windows.h"
 #else
 #include "dlfcn.h"
-#define __stdcall
 #endif
 #include "stdio.h"
 #ifdef _WIN32
@@ -15,9 +14,9 @@
 #define __symLoad dlsym
 #endif
 #ifdef _WIN32
-#define _LibClose FreeLibrary
+#define __libClose FreeLibrary
 #else
-#define _LibClose dlclose
+#define __libClose dlclose
 #endif
 
 int handleErrors(void *handle, int cond)
@@ -31,10 +30,10 @@ int handleErrors(void *handle, int cond)
             {
 
                 printf("Unable to load library, err: %s", dlerror());
-                _LibClose(handle);
+                __libClose(handle);
                 return 1;
             }
-        };
+        }
 
         case 1:
         {
@@ -42,11 +41,11 @@ int handleErrors(void *handle, int cond)
             if (dlsym_error)
             {
                 printf("Unable to load symbol,err: %s", dlerror());
-                _LibClose(handle);
+                __libClose(handle);
                 return 1;
             }
-        };
-    };
+        }
+    }
 
     return 0;
 }
@@ -65,9 +64,8 @@ int callSumFunc(char *path, char *funcName, int a, int b)
         return 0;
     } //Error loading library
 
-    typedef int(__stdcall * myFunc)();
+    typedef int(*myFunc)();
 
-    dlerror();
     myFunc MyImport = __symLoad(handle, funcName);
 
     if (handleErrors(handle, 1))
@@ -76,7 +74,7 @@ int callSumFunc(char *path, char *funcName, int a, int b)
     } //Error loading symbol
 
     int result = MyImport(a, b);
-    _LibClose(handle);
+    __libClose(handle);
     return result;
 }
 
@@ -95,7 +93,7 @@ char *callSumStringFunc(char *path, char *funcName, char *a, char *b)
     } //Error loading library
 
     /*Declare a typedef*/
-    typedef char *(__stdcall * myFunc)();
+    typedef char *(*myFunc)();
 
     /* Import Symbol named funcName */
     myFunc MyImport = __symLoad(handle, funcName);
@@ -108,6 +106,6 @@ char *callSumStringFunc(char *path, char *funcName, char *a, char *b)
     /* The C# function will return a pointer */
     char *result = MyImport(a, b);
 
-    _LibClose(handle);
+    __libClose(handle);
     return result;
 }
