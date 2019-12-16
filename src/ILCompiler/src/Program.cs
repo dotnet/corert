@@ -311,8 +311,7 @@ namespace ILCompiler
             // Initialize type system context
             //
 
-            SharedGenericsMode genericsMode = _useSharedGenerics ?
-                SharedGenericsMode.CanonicalReferenceTypes : SharedGenericsMode.Disabled;
+            SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             // TODO: compiler switch for SIMD support?
             var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
