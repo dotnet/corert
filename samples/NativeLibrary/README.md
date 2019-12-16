@@ -29,59 +29,30 @@ The above command will drop a static library (Windows `.lib`, OSX/Linux `.a`) in
 The above command will drop a shared library (Windows `.dll`, OSX `.dylib`, Linux `.so`) in `./bin/[configuration]/netstandard2.0/[RID]/publish/` folder and will have the same name as the folder in which your source file is present.
 
 ### Loading shared libraries from C and importing methods
+
 For reference, you can read the two C files located in the c_source folder.
 The first thing you'll have to do in order to have a proper "loader" that loads your shared library is to add these directives
 
 ```c
-    #ifdef _WIN32
-    
-    #include "windows.h"
-    
-    #else
-    
-    #include "dlfcn.h"
-    
-    #endif
-    
-    #include "stdio.h"
-    
-    #include "string.h"
-    
-    #ifdef _WIN32
-    
-    #define __symLoad GetProcAddress
-    
-    #else
-    
-    #define __symLoad dlsym
-    
-    #endif
-
-    #ifdef _WIN32
-
-    #define __libClose FreeLibrary
-
-    #else
-
-    #define __libClose dlclose
-
-    #endif
+#ifdef _WIN32
+#include "windows.h"
+#define __symLoad GetProcAddress GetProcAddress
+#define __libClose FreeLibrary
+#else
+#include "dlfcn.h"
+#define __symLoad dlsym
+#define __libClose dlclose
+#endif
 ```
 
 After these, in order to load the 'handle' of the shared library
 
 ```c
-
 #ifdef _WIN32
-
 HINSTANCE handle = LoadLibrary(path);
-
 #else
-
 void *handle = dlopen(path, RTLD_LAZY);
-
 #endif
-
   ```
 
 the variable path is the string that holds the path to the .so/.dll file.
@@ -89,23 +60,24 @@ From now on, the handle variable will "contain" a pointer to your shared library
 Now we'll have to define what type does the function we want to call will return
 
 ```c
-    typedef  int (*myFunc)();
+typedef  int (*myFunc)();
 ```
 
 For example here, we'll refer to the C# function underneath, which returns the sum of two integers.
 Now we'll import from handle , that as we said points to our shared library , the function we want to call
 
 ```c
-    myFunc MyImport =  __symLoad(handle, funcName);
+myFunc MyImport =  __symLoad(handle, funcName);
 ```
 
 where funcName is a string that contains the name of the entrypoint value defined in the NativeCallable field.
 The last thing to do is to actually call the method we have imported, and close the library handle
+
 ```c
 int result =  MyImport(5,3);
-
 __libClose(handle);
 ```
+
 Make sure to compile using -ldl flag on your compiler.
 
 ## Exporting methods
@@ -116,9 +88,9 @@ Next, apply the attribute to the method, specifying the `EntryPoint`:
 
 ```csharp
 [NativeCallable(EntryPoint = "add")]
-public  static  int  Add(int  a, int  b)
+public static int Add(int a, int b)
 {
-    return  a + b;
+    return a+b;
 }
 ```
 
