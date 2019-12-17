@@ -30,18 +30,18 @@ The above command will drop a shared library (Windows `.dll`, OSX `.dylib`, Linu
 
 ### Loading shared libraries from C and importing methods
 
-For reference, you can read the two C files located in the c_source folder.
+For reference, you can read the file LoadLibrary.c.
 The first thing you'll have to do in order to have a proper "loader" that loads your shared library is to add these directives
 
 ```c
 #ifdef _WIN32
 #include "windows.h"
-#define __symLoad GetProcAddress GetProcAddress
-#define __libClose FreeLibrary
+#define symLoad GetProcAddress GetProcAddress
+#define libClose FreeLibrary
 #else
 #include "dlfcn.h"
-#define __symLoad dlsym
-#define __libClose dlclose
+#define symLoad dlsym
+#define libClose dlclose
 #endif
 ```
 
@@ -67,7 +67,7 @@ For example here, we'll refer to the C# function underneath, which returns the s
 Now we'll import from handle , that as we said points to our shared library , the function we want to call
 
 ```c
-myFunc MyImport =  __symLoad(handle, funcName);
+myFunc MyImport =  symLoad(handle, funcName);
 ```
 
 where funcName is a string that contains the name of the entrypoint value defined in the NativeCallable field.
@@ -75,10 +75,8 @@ The last thing to do is to actually call the method we have imported, and close 
 
 ```c
 int result =  MyImport(5,3);
-__libClose(handle);
+libClose(handle);
 ```
-
-Make sure to compile using -ldl flag on your compiler.
 
 ## Exporting methods
 
