@@ -1474,13 +1474,13 @@ namespace Internal.IL
             
             //TODO: call GetCastingHelperNameForType from JitHelper.cs (needs refactoring)
             string function;
-            bool throwing = opcode == ILOpcode.castclass;
+            bool isCastClass = opcode == ILOpcode.castclass;
             if (type.IsArray)
-                function = throwing ? "CheckCastArray" : "IsInstanceOfArray";
+                function = isCastClass ? "CheckCastArray" : "IsInstanceOfArray";
             else if (type.IsInterface)
-                function = throwing ? "CheckCastInterface" : "IsInstanceOfInterface";
+                function = isCastClass ? "CheckCastInterface" : "IsInstanceOfInterface";
             else
-                function = throwing ? "CheckCastClass" : "IsInstanceOfClass";
+                function = isCastClass ? "CheckCastClass" : "IsInstanceOfClass";
 
             var arguments = new StackEntry[]
             {
@@ -1488,7 +1488,8 @@ namespace Internal.IL
                 _stack.Pop()
             };
 
-            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, type));
+            // don't force the return type fo isinst.  If the type is a struct and the argument a boxed struct, then it would not be correct.
+            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, isCastClass ? type : null));
         }
 
         private void ImportLoadNull()
@@ -1852,38 +1853,44 @@ namespace Internal.IL
 
                         LLVMValueRef src = LoadAddressOfSymbolNode(fieldNode);
                         _dependencies.Add(fieldNode);
-                        int srcLength = fieldNode.GetData(_compilation.NodeFactory, false).Data.Length;
+                        var fieldData = fieldNode.GetData(_compilation.NodeFactory, false).Data;
+                        int srcLength = fieldData.Length;
 
-                        if (arraySlot.Type.IsSzArray)
+                        if (arraySlot.Type.IsSzArray || arraySlot.Type.IsMdArray)
                         {
-                            // Handle single dimensional arrays (vectors).
+                            // Handle single dimensional arrays (vectors) and multidimensional.
                             LLVMValueRef arrayObjPtr = arraySlot.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
 
                             var argsType = new LLVMTypeRef[]
                             {
-                            LLVM.PointerType(LLVM.Int8Type(), 0),
-                            LLVM.PointerType(LLVM.Int8Type(), 0),
-                            LLVM.Int32Type(),
-                            LLVM.Int32Type(),
-                            LLVM.Int1Type()
+                                LLVM.PointerType(LLVM.Int8Type(), 0),
+                                LLVM.PointerType(LLVM.Int8Type(), 0),
+                                LLVM.Int32Type(),
+                                LLVM.Int32Type(),
+                                LLVM.Int1Type()
                             };
                             LLVMValueRef memcpyFunction = GetOrCreateLLVMFunction("llvm.memcpy.p0i8.p0i8.i32", LLVM.FunctionType(LLVM.VoidType(), argsType, false));
 
+                            LLVMValueRef offset;
+                            if (arraySlot.Type.IsSzArray)
+                            {
+                                offset = ArrayBaseSizeRef();
+                            }
+                            else
+                            {
+                                ArrayType arrayType = (ArrayType)arraySlot.Type;
+                                offset = BuildConstInt32(ArrayBaseSize() +
+                                                         2 * sizeof(int) * arrayType.Rank);
+                            }
                             var args = new LLVMValueRef[]
                             {
-                            LLVM.BuildGEP(_builder, arrayObjPtr, new LLVMValueRef[] { ArrayBaseSize() }, string.Empty),
-                            LLVM.BuildBitCast(_builder, src, LLVM.PointerType(LLVM.Int8Type(), 0), string.Empty),
-                            BuildConstInt32(srcLength), // TODO: Handle destination array length to avoid runtime overflow.
-                            BuildConstInt32(0), // Assume no alignment
-                            BuildConstInt1(0)
+                                LLVM.BuildGEP(_builder, arrayObjPtr, new LLVMValueRef[] { offset }, string.Empty),
+                                LLVM.BuildBitCast(_builder, src, LLVM.PointerType(LLVM.Int8Type(), 0), string.Empty),
+                                BuildConstInt32(srcLength), // TODO: Handle destination array length to avoid runtime overflow.
+                                BuildConstInt32(0), // Assume no alignment
+                                BuildConstInt1(0)
                             };
                             LLVM.BuildCall(_builder, memcpyFunction, args, string.Empty);
-                        }
-                        else if (arraySlot.Type.IsMdArray)
-                        {
-                            // Handle multidimensional arrays.
-                            // TODO: Add support for multidimensional array.
-                            throw new NotImplementedException();
                         }
                         else
                         {
@@ -2008,10 +2015,11 @@ namespace Internal.IL
 
             bool needsReturnSlot = NeedsReturnStackSlot(signature);
             SpilledExpressionEntry returnSlot = null;
+            var actualReturnType = forcedReturnType ?? returnType;
             if (needsReturnSlot)
             {
                 int returnIndex = _spilledExpressions.Count;
-                returnSlot = new SpilledExpressionEntry(GetStackValueKind(returnType), callee?.Name + "_return", returnType, returnIndex, this);
+                returnSlot = new SpilledExpressionEntry(GetStackValueKind(actualReturnType), callee?.Name + "_return", actualReturnType, returnIndex, this);
                 _spilledExpressions.Add(returnSlot);
                 returnAddress = LoadVarAddress(returnIndex, LocalVarKind.Temp, out TypeDesc unused);
                 castReturnAddress = LLVM.BuildPointerCast(_builder, returnAddress, LLVM.PointerType(LLVM.Int8Type(), 0), callee?.Name + "_castreturn");
@@ -2085,7 +2093,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    return new ExpressionEntry(GetStackValueKind(returnType), callee?.Name + "_return", llvmReturn, returnType);
+                    return new ExpressionEntry(GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType);
                 }
             }
             else
@@ -3536,9 +3544,14 @@ namespace Internal.IL
             PushNonNull(CallRuntime(_compilation.TypeSystemContext, InternalCalls, "RhpNewArray", arguments, arrayType));
         }
 
-        private LLVMValueRef ArrayBaseSize()
+        private LLVMValueRef ArrayBaseSizeRef()
         {
-            return BuildConstInt32(2 * _compilation.NodeFactory.Target.PointerSize);
+            return BuildConstInt32(ArrayBaseSize());
+        }
+
+        private int ArrayBaseSize()
+        {
+            return 2 * _compilation.NodeFactory.Target.PointerSize;
         }
 
         private void ImportLoadElement(int token)
@@ -3594,7 +3607,7 @@ namespace Internal.IL
             ThrowIfNull(arrayReference);
             var elementSize = arrayElementType.GetElementSize();
             LLVMValueRef elementOffset = LLVM.BuildMul(_builder, elementPosition, BuildConstInt32(elementSize.AsInt), "elementOffset");
-            LLVMValueRef arrayOffset = LLVM.BuildAdd(_builder, elementOffset, ArrayBaseSize(), "arrayOffset");
+            LLVMValueRef arrayOffset = LLVM.BuildAdd(_builder, elementOffset, ArrayBaseSizeRef(), "arrayOffset");
             return LLVM.BuildGEP(_builder, arrayReference, new LLVMValueRef[] { arrayOffset }, "elementPointer");
         }
 
