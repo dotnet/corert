@@ -1474,13 +1474,13 @@ namespace Internal.IL
             
             //TODO: call GetCastingHelperNameForType from JitHelper.cs (needs refactoring)
             string function;
-            bool isCastClass = opcode == ILOpcode.castclass;
+            bool throwing = opcode == ILOpcode.castclass;
             if (type.IsArray)
-                function = isCastClass ? "CheckCastArray" : "IsInstanceOfArray";
+                function = throwing ? "CheckCastArray" : "IsInstanceOfArray";
             else if (type.IsInterface)
-                function = isCastClass ? "CheckCastInterface" : "IsInstanceOfInterface";
+                function = throwing ? "CheckCastInterface" : "IsInstanceOfInterface";
             else
-                function = isCastClass ? "CheckCastClass" : "IsInstanceOfClass";
+                function = throwing ? "CheckCastClass" : "IsInstanceOfClass";
 
             var arguments = new StackEntry[]
             {
@@ -1488,8 +1488,8 @@ namespace Internal.IL
                 _stack.Pop()
             };
 
-            // don't force the return type fo isinst.  If the type is a struct and the argument a boxed struct, then it would not be correct.
-            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, isCastClass ? type : null));
+            TypeDesc stackType = type.IsValueType ? type.MakePointerType() : type;
+            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, stackType));
         }
 
         private void ImportLoadNull()
@@ -1856,7 +1856,7 @@ namespace Internal.IL
                         var fieldData = fieldNode.GetData(_compilation.NodeFactory, false).Data;
                         int srcLength = fieldData.Length;
 
-                        if (arraySlot.Type.IsSzArray || arraySlot.Type.IsMdArray)
+                        if (arraySlot.Type.IsArray)
                         {
                             // Handle single dimensional arrays (vectors) and multidimensional.
                             LLVMValueRef arrayObjPtr = arraySlot.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
