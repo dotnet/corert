@@ -1488,8 +1488,7 @@ namespace Internal.IL
                 _stack.Pop()
             };
 
-            TypeDesc stackType = type.IsValueType ? type.MakePointerType() : type;
-            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, stackType));
+            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, GetWellKnownType(WellKnownType.Object)));
         }
 
         private void ImportLoadNull()
