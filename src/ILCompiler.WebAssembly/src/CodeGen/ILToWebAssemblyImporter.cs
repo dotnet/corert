@@ -3109,22 +3109,15 @@ namespace Internal.IL
         {
             var ldtokenValue = _methodIL.GetObject(token);
             WellKnownType ldtokenKind;
-            string name;
             StackEntry value;
             if (ldtokenValue is TypeDesc)
             {
-                ldtokenKind = WellKnownType.RuntimeTypeHandle;
                 var typeDesc = (TypeDesc)ldtokenValue;
                 PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(typeDesc, false), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"));
                 MethodDesc helper = _compilation.TypeSystemContext.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
                 AddMethodReference(helper);
                 HandleCall(helper, helper.Signature);
-                if (ConstructedEETypeNode.CreationAllowed(typeDesc))
-                {
-                    var typeSymbol = _compilation.NodeFactory.ConstructedTypeSymbol(typeDesc);
-                    _dependencies.Add(typeSymbol);
-                }
-                name = ldtokenValue.ToString();
+                _dependencies.Add(_compilation.NodeFactory.MaximallyConstructableType(typeDesc));
             }
             else if (ldtokenValue is FieldDesc)
             {
