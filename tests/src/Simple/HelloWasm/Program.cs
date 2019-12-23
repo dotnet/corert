@@ -228,7 +228,7 @@ internal static class Program
         testMdArrayInstantiation[0, 1] = 2;
         testMdArrayInstantiation[1, 0] = 3;
         testMdArrayInstantiation[1, 1] = 4;
-        EndTest(testMdArrayInstantiation[0, 0] == 1 
+        EndTest(testMdArrayInstantiation[0, 0] == 1
                 && testMdArrayInstantiation[0, 1] == 2
                 && testMdArrayInstantiation[1, 0] == 3
                 && testMdArrayInstantiation[1, 1] == 4);
@@ -258,7 +258,7 @@ internal static class Program
         }
 
         TestConstrainedClassCalls();
-        
+
         TestConstrainedStructCalls();
 
         TestValueTypeElementIndexing();
@@ -306,6 +306,8 @@ internal static class Program
 
         TestUlongUintMultiply();
 
+        TestInitializeArray();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -344,7 +346,7 @@ internal static class Program
     }
 
     private static int StaticDelegateTarget()
-    {         
+    {
         return 7;
     }
 
@@ -361,7 +363,7 @@ internal static class Program
             }
         }
     }
-    
+
     public static void PrintLine(string s)
     {
         PrintString(s);
@@ -397,21 +399,21 @@ internal static class Program
     {
         return a >> b;
     }
-    
+
     private static int SwitchOp(int a, int b, int mode)
     {
-        switch(mode)
+        switch (mode)
         {
-          case 0:
-            return a + b;
-          case 1:
-            return a * b;
-          case 2:
-            return a / b;
-          case 3:
-            return a - b;
-          default:
-            return 0;
+            case 0:
+                return a + b;
+            case 1:
+                return a * b;
+            case 2:
+                return a / b;
+            case 3:
+                return a - b;
+            default:
+                return 0;
         }
     }
 
@@ -443,16 +445,16 @@ internal static class Program
         StartTest("ldind test");
         var ldindTarget = new TwoByteStr { first = byte.MaxValue, second = byte.MinValue };
         var ldindField = &ldindTarget.first;
-        if((*ldindField) == byte.MaxValue)
+        if ((*ldindField) == byte.MaxValue)
         {
             ldindTarget.second = byte.MaxValue;
             *ldindField = byte.MinValue;
             //ensure there isnt any overwrite of nearby fields
-            if(ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
+            if (ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
             {
                 PassTest();
             }
-            else if(ldindTarget.first != byte.MinValue)
+            else if (ldindTarget.first != byte.MinValue)
             {
                 FailTest("didnt update target.");
             }
@@ -527,7 +529,7 @@ internal static class Program
             PrintString(stringDirectToString);
             PrintLine("\"");
         }
-       
+
         // Generic calls on methods not defined on object
         uint dataFromBase = GenericGetData<MyBase>(new MyBase(11));
         StartTest("Generic call to base class test");
@@ -723,7 +725,7 @@ internal static class Program
 
         StartTest("Type GetFields length");
         var x = new ClassForMetaTests();
-        var s = x.StringField;  
+        var s = x.StringField;
         var i = x.IntField;
         var classForMetaTestsType = typeof(ClassForMetaTests);
         FieldInfo[] fields = classForMetaTestsType.GetFields();
@@ -771,8 +773,8 @@ internal static class Program
 
         StartTest("Class get+invoke simple method via reflection");
         var mtd = classForMetaTestsType.GetMethod("ReturnTrueIf1");
-        bool shouldBeTrue = (bool)mtd.Invoke(instance, new object[] {1});
-        bool shouldBeFalse = (bool)mtd.Invoke(instance, new object[] {2});
+        bool shouldBeTrue = (bool)mtd.Invoke(instance, new object[] { 1 });
+        bool shouldBeFalse = (bool)mtd.Invoke(instance, new object[] { 2 });
         EndTest(shouldBeTrue && !shouldBeFalse);
 
         StartTest("Class get+invoke method with ref param via reflection");
@@ -1029,7 +1031,7 @@ internal static class Program
 
         StartTest("SByte left shift");
         x = (int)(s << 1);
-        if(x == -2)
+        if (x == -2)
         {
             PassTest();
         }
@@ -1040,7 +1042,7 @@ internal static class Program
 
         sbyte minus1 = -1;
         StartTest("Negative SByte op");
-        if((s & minus1) == -1)
+        if ((s & minus1) == -1)
         {
             PassTest();
         }
@@ -1049,7 +1051,7 @@ internal static class Program
             FailTest();
         }
 
-        StartTest("Negative SByte br"); 
+        StartTest("Negative SByte br");
         EndTest(ILHelpers.ILHelpersTest.BneSbyteExtend());
     }
 
@@ -1060,6 +1062,37 @@ internal static class Program
         uint b = 2;
         ulong f = ((ulong)a * b);
         EndTest(f == 0x100000000);
+    }
+
+    static void TestInitializeArray()
+    {
+        StartTest("Test InitializeArray");
+
+        bool[,] bools = new bool[2, 2] {
+            {  true,                        true},
+            {  false,                       true},
+        };
+
+        if (!(bools[0, 0] && bools[0, 1]
+            && !bools[1, 0] && bools[0, 1]))
+        {
+            FailTest("bool initialisation failed");
+        }
+
+        double[,] doubles = new double[2, 3]
+        {
+            {1.0, 1.1, 1.2 },
+            {2.0, 2.1, 2.2 },
+        };
+
+        if (!(doubles[0, 0] == 1.0 && doubles[0, 1] == 1.1 && doubles[0, 2] == 1.2
+            && doubles[1, 0] == 2.0 && doubles[1, 1] == 2.1 && doubles[1, 2] == 2.2
+            ))
+        {
+            FailTest("double initialisation failed");
+        }
+
+        PassTest();
     }
 
     [DllImport("*")]
