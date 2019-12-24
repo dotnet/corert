@@ -3108,7 +3108,6 @@ namespace Internal.IL
         private void ImportLdToken(int token)
         {
             var ldtokenValue = _methodIL.GetObject(token);
-            WellKnownType ldtokenKind;
             StackEntry value;
             if (ldtokenValue is TypeDesc)
             {
@@ -3121,9 +3120,8 @@ namespace Internal.IL
             }
             else if (ldtokenValue is FieldDesc)
             {
-                ldtokenKind = WellKnownType.RuntimeFieldHandle;
                 LLVMValueRef fieldHandle = LLVM.ConstStruct(new LLVMValueRef[] { BuildConstInt32(0) }, true);
-                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, fieldHandle, GetWellKnownType(ldtokenKind));
+                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, fieldHandle, GetWellKnownType(WellKnownType.RuntimeFieldHandle));
                 _stack.Push(value);
             }
             else if (ldtokenValue is MethodDesc)
