@@ -79,6 +79,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\GenericParameterDesc.cs">
       <Link>TypeSystem\Common\GenericParameterDesc.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\GenericParameterDesc.Dummy.Diagnostic.cs">
+      <Link>TypeSystem\Common\GenericParameterDesc.Dummy.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>TypeSystem\Common\ExceptionStringID.cs</Link>
     </Compile>
@@ -126,6 +129,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataFieldLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\MetadataFieldLayoutAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ExplicitLayoutValidator.cs">
+      <Link>TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs">
       <Link>TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs</Link>
@@ -181,6 +187,9 @@
 		<Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.ToString.cs">
 			<Link>TypeSystem\Common\MethodDesc.ToString.cs</Link>
 		</Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.Dummy.Diagnostic.cs">
+      <Link>TypeSystem\Common\MethodDesc.Dummy.Diagnostic.ToString.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataVirtualMethodAlgorithm.cs">
       <Link>TypeSystem\Common\StandardVirtualMethodAlgorithm.cs</Link>
     </Compile>
@@ -198,6 +207,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\DefType.FieldLayout.cs">
       <Link>TypeSystem\Common\DefType.FieldLayout.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\DefType.Dummy.Diagnostic.cs">
+      <Link>TypeSystem\Common\DefType.Dummy.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\RuntimeInterfacesAlgorithm.cs">
       <Link>TypeSystem\Common\RuntimeInterfacesAlgorithm.cs</Link>
