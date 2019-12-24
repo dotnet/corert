@@ -1630,7 +1630,11 @@ namespace Internal.JitInterface
 
         private bool IsPInvokeStubRequired(MethodDesc method)
         {
-            return ((Internal.IL.Stubs.PInvokeILStubMethodIL)_compilation.GetMethodIL(method))?.IsStubRequired ?? false;
+            if (_compilation.GetMethodIL(method) is Internal.IL.Stubs.PInvokeILStubMethodIL stub)
+                return stub.IsStubRequired;
+
+            // This path is taken for PInvokes replaced by RemovingILProvider
+            return true;
         }
 
         private int SizeOfPInvokeTransitionFrame

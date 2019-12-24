@@ -445,7 +445,7 @@ namespace Internal.TypeSystem
 
             // Now that we've written to the local array, find out if that array has been
             // replaced by expansion. If it has, we need to restart and write to the new array.
-            if (Interlocked.CompareExchange(ref _newHashTable, hashTableLocal, hashTableLocal) != hashTableLocal)
+            if (_newHashTable != hashTableLocal)
             {
                 WriteAbortNullToLocation(hashTableLocal, tableIndex);
                 // Pulse the lock so we don't spin during an expansion

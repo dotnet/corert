@@ -167,6 +167,12 @@ namespace ILCompiler
                     {
                         return RemoveAction.ConvertToThrow;
                     }
+
+                    // Make sure that there are no ICU dependencies left
+                    if (method.IsPInvoke && method.GetPInvokeMethodMetadata().Module == "System.Globalization.Native")
+                    {
+                        return RemoveAction.ConvertToThrow;
+                    }
                 }
             }
 
@@ -184,14 +190,14 @@ namespace ILCompiler
                 }
             }
 
-            if ((_removedFeature & RemovedFeature.CurlHandler) != 0)
-            {
-                if (owningType is Internal.TypeSystem.Ecma.EcmaType mdType
-                    && mdType.Module.Assembly.GetName().Name == "System.Net.Http"
-                    && mdType.Name == "CurlHandler"
-                    && mdType.Namespace == "System.Net.Http")
+            if ((_removedFeature & RemovedFeature.SerializationGuard) != 0)
+            {               
+                if (method.Name == "ThrowIfDeserializationInProgress" &&
+                    owningType is Internal.TypeSystem.Ecma.EcmaType mdType &&
+                    mdType.Namespace == "System.Runtime.Serialization" &&
+                    (mdType.Name == ((mdType.Module != method.Context.SystemModule) ? "SerializationGuard" : "SerializationInfo")))
                 {
-                    return RemoveAction.ConvertToThrow;
+                    return RemoveAction.ConvertToStub;
                 }
             }
 
@@ -246,6 +252,6 @@ namespace ILCompiler
         FrameworkResources = 0x2,
         Globalization = 0x4,
         Comparers = 0x8,
-        CurlHandler = 0x10,
+        SerializationGuard = 0x10,
     }
 }

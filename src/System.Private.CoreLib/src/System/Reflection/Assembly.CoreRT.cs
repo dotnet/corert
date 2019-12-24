@@ -18,7 +18,13 @@ namespace System.Reflection
         [System.Runtime.CompilerServices.Intrinsic]
         public static Assembly GetExecutingAssembly() { throw NotImplemented.ByDesign; } //Implemented by toolchain. 
 
-        public static Assembly GetCallingAssembly() { throw new PlatformNotSupportedException(); }
+        public static Assembly GetCallingAssembly()
+        {
+            if (AppContext.TryGetSwitch("Switch.System.Reflection.Assembly.SimulatedCallingAssembly", out bool isSimulated) && isSimulated)
+                return GetEntryAssembly();
+
+            throw new PlatformNotSupportedException();
+        }
 
         public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef, throwOnFileNotFound: true);
 
