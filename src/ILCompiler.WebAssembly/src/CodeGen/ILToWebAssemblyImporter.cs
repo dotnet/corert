@@ -3115,23 +3115,20 @@ namespace Internal.IL
         private void ImportLdToken(int token)
         {
             var ldtokenValue = _methodIL.GetObject(token);
-            WellKnownType ldtokenKind;
-            string name;
             StackEntry value;
             if (ldtokenValue is TypeDesc)
             {
-                ldtokenKind = WellKnownType.RuntimeTypeHandle;
-                PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(ldtokenValue as TypeDesc, false), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"));
+                var typeDesc = (TypeDesc)ldtokenValue;
+                PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(typeDesc, false), _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr"));
                 MethodDesc helper = _compilation.TypeSystemContext.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
                 AddMethodReference(helper);
                 HandleCall(helper, helper.Signature);
-                name = ldtokenValue.ToString();
+                _dependencies.Add(_compilation.NodeFactory.MaximallyConstructableType(typeDesc));
             }
             else if (ldtokenValue is FieldDesc)
             {
-                ldtokenKind = WellKnownType.RuntimeFieldHandle;
                 LLVMValueRef fieldHandle = LLVM.ConstStruct(new LLVMValueRef[] { BuildConstInt32(0) }, true);
-                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, fieldHandle, GetWellKnownType(ldtokenKind));
+                value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, fieldHandle, GetWellKnownType(WellKnownType.RuntimeFieldHandle));
                 _stack.Push(value);
             }
             else if (ldtokenValue is MethodDesc)
@@ -3493,7 +3490,16 @@ namespace Internal.IL
             TypeDesc type = ResolveTypeToken(token);
             LLVMValueRef eeType = GetEETypePointerForTypeDesc(type, true);
             var eeTypeDesc = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
-            var valueAddress = TakeAddressOf(_stack.Pop());
+            bool truncDouble = type.Equals(GetWellKnownType(WellKnownType.Single));
+            var toBoxValue = _stack.Pop();
+            if (truncDouble)
+            {
+                var doubleToBox = toBoxValue.ValueAsType(LLVMTypeRef.DoubleType(), _builder);
+                var singleToBox = LLVM.BuildFPTrunc(_builder, doubleToBox, LLVMTypeRef.FloatType(), "trunc");
+                toBoxValue = new ExpressionEntry(StackValueKind.Float, "singleToBox", singleToBox,
+                    GetWellKnownType(WellKnownType.Single));
+            }
+            StackEntry valueAddress = TakeAddressOf(toBoxValue);
             var eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
             if (type.IsValueType)
             {

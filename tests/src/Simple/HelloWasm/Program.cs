@@ -306,6 +306,8 @@ internal static class Program
 
         TestUlongUintMultiply();
 
+        TestBoxSingle();
+        
         TestInitializeArray();
 
         // This test should remain last to get other results before stopping the debugger
@@ -1095,8 +1097,21 @@ internal static class Program
         PassTest();
     }
 
-    [DllImport("*")]
+    internal static void TestBoxSingle()
+    {
+        StartTest("Test box single");
+        var fi = typeof(ClassWithFloat).GetField("F");
+        fi.SetValue(null, 1.1f);
+        EndTest(1.1f == ClassWithFloat.F);
+    }
+
+  [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
+}
+
+public class ClassWithFloat
+{
+    public static float F;
 }
 
 public struct TwoByteStr
