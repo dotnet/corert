@@ -6,10 +6,8 @@ using System;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Linq;
 
 using Internal.TypeSystem;
-using System.Collections.Generic;
 
 namespace Internal.TypeSystem.Ecma
 {
@@ -18,16 +16,13 @@ namespace Internal.TypeSystem.Ecma
         private EcmaModule _module;
         private BlobReader _reader;
 
-        private Stack<int> _indexStack;
-        private List<EmbeddedSignatureData> _embeddedSignatureDataList;
-
+        // TODO
+        // bool _hasModifiers;
 
         public EcmaSignatureParser(EcmaModule module, BlobReader reader)
         {
             _module = module;
             _reader = reader;
-            _indexStack = null;
-            _embeddedSignatureDataList = null;
         }
 
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
@@ -36,23 +31,6 @@ namespace Internal.TypeSystem.Ecma
         }
 
         private TypeDesc ParseType(SignatureTypeCode typeCode)
-        {
-
-            if (_indexStack != null)
-            {
-                int was = _indexStack.Pop();
-                _indexStack.Push(was + 1);
-                _indexStack.Push(0);
-            }
-            TypeDesc result = ParseTypeImpl(typeCode);
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
-            return result;
-        }
-
-        private TypeDesc ParseTypeImpl(SignatureTypeCode typeCode)
         {
             // Switch on the type.
             switch (typeCode)
@@ -133,7 +111,7 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.TypedReference:
                     return GetWellKnownType(WellKnownType.TypedReference);
                 case SignatureTypeCode.FunctionPointer:
-                    return _module.Context.GetFunctionPointerType(ParseMethodSignatureInternal(skipEmbeddedSignatureData: true));
+                    return _module.Context.GetFunctionPointerType(ParseMethodSignature());
                 default:
                     throw new BadImageFormatException();
             }
@@ -141,43 +119,15 @@ namespace Internal.TypeSystem.Ecma
 
         private SignatureTypeCode ParseTypeCode(bool skipPinned = true)
         {
-            if (_indexStack != null)
-            {
-                int was = _indexStack.Pop();
-                _indexStack.Push(was + 1);
-                _indexStack.Push(0);
-            }
-            SignatureTypeCode result = ParseTypeCodeImpl(skipPinned);
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
-            return result;
-        }
-
-        private SignatureTypeCode ParseTypeCodeImpl(bool skipPinned = true)
-        {
-            for (; ; )
+            for (;;)
             {
                 SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
 
-                if (typeCode == SignatureTypeCode.RequiredModifier)
+                // TODO: actually consume modopts
+                if (typeCode == SignatureTypeCode.RequiredModifier ||
+                    typeCode == SignatureTypeCode.OptionalModifier)
                 {
-                    EntityHandle typeHandle = _reader.ReadTypeHandle();
-                    if (_embeddedSignatureDataList != null)
-                    {
-                        _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = _module.GetType(typeHandle) });
-                    }
-                    continue;
-                }
-
-                if (typeCode == SignatureTypeCode.OptionalModifier)
-                {
-                    EntityHandle typeHandle = _reader.ReadTypeHandle();
-                    if (_embeddedSignatureDataList != null)
-                    {
-                        _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = _module.GetType(typeHandle) });
-                    }
+                    _reader.ReadTypeHandle();
                     continue;
                 }
 
@@ -194,22 +144,6 @@ namespace Internal.TypeSystem.Ecma
 
         public TypeDesc ParseType()
         {
-            if (_indexStack != null)
-            {
-                int was = _indexStack.Pop();
-                _indexStack.Push(was + 1);
-                _indexStack.Push(0);
-            }
-            TypeDesc result = ParseTypeImpl();
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
-            return result;
-        }
-
-        private TypeDesc ParseTypeImpl()
-        {
             return ParseType(ParseTypeCode());
         }
 
@@ -223,39 +157,6 @@ namespace Internal.TypeSystem.Ecma
         }
 
         public MethodSignature ParseMethodSignature()
-        {
-            try
-            {
-                _indexStack = new Stack<int>();
-                _indexStack.Push(0);
-                _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
-                return ParseMethodSignatureInternal(skipEmbeddedSignatureData: false);
-            }
-            finally
-            {
-                _indexStack = null;
-                _embeddedSignatureDataList = null;
-            }
-
-        }
-
-        private MethodSignature ParseMethodSignatureInternal(bool skipEmbeddedSignatureData)
-        {
-            if (_indexStack != null)
-            {
-                int was = _indexStack.Pop();
-                _indexStack.Push(was + 1);
-                _indexStack.Push(0);
-            }
-            MethodSignature result = ParseMethodSignatureImpl(skipEmbeddedSignatureData);
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
-            return result;
-        }
-
-        private MethodSignature ParseMethodSignatureImpl(bool skipEmbeddedSignatureData)
         {
             SignatureHeader header = _reader.ReadSignatureHeader();
 
@@ -297,10 +198,7 @@ namespace Internal.TypeSystem.Ecma
                 parameters = TypeDesc.EmptyTypes;
             }
 
-            EmbeddedSignatureData[] embeddedSignatureDataArray = (_embeddedSignatureDataList == null || _embeddedSignatureDataList.Count == 0 || skipEmbeddedSignatureData) ? null : _embeddedSignatureDataList.ToArray();
-
-            return new MethodSignature(flags, arity, returnType, parameters, embeddedSignatureDataArray);
-
+            return new MethodSignature(flags, arity, returnType, parameters);
         }
 
         public PropertySignature ParsePropertySignature()
