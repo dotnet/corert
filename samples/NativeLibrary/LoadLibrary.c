@@ -15,7 +15,9 @@
 #else
 #include "dlfcn.h"
 #define symLoad dlsym
-#define libClose dlclose
+// TODO: How to pin the library in memory on Unix?
+// dlclose(handle);
+#define libClose 
 #endif
 #include <unistd.h>
 #include <stdlib.h>

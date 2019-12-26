@@ -53,7 +53,7 @@ HINSTANCE handle = LoadLibrary(path);
 #else
 void *handle = dlopen(path, RTLD_LAZY);
 #endif
-  ```
+```
 
 the variable path is the string that holds the path to the .so/.dll file.
 From now on, the handle variable will "contain" a pointer to your shared library.
@@ -88,7 +88,7 @@ Next, apply the attribute to the method, specifying the `EntryPoint`:
 [NativeCallable(EntryPoint = "add")]
 public static int Add(int a, int b)
 {
-    return a+b;
+    return a + b;
 }
 ```
 
