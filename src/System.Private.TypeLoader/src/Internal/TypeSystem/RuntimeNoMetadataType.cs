@@ -332,7 +332,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public string DiagnosticNamespace
+        public string NamespaceForDiagnostics
         {
             get
             {
@@ -342,7 +342,7 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public string DiagnosticName
+        public string NameForDiagnostics
         {
             get
             {

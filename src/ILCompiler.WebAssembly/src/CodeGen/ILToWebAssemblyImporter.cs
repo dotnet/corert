@@ -1530,7 +1530,7 @@ namespace Internal.IL
                                 };
             }
 
-            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, type));
+            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, GetWellKnownType(WellKnownType.Object)));
         }
 
         LLVMValueRef CallGenericHelper(ReadyToRunHelperId helperId, object helperArg)
@@ -1623,7 +1623,7 @@ namespace Internal.IL
                     }
                     MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", "ArrayHelpers");
                     MethodDesc helperMethod = helperType.GetKnownMethod("NewObjArray", null);
-                    PushNonNull(HandleCall(helperMethod, helperMethod.Signature, helperMethod, arguments, runtimeDeterminedMethod));
+                    PushNonNull(HandleCall(helperMethod, helperMethod.Signature, helperMethod, arguments, runtimeDeterminedMethod, forcedReturnType: newType));
                     return;
                 }
                 else if (newType.IsString)
@@ -2143,38 +2143,44 @@ namespace Internal.IL
 
                         LLVMValueRef src = LoadAddressOfSymbolNode(fieldNode);
                         _dependencies.Add(fieldNode);
-                        int srcLength = fieldNode.GetData(_compilation.NodeFactory, false).Data.Length;
+                        var fieldData = fieldNode.GetData(_compilation.NodeFactory, false).Data;
+                        int srcLength = fieldData.Length;
 
-                        if (arraySlot.Type.IsSzArray)
+                        if (arraySlot.Type.IsArray)
                         {
-                            // Handle single dimensional arrays (vectors).
+                            // Handle single dimensional arrays (vectors) and multidimensional.
                             LLVMValueRef arrayObjPtr = arraySlot.ValueAsType(LLVM.PointerType(LLVM.Int8Type(), 0), _builder);
 
                             var argsType = new LLVMTypeRef[]
                             {
-                            LLVM.PointerType(LLVM.Int8Type(), 0),
-                            LLVM.PointerType(LLVM.Int8Type(), 0),
-                            LLVM.Int32Type(),
-                            LLVM.Int32Type(),
-                            LLVM.Int1Type()
+                                LLVM.PointerType(LLVM.Int8Type(), 0),
+                                LLVM.PointerType(LLVM.Int8Type(), 0),
+                                LLVM.Int32Type(),
+                                LLVM.Int32Type(),
+                                LLVM.Int1Type()
                             };
                             LLVMValueRef memcpyFunction = GetOrCreateLLVMFunction("llvm.memcpy.p0i8.p0i8.i32", LLVM.FunctionType(LLVM.VoidType(), argsType, false));
 
+                            LLVMValueRef offset;
+                            if (arraySlot.Type.IsSzArray)
+                            {
+                                offset = ArrayBaseSizeRef();
+                            }
+                            else
+                            {
+                                ArrayType arrayType = (ArrayType)arraySlot.Type;
+                                offset = BuildConstInt32(ArrayBaseSize() +
+                                                         2 * sizeof(int) * arrayType.Rank);
+                            }
                             var args = new LLVMValueRef[]
                             {
-                            LLVM.BuildGEP(_builder, arrayObjPtr, new LLVMValueRef[] { ArrayBaseSize() }, string.Empty),
-                            LLVM.BuildBitCast(_builder, src, LLVM.PointerType(LLVM.Int8Type(), 0), string.Empty),
-                            BuildConstInt32(srcLength), // TODO: Handle destination array length to avoid runtime overflow.
-                            BuildConstInt32(0), // Assume no alignment
-                            BuildConstInt1(0)
+                                LLVM.BuildGEP(_builder, arrayObjPtr, new LLVMValueRef[] { offset }, string.Empty),
+                                LLVM.BuildBitCast(_builder, src, LLVM.PointerType(LLVM.Int8Type(), 0), string.Empty),
+                                BuildConstInt32(srcLength), // TODO: Handle destination array length to avoid runtime overflow.
+                                BuildConstInt32(0), // Assume no alignment
+                                BuildConstInt1(0)
                             };
                             LLVM.BuildCall(_builder, memcpyFunction, args, string.Empty);
-                        }
-                        else if (arraySlot.Type.IsMdArray)
-                        {
-                            // Handle multidimensional arrays.
-                            // TODO: Add support for multidimensional array.
-                            throw new NotImplementedException();
                         }
                         else
                         {
@@ -2301,7 +2307,7 @@ namespace Internal.IL
             PushNonNull(HandleCall(callee, signature, canonMethod, argumentValues, runtimeDeterminedMethod, opcode, constrainedType, calliTarget, hiddenRef, resolvedConstraint));
         }
 
-        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc canonMethod, StackEntry[] argumentValues, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), LLVMValueRef hiddenParamRef = default(LLVMValueRef), bool resolvedConstraint = false)
+        private ExpressionEntry HandleCall(MethodDesc callee, MethodSignature signature, MethodDesc canonMethod, StackEntry[] argumentValues, MethodDesc runtimeDeterminedMethod, ILOpcode opcode = ILOpcode.call, TypeDesc constrainedType = null, LLVMValueRef calliTarget = default(LLVMValueRef), LLVMValueRef hiddenParamRef = default(LLVMValueRef), bool resolvedConstraint = false, TypeDesc forcedReturnType = null)
         {
             LLVMValueRef fn;
             bool hasHiddenParam = false;
@@ -2332,10 +2338,11 @@ namespace Internal.IL
 
             bool needsReturnSlot = NeedsReturnStackSlot(signature);
             SpilledExpressionEntry returnSlot = null;
+            var actualReturnType = forcedReturnType ?? returnType;
             if (needsReturnSlot)
             {
                 int returnIndex = _spilledExpressions.Count;
-                returnSlot = new SpilledExpressionEntry(GetStackValueKind(returnType), callee?.Name + "_return", returnType, returnIndex, this);
+                returnSlot = new SpilledExpressionEntry(GetStackValueKind(actualReturnType), callee?.Name + "_return", actualReturnType, returnIndex, this);
                 _spilledExpressions.Add(returnSlot);
                 LLVMValueRef returnAddress = LoadVarAddress(returnIndex, LocalVarKind.Temp, out TypeDesc unused);
                 LLVMValueRef castReturnAddress = LLVM.BuildPointerCast(_builder, returnAddress, LLVM.PointerType(LLVM.Int8Type(), 0), callee?.Name + "_castreturn");
@@ -2492,7 +2499,7 @@ namespace Internal.IL
 
             if (!returnType.IsVoid)
             {
-                return needsReturnSlot ? returnSlot : new ExpressionEntry(GetStackValueKind(returnType), callee?.Name + "_return", llvmReturn, returnType);
+                return needsReturnSlot ? returnSlot : new ExpressionEntry(GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType);
             }
             else
             {
@@ -3638,10 +3645,9 @@ namespace Internal.IL
         private void ImportLdToken(int token)
         {
             var ldtokenValue = _methodIL.GetObject(token);
-            WellKnownType ldtokenKind;
             if (ldtokenValue is TypeDesc)
             {
-                ldtokenKind = WellKnownType.RuntimeTypeHandle;
+                TypeDesc runtimeTypeHandleTypeDesc = GetWellKnownType(WellKnownType.RuntimeTypeHandle);
                 var typeDesc = (TypeDesc)ldtokenValue;
                 MethodDesc helper = _compilation.TypeSystemContext.GetHelperEntryPoint("LdTokenHelpers", "GetRuntimeTypeHandle");
                 AddMethodReference(helper);
@@ -3655,7 +3661,7 @@ namespace Internal.IL
                         GetShadowStack(),
                         hiddenParam
                     }, "getHelper");
-                    _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, handleRef, GetWellKnownType(ldtokenKind)));
+                    _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, handleRef, runtimeTypeHandleTypeDesc));
                 }
                 else
                 {
@@ -3667,14 +3673,13 @@ namespace Internal.IL
                     PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(typeDesc, false), GetEETypePtrTypeDesc());
                     HandleCall(helper, helper.Signature, helper);
                     var callExp = _stack.Pop();
-                    _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, callExp.ValueAsInt32(_builder, false), GetWellKnownType(ldtokenKind)));
+                    _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, callExp.ValueAsInt32(_builder, false), runtimeTypeHandleTypeDesc));
                 }
             }
             else if (ldtokenValue is FieldDesc)
             {
-                ldtokenKind = WellKnownType.RuntimeFieldHandle;
                 LLVMValueRef fieldHandle = LLVM.ConstStruct(new LLVMValueRef[] { BuildConstInt32(0) }, true);
-                StackEntry value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, fieldHandle, GetWellKnownType(ldtokenKind));
+                StackEntry value = new LdTokenEntry<FieldDesc>(StackValueKind.ValueType, null, (FieldDesc)ldtokenValue, fieldHandle, GetWellKnownType(WellKnownType.RuntimeFieldHandle));
                 _stack.Push(value);
             }
             else if (ldtokenValue is MethodDesc)
@@ -4213,9 +4218,14 @@ namespace Internal.IL
             return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0) /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "HiddenArg");
         }
 
-        private LLVMValueRef ArrayBaseSize()
+        private LLVMValueRef ArrayBaseSizeRef()
         {
-            return BuildConstInt32(2 * _compilation.NodeFactory.Target.PointerSize);
+            return BuildConstInt32(ArrayBaseSize());
+        }
+
+        private int ArrayBaseSize()
+        {
+            return 2 * _compilation.NodeFactory.Target.PointerSize;
         }
 
         private void ImportLoadElement(int token)
@@ -4271,7 +4281,7 @@ namespace Internal.IL
             ThrowIfNull(arrayReference);
             var elementSize = arrayElementType.GetElementSize();
             LLVMValueRef elementOffset = LLVM.BuildMul(_builder, elementPosition, BuildConstInt32(elementSize.AsInt), "elementOffset");
-            LLVMValueRef arrayOffset = LLVM.BuildAdd(_builder, elementOffset, ArrayBaseSize(), "arrayOffset");
+            LLVMValueRef arrayOffset = LLVM.BuildAdd(_builder, elementOffset, ArrayBaseSizeRef(), "arrayOffset");
             return LLVM.BuildGEP(_builder, arrayReference, new LLVMValueRef[] { arrayOffset }, "elementPointer");
         }
 

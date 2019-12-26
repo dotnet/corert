@@ -163,6 +163,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\GenericParameterDesc.cs">
       <Link>TypeSystem\Common\GenericParameterDesc.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\GenericParameterDesc.Dummy.Diagnostic.cs">
+      <Link>TypeSystem\Common\GenericParameterDesc.Dummy.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\ExceptionStringID.cs">
       <Link>TypeSystem\Common\ExceptionStringID.cs</Link>
     </Compile>
@@ -180,6 +183,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\FieldLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\FieldLayoutAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ExplicitLayoutValidator.cs">
+      <Link>TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedMethod.cs">
       <Link>TypeSystem\Common\InstantiatedMethod.cs</Link>
@@ -277,6 +283,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.cs">
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.Dummy.Diagnostic.cs">
+      <Link>TypeSystem\Common\MethodDesc.Dummy.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.ToString.cs">
       <Link>TypeSystem\Common\MethodDesc.ToString.cs</Link>
     </Compile>
@@ -294,6 +303,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\DefType.cs">
       <Link>TypeSystem\Common\DefType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\DefType.Dummy.Diagnostic.cs">
+      <Link>TypeSystem\Common\DefType.Dummy.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\DefType.FieldLayout.cs">
       <Link>TypeSystem\Common\DefType.FieldLayout.cs</Link>

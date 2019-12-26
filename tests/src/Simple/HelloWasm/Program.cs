@@ -233,7 +233,7 @@ internal static class Program
         testMdArrayInstantiation[0, 1] = 2;
         testMdArrayInstantiation[1, 0] = 3;
         testMdArrayInstantiation[1, 1] = 4;
-        EndTest(testMdArrayInstantiation[0, 0] == 1 
+        EndTest(testMdArrayInstantiation[0, 0] == 1
                 && testMdArrayInstantiation[0, 1] == 2
                 && testMdArrayInstantiation[1, 0] == 3
                 && testMdArrayInstantiation[1, 1] == 4);
@@ -263,7 +263,7 @@ internal static class Program
         }
 
         TestConstrainedClassCalls();
-        
+
         TestConstrainedStructCalls();
 
         TestValueTypeElementIndexing();
@@ -314,6 +314,8 @@ internal static class Program
         TestBoxSingle();
 
         TestGvmCallInIf(new GenDerived<string>(), "hello");
+        
+        TestInitializeArray();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -365,7 +367,7 @@ internal static class Program
     }
 
     private static int StaticDelegateTarget()
-    {         
+    {
         return 7;
     }
 
@@ -382,7 +384,7 @@ internal static class Program
             }
         }
     }
-    
+
     public static void PrintLine(string s)
     {
         PrintString(s);
@@ -418,21 +420,21 @@ internal static class Program
     {
         return a >> b;
     }
-    
+
     private static int SwitchOp(int a, int b, int mode)
     {
-        switch(mode)
+        switch (mode)
         {
-          case 0:
-            return a + b;
-          case 1:
-            return a * b;
-          case 2:
-            return a / b;
-          case 3:
-            return a - b;
-          default:
-            return 0;
+            case 0:
+                return a + b;
+            case 1:
+                return a * b;
+            case 2:
+                return a / b;
+            case 3:
+                return a - b;
+            default:
+                return 0;
         }
     }
 
@@ -464,16 +466,16 @@ internal static class Program
         StartTest("ldind test");
         var ldindTarget = new TwoByteStr { first = byte.MaxValue, second = byte.MinValue };
         var ldindField = &ldindTarget.first;
-        if((*ldindField) == byte.MaxValue)
+        if ((*ldindField) == byte.MaxValue)
         {
             ldindTarget.second = byte.MaxValue;
             *ldindField = byte.MinValue;
             //ensure there isnt any overwrite of nearby fields
-            if(ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
+            if (ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
             {
                 PassTest();
             }
-            else if(ldindTarget.first != byte.MinValue)
+            else if (ldindTarget.first != byte.MinValue)
             {
                 FailTest("didnt update target.");
             }
@@ -548,7 +550,7 @@ internal static class Program
             PrintString(stringDirectToString);
             PrintLine("\"");
         }
-       
+
         // Generic calls on methods not defined on object
         uint dataFromBase = GenericGetData<MyBase>(new MyBase(11));
         StartTest("Generic call to base class test");
@@ -1075,7 +1077,7 @@ internal static class Program
 
         StartTest("SByte left shift");
         x = (int)(s << 1);
-        if(x == -2)
+        if (x == -2)
         {
             PassTest();
         }
@@ -1086,7 +1088,7 @@ internal static class Program
 
         sbyte minus1 = -1;
         StartTest("Negative SByte op");
-        if((s & minus1) == -1)
+        if ((s & minus1) == -1)
         {
             PassTest();
         }
@@ -1095,7 +1097,7 @@ internal static class Program
             FailTest();
         }
 
-        StartTest("Negative SByte br"); 
+        StartTest("Negative SByte br");
         if (s == -1) // this only creates the bne opcode, which it is testing, in Release mode.
         {
             PassTest();
@@ -1129,6 +1131,37 @@ internal static class Program
         var fi = typeof(ClassWithFloat).GetField("F");
         fi.SetValue(null, 1.1f);
         EndTest(1.1f == ClassWithFloat.F);
+    }
+    
+    static void TestInitializeArray()
+    {
+        StartTest("Test InitializeArray");
+
+        bool[,] bools = new bool[2, 2] {
+            {  true,                        true},
+            {  false,                       true},
+        };
+
+        if (!(bools[0, 0] && bools[0, 1]
+            && !bools[1, 0] && bools[0, 1]))
+        {
+            FailTest("bool initialisation failed");
+        }
+
+        double[,] doubles = new double[2, 3]
+        {
+            {1.0, 1.1, 1.2 },
+            {2.0, 2.1, 2.2 },
+        };
+
+        if (!(doubles[0, 0] == 1.0 && doubles[0, 1] == 1.1 && doubles[0, 2] == 1.2
+            && doubles[1, 0] == 2.0 && doubles[1, 1] == 2.1 && doubles[1, 2] == 2.2
+            ))
+        {
+            FailTest("double initialisation failed");
+        }
+
+        PassTest();
     }
 
     [DllImport("*")]
