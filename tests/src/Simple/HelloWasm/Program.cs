@@ -314,6 +314,8 @@ internal static class Program
         TestBoxSingle();
 
         TestGvmCallInIf(new GenDerived<string>(), "hello");
+
+        TestStoreFromGenericMethod();
         
         TestInitializeArray();
 
@@ -903,6 +905,13 @@ internal static class Program
         {
             g.GMethod1(p, p);
         }
+    }
+
+
+    private static void TestStoreFromGenericMethod()
+    {
+        var values = new string[1];
+        values = values.AsSpan(0, 1).ToArray();
     }
 
 
