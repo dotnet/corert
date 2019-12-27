@@ -898,6 +898,11 @@ namespace Internal.IL
 
         private void CastingStore(LLVMValueRef address, StackEntry value, TypeDesc targetType, string targetName = null)
         {
+            if (value is GenericReturnExpressionEntry)
+            {
+                targetType = ((GenericReturnExpressionEntry)value).GenericReturnTypeDesc;
+            }
+
             var typedStoreLocation = CastToPointerToTypeDesc(address, targetType, targetName);
             LLVM.BuildStore(_builder, value.ValueAsType(targetType, _builder), typedStoreLocation);
         }
@@ -2499,7 +2504,11 @@ namespace Internal.IL
 
             if (!returnType.IsVoid)
             {
-                return needsReturnSlot ? returnSlot : new ExpressionEntry(GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType);
+                return needsReturnSlot ? returnSlot : 
+                    (
+                        canonMethod != null && canonMethod.Signature.ReturnType != actualReturnType
+                        ? new GenericReturnExpressionEntry(canonMethod.Signature.ReturnType, GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType)
+                        : new ExpressionEntry(GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType));
             }
             else
             {
@@ -3753,8 +3762,7 @@ namespace Internal.IL
 
         private void ImportConstrainedPrefix(int token)
         {
-//            _constrainedType = (TypeDesc)_methodIL.GetObject(token);
-            _constrainedType = (TypeDesc)_canonMethodIL.GetObject(token);
+            _constrainedType = (TypeDesc)_methodIL.GetObject(token);
         }
 
         private void ImportNoPrefix(byte mask)
