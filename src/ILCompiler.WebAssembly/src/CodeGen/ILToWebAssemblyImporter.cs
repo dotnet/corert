@@ -1497,7 +1497,7 @@ namespace Internal.IL
 
         private void ImportCasting(ILOpcode opcode, int token)
         {
-            TypeDesc type = ResolveTypeToken(token);
+            TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
             //TODO: call GetCastingHelperNameForType from JitHelper.cs (needs refactoring)
             string function;
@@ -3585,23 +3585,24 @@ namespace Internal.IL
         private void ImportUnbox(int token, ILOpcode opCode)
         {
             TypeDesc type = ResolveTypeToken(token);
+            TypeDesc methodType = (TypeDesc)_methodIL.GetObject(token);
             LLVMValueRef eeType;
             var eeTypeDesc = GetEETypePtrTypeDesc();
             ExpressionEntry eeTypeExp;
-            if (type.IsRuntimeDeterminedSubtype)
+            if (methodType.IsRuntimeDeterminedSubtype)
             {
-                eeType = CallGenericHelper(ReadyToRunHelperId.TypeHandle, type);
+                eeType = CallGenericHelper(ReadyToRunHelperId.TypeHandle, methodType);
                 eeTypeExp = new ExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc);
             }
             else
             {
-                eeType = GetEETypePointerForTypeDesc(type, true);
+                eeType = GetEETypePointerForTypeDesc(methodType, true);
                 eeTypeExp = new LoadExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc);
             }
             StackEntry boxedObject = _stack.Pop();
             if (opCode == ILOpcode.unbox)
             {
-                if (type.IsNullable)
+                if (methodType.IsNullable)
                     throw new NotImplementedException();
 
                 var arguments = new StackEntry[] { eeTypeExp, boxedObject };
@@ -3610,15 +3611,15 @@ namespace Internal.IL
             else //unbox_any
             {
                 Debug.Assert(opCode == ILOpcode.unbox_any);
-                LLVMValueRef untypedObjectValue = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(type), "objptr");
+                LLVMValueRef untypedObjectValue = LLVM.BuildAlloca(_builder, GetLLVMTypeForTypeDesc(methodType), "objptr");
                 var arguments = new StackEntry[]
                 {
                     boxedObject,
-                    new ExpressionEntry(StackValueKind.ByRef, "objPtr", untypedObjectValue, type.MakePointerType()),
+                    new ExpressionEntry(StackValueKind.ByRef, "objPtr", untypedObjectValue, methodType.MakePointerType()),
                     eeTypeExp
                 };
                 CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhUnboxAny", arguments);
-                PushLoadExpression(GetStackValueKind(type), "unboxed", untypedObjectValue, type);
+                PushLoadExpression(GetStackValueKind(methodType), "unboxed", untypedObjectValue, methodType);
             }
         }
 
@@ -3752,7 +3753,8 @@ namespace Internal.IL
 
         private void ImportConstrainedPrefix(int token)
         {
-            _constrainedType = (TypeDesc)_methodIL.GetObject(token);
+//            _constrainedType = (TypeDesc)_methodIL.GetObject(token);
+            _constrainedType = (TypeDesc)_canonMethodIL.GetObject(token);
         }
 
         private void ImportNoPrefix(byte mask)
@@ -4118,7 +4120,8 @@ namespace Internal.IL
         private void ImportBox(int token)
         {
             LLVMValueRef eeType;
-            TypeDesc type = ResolveTypeToken(token);
+            TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
+
             StackEntry eeTypeEntry;
             var eeTypeDesc = GetEETypePtrTypeDesc();
             bool truncDouble = type.Equals(GetWellKnownType(WellKnownType.Single));
@@ -4421,7 +4424,7 @@ namespace Internal.IL
 
         private TypeDesc ResolveTypeToken(int token)
         {
-            return (TypeDesc)_methodIL.GetObject(token);
+            return (TypeDesc)_canonMethodIL.GetObject(token);
         }
 
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
