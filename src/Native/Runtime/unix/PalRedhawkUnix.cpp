@@ -40,12 +40,12 @@
 #include <lwp.h>
 #endif
 
-#if !HAVE_SYSCONF && !HAVE_SYSCTL
-#error Neither sysconf nor sysctl is present on the current system
-#endif
-
-#if HAVE_SYSCTL
+#if HAVE_SYSCONF
+// <unistd.h> already included above
+#elif HAVE_SYSCTL
 #include <sys/sysctl.h>
+#else
+#error Either sysctl or sysconf is required for GetSystemInfo.
 #endif
 
 #if HAVE_SYS_VMPARAM_H
