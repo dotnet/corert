@@ -64,6 +64,7 @@ See the LICENSE file in the project root for more information.
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
     <ExportsFile Condition="$(NativeLib) == 'Shared' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
+	<VersionFile Condition="$(NativeLib) == 'Shared' and $(VersionFile) == ''">$(NativeIntermediateOutputPath)$(TargetName).map</VersionFile>
 
     <IlcCompileOutput Condition="$(NativeCodeGen) == ''">$(NativeObject)</IlcCompileOutput>
     <IlcCompileOutput Condition="$(NativeCodeGen) == 'cpp'">$(NativeIntermediateOutputPath)$(TargetName).cpp</IlcCompileOutput>
@@ -224,6 +225,7 @@ See the LICENSE file in the project root for more information.
     <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeCoreRT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
 
     <Exec Command="&quot;$(IlcPath)\tools\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
+	<Exec Condition="$(VersionFile) != ''" Command="awk -f $(MSBuildThisFileDirectory)generateversionscript.awk &quot;$(ExportsFile)&quot; > &quot;$(VersionFile)&quot;"/>
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'Windows_NT'" />
@@ -282,10 +284,16 @@ See the LICENSE file in the project root for more information.
       <CustomLinkerArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(OS)' == 'Windows_NT'" />
       <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(OS)' == 'Windows_NT' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(OS)' == 'Windows_NT' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
-      <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(OS)' != 'Windows_NT' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(OS)' != 'Windows_NT' and $(ExportsFile) != '' and $(VersionFile) == ''" />
       <CustomLinkerArg Condition="Exists('$(_Win32ResFile)')" Include="&quot;$(_Win32ResFile)&quot;" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
+	<ItemGroup Condition="'$(OS)' != 'Windows_NT' and $(VersionFile) != ''">
+		<CustomLinkerArg Include="-Wl,--version-script=$(VersionFile)" />
+		<CustomLinkerArg Include="-Wl,--discard-all" />
+		<CustomLinkerArg Include="-Wl,--gc-sections" />
+		<CustomLinkerArg Include="-Wunused-command-line-argument" />
+	</ItemGroup>
 
     <ItemGroup>
       <CustomLibArg Include="-crs &quot;$(NativeBinary)&quot;" Condition="'$(OS)' != 'Windows_NT'" />
