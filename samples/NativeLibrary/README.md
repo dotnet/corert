@@ -37,11 +37,9 @@ The first thing you'll have to do in order to have a proper "loader" that loads 
 #ifdef _WIN32
 #include "windows.h"
 #define symLoad GetProcAddress GetProcAddress
-#define libClose FreeLibrary
 #else
 #include "dlfcn.h"
 #define symLoad dlsym
-#define libClose dlclose
 #endif
 ```
 
@@ -71,11 +69,10 @@ myFunc MyImport =  symLoad(handle, funcName);
 ```
 
 where funcName is a string that contains the name of the entrypoint value defined in the NativeCallable field.
-The last thing to do is to actually call the method we have imported, and close the library handle
+The last thing to do is to actually call the method we have imported.
 
 ```c
 int result =  MyImport(5,3);
-libClose(handle);
 ```
 
 ## Exporting methods

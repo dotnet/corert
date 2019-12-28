@@ -11,13 +11,9 @@
 #ifdef _WIN32
 #include "windows.h"
 #define symLoad GetProcAddress GetProcAddress
-#define libClose FreeLibrary
 #else
 #include "dlfcn.h"
 #define symLoad dlsym
-// TODO: How to pin the library in memory on Unix?
-// dlclose(handle);
-#define libClose 
 #endif
 #include <unistd.h>
 #include <stdlib.h>
@@ -60,7 +56,9 @@ int callSumFunc(char *path, char *funcName, int firstInt, int secondInt)
     myFunc MyImport = symLoad(handle, funcName);
 
     int result = MyImport(firstInt, secondInt);
-    libClose(handle);
+
+    // CoreRT libraries do not support unloading
+    // See https://github.com/dotnet/corert/issues/7887
     return result;
 }
 
@@ -81,6 +79,8 @@ char *callSumStringFunc(char *path, char *funcName, char *firstString, char *sec
 
     // The C# function will return a pointer
     char *result = MyImport(firstString, secondString);
-    libClose(handle);
+
+    // CoreRT libraries do not support unloading
+    // See https://github.com/dotnet/corert/issues/7887
     return result;
 }
