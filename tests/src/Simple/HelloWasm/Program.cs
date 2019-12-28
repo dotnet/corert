@@ -316,7 +316,9 @@ internal static class Program
         TestGvmCallInIf(new GenDerived<string>(), "hello");
 
         TestStoreFromGenericMethod();
-        
+
+        TestConstrainedValueTypeCallVirt();
+
         TestInitializeArray();
 
         // This test should remain last to get other results before stopping the debugger
@@ -907,7 +909,6 @@ internal static class Program
         }
     }
 
-
     private static void TestStoreFromGenericMethod()
     {
         StartTest("TestStoreFromGenericMethod");
@@ -917,7 +918,6 @@ internal static class Program
         PassTest();
     }
 
-
     private static void TestCallToGenericInterfaceMethod()
     {
         StartTest("Call generic method on interface test");
@@ -925,6 +925,18 @@ internal static class Program
         TestGenItf implInt = new TestGenItf();
         implInt.Log<object>(new object());
         EndTest(true);
+    }
+
+    private static void TestConstrainedValueTypeCallVirt()
+    {
+        StartTest("Call constrained callvirt");
+
+        var dict = new Dictionary<KeyValuePair<string, string>, string>();
+        var notContainsKey = dict.ContainsKey(new KeyValuePair<string, string>("", ""));
+//        dict.Add(new KeyValuePair<string, string>("", ""), "");
+  //      var containsKey = dict.ContainsKey(new KeyValuePair<string, string>("", ""));
+
+        EndTest(!notContainsKey/* && containsKey */);
     }
 
     public interface ITestGenItf

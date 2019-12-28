@@ -1842,6 +1842,10 @@ namespace Internal.IL
                 {
                     if (constrainedType != null)
                     {
+                        if (constrainedType.IsRuntimeDeterminedType)
+                        {
+                            constrainedType = constrainedType.ConvertToCanonForm(CanonicalFormKind.Specific);
+                        }
                         targetMethod = constrainedType.TryResolveConstraintMethodApprox(canonMethod.OwningType, canonMethod, out _);
                     }
                     else if (canonMethod.OwningType.IsInterface)
