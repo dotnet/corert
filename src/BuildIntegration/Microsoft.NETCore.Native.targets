@@ -64,7 +64,7 @@ See the LICENSE file in the project root for more information.
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
     <ExportsFile Condition="$(NativeLib) == 'Shared' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
-	<VersionFile Condition="$(NativeLib) == 'Shared' and $(VersionFile) == '' and '$(OS)' != 'Windows_NT'">$(NativeIntermediateOutputPath)$(TargetName).map</VersionFile>
+	<VersionFile Condition="$(NativeLib) == 'Shared' and $(VersionFile) == ''">$(NativeIntermediateOutputPath)$(TargetName).map</VersionFile>
 
     <IlcCompileOutput Condition="$(NativeCodeGen) == ''">$(NativeObject)</IlcCompileOutput>
     <IlcCompileOutput Condition="$(NativeCodeGen) == 'cpp'">$(NativeIntermediateOutputPath)$(TargetName).cpp</IlcCompileOutput>
