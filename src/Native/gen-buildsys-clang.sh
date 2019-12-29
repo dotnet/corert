@@ -117,7 +117,11 @@ if [[ -n "$CROSSCOMPILE" ]]; then
     cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$CONFIG_DIR/toolchain.cmake"
 fi
 
-if [ $build_arch == "wasm" ]; then
+if [ "${__ObjWriterBuild}" = 1 ]; then
+    cmake_extra_defines="$cmake_extra_defines -DOBJWRITER_BUILD=${__ObjWriterBuild} -DCROSS_BUILD=${__CrossBuild}"
+fi
+
+if [ "$build_arch" = "wasm" ]; then
     emcmake $CMAKE \
         "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" \
         "-DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN/cmake/Modules/Platform/Emscripten.cmake" \
@@ -133,8 +137,6 @@ else
         "-DCMAKE_RANLIB=$llvm_ranlib" \
         "-DCMAKE_BUILD_TYPE=$build_type" \
         "-DCLR_CMAKE_TARGET_ARCH=$build_arch" \
-        "-DOBJWRITER_BUILD=${__ObjWriterBuild}" \
-        "-DCROSS_BUILD=${__CrossBuild}" \
         $cmake_extra_defines \
         "$1/src/Native"
 fi
