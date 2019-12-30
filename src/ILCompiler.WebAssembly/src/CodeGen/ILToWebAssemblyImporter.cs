@@ -2296,11 +2296,21 @@ namespace Internal.IL
 
                     if (directMethod == null)
                     {
+                        StackEntry eeTypeEntry;
+                        var eeTypeDesc = GetEETypePtrTypeDesc();
+                        if (constrainedType.IsRuntimeDeterminedSubtype)
+                        {
+                            eeTypeEntry = new ExpressionEntry(StackValueKind.ValueType, "eeType", CallGenericHelper(ReadyToRunHelperId.TypeHandle, constrainedType), eeTypeDesc.MakePointerType());
+                        }
+                        else
+                        {
+                            eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(constrainedType, true), eeTypeDesc);
+                        }
+
                         argumentValues[0] = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhBox",
                             new StackEntry[]
                             {
-                                new LoadExpressionEntry(StackValueKind.ValueType, "eeType",
-                                    GetEETypePointerForTypeDesc(constrainedClosestDefType, true), GetEETypePtrTypeDesc()),
+                                eeTypeEntry,
                                 argumentValues[0],
                             });
                     }

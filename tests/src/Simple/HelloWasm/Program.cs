@@ -319,6 +319,8 @@ internal static class Program
 
         TestConstrainedValueTypeCallVirt();
 
+        TestBoxToGenericTypeFromDirectMethod();
+
         TestInitializeArray();
 
         // This test should remain last to get other results before stopping the debugger
@@ -930,13 +932,38 @@ internal static class Program
     private static void TestConstrainedValueTypeCallVirt()
     {
         StartTest("Call constrained callvirt");
-
+        //TODO: create simpler test that doesn't need Dictionary<>/KVP<>/Span
         var dict = new Dictionary<KeyValuePair<string, string>, string>();
-        var notContainsKey = dict.ContainsKey(new KeyValuePair<string, string>("", ""));
-//        dict.Add(new KeyValuePair<string, string>("", ""), "");
-  //      var containsKey = dict.ContainsKey(new KeyValuePair<string, string>("", ""));
+        var notContainsKey = dict.ContainsKey(new KeyValuePair<string, string>());
 
-        EndTest(!notContainsKey/* && containsKey */);
+        EndTest(!notContainsKey);
+    }
+
+    private static void TestBoxToGenericTypeFromDirectMethod()
+    {
+        StartTest("Callvirt on generic struct boxing to looked up generic type");
+
+        new GetHashCodeCaller<GenStruct<string>, string>().CallValueTypeGetHashCodeFromGeneric(new GenStruct<string>(""));
+
+        PassTest();
+    }
+
+    public struct GenStruct<TKey>
+    {
+        private TKey key; 
+
+        public GenStruct(TKey key)
+        {
+            this.key = key;
+        }
+    }
+
+    public class GetHashCodeCaller<TKey, TValue>
+    {
+        public void CallValueTypeGetHashCodeFromGeneric(TKey k)
+        {
+            k.GetHashCode();
+        }
     }
 
     public interface ITestGenItf
