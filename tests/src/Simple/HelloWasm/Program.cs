@@ -321,6 +321,8 @@ internal static class Program
 
         TestBoxToGenericTypeFromDirectMethod();
 
+        TestGenericCallInFinally();
+
         TestInitializeArray();
 
         // This test should remain last to get other results before stopping the debugger
@@ -963,6 +965,23 @@ internal static class Program
         public void CallValueTypeGetHashCodeFromGeneric(TKey k)
         {
             k.GetHashCode();
+        }
+    }
+
+    private static void TestGenericCallInFinally()
+    {
+        StartTest("calling generic method requiring context from finally block");
+
+        CallGenericInFinally<string>();
+
+        PassTest();
+    }
+
+    private static void CallGenericInFinally<T>()
+    {
+        List<T> list = new List<T>();
+        foreach (var s in list)
+        {
         }
     }
 
