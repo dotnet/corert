@@ -5,7 +5,7 @@
     <CoreFxVersion Condition="'$(CoreFxVersion)' == ''">5.0.0-alpha.1.19563.6</CoreFxVersion>
     <CoreFxUapVersion Condition="'$(CoreFxUapVersion)' == ''">4.7.0-preview6.19265.2</CoreFxUapVersion>
     <MicrosoftNETCoreNativeVersion Condition="'$(MicrosoftNETCoreNativeVersion)' == ''">5.0.0-alpha1.19563.3</MicrosoftNETCoreNativeVersion>
-    <MicrosoftNETCoreAppPackageVersion Condition="'$(MicrosoftNETCoreAppPackageVersion)' == ''">2.1.11</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion Condition="'$(MicrosoftNETCoreAppPackageVersion)' == ''">2.1.14</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftDotNetTestSdkVersion Condition="'$(MicrosoftDotNetTestSdkVersion)' == ''">15.8.0</MicrosoftDotNetTestSdkVersion>
     <XUnitPackageVersion Condition="'$(XUnitPackageVersion)' == ''">2.4.1-pre.build.4059</XUnitPackageVersion>
     <MicrosoftDotNetXUnitExtensionsVersion Condition="'$(MicrosoftDotNetXUnitExtensionsVersion)' == ''">2.4.0-beta.18420.4</MicrosoftDotNetXUnitExtensionsVersion>

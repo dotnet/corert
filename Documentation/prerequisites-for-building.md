@@ -21,7 +21,7 @@ sudo apt-get update
 ```
 
 ```sh
-sudo apt-get install cmake clang-3.9 libicu-dev uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev
+sudo apt-get install cmake clang-3.9 libicu-dev uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev libtinfo5
 ```
 
 # macOS (10.12+)
