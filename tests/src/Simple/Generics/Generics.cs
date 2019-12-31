@@ -36,6 +36,7 @@ class Program
         TestReflectionInvoke.Run();
         TestFieldAccess.Run();
         TestDevirtualization.Run();
+        TestGenericInlining.Run();
 #if !CODEGEN_CPP 
 #if !CODEGEN_WASM
         TestNullableCasting.Run();
