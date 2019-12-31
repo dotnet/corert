@@ -27,12 +27,12 @@ namespace rh { namespace util
               m_end(range.m_end)
             {}
 
-        template <typename VALUE_TYPE>
+        template <VALUE_TYPE>
         static Range<VALUE_TYPE> CreateWithEndpoint(VALUE_TYPE start,
                                                     VALUE_TYPE end)
             { return Range<VALUE_TYPE>(start, end); }
 
-        template <typename VALUE_TYPE, typename LENGTH_TYPE>
+        template <VALUE_TYPE, LENGTH_TYPE>
         static Range<VALUE_TYPE> CreateWithLength(VALUE_TYPE start, LENGTH_TYPE len)
             { return Range<VALUE_TYPE>(start, start + len); }
 
