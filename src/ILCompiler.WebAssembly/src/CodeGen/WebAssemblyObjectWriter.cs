@@ -753,7 +753,7 @@ namespace ILCompiler.DependencyAnalysis
                     ObjectNode node = depNode as ObjectNode;
                     if (node == null)
                         continue;
-                    
+
                     if (node.ShouldSkipEmittingObjectNode(factory))
                         continue;
 
@@ -784,7 +784,7 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
 #endif
-   
+
                     ObjectNodeSection section = node.Section;
                     if (objectWriter.ShouldShareSymbol(node))
                     {
@@ -1031,7 +1031,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
                         MethodDesc constructor = target.Constructor.Method;
-                        var fatPtr = ILImporter.MakeFatPointer(builder, resVar);
+                        var fatPtr = ILImporter.MakeFatPointer(builder, resVar, compilation);
                         importer.OutputCodeForDelegateCtorInit(builder, helperFunc, constructor, fatPtr);
                     }
                     break;

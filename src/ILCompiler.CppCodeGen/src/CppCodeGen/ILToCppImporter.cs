@@ -1374,7 +1374,7 @@ namespace Internal.IL
                                 sb.Append("((intptr_t)");
                                 sb.Append(_writer.GetCppSymbolNodeName(_nodeFactory, targetNode));
                                 sb.Append("()) + ");
-                                sb.Append(method.Context.Target.FatFunctionPointerOffset.ToString());
+                                sb.Append(_typeSystemContext.Target.FatFunctionPointerOffset.ToString());
                             }
                             else
                             {
@@ -1516,13 +1516,13 @@ namespace Internal.IL
                 Append("if (");
                 Append(gvmSlotVarName);
                 Append(" & ");
-                Append(method.Context.Target.FatFunctionPointerOffset.ToString());
+                Append(_typeSystemContext.Target.FatFunctionPointerOffset.ToString());
                 Append(") {");
                 Append(functionPtr);
                 Append(" = *(intptr_t*)(");
                 Append(gvmSlotVarName);
                 Append(" - ");
-                Append(method.Context.Target.FatFunctionPointerOffset.ToString());
+                Append(_typeSystemContext.Target.FatFunctionPointerOffset.ToString());
                 Append(");} else {");
                 Append(functionPtr);
                 Append(" = ");
@@ -1723,7 +1723,7 @@ namespace Internal.IL
                 Append("if (");
                 Append(gvmSlotVarName);
                 Append(" & ");
-                Append(method.Context.Target.FatFunctionPointerOffset.ToString());
+                Append(_typeSystemContext.Target.FatFunctionPointerOffset.ToString());
                 Append(") {");
 
                 _writer.AppendSignatureTypeDef(_builder, typeDefName, canonMethodSignature,
@@ -1760,7 +1760,7 @@ namespace Internal.IL
                 Append("**(void***)(");
                 Append(gvmSlotVarName);
                 Append(" - ");
-                Append(method.Context.Target.FatFunctionPointerOffset.ToString());
+                Append(_typeSystemContext.Target.FatFunctionPointerOffset.ToString());
                 Append(" + sizeof(void*))");
 
                 if (canonMethodSignature.Length > 0)
@@ -2114,13 +2114,13 @@ namespace Internal.IL
             Append("if (");
             Append(fatPtr);
             Append(" & ");
-            Append(methodSignature.Context.Target.FatFunctionPointerOffset.ToString());
+            Append(_typeSystemContext.Target.FatFunctionPointerOffset.ToString());
             Append(") {");
             Append(fnPtrValue);
             Append(" = *(intptr_t*)(");
             Append(fatPtr);
             Append(" - ");
-            Append(methodSignature.Context.Target.FatFunctionPointerOffset.ToString());
+            Append(_typeSystemContext.Target.FatFunctionPointerOffset.ToString());
             Append(")");
 
             AppendSemicolon();
@@ -2153,7 +2153,7 @@ namespace Internal.IL
             Append("**(void***)(");
             Append(fatPtr);
             Append(" - ");
-            Append(methodSignature.Context.Target.FatFunctionPointerOffset.ToString());
+            Append(_typeSystemContext.Target.FatFunctionPointerOffset.ToString());
             Append(" + sizeof(void*))");
 
             if (methodSignature.Length > 0)
@@ -2307,14 +2307,14 @@ namespace Internal.IL
                             Append("(");
                             Append(GetGenericContext());
                             Append(")) + ");
-                            Append(canonMethod.Context.Target.FatFunctionPointerOffset.ToString());
+                            Append(_typeSystemContext.Target.FatFunctionPointerOffset.ToString());
                         }
                         else
                         {
                             Append("((intptr_t)");
                             AppendFatFunctionPointer(runtimeDeterminedMethod);
                             Append("()) + ");
-                            Append(canonMethod.Context.Target.FatFunctionPointerOffset.ToString());
+                            Append(_typeSystemContext.Target.FatFunctionPointerOffset.ToString());
                         }
                     }
                     else

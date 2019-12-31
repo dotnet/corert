@@ -60,11 +60,6 @@ namespace Internal.IL
         private MethodDebugInformation _debugInformation;
         private LLVMMetadataRef _debugFunction;
         private TypeDesc _constrainedType = null;
-        /// <summary>
-        /// Offset by which fat function pointers are shifted to distinguish them
-        /// from real function pointers.  Keep in line with FatFunctionPointerConstants
-        /// </summary> 
-        internal const uint FatFunctionPointerOffset = (uint)1 << 31;
 
         List<LLVMValueRef> _exceptionFunclets;
 
@@ -1770,7 +1765,7 @@ namespace Internal.IL
                     {
                         var funcRef = LoadAddressOfSymbolNode(targetNode);
                         var toInt = LLVM.BuildPtrToInt(_builder, funcRef, LLVMTypeRef.Int32Type(), "toInt");
-                        var withOffset = LLVM.BuildOr(_builder, toInt, BuildConstUInt32(FatFunctionPointerOffset), "withOffset");
+                        var withOffset = LLVM.BuildOr(_builder, toInt, BuildConstUInt32((uint)_compilation.TypeSystemContext.Target.FatFunctionPointerOffset), "withOffset");
                         PushExpression(StackValueKind.NativeInt, "fatthunk", withOffset);
                     }
                     else
@@ -1984,7 +1979,7 @@ namespace Internal.IL
             var notFatBranch = LLVM.AppendBasicBlock(_currentFunclet, "else");
             var endifBlock = LLVM.AppendBasicBlock(_currentFunclet, "endif");
             // if
-            var andResRef = LLVM.BuildAnd(_builder, CastIfNecessary(_builder, slotRef, LLVMTypeRef.Int32Type()), LLVM.ConstInt(LLVM.Int32Type(), FatFunctionPointerOffset, LLVMMisc.False), "andPtrOffset");
+            var andResRef = LLVM.BuildAnd(_builder, CastIfNecessary(_builder, slotRef, LLVMTypeRef.Int32Type()), LLVM.ConstInt(LLVM.Int32Type(), (ulong)_compilation.TypeSystemContext.Target.FatFunctionPointerOffset, LLVMMisc.False), "andPtrOffset");
             var eqz = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, andResRef, BuildConstInt32(0), "eqz");
             LLVM.BuildCondBr(_builder, eqz, notFatBranch, fatBranch);
 
@@ -2858,16 +2853,12 @@ namespace Internal.IL
         {
             MethodSignature methodSignature = (MethodSignature)_canonMethodIL.GetObject(token);
 
-            if (_method.ToString().Contains("InvokeRet"))
-            {
-
-            }
             var noHiddenParamSig = GetLLVMSignatureForMethod(methodSignature, false);
             var hddenParamSig = GetLLVMSignatureForMethod(methodSignature, true);
             var target = ((ExpressionEntry)_stack.Pop()).ValueAsType(LLVM.PointerType(noHiddenParamSig, 0), _builder);
 
             var functionPtrAsInt = LLVM.BuildPtrToInt(_builder, target, LLVMTypeRef.Int32Type(), "ptrToInt");
-            var andResRef = LLVM.BuildBinOp(_builder, LLVMOpcode.LLVMAnd, functionPtrAsInt, LLVM.ConstInt(LLVM.Int32Type(), FatFunctionPointerOffset, LLVMMisc.False), "andFatCheck");
+            var andResRef = LLVM.BuildBinOp(_builder, LLVMOpcode.LLVMAnd, functionPtrAsInt, LLVM.ConstInt(LLVM.Int32Type(), (ulong)_compilation.TypeSystemContext.Target.FatFunctionPointerOffset, LLVMMisc.False), "andFatCheck");
             var boolConv = LLVM.BuildICmp(_builder, LLVMIntPredicate.LLVMIntEQ, andResRef, BuildConstInt32(0), "bitConv");
             var fatBranch = LLVM.AppendBasicBlock(_currentFunclet, "fat");
             var notFatBranch = LLVM.AppendBasicBlock(_currentFunclet, "notFat");
@@ -2972,13 +2963,13 @@ namespace Internal.IL
                         if (!(canonMethod.IsVirtual && !canonMethod.IsFinal && !canonMethod.OwningType.IsSealed()))
                         {
                             // fat function pointer
-                            targetLLVMFunction = MakeFatPointer(_builder, targetLLVMFunction);
+                            targetLLVMFunction = MakeFatPointer(_builder, targetLLVMFunction, _compilation);
                         }
                     }
                     else
                     {
                         var fatFunctionSymbol = GetAndAddFatFunctionPointer(runtimeDeterminedMethod);
-                        targetLLVMFunction = MakeFatPointer(_builder, LoadAddressOfSymbolNode(fatFunctionSymbol));
+                        targetLLVMFunction = MakeFatPointer(_builder, LoadAddressOfSymbolNode(fatFunctionSymbol), _compilation);
                     }
                 }
                 else AddMethodReference(canonMethod);
@@ -3689,12 +3680,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    if (ConstructedEETypeNode.CreationAllowed(typeDesc))
-                    {
-                        var typeSymbol = _compilation.NodeFactory.ConstructedTypeSymbol(typeDesc);
-                        _dependencies.Add(typeSymbol);
-                    }
-                    PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(typeDesc, false), GetEETypePtrTypeDesc());
+                    PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(typeDesc, true), GetEETypePtrTypeDesc());
                     HandleCall(helper, helper.Signature, helper);
                     var callExp = _stack.Pop();
                     _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, callExp.ValueAsInt32(_builder, false), runtimeTypeHandleTypeDesc));
@@ -4519,6 +4505,13 @@ namespace Internal.IL
                     tlsIndexExpressionEntry
                 });
             return expressionEntry;
+        }
+
+        private LLVMValueRef RemoveFatOffset(LLVMBuilderRef builder, LLVMValueRef fatFunctionRef)
+        {
+            return LLVM.BuildAnd(builder,
+                CastIfNecessary(builder, fatFunctionRef, LLVMTypeRef.Int32Type()),
+                BuildConstUInt32(~(uint)_compilation.TypeSystemContext.Target.FatFunctionPointerOffset), "minusFatOffset");
         }
     }
 }
