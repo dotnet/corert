@@ -404,8 +404,14 @@ namespace Internal.IL
             LLVMValueRef funclet = LLVM.GetNamedFunction(Module, funcletName);
             if (funclet.Pointer == IntPtr.Zero)
             {
-                // Funclets only accept a shadow stack pointer
-                LLVMTypeRef universalFuncletSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+                // Funclets accept a shadow stack pointer and a generic ctx hidden param if the owning method has one
+                var funcletArgs = new LLVMTypeRef[FuncletsRequireHiddenContext() ? 2 : 1];
+                funcletArgs[0] = LLVM.PointerType(LLVM.Int8Type(), 0);
+                if (FuncletsRequireHiddenContext())
+                {
+                    funcletArgs[1] = LLVM.PointerType(LLVM.Int8Type(), 0);
+                }
+                LLVMTypeRef universalFuncletSignature = LLVM.FunctionType(LLVM.VoidType(), funcletArgs, false);
                 funclet = LLVM.AddFunction(Module, funcletName, universalFuncletSignature);
                 _exceptionFunclets.Add(funclet);
             }
@@ -4080,11 +4086,9 @@ namespace Internal.IL
             FieldDesc runtimeDeterminedField = (FieldDesc)_methodIL.GetObject(token);
             FieldDesc field = (FieldDesc)_canonMethodIL.GetObject(token);
             StackEntry valueEntry = _stack.Pop();
-            //            TypeDesc owningType = _compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
-            TypeDesc fieldType = _compilation.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             LLVMValueRef fieldAddress = GetFieldAddress(runtimeDeterminedField, field, isStatic);
-            CastingStore(fieldAddress, valueEntry, fieldType);
+            CastingStore(fieldAddress, valueEntry, field.FieldType);
         }
 
         // Loads symbol address. Address is represented as a i32*
@@ -4179,7 +4183,13 @@ namespace Internal.IL
                     // Work backwards through containing finally blocks to call them in the right order
                     BasicBlock finallyBlock = _basicBlocks[r.ILRegion.HandlerOffset];
                     MarkBasicBlock(finallyBlock);
-                    LLVM.BuildCall(_builder, GetFuncletForBlock(finallyBlock), new LLVMValueRef[] { LLVM.GetFirstParam(_currentFunclet) }, String.Empty);
+                    var funcletParams = new LLVMValueRef[FuncletsRequireHiddenContext() ? 2 : 1];
+                    funcletParams[0] = LLVM.GetFirstParam(_currentFunclet);
+                    if (FuncletsRequireHiddenContext())
+                    {
+                        funcletParams[1] = LLVM.GetParam(_currentFunclet, GetHiddenContextParamNo());
+                    }
+                    LLVM.BuildCall(_builder, GetFuncletForBlock(finallyBlock), funcletParams, String.Empty);
                 }
             }
 
@@ -4226,7 +4236,17 @@ namespace Internal.IL
 
                 return LLVM.BuildLoad(_builder, thisPtr, "methodTablePtrRef");
             }
-            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0) /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "HiddenArg");
+            return CastIfNecessary(_builder, LLVM.GetParam(_currentFunclet, GetHiddenContextParamNo() /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "HiddenArg");
+        }
+
+        uint GetHiddenContextParamNo()
+        {
+            return 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0);
+        }
+
+        bool FuncletsRequireHiddenContext()
+        {
+            return _method.IsSharedByGenericInstantiations && !_method.AcquiresInstMethodTableFromThis();
         }
 
         private LLVMValueRef ArrayBaseSizeRef()

@@ -26,7 +26,7 @@ internal static class Program
 
         TestBox();
 
-        TestSByteExtend(); 
+        TestSByteExtend();
         TestMetaData();
 
         Add(1, 2);
@@ -321,6 +321,8 @@ internal static class Program
         TestConstrainedValueTypeCallVirt();
 
         TestBoxToGenericTypeFromDirectMethod();
+
+        TestGenericCallInFinally();
 
         TestInitializeArray();
 
@@ -896,7 +898,7 @@ internal static class Program
         return result;
     }
 
-    class GenBase<A> 
+    class GenBase<A>
     {
         public virtual string GMethod1<T>(T t1, T t2) { return "GenBase<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
     }
@@ -939,7 +941,21 @@ internal static class Program
         var dict = new Dictionary<KeyValuePair<string, string>, string>();
         var notContainsKey = dict.ContainsKey(new KeyValuePair<string, string>());
 
+        // just testing can store the returned struct
+        new GenClassThatStoresGenReturn<string>(new Dictionary<string, string>());
+        
         EndTest(!notContainsKey);
+    }
+
+    private class GenClassThatStoresGenReturn<TKey>
+    {
+        private Dictionary<TKey, string>.ValueCollection.Enumerator _enumerator;
+
+        internal GenClassThatStoresGenReturn(Dictionary<TKey, string> table)
+        {
+            // testing the return value from the generic method can be stored in the field
+            _enumerator = table.Values.GetEnumerator();
+        }
     }
 
     private static void TestBoxToGenericTypeFromDirectMethod()
@@ -966,6 +982,23 @@ internal static class Program
         public void CallValueTypeGetHashCodeFromGeneric(TKey k)
         {
             k.GetHashCode();
+        }
+    }
+
+    private static void TestGenericCallInFinally()
+    {
+        StartTest("calling generic method requiring context from finally block");
+
+        CallGenericInFinally<string>();
+
+        PassTest();
+    }
+
+    private static void CallGenericInFinally<T>()
+    {
+        List<T> list = new List<T>();
+        foreach (var s in list)
+        {
         }
     }
 
