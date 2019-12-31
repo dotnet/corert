@@ -7,6 +7,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 
 #if PLATFORM_WINDOWS
 using CpObj;
@@ -322,6 +323,8 @@ internal static class Program
         TestBoxToGenericTypeFromDirectMethod();
 
         TestInitializeArray();
+
+        TestGenInfWithEnum();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -1213,6 +1216,12 @@ internal static class Program
         }
 
         PassTest();
+    }
+
+    enum e { v1 };
+    static void TestGenInfWithEnum()
+    {
+        Dictionary<string, e> dict = new List<string> { "" }.ToDictionary(m => m, m => e.v1);
     }
 
     [DllImport("*")]
