@@ -4241,7 +4241,8 @@ namespace Internal.IL
 
         uint GetHiddenContextParamNo()
         {
-            return 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0);
+            // only top funclet has a return slot
+            return 1 + (_currentFunclet.Pointer == _llvmFunction.Pointer &&  NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0);
         }
 
         bool FuncletsRequireHiddenContext()
