@@ -38,10 +38,19 @@ namespace ILCompiler
                     foreach (var method in _methods)
                         streamWriter.WriteLine($"   {method.GetNativeCallableExportName()}");
                 }
-                else
+                else if(_context.Target.IsOSX)
                 {
                     foreach (var method in _methods)
                         streamWriter.WriteLine($"_{method.GetNativeCallableExportName()}");
+                }
+                else
+                {
+                    streamWriter.WriteLine("V1.0 {");
+                    streamWriter.WriteLine("    global: _init; _fini;");
+                    foreach (var method in _methods)
+                        streamWriter.WriteLine($"        {method.GetNativeCallableExportName()};");
+                    streamWriter.WriteLine("    local: *;");
+                    streamWriter.WriteLine("};");
                 }
             }
         }
