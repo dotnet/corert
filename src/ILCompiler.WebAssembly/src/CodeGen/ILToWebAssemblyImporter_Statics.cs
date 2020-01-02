@@ -42,7 +42,6 @@ namespace Internal.IL
                 //CompileExternMethod(methodCodeNodeNeedingCode, method.GetPInvokeMethodMetadata().Name ?? method.Name);
                 //return;
             }
-
             var methodIL = compilation.GetMethodIL(method);
             if (methodIL == null)
                 return;
@@ -62,7 +61,7 @@ namespace Internal.IL
                     mangledName = compilation.NameMangler.GetMangledMethodName(methodCodeNodeNeedingCode.Method).ToString();
                 }
 
-                ilImporter = new ILImporter(compilation, method, methodIL, mangledName);
+                ilImporter = new ILImporter(compilation, method, methodIL, mangledName, methodCodeNodeNeedingCode is WebAssemblyUnboxingThunkNode);
 
                 CompilerTypeSystemContext typeSystemContext = compilation.TypeSystemContext;
 
@@ -116,6 +115,12 @@ namespace Internal.IL
         static LLVMValueRef TrapFunction = default(LLVMValueRef);
         static LLVMValueRef DoNothingFunction = default(LLVMValueRef);
         static LLVMValueRef NullRefFunction = default(LLVMValueRef);
+
+        internal static LLVMValueRef MakeFatPointer(LLVMBuilderRef builder, LLVMValueRef targetLlvmFunction, WebAssemblyCodegenCompilation compilation)
+        {
+            var asInt = LLVM.BuildPtrToInt(builder, targetLlvmFunction, LLVMTypeRef.Int32Type(), "toInt");
+            return LLVM.BuildBinOp(builder, LLVMOpcode.LLVMOr, asInt, LLVM.ConstInt(LLVM.Int32Type(), (ulong)compilation.TypeSystemContext.Target.FatFunctionPointerOffset, LLVMMisc.False), "makeFat");
+        }
 
         private static IList<string> GetParameterNamesForMethod(MethodDesc method)
         {

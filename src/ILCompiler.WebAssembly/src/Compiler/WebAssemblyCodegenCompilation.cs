@@ -56,10 +56,45 @@ namespace ILCompiler
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
         {
-            foreach (WebAssemblyMethodCodeNode methodCodeNodeNeedingCode in obj)
+            foreach (var dependency in obj)
             {
+                var methodCodeNodeNeedingCode = dependency as WebAssemblyMethodCodeNode;
+                if (methodCodeNodeNeedingCode == null)
+                {
+                    // To compute dependencies of the shadow method that tracks dictionary
+                    // dependencies we need to ensure there is code for the canonical method body.
+                    var dependencyMethod = (ShadowConcreteMethodNode)dependency;
+                    methodCodeNodeNeedingCode = (WebAssemblyMethodCodeNode)dependencyMethod.CanonicalMethodNode;
+                }
+
+                // We might have already compiled this method.
+                if (methodCodeNodeNeedingCode.StaticDependenciesAreComputed)
+                    continue;
+
                 ILImporter.CompileMethod(this, methodCodeNodeNeedingCode);
             }
+        }
+
+        public TypeDesc ConvertToCanonFormIfNecessary(TypeDesc type, CanonicalFormKind policy)
+        {
+            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                return type;
+
+            if (type.IsPointer || type.IsByRef)
+            {
+                ParameterizedType parameterizedType = (ParameterizedType)type;
+                TypeDesc paramTypeConverted = ConvertToCanonFormIfNecessary(parameterizedType.ParameterType, policy);
+                if (paramTypeConverted == parameterizedType.ParameterType)
+                    return type;
+
+                if (type.IsPointer)
+                    return TypeSystemContext.GetPointerType(paramTypeConverted);
+
+                if (type.IsByRef)
+                    return TypeSystemContext.GetByRefType(paramTypeConverted);
+            }
+
+            return type.ConvertToCanonForm(policy);
         }
     }
 }

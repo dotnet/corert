@@ -17,7 +17,6 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
-using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
 
 namespace ILCompiler.CppCodeGen
 {
@@ -2102,7 +2101,7 @@ namespace ILCompiler.CppCodeGen
                         sb.Append(" = ((intptr_t)");
                         sb.Append(resVarName);
                         sb.Append(") + ");
-                        sb.Append(FatFunctionPointerConstants.Offset.ToString());
+                        sb.Append(constructor.Context.Target.FatFunctionPointerOffset.ToString());
                         sb.Append(";");
                         sb.AppendLine();
 
@@ -2290,7 +2289,7 @@ namespace ILCompiler.CppCodeGen
                             sb.Append("(char *)");
                             sb.Append(GetCppFatFunctionPointerNameForMethod(cctor));
                             sb.Append("() + ");
-                            sb.Append(FatFunctionPointerConstants.Offset.ToString());
+                            sb.Append(cctor.Context.Target.FatFunctionPointerOffset.ToString());
                         }
                         else
                         {

@@ -4,15 +4,6 @@
 
 namespace Internal.Runtime
 {
-    internal static class FatFunctionPointerConstants
-    {
-        /// <summary>
-        /// Offset by which fat function pointers are shifted to distinguish them
-        /// from real function pointers.
-        /// </summary>
-        public const int Offset = 2;
-    }
-
     internal static class IndirectionConstants
     {
         /// <summary>

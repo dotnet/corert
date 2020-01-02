@@ -34,6 +34,13 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
         {
+            if (method.IsInternalCall)
+            {
+                if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
+                {
+                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
+                }
+            }
             if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
                 return new WebAssemblyMethodBodyNode(method);
@@ -51,12 +58,34 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override IMethodNode CreateUnboxingStubNode(MethodDesc method)
         {
-            return new WebAssemblyUnboxingThunkNode(TypeSystemContext.GetUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
+            if (method.IsCanonicalMethod(CanonicalFormKind.Specific) && !method.HasInstantiation)
+            {
+                // Unboxing stubs to canonical instance methods need a special unboxing stub that unboxes
+                // 'this' and also provides an instantiation argument (we do a calling convention conversion).
+                // We don't do this for generic instance methods though because they don't use the EEType
+                // for the generic context anyway.
+                return new WebAssemblyMethodBodyNode(TypeSystemContext.GetSpecialUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
+            }
+            else
+            {
+                // Otherwise we just unbox 'this' and don't touch anything else.
+                return new WebAssemblyUnboxingThunkNode(TypeSystemContext.GetUnboxingThunk(method, TypeSystemContext.GeneratedAssembly));
+            }
         }
 
         protected override ISymbolNode CreateReadyToRunHelperNode(ReadyToRunHelperKey helperCall)
         {
             throw new NotSupportedException();
+        }
+
+        protected override ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey)
+        {
+            return new WebAssemblyReadyToRunGenericLookupFromDictionaryNode(this, helperKey.HelperId, helperKey.Target, helperKey.DictionaryOwner);
+        }
+
+        protected override ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey)
+        {
+            return new WebAssemblyReadyToRunGenericLookupFromTypeNode(this, helperKey.HelperId, helperKey.Target, helperKey.DictionaryOwner);
         }
     }
 }

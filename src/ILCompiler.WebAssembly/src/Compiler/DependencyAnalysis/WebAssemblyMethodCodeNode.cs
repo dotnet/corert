@@ -85,31 +85,4 @@ namespace ILCompiler.DependencyAnalysis
             return comparer.Compare(_method, ((WebAssemblyMethodBodyNode)other)._method);
         }
     }
-
-    internal class WebAssemblyUnboxingThunkNode : WebAssemblyMethodCodeNode, IMethodNode
-    {
-        public WebAssemblyUnboxingThunkNode(MethodDesc method)
-            : base(method)
-        {
-        }
-
-        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
-        {
-            var dependencies = new DependencyList();
-
-            foreach (Object node in _dependencies)
-                dependencies.Add(node, "Wasm code ");
-
-            return dependencies;
-        }
-
-        int ISortableNode.ClassCode => -18942467;
-
-        int ISortableNode.CompareToImpl(ISortableNode other, CompilerComparer comparer)
-        {
-            return comparer.Compare(_method, ((WebAssemblyUnboxingThunkNode)other)._method);
-        }
-    }
 }

@@ -21,7 +21,12 @@ internal static class Program
     private static unsafe int Main(string[] args)
     {
         Success = true;
-        PrintLine("Starting");
+        PrintLine("Starting " + 1);
+
+        TestBox();
+
+        TestSByteExtend(); 
+        TestMetaData();
 
         Add(1, 2);
         PrintLine("Hello from C#!");
@@ -265,8 +270,6 @@ internal static class Program
 
         TestArrayItfDispatch();
 
-        TestMetaData();
-
         TestTryFinally();
 
         StartTest("RVA static field test");
@@ -304,10 +307,20 @@ internal static class Program
 
         TestSByteExtend();
 
+        TestSharedDelegate();
+
         TestUlongUintMultiply();
 
         TestBoxSingle();
-        
+
+        TestGvmCallInIf(new GenDerived<string>(), "hello");
+
+        TestStoreFromGenericMethod();
+
+        TestConstrainedValueTypeCallVirt();
+
+        TestBoxToGenericTypeFromDirectMethod();
+
         TestInitializeArray();
 
         // This test should remain last to get other results before stopping the debugger
@@ -345,6 +358,18 @@ internal static class Program
         Success = false;
         PrintLine("Failed.");
         if (failMessage != null) PrintLine(failMessage + "-");
+    }
+
+    private static void TestBox()
+    {
+        StartTest("Box int test");
+        object o = (Int32)1;
+        string virtCallRes = o.ToString();
+        PrintLine(virtCallRes);
+        var i = (int)o;
+        PrintLine("i");
+        PrintLine(i.ToString());
+        EndTest(virtCallRes == "1");
     }
 
     private static int StaticDelegateTarget()
@@ -773,6 +798,16 @@ internal static class Program
         instance.ReturnTrueIf1AndThis(0, null); // force method output
         ClassForMetaTests.ReturnsParam(null); // force method output
 
+        NewMethod(classForMetaTestsType, instance);
+
+        StartTest("Class get+invoke static method with ref param via reflection");
+        var staticMtd = classForMetaTestsType.GetMethod("ReturnsParam");
+        var retVal = (ClassForMetaTests)staticMtd.Invoke(null, new object[] { instance });
+        EndTest(Object.ReferenceEquals(retVal, instance));
+    }
+
+    private static void NewMethod(Type classForMetaTestsType, ClassForMetaTests instance)
+    {
         StartTest("Class get+invoke simple method via reflection");
         var mtd = classForMetaTestsType.GetMethod("ReturnTrueIf1");
         bool shouldBeTrue = (bool)mtd.Invoke(instance, new object[] { 1 });
@@ -785,10 +820,6 @@ internal static class Program
         shouldBeFalse = (bool)mtdWith2Params.Invoke(instance, new object[] { 1, new ClassForMetaTests() });
         EndTest(shouldBeTrue && !shouldBeFalse);
 
-        StartTest("Class get+invoke static method with ref param via reflection");
-        var staticMtd = classForMetaTestsType.GetMethod("ReturnsParam");
-        var retVal = (ClassForMetaTests)staticMtd.Invoke(null, new object[] { instance });
-        EndTest(Object.ReferenceEquals(retVal, instance));
     }
 
     public class ClassForMetaTests
@@ -862,6 +893,33 @@ internal static class Program
         return result;
     }
 
+    class GenBase<A> 
+    {
+        public virtual string GMethod1<T>(T t1, T t2) { return "GenBase<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+    }
+    class GenDerived<A> : GenBase<A>
+    {
+        public override string GMethod1<T>(T t1, T t2) { return "GenDerived<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+    }
+
+    private static void TestGvmCallInIf<T>(GenBase<T> g, T p)
+    {
+        var i = 1;
+        if (i == 1)
+        {
+            g.GMethod1(p, p);
+        }
+    }
+
+    private static void TestStoreFromGenericMethod()
+    {
+        StartTest("TestStoreFromGenericMethod");
+        var values = new string[1];
+        // testing that the generic return value type from the function can be stored in a concrete type
+        values = values.AsSpan(0, 1).ToArray();
+        PassTest();
+    }
+
     private static void TestCallToGenericInterfaceMethod()
     {
         StartTest("Call generic method on interface test");
@@ -869,6 +927,43 @@ internal static class Program
         TestGenItf implInt = new TestGenItf();
         implInt.Log<object>(new object());
         EndTest(true);
+    }
+
+    private static void TestConstrainedValueTypeCallVirt()
+    {
+        StartTest("Call constrained callvirt");
+        //TODO: create simpler test that doesn't need Dictionary<>/KVP<>/Span
+        var dict = new Dictionary<KeyValuePair<string, string>, string>();
+        var notContainsKey = dict.ContainsKey(new KeyValuePair<string, string>());
+
+        EndTest(!notContainsKey);
+    }
+
+    private static void TestBoxToGenericTypeFromDirectMethod()
+    {
+        StartTest("Callvirt on generic struct boxing to looked up generic type");
+
+        new GetHashCodeCaller<GenStruct<string>, string>().CallValueTypeGetHashCodeFromGeneric(new GenStruct<string>(""));
+
+        PassTest();
+    }
+
+    public struct GenStruct<TKey>
+    {
+        private TKey key; 
+
+        public GenStruct(TKey key)
+        {
+            this.key = key;
+        }
+    }
+
+    public class GetHashCodeCaller<TKey, TValue>
+    {
+        public void CallValueTypeGetHashCodeFromGeneric(TKey k)
+        {
+            k.GetHashCode();
+        }
     }
 
     public interface ITestGenItf
@@ -1015,7 +1110,7 @@ internal static class Program
         EndTest(strt.DoubleField == 0d);
     }
 
-    private static void TestSByteExtend()
+    private static unsafe void TestSByteExtend()
     {
         StartTest("SByte extend");
         sbyte s = -1;
@@ -1054,7 +1149,22 @@ internal static class Program
         }
 
         StartTest("Negative SByte br");
-        EndTest(ILHelpers.ILHelpersTest.BneSbyteExtend());
+        if (s == -1) // this only creates the bne opcode, which it is testing, in Release mode.
+        {
+            PassTest();
+        }
+        else
+        {
+            FailTest();
+        }
+    }
+
+    public static void TestSharedDelegate()
+    {
+        StartTest("Shared Delegate");
+        var shouldBeFalse = SampleClassWithGenericDelegate.CallDelegate(new object[0]);
+        var shouldBeTrue = SampleClassWithGenericDelegate.CallDelegate(new object[1]);
+        EndTest(!shouldBeFalse && shouldBeTrue);
     }
 
     internal static void TestUlongUintMultiply()
@@ -1066,6 +1176,14 @@ internal static class Program
         EndTest(f == 0x100000000);
     }
 
+    internal static void TestBoxSingle()
+    {
+        StartTest("Test box single");
+        var fi = typeof(ClassWithFloat).GetField("F");
+        fi.SetValue(null, 1.1f);
+        EndTest(1.1f == ClassWithFloat.F);
+    }
+    
     static void TestInitializeArray()
     {
         StartTest("Test InitializeArray");
@@ -1097,21 +1215,46 @@ internal static class Program
         PassTest();
     }
 
-    internal static void TestBoxSingle()
-    {
-        StartTest("Test box single");
-        var fi = typeof(ClassWithFloat).GetField("F");
-        fi.SetValue(null, 1.1f);
-        EndTest(1.1f == ClassWithFloat.F);
-    }
-
-  [DllImport("*")]
+    [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
 
 public class ClassWithFloat
 {
     public static float F;
+}
+
+public class SampleClassWithGenericDelegate
+{
+    public static bool CallDelegate<T>(T[] items)
+    {
+        return new Stack<T>(items).CallDelegate(DoWork);
+    }
+
+    public static bool DoWork<T>(T[] items)
+    {
+        Program.PrintLine("DoWork");
+        return items.Length > 0;
+    }
+}
+
+public class Stack<T>
+{
+    T[] items;
+
+    public Stack(T[] items)
+    {
+        this.items = items;
+    }
+
+    public bool CallDelegate(StackDelegate d)
+    {
+        Program.PrintLine("CallDelegate");
+        Program.PrintLine(items.Length.ToString());
+        return d(items);
+    }
+
+    public delegate bool StackDelegate(T[] items);
 }
 
 public struct TwoByteStr

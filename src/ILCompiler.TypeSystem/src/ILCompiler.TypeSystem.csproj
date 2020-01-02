@@ -79,6 +79,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Canon\TypeSystemContext.Canon.cs">
       <Link>TypeSystem\Canon\TypeSystemContext.Canon.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Aot\TargetDetails.Aot.cs">
+      <Link>TypeSystem\Aot\TargetDetails.Aot.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\FieldDesc.CodeGen.cs">
       <Link>TypeSystem\CodeGen\FieldDesc.CodeGen.cs</Link>
     </Compile>

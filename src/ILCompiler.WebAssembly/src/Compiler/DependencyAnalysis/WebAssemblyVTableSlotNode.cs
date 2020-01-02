@@ -17,8 +17,8 @@ namespace ILCompiler.DependencyAnalysis
         public WebAssemblyVTableSlotNode(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.IsVirtual);
-            Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
             Debug.Assert(!targetMethod.HasInstantiation);
+            Debug.Assert(!targetMethod.IsRuntimeDeterminedExactMethod);
             _targetMethod = targetMethod;
         }
 
