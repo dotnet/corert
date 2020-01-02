@@ -962,17 +962,29 @@ internal static class Program
 
     private static void TestPassGenericReturnToActualCallParam()
     {
+        StartTest("Casting of generic structs on return and in call params");
+
+        // test return  type is cast
         ActualStructCallParam(new string[0]);
+
+        // test call param is cast
+        GenStructCallParam(new GenStructWithImplicitOp<string>());
+
+        PassTest();
     }
 
     private static void ActualStructCallParam(GenStructWithImplicitOp<string> gs)
     {
     }
 
+    private static void GenStructCallParam<T>(GenStructWithImplicitOp<T> gs)
+    {
+    }
+
     public ref struct GenStructWithImplicitOp<TKey>
     {
         private int length;
-        private int length2;
+        private int length2; // just one int field will not create an LLVM struct type, so put another field
 
         public GenStructWithImplicitOp(TKey[] key)
         {

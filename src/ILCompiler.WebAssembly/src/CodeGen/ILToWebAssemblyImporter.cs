@@ -2448,6 +2448,10 @@ namespace Internal.IL
                 else
                 {
                     argType = signature[index - instanceAdjustment];
+                    if (canonMethod != null && CanStoreTypeOnStack(argType))
+                    {
+                        argType = canonMethod.Signature[index - instanceAdjustment];
+                    }
                 }
 
                 LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(argType);
