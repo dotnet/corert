@@ -321,6 +321,8 @@ internal static class Program
 
         TestBoxToGenericTypeFromDirectMethod();
 
+        TestPassGenericReturnToActualCallParam();
+
         TestInitializeArray();
 
         // This test should remain last to get other results before stopping the debugger
@@ -950,12 +952,35 @@ internal static class Program
 
     public struct GenStruct<TKey>
     {
-        private TKey key; 
+        private TKey key;
 
         public GenStruct(TKey key)
         {
             this.key = key;
         }
+    }
+
+    private static void TestPassGenericReturnToActualCallParam()
+    {
+        ActualStructCallParam(new string[0]);
+    }
+
+    private static void ActualStructCallParam(GenStructWithImplicitOp<string> gs)
+    {
+    }
+
+    public ref struct GenStructWithImplicitOp<TKey>
+    {
+        private int length;
+        private int length2;
+
+        public GenStructWithImplicitOp(TKey[] key)
+        {
+            length = key.Length;
+            length2 = length;
+        }
+
+        public static implicit operator GenStructWithImplicitOp<TKey>(TKey[] array) => new GenStructWithImplicitOp<TKey>(array);
     }
 
     public class GetHashCodeCaller<TKey, TValue>
