@@ -4073,8 +4073,13 @@ namespace Internal.IL
         {
             FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
             LLVMValueRef fieldAddress = GetFieldAddress(field, (FieldDesc)_canonMethodIL.GetObject(token), isStatic);
+            TypeDesc fieldType = field.FieldType;
+            if (fieldType is RuntimeDeterminedType runtimeDeterminedType)
+            {
+                fieldType = runtimeDeterminedType.CanonicalType;
+            }
 
-            PushLoadExpression(GetStackValueKind(field.FieldType), $"Field_{field.Name}", fieldAddress, field.FieldType);
+            PushLoadExpression(GetStackValueKind(field.FieldType), $"Field_{field.Name}", fieldAddress, fieldType);
         }
 
         private void ImportAddressOfField(int token, bool isStatic)
