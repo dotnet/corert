@@ -2549,8 +2549,7 @@ namespace Internal.IL
         private ExpressionEntry CreateGenericReturnExpression(StackValueKind stackValueKind, string calleeName, LLVMValueRef llvmReturn, TypeDesc actualReturnType)
         {
             Debug.Assert(llvmReturn.TypeOf().IsPackedStruct);
-            var destLLVMStructType = GetLLVMTypeForTypeDesc(actualReturnType);
-            var destStruct = destLLVMStructType.GetUndef();
+            var destStruct = GetLLVMTypeForTypeDesc(actualReturnType).GetUndef();
             for (uint elemNo = 0; elemNo < llvmReturn.TypeOf().CountStructElementTypes(); elemNo++)
             {
                 var elemValRef = LLVM.BuildExtractValue(_builder, llvmReturn, 0, "ex" + elemNo);
