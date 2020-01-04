@@ -321,7 +321,7 @@ internal static class Program
 
         TestBoxToGenericTypeFromDirectMethod();
 
-        TestPassGenericReturnToActualCallParam();
+        TestGenericStructHandling();
 
         TestGenericCallInFinally();
 
@@ -962,7 +962,7 @@ internal static class Program
         }
     }
 
-    private static void TestPassGenericReturnToActualCallParam()
+    private static void TestGenericStructHandling()
     {
         StartTest("Casting of generic structs on return and in call params");
 
@@ -1025,7 +1025,7 @@ internal static class Program
     private static void CallGenericInFinally<T>()
     {
         List<T> list = new List<T>();
-        foreach (var s in list)
+        foreach (var s in list) // will generate a call to Dispose
         {
         }
     }

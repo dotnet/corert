@@ -2536,7 +2536,7 @@ namespace Internal.IL
                 return needsReturnSlot ? returnSlot : 
                     (
                         canonMethod != null && canonMethod.Signature.ReturnType != actualReturnType
-                        ? CreateGenericReturnExpression(canonMethod.Signature.ReturnType, GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType)
+                        ? CreateGenericReturnExpression(GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType)
                         : new ExpressionEntry(GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType));
             }
             else
@@ -2546,16 +2546,17 @@ namespace Internal.IL
         }
 
         // generic structs need to be cast to the actualReturnType
-        private ExpressionEntry CreateGenericReturnExpression(TypeDesc signatureReturnType,
-            StackValueKind stackValueKind, string calleeName, LLVMValueRef llvmReturn, TypeDesc actualReturnType)
+        private ExpressionEntry CreateGenericReturnExpression(StackValueKind stackValueKind, string calleeName, LLVMValueRef llvmReturn, TypeDesc actualReturnType)
         {
             Debug.Assert(llvmReturn.TypeOf().IsPackedStruct);
-
-            var memStructPtr = LLVM.BuildAlloca(_builder, llvmReturn.TypeOf(), "memStruct");
-            LLVM.BuildStore(_builder, llvmReturn, memStructPtr);
-            var castPtr = LLVM.BuildPointerCast(_builder, memStructPtr,
-                LLVMTypeRef.PointerType(GetLLVMTypeForTypeDesc(actualReturnType), 0), "castPtr");
-            return new LoadExpressionEntry(stackValueKind, calleeName, castPtr, actualReturnType);
+            var destLLVMStructType = GetLLVMTypeForTypeDesc(actualReturnType);
+            var destStruct = destLLVMStructType.GetUndef();
+            for (uint elemNo = 0; elemNo < llvmReturn.TypeOf().CountStructElementTypes(); elemNo++)
+            {
+                var elemValRef = LLVM.BuildExtractValue(_builder, llvmReturn, 0, "ex" + elemNo);
+                destStruct = LLVM.BuildInsertValue(_builder, destStruct, elemValRef, elemNo, "st" + elemNo);
+            }
+            return new ExpressionEntry(stackValueKind, calleeName, destStruct, actualReturnType);
         }
 
         // simple calling cases, not virtual, not calli
@@ -4118,7 +4119,6 @@ namespace Internal.IL
             FieldDesc runtimeDeterminedField = (FieldDesc)_methodIL.GetObject(token);
             FieldDesc field = (FieldDesc)_canonMethodIL.GetObject(token);
             StackEntry valueEntry = _stack.Pop();
-            //            TypeDesc owningType = _compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
             TypeDesc fieldType = _compilation.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             LLVMValueRef fieldAddress = GetFieldAddress(runtimeDeterminedField, field, isStatic);
