@@ -1717,7 +1717,7 @@ namespace Internal.IL
                     // pass this (delegate obj) as first param
                     LLVMTypeRef llvmTypeRefForThis = GetLLVMTypeForTypeDesc(thisEntry.Type);
                     curOffset = PadOffset(thisEntry.Type, curOffset);
-                    LLVMValueRef thisAddr = LLVM.BuildGEP(_builder, shadowStack, new LLVMValueRef[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False)}, "thisLoc");
+                    LLVMValueRef thisAddr = LLVM.BuildGEP(_builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "thisLoc");
                     LLVMValueRef llvmValueRefForThis = thisEntry.ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
                     LLVM.BuildStore(_builder, llvmValueRefForThis, CastIfNecessary(_builder, thisAddr, LLVM.PointerType(llvmTypeRefForThis, 0), "thisCast"));
                     curOffset = PadNextOffset(GetWellKnownType(WellKnownType.Object), curOffset);
@@ -1743,7 +1743,7 @@ namespace Internal.IL
                         {
                             LLVMValueRef llvmValueRefForArg = argStackEntry.ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
                             curOffset = PadOffset(argTypeDesc, curOffset);
-                            LLVMValueRef argAddr = LLVM.BuildGEP(_builder, shadowStack, new LLVMValueRef[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False)}, "arg" + i);
+                            LLVMValueRef argAddr = LLVM.BuildGEP(_builder, shadowStack, new LLVMValueRef[] { LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False) }, "arg" + i);
                             LLVM.BuildStore(_builder, llvmValueRefForArg, CastIfNecessary(_builder, argAddr, LLVM.PointerType(llvmTypeRefForArg, 0), $"parameter{i}_"));
                             curOffset = PadNextOffset(argTypeDesc, curOffset);
                         }
@@ -1753,7 +1753,8 @@ namespace Internal.IL
                     LLVM.BuildCall(_builder, helper, helperParams.ToArray(), string.Empty);
                     return;
                 }
-                if (!functionPointer.IsVirtual && delegateTargetMethod.OwningType.IsValueType && !delegateTargetMethod.Signature.IsStatic)
+                if (!functionPointer.IsVirtual && delegateTargetMethod.OwningType.IsValueType && 
+                    !delegateTargetMethod.Signature.IsStatic)
                 {
                     _stack.Pop(); // remove the target
 
@@ -1776,10 +1777,7 @@ namespace Internal.IL
                 {
                     // These are the invoke thunks e.g. {[S.P.CoreLib]System.Func`1<System.__Canon>.InvokeOpenStaticThunk()} that are passed to e.g. {[S.P.CoreLib]System.Delegate.InitializeOpenStaticThunk(object,native int,native int)}
                     // only push this if there is the third argument, i.e. not {[S.P.CoreLib]System.Delegate.InitializeClosedInstance(object,native int)}
-                    PushExpression(StackValueKind.NativeInt, "thunk",
-                        GetOrCreateLLVMFunction(
-                            _compilation.NodeFactory.NameMangler.GetMangledMethodName(delegateInfo.Thunk.Method)
-                                .ToString(), delegateInfo.Thunk.Method.Signature, false));
+                    PushExpression(StackValueKind.NativeInt, "thunk", GetOrCreateLLVMFunction(_compilation.NodeFactory.NameMangler.GetMangledMethodName(delegateInfo.Thunk.Method).ToString(), delegateInfo.Thunk.Method.Signature, false));
                 }
             }
 
