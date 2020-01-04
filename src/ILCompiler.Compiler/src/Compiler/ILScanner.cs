@@ -13,6 +13,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
+using Internal.ReadyToRunConstants;
 
 using Debug = System.Diagnostics.Debug;
 

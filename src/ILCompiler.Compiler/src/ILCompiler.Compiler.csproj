@@ -25,6 +25,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\GCDescEncoder.cs">
       <Link>Common\GCDescEncoder.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\ReadyToRunConstants.cs">
+      <Link>Common\ReadyToRunConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\InteropConstants.cs">
       <Link>Common\InteropConstants.cs</Link>
     </Compile>
@@ -339,7 +342,6 @@
     <Compile Include="Compiler\NodeMangler.cs" />
     <Compile Include="Compiler\ObjectDumper.cs" />
     <Compile Include="Compiler\ExportsFileWriter.cs" />
-    <Compile Include="Compiler\ReadyToRun.cs" />
     <Compile Include="Compiler\RootingHelpers.cs" />
     <Compile Include="Compiler\RootingServiceProvider.cs" />
     <Compile Include="Compiler\RuntimeConfigurationRootProvider.cs" />

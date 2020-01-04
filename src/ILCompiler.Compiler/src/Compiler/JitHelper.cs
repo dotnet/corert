@@ -6,7 +6,7 @@ using System;
 
 using Internal.TypeSystem;
 using Internal.IL;
-using Internal.Runtime;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler
 {

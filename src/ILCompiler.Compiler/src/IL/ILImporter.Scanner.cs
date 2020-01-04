@@ -5,6 +5,7 @@
 using System;
 
 using Internal.TypeSystem;
+using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
