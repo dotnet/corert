@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 
 using Internal.IL;
 using Internal.TypeSystem;
+using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;

@@ -54,6 +54,7 @@
     <Compile Include="Internal\Runtime\JitSupport\JitNodeFactory.cs" />
     <Compile Include="Internal\Runtime\JitSupport\JitTemp.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Runtime\CorConstants.cs" />
+    <Compile Include="$(CommonBasePath)\Internal\Runtime\ReadyToRunConstants.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Runtime\EEType.Constants.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Runtime\EETypeBuilderHelpers.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Runtime\RuntimeConstants.cs" />
@@ -139,7 +140,6 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\MethodExtensions.cs" />
-    <Compile Include="$(ILCompilerBasePath)\Compiler\ReadyToRun.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\TypeExtensions.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\NameMangler.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\NodeMangler.cs" />
