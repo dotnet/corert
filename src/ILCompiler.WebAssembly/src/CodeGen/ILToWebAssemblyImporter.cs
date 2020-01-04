@@ -1753,8 +1753,8 @@ namespace Internal.IL
                     LLVM.BuildCall(_builder, helper, helperParams.ToArray(), string.Empty);
                     return;
                 }
-                if (!functionPointer.IsVirtual && delegateTargetMethod.OwningType.IsValueType && 
-                    !delegateTargetMethod.Signature.IsStatic)
+                if (!functionPointer.IsVirtual && delegateTargetMethod.OwningType.IsValueType &&
+                        !delegateTargetMethod.Signature.IsStatic)
                 {
                     _stack.Pop(); // remove the target
 
