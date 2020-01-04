@@ -105,38 +105,6 @@ namespace Internal.JitInterface
     public enum mdToken : uint
     { }
 
-    public enum CorTokenType
-    {
-        mdtModule = 0x00000000,
-        mdtTypeRef = 0x01000000,
-        mdtTypeDef = 0x02000000,
-        mdtFieldDef = 0x04000000,
-        mdtMethodDef = 0x06000000,
-        mdtParamDef = 0x08000000,
-        mdtInterfaceImpl = 0x09000000,
-        mdtMemberRef = 0x0a000000,
-        mdtCustomAttribute = 0x0c000000,
-        mdtPermission = 0x0e000000,
-        mdtSignature = 0x11000000,
-        mdtEvent = 0x14000000,
-        mdtProperty = 0x17000000,
-        mdtMethodImpl = 0x19000000,
-        mdtModuleRef = 0x1a000000,
-        mdtTypeSpec = 0x1b000000,
-        mdtAssembly = 0x20000000,
-        mdtAssemblyRef = 0x23000000,
-        mdtFile = 0x26000000,
-        mdtExportedType = 0x27000000,
-        mdtManifestResource = 0x28000000,
-        mdtGenericParam = 0x2a000000,
-        mdtMethodSpec = 0x2b000000,
-        mdtGenericParamConstraint = 0x2c000000,
-
-        mdtString = 0x70000000,
-        mdtName = 0x71000000,
-        mdtBaseType = 0x72000000,
-    }
-
     public enum HRESULT {
         E_NOTIMPL = -2147467263
     }
@@ -925,7 +893,7 @@ namespace Internal.JitInterface
         public uint offsetOfDelegateInstance;
         public uint offsetOfDelegateFirstTarget;
 
-        // Secure delegate offsets
+        // Wrapper delegate offsets
         public uint offsetOfWrapperDelegateIndirectCell;
 
         // Remoting offsets
@@ -1016,7 +984,7 @@ namespace Internal.JitInterface
     // thisTransform and constraint calls
     // ----------------------------------
     //
-    // For evertyhing besides "constrained." calls "thisTransform" is set to
+    // For everything besides "constrained." calls "thisTransform" is set to
     // CORINFO_NO_THIS_TRANSFORM.
     //
     // For "constrained." calls the EE attempts to resolve the call at compile
@@ -1405,9 +1373,9 @@ namespace Internal.JitInterface
         CORJIT_FLAG_HAS_ARM64_SHA256        = 55, // ID_AA64ISAR0_EL1.SHA2 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SHA512        = 56, // ID_AA64ISAR0_EL1.SHA2 is 2 or better
         CORJIT_FLAG_HAS_ARM64_SHA3          = 57, // ID_AA64ISAR0_EL1.SHA3 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_ADVSIMD       = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
-        CORJIT_FLAG_HAS_ARM64_ADVSIMD_V81   = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
-        CORJIT_FLAG_HAS_ARM64_ADVSIMD_FP16  = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD          = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD_V81      = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD_FP16     = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
         CORJIT_FLAG_HAS_ARM64_SM3           = 61, // ID_AA64ISAR0_EL1.SM3 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SM4           = 62, // ID_AA64ISAR0_EL1.SM4 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SVE           = 63, // ID_AA64PFR0_EL1.SVE is 1 or better
