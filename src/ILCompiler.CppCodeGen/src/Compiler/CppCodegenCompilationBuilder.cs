@@ -49,6 +49,11 @@ namespace ILCompiler
 
             return new CppCodegenCompilation(graph, factory, _compilationRoots, _ilProvider, _debugInformationProvider, _logger, _config);
         }
+
+        public override CompilationBuilder UseJitPath(string jitPath)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     internal class CppCodegenConfigProvider
