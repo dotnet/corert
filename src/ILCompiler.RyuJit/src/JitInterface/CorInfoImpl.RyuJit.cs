@@ -1675,5 +1675,19 @@ namespace Internal.JitInterface
 
         private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
         { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
+
+        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
+        {
+        }
+
+        private void setEHcount(uint cEH)
+        {
+            _ehClauses = new CORINFO_EH_CLAUSE[cEH];
+        }
+
+        private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
+        {
+            _ehClauses[EHnumber] = clause;
+        }
     }
 }
