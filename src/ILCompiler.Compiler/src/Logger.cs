@@ -18,7 +18,7 @@ namespace ILCompiler
 
         public Logger(TextWriter writer, bool isVerbose)
         {
-            Writer = TextWriter.Synchronized(writer);
+            Writer = writer;
             IsVerbose = isVerbose;
         }
     }
