@@ -1685,8 +1685,7 @@ namespace Internal.IL
             {
                 FunctionPointerEntry functionPointer = ((FunctionPointerEntry)_stack.Peek());
                 TypeDesc canonDelegateType = callee.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(canonDelegateType,
-                    functionPointer.Method, followVirtualDispatch: false);
+                DelegateCreationInfo delegateInfo = _compilation.GetDelegateCtor(canonDelegateType, functionPointer.Method, followVirtualDispatch: false);
                 MethodDesc delegateTargetMethod = delegateInfo.TargetMethod;
                 callee = delegateInfo.Constructor.Method;
                 if (delegateInfo.NeedsRuntimeLookup && !functionPointer.IsVirtual)
@@ -1710,8 +1709,7 @@ namespace Internal.IL
                     {
                         stackCopy[i] = _stack.Pop();
                     }
-                    var thisEntry =
-                        _stack.Pop(); // the extra newObjResult which we dont want as we are not going through HandleCall
+                    var thisEntry = _stack.Pop(); // the extra newObjResult which we dont want as we are not going through HandleCall
                     // by convention(?) the delegate initialize methods take this as the first parameter which is not in the ctor
                     // method sig, so add that here
                     int curOffset = 0;
@@ -1719,16 +1717,16 @@ namespace Internal.IL
                     // pass this (delegate obj) as first param
                     LLVMTypeRef llvmTypeRefForThis = GetLLVMTypeForTypeDesc(thisEntry.Type);
                     curOffset = PadOffset(thisEntry.Type, curOffset);
-                    LLVMValueRef thisAddr = LLVM.BuildGEP(_builder, shadowStack,
-                        new LLVMValueRef[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False)},
-                        "thisLoc");
-                    LLVMValueRef llvmValueRefForThis =
-                        thisEntry.ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
-                    LLVM.BuildStore(_builder, llvmValueRefForThis,
-                        CastIfNecessary(_builder, thisAddr, LLVM.PointerType(llvmTypeRefForThis, 0), "thisCast"));
+                    LLVMValueRef thisAddr = LLVM.BuildGEP(_builder, shadowStack, new LLVMValueRef[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False)}, "thisLoc");
+                    LLVMValueRef llvmValueRefForThis = thisEntry.ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
+                    LLVM.BuildStore(_builder, llvmValueRefForThis, CastIfNecessary(_builder, thisAddr, LLVM.PointerType(llvmTypeRefForThis, 0), "thisCast"));
                     curOffset = PadNextOffset(GetWellKnownType(WellKnownType.Object), curOffset);
 
-                    List<LLVMValueRef> helperParams = new List<LLVMValueRef> {shadowStack, GetGenericContext()};
+                    List<LLVMValueRef> helperParams = new List<LLVMValueRef>
+                    {
+                        shadowStack, 
+                        GetGenericContext()
+                    };
 
                     for (var i = 0; i < sigLength; i++)
                     {
@@ -1743,48 +1741,35 @@ namespace Internal.IL
                         }
                         else
                         {
-                            LLVMValueRef llvmValueRefForArg =
-                                argStackEntry.ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
+                            LLVMValueRef llvmValueRefForArg = argStackEntry.ValueAsType(LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), _builder);
                             curOffset = PadOffset(argTypeDesc, curOffset);
-                            LLVMValueRef argAddr = LLVM.BuildGEP(_builder, shadowStack,
-                                new LLVMValueRef[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False)},
-                                "arg" + i);
-                            LLVM.BuildStore(_builder, llvmValueRefForArg,
-                                CastIfNecessary(_builder, argAddr, LLVM.PointerType(llvmTypeRefForArg, 0),
-                                    $"parameter{i}_"));
+                            LLVMValueRef argAddr = LLVM.BuildGEP(_builder, shadowStack, new LLVMValueRef[] {LLVM.ConstInt(LLVM.Int32Type(), (ulong)curOffset, LLVMMisc.False)}, "arg" + i);
+                            LLVM.BuildStore(_builder, llvmValueRefForArg, CastIfNecessary(_builder, argAddr, LLVM.PointerType(llvmTypeRefForArg, 0), $"parameter{i}_"));
                             curOffset = PadNextOffset(argTypeDesc, curOffset);
                         }
                     }
 
-                    var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo,
-                        out helper,
-                        additionalTypes);
+                    GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo, out helper, additionalTypes);
                     LLVM.BuildCall(_builder, helper, helperParams.ToArray(), string.Empty);
                     return;
                 }
-                if (!functionPointer.IsVirtual && delegateTargetMethod.OwningType.IsValueType &&
-                    !delegateTargetMethod.Signature.IsStatic)
+                if (!functionPointer.IsVirtual && delegateTargetMethod.OwningType.IsValueType && !delegateTargetMethod.Signature.IsStatic)
                 {
                     _stack.Pop(); // remove the target
 
-                    MethodDesc canonDelegateTargetMethod =
-                        delegateTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    MethodDesc canonDelegateTargetMethod = delegateTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     ISymbolNode targetNode = delegateInfo.GetTargetNode(_compilation.NodeFactory);
                     _dependencies.Add(targetNode);
                     if (delegateTargetMethod != canonDelegateTargetMethod)
                     {
                         var funcRef = LoadAddressOfSymbolNode(targetNode);
                         var toInt = LLVM.BuildPtrToInt(_builder, funcRef, LLVMTypeRef.Int32Type(), "toInt");
-                        var withOffset = LLVM.BuildOr(_builder, toInt,
-                            BuildConstUInt32((uint)_compilation.TypeSystemContext.Target.FatFunctionPointerOffset),
-                            "withOffset");
+                        var withOffset = LLVM.BuildOr(_builder, toInt, BuildConstUInt32((uint)_compilation.TypeSystemContext.Target.FatFunctionPointerOffset), "withOffset");
                         PushExpression(StackValueKind.NativeInt, "fatthunk", withOffset);
                     }
                     else
                     {
-                        PushExpression(StackValueKind.NativeInt, "thunk",
-                            GetOrCreateLLVMFunction(targetNode.GetMangledName(_compilation.NodeFactory.NameMangler),
-                                delegateTargetMethod.Signature, false));
+                        PushExpression(StackValueKind.NativeInt, "thunk", GetOrCreateLLVMFunction(targetNode.GetMangledName(_compilation.NodeFactory.NameMangler), delegateTargetMethod.Signature, false));
                     }
                 }
                 else if (callee.Signature.Length == 3)
@@ -1797,6 +1782,7 @@ namespace Internal.IL
                                 .ToString(), delegateInfo.Thunk.Method.Signature, false));
                 }
             }
+
             HandleCall(callee, callee.Signature, runtimeDeterminedMethod, opcode, localConstrainedType);
         }
 
