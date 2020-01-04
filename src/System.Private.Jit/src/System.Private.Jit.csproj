@@ -53,6 +53,7 @@
     <Compile Include="Internal\Runtime\JitSupport\JitMethodEntrypointNode.cs" />
     <Compile Include="Internal\Runtime\JitSupport\JitNodeFactory.cs" />
     <Compile Include="Internal\Runtime\JitSupport\JitTemp.cs" />
+    <Compile Include="$(CommonBasePath)\Internal\Runtime\CorConstants.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Runtime\EEType.Constants.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Runtime\EETypeBuilderHelpers.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Runtime\RuntimeConstants.cs" />

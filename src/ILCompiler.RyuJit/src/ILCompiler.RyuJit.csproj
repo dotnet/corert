@@ -43,6 +43,9 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
       <Link>Common\EEType.Constants.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\CorConstants.cs">
+      <Link>Common\CorConstants.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
       <Link>Common\FormattingHelpers.cs</Link>
     </Compile>
