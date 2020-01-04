@@ -1749,12 +1749,13 @@ namespace Internal.IL
                         }
                     }
 
-                    GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo, out helper, additionalTypes);
+                    GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo, out helper,
+                        additionalTypes);
                     LLVM.BuildCall(_builder, helper, helperParams.ToArray(), string.Empty);
                     return;
                 }
                 if (!functionPointer.IsVirtual && delegateTargetMethod.OwningType.IsValueType &&
-                        !delegateTargetMethod.Signature.IsStatic)
+                         !delegateTargetMethod.Signature.IsStatic)
                 {
                     _stack.Pop(); // remove the target
 
