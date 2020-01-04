@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using ILCompiler;
+
 using Internal.TypeSystem;
 
 namespace Internal.JitInterface
@@ -253,8 +253,16 @@ namespace Internal.JitInterface
                 InstantiatedType instantiatedType = typeDesc as InstantiatedType;
                 if (instantiatedType != null)
                 {
-                    if (VectorFieldLayoutAlgorithm.IsVectorType(instantiatedType) ||
-                        VectorFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType))
+                    string typeName = instantiatedType.Name;
+                    string namespaceName = instantiatedType.Namespace;
+
+                    if (typeName == "Vector256`1" || typeName == "Vector128`1" || typeName == "Vector64`1")
+                    {
+                        Debug.Assert(namespaceName == "System.Runtime.Intrinsics");
+                        return false;
+                    }
+
+                    if ((typeName ==  "Vector`1") && (namespaceName == "System.Numerics"))
                     {
                         return false;
                     }
