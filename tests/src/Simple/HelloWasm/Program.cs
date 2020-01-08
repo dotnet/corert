@@ -1227,8 +1227,10 @@ internal static class Program
 
     static ushort ReadUInt16()
     {
+        // something with MSB set
         return 0x828f;
     }
+
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
