@@ -27,6 +27,7 @@ internal static class Program
         TestBox();
 
         TestSByteExtend();
+
         TestMetaData();
 
         Add(1, 2);
@@ -943,7 +944,7 @@ internal static class Program
 
         // just testing can store the returned struct
         new GenClassThatStoresGenReturn<string>(new Dictionary<string, string>());
-        
+
         EndTest(!notContainsKey);
     }
 

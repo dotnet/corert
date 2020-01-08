@@ -1798,7 +1798,6 @@ namespace Internal.IL
             hasHiddenParam = false;
             dictPtrPtrStore = default(LLVMValueRef);
             fatFunctionPtr = default(LLVMValueRef);
-
             string canonMethodName = _compilation.NameMangler.GetMangledMethodName(canonMethod).ToString();
             TypeDesc owningType = callee.OwningType;
             bool delegateInvoke = owningType.IsDelegate && callee.Name == "Invoke";
@@ -4086,9 +4085,11 @@ namespace Internal.IL
             FieldDesc runtimeDeterminedField = (FieldDesc)_methodIL.GetObject(token);
             FieldDesc field = (FieldDesc)_canonMethodIL.GetObject(token);
             StackEntry valueEntry = _stack.Pop();
+            //            TypeDesc owningType = _compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
+            TypeDesc fieldType = _compilation.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             LLVMValueRef fieldAddress = GetFieldAddress(runtimeDeterminedField, field, isStatic);
-            CastingStore(fieldAddress, valueEntry, field.FieldType);
+            CastingStore(fieldAddress, valueEntry, fieldType);
         }
 
         // Loads symbol address. Address is represented as a i32*
@@ -4236,7 +4237,7 @@ namespace Internal.IL
 
                 return LLVM.BuildLoad(_builder, thisPtr, "methodTablePtrRef");
             }
-            return CastIfNecessary(_builder, LLVM.GetParam(_currentFunclet, GetHiddenContextParamNo() /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "HiddenArg");
+            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0) /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "HiddenArg");
         }
 
         uint GetHiddenContextParamNo()
