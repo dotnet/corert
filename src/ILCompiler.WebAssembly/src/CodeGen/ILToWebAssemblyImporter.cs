@@ -1527,7 +1527,7 @@ namespace Internal.IL
                                 {
                                     new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(type, true),
                                         GetEETypePtrTypeDesc()),
-                                        _stack.Pop()
+                                    _stack.Pop()
                                 };
             }
 
@@ -4080,15 +4080,10 @@ namespace Internal.IL
         private void ImportLoadField(int token, bool isStatic)
         {
             FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
-            LLVMValueRef fieldAddress = GetFieldAddress(field, (FieldDesc)_canonMethodIL.GetObject(token), isStatic);
-            TypeDesc fieldType = field.FieldType;
+            FieldDesc canonFieldDesc = (FieldDesc)_canonMethodIL.GetObject(token);
+            LLVMValueRef fieldAddress = GetFieldAddress(field, canonFieldDesc, isStatic);
 
-            if (fieldType is RuntimeDeterminedType runtimeDeterminedType)
-            {
-                fieldType = runtimeDeterminedType.CanonicalType;
-            }
-
-            PushLoadExpression(GetStackValueKind(field.FieldType), $"Field_{field.Name}", fieldAddress, fieldType);
+            PushLoadExpression(GetStackValueKind(canonFieldDesc.FieldType), $"Field_{field.Name}", fieldAddress, canonFieldDesc.FieldType);
         }
 
         private void ImportAddressOfField(int token, bool isStatic)

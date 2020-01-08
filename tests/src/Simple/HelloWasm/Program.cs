@@ -1016,17 +1016,33 @@ internal static class Program
     private static void TestGenericCallInFinally()
     {
         StartTest("calling generic method requiring context from finally block");
-
-        CallGenericInFinally<string>();
-
-        PassTest();
+        if(GenRequiresContext<string>.Called)
+        {
+            FailTest("static bool defaulted to true");
+        }
+        EndTest(CallGenericInFinally<string>());
     }
 
-    private static void CallGenericInFinally<T>()
+    private static bool CallGenericInFinally<T>()
     {
-        List<T> list = new List<T>();
-        foreach (var s in list) // will generate a call to Dispose
+        try
         {
+            // do nothing
+        }
+        finally
+        {
+            GenRequiresContext<T>.Dispose();
+        }
+        return GenRequiresContext<T>.Called;
+    }
+
+    public class GenRequiresContext<T> 
+    {
+        internal static bool Called;
+
+        public static void Dispose()
+        {
+            Called = true;
         }
     }
 
