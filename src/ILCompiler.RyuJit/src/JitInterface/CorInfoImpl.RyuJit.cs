@@ -1550,6 +1550,8 @@ namespace Internal.JitInterface
             string externName = md.GetPInvokeMethodMetadata().Name ?? md.Name;
             Debug.Assert(externName != null);
 
+            externName = _compilation.NodeFactory.NameMangler.NodeMangler.ExternMethod(externName, md.Signature);
+
             pLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol(externName));
         }
 

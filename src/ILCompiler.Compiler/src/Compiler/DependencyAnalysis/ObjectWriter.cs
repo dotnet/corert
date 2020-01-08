@@ -791,9 +791,10 @@ namespace ILCompiler.DependencyAnalysis
 
         private void AppendExternCPrefix(Utf8StringBuilder sb)
         {
-            if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+            if (_targetPlatform.IsOSX ||
+                (_targetPlatform.IsWindows && _targetPlatform.Architecture == TargetArchitecture.X86))
             {
-                // On OSX, we need to prefix an extra underscore to account for correct linkage of 
+                // On OSX and Windows x86, we need to prefix an extra underscore to account for correct linkage of
                 // extern "C" functions.
                 sb.Append('_');
             }
@@ -938,7 +939,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_isSingleFileCompilation)
                 return false;
 
-            if (_targetPlatform.OperatingSystem == TargetOS.OSX)
+            if (_targetPlatform.IsOSX)
                 return false;
 
             if (!(node is ISymbolNode))

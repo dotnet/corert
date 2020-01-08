@@ -63,5 +63,20 @@ namespace ILCompiler
         {
             return GenericDictionaryNamePrefix + NameMangler.GetMangledMethodName(method);
         }
+
+        public override string ExternMethod(string unmangledName, MethodSignature signature)
+        {
+            TargetDetails target = signature.Context.Target;
+            if (target.Architecture != TargetArchitecture.X86)
+                return unmangledName;
+
+            int signatureBytes = 0;
+            foreach (var p in signature)
+            {
+                signatureBytes += AlignmentHelper.AlignUp(p.GetElementSize().AsInt, target.PointerSize);
+            }
+
+            return string.Concat(unmangledName, "@", signatureBytes.ToString());
+        }
     }
 }
