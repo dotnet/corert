@@ -1724,7 +1724,7 @@ namespace Internal.IL
 
                     List<LLVMValueRef> helperParams = new List<LLVMValueRef>
                     {
-                        shadowStack, 
+                        shadowStack,
                         GetGenericContext()
                     };
 
