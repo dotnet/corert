@@ -139,7 +139,7 @@ namespace System.Threading
 
             if (s_maxSpinCount == SpinningNotInitialized)
             {
-                // Use RhGetProcessCpuCount directly to avoid Environment.Processor->ClassConstructorRunner->Lock->Environment.Processor cycle
+                // Use RhGetProcessCpuCount directly to avoid Environment.ProcessorCount->ClassConstructorRunner->Lock->Environment.ProcessorCount cycle
                 s_maxSpinCount = (RuntimeImports.RhGetProcessCpuCount() > 1) ? MaxSpinningValue : SpinningDisabled;
             }
 
