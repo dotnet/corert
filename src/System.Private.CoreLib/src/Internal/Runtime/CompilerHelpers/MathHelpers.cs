@@ -22,6 +22,8 @@ namespace Internal.Runtime.CompilerHelpers
         // 64-bit checked multiplication for 32-bit platforms
         //
 
+        private const string RuntimeLibrary = "[MRT]";
+
         // Helper to multiply two 32-bit uints
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong Mul32x32To64(uint a, uint b)
@@ -143,6 +145,74 @@ namespace Internal.Runtime.CompilerHelpers
         ThrowExcep:
             return ThrowULngOvf();
         }
+
+        [RuntimeImport(RuntimeLibrary, "RhpULMod")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern ulong RhpULMod(ulong i, ulong j);
+
+        public static ulong ULMod(ulong i, ulong j)
+        {
+            if (j == 0)
+                return ThrowULngDivByZero();
+            else
+                return RhpULMod(i, j);
+        }
+
+        [RuntimeImport(RuntimeLibrary, "RhpLMod")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern long RhpLMod(long i, long j);
+
+        public static long LMod(long i, long j)
+        {
+            if (j == 0)
+                return ThrowLngDivByZero();
+            else
+                return RhpLMod(i, j);
+        }
+
+        [RuntimeImport(RuntimeLibrary, "RhpULDiv")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern ulong RhpULDiv(ulong i, ulong j);
+
+        public static ulong ULDiv(ulong i, ulong j)
+        {
+            if (j == 0)
+                return ThrowULngDivByZero();
+            else
+                return RhpULDiv(i, j);
+        }
+
+        [RuntimeImport(RuntimeLibrary, "RhpLDiv")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern long RhpLDiv(long i, long j);
+
+        public static long LDiv(long i, long j)
+        {
+            if (j == 0)
+                return ThrowLngDivByZero();
+            else if (j == -1 && i == long.MinValue)
+                return ThrowLngArithExc();
+            else
+                return RhpLDiv(i, j);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static long ThrowLngDivByZero()
+        {
+            throw new DivideByZeroException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ulong ThrowULngDivByZero()
+        {
+            throw new DivideByZeroException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static long ThrowLngArithExc()
+        {
+            throw new ArithmeticException();
+        }
 #endif // BIT64
 
         [RuntimeExport("Dbl2IntOvf")]
@@ -218,8 +288,6 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
 #if ARM
-        private const string RuntimeLibrary = "[MRT]";
-
         [RuntimeImport(RuntimeLibrary, "RhpIDiv")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int RhpIDiv(int i, int j);
@@ -246,32 +314,6 @@ namespace Internal.Runtime.CompilerHelpers
                 return RhpUDiv(i, j);
         }
 
-        [RuntimeImport(RuntimeLibrary, "RhpULDiv")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern ulong RhpULDiv(ulong i, ulong j);
-
-        public static ulong ULDiv(ulong i, ulong j)
-        {
-            if (j == 0)
-                return ThrowULngDivByZero();
-            else
-                return RhpULDiv(i, j);
-        }
-
-        [RuntimeImport(RuntimeLibrary, "RhpLDiv")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern long RhpLDiv(long i, long j);
-
-        public static long LDiv(long i, long j)
-        {
-            if (j == 0)
-                return ThrowLngDivByZero();
-            else if (j == -1 && i == long.MinValue)
-                return ThrowLngArithExc();
-            else
-                return RhpLDiv(i, j);
-        }
-
         [RuntimeImport(RuntimeLibrary, "RhpIMod")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int RhpIMod(int i, int j);
@@ -294,30 +336,6 @@ namespace Internal.Runtime.CompilerHelpers
                 return ThrowUIntDivByZero();
             else
                 return RhpUMod(i, j);
-        }
-
-        [RuntimeImport(RuntimeLibrary, "RhpULMod")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern ulong RhpULMod(ulong i, ulong j);
-
-        public static ulong ULMod(ulong i, ulong j)
-        {
-            if (j == 0)
-                return ThrowULngDivByZero();
-            else
-                return RhpULMod(i, j);
-        }
-
-        [RuntimeImport(RuntimeLibrary, "RhpLMod")]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern long RhpLMod(long i, long j);
-
-        public static long LMod(long i, long j)
-        {
-            if (j == 0)
-                return ThrowLngDivByZero();
-            else
-                return RhpLMod(i, j);
         }
 #endif // ARM
 
@@ -364,25 +382,7 @@ namespace Internal.Runtime.CompilerHelpers
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long ThrowLngDivByZero()
-        {
-            throw new DivideByZeroException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static ulong ThrowULngDivByZero()
-        {
-            throw new DivideByZeroException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static int ThrowIntArithExc()
-        {
-            throw new ArithmeticException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long ThrowLngArithExc()
         {
             throw new ArithmeticException();
         }

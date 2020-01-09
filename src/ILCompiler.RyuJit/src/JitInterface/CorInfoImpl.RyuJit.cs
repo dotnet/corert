@@ -271,6 +271,18 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
                     id = ReadyToRunHelper.ByRefWriteBarrier;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
+                    id = ReadyToRunHelper.WriteBarrier_EAX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_ECX:
+                    id = ReadyToRunHelper.WriteBarrier_ECX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_EAX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_ECX;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST:
                     id = ReadyToRunHelper.Stelem_Ref;

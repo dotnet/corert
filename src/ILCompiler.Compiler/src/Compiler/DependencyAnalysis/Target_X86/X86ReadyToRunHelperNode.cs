@@ -21,8 +21,9 @@ namespace ILCompiler.DependencyAnalysis
             {
                 case ReadyToRunHelperId.VirtualCall:
                     {
-                        throw new NotImplementedException();
+                        encoder.EmitINT3();
                     }
+                    break;
 
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
@@ -51,23 +52,27 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
-                        throw new NotImplementedException();
+                        encoder.EmitINT3();
                     }
+                    break;
 
                 case ReadyToRunHelperId.GetGCStaticBase:
                     {
-                        throw new NotImplementedException();
+                        encoder.EmitINT3();
                     }
+                    break;
 
                 case ReadyToRunHelperId.DelegateCtor:
                     {
-                        throw new NotImplementedException();
+                        encoder.EmitINT3();
                     }
+                    break;
 
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
-                        throw new NotImplementedException();
+                        encoder.EmitINT3();
                     }
+                    break;
 
                 default:
                     throw new NotImplementedException();
