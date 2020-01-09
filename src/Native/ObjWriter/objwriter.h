@@ -31,6 +31,15 @@ using namespace llvm::codeview;
 #define DLL_EXPORT extern "C" __attribute((visibility("default")))
 #endif
 
+// ***
+// Define default call conventions
+// ***
+#if defined(_X86_) && !defined(PLATFORM_UNIX)
+#define STDMETHODCALLTYPE  __stdcall
+#else
+#define STDMETHODCALLTYPE
+#endif //  defined(_X86_) && !defined(PLATFORM_UNIX)
+
 enum CustomSectionAttributes : int32_t {
   CustomSectionAttributes_ReadOnly = 0x0000,
   CustomSectionAttributes_Writeable = 0x0001,
@@ -180,7 +189,7 @@ private:
 
 // When object writer is created/initialized successfully, it is returned.
 // Or null object is returned. Client should check this.
-DLL_EXPORT ObjectWriter *InitObjWriter(const char *ObjectFilePath, const char* TripleName = nullptr) {
+DLL_EXPORT STDMETHODCALLTYPE ObjectWriter *InitObjWriter(const char *ObjectFilePath, const char* TripleName = nullptr) {
   ObjectWriter *OW = new ObjectWriter();
   if (OW->Init(ObjectFilePath, TripleName)) {
     return OW;
@@ -189,20 +198,20 @@ DLL_EXPORT ObjectWriter *InitObjWriter(const char *ObjectFilePath, const char* T
   return nullptr;
 }
 
-DLL_EXPORT void FinishObjWriter(ObjectWriter *OW) {
+DLL_EXPORT STDMETHODCALLTYPE void FinishObjWriter(ObjectWriter *OW) {
   assert(OW && "ObjWriter is null");
   OW->Finish();
   delete OW;
 }
 
-DLL_EXPORT void SwitchSection(ObjectWriter *OW, const char *SectionName,
+DLL_EXPORT STDMETHODCALLTYPE void SwitchSection(ObjectWriter *OW, const char *SectionName,
                               CustomSectionAttributes attributes,
                               const char *ComdatName) {
   assert(OW && "ObjWriter is null");
   OW->SwitchSection(SectionName, attributes, ComdatName);
 }
 
-DLL_EXPORT void SetCodeSectionAttribute(ObjectWriter *OW,
+DLL_EXPORT STDMETHODCALLTYPE void SetCodeSectionAttribute(ObjectWriter *OW,
                                         const char *SectionName,
                                         CustomSectionAttributes attributes,
                                         const char *ComdatName) {
@@ -210,66 +219,66 @@ DLL_EXPORT void SetCodeSectionAttribute(ObjectWriter *OW,
   OW->SetCodeSectionAttribute(SectionName, attributes, ComdatName);
 }
 
-DLL_EXPORT void EmitAlignment(ObjectWriter *OW, int ByteAlignment) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitAlignment(ObjectWriter *OW, int ByteAlignment) {
   assert(OW && "ObjWriter is null");
   OW->EmitAlignment(ByteAlignment);
 }
 
-DLL_EXPORT void EmitBlob(ObjectWriter *OW, int BlobSize, const char *Blob) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitBlob(ObjectWriter *OW, int BlobSize, const char *Blob) {
   assert(OW && "ObjWriter null");
   OW->EmitBlob(BlobSize, Blob);
 }
 
-DLL_EXPORT void EmitIntValue(ObjectWriter *OW, uint64_t Value, unsigned Size) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitIntValue(ObjectWriter *OW, uint64_t Value, unsigned Size) {
   assert(OW && "ObjWriter is null");
   OW->EmitIntValue(Value, Size);
 }
 
-DLL_EXPORT void EmitSymbolDef(ObjectWriter *OW, const char *SymbolName, bool global) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitSymbolDef(ObjectWriter *OW, const char *SymbolName, bool global) {
   assert(OW && "ObjWriter is null");
   OW->EmitSymbolDef(SymbolName, global);
 }
 
-DLL_EXPORT int EmitSymbolRef(ObjectWriter *OW, const char *SymbolName,
+DLL_EXPORT STDMETHODCALLTYPE int EmitSymbolRef(ObjectWriter *OW, const char *SymbolName,
                              RelocType RelocType, int Delta) {
   assert(OW && "ObjWriter is null");
   return OW->EmitSymbolRef(SymbolName, RelocType, Delta);
 }
 
-DLL_EXPORT void EmitWinFrameInfo(ObjectWriter *OW, const char *FunctionName,
+DLL_EXPORT STDMETHODCALLTYPE void EmitWinFrameInfo(ObjectWriter *OW, const char *FunctionName,
                                  int StartOffset, int EndOffset,
                                  const char *BlobSymbolName) {
   assert(OW && "ObjWriter is null");
   OW->EmitWinFrameInfo(FunctionName, StartOffset, EndOffset, BlobSymbolName);
 }
 
-DLL_EXPORT void EmitCFIStart(ObjectWriter *OW, int Offset) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitCFIStart(ObjectWriter *OW, int Offset) {
   assert(OW && "ObjWriter is null");
   OW->EmitCFIStart(Offset);
 }
 
-DLL_EXPORT void EmitCFIEnd(ObjectWriter *OW, int Offset) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitCFIEnd(ObjectWriter *OW, int Offset) {
   assert(OW && "ObjWriter is null");
   OW->EmitCFIEnd(Offset);
 }
 
-DLL_EXPORT void EmitCFILsda(ObjectWriter *OW, const char *LsdaBlobSymbolName) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitCFILsda(ObjectWriter *OW, const char *LsdaBlobSymbolName) {
   assert(OW && "ObjWriter is null");
   OW->EmitCFILsda(LsdaBlobSymbolName);
 }
 
-DLL_EXPORT void EmitCFICode(ObjectWriter *OW, int Offset, const char *Blob) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitCFICode(ObjectWriter *OW, int Offset, const char *Blob) {
   assert(OW && "ObjWriter is null");
   OW->EmitCFICode(Offset, Blob);
 }
 
-DLL_EXPORT void EmitDebugFileInfo(ObjectWriter *OW, int FileId,
+DLL_EXPORT STDMETHODCALLTYPE void EmitDebugFileInfo(ObjectWriter *OW, int FileId,
                                   const char *FileName) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugFileInfo(FileId, FileName);
 }
 
-DLL_EXPORT void EmitDebugFunctionInfo(ObjectWriter *OW,
+DLL_EXPORT STDMETHODCALLTYPE void EmitDebugFunctionInfo(ObjectWriter *OW,
                                       const char *FunctionName,
                                       int FunctionSize,
                                       unsigned MethodTypeIndex) {
@@ -277,21 +286,21 @@ DLL_EXPORT void EmitDebugFunctionInfo(ObjectWriter *OW,
   OW->EmitDebugFunctionInfo(FunctionName, FunctionSize, MethodTypeIndex);
 }
 
-DLL_EXPORT void EmitDebugVar(ObjectWriter *OW, char *Name, int TypeIndex,
+DLL_EXPORT STDMETHODCALLTYPE void EmitDebugVar(ObjectWriter *OW, char *Name, int TypeIndex,
                              bool IsParam, int RangeCount,
                              ICorDebugInfo::NativeVarInfo *Ranges) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugVar(Name, TypeIndex, IsParam, RangeCount, Ranges);
 }
 
-DLL_EXPORT void EmitDebugEHClause(ObjectWriter *OW, unsigned TryOffset,
+DLL_EXPORT STDMETHODCALLTYPE void EmitDebugEHClause(ObjectWriter *OW, unsigned TryOffset,
                                   unsigned TryLength, unsigned HandlerOffset,
                                   unsigned HandlerLength) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugEHClause(TryOffset, TryLength, HandlerOffset, HandlerLength);
 }
 
-DLL_EXPORT void EmitDebugLoc(ObjectWriter *OW, int NativeOffset, int FileId,
+DLL_EXPORT STDMETHODCALLTYPE void EmitDebugLoc(ObjectWriter *OW, int NativeOffset, int FileId,
                              int LineNumber, int ColNumber) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugLoc(NativeOffset, FileId, LineNumber, ColNumber);
@@ -299,25 +308,25 @@ DLL_EXPORT void EmitDebugLoc(ObjectWriter *OW, int NativeOffset, int FileId,
 
 // This should be invoked at the end of module emission to finalize
 // debug module info.
-DLL_EXPORT void EmitDebugModuleInfo(ObjectWriter *OW) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitDebugModuleInfo(ObjectWriter *OW) {
   assert(OW && "ObjWriter is null");
   OW->EmitDebugModuleInfo();
 }
 
-DLL_EXPORT unsigned GetEnumTypeIndex(ObjectWriter *OW,
+DLL_EXPORT STDMETHODCALLTYPE unsigned GetEnumTypeIndex(ObjectWriter *OW,
                                      EnumTypeDescriptor TypeDescriptor,
                                      EnumRecordTypeDescriptor *TypeRecords) {
   assert(OW && "ObjWriter is null");
   return OW->GetEnumTypeIndex(TypeDescriptor, TypeRecords);
 }
 
-DLL_EXPORT unsigned GetClassTypeIndex(ObjectWriter *OW,
+DLL_EXPORT STDMETHODCALLTYPE unsigned GetClassTypeIndex(ObjectWriter *OW,
                                       ClassTypeDescriptor ClassDescriptor) {
   assert(OW && "ObjWriter is null");
   return OW->GetClassTypeIndex(ClassDescriptor);
 }
 
-DLL_EXPORT unsigned
+DLL_EXPORT STDMETHODCALLTYPE unsigned
 GetCompleteClassTypeIndex(ObjectWriter *OW, ClassTypeDescriptor ClassDescriptor,
                           ClassFieldsTypeDescriptior ClassFieldsDescriptor,
                           DataFieldDescriptor *FieldsDescriptors,
@@ -327,53 +336,53 @@ GetCompleteClassTypeIndex(ObjectWriter *OW, ClassTypeDescriptor ClassDescriptor,
                                        FieldsDescriptors, StaticsDescriptors);
 }
 
-DLL_EXPORT unsigned GetArrayTypeIndex(ObjectWriter *OW,
+DLL_EXPORT STDMETHODCALLTYPE unsigned GetArrayTypeIndex(ObjectWriter *OW,
                                       ClassTypeDescriptor ClassDescriptor,
                                       ArrayTypeDescriptor ArrayDescriptor) {
   assert(OW && "ObjWriter is null");
   return OW->GetArrayTypeIndex(ClassDescriptor, ArrayDescriptor);
 }
 
-DLL_EXPORT unsigned GetPointerTypeIndex(ObjectWriter *OW,
+DLL_EXPORT STDMETHODCALLTYPE unsigned GetPointerTypeIndex(ObjectWriter *OW,
     PointerTypeDescriptor PointerDescriptor) {
     assert(OW && "ObjWriter is null");
     return OW->GetPointerTypeIndex(PointerDescriptor);
 }
 
-DLL_EXPORT unsigned GetMemberFunctionTypeIndex(ObjectWriter *OW,
+DLL_EXPORT STDMETHODCALLTYPE unsigned GetMemberFunctionTypeIndex(ObjectWriter *OW,
     MemberFunctionTypeDescriptor MemberDescriptor,
     uint32_t *ArgumentTypes) {
     assert(OW && "ObjWriter is null");
     return OW->GetMemberFunctionTypeIndex(MemberDescriptor, ArgumentTypes);
 }
 
-DLL_EXPORT unsigned GetMemberFunctionIdTypeIndex(ObjectWriter *OW,
+DLL_EXPORT STDMETHODCALLTYPE unsigned GetMemberFunctionIdTypeIndex(ObjectWriter *OW,
     MemberFunctionIdTypeDescriptor MemberIdDescriptor) {
     assert(OW && "ObjWriter is null");
     return OW->GetMemberFunctionId(MemberIdDescriptor);
 }
 
-DLL_EXPORT unsigned GetPrimitiveTypeIndex(ObjectWriter *OW, int Type) {
+DLL_EXPORT STDMETHODCALLTYPE unsigned GetPrimitiveTypeIndex(ObjectWriter *OW, int Type) {
     assert(OW && "ObjWriter is null");
     return OW->GetPrimitiveTypeIndex(Type);
 }
 
-DLL_EXPORT void EmitARMFnStart(ObjectWriter *OW) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitARMFnStart(ObjectWriter *OW) {
     assert(OW && "ObjWriter is null");
     return OW->EmitARMFnStart();
 }
 
-DLL_EXPORT void EmitARMFnEnd(ObjectWriter *OW) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitARMFnEnd(ObjectWriter *OW) {
   assert(OW && "ObjWriter is null");
   return OW->EmitARMFnEnd();
 }
 
-DLL_EXPORT void EmitARMExIdxLsda(ObjectWriter *OW, const char *Blob) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitARMExIdxLsda(ObjectWriter *OW, const char *Blob) {
   assert(OW && "ObjWriter is null");
   return OW->EmitARMExIdxLsda(Blob);
 }
 
-DLL_EXPORT void EmitARMExIdxCode(ObjectWriter *OW, int Offset, const char *Blob) {
+DLL_EXPORT STDMETHODCALLTYPE void EmitARMExIdxCode(ObjectWriter *OW, int Offset, const char *Blob) {
   assert(OW && "ObjWriter is null");
   return OW->EmitARMExIdxCode(Offset, Blob);
 }
