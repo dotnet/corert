@@ -16,7 +16,7 @@ RUN apt-get -y install git procps lsb-release
 # ***********************************
 # * Install stuff needed for CoreRT *
 # ***********************************
-RUN apt-get -y install cmake clang-3.9 libicu-dev uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev wget
+RUN apt-get -y install cmake clang libicu-dev uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev wget
 
 # Clean up
 RUN apt-get autoremove -y \
