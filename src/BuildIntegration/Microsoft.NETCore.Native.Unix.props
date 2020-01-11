@@ -15,22 +15,12 @@ See the LICENSE file in the project root for more information.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' == 'OSX'">clang</CppCompilerAndLinker>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.9</CppCompilerAndLinker>
+    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
     <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
   </PropertyGroup>
   
-  <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
-  <!-- Ensure that runtime-specific paths have already been set -->
-  <PropertyGroup>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' == 'OSX'">clang</CppCompilerAndLinker>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.9</CppCompilerAndLinker>
-    <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
-    <CppLinker>$(CppCompilerAndLinker)</CppLinker>
-    <CppLibCreator>ar</CppLibCreator>
-  </PropertyGroup>
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <PropertyGroup>

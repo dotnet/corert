@@ -92,6 +92,11 @@ if [ "$__BuildArch" == "wasm" ]; then
     export CoreRT_BuildOS=WebAssembly
 fi
 
+# Workardound for CI images without clang alias
+if [ "${CoreRT_BuildOS}" == "Linux" ] && [ -z "$CppCompilerAndLinker" ] && [ ! -x "$(command -v clang)" ]; then
+    export CppCompilerAndLinker=clang-3.9
+fi
+
 export CoreRT_BuildArch
 export CoreRT_BuildType
 export CoreRT_BuildOS
