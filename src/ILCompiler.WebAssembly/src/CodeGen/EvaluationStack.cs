@@ -446,8 +446,7 @@ namespace Internal.IL
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            //TODO: deal with sign extension here
-            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name);
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name, !signExtend);
         }
     }
 
