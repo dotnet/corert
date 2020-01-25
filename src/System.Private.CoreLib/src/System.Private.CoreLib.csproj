@@ -236,6 +236,7 @@
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.CoreRT.cs"  />
     <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(FeatureCominterop)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.CoreRT.cs"  />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.CoreRT.cs" />
