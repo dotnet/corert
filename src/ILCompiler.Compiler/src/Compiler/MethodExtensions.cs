@@ -6,6 +6,8 @@ using System;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler
 {
     public static class MethodExtensions
@@ -84,6 +86,19 @@ namespace ILCompiler
         public static bool IsRawPInvoke(this MethodDesc method)
         {
             return method.IsPInvoke && (method is Internal.IL.Stubs.PInvokeTargetNativeMethod);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether GC transition should be suppressed on the given p/invoke.
+        /// </summary>
+        public static bool IsSuppressGCTransition(this MethodDesc method)
+        {
+            Debug.Assert(method.IsPInvoke);
+
+            if (method is Internal.IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                method = rawPinvoke.Target;
+
+            return method.HasCustomAttribute("System.Runtime.InteropServices", "SuppressGCTransitionAttribute");
         }
 
         /// <summary>
