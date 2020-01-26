@@ -355,6 +355,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
                     return _compilation.NodeFactory.ExternSymbol("RhpStackProbe");
 
+                case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
+                    return _compilation.NodeFactory.ExternSymbol("RhpGcPoll");
+
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:
                     id = ReadyToRunHelper.LMul;
                     break;

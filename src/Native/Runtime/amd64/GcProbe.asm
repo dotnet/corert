@@ -245,22 +245,6 @@ Abort:
 NESTED_END RhpGcProbe, _TEXT
 
 
-LEAF_ENTRY RhpGcPoll, _TEXT
-        ;
-        ; loop hijacking is used instead
-        ;
-        int 3
-
-LEAF_END RhpGcPoll, _TEXT
-
-LEAF_ENTRY RhpGcPollStress, _TEXT
-        ;
-        ; loop hijacking is used instead
-        ;
-        int 3
-
-LEAF_END RhpGcPollStress, _TEXT
-
 ifdef FEATURE_GC_STRESS
 ;; PAL_LIMITED_CONTEXT, 6 xmm regs to save, 2 scratch regs to save, plus 20h bytes for scratch space
 RhpHijackForGcStress_FrameSize equ SIZEOF__PAL_LIMITED_CONTEXT + 6*10h + 2*8h + 20h
