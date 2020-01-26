@@ -272,22 +272,6 @@ RhpGcStressProbe  endp
 
 endif ;; FEATURE_GC_STRESS
 
-FASTCALL_FUNC RhpGcPoll, 0
-        ;
-        ; loop hijacking is used instead
-        ;
-        int 3
-
-FASTCALL_ENDFUNC
-
-FASTCALL_FUNC RhpGcPollStress, 0
-        ;
-        ; loop hijacking is used instead
-        ;
-        int 3
-
-FASTCALL_ENDFUNC
-
 FASTCALL_FUNC RhpGcProbeHijackScalar, 0
 
         HijackFixupProlog
