@@ -73,7 +73,8 @@ See the LICENSE file in the project root for more information.
 
     <ItemGroup>
       <LinkerArg Include="@(NativeLibrary)" />
-      <LinkerArg Include="-g" />
+      <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
+      <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
       <LinkerArg Include="-Wl,--as-needed" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'OSX'" />
