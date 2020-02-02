@@ -1349,7 +1349,7 @@ namespace System
         }
     }
 
-    internal class ArrayEnumeratorBase
+    internal class ArrayEnumeratorBase : ICloneable
     {
         protected int _index;
         protected int _endIndex;
@@ -1372,6 +1372,11 @@ namespace System
         public void Dispose()
         {
         }
+
+        public object Clone()
+        {
+            return MemberwiseClone();
+        }
     }
 
     //
@@ -1380,6 +1385,9 @@ namespace System
     //
     public class Array<T> : Array, IEnumerable<T>, ICollection<T>, IList<T>, IReadOnlyList<T>
     {
+        // Prevent the C# compiler from generating a public default constructor
+        private Array() { }
+
         public new IEnumerator<T> GetEnumerator()
         {
             // get length so we don't have to call the Length property again in ArrayEnumerator constructor
@@ -1412,12 +1420,12 @@ namespace System
 
         public void Add(T item)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
 
         public void Clear()
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
 
         public bool Contains(T item)
@@ -1433,7 +1441,8 @@ namespace System
 
         public bool Remove(T item)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
+            return false; // unreachable
         }
 
         public T this[int index]
@@ -1446,7 +1455,8 @@ namespace System
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                    return default; // unreachable
                 }
             }
             set
@@ -1457,7 +1467,7 @@ namespace System
                 }
                 catch (IndexOutOfRangeException)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                    ThrowHelper.ThrowArgumentOutOfRange_IndexException();
                 }
             }
         }
@@ -1470,15 +1480,15 @@ namespace System
 
         public void Insert(int index, T item)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
 
         public void RemoveAt(int index)
         {
-            throw new NotSupportedException();
+            ThrowHelper.ThrowNotSupportedException();
         }
 
-        private sealed class ArrayEnumerator : ArrayEnumeratorBase, IEnumerator<T>, ICloneable
+        private sealed class ArrayEnumerator : ArrayEnumeratorBase, IEnumerator<T>
         {
             private T[] _array;
 
@@ -1495,8 +1505,8 @@ namespace System
             {
                 get
                 {
-                    if (_index < 0 || _index >= _endIndex)
-                        throw new InvalidOperationException();
+                    if ((uint)_index >= (uint)_endIndex)
+                        ThrowHelper.ThrowInvalidOperationException();
                     return _array[_index];
                 }
             }
@@ -1512,11 +1522,6 @@ namespace System
             void IEnumerator.Reset()
             {
                 _index = -1;
-            }
-
-            public object Clone()
-            {
-                return MemberwiseClone();
             }
         }
     }
