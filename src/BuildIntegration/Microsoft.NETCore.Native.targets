@@ -90,7 +90,7 @@ See the LICENSE file in the project root for more information.
 
   <ItemGroup>
     <AutoInitializedAssemblies Include="System.Private.CoreLib" />
-    <AutoInitializedAssemblies Include="System.Private.DeveloperExperience.Console" />
+    <AutoInitializedAssemblies Include="System.Private.DeveloperExperience.Console" Condition="$(IlcDisableUnhandledExceptionExperience) != 'true'"  />
     <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="System.Private.Interpreter" />
     <AutoInitializedAssemblies Condition="'$(ExperimentalJitSupport)' == 'true'" Include="System.Private.Jit" />
   </ItemGroup>
