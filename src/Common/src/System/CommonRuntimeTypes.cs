@@ -31,8 +31,8 @@ namespace System
         internal static Type IntPtr { get { return s_intPtr; } }
         internal static Type Single { get { return s_single; } }
         internal static Type Double { get { return s_double; } }
-        internal static Type Decimal { get { return s_decimal; } }
-        internal static Type DateTime { get { return s_datetime; } }
+        internal static Type Decimal { get { return NotSoCommonTypes.s_decimal; } }
+        internal static Type DateTime { get { return NotSoCommonTypes.s_datetime; } }
         internal static Type Nullable { get { return s_nullable; } }
         internal static Type Void { get { return s_void; } }
         internal static Type MulticastDelegate { get { return s_multicastDelegate; } }
@@ -58,10 +58,17 @@ namespace System
         private static Type s_intPtr = typeof(IntPtr);
         private static Type s_single = typeof(float);
         private static Type s_double = typeof(double);
-        private static Type s_decimal = typeof(decimal);
-        private static Type s_datetime = typeof(DateTime);
         private static Type s_nullable = typeof(Nullable<>);
         private static Type s_void = typeof(void);
         private static Type s_multicastDelegate = typeof(MulticastDelegate);
+
+        // Following types are not so common and their ToString and formatting is particularly heavy.
+        // Make it less likely that they'll get included in small projects by placing them into
+        // a separate class constructor.
+        private static class NotSoCommonTypes
+        {
+            internal static Type s_decimal = typeof(decimal);
+            internal static Type s_datetime = typeof(DateTime);
+        }
     }
 }
