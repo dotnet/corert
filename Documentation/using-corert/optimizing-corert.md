@@ -34,3 +34,6 @@ By default, the compiler tries to maximize compatibility with existing .NET code
 Debugging symbols (data about your program required for debugging) is by default part of native executable files on Unix-like operating systems. To minimize the size of your CoreRT-compiled executable, you can run the `strip` tool to remove the debugging symbols.
 
 No action is needed on Windows since the platform convention is to generate debug information into a separate file (`*.pdb`).
+
+## Advanced options 
+* `<IlcDisableUnhandledExceptionExperience>true</IlcDisableUnhandledExceptionExperience>`: disables code that prints stack traces for unhandled exceptions to the console.
