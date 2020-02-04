@@ -23,7 +23,7 @@ When use VS 2017:
 When use VS 2019
 - You should use `Developer Command Prompt for VS 2019`
 
-If you have both stable and preview VS versions installed, opens corresponding command prompt where you have C++ tools installed.
+If you have both stable and preview VS versions installed, open corresponding command prompt where you have C++ tools installed.
 
 # Compiling source to native code using the ILCompiler you built #
 
