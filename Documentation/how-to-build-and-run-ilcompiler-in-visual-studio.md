@@ -5,7 +5,7 @@ _Note_:
 * Instructions below assume `c:\corert` is the repo root.
 
 
-# Building ILCompiler in Visual Studio 2017 #
+# Building ILCompiler in Visual Studio 2019 #
 
 First, build your repo by issuing the following command at repo root, by default this builds Debug x64:
 
