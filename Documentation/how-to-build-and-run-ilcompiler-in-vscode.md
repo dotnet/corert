@@ -6,7 +6,7 @@ _Note_:
 
 # Setting up #
 
-Please make sure you have latest VS Code, C# extension, and .NET Core available. This guide is tested under C# 1.6.2 + VS Code 1.8.1 + CLI 1.0.0-preview4-004233.
+Please make sure you have latest VS Code, C# extension, and .NET Core available.
 
 This guide assumes that your VS code workspace is set to the root of the repo. 
 
