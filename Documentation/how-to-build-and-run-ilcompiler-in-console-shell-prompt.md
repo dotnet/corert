@@ -16,9 +16,15 @@ This will result in the following:
 
 ## On Windows
 
-- You should use `Developer Command Prompt for VS 2019`
+- You should use `x64 Native Tools Command Prompt for VS 2019`
 
 If you have both stable and preview VS versions installed, open corresponding command prompt where you have C++ tools installed.
+
+# Install .NET Core 3.1 SDK
+
+Download .NET Core 3.1 SDK from [https://www.microsoft.com/net/download/core](https://www.microsoft.com/net/download/core)
+
+You should now be able to use the `dotnet` commands of the CLI tools.
 
 # Compiling source to native code using the ILCompiler you built #
 
@@ -106,6 +112,6 @@ or
 Microsoft.NETCore.Native.targets(132,5): error MSB3073: The command "cl @"native\cl.rsp"" exited with code 9009.
 ```
 
-Make sure you run these commands from the `Developer Command Prompt for VS 2019` instead of a vanilla command prompt
+Make sure you run these commands from the `x64 Native Tools Command Prompt for VS 2019` instead of a vanilla command prompt
 
 For more details see discussion in issue #2679
