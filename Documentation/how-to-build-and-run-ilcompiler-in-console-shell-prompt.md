@@ -16,11 +16,6 @@ This will result in the following:
 
 ## On Windows
 
-When use VS 2017:
-- When building on windows ensure you are using the `x64 Native Tools Command Prompt for VS 2017`
-    (This is distinct from the `Developer Command Prompt for VS 2017`)
-
-When use VS 2019
 - You should use `Developer Command Prompt for VS 2019`
 
 If you have both stable and preview VS versions installed, open corresponding command prompt where you have C++ tools installed.
@@ -38,7 +33,7 @@ If you have both stable and preview VS versions installed, open corresponding co
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
   <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.targets" />
@@ -96,7 +91,7 @@ If you are seeing errors such as:
 
 ```
 libcpmtd.lib(nothrow.obj) : fatal error LNK1112: module machine type 'X86' conflicts with target machine type 'x64' [C:\Users\[omitted]\nativetest\app\app.csproj]
-C:\Users\[omitted]\nativetest\bin\Windows_NT.x64.Debug\build\Microsoft.NETCore.Native.targets(151,5): error MSB3073: The command "link  @"obj\Debug\netcoreapp2.1\native\link.rsp"" exited with code 1112. [C:\Users\[omitted]\nativetest\app\app.csproj]
+C:\Users\[omitted]\nativetest\bin\Windows_NT.x64.Debug\build\Microsoft.NETCore.Native.targets(151,5): error MSB3073: The command "link  @"obj\Debug\netcoreapp3.1\native\link.rsp"" exited with code 1112. [C:\Users\[omitted]\nativetest\app\app.csproj]
 ```
 
 or 
@@ -111,6 +106,6 @@ or
 Microsoft.NETCore.Native.targets(132,5): error MSB3073: The command "cl @"native\cl.rsp"" exited with code 9009.
 ```
 
-Make sure you run these commands from the `x64 Native Tools Command Prompt for VS 2017` instead of a vanilla command prompt
+Make sure you run these commands from the `Developer Command Prompt for VS 2019` instead of a vanilla command prompt
 
 For more details see discussion in issue #2679
