@@ -14,13 +14,16 @@ This will result in the following:
 - Build native and managed components of ILCompiler. The final binaries are placed to `<repo_root>\bin\<OS>.<arch>.<Config>\tools`.
 - Build and run tests
 
-# Install .NET Core 2.1 SDK
+## On Windows
 
-* Download .NET Core 2.1 SDK from [https://www.microsoft.com/net/download/core](https://www.microsoft.com/net/download/core)
-* On windows ensure you are using the 'x64 Native Tools Command Prompt for VS 2017'
-    (This is distinct from the 'Developer Command Prompt for VS 2017')
+When use VS 2017:
+- When building on windows ensure you are using the `x64 Native Tools Command Prompt for VS 2017`
+    (This is distinct from the `Developer Command Prompt for VS 2017`)
 
-You should now be able to use the `dotnet` commands of the CLI tools.
+When use VS 2019
+- You should use `Developer Command Prompt for VS 2019`
+
+If you have both stable and preview VS versions installed, opens corresponding command prompt where you have C++ tools installed.
 
 # Compiling source to native code using the ILCompiler you built #
 

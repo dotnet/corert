@@ -1,5 +1,11 @@
 The following pre-requisites need to be installed for building the repo:
 
+# Install .NET Core 2.1 SDK
+
+Download .NET Core 2.1 SDK from [https://www.microsoft.com/net/download/core](https://www.microsoft.com/net/download/core)
+
+You should now be able to use the `dotnet` commands of the CLI tools.
+
 # Windows (Windows 7+)
 
 1. Install [Visual Studio 2017](https://visualstudio.microsoft.com/vs/community/) or [Visual Studio 2019 Preview](https://visualstudio.microsoft.com/vs/preview/), including Visual C++ support.
