@@ -8,7 +8,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
 # Windows (Windows 7+)
 
-1. Install [Visual Studio 2019](https://visualstudio.microsoft.com/vs/preview/), including Visual C++ support.
+1. Install [Visual Studio 2019](https://visualstudio.microsoft.com/vs/community/), including Visual C++ support.
  - For an existing Visual Studio 2019 installation, `buildscripts/install-reqs-vs2019.cmd` is provided.
 2. Install [CMake](http://www.cmake.org/download/) 3.14.0 or later. Make sure you add it to the PATH in the setup wizard.
 3. (Windows 7 only) Install PowerShell 3.0. It's part of [Windows Management Framework 3.0](http://go.microsoft.com/fwlink/?LinkID=240290). Windows 8 or later comes with the right version inbox.
