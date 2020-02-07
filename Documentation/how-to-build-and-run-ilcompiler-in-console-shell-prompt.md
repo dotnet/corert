@@ -47,7 +47,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 </Project>
 ```
 
-* Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Windows_NT.x64.Debug` argument to all dotnet commands below. **Important:** Do not use path, since `IlcPath` is required variable for building.
+* Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Windows_NT.x64.Debug` argument to all dotnet commands below. **Important:** Use of the `IlcPath` variable is required as the target files rely on it, do not replace the variable in the `.csproj` by the full path or you will encounter errors during publish.
 
     * Unix: `export IlcPath=<repo_root>/bin/Linux.x64.Debug`
 
