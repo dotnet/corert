@@ -404,8 +404,14 @@ namespace Internal.IL
             LLVMValueRef funclet = LLVM.GetNamedFunction(Module, funcletName);
             if (funclet.Pointer == IntPtr.Zero)
             {
-                // Funclets only accept a shadow stack pointer
-                LLVMTypeRef universalFuncletSignature = LLVM.FunctionType(LLVM.VoidType(), new LLVMTypeRef[] { LLVM.PointerType(LLVM.Int8Type(), 0) }, false);
+                // Funclets accept a shadow stack pointer and a generic ctx hidden param if the owning method has one
+                var funcletArgs = new LLVMTypeRef[FuncletsRequireHiddenContext() ? 2 : 1];
+                funcletArgs[0] = LLVM.PointerType(LLVM.Int8Type(), 0);
+                if (FuncletsRequireHiddenContext())
+                {
+                    funcletArgs[1] = LLVM.PointerType(LLVM.Int8Type(), 0);
+                }
+                LLVMTypeRef universalFuncletSignature = LLVM.FunctionType(LLVM.VoidType(), funcletArgs, false);
                 funclet = LLVM.AddFunction(Module, funcletName, universalFuncletSignature);
                 _exceptionFunclets.Add(funclet);
             }
@@ -893,11 +899,6 @@ namespace Internal.IL
 
         private void CastingStore(LLVMValueRef address, StackEntry value, TypeDesc targetType, string targetName = null)
         {
-            if (value is GenericReturnExpressionEntry)
-            {
-                targetType = ((GenericReturnExpressionEntry)value).GenericReturnTypeDesc;
-            }
-
             var typedStoreLocation = CastToPointerToTypeDesc(address, targetType, targetName);
             LLVM.BuildStore(_builder, value.ValueAsType(targetType, _builder), typedStoreLocation);
         }
@@ -1696,10 +1697,10 @@ namespace Internal.IL
                     {
                         MethodDesc thunkMethod = delegateInfo.Thunk.Method;
                         AddMethodReference(thunkMethod);
-                        PushExpression(StackValueKind.NativeInt, "invokeThunk", 
+                        PushExpression(StackValueKind.NativeInt, "invokeThunk",
                             GetOrCreateLLVMFunction(
                                 _compilation.NameMangler.GetMangledMethodName(thunkMethod).ToString(),
-                                thunkMethod.Signature, 
+                                thunkMethod.Signature,
                                 false));
                     }
                     var sigLength = callee.Signature.Length;
@@ -1708,7 +1709,7 @@ namespace Internal.IL
                     {
                         stackCopy[i] = _stack.Pop();
                     }
-                    var thisEntry = _stack.Pop();  // the extra newObjResult which we dont want as we are not going through HandleCall
+                    var thisEntry = _stack.Pop(); // the extra newObjResult which we dont want as we are not going through HandleCall
                     // by convention(?) the delegate initialize methods take this as the first parameter which is not in the ctor
                     // method sig, so add that here
                     int curOffset = 0;
@@ -1748,7 +1749,7 @@ namespace Internal.IL
                         }
                     }
 
-                    var node = GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo, out helper,
+                    GetGenericLookupHelperAndAddReference(ReadyToRunHelperId.DelegateCtor, delegateInfo, out helper,
                         additionalTypes);
                     LLVM.BuildCall(_builder, helper, helperParams.ToArray(), string.Empty);
                     return;
@@ -2453,6 +2454,10 @@ namespace Internal.IL
                 else
                 {
                     argType = signature[index - instanceAdjustment];
+                    if (canonMethod != null && CanStoreTypeOnStack(argType))
+                    {
+                        argType = canonMethod.Signature[index - instanceAdjustment];
+                    }
                 }
 
                 LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(argType);
@@ -2516,7 +2521,7 @@ namespace Internal.IL
                 return needsReturnSlot ? returnSlot : 
                     (
                         canonMethod != null && canonMethod.Signature.ReturnType != actualReturnType
-                        ? new GenericReturnExpressionEntry(canonMethod.Signature.ReturnType, GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType)
+                        ? CreateGenericReturnExpression(GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType)
                         : new ExpressionEntry(GetStackValueKind(actualReturnType), callee?.Name + "_return", llvmReturn, actualReturnType));
             }
             else
@@ -2525,6 +2530,18 @@ namespace Internal.IL
             }
         }
 
+        // generic structs need to be cast to the actualReturnType
+        private ExpressionEntry CreateGenericReturnExpression(StackValueKind stackValueKind, string calleeName, LLVMValueRef llvmReturn, TypeDesc actualReturnType)
+        {
+            Debug.Assert(llvmReturn.TypeOf().IsPackedStruct);
+            var destStruct = GetLLVMTypeForTypeDesc(actualReturnType).GetUndef();
+            for (uint elemNo = 0; elemNo < llvmReturn.TypeOf().CountStructElementTypes(); elemNo++)
+            {
+                var elemValRef = LLVM.BuildExtractValue(_builder, llvmReturn, 0, "ex" + elemNo);
+                destStruct = LLVM.BuildInsertValue(_builder, destStruct, elemValRef, elemNo, "st" + elemNo);
+            }
+            return new ExpressionEntry(stackValueKind, calleeName, destStruct, actualReturnType);
+        }
 
         // simple calling cases, not virtual, not calli
         private LLVMValueRef HandleDirectCall(MethodDesc callee, MethodSignature signature,
@@ -4063,9 +4080,10 @@ namespace Internal.IL
         private void ImportLoadField(int token, bool isStatic)
         {
             FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
-            LLVMValueRef fieldAddress = GetFieldAddress(field, (FieldDesc)_canonMethodIL.GetObject(token), isStatic);
+            FieldDesc canonFieldDesc = (FieldDesc)_canonMethodIL.GetObject(token);
+            LLVMValueRef fieldAddress = GetFieldAddress(field, canonFieldDesc, isStatic);
 
-            PushLoadExpression(GetStackValueKind(field.FieldType), $"Field_{field.Name}", fieldAddress, field.FieldType);
+            PushLoadExpression(GetStackValueKind(canonFieldDesc.FieldType), $"Field_{field.Name}", fieldAddress, canonFieldDesc.FieldType);
         }
 
         private void ImportAddressOfField(int token, bool isStatic)
@@ -4080,7 +4098,6 @@ namespace Internal.IL
             FieldDesc runtimeDeterminedField = (FieldDesc)_methodIL.GetObject(token);
             FieldDesc field = (FieldDesc)_canonMethodIL.GetObject(token);
             StackEntry valueEntry = _stack.Pop();
-            //            TypeDesc owningType = _compilation.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
             TypeDesc fieldType = _compilation.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             LLVMValueRef fieldAddress = GetFieldAddress(runtimeDeterminedField, field, isStatic);
@@ -4179,7 +4196,13 @@ namespace Internal.IL
                     // Work backwards through containing finally blocks to call them in the right order
                     BasicBlock finallyBlock = _basicBlocks[r.ILRegion.HandlerOffset];
                     MarkBasicBlock(finallyBlock);
-                    LLVM.BuildCall(_builder, GetFuncletForBlock(finallyBlock), new LLVMValueRef[] { LLVM.GetFirstParam(_currentFunclet) }, String.Empty);
+                    var funcletParams = new LLVMValueRef[FuncletsRequireHiddenContext() ? 2 : 1];
+                    funcletParams[0] = LLVM.GetFirstParam(_currentFunclet);
+                    if (FuncletsRequireHiddenContext())
+                    {
+                        funcletParams[1] = LLVM.GetParam(_currentFunclet, GetHiddenContextParamNo());
+                    }
+                    LLVM.BuildCall(_builder, GetFuncletForBlock(finallyBlock), funcletParams, String.Empty);
                 }
             }
 
@@ -4226,7 +4249,17 @@ namespace Internal.IL
 
                 return LLVM.BuildLoad(_builder, thisPtr, "methodTablePtrRef");
             }
-            return CastIfNecessary(_builder, LLVM.GetParam(_llvmFunction, 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0) /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "HiddenArg");
+            return CastIfNecessary(_builder, LLVM.GetParam(_currentFunclet, GetHiddenContextParamNo() /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.PointerType(LLVMTypeRef.Int8Type(), 0), "HiddenArg");
+        }
+
+        uint GetHiddenContextParamNo()
+        {
+            return 1 + (NeedsReturnStackSlot(_method.Signature) ? (uint)1 : 0);
+        }
+
+        bool FuncletsRequireHiddenContext()
+        {
+            return _method.IsSharedByGenericInstantiations && !_method.AcquiresInstMethodTableFromThis();
         }
 
         private LLVMValueRef ArrayBaseSizeRef()
