@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
 
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
-            int offset = structureTypeHandle.IsValueType() ? 1 : 0;
+            nuint offset = structureTypeHandle.IsValueType() ? (nuint)sizeof(IntPtr) : 0;
 
             IntPtr unmarshalStub;
             if (structureTypeHandle.IsBlittable())
@@ -90,30 +90,21 @@ namespace System.Runtime.InteropServices
                 unmarshalStub = RuntimeAugments.InteropCallbacks.GetStructUnmarshalStub(structureTypeHandle);
             }
 
+            ref byte dest = ref Unsafe.AddByteOffset(ref Unsafe.As<IntPtr, byte>(ref structure.m_pEEType), offset);
             if (unmarshalStub != IntPtr.Zero)
             {
-                InteropExtensions.PinObjectAndCall(structure,
-                    unboxedStructPtr =>
-                    {
-                        CalliIntrinsics.Call<int>(
-                            unmarshalStub,
-                            (void*)ptr,                                     // unsafe (no need to adjust as it is always struct)
-                            ((void*)((IntPtr*)unboxedStructPtr + offset))   // safe (need to adjust offset as it could be class)
-                        );
-                    });
+                CalliIntrinsics.Call(
+                    unmarshalStub,
+                    ref Unsafe.AsRef<byte>((void*)ptr),
+                    ref dest);
             }
             else
             {
-                int structSize = Marshal.SizeOf(structure);
-                InteropExtensions.PinObjectAndCall(structure,
-                    unboxedStructPtr =>
-                    {
-                        InteropExtensions.Memcpy(
-                            (IntPtr)((IntPtr*)unboxedStructPtr + offset),   // safe (need to adjust offset as it could be class)
-                            ptr,                                            // unsafe (no need to adjust as it is always struct)
-                            structSize
-                        );
-                    });
+                nuint size = (nuint)RuntimeAugments.InteropCallbacks.GetStructUnsafeStructSize(structureTypeHandle);
+                fixed (byte* pDest = &dest)
+                {
+                    Buffer.Memmove(pDest, (byte*)ptr, size);
+                }
             }
         }
 
@@ -146,12 +137,12 @@ namespace System.Runtime.InteropServices
             IntPtr destroyStructureStub = RuntimeAugments.InteropCallbacks.GetDestroyStructureStub(structureTypeHandle, out bool hasInvalidLayout);
             if (hasInvalidLayout)
                 throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.LastResortToString));
-            // DestroyStructureStub == IntPtr.Zero means its fields don't need to be destroied
+            // DestroyStructureStub == IntPtr.Zero means its fields don't need to be destroyed
             if (destroyStructureStub != IntPtr.Zero)
             {
-                CalliIntrinsics.Call<int>(
+                CalliIntrinsics.Call(
                     destroyStructureStub,
-                    (void*)ptr                                     // unsafe (no need to adjust as it is always struct)
+                    ref Unsafe.AsRef<byte>((void*)ptr)
                 );
             }
         }
@@ -177,7 +168,7 @@ namespace System.Runtime.InteropServices
             }
 
             // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
-            int offset = structureTypeHandle.IsValueType() ? 1 : 0;
+            nuint offset = structureTypeHandle.IsValueType() ? (nuint)sizeof(IntPtr) : 0;
 
             IntPtr marshalStub;
             if (structureTypeHandle.IsBlittable())
@@ -192,30 +183,20 @@ namespace System.Runtime.InteropServices
                 marshalStub = RuntimeAugments.InteropCallbacks.GetStructMarshalStub(structureTypeHandle);
             }
 
+            ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<IntPtr, byte>(ref structure.m_pEEType), offset);
             if (marshalStub != IntPtr.Zero)
             {
-                InteropExtensions.PinObjectAndCall(structure,
-                    unboxedStructPtr =>
-                    {
-                        CalliIntrinsics.Call<int>(
-                            marshalStub,
-                            ((void*)((IntPtr*)unboxedStructPtr + offset)),  // safe (need to adjust offset as it could be class)
-                            (void*)ptr                                      // unsafe (no need to adjust as it is always struct)
-                        );
-                    });
+                CalliIntrinsics.Call(marshalStub,
+                    ref src,
+                    ref Unsafe.AsRef<byte>((void*)ptr));
             }
             else
             {
-                int structSize = Marshal.SizeOf(structure);
-                InteropExtensions.PinObjectAndCall(structure,
-                    unboxedStructPtr =>
-                    {
-                        InteropExtensions.Memcpy(
-                            ptr,                                            // unsafe (no need to adjust as it is always struct)
-                            (IntPtr)((IntPtr*)unboxedStructPtr + offset),   // safe (need to adjust offset as it could be class)
-                            structSize
-                        );
-                    });
+                nuint size = (nuint)RuntimeAugments.InteropCallbacks.GetStructUnsafeStructSize(structureTypeHandle);
+                fixed (byte* pSrc = &src)
+                {
+                    Buffer.Memmove((byte*)ptr, pSrc, size);
+                }
             }
         }
 
@@ -481,16 +462,11 @@ namespace System.Runtime.InteropServices
         [McgIntrinsics]
         internal static unsafe partial class CalliIntrinsics
         {
-            internal static T Call<T>(
-            System.IntPtr pfn,
-            void* arg0,
-            void* arg1)
+            internal static void Call(IntPtr pfn, ref byte arg0, ref byte arg1)
             {
                 throw new NotSupportedException();
             }
-            internal static T Call<T>(
-            System.IntPtr pfn,
-            void* arg0)
+            internal static void Call(IntPtr pfn, ref byte arg0)
             {
                 throw new NotSupportedException();
             }

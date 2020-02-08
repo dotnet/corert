@@ -14,11 +14,15 @@ This will result in the following:
 - Build native and managed components of ILCompiler. The final binaries are placed to `<repo_root>\bin\<OS>.<arch>.<Config>\tools`.
 - Build and run tests
 
-# Install .NET Core 2.1 SDK
+## On Windows
 
-* Download .NET Core 2.1 SDK from [https://www.microsoft.com/net/download/core](https://www.microsoft.com/net/download/core)
-* On windows ensure you are using the 'x64 Native Tools Command Prompt for VS 2017'
-    (This is distinct from the 'Developer Command Prompt for VS 2017')
+- You should use `x64 Native Tools Command Prompt for VS 2019`
+
+If you have both stable and preview VS versions installed, open corresponding command prompt where you have C++ tools installed.
+
+# Install .NET Core 3.1 SDK
+
+Download .NET Core 3.1 SDK from [https://www.microsoft.com/net/download/core](https://www.microsoft.com/net/download/core)
 
 You should now be able to use the `dotnet` commands of the CLI tools.
 
@@ -35,7 +39,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
   <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.targets" />
@@ -43,7 +47,7 @@ You should now be able to use the `dotnet` commands of the CLI tools.
 </Project>
 ```
 
-* Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Windows_NT.x64.Debug` argument to all dotnet commands below.
+* Set IlcPath environment variable to point to the built binaries. Alternatively, pass an extra `/p:IlcPath=<repo_root>\bin\Windows_NT.x64.Debug` argument to all dotnet commands below. **Important:** Use of the `IlcPath` variable is required as the target files rely on it, do not replace the variable in the `.csproj` by the full path or you will encounter errors during publish.
 
     * Unix: `export IlcPath=<repo_root>/bin/Linux.x64.Debug`
 
@@ -93,7 +97,7 @@ If you are seeing errors such as:
 
 ```
 libcpmtd.lib(nothrow.obj) : fatal error LNK1112: module machine type 'X86' conflicts with target machine type 'x64' [C:\Users\[omitted]\nativetest\app\app.csproj]
-C:\Users\[omitted]\nativetest\bin\Windows_NT.x64.Debug\build\Microsoft.NETCore.Native.targets(151,5): error MSB3073: The command "link  @"obj\Debug\netcoreapp2.1\native\link.rsp"" exited with code 1112. [C:\Users\[omitted]\nativetest\app\app.csproj]
+C:\Users\[omitted]\nativetest\bin\Windows_NT.x64.Debug\build\Microsoft.NETCore.Native.targets(151,5): error MSB3073: The command "link  @"obj\Debug\netcoreapp3.1\native\link.rsp"" exited with code 1112. [C:\Users\[omitted]\nativetest\app\app.csproj]
 ```
 
 or 
@@ -108,6 +112,6 @@ or
 Microsoft.NETCore.Native.targets(132,5): error MSB3073: The command "cl @"native\cl.rsp"" exited with code 9009.
 ```
 
-Make sure you run these commands from the `x64 Native Tools Command Prompt for VS 2017` instead of a vanilla command prompt
+Make sure you run these commands from the `x64 Native Tools Command Prompt for VS 2019` instead of a vanilla command prompt
 
 For more details see discussion in issue #2679

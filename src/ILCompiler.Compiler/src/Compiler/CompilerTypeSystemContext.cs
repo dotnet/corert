@@ -19,7 +19,7 @@ namespace ILCompiler
     {
         private readonly MetadataRuntimeInterfacesAlgorithm _metadataRuntimeInterfacesAlgorithm = new MetadataRuntimeInterfacesAlgorithm();
         private readonly MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
-        
+
         private MetadataStringDecoder _metadataStringDecoder;
 
         private class ModuleData

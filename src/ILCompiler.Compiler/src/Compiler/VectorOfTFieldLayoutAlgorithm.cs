@@ -12,7 +12,7 @@ namespace ILCompiler
     /// Represents an algorithm that computes field layout for the SIMD Vector&lt;T&gt; type
     /// depending on the target details.
     /// </summary>
-    internal class VectorOfTFieldLayoutAlgorithm : FieldLayoutAlgorithm
+    public class VectorOfTFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {
         private readonly FieldLayoutAlgorithm _fallbackAlgorithm;
 

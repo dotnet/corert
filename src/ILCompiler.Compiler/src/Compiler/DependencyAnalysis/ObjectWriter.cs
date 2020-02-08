@@ -1226,7 +1226,7 @@ namespace ILCompiler.DependencyAnalysis
                     arch = "x86_64";
                     break;
                 case TargetArchitecture.X86:
-                    arch = "x86";
+                    arch = "i686";
                     break;
                 case TargetArchitecture.Wasm32:
                     arch = "wasm32";

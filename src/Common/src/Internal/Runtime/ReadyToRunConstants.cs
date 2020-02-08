@@ -2,16 +2,131 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-// Keep in sync with https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
-//
+using System;
 
-namespace ILCompiler
+namespace Internal.ReadyToRunConstants
 {
+    [Flags]
+    public enum ReadyToRunFlag
+    {
+        READYTORUN_FLAG_PlatformNeutralSource = 0x00000001,     // Set if the original IL assembly was platform-neutral
+        READYTORUN_FLAG_SkipTypeValidation = 0x00000002,        // Set of methods with native code was determined using profile data
+        READYTORUN_FLAG_Partial = 0x00000004,
+        READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008      // PInvoke stubs compiled into image are non-shareable (no secret parameter)
+    }
+
+    /// <summary>
+    /// Constants for method and field encoding
+    /// </summary>
+    [Flags]
+    public enum ReadyToRunMethodSigFlags : byte
+    {
+        READYTORUN_METHOD_SIG_None = 0x00,
+        READYTORUN_METHOD_SIG_UnboxingStub = 0x01,
+        READYTORUN_METHOD_SIG_InstantiatingStub = 0x02,
+        READYTORUN_METHOD_SIG_MethodInstantiation = 0x04,
+        READYTORUN_METHOD_SIG_SlotInsteadOfToken = 0x08,
+        READYTORUN_METHOD_SIG_MemberRefToken = 0x10,
+        READYTORUN_METHOD_SIG_Constrained = 0x20,
+        READYTORUN_METHOD_SIG_OwnerType = 0x40,
+    }
+
+    [Flags]
+    public enum ReadyToRunFieldSigFlags : byte
+    {
+        READYTORUN_FIELD_SIG_IndexInsteadOfToken = 0x08,
+        READYTORUN_FIELD_SIG_MemberRefToken = 0x10,
+        READYTORUN_FIELD_SIG_OwnerType = 0x40,
+    }
+
+    [Flags]
+    public enum ReadyToRunTypeLayoutFlags : byte
+    {
+        READYTORUN_LAYOUT_HFA = 0x01,
+        READYTORUN_LAYOUT_Alignment = 0x02,
+        READYTORUN_LAYOUT_Alignment_Native = 0x04,
+        READYTORUN_LAYOUT_GCLayout = 0x08,
+        READYTORUN_LAYOUT_GCLayout_Empty = 0x10,
+    }
+
+    public enum DictionaryEntryKind
+    {
+        EmptySlot = 0,
+        TypeHandleSlot = 1,
+        MethodDescSlot = 2,
+        MethodEntrySlot = 3,
+        ConstrainedMethodEntrySlot = 4,
+        DispatchStubAddrSlot = 5,
+        FieldDescSlot = 6,
+        DeclaringTypeHandleSlot = 7,
+    }
+
+    public enum ReadyToRunFixupKind
+    {
+        Invalid = 0x00,
+
+        ThisObjDictionaryLookup = 0x07,
+        TypeDictionaryLookup = 0x08,
+        MethodDictionaryLookup = 0x09,
+
+        TypeHandle = 0x10,
+        MethodHandle = 0x11,
+        FieldHandle = 0x12,
+
+        MethodEntry = 0x13,                 // For calling a method entry point
+        MethodEntry_DefToken = 0x14,        // Smaller version of MethodEntry - method is def token
+        MethodEntry_RefToken = 0x15,        // Smaller version of MethodEntry - method is ref token
+
+        VirtualEntry = 0x16,                // For invoking a virtual method
+        VirtualEntry_DefToken = 0x17,       // Smaller version of VirtualEntry - method is def token
+        VirtualEntry_RefToken = 0x18,       // Smaller version of VirtualEntry - method is ref token
+        VirtualEntry_Slot = 0x19,           // Smaller version of VirtualEntry - type & slot
+
+        Helper = 0x1A,                      // Helper
+        StringHandle = 0x1B,                // String handle
+
+        NewObject = 0x1C,                   // Dynamically created new helper
+        NewArray = 0x1D,
+
+        IsInstanceOf = 0x1E,                // Dynamically created casting helper
+        ChkCast = 0x1F,
+
+        FieldAddress = 0x20,                // For accessing a cross-module static fields
+        CctorTrigger = 0x21,                // Static constructor trigger
+
+        StaticBaseNonGC = 0x22,             // Dynamically created static base helpers
+        StaticBaseGC = 0x23,
+        ThreadStaticBaseNonGC = 0x24,
+        ThreadStaticBaseGC = 0x25,
+
+        FieldBaseOffset = 0x26,             // Field base offset
+        FieldOffset = 0x27,                 // Field offset
+
+        TypeDictionary = 0x28,
+        MethodDictionary = 0x29,
+
+        Check_TypeLayout = 0x2A,            // size, alignment, HFA, reference map
+        Check_FieldOffset = 0x2B,
+
+        DelegateCtor = 0x2C,                // optimized delegate ctor
+        DeclaringTypeHandle = 0x2D,
+
+        IndirectPInvokeTarget = 0x2E,       // Target (indirect) of an inlined pinvoke
+        PInvokeTarget = 0x2F,               // Target of an inlined pinvoke
+
+        ModuleOverride = 0x80,
+        // followed by sig-encoded UInt with assemblyref index into either the assemblyref
+        // table of the MSIL metadata of the master context module for the signature or
+        // into the extra assemblyref table in the manifest metadata R2R header table
+        // (used in cases inlining brings in references to assemblies not seen in the MSIL).
+    }
+
     //
     // Intrinsics and helpers
+    // Keep in sync with https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
     //
 
+    [Flags]
     public enum ReadyToRunHelper
     {
         Invalid                     = 0x00,
@@ -57,9 +172,10 @@ namespace ILCompiler
         // P/Invoke support
         PInvokeBegin                = 0x42,
         PInvokeEnd                  = 0x43,
+        GCPoll                      = 0x44,
 
         // Get string handle lazily
-        GetString                   = 0x50,
+        GetString = 0x50,
 
         // Used by /Tuning for Profile optimizations
         LogMethodEnter = 0x51,
@@ -191,5 +307,10 @@ namespace ILCompiler
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+    }
+
+    public static class ReadyToRunRuntimeConstants
+    {
+        public const int READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11;
     }
 }

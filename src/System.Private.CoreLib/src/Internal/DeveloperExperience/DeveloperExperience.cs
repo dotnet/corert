@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// We want the Debug.WriteLine statements below to actually do something.
+#define DEBUG
+
 using System;
 using System.Text;
 using System.Runtime;

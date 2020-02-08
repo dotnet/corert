@@ -2,26 +2,17 @@ The following pre-requisites need to be installed for building the repo:
 
 # Windows (Windows 7+)
 
-1. Install [Visual Studio 2017](https://visualstudio.microsoft.com/vs/community/) or [Visual Studio 2019 Preview](https://visualstudio.microsoft.com/vs/preview/), including Visual C++ support.
+1. Install [Visual Studio 2019](https://visualstudio.microsoft.com/vs/community/), including Visual C++ support.
  - For an existing Visual Studio 2019 installation, `buildscripts/install-reqs-vs2019.cmd` is provided.
-2. Install [CMake](http://www.cmake.org/download/) 3.8.0 or later (3.14.0-rc1 or later is required for VS2019). Make sure you add it to the PATH in the setup wizard.
+2. Install [CMake](http://www.cmake.org/download/) 3.14.0 or later. Make sure you add it to the PATH in the setup wizard.
 3. (Windows 7 only) Install PowerShell 3.0. It's part of [Windows Management Framework 3.0](http://go.microsoft.com/fwlink/?LinkID=240290). Windows 8 or later comes with the right version inbox.
 
 PowerShell also needs to be available from the PATH environment variable (it's the default). Typically it should be %SYSTEMROOT%\System32\WindowsPowerShell\v1.0\.
 
 # Ubuntu (16.04+)
 
-Install basic dependency packages:
-
-First add a new package source to be able to install clang-3.9:
 ```sh
-echo "deb http://llvm.org/apt/xenial/ llvm-toolchain-xenial-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
-wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
-sudo apt-get update
-```
-
-```sh
-sudo apt-get install cmake clang-3.9 libicu-dev uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev libtinfo5
+sudo apt-get install cmake clang libicu-dev uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev libtinfo5
 ```
 
 # macOS (10.12+)
@@ -52,17 +43,17 @@ Make sure you run with Ubuntu 16.04 Xenial userland (this is the default after W
 
 Then follow the Ubuntu 16.04 instructions above.
 
-# clang 3.9 not found on Linux
+# clang not found on Linux
 
 If you encounter this error, CoreRT could not find the clang executable
 ```
-error : Platform linker ('clang-3.9') not found. Try installing clang-3.9 or the appropriate package for your platform to resolve the problem.
+error : Platform linker ('clang') not found. Try installing clang package for your platform to resolve the problem.
 ```
 
-CoreRT expect by default clang-3.9 installed (see above). You can override this by setting an environment variable.
+You can override the default name by setting an environment variable. This is useful when clang executable on your platform has version specific suffix.
 
 ```
-export CppCompilerAndLinker=clang
+export CppCompilerAndLinker=clang-3.9
 ```
 
 This works for building CoreCR itself as well as building with CoreRT.

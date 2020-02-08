@@ -404,20 +404,6 @@ namespace Internal.IL
     }
 
     /// <summary>
-    /// Entry representing the generic return value of a function.
-    /// </summary>
-    internal class GenericReturnExpressionEntry : ExpressionEntry
-    {
-        public GenericReturnExpressionEntry(TypeDesc genericReturnTypeDesc, StackValueKind kind, string name, LLVMValueRef llvmValue, TypeDesc type = null) 
-            : base(kind, name, llvmValue, type)
-        {
-            GenericReturnTypeDesc = genericReturnTypeDesc;
-        }
-
-        public TypeDesc GenericReturnTypeDesc { get; }
-    }
-
-    /// <summary>
     /// Entry representing some expression
     /// </summary>
     internal class ExpressionEntry : StackEntry
@@ -446,8 +432,7 @@ namespace Internal.IL
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
-            //TODO: deal with sign extension here
-            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name);
+            return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name, !signExtend);
         }
     }
 
