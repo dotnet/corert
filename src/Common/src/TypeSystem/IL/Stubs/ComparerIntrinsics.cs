@@ -60,8 +60,6 @@ namespace Internal.IL.Stubs
             var codeStream = emitter.NewCodeStream();
 
             codeStream.Emit(ILOpcode.newobj, emitter.NewToken(comparerType.GetParameterlessConstructor()));
-            codeStream.Emit(ILOpcode.dup);
-            codeStream.Emit(ILOpcode.stsfld, emitter.NewToken(owningType.GetKnownField("_default")));
             codeStream.Emit(ILOpcode.ret);
 
             return emitter.Link(methodBeingGenerated);
