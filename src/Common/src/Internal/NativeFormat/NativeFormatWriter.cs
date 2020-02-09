@@ -302,7 +302,6 @@ namespace Internal.NativeFormat
             _phase = SavePhase.Shrinking;
             for (; ; )
             {
-
                 _iteration++;
                 _encoder.Clear();
 

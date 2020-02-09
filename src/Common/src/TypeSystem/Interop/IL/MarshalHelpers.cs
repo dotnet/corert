@@ -438,11 +438,6 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsPointer)
             {
-#if READYTORUN
-#else
-                // Do not bother enforcing the above artificial restriction
-                // See https://github.com/dotnet/coreclr/issues/27800
-#endif
                 if (nativeType == NativeTypeKind.Default)
                     return MarshallerKind.BlittableValue;
                 else

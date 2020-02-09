@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29509.3
+# Visual Studio 15
+VisualStudioVersion = 15.0.26828.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILCompiler", "src\ILCompiler.csproj", "{DD5B6BAA-D41A-4A6E-9E7D-83060F394B10}"
 	ProjectSection(ProjectDependencies) = postProject
