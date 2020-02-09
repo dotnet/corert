@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-// These helper methods are known to a NUTC intrinsic used to implement EqualityComparer<T> class.
-
-// The compiler will instead replace the IL code within get_Default to call one of GetUnknownEquatableComparer, GetKnownGenericEquatableComparer,
-// GetKnownNullableEquatableComparer, GetKnownEnumEquatableComparer or GetKnownObjectEquatableComparer based on what sort of
-// type is being compared.
+// The algoritm to choose the default equality comparer is duplicated in the IL compiler. The compiler will replace the code within
+// EqualityComparer<T>.Create method with more specific implementation based on what sort of type is being compared where possible.
 //
 // In addition, there are a set of generic functions which are used by Array.IndexOf<T> to perform equality checking
 // in a similar manner. Array.IndexOf<T> uses these functions instead of the EqualityComparer<T> infrastructure because constructing
@@ -58,7 +54,7 @@ namespace Internal.IntrinsicSupport
 
         // this function utilizes the template type loader to generate new
         // EqualityComparer types on the fly
-        private static object GetComparer(RuntimeTypeHandle t)
+        internal static object GetComparer(RuntimeTypeHandle t)
         {
             RuntimeTypeHandle comparerType;
             RuntimeTypeHandle openComparerType = default(RuntimeTypeHandle);
@@ -100,34 +96,6 @@ namespace Internal.IntrinsicSupport
             }
 
             return RuntimeAugments.NewObject(comparerType);
-        }
-
-        //----------------------------------------------------------------------
-        // target functions of intrinsic replacement in EqualityComparer.get_Default
-        //----------------------------------------------------------------------
-        internal static EqualityComparer<T> GetUnknownEquatableComparer<T>()
-        {
-            return (EqualityComparer<T>)GetComparer(typeof(T).TypeHandle);
-        }
-
-        private static EqualityComparer<T> GetKnownGenericEquatableComparer<T>() where T : IEquatable<T>
-        {
-            return new GenericEqualityComparer<T>();
-        }
-
-        private static EqualityComparer<Nullable<U>> GetKnownNullableEquatableComparer<U>() where U : struct, IEquatable<U>
-        {
-            return new NullableEqualityComparer<U>();
-        }
-
-        private static EqualityComparer<T> GetKnownObjectEquatableComparer<T>()
-        {
-            return new ObjectEqualityComparer<T>();
-        }
-
-        private static EqualityComparer<T> GetKnownEnumEquatableComparer<T>() where T : struct, Enum
-        {
-            return new EnumEqualityComparer<T>();
         }
 
         //-----------------------------------------------------------------------
