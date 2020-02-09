@@ -453,3 +453,8 @@ COOP_PINVOKE_HELPER(void *, RhGetCurrentThunkContext, ())
 }
 
 #endif
+
+COOP_PINVOKE_HELPER(void, RhpGcPoll, ())
+{
+    // TODO: implement
+}

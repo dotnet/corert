@@ -40,12 +40,12 @@
 #include <lwp.h>
 #endif
 
-#if !HAVE_SYSCONF && !HAVE_SYSCTL
-#error Neither sysconf nor sysctl is present on the current system
-#endif
-
-#if HAVE_SYSCTL
+#if HAVE_SYSCONF
+// <unistd.h> already included above
+#elif HAVE_SYSCTL
 #include <sys/sysctl.h>
+#else
+#error Either sysctl or sysconf is required for GetSystemInfo.
 #endif
 
 #if HAVE_SYS_VMPARAM_H
@@ -415,7 +415,7 @@ void ConfigureSignals()
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 {
-    g_dwPALCapabilities = GetCurrentProcessorNumberCapability;
+    g_dwPALCapabilities = 0;
 
     if (!QueryLogicalProcessorCount())
         return false;
@@ -507,17 +507,6 @@ extern "C" bool PalDetachThread(void* thread)
         g_threadExitCallback();
     }
     return true;
-}
-
-REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
-{
-#if HAVE_SCHED_GETCPU
-    int processorNumber = sched_getcpu();
-    ASSERT(processorNumber != -1);
-    return processorNumber;
-#else //HAVE_SCHED_GETCPU
-    return 0;
-#endif //HAVE_SCHED_GETCPU
 }
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)

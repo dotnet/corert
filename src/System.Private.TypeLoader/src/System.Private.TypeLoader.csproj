@@ -62,6 +62,7 @@
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\TypeDesc.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\FieldDesc.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\CodeGen\MethodDelegator.CodeGen.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\CodeGen\TargetDetails.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Ecma\EcmaField.CodeGen.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\Interop\MethodDelegator.Interop.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\NativeFormat\NativeFormatField.CodeGen.cs" />
@@ -335,6 +336,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataFieldLayoutAlgorithm.cs">
       <Link>Internal\TypeSystem\MetadataFieldLayoutAlgorithm.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\ExplicitLayoutValidator.cs">
+      <Link>Internal\TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\MetadataRuntimeInterfacesAlgorithm.cs">
       <Link>Internal\TypeSystem\MetadataRuntimeInterfacesAlgorithm.cs</Link>
     </Compile>
@@ -550,6 +554,15 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\DebugNameFormatter.cs">
       <Link>Utilities\DebugNameFormatter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\GenericParameterDesc.Dummy.Diagnostic.cs">
+      <Link>Internal\TypeSystem\Common\GenericParameterDesc.Dummy.Diagnostic.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\MethodDesc.Dummy.Diagnostic.cs">
+      <Link>Internal\TypeSystem\Common\MethodDesc.Dummy.Diagnostic.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\DefType.Dummy.Diagnostic.cs">
+      <Link>Internal\TypeSystem\Common\DefType.Dummy.Diagnostic.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

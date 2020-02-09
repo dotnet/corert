@@ -36,10 +36,8 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI __stdcall
 
-#ifndef RUNTIME_SERVICES_ONLY
 // Index for the fiber local storage of the attached thread pointer
 static UInt32 g_flsIndex = FLS_OUT_OF_INDEXES;
-#endif
 
 static DWORD g_dwPALCapabilities;
 
@@ -57,7 +55,6 @@ bool InitializeSystemInfo()
     return true;
 }
 
-#ifndef RUNTIME_SERVICES_ONLY
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.
 // Since we receive that notification outside of the Loader Lock, it allows us to safely acquire
@@ -73,15 +70,13 @@ void __stdcall FiberDetachCallback(void* lpFlsData)
         RuntimeThreadShutdown(lpFlsData);
     }
 }
-#endif
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 {
-    g_dwPALCapabilities = WriteWatchCapability | GetCurrentProcessorNumberCapability | LowMemoryNotificationCapability;
+    g_dwPALCapabilities = WriteWatchCapability | LowMemoryNotificationCapability;
 
-#ifndef RUNTIME_SERVICES_ONLY
     // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
     // callback is made without the OS loader lock
     g_flsIndex = FlsAlloc(FiberDetachCallback);
@@ -89,7 +84,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     {
         return false;
     }
-#endif
 
     return true;
 }
@@ -100,7 +94,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
     return (g_dwPALCapabilities & (DWORD)capability) == (DWORD)capability;
 }
 
-#ifndef RUNTIME_SERVICES_ONLY
 // Attach thread to PAL. 
 // It can be called multiple times for the same thread.
 // It fails fast if a different thread was already registered with the current fiber
@@ -150,7 +143,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
     FlsSetValue(g_flsIndex, NULL);
     return true;
 }
-#endif // RUNTIME_SERVICES_ONLY
 
 extern "C" UInt64 PalGetCurrentThreadIdForLogging()
 {

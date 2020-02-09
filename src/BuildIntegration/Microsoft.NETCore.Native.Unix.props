@@ -15,22 +15,12 @@ See the LICENSE file in the project root for more information.
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' == 'OSX'">clang</CppCompilerAndLinker>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.9</CppCompilerAndLinker>
+    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
     <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
     <CppLinker>$(CppCompilerAndLinker)</CppLinker>
     <CppLibCreator>ar</CppLibCreator>
   </PropertyGroup>
   
-  <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
-  <!-- Ensure that runtime-specific paths have already been set -->
-  <PropertyGroup>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == '' and '$(TargetOS)' == 'OSX'">clang</CppCompilerAndLinker>
-    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang-3.9</CppCompilerAndLinker>
-    <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
-    <CppLinker>$(CppCompilerAndLinker)</CppLinker>
-    <CppLibCreator>ar</CppLibCreator>
-  </PropertyGroup>
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <PropertyGroup>
@@ -60,8 +50,6 @@ See the LICENSE file in the project root for more information.
     </ItemGroup>
 
     <ItemGroup>
-      <!-- Workaround for https://github.com/dotnet/corert/issues/7000 -->
-      <IlcArg Include="--removefeature:CurlHandler" />
       <!-- libicu loader in System.Globalization.Native is not compatible with static linking -->
       <IlcArg Include="--removefeature:Globalization" Condition="'$(StaticallyLinked)' == 'true'" />
     </ItemGroup>
@@ -85,7 +73,8 @@ See the LICENSE file in the project root for more information.
 
     <ItemGroup>
       <LinkerArg Include="@(NativeLibrary)" />
-      <LinkerArg Include="-g" />
+      <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
+      <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
       <LinkerArg Include="-Wl,--as-needed" Condition="'$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'OSX'" />

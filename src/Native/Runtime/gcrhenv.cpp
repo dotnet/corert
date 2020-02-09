@@ -188,8 +188,12 @@ bool RedhawkGCInterface::InitializeSubsystems()
     if (!g_SuspendEELock.InitNoThrow(CrstSuspendEE))
         return false;
 
+#ifdef FEATURE_SVR_GC
     // TODO: This should use the logical CPU count adjusted for process affinity and cgroup limits
     g_heap_type = (g_pRhConfig->GetUseServerGC() && PalGetProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
+#else
+    g_heap_type = GC_HEAP_WKS;
+#endif
 
     HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
     if (FAILED(hr))

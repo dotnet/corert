@@ -26,20 +26,22 @@ namespace Internal.JitInterface
         /// <summary>
         /// Creates a new instance of <see cref="JitConfigProvider"/>.
         /// </summary>
-        /// <param name="parameters">Name-value pairs separated by an equals sign.</param>
+        /// <param name="jitFlags">A collection of JIT compiler flags.</param>
+        /// <param name="parameters">A collection of parameter name/value pairs.</param>
+        /// <param name="jitPath">A path to the JIT library to be used (may be null).</param>
         public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters)
         {
-            foreach (var param in parameters)
-            {
-                _config[param.Key] = param.Value;
-            }
-
             ArrayBuilder<CorJitFlag> jitFlagBuilder = new ArrayBuilder<CorJitFlag>();
             foreach (CorJitFlag jitFlag in jitFlags)
             {
                 jitFlagBuilder.Add(jitFlag);
             }
             _jitFlags = jitFlagBuilder.ToArray();
+
+            foreach (var param in parameters)
+            {
+                _config[param.Key] = param.Value;
+            }
 
             UnmanagedInstance = CreateUnmanagedInstance();
         }

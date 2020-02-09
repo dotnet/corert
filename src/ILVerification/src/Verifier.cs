@@ -227,7 +227,7 @@ namespace ILVerify
             }
             catch (TypeSystemException e)
             {
-                reportException(e);
+                reportTypeSystemException(e);
             }
 
             return builder.ToArray();
@@ -236,6 +236,16 @@ namespace ILVerify
             {
                 builder.Add(new VerificationResult()
                 {
+                    Method = methodHandle,
+                    Message = e.Message
+                });
+            }
+
+            void reportTypeSystemException(TypeSystemException e)
+            {
+                builder.Add(new VerificationResult()
+                {
+                    ExceptionID = e.StringID,
                     Method = methodHandle,
                     Message = e.Message
                 });

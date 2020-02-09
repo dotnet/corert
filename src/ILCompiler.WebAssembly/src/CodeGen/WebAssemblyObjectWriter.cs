@@ -994,7 +994,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         DelegateCreationInfo target = (DelegateCreationInfo)node.Target;
                         MethodDesc constructor = target.Constructor.Method;
-                        var fatPtr = ILImporter.MakeFatPointer(builder, resVar);
+                        var fatPtr = ILImporter.MakeFatPointer(builder, resVar, compilation);
                         importer.OutputCodeForDelegateCtorInit(builder, helperFunc, constructor, fatPtr);
                     }
                     break;

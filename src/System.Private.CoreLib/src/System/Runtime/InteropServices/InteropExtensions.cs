@@ -43,15 +43,6 @@ namespace System.Runtime.InteropServices
             safeHandle.InitializeHandle(win32Handle);
         }
 
-        // Used for methods in System.Private.Interop.dll that need to work from offsets on boxed structs
-        public static unsafe void PinObjectAndCall(object obj, Action<IntPtr> del)
-        {
-            fixed (IntPtr* pEEType = &obj.m_pEEType)
-            {
-                del((IntPtr)pEEType);
-            }
-        }
-
         public static int GetElementSize(this Array array)
         {
             return array.EETypePtr.ComponentSize;

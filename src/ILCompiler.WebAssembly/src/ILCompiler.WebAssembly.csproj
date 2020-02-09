@@ -9,7 +9,13 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <NoWarn>8002</NoWarn>
   </PropertyGroup>
-  
+
+  <ItemGroup>
+    <PackageReference Include="LLVMSharp">
+      <Version>9.0.0-beta</Version>
+    </PackageReference>
+  </ItemGroup>
+
   <!--<ItemGroup Condition="'$(OSGroup)' != 'Windows_NT'">-->
   <ItemGroup>
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
@@ -17,7 +23,6 @@
     <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
     <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
-    <ProjectReference Include="..\..\LLVMSharp\LLVMSharp.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs">
@@ -37,7 +42,6 @@
     </Compile>
     <Compile Include="CodeGen\DebugMetadata.cs" />
     <Compile Include="CodeGen\ILToWebAssemblyImporter_Statics.cs" />
-    <Compile Include="CodeGen\LLVMPInvokes.cs" />
     <Compile Include="CodeGen\WebAssemblyObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RawMainMethodRootProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\WebAssemblyCodegenNodeFactory.cs" />
@@ -55,6 +59,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\..\..\packages\llvmsharp\9.0.0\lib\netstandard2.0\LLVMSharp.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <PackageReference Include="libLLVM" Version="9.0.0" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

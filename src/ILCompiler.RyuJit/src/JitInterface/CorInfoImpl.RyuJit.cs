@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 
 using Internal.IL;
 using Internal.TypeSystem;
+using Internal.ReadyToRunConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
@@ -271,6 +272,18 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_BYREF:
                     id = ReadyToRunHelper.ByRefWriteBarrier;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:
+                    id = ReadyToRunHelper.WriteBarrier_EAX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_ECX:
+                    id = ReadyToRunHelper.WriteBarrier_ECX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_EAX;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
+                    id = ReadyToRunHelper.CheckedWriteBarrier_ECX;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST:
                     id = ReadyToRunHelper.Stelem_Ref;
@@ -341,6 +354,9 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
                     return _compilation.NodeFactory.ExternSymbol("RhpStackProbe");
+
+                case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
+                    return _compilation.NodeFactory.ExternSymbol("RhpGcPoll");
 
                 case CorInfoHelpFunc.CORINFO_HELP_LMUL:
                     id = ReadyToRunHelper.LMul;
@@ -1630,7 +1646,11 @@ namespace Internal.JitInterface
 
         private bool IsPInvokeStubRequired(MethodDesc method)
         {
-            return ((Internal.IL.Stubs.PInvokeILStubMethodIL)_compilation.GetMethodIL(method))?.IsStubRequired ?? false;
+            if (_compilation.GetMethodIL(method) is Internal.IL.Stubs.PInvokeILStubMethodIL stub)
+                return stub.IsStubRequired;
+
+            // This path is taken for PInvokes replaced by RemovingILProvider
+            return true;
         }
 
         private int SizeOfPInvokeTransitionFrame
@@ -1659,5 +1679,19 @@ namespace Internal.JitInterface
 
         private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
         { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
+
+        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
+        {
+        }
+
+        private void setEHcount(uint cEH)
+        {
+            _ehClauses = new CORINFO_EH_CLAUSE[cEH];
+        }
+
+        private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
+        {
+            _ehClauses[EHnumber] = clause;
+        }
     }
 }

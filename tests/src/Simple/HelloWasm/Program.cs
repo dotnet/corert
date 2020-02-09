@@ -233,7 +233,7 @@ internal static class Program
         testMdArrayInstantiation[0, 1] = 2;
         testMdArrayInstantiation[1, 0] = 3;
         testMdArrayInstantiation[1, 1] = 4;
-        EndTest(testMdArrayInstantiation[0, 0] == 1 
+        EndTest(testMdArrayInstantiation[0, 0] == 1
                 && testMdArrayInstantiation[0, 1] == 2
                 && testMdArrayInstantiation[1, 0] == 3
                 && testMdArrayInstantiation[1, 1] == 4);
@@ -263,7 +263,7 @@ internal static class Program
         }
 
         TestConstrainedClassCalls();
-        
+
         TestConstrainedStructCalls();
 
         TestValueTypeElementIndexing();
@@ -312,6 +312,22 @@ internal static class Program
         TestUlongUintMultiply();
 
         TestBoxSingle();
+
+        TestGvmCallInIf(new GenDerived<string>(), "hello");
+
+        TestStoreFromGenericMethod();
+
+        TestConstrainedValueTypeCallVirt();
+
+        TestBoxToGenericTypeFromDirectMethod();
+
+        TestGenericStructHandling();
+
+        TestGenericCallInFinally();
+
+        TestInitializeArray();
+
+        TestImplicitUShortToUInt();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -363,7 +379,7 @@ internal static class Program
     }
 
     private static int StaticDelegateTarget()
-    {         
+    {
         return 7;
     }
 
@@ -380,7 +396,7 @@ internal static class Program
             }
         }
     }
-    
+
     public static void PrintLine(string s)
     {
         PrintString(s);
@@ -416,21 +432,21 @@ internal static class Program
     {
         return a >> b;
     }
-    
+
     private static int SwitchOp(int a, int b, int mode)
     {
-        switch(mode)
+        switch (mode)
         {
-          case 0:
-            return a + b;
-          case 1:
-            return a * b;
-          case 2:
-            return a / b;
-          case 3:
-            return a - b;
-          default:
-            return 0;
+            case 0:
+                return a + b;
+            case 1:
+                return a * b;
+            case 2:
+                return a / b;
+            case 3:
+                return a - b;
+            default:
+                return 0;
         }
     }
 
@@ -462,16 +478,16 @@ internal static class Program
         StartTest("ldind test");
         var ldindTarget = new TwoByteStr { first = byte.MaxValue, second = byte.MinValue };
         var ldindField = &ldindTarget.first;
-        if((*ldindField) == byte.MaxValue)
+        if ((*ldindField) == byte.MaxValue)
         {
             ldindTarget.second = byte.MaxValue;
             *ldindField = byte.MinValue;
             //ensure there isnt any overwrite of nearby fields
-            if(ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
+            if (ldindTarget.first == byte.MinValue && ldindTarget.second == byte.MaxValue)
             {
                 PassTest();
             }
-            else if(ldindTarget.first != byte.MinValue)
+            else if (ldindTarget.first != byte.MinValue)
             {
                 FailTest("didnt update target.");
             }
@@ -546,7 +562,7 @@ internal static class Program
             PrintString(stringDirectToString);
             PrintLine("\"");
         }
-       
+
         // Generic calls on methods not defined on object
         uint dataFromBase = GenericGetData<MyBase>(new MyBase(11));
         StartTest("Generic call to base class test");
@@ -883,6 +899,33 @@ internal static class Program
         return result;
     }
 
+    class GenBase<A> 
+    {
+        public virtual string GMethod1<T>(T t1, T t2) { return "GenBase<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+    }
+    class GenDerived<A> : GenBase<A>
+    {
+        public override string GMethod1<T>(T t1, T t2) { return "GenDerived<" + typeof(A) + ">.GMethod1<" + typeof(T) + ">(" + t1 + "," + t2 + ")"; }
+    }
+
+    private static void TestGvmCallInIf<T>(GenBase<T> g, T p)
+    {
+        var i = 1;
+        if (i == 1)
+        {
+            g.GMethod1(p, p);
+        }
+    }
+
+    private static void TestStoreFromGenericMethod()
+    {
+        StartTest("TestStoreFromGenericMethod");
+        var values = new string[1];
+        // testing that the generic return value type from the function can be stored in a concrete type
+        values = values.AsSpan(0, 1).ToArray();
+        PassTest();
+    }
+
     private static void TestCallToGenericInterfaceMethod()
     {
         StartTest("Call generic method on interface test");
@@ -890,6 +933,149 @@ internal static class Program
         TestGenItf implInt = new TestGenItf();
         implInt.Log<object>(new object());
         EndTest(true);
+    }
+
+    private static void TestConstrainedValueTypeCallVirt()
+    {
+        StartTest("Call constrained callvirt");
+        //TODO: create simpler test that doesn't need Dictionary<>/KVP<>/Span
+        var dict = new Dictionary<KeyValuePair<string, string>, string>();
+        var notContainsKey = dict.ContainsKey(new KeyValuePair<string, string>());
+
+        EndTest(!notContainsKey);
+    }
+
+    private static void TestBoxToGenericTypeFromDirectMethod()
+    {
+        StartTest("Callvirt on generic struct boxing to looked up generic type");
+
+        new GetHashCodeCaller<GenStruct<string>, string>().CallValueTypeGetHashCodeFromGeneric(new GenStruct<string>(""));
+
+        PassTest();
+    }
+
+    public struct GenStruct<TKey>
+    {
+        private TKey key;
+
+        public GenStruct(TKey key)
+        {
+            this.key = key;
+        }
+    }
+
+    private static void TestGenericStructHandling()
+    {
+        StartTest("Casting of generic structs on return and in call params");
+
+        // test return  type is cast
+        ActualStructCallParam(new string[0]);
+
+        // test call param is cast
+        GenStructCallParam(new GenStructWithImplicitOp<string>());
+
+        // replicate compilation error with https://github.com/dotnet/corefx/blob/e99ec129cfd594d53f4390bf97d1d736cff6f860/src/System.Collections.Immutable/src/System/Collections/Immutable/SortedInt32KeyNode.cs#L561
+        new GenClassUsingFieldOfInnerStruct<GenClassWithInnerStruct<string>.GenInterfaceOverGenStructStruct>(
+            new GenClassWithInnerStruct<string>.GenInterfaceOverGenStructStruct(), null).Create();
+
+        PassTest();
+    }
+
+    public class GenClassWithInnerStruct<TKey>
+    {
+        internal readonly struct GenInterfaceOverGenStructStruct 
+        {
+            // 2 fields to avoid struct collapsing to an i32
+            private readonly TKey _firstValue;
+            private readonly TKey _otherValue;
+
+            private GenInterfaceOverGenStructStruct(TKey firstElement)
+            {
+                _firstValue = firstElement;
+                _otherValue = firstElement;
+            }
+        }
+    }
+
+    public class GenClassUsingFieldOfInnerStruct<T>
+    {
+        private readonly T _value;
+        private GenClassUsingFieldOfInnerStruct<T> _left;
+
+        public GenClassUsingFieldOfInnerStruct(T v, GenClassUsingFieldOfInnerStruct<T> left)
+        {
+            _value = v;
+            _left = left;
+        }
+
+        public GenClassUsingFieldOfInnerStruct<T> Create(GenClassUsingFieldOfInnerStruct<T> left = null)
+        {
+            // some logic to get _value in a temp 
+            return new GenClassUsingFieldOfInnerStruct<T>(_value, left ?? _left);
+        }
+    }
+
+    private static void TestGenericCallInFinally()
+    {
+        StartTest("calling generic method requiring context from finally block");
+        if(GenRequiresContext<string>.Called)
+        {
+            FailTest("static bool defaulted to true");
+        }
+        EndTest(CallGenericInFinally<string>());
+    }
+
+    private static bool CallGenericInFinally<T>()
+    {
+        try
+        {
+            // do nothing
+        }
+        finally
+        {
+            GenRequiresContext<T>.Dispose();
+        }
+        return GenRequiresContext<T>.Called;
+    }
+
+    public class GenRequiresContext<T> 
+    {
+        internal static bool Called;
+
+        public static void Dispose()
+        {
+            Called = true;
+        }
+    }
+
+    private static void ActualStructCallParam(GenStructWithImplicitOp<string> gs)
+    {
+    }
+
+    private static void GenStructCallParam<T>(GenStructWithImplicitOp<T> gs)
+    {
+    }
+
+    public ref struct GenStructWithImplicitOp<TKey>
+    {
+        private int length;
+        private int length2; // just one int field will not create an LLVM struct type, so put another field
+
+        public GenStructWithImplicitOp(TKey[] key)
+        {
+            length = key.Length;
+            length2 = length;
+        }
+
+        public static implicit operator GenStructWithImplicitOp<TKey>(TKey[] array) => new GenStructWithImplicitOp<TKey>(array);
+    }
+
+    public class GetHashCodeCaller<TKey, TValue>
+    {
+        public void CallValueTypeGetHashCodeFromGeneric(TKey k)
+        {
+            k.GetHashCode();
+        }
     }
 
     public interface ITestGenItf
@@ -1054,7 +1240,7 @@ internal static class Program
 
         StartTest("SByte left shift");
         x = (int)(s << 1);
-        if(x == -2)
+        if (x == -2)
         {
             PassTest();
         }
@@ -1065,7 +1251,7 @@ internal static class Program
 
         sbyte minus1 = -1;
         StartTest("Negative SByte op");
-        if((s & minus1) == -1)
+        if ((s & minus1) == -1)
         {
             PassTest();
         }
@@ -1074,8 +1260,85 @@ internal static class Program
             FailTest();
         }
 
-        StartTest("Negative SByte br"); 
-        EndTest(ILHelpers.ILHelpersTest.BneSbyteExtend());
+        StartTest("Negative SByte br");
+        if (s == -1) // this only creates the bne opcode, which it is testing, in Release mode.
+        {
+            PassTest();
+        }
+        else
+        {
+            FailTest();
+        }
+    }
+
+    public static void TestSharedDelegate()
+    {
+        StartTest("Shared Delegate");
+        var shouldBeFalse = SampleClassWithGenericDelegate.CallDelegate(new object[0]);
+        var shouldBeTrue = SampleClassWithGenericDelegate.CallDelegate(new object[1]);
+        EndTest(!shouldBeFalse && shouldBeTrue);
+    }
+
+    internal static void TestUlongUintMultiply()
+    {
+        StartTest("Test ulong/int multiplication");
+        uint a = 0x80000000;
+        uint b = 2;
+        ulong f = ((ulong)a * b);
+        EndTest(f == 0x100000000);
+    }
+
+    internal static void TestBoxSingle()
+    {
+        StartTest("Test box single");
+        var fi = typeof(ClassWithFloat).GetField("F");
+        fi.SetValue(null, 1.1f);
+        EndTest(1.1f == ClassWithFloat.F);
+    }
+    
+    static void TestInitializeArray()
+    {
+        StartTest("Test InitializeArray");
+
+        bool[,] bools = new bool[2, 2] {
+            {  true,                        true},
+            {  false,                       true},
+        };
+
+        if (!(bools[0, 0] && bools[0, 1]
+            && !bools[1, 0] && bools[0, 1]))
+        {
+            FailTest("bool initialisation failed");
+        }
+
+        double[,] doubles = new double[2, 3]
+        {
+            {1.0, 1.1, 1.2 },
+            {2.0, 2.1, 2.2 },
+        };
+
+        if (!(doubles[0, 0] == 1.0 && doubles[0, 1] == 1.1 && doubles[0, 2] == 1.2
+            && doubles[1, 0] == 2.0 && doubles[1, 1] == 2.1 && doubles[1, 2] == 2.2
+            ))
+        {
+            FailTest("double initialisation failed");
+        }
+
+        PassTest();
+    }
+
+    static void TestImplicitUShortToUInt()
+    {
+        StartTest("test extend of shorts with MSB set");
+        uint start;
+        start = ReadUInt16();
+        EndTest(start == 0x0000828f);
+    }
+
+    static ushort ReadUInt16()
+    {
+        // something with MSB set
+        return 0x828f;
     }
 
     internal static void TestUlongUintMultiply()

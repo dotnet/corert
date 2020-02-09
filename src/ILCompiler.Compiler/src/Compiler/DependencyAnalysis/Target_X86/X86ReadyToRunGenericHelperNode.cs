@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis
     {       
         protected sealed override void EmitCode(NodeFactory factory, ref X86Emitter encoder, bool relocsOnly)
         {
-            throw new NotImplementedException();            
+            encoder.EmitINT3();  
         }
     }    
 }

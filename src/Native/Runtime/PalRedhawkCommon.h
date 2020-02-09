@@ -22,7 +22,6 @@ enum PalCapability
 {
     WriteWatchCapability                = 0x00000001,   // GetWriteWatch() and friends
     LowMemoryNotificationCapability     = 0x00000002,   // CreateMemoryResourceNotification() and friends
-    GetCurrentProcessorNumberCapability = 0x00000004,   // GetCurrentProcessorNumber()
 };
 
 #ifndef DECLSPEC_ALIGN

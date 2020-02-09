@@ -157,9 +157,6 @@ if [ -z "$__ClangMajorVersion" ] || [ -z "$__ClangMinorVersion" ]; then
     if [ -x "$(command -v clang)" ]; then
         export __ClangMajorVersion="$(echo | clang -dM -E - | grep __clang_major__ | cut -f3 -d ' ')"
         export __ClangMinorVersion="$(echo | clang -dM -E - | grep __clang_minor__ | cut -f3 -d ' ')"
-        if [ "${__HostOS}" != "OSX" ]; then
-            export CppCompilerAndLinker=clang
-        fi
     else
         export __ClangMajorVersion=3
         export __ClangMinorVersion=9

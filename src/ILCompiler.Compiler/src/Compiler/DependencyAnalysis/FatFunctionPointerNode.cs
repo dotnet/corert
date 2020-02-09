@@ -6,7 +6,6 @@ using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
-using FatFunctionPointerConstants = Internal.Runtime.FatFunctionPointerConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -37,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         int ISymbolDefinitionNode.Offset => 0;
-        int ISymbolNode.Offset => FatFunctionPointerConstants.Offset;
+        int ISymbolNode.Offset => Method.Context.Target.FatFunctionPointerOffset;
 
         public override bool IsShareable => true;
 

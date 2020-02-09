@@ -105,38 +105,6 @@ namespace Internal.JitInterface
     public enum mdToken : uint
     { }
 
-    public enum CorTokenType
-    {
-        mdtModule = 0x00000000,
-        mdtTypeRef = 0x01000000,
-        mdtTypeDef = 0x02000000,
-        mdtFieldDef = 0x04000000,
-        mdtMethodDef = 0x06000000,
-        mdtParamDef = 0x08000000,
-        mdtInterfaceImpl = 0x09000000,
-        mdtMemberRef = 0x0a000000,
-        mdtCustomAttribute = 0x0c000000,
-        mdtPermission = 0x0e000000,
-        mdtSignature = 0x11000000,
-        mdtEvent = 0x14000000,
-        mdtProperty = 0x17000000,
-        mdtMethodImpl = 0x19000000,
-        mdtModuleRef = 0x1a000000,
-        mdtTypeSpec = 0x1b000000,
-        mdtAssembly = 0x20000000,
-        mdtAssemblyRef = 0x23000000,
-        mdtFile = 0x26000000,
-        mdtExportedType = 0x27000000,
-        mdtManifestResource = 0x28000000,
-        mdtGenericParam = 0x2a000000,
-        mdtMethodSpec = 0x2b000000,
-        mdtGenericParamConstraint = 0x2c000000,
-
-        mdtString = 0x70000000,
-        mdtName = 0x71000000,
-        mdtBaseType = 0x72000000,
-    }
-
     public enum HRESULT {
         E_NOTIMPL = -2147467263
     }
@@ -147,7 +115,7 @@ namespace Internal.JitInterface
         public CORINFO_CLASS_STRUCT_* retTypeClass;   // if the return type is a value class, this is its handle (enums are normalized)
         public CORINFO_CLASS_STRUCT_* retTypeSigClass;// returns the value class as it is in the sig (enums are not converted to primitives)
         public byte _retType;
-        public byte flags;    // used by IL stubs code
+        public CorInfoSigInfoFlags flags;    // used by IL stubs code
         public ushort numArgs;
         public CORINFO_SIG_INST sigInst;  // information about how type variables are being instantiated in generic code
         public CORINFO_ARG_LIST_STRUCT_* args;
@@ -219,7 +187,7 @@ namespace Internal.JitInterface
     public unsafe struct CORINFO_CONST_LOOKUP
     {
         // If the handle is obtained at compile-time, then this handle is the "exact" handle (class, method, or field)
-        // Otherwise, it's a representative... 
+        // Otherwise, it's a representative...
         // If accessType is
         //     IAT_VALUE   --> "handle" stores the real handle or "addr " stores the computed address
         //     IAT_PVALUE  --> "addr" stores a pointer to a location which will hold the real handle
@@ -330,10 +298,10 @@ namespace Internal.JitInterface
         public CorInfoTokenKind tokenType;
 
         //
-        // [Out] arguments of resolveToken. 
+        // [Out] arguments of resolveToken.
         // - Type handle is always non-NULL.
         // - At most one of method and field handles is non-NULL (according to the token type).
-        // - Method handle is an instantiating stub only for generic methods. Type handle 
+        // - Method handle is an instantiating stub only for generic methods. Type handle
         //   is required to provide the full context for methods in generic types.
         //
         public CORINFO_CLASS_STRUCT_* hClass;
@@ -416,10 +384,11 @@ namespace Internal.JitInterface
         CORINFO_CONTEXTFLAGS_MASK = 0x01
     };
 
-    public enum CorInfoSigInfoFlags
+    public enum CorInfoSigInfoFlags : byte
     {
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
+        CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
     };
 
     // These are returned from getMethodOptions
@@ -574,7 +543,7 @@ namespace Internal.JitInterface
         CORINFO_VERIFICATION_CANNOT_SKIP = 0,    // Cannot skip verification during jit time.
         CORINFO_VERIFICATION_CAN_SKIP = 1,    // Can skip verification during jit time.
         CORINFO_VERIFICATION_RUNTIME_CHECK = 2,    // Cannot skip verification during jit time,
-        //     but need to insert a callout to the VM to ask during runtime 
+        //     but need to insert a callout to the VM to ask during runtime
         //     whether to raise a verification or not (if the method is unverifiable).
         CORINFO_VERIFICATION_DONT_JIT = 3,    // Cannot skip verification during jit time,
         //     but do not jit the method if is is unverifiable.
@@ -582,13 +551,13 @@ namespace Internal.JitInterface
 
     public enum CorInfoInitClassResult
     {
-        CORINFO_INITCLASS_NOT_REQUIRED = 0x00, // No class initialization required, but the class is not actually initialized yet 
+        CORINFO_INITCLASS_NOT_REQUIRED = 0x00, // No class initialization required, but the class is not actually initialized yet
         // (e.g. we are guaranteed to run the static constructor in method prolog)
         CORINFO_INITCLASS_INITIALIZED = 0x01, // Class initialized
         CORINFO_INITCLASS_SPECULATIVE = 0x02, // Class may be initialized speculatively
         CORINFO_INITCLASS_USE_HELPER = 0x04, // The JIT must insert class initialization helper call.
-        CORINFO_INITCLASS_DONT_INLINE = 0x08, // The JIT should not inline the method requesting the class initialization. The class 
-        // initialization requires helper class now, but will not require initialization 
+        CORINFO_INITCLASS_DONT_INLINE = 0x08, // The JIT should not inline the method requesting the class initialization. The class
+        // initialization requires helper class now, but will not require initialization
         // if the method is compiled standalone. Or the method cannot be inlined due to some
         // requirement around class initialization such as shared generics.
     }
@@ -835,16 +804,16 @@ namespace Internal.JitInterface
     // instantiations) passed verification.
     public enum CorInfoInstantiationVerification
     {
-        // The method is NOT a concrete instantiation (eg. List<int>.Add()) of a method 
-        // in a generic class or a generic method. It is either the typical instantiation 
+        // The method is NOT a concrete instantiation (eg. List<int>.Add()) of a method
+        // in a generic class or a generic method. It is either the typical instantiation
         // (eg. List<T>.Add()) or entirely non-generic.
         INSTVER_NOT_INSTANTIATION = 0,
 
-        // The method is an instantiation of a method in a generic class or a generic method, 
+        // The method is an instantiation of a method in a generic class or a generic method,
         // and the generic class was successfully verified
         INSTVER_GENERIC_PASSED_VERIFICATION = 1,
 
-        // The method is an instantiation of a method in a generic class or a generic method, 
+        // The method is an instantiation of a method in a generic class or a generic method,
         // and the generic class failed verification
         INSTVER_GENERIC_FAILED_VERIFICATION = 2,
     };
@@ -885,7 +854,7 @@ namespace Internal.JitInterface
     public enum CORINFO_OS
     {
         CORINFO_WINNT,
-        CORINFO_PAL,
+        CORINFO_UNIX,
     }
 
     public enum CORINFO_RUNTIME_ABI
@@ -925,7 +894,7 @@ namespace Internal.JitInterface
         public uint offsetOfDelegateInstance;
         public uint offsetOfDelegateFirstTarget;
 
-        // Secure delegate offsets
+        // Wrapper delegate offsets
         public uint offsetOfWrapperDelegateIndirectCell;
 
         // Remoting offsets
@@ -1016,7 +985,7 @@ namespace Internal.JitInterface
     // thisTransform and constraint calls
     // ----------------------------------
     //
-    // For evertyhing besides "constrained." calls "thisTransform" is set to
+    // For everything besides "constrained." calls "thisTransform" is set to
     // CORINFO_NO_THIS_TRANSFORM.
     //
     // For "constrained." calls the EE attempts to resolve the call at compile
@@ -1166,7 +1135,7 @@ namespace Internal.JitInterface
     };
 
     // System V struct passing
-    // The Classification types are described in the ABI spec at http://www.x86-64.org/documentation/abi.pdf
+    // The Classification types are described in the ABI spec at https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
     public enum SystemVClassificationType : byte
     {
         SystemVClassificationTypeUnknown            = 0,
@@ -1184,13 +1153,13 @@ namespace Internal.JitInterface
 
         // Internal flags - never returned outside of the classification implementation.
 
-        // This value represents a very special type with two eightbytes. 
+        // This value represents a very special type with two eightbytes.
         // First ByRef, second Integer (platform int).
         // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
-        // This is the classification counterpart for that element type. It is used to detect 
+        // This is the classification counterpart for that element type. It is used to detect
         // the special TypedReference type and specialize its classification.
         // This type is represented as a struct with two fields. The classification needs to do
-        // special handling of it since the source/methadata type of the fieds is IntPtr. 
+        // special handling of it since the source/methadata type of the fieds is IntPtr.
         // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
         // special handling is warranted (similar thing is done in the getGCLayout function for this type).
         SystemVClassificationTypeTypedReference     = 8,
@@ -1290,7 +1259,7 @@ namespace Internal.JitInterface
     };
 
     // This enum is used for JIT to tell EE where this token comes from.
-    // E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or 
+    // E.g. Depending on different opcodes, we might allow/disallow certain types of tokens or
     // return different types of handles (e.g. boxed vs. regular entrypoints)
     public enum CorInfoTokenKind
     {
@@ -1405,9 +1374,9 @@ namespace Internal.JitInterface
         CORJIT_FLAG_HAS_ARM64_SHA256        = 55, // ID_AA64ISAR0_EL1.SHA2 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SHA512        = 56, // ID_AA64ISAR0_EL1.SHA2 is 2 or better
         CORJIT_FLAG_HAS_ARM64_SHA3          = 57, // ID_AA64ISAR0_EL1.SHA3 is 1 or better
-        CORJIT_FLAG_HAS_ARM64_ADVSIMD       = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
-        CORJIT_FLAG_HAS_ARM64_ADVSIMD_V81   = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
-        CORJIT_FLAG_HAS_ARM64_ADVSIMD_FP16  = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD          = 58, // ID_AA64PFR0_EL1.AdvSIMD is 0 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD_V81      = 59, // ID_AA64ISAR0_EL1.RDM is 1 or better
+        CORJIT_FLAG_HAS_ARM64_SIMD_FP16     = 60, // ID_AA64PFR0_EL1.AdvSIMD is 1 or better
         CORJIT_FLAG_HAS_ARM64_SM3           = 61, // ID_AA64ISAR0_EL1.SM3 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SM4           = 62, // ID_AA64ISAR0_EL1.SM4 is 1 or better
         CORJIT_FLAG_HAS_ARM64_SVE           = 63, // ID_AA64PFR0_EL1.SVE is 1 or better
@@ -1431,7 +1400,7 @@ namespace Internal.JitInterface
     public struct CORJIT_FLAGS
     {
         private UInt64 _corJitFlags;
-        
+
         public void Reset()
         {
             _corJitFlags = 0;

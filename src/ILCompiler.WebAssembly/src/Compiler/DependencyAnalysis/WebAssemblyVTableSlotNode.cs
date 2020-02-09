@@ -18,6 +18,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(targetMethod.IsVirtual);
             Debug.Assert(!targetMethod.HasInstantiation);
+            Debug.Assert(!targetMethod.IsRuntimeDeterminedExactMethod);
             _targetMethod = targetMethod;
         }
 

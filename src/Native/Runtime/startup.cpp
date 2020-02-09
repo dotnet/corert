@@ -73,6 +73,13 @@ static bool InitDLL(HANDLE hPalInstance)
     if (!RestrictedCallouts::Initialize())
         return false;
 
+    //
+    // Initialize RuntimeInstance state
+    //
+    if (!RuntimeInstance::Initialize(hPalInstance))
+        return false;
+
+    // Note: The global exception handler uses RuntimeInstance
 #if !defined(APP_LOCAL_RUNTIME) && !defined(USE_PORTABLE_HELPERS)
 #ifndef PLATFORM_UNIX
     PalAddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
@@ -80,12 +87,6 @@ static bool InitDLL(HANDLE hPalInstance)
     PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
 #endif
 #endif // !APP_LOCAL_RUNTIME && !USE_PORTABLE_HELPERS
-
-    //
-    // init per-instance state
-    //
-    if (!RuntimeInstance::Initialize(hPalInstance))
-        return false;
 
     InitializeYieldProcessorNormalizedCrst();
 

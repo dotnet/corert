@@ -53,6 +53,8 @@
     <Compile Include="Internal\Runtime\JitSupport\JitMethodEntrypointNode.cs" />
     <Compile Include="Internal\Runtime\JitSupport\JitNodeFactory.cs" />
     <Compile Include="Internal\Runtime\JitSupport\JitTemp.cs" />
+    <Compile Include="$(CommonBasePath)\Internal\Runtime\CorConstants.cs" />
+    <Compile Include="$(CommonBasePath)\Internal\Runtime\ReadyToRunConstants.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Runtime\EEType.Constants.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Runtime\EETypeBuilderHelpers.cs" />
     <Compile Include="$(CommonBasePath)\Internal\Runtime\RuntimeConstants.cs" />
@@ -82,6 +84,7 @@
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\TypeGetTypeMethodThunk.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\InterlockedIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\RuntimeHelpersIntrinsics.cs" />
+    <Compile Include="$(TypeSystemBasePath)\IL\Stubs\MemoryMarshalIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\UnsafeIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\IL\Stubs\VolatileIntrinsics.cs" />
     <Compile Include="$(TypeSystemBasePath)\Interop\IL\Marshaller.cs" />
@@ -138,11 +141,12 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\HardwareIntrinsicHelpers.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\MethodExtensions.cs" />
-    <Compile Include="$(ILCompilerBasePath)\Compiler\ReadyToRun.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\TypeExtensions.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\NameMangler.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\NodeMangler.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DevirtualizationManager.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\VectorFieldLayoutAlgorithm.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="$(ILCompilerBasePath)\IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="$(ILCompilerRyuJitBasePath)\JitInterface\CorInfoImpl.RyuJit.cs" />
     <Compile Include="$(DependencyAnalysisFrameworkBasePath)\IDependencyNode.cs" />
