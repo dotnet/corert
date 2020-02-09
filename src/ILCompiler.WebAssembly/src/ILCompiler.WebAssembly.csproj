@@ -6,7 +6,7 @@
     <RootNamespace>ILCompiler</RootNamespace>
     <AssemblyName>ILCompiler.WebAssembly</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>netstandard1.6</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <NoWarn>8002</NoWarn>
   </PropertyGroup>
   
