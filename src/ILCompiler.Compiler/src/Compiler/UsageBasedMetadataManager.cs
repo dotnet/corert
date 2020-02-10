@@ -334,22 +334,38 @@ namespace ILCompiler
             }
         }
 
+        public override bool ShouldConsiderLdTokenReferenceAConstruction(TypeDesc type)
+        {
+            // Tell codegen to use necessary type symbol. We're going to upgrade to a constructed
+            // type symbol from our IL scanner if needed when we get the GetDependenciesDueToMethodCodePresence callback.
+            return false;
+        }
+
         protected override void GetDependenciesDueToMethodCodePresenceInternal(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if ((_generationOptions & UsageBasedMetadataGenerationOptions.ILScanning) != 0)
-            {
-                MethodIL methodIL = _ilProvider.GetMethodIL(method);
+            bool scanReflection = (_generationOptions & UsageBasedMetadataGenerationOptions.ReflectionILScanning) != 0;
+            bool scanInterop = (_generationOptions & UsageBasedMetadataGenerationOptions.IteropILScanning) != 0;
 
-                if (methodIL != null)
+            // NOTE: we will intentionally run the scanner even if both scan modes are disabled
+            // because we rely on the scanner to report constructed EETypes for LDTOKEN references
+            // to types.
+            ReflectionMethodBodyScanner.ScanModes modes = 0;
+            if (scanReflection)
+                modes |= ReflectionMethodBodyScanner.ScanModes.Reflection;
+            if (scanInterop)
+                modes |= ReflectionMethodBodyScanner.ScanModes.Interop;
+
+            MethodIL methodIL = _ilProvider.GetMethodIL(method);
+
+            if (methodIL != null)
+            {
+                try
                 {
-                    try
-                    {
-                        ReflectionMethodBodyScanner.Scan(ref dependencies, factory, methodIL);
-                    }
-                    catch (TypeSystemException)
-                    {
-                        // A problem with the IL - we just don't scan it...
-                    }
+                    ReflectionMethodBodyScanner.Scan(ref dependencies, factory, methodIL, modes);
+                }
+                catch (TypeSystemException)
+                {
+                    // A problem with the IL - we just don't scan it...
                 }
             }
         }
@@ -496,7 +512,7 @@ namespace ILCompiler
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
                 _modulesWithMetadata, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
-                reflectableFields.ToEnumerable());
+                reflectableFields.ToEnumerable(), GetTypesWithConstructedEETypes());
         }
 
         private struct ReflectableEntityBuilder<T>
@@ -607,12 +623,17 @@ namespace ILCompiler
         /// <summary>
         /// Scan IL for common reflection patterns to find additional compilation roots.
         /// </summary>
-        ILScanning = 4,
+        ReflectionILScanning = 4,
+
+        /// <summary>
+        /// Scan IL for common interop patterns to find additional compilation roots.
+        /// </summary>
+        IteropILScanning = 8,
 
         /// <summary>
         /// Specifies that all types and methods in user assemblies should be considered dynamically
         /// used.
         /// </summary>
-        FullUserAssemblyRooting = 8,
+        FullUserAssemblyRooting = 0x10,
     }
 }

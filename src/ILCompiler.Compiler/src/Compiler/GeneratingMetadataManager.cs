@@ -219,6 +219,8 @@ namespace ILCompiler
         protected virtual void GetDependenciesDueToTemplateTypeLoader(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
             // TODO-SIZE: this is overly generous in the templates we create
+            if (_blockingPolicy is FullyBlockedMetadataBlockingPolicy)
+                return;
 
             if (method.HasInstantiation)
             {
@@ -248,6 +250,9 @@ namespace ILCompiler
             DefType closestDefType = type.GetClosestDefType();
 
             // TODO-SIZE: this is overly generous in the templates we create
+            if (_blockingPolicy is FullyBlockedMetadataBlockingPolicy)
+                return;
+
             if (closestDefType.HasInstantiation)
             {
                 TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);

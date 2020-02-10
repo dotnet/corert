@@ -490,6 +490,8 @@ namespace ILCompiler
             ComputeMetadata(factory, out _metadataBlob, out _typeMappings, out _methodMappings, out _fieldMappings, out _stackTraceMappings);
         }
 
+        public abstract bool ShouldConsiderLdTokenReferenceAConstruction(TypeDesc type);
+
         void ICompilationRootProvider.AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             // MetadataManagers can override this to provide metadata compilation roots that need to be added to the graph ahead of time.
@@ -669,15 +671,11 @@ namespace ILCompiler
                         if (_blockingPolicy.IsBlocked((MetadataType)typeDefinition))
                             return true;
 
-                        foreach (var arg in type.Instantiation)
-                            if (IsReflectionBlocked(arg))
-                                return true;
+                        if (IsReflectionBlocked(type.Instantiation))
+                            return true;
 
                         return false;
                     }
-
-                    if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
-                        return false;
 
                     return _blockingPolicy.IsBlocked((MetadataType)type);
             }
@@ -687,7 +685,7 @@ namespace ILCompiler
         {
             foreach (TypeDesc type in instantiation)
             {
-                if (IsReflectionBlocked(type))
+                if (IsReflectionBlocked(type) && !type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
                     return true;
             }
             return false;

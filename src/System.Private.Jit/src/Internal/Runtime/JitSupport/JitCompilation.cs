@@ -130,6 +130,11 @@ namespace ILCompiler
             throw new NotImplementedException();
         }
 
+        public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
+        {
+            return ReadyToRunHelperId.TypeHandle;
+        }
+
         public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
         {
             // The current plan seem to be to copy paste from ILCompiler.Compilation, but that's not a sustainable plan

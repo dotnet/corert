@@ -783,14 +783,16 @@ namespace Internal.IL
             {
                 var type = (TypeDesc)obj;
 
+                ISymbolNode reference;
                 if (type.IsRuntimeDeterminedSubtype)
                 {
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type), "ldtoken");
+                    reference = GetGenericLookupHelper(ReadyToRunHelperId.TypeHandle, type);
                 }
                 else
                 {
-                    _dependencies.Add(_factory.MaximallyConstructableType(type), "ldtoken");
+                    reference = _compilation.ComputeConstantLookup(_compilation.GetLdTokenHelperForType(type), type);
                 }
+                _dependencies.Add(reference, "ldtoken");
 
                 // If this is a ldtoken Type / GetValueInternal sequence, we're done.
                 // If this is a ldtoken Type / Type.GetTypeFromHandle sequence, we need one more helper.

@@ -19,7 +19,7 @@ namespace ILCompiler
 
         partial void InitializePartial()
         {
-            _metadataManager = new EmptyMetadataManager(_context);
+            _metadataManager = new AnalysisBasedMetadataManager(_context);
         }
 
         public CompilationBuilder UseMetadataManager(MetadataManager metadataManager)

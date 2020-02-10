@@ -480,27 +480,36 @@ namespace ILCompiler
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
 
-            MetadataBlockingPolicy mdBlockingPolicy = _noMetadataBlocking 
-                    ? (MetadataBlockingPolicy)new NoMetadataBlockingPolicy() 
+            MetadataBlockingPolicy mdBlockingPolicy;
+            ManifestResourceBlockingPolicy resBlockingPolicy;
+            UsageBasedMetadataGenerationOptions metadataGenerationOptions = UsageBasedMetadataGenerationOptions.IteropILScanning;
+            if (supportsReflection)
+            {
+                mdBlockingPolicy = _noMetadataBlocking
+                    ? (MetadataBlockingPolicy)new NoMetadataBlockingPolicy()
                     : new BlockedInternalsBlockingPolicy(typeSystemContext);
 
-            ManifestResourceBlockingPolicy resBlockingPolicy = (removedFeatures & RemovedFeature.FrameworkResources) != 0 ?
-                new FrameworkStringResourceBlockingPolicy() : (ManifestResourceBlockingPolicy)new NoManifestResourceBlockingPolicy();
+                resBlockingPolicy = (removedFeatures & RemovedFeature.FrameworkResources) != 0
+                    ? new FrameworkStringResourceBlockingPolicy()
+                    : (ManifestResourceBlockingPolicy)new NoManifestResourceBlockingPolicy();
 
-            UsageBasedMetadataGenerationOptions metadataGenerationOptions = UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
-            if (_completeTypesMetadata)
-                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
-            if (_scanReflection)
-                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ILScanning;
-            if (_rootAllApplicationAssemblies)
-                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.FullUserAssemblyRooting;
+                metadataGenerationOptions = UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
+                if (_completeTypesMetadata)
+                    metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
+                if (_scanReflection)
+                    metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.ReflectionILScanning;
+                if (_rootAllApplicationAssemblies)
+                    metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.FullUserAssemblyRooting;
+            }
+            else
+            {
+                mdBlockingPolicy = new FullyBlockedMetadataBlockingPolicy();
+                resBlockingPolicy = new FullyBlockedManifestResourceBlockingPolicy();
+            }
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            MetadataManager metadataManager;
-            if (supportsReflection)
-            {
-                metadataManager = new UsageBasedMetadataManager(
+            MetadataManager metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,
                     typeSystemContext,
                     mdBlockingPolicy,
@@ -510,11 +519,6 @@ namespace ILCompiler
                     invokeThunkGenerationPolicy,
                     ilProvider,
                     metadataGenerationOptions);
-            }
-            else
-            {
-                metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy, ilProvider);
-            }
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
             InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy);
@@ -547,16 +551,7 @@ namespace ILCompiler
 
                 scanResults = scanner.Scan();
 
-                if (metadataManager is UsageBasedMetadataManager usageBasedManager)
-                {
-                    metadataManager = usageBasedManager.ToAnalysisBasedMetadataManager();
-                }
-                else
-                {
-                    // MetadataManager collects a bunch of state (e.g. list of compiled method bodies) that we need to reset.
-                    Debug.Assert(metadataManager is EmptyMetadataManager);
-                    metadataManager = new EmptyMetadataManager(typeSystemContext, stackTracePolicy, ilProvider);
-                }
+                metadataManager = ((UsageBasedMetadataManager)metadataManager).ToAnalysisBasedMetadataManager();
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
             }

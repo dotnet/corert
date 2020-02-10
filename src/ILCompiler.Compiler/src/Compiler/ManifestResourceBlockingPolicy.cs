@@ -18,4 +18,12 @@ namespace ILCompiler
         /// </summary>
         public abstract bool IsManifestResourceBlocked(ModuleDesc module, string resourceName);
     }
+
+    public class FullyBlockedManifestResourceBlockingPolicy : ManifestResourceBlockingPolicy
+    {
+        public override bool IsManifestResourceBlocked(ModuleDesc module, string resourceName)
+        {
+            return true;
+        }
+    }
 }

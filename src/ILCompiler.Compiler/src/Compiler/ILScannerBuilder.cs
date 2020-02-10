@@ -34,7 +34,7 @@ namespace ILCompiler
             _context = context;
             _compilationGroup = compilationGroup;
             _nameMangler = mangler;
-            _metadataManager = new EmptyMetadataManager(context);
+            _metadataManager = new AnalysisBasedMetadataManager(context);
             _ilProvider = ilProvider;
         }
 

@@ -67,9 +67,19 @@ namespace ILCompiler.Compiler.Tests
             var context = (CompilerTypeSystemContext)method.Context;
             CompilationModuleGroup compilationGroup = new SingleFileCompilationModuleGroup();
 
-            CompilationBuilder builder = new RyuJitCompilationBuilder(context, compilationGroup);
+            CoreRTILProvider ilProvider = new CoreRTILProvider();
+
+            UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(compilationGroup, context,
+                new FullyBlockedMetadataBlockingPolicy(), new FullyBlockedManifestResourceBlockingPolicy(),
+                null, new NoStackTraceEmissionPolicy(), new NoDynamicInvokeThunkGenerationPolicy(), ilProvider,
+                UsageBasedMetadataGenerationOptions.None);
+
+            CompilationBuilder builder = new RyuJitCompilationBuilder(context, compilationGroup)
+                .UseILProvider(ilProvider);
+
             IILScanner scanner = builder.GetILScannerBuilder()
                 .UseCompilationRoots(new ICompilationRootProvider[] { new SingleMethodRootProvider(method) })
+                .UseMetadataManager(metadataManager)
                 .ToILScanner();
 
             ILScanResults results = scanner.Scan();
