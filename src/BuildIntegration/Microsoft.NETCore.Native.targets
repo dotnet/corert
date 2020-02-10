@@ -88,14 +88,14 @@ See the LICENSE file in the project root for more information.
     <IlcCompileDependsOn>$(IlcCompileDependsOn);SetupOSSpecificProps</IlcCompileDependsOn>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="$(IlcSystemModule) == ''">
     <AutoInitializedAssemblies Include="System.Private.CoreLib" />
     <AutoInitializedAssemblies Include="System.Private.DeveloperExperience.Console" Condition="$(IlcDisableUnhandledExceptionExperience) != 'true'"  />
     <AutoInitializedAssemblies Condition="'$(ExperimentalInterpreterSupport)' == 'true'" Include="System.Private.Interpreter" />
     <AutoInitializedAssemblies Condition="'$(ExperimentalJitSupport)' == 'true'" Include="System.Private.Jit" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ExperimentalDynamicCodeSupport)' != 'true'">
+  <ItemGroup Condition="$(IlcSystemModule) == '' and '$(ExperimentalDynamicCodeSupport)' != 'true'">
     <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" Condition="$(IlcDisableReflection) != 'true' or $(IlcGenerateStackTraceData) == 'true'"/>
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
     <AutoInitializedAssemblies Include="System.Private.Reflection.Execution" Condition="$(IlcDisableReflection) != 'true'" />
@@ -103,7 +103,7 @@ See the LICENSE file in the project root for more information.
     <AutoInitializedAssemblies Include="System.Private.Interop" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(ExperimentalDynamicCodeSupport)' == 'true'">
+  <ItemGroup Condition="$(IlcSystemModule) == '' and '$(ExperimentalDynamicCodeSupport)' == 'true'">
     <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata.Experimental" />
     <AutoInitializedAssemblies Include="System.Private.TypeLoader.Experimental" />
     <AutoInitializedAssemblies Include="System.Private.Reflection.Execution.Experimental" />
