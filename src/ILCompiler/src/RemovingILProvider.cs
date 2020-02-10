@@ -62,10 +62,27 @@ namespace ILCompiler
 
                         ILEmitter emitter = new ILEmitter();
                         ILCodeStream codeStream = emitter.NewCodeStream();
+
+                        FieldDesc defaultField = methodDef.OwningType.InstantiateAsOpen().GetField("s_default");
+
+                        TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
+                        MethodDesc compareExchangeObject = context.SystemModule.
+                            GetType("System.Threading", "Interlocked").
+                                GetMethod("CompareExchange",
+                                    new MethodSignature(
+                                        MethodSignatureFlags.Static,
+                                        genericParameterCount: 0,
+                                        returnType: objectType,
+                                        parameters: new TypeDesc[] { objectType.MakeByRefType(), objectType, objectType }));
+
+                        codeStream.Emit(ILOpcode.ldsflda, emitter.NewToken(defaultField));
                         codeStream.Emit(ILOpcode.newobj, emitter.NewToken(comparerType.MakeInstantiatedType(context.GetSignatureVariable(0, method: false)).GetDefaultConstructor()));
-                        codeStream.Emit(ILOpcode.dup);
-                        codeStream.Emit(ILOpcode.stsfld, emitter.NewToken(methodDef.OwningType.InstantiateAsOpen().GetField("_default")));
+                        codeStream.Emit(ILOpcode.ldnull);
+                        codeStream.Emit(ILOpcode.call, emitter.NewToken(compareExchangeObject));
+                        codeStream.Emit(ILOpcode.pop);
+                        codeStream.Emit(ILOpcode.ldsfld, emitter.NewToken(defaultField));
                         codeStream.Emit(ILOpcode.ret);
+
                         return new InstantiatedMethodIL(method, emitter.Link(methodDef));
                     }
 

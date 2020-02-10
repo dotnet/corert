@@ -4,18 +4,16 @@
 
 #nullable enable
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 using Internal.IntrinsicSupport;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
     public abstract partial class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
-        // WARNING: We allow diagnostic tools to directly inspect this member (_default). 
-        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details. 
-        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools. 
-        // Get in touch with the diagnostics team if you have questions.
-        private static EqualityComparer<T> _default;
+        private static EqualityComparer<T> s_default;
 
         [Intrinsic]
         private static EqualityComparer<T> Create()
@@ -23,7 +21,8 @@ namespace System.Collections.Generic
             // The compiler will overwrite the Create method with optimized
             // instantiation-specific implementation.
             // This body serves as a fallback when instantiation-specific implementation is unavailable.
-            return (_default = EqualityComparerHelpers.GetUnknownEquatableComparer<T>());
+            Interlocked.CompareExchange(ref s_default, Unsafe.As<EqualityComparer<T>>(EqualityComparerHelpers.GetComparer(typeof(T).TypeHandle)), null);
+            return s_default;
         }
 
         public static EqualityComparer<T> Default
@@ -32,7 +31,7 @@ namespace System.Collections.Generic
             get
             {
                 // Lazy initialization produces smaller code for CoreRT than initialization in constructor
-                return _default ?? Create();
+                return s_default ?? Create();
             }
         }
     }

@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-// These helper methods are known to a NUTC intrinsic used to implement the Comparer<T> class.
-
-// the compiler will instead replace the IL code within get_Default to call one of GetUnknownComparer, GetKnownGenericComparer,
-// GetKnownNullableComparer, GetKnownEnumComparer or GetKnownObjectComparer based on what sort of
-// type is being compared.
+// The algoritm to choose the default comparer is duplicated in the IL compiler. The compiler will replace the code within
+// Comparer<T>.Create method with more specific implementation based on what sort of type is being compared where possible.
 
 using System;
 using System.Collections.Generic;
@@ -54,7 +50,7 @@ namespace Internal.IntrinsicSupport
             return false;
         }
 
-        private static object GetComparer(RuntimeTypeHandle t)
+        internal static object GetComparer(RuntimeTypeHandle t)
         {
             RuntimeTypeHandle comparerType;
             RuntimeTypeHandle openComparerType = default(RuntimeTypeHandle);
@@ -91,26 +87,6 @@ namespace Internal.IntrinsicSupport
             }
 
             return RuntimeAugments.NewObject(comparerType);
-        }
-
-        internal static Comparer<T> GetUnknownComparer<T>()
-        {
-            return (Comparer<T>)GetComparer(typeof(T).TypeHandle);
-        }
-
-        private static Comparer<T> GetKnownGenericComparer<T>() where T : IComparable<T>
-        {
-            return new GenericComparer<T>();
-        }
-
-        private static Comparer<Nullable<U>> GetKnownNullableComparer<U>() where U : struct, IComparable<U>
-        {
-            return new NullableComparer<U>();
-        }
-
-        private static Comparer<T> GetKnownObjectComparer<T>()
-        {
-            return new ObjectComparer<T>();
         }
     }
 }
