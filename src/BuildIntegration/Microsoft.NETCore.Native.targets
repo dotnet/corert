@@ -211,6 +211,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:EventSource" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--removefeature:FrameworkStrings" />
       <IlcArg Condition="$(IlcInvariantGlobalization) == 'true'" Include="--removefeature:Globalization" />
+      <IlcArg Condition="$(IlcSystemModule) != ''" Include="--systemmodule:$(IlcSystemModule)" />
 
       <!-- Workaround for https://github.com/dotnet/corefx/issues/36723 -->
       <IlcArg Include="--removefeature:SerializationGuard" />
