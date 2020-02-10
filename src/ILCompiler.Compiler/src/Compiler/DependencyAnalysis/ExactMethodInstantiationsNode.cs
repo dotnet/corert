@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (MethodDesc method in factory.MetadataManager.GetCompiledMethods())
             {
-                if (!IsMethodEligibleForTracking(method))
+                if (!IsMethodEligibleForTracking(factory, method))
                     continue;
 
                 // Get the method pointer vertex
@@ -107,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void GetExactMethodInstantiationDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (!IsMethodEligibleForTracking(method))
+            if (!IsMethodEligibleForTracking(factory, method))
                 return;
 
             dependencies = dependencies ?? new DependencyList();
@@ -129,7 +129,7 @@ namespace ILCompiler.DependencyAnalysis
             dependencies.Add(new DependencyListEntry(factory.NativeLayout.PlacedSignatureVertex(nameAndSig), "Exact method instantiation entry"));
         }
 
-        private static bool IsMethodEligibleForTracking(MethodDesc method)
+        private static bool IsMethodEligibleForTracking(NodeFactory factory, MethodDesc method)
         {
             // Runtime determined methods should never show up here.
             Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
@@ -145,7 +145,17 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsSharedByGenericInstantiations || method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method)
                 return false;
 
-            return true;
+            // The hashtable is used to find implementations of generic virtual methods at runtime
+            if (method.IsVirtual)
+                return true;
+
+            // The hashtable is also used for reflection
+            if (!factory.MetadataManager.IsReflectionBlocked(method))
+                return true;
+
+            // The rest of the entries are potentially only useful for the universal
+            // canonical type loader.
+            return factory.TypeSystemContext.SupportsUniversalCanon;
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
