@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 using Internal.IL;
 using Internal.TypeSystem;
 
@@ -17,7 +19,14 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal static class ReflectionMethodBodyScanner
     {
-        public static void Scan(ref DependencyList list, NodeFactory factory, MethodIL methodIL)
+        [Flags]
+        internal enum ScanModes
+        {
+            Interop = 1,
+            Reflection = 2,
+        }
+
+        public static void Scan(ref DependencyList list, NodeFactory factory, MethodIL methodIL, ScanModes modes)
         {
             ILReader reader = new ILReader(methodIL.GetILBytes());
 
@@ -49,7 +58,22 @@ namespace ILCompiler.DependencyAnalysis
                         break;
 
                     case ILOpcode.ldtoken:
-                        tracker.TrackLdTokenToken(reader.ReadILToken());
+                        int token = reader.ReadILToken();
+                        if (IsTypeEqualityTest(methodIL, reader, out ILReader newReader))
+                        {
+                            reader = newReader;
+                        }
+                        else
+                        {
+                            tracker.TrackLdTokenToken(token);
+                            TypeDesc type = methodIL.GetObject(token) as TypeDesc;
+                            if (type != null && !type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                            {
+                                list = list ?? new DependencyList();
+                                list.Add(factory.MaximallyConstructableType(type), "Unknown LDTOKEN use");
+                            }
+                        }
+
                         break;
 
                     case ILOpcode.call:
@@ -57,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis
                         var method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
                         if (method != null)
                         {
-                            HandleCall(ref list, factory, methodIL, method, ref tracker);
+                            HandleCall(ref list, factory, methodIL, method, ref tracker, modes);
                         }
                         break;
 
@@ -68,51 +92,15 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        /// <summary>
-        /// Subset of <see cref="Scan(ref DependencyList, NodeFactory, MethodIL)"/> that only deals with Marshal.SizeOf.
-        /// </summary>
-        public static void ScanMarshalOnly(ref DependencyList list, NodeFactory factory, MethodIL methodIL)
+        private static void HandleCall(ref DependencyList list, NodeFactory factory, MethodIL methodIL, MethodDesc methodCalled, ref Tracker tracker, ScanModes modes)
         {
-            ILReader reader = new ILReader(methodIL.GetILBytes());
+            bool scanningReflection = (modes & ScanModes.Reflection) != 0;
+            bool scanningInterop = (modes & ScanModes.Interop) != 0;
 
-            Tracker tracker = new Tracker(methodIL);
-
-            while (reader.HasNext)
-            {
-                ILOpcode opcode = reader.ReadILOpcode();
-                switch (opcode)
-                {
-                    case ILOpcode.ldtoken:
-                        tracker.TrackLdTokenToken(reader.ReadILToken());
-                        break;
-
-                    case ILOpcode.call:
-                        var method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
-                        if (method != null && method.Name == "SizeOf" && IsMarshalSizeOf(method))
-                        {
-                            TypeDesc type = tracker.GetLastType();
-                            if (IsTypeEligibleForMarshalSizeOfTracking(type))
-                            {
-                                list = list ?? new DependencyList();
-
-                                list.Add(factory.StructMarshallingData((DefType)type), "Marshal.SizeOf");
-                            }
-                        }
-                        break;
-
-                    default:
-                        reader.Skip(opcode);
-                        break;
-                }
-            }
-        }
-
-        private static void HandleCall(ref DependencyList list, NodeFactory factory, MethodIL methodIL, MethodDesc methodCalled, ref Tracker tracker)
-        {
             switch (methodCalled.Name)
             {
                 // Enum.GetValues(Type) needs array of that type
-                case "GetValues" when methodCalled.OwningType == factory.TypeSystemContext.GetWellKnownType(WellKnownType.Enum):
+                case "GetValues" when scanningReflection && methodCalled.OwningType == factory.TypeSystemContext.GetWellKnownType(WellKnownType.Enum):
                     {
                         TypeDesc type = tracker.GetLastType();
                         if (type != null && type.IsEnum && !type.IsGenericDefinition /* generic enums! */)
@@ -127,7 +115,7 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 // Type.GetType(string...) needs the type with the given name
-                case "GetType" when methodCalled.OwningType.IsSystemType() && methodCalled.Signature.Length > 0:
+                case "GetType" when scanningReflection && methodCalled.OwningType.IsSystemType() && methodCalled.Signature.Length > 0:
                     {
                         string name = tracker.GetLastString();
                         if (name != null
@@ -150,7 +138,7 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 // Type.GetMethod(string...)
-                case "GetMethod" when methodCalled.OwningType.IsSystemType():
+                case "GetMethod" when scanningReflection && methodCalled.OwningType.IsSystemType():
                     {
                         string name = tracker.GetLastString();
                         TypeDesc type = tracker.GetLastType();
@@ -205,7 +193,7 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
                     break;
-                case "SizeOf" when IsMarshalSizeOf(methodCalled):
+                case "SizeOf" when scanningInterop && IsMarshalSizeOf(methodCalled):
                     {
                         TypeDesc type = tracker.GetLastType();
                         if (IsTypeEligibleForMarshalSizeOfTracking(type))
@@ -318,6 +306,41 @@ namespace ILCompiler.DependencyAnalysis
             {
                 list.Add(factory.ReflectableMethod(method), reason);
             }
+        }
+
+        /// <summary>
+        /// Skips over a "foo == typeof(Bar)" or "typeof(Foo) == typeof(Bar)" sequence.
+        /// </summary>
+        private static bool IsTypeEqualityTest(MethodIL methodIL, ILReader reader, out ILReader afterTest)
+        {
+            afterTest = default;
+
+            if (reader.ReadILOpcode() != ILOpcode.call)
+                return false;
+            MethodDesc method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
+            if (method == null || method.Name != "GetTypeFromHandle" && !method.OwningType.IsSystemType())
+                return false;
+
+            ILOpcode opcode = reader.ReadILOpcode();
+            if (opcode == ILOpcode.ldtoken)
+            {
+                reader.ReadILToken();
+                opcode = reader.ReadILOpcode();
+                if (opcode != ILOpcode.call)
+                    return false;
+                method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
+                if (method == null || method.Name != "GetTypeFromHandle" && !method.OwningType.IsSystemType())
+                    return false;
+                opcode = reader.ReadILOpcode();
+            }
+            if (opcode != ILOpcode.call)
+                return false;
+            method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
+            if (method == null || method.Name != "op_Equality" && !method.OwningType.IsSystemType())
+                return false;
+
+            afterTest = reader;
+            return true;
         }
 
         private static bool IsSystemType(this TypeDesc type)

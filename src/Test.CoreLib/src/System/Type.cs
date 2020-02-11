@@ -26,5 +26,18 @@ namespace System
         {
             return new Type(rh);
         }
+
+        [Intrinsic]
+        public static bool operator ==(Type left, Type right)
+        {
+            return RuntimeTypeHandle.GetValueInternal(left._typeHandle) == RuntimeTypeHandle.GetValueInternal(right._typeHandle);
+        }
+
+        [Intrinsic]
+        public static bool operator !=(Type left, Type right) => !(left == right);
+
+        public override bool Equals(object o) => o is Type && this == (Type)o;
+
+        public override int GetHashCode() => 0;
     }
 }

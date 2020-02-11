@@ -65,6 +65,25 @@ namespace ILCompiler.Compiler.Tests.Assets
                 new Derived().CallBaseGenericVirtualDirectly<object>();
             }
         }
+
+        class TypeofDoesntTriggerFullTypeTest
+        {
+            static Type s_somefield = null;
+
+            class NeverAllocated { }
+
+            class ShouldBeAllocated { }
+
+            [NoConstructedEEType(typeof(NeverAllocated))]
+            [GeneratesConstructedEEType(typeof(ShouldBeAllocated))]
+            public static void Entrypoint()
+            {
+                if (s_somefield == typeof(NeverAllocated))
+                    Entrypoint();
+
+                typeof(ShouldBeAllocated).GetHashCode();
+            }
+        }
     }
 
     #region Custom attributes that define invariants to check

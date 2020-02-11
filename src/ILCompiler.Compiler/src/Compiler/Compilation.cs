@@ -256,6 +256,13 @@ namespace ILCompiler
             }
         }
 
+        public ReadyToRunHelperId GetLdTokenHelperForType(TypeDesc type)
+        {
+            return _nodeFactory.MetadataManager.ShouldConsiderLdTokenReferenceAConstruction(type)
+                ? ReadyToRunHelperId.TypeHandle
+                : ReadyToRunHelperId.NecessaryTypeHandle;
+        }
+
         public ISymbolNode ComputeConstantLookup(ReadyToRunHelperId lookupKind, object targetOfLookup)
         {
             switch (lookupKind)

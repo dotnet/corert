@@ -1455,14 +1455,17 @@ namespace Internal.JitInterface
                 if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_NewObj
                         || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr
                         || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Box
-                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Constrained
-                        || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken && ConstructedEETypeNode.CreationAllowed(td)))
+                        || pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Constrained)
                 {
                     helperId = ReadyToRunHelperId.TypeHandle;
                 }
                 else if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Casting)
                 {
                     helperId = ReadyToRunHelperId.TypeHandleForCasting;
+                }
+                else if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Ldtoken)
+                {
+                    helperId = _compilation.GetLdTokenHelperForType(td);
                 }
                 else
                 {
