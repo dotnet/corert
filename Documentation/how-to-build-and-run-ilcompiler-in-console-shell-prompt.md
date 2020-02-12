@@ -42,8 +42,14 @@ You should now be able to use the `dotnet` commands of the CLI tools.
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+     <-- This line allow usage of published alpha packages when local build not available -->
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-*" Condition="$(IlcPath) == ''" />
+  </ItemGroup>
+
   <Import Project="$(MSBuildSDKsPath)\Microsoft.NET.Sdk\Sdk\Sdk.targets" />
-  <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
+  <-- This line allow usage of local CoreRT build when available -->
+  <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" Condition="$(IlcPath) != ''" />
 </Project>
 ```
 
