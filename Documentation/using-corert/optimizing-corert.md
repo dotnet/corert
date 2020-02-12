@@ -37,5 +37,6 @@ No action is needed on Windows since the platform convention is to generate debu
 
 ## Advanced options 
 * `<IlcDisableUnhandledExceptionExperience>true</IlcDisableUnhandledExceptionExperience>`: disables code that prints stack traces for unhandled exceptions to the console.
-* `<IlcGenerateMetadataLog>true</IlcGenerateMetadataLog>`: Enable generation of metadata log. This class is CSV format with following structure: `Handle, Kind, Name, Children`.
 * `<IlcSystemModule>classlibmodule</IlcSystemModule>`: Name of the module which contains basic classes. When specified, disable automatic referencing of the `System.Private.CoreLib` and other libraries. 
+* `<IlcMultiModule>true</IlcMultiModule>`: Compile only input files (do not compile referenced assemblies)
+* `<ExperimentalDynamicCodeSupport>true</ExperimentalDynamicCodeSupport>`: **Experimental**: Ignore metadata blocking for internal implementation details. Maybe removed anytime.
