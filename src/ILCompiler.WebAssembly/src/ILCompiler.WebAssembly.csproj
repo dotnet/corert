@@ -59,7 +59,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\..\..\packages\llvmsharp\9.0.0\lib\netstandard2.0\LLVMSharp.dll">
+    <Content Include="..\..\..\packages\llvmsharp\9.0.0-beta\lib\netstandard2.0\LLVMSharp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <PackageReference Include="libLLVM" Version="9.0.0" />

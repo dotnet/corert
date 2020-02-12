@@ -1341,40 +1341,6 @@ internal static class Program
         return 0x828f;
     }
 
-    internal static void TestUlongUintMultiply()
-    {
-        StartTest("Test ulong/int multiplication");
-        uint a = 0x80000000;
-        uint b = 2;
-        ulong f = ((ulong)a * b);
-        EndTest(f == 0x100000000);
-    }
-
-    public static void TestSharedDelegate()
-    {
-        StartTest("Shared Delegate");
-        var shouldBeFalse = SampleClassWithGenericDelegate.CallDelegate(new object[0]);
-        var shouldBeTrue = SampleClassWithGenericDelegate.CallDelegate(new object[1]);
-        EndTest(!shouldBeFalse && shouldBeTrue);
-    }
-
-    internal static void TestUlongUintMultiply()
-    {
-        StartTest("Test ulong/int multiplication");
-        uint a = 0x80000000;
-        uint b = 2;
-        ulong f = ((ulong)a * b);
-        EndTest(f == 0x100000000);
-    }
-
-    internal static void TestBoxSingle()
-    {
-        StartTest("Test box single");
-        var fi = typeof(ClassWithFloat).GetField("F");
-        fi.SetValue(null, 1.1f);
-        EndTest(1.1f == ClassWithFloat.F);
-    }
-
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }

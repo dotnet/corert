@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard1.3</TargetFramework>
     <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
     <RidSpecificAssets>true</RidSpecificAssets>
   </PropertyGroup>
