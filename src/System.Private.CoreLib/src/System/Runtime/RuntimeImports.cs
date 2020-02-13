@@ -1070,10 +1070,10 @@ namespace System.Runtime
         internal static extern unsafe float modff(float x, float* intptr);
 
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
-        internal static extern unsafe byte* memmove(byte* dmem, byte* smem, nuint size);
+        internal static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
 
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
-        internal static extern unsafe byte* memset(byte* mem, int value, nuint size);
+        internal static extern unsafe void* memset(byte* mem, int value, nuint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpArrayCopy")]
