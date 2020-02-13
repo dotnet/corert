@@ -822,7 +822,13 @@ enum RuntimeHelperKind
 // Create indirections for all helpers used below
 
 #define DECLARE_INDIRECTION(HELPER_NAME) \
-    EXTERN_C void * HELPER_NAME; \
+    EXTERN_C void HELPER_NAME(); \
+    const PTR_VOID indirection_##HELPER_NAME = (PTR_VOID)&HELPER_NAME
+#define DECLARE_INDIRECTIONvpp(HELPER_NAME) \
+    EXTERN_C void HELPER_NAME(void*, void*); \
+    const PTR_VOID indirection_##HELPER_NAME = (PTR_VOID)&HELPER_NAME
+#define DECLARE_INDIRECTIONppp(HELPER_NAME) \
+    EXTERN_C void* HELPER_NAME(void*, void*); \
     const PTR_VOID indirection_##HELPER_NAME = (PTR_VOID)&HELPER_NAME
 
 #define INDIRECTION(HELPER_NAME) ((PTR_VOID)&indirection_##HELPER_NAME)
@@ -832,16 +838,16 @@ DECLARE_INDIRECTION(RhpNewFinalizable);
 
 DECLARE_INDIRECTION(RhpNewArray);
 
-DECLARE_INDIRECTION(RhTypeCast_IsInstanceOf);
-DECLARE_INDIRECTION(RhTypeCast_CheckCast);
-DECLARE_INDIRECTION(RhTypeCast_IsInstanceOfClass);
-DECLARE_INDIRECTION(RhTypeCast_CheckCastClass);
-DECLARE_INDIRECTION(RhTypeCast_IsInstanceOfArray);
-DECLARE_INDIRECTION(RhTypeCast_CheckCastArray);
-DECLARE_INDIRECTION(RhTypeCast_IsInstanceOfInterface);
-DECLARE_INDIRECTION(RhTypeCast_CheckCastInterface);
+DECLARE_INDIRECTIONppp(RhTypeCast_IsInstanceOf);
+DECLARE_INDIRECTIONppp(RhTypeCast_CheckCast);
+DECLARE_INDIRECTIONppp(RhTypeCast_IsInstanceOfClass);
+DECLARE_INDIRECTIONppp(RhTypeCast_CheckCastClass);
+DECLARE_INDIRECTIONppp(RhTypeCast_IsInstanceOfArray);
+DECLARE_INDIRECTIONppp(RhTypeCast_CheckCastArray);
+DECLARE_INDIRECTIONppp(RhTypeCast_IsInstanceOfInterface);
+DECLARE_INDIRECTIONppp(RhTypeCast_CheckCastInterface);
 
-DECLARE_INDIRECTION(RhTypeCast_CheckVectorElemAddr);
+DECLARE_INDIRECTIONvpp(RhTypeCast_CheckVectorElemAddr);
 
 #ifdef _ARM_
 DECLARE_INDIRECTION(RhpNewFinalizableAlign8);
@@ -914,7 +920,7 @@ COOP_PINVOKE_HELPER(PTR_VOID, RhGetRuntimeHelperForType, (EEType * pEEType, int 
 #undef INDIRECTION
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-EXTERN_C void * RhpInitialDynamicInterfaceDispatch;
+EXTERN_C void RhpInitialDynamicInterfaceDispatch();
 
 COOP_PINVOKE_HELPER(void *, RhNewInterfaceDispatchCell, (EEType * pInterface, Int32 slotNumber))
 {

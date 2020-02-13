@@ -312,7 +312,7 @@ See the LICENSE file in the project root for more information.
     
     <PropertyGroup>
       <EmccArgs>&quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --emrun </EmccArgs>
-      <EmccArgs Condition="'$(Platform)'=='wasm'">$(EmccArgs) &quot;$(IlcPath)/sdk/libPortableRuntime.bc&quot; &quot;$(IlcPath)/sdk/libbootstrappercpp.bc&quot; &quot;$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.bc&quot; </EmccArgs>
+      <EmccArgs Condition="'$(Platform)'=='wasm'">$(EmccArgs) &quot;$(IlcPath)/sdk/libPortableRuntime.a&quot; &quot;$(IlcPath)/sdk/libbootstrappercpp.a&quot; &quot;$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a&quot; </EmccArgs>
       <EmccArgs Condition="'$(Configuration)'=='Release'">$(EmccArgs) -O2 --llvm-lto 2</EmccArgs>
       <EmccArgs Condition="'$(Configuration)'=='Debug'">$(EmccArgs) -g3</EmccArgs>
     </PropertyGroup>

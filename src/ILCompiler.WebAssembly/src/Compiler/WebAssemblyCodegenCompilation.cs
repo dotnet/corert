@@ -33,7 +33,15 @@ namespace ILCompiler
         {
             NodeFactory = nodeFactory;
             LLVMModuleRef m = LLVMModuleRef.CreateWithName("netscripten");
-            m.Target = "asmjs-unknown-emscripten";
+            m.Target = "wasm32-unknown-unknown-wasm";
+            // https://llvm.org/docs/LangRef.html#langref-datalayout
+            // e litte endian, mangled names
+            // m:e ELF mangling 
+            // p:32:32 pointer size 32, abi 32
+            // i64:64 64 ints aligned 64
+            // n:32:64 native widths
+            // S128 natural alignment of stack
+            m.DataLayout = "e-m:e-p:32:32-i64:64-n32:64-S128";
             Module = m; 
 
             Options = options;

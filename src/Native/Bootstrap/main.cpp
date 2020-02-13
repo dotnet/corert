@@ -244,15 +244,15 @@ extern "C" void RhpThrowHwEx()
 {
     throw "RhpThrowHwEx";
 }
-extern "C" void RhpCallCatchFunclet()
+extern "C" void* RhpCallCatchFunclet(void *, void*, void*, void*)
 {
     throw "RhpCallCatchFunclet";
 }
-extern "C" void RhpCallFilterFunclet()
+extern "C" void* RhpCallFilterFunclet(void*, void*, void*)
 {
     throw "RhpCallFilterFunclet";
 }
-extern "C" void RhpCallFinallyFunclet()
+extern "C" void RhpCallFinallyFunclet(void *, void*)
 {
     throw "RhpCallFinallyFunclet";
 }
@@ -264,7 +264,7 @@ extern "C" void RhpUniversalTransition_DebugStepTailCall()
 {
     throw "RhpUniversalTransition_DebugStepTailCall";
 }
-extern "C" void ConstrainedCallSupport_GetStubs()
+extern "C" void ConstrainedCallSupport_GetStubs(void*, void*)
 {
     throw "ConstrainedCallSupport_GetStubs";
 }

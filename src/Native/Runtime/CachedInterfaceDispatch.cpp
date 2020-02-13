@@ -218,26 +218,26 @@ static CrstStatic g_sListLock;
 static AllocHeap * g_pAllocHeap = NULL;
 
 // Each cache size has an associated stub used to perform lookup over that cache.
-extern "C" void (*RhpInterfaceDispatch1)();
-extern "C" void (*RhpInterfaceDispatch2)();
-extern "C" void (*RhpInterfaceDispatch4)();
-extern "C" void (*RhpInterfaceDispatch8)();
-extern "C" void (*RhpInterfaceDispatch16)();
-extern "C" void (*RhpInterfaceDispatch32)();
-extern "C" void (*RhpInterfaceDispatch64)();
+extern "C" void RhpInterfaceDispatch1();
+extern "C" void RhpInterfaceDispatch2();
+extern "C" void RhpInterfaceDispatch4();
+extern "C" void RhpInterfaceDispatch8();
+extern "C" void RhpInterfaceDispatch16();
+extern "C" void RhpInterfaceDispatch32();
+extern "C" void RhpInterfaceDispatch64();
 
-extern "C" void (*RhpVTableOffsetDispatch)();
+extern "C" void RhpVTableOffsetDispatch();
 
 typedef void (*InterfaceDispatchStub)();
 
 static void * g_rgDispatchStubs[CID_MAX_CACHE_SIZE_LOG2 + 1] = {
-    &RhpInterfaceDispatch1,
-    &RhpInterfaceDispatch2,
-    &RhpInterfaceDispatch4,
-    &RhpInterfaceDispatch8,
-    &RhpInterfaceDispatch16,
-    &RhpInterfaceDispatch32,
-    &RhpInterfaceDispatch64,
+    (void *)&RhpInterfaceDispatch1,
+    (void *)&RhpInterfaceDispatch2,
+    (void *)&RhpInterfaceDispatch4,
+    (void *)&RhpInterfaceDispatch8,
+    (void *)&RhpInterfaceDispatch16,
+    (void *)&RhpInterfaceDispatch32,
+    (void *)&RhpInterfaceDispatch64,
 };
 
 // Map a cache size into a linear index.
@@ -272,7 +272,7 @@ static UIntNative AllocateCache(UInt32 cCacheEntries, InterfaceDispatchCache * p
     if (pNewCellInfo->CellType == DispatchCellType::VTableOffset)
     {
         ASSERT(pNewCellInfo->VTableOffset < InterfaceDispatchCell::IDC_MaxVTableOffsetPlusOne);
-        *ppStub = &RhpVTableOffsetDispatch;
+        *ppStub = (void *)&RhpVTableOffsetDispatch;
         ASSERT(!InterfaceDispatchCell::IsCache(pNewCellInfo->VTableOffset));
         return pNewCellInfo->VTableOffset;
     }
@@ -548,28 +548,28 @@ COOP_PINVOKE_HELPER(void, RhpSetTLSDispatchCell, (void *dispatchCell))
     t_TLS_DispatchCell = dispatchCell;
 }
 
-extern "C" void(*RhpTailCallTLSDispatchCell)();
+extern "C" void RhpTailCallTLSDispatchCell();
 COOP_PINVOKE_HELPER(void*, RhpGetTailCallTLSDispatchCell, ())
 {
-    return &RhpTailCallTLSDispatchCell;
+    return (void *)(&RhpTailCallTLSDispatchCell);
 }
 
-extern "C" void(*RhpCastableObjectDispatchHelper)();
+extern "C" void RhpCastableObjectDispatchHelper();
 COOP_PINVOKE_HELPER(void*, RhpGetCastableObjectDispatchHelper, ())
 {
-    return &RhpCastableObjectDispatchHelper;
+    return (void *)(&RhpCastableObjectDispatchHelper);
 }
 
-extern "C" void(*RhpCastableObjectDispatchHelper_TailCalled)();
+extern "C" void RhpCastableObjectDispatchHelper_TailCalled();
 COOP_PINVOKE_HELPER(void*, RhpGetCastableObjectDispatchHelper_TailCalled, ())
 {
-    return &RhpCastableObjectDispatchHelper_TailCalled;
+    return (void *)(&RhpCastableObjectDispatchHelper_TailCalled);
 }
 
-extern "C" void(*RhpCastableObjectDispatch_CommonStub)();
+extern "C" void RhpCastableObjectDispatch_CommonStub();
 COOP_PINVOKE_HELPER(void*, RhpGetCastableObjectDispatch_CommonStub, ())
 {
-    return &RhpCastableObjectDispatch_CommonStub;
+    return (void *)(&RhpCastableObjectDispatch_CommonStub);
 }
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
