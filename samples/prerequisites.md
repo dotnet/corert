@@ -7,6 +7,14 @@ The following pre-requisites need to be installed for building .NET Core project
 
 * Install [Visual Studio 2019](https://visualstudio.microsoft.com/vs/community/), including Visual C++ support.
 
+# Fedora (31+)
+
+Tested on Fedora 31, will most likely work on lower versions, too.
+
+```sh
+sudo dnf install clang zlib-devel krb5-libs krb5-devel ncurses-compat-libs
+```
+
 # Ubuntu (16.04+)
 
 * Install clang and developer packages for libraries that .NET Core depends on.
