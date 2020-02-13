@@ -37,4 +37,4 @@ No action is needed on Windows since the platform convention is to generate debu
 
 ## Advanced options 
 * `<IlcDisableUnhandledExceptionExperience>true</IlcDisableUnhandledExceptionExperience>`: disables code that prints stack traces for unhandled exceptions to the console.
-* `<IlcSystemModule>classlibmodule</IlcSystemModule>`: Name of the module which contains basic classes. When specified, disable automatic referencing of the `System.Private.CoreLib` and other libraries. 
+* `<IlcSystemModule>classlibmodule</IlcSystemModule>`: Name of the module which contains basic classes. When specified, disable automatic referencing of the `System.Private.CoreLib` and other libraries. See https://github.com/MichalStrehovsky/zerosharp for example of usage.
