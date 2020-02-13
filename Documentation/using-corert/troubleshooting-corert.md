@@ -1,4 +1,4 @@
-# Troubleshooting CoreRT
+# Troubleshooting CoreRT compiler
 
 Sometimes you want to have more information how CoreRT work. ILC Compiler provide couple switches for that:
 
