@@ -4602,5 +4602,11 @@ CreateDebugLocation();
                 });
             return expressionEntry;
         }
+
+        private LLVMValueRef RemoveFatOffset(LLVMBuilderRef builder, LLVMValueRef fatFunctionRef)
+        {
+            return builder.BuildAnd(CastIfNecessary(builder, fatFunctionRef, LLVMTypeRef.Int32),
+                BuildConstUInt32(~(uint)_compilation.TypeSystemContext.Target.FatFunctionPointerOffset), "minusFatOffset");
+        }
     }
 }

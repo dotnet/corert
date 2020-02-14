@@ -18,7 +18,9 @@
 #define IDRETRY             4
 #define IDIGNORE            5
 
+#ifdef _WASM_
 unsigned long __stack_chk_guard;
+#endif
 
 void Assert(const char * expr, const char * file, UInt32 line_num, const char * message)
 {

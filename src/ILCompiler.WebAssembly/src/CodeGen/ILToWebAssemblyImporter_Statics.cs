@@ -120,12 +120,6 @@ namespace Internal.IL
             return builder.BuildBinOp(LLVMOpcode.LLVMOr, asInt, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)compilation.TypeSystemContext.Target.FatFunctionPointerOffset, false), "makeFat");
         }
 
-        internal LLVMValueRef RemoveFatOffset(LLVMBuilderRef builder, LLVMValueRef fatFunctionRef)
-        {
-            return builder.BuildAnd(CastIfNecessary(builder, fatFunctionRef, LLVMTypeRef.Int32),
-                BuildConstUInt32(~(uint)_compilation.TypeSystemContext.Target.FatFunctionPointerOffset), "minusFatOffset");
-        }
-        
         private static IList<string> GetParameterNamesForMethod(MethodDesc method)
         {
             // TODO: The uses of this method need revision. The right way to get to this info is from
