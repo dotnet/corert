@@ -309,13 +309,10 @@
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ConditionVariable.cs">
       <Link>Interop\Windows\Kernel32\Interop.ConditionVariable.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetSystemTimes.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetSystemTimes.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetModuleFileName.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetModuleFileName.cs</Link>
     </Compile>
-    <Compile Include="..\shared\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.SetLastError.cs">
@@ -384,9 +381,7 @@
     <Compile Condition="'$(EnableWinRT)' == 'true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.TimeZone.cs">
       <Link>Interop\Windows\Mincore\Interop.TimeZone.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Interop\Windows\Interop.Libraries.cs">
-      <Link>Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
+    <Compile Include="Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetLastError.cs">
       <Link>Interop\Windows\Mincore\Interop.GetLastError.cs</Link>
     </Compile>
@@ -411,9 +406,7 @@
     <Compile Include="System\Threading\WaitSubsystem.ThreadWaitInfo.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.Unix.cs" />
     <Compile Include="System\Threading\WaitSubsystem.WaitableObject.Unix.cs" />
-    <Compile Include="..\..\Common\src\Interop\Unix\Interop.Libraries.cs">
-      <Link>Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
+    <Compile Include="Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="..\..\Common\src\Interop\Unix\System.Private.CoreLib.Native\Interop.Abort.cs">
       <Link>Interop\Unix\System.Private.CoreLib.Native\Interop.Abort.cs</Link>
     </Compile>
