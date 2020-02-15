@@ -301,11 +301,20 @@ namespace ILCompiler.DependencyAnalysis
                         TypeDesc interfaceDefinition = implementedInterface.GetTypeDefinition();
                         for (int i = 0; i < interfaceDefinition.Instantiation.Length; i++)
                         {
-                            if (((GenericParameterDesc)interfaceDefinition.Instantiation[i]).Variance != 0 &&
-                                !implementedInterface.Instantiation[i].IsValueType)
+                            var variantParameter = (GenericParameterDesc)interfaceDefinition.Instantiation[i];
+                            if (variantParameter.Variance != 0)
                             {
-                                allInterfaceMethodsAreImplicitlyUsed = true;
-                                break;
+                                // Variant interface parameters that are instantiated over valuetypes are
+                                // not actually variant. Neither are contravariant parameters instantiated
+                                // over sealed types (there won't be another interface castable to it
+                                // through variance on that parameter).
+                                TypeDesc variantArgument = implementedInterface.Instantiation[i];
+                                if (!variantArgument.IsValueType
+                                    && (!variantArgument.IsSealed() || variantParameter.IsCovariant))
+                                {
+                                    allInterfaceMethodsAreImplicitlyUsed = true;
+                                    break;
+                                }
                             }
                         }
                     }
