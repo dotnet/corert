@@ -250,14 +250,14 @@ namespace Internal.Runtime.CallConverter
     // Locations are split into floating point registers, general registers and stack offsets. Registers are
     // obviously architecture dependent but are represented as a zero-based index into the usual sequence in which
     // such registers are allocated for input on the platform in question. For instance:
-    //      TARGET_X86: 0 == ecx, 1 == edx
-    //      TARGET_ARM: 0 == r0, 1 == r1, 2 == r2 etc.
+    //      X86: 0 == ecx, 1 == edx
+    //      ARM: 0 == r0, 1 == r1, 2 == r2 etc.
     //
     // Stack locations are represented as offsets from the stack pointer (at the point of the call). The offset is
     // given as an index of a pointer sized slot. Similarly the size of data on the stack is given in slot-sized
     // units. For instance, given an index of 2 and a size of 3:
-    //      TARGET_X86:   argument starts at [ESP + 8] and is 12 bytes long
-    //      TARGET_AMD64: argument starts at [RSP + 16] and is 24 bytes long
+    //      X86:   argument starts at [ESP + 8] and is 12 bytes long
+    //      AMD64: argument starts at [RSP + 16] and is 24 bytes long
     //
     // The structure is flexible enough to describe an argument that is split over several (consecutive) registers
     // and possibly on to the stack as well.
@@ -517,7 +517,7 @@ namespace Internal.Runtime.CallConverter
             uint size = SizeOfArgStack();
 
 #if TARGET_AMD64 && !UNIX_AMD64_ABI
-            // The argument registers are not included in the stack size on TARGET_AMD64
+            // The argument registers are not included in the stack size on AMD64
             size += ArchitectureConstants.ARGUMENTREGISTERS_SIZE;
 #endif
 
@@ -645,7 +645,7 @@ namespace Internal.Runtime.CallConverter
         }
 
 #if TARGET_AMD64
-        // This overload should only be used in TARGET_AMD64-specific code only.
+        // This overload should only be used in AMD64-specific code only.
         private static bool IsArgPassedByRef(int size)
         {
             //        LIMITED_METHOD_CONTRACT;
@@ -1425,7 +1425,7 @@ namespace Internal.Runtime.CallConverter
                 int stackElemSize;
 
 #if TARGET_AMD64
-                // All stack arguments take just one stack slot on TARGET_AMD64 because of arguments bigger 
+                // All stack arguments take just one stack slot on AMD64 because of arguments bigger
                 // than a stack slot are passed by reference. 
                 stackElemSize = ArchitectureConstants.STACK_ELEM_SIZE;
 #else

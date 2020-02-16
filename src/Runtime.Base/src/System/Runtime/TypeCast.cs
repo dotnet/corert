@@ -861,13 +861,13 @@ namespace System.Runtime
                 // Both bounds and type check are ok.
 
                 // Call write barrier directly. Assigning object reference would call slower checked write barrier.
-                ref object rawData = ref Unsafe.As<byte, object>(ref array.GetRawSzArrayData());
+                ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
                 InternalCalls.RhpAssignRef(ref Unsafe.Add(ref rawData, index), obj);
             }
             else
             {
                 // Storing null does not require write barrier
-                ref IntPtr rawData = ref Unsafe.As<byte, IntPtr>(ref array.GetRawSzArrayData());
+                ref IntPtr rawData = ref Unsafe.As<byte, IntPtr>(ref Unsafe.As<RawArrayData>(array).Data);
                 Unsafe.Add(ref rawData, index) = default(IntPtr);
             }
         }
@@ -888,7 +888,7 @@ namespace System.Runtime
                 throw array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
             }
 
-            ref object rawData = ref Unsafe.As<byte, object>(ref array.GetRawSzArrayData());
+            ref object rawData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(array).Data);
             return ref Unsafe.Add(ref rawData, index);
         }
 
