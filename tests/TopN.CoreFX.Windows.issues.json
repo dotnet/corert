@@ -644,6 +644,10 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Tests.EnvironmentTests.UserInteractive_True",
+                    "reason": "outdated"
+                },
+                {
                     "name": "System.Tests.MathFTests.Min",
                     "reason": "outdated"
                 },
@@ -1016,6 +1020,10 @@
             "namespaces": null,
             "classes": null,
             "methods": [
+                {
+                    "name": "System.Reflection.Tests.ReflectionTypeLoadExceptionTests.NullArgumentsNoNullPointerException",
+                    "reason": "Outdated"
+                },
                 {
                     "name": "System.Tests.UriMethodTests.EscapeUriString_HighSurrogatePair",
                     "reason": "Outdated"
