@@ -15,7 +15,8 @@ namespace Internal.TypeSystem
             get
             {
                 // TODO Eventually implement via working with a RuntimeMethod that refers to the actual implementation.
-                throw NotImplemented.ActiveIssue("https://github.com/dotnet/corert/issues/3772");
+                // https://github.com/dotnet/corert/issues/3772
+                throw new NotImplementedException();
             }
         }
     }

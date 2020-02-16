@@ -13,7 +13,7 @@ namespace System.Reflection
 {
     public abstract partial class Assembly : ICustomAttributeProvider, ISerializable
     {
-        public static Assembly GetEntryAssembly() => Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetEntryAssembly();
+        private static Assembly GetEntryAssemblyInternal() => Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetEntryAssembly();
 
         [System.Runtime.CompilerServices.Intrinsic]
         public static Assembly GetExecutingAssembly() { throw NotImplemented.ByDesign; } //Implemented by toolchain. 
