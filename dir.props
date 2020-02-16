@@ -227,31 +227,31 @@
     <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsWindows)'=='true'">
-    <DefineConstants>PLATFORM_WINDOWS;TARGET_WINDOWS;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_WINDOWS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)'=='true'">
-    <DefineConstants>PLATFORM_UNIX;TARGET_UNIX;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_UNIX;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsOSX)'=='true'">
-    <DefineConstants>PLATFORM_OSX;TARGET_OSX;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_OSX;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
-    <DefineConstants>AMD64;TARGET_AMD64;BIT64;TARGET_64BIT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_AMD64;TARGET_64BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <DefineConstants>X86;BIT32;TARGET_32BIT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_X86;TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <DefineConstants>ARM;TARGET_ARM;BIT32;TARGET_32BIT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_ARM;TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'armel'">
-    <DefineConstants>ARM;TARGET_ARM;BIT32;TARGET_32BIT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_ARM;TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <DefineConstants>ARM64;TARGET_ARM64;BIT64;TARGET_64BIT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_ARM64;TARGET_64BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
-    <DefineConstants>WASM;BIT32;TARGET_32BIT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_WASM;TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>

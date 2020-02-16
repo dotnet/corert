@@ -15,7 +15,7 @@ internal partial class Interop
         internal IntPtr ExceptionRecord;
         internal IntPtr ExceptionAddress;
         internal uint NumberParameters;
-#if BIT64
+#if TARGET_64BIT
         internal fixed ulong ExceptionInformation[15];
 #else
         internal fixed uint ExceptionInformation[15];

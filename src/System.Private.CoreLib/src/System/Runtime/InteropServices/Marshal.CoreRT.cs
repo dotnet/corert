@@ -10,7 +10,7 @@ using System.Text;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -381,7 +381,7 @@ namespace System.Runtime.InteropServices
             if (s.Length + 1 < s.Length)
                 throw new ArgumentOutOfRangeException(nameof(s));
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             IntPtr bstr = Interop.OleAut32.SysAllocStringLen(s, s.Length);
             if (bstr == IntPtr.Zero)
                 throw new OutOfMemoryException();

@@ -36,7 +36,7 @@ namespace System.Threading
         private const int BIT_SBLK_IS_HASHCODE = 1 << IS_HASHCODE_BIT_NUMBER;
         internal const int MASK_HASHCODE_INDEX = BIT_SBLK_IS_HASHCODE - 1;
 
-#if ARM || ARM64
+#if TARGET_ARM || TARGET_ARM64
         [MethodImpl(MethodImplOptions.NoInlining)]
 #else
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -45,7 +45,7 @@ namespace System.Threading
         {
             // While in x86/amd64 Volatile.Read is cheap, in arm we have to pay the
             // cost of a barrier. We do no inlining to get around that.
-#if ARM || ARM64
+#if TARGET_ARM || TARGET_ARM64
             return *pHeader;
 #else
             return Volatile.Read(ref *pHeader);

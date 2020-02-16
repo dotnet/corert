@@ -82,7 +82,7 @@ class Details
     [TypeHandleFixupAttribute(0, typeof(IntPtr))]
     private static IntPtr PreInitializedIntField_DataBlob;
 
-#if BIT64
+#if TARGET_64BIT
     [TypeHandleFixupAttribute(0, typeof(RuntimeTypeHandle))]
     [TypeHandleFixupAttribute(16, typeof(int))]
     [TypeHandleFixupAttribute(24, typeof(short))]
@@ -97,7 +97,7 @@ class Details
 #endif
     private static IntPtr PreInitializedTypeField_DataBlob;
 
-#if BIT64
+#if TARGET_64BIT
     [TypeHandleFixupAttribute(0, typeof(IntPtr))]
     [MethodAddrFixupAttribute(16, typeof(NativeMethods), "Func1")]
     [MethodAddrFixupAttribute(24, typeof(NativeMethods), "Func2")]

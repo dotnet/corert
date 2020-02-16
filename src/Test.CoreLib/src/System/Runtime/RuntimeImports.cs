@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Internal.Runtime;
 
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;

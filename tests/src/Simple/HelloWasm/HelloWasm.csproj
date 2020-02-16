@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
-    <DefineConstants>PLATFORM_WINDOWS;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_WINDOWS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />

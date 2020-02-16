@@ -56,7 +56,7 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public class String
     {
-#if BIT64
+#if TARGET_64BIT
         private const int POINTER_SIZE = 8;
 #else
         private const int POINTER_SIZE = 4;

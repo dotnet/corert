@@ -33,7 +33,7 @@ using Internal.Runtime.CompilerServices;
 
 using Volatile = System.Threading.Volatile;
 
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -799,15 +799,15 @@ namespace Internal.Runtime.Augments
         /// <param name="moduleBase">Module base address</param>
         public static unsafe string TryGetFullPathToApplicationModule(IntPtr moduleBase)
         {
-#if PLATFORM_UNIX
+#if TARGET_UNIX
             byte* pModuleNameUtf8;
             int numUtf8Chars = RuntimeImports.RhGetModuleFileName(moduleBase, out pModuleNameUtf8);
             String modulePath = System.Text.Encoding.UTF8.GetString(pModuleNameUtf8, numUtf8Chars);
-#else // PLATFORM_UNIX
+#else // TARGET_UNIX
             char* pModuleName;
             int numChars = RuntimeImports.RhGetModuleFileName(moduleBase, out pModuleName);
             string modulePath = new string(pModuleName, 0, numChars);
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
             return modulePath;
         }
 

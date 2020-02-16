@@ -39,7 +39,7 @@ using System.Diagnostics;
 using Internal.Runtime;
 
 // Convenient typecasting for IntPtr to use with arithmetic operations
-#if BIT64
+#if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
 #else
@@ -80,7 +80,7 @@ namespace System.Runtime
         // Helper functions to set/clear the lowest bit for ARM instruction pointers
         private static IntPtr ClearThumbBit(IntPtr value)
         {
-#if ARM
+#if TARGET_ARM
             Debug.Assert(((nint)value & 1) == 1);
             value = (IntPtr)((nint)value - 1);
 #endif
@@ -88,7 +88,7 @@ namespace System.Runtime
         }
         private static IntPtr SetThumbBit(IntPtr value)
         {
-#if ARM
+#if TARGET_ARM
             Debug.Assert(((nint)value & 1) == 0);
             value = (IntPtr)((nint)value + 1);
 #endif

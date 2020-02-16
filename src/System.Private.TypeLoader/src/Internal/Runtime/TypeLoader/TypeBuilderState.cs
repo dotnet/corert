@@ -1069,7 +1069,7 @@ namespace Internal.Runtime.TypeLoader
         {
             get
             {
-#if ARM
+#if TARGET_ARM
                 if (TypeBeingBuilt is DefType)
                 {
                     return ((DefType)TypeBeingBuilt).IsHfa;

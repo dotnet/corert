@@ -415,7 +415,7 @@ namespace System.Threading
             }
             catch (OutOfMemoryException)
             {
-#if PLATFORM_UNIX
+#if TARGET_UNIX
                 // This should go away once OnThreadExit stops using t_currentThread to signal
                 // shutdown of the thread on Unix.
                 thread._stopped.Set();

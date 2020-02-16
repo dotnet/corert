@@ -12,7 +12,7 @@ namespace Internal.Runtime.CompilerServices
     [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class FunctionPointerOps
     {
-#if WASM
+#if TARGET_WASM
         private const int FatFunctionPointerOffset = 1 << 31;
 #else
         private const int FatFunctionPointerOffset = 2;
@@ -131,7 +131,7 @@ namespace Internal.Runtime.CompilerServices
         public static unsafe bool IsGenericMethodPointer(IntPtr functionPointer)
         {
             // Check the low bit to find out what kind of function pointer we have here.
-#if BIT64
+#if TARGET_64BIT
             if ((functionPointer.ToInt64() & FatFunctionPointerOffset) == FatFunctionPointerOffset)
 #else
             if ((functionPointer.ToInt32() & FatFunctionPointerOffset) == FatFunctionPointerOffset)

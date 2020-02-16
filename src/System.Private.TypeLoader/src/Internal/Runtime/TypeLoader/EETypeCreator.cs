@@ -313,14 +313,14 @@ namespace Internal.Runtime.TypeLoader
                     if (state.ThreadDataSize != 0)
                         rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeWithThreadStatics;
 
-#if ARM
+#if TARGET_ARM
                     if (state.FieldAlignment == 8)
                         rareFlags |= (uint)EETypeRareFlags.RequiresAlign8Flag;
                     else
                         rareFlags &= ~(uint)EETypeRareFlags.RequiresAlign8Flag;
 #endif
 
-#if ARM || ARM64
+#if TARGET_ARM || TARGET_ARM64
                     if (state.IsHFA)
                         rareFlags |= (uint)EETypeRareFlags.IsHFAFlag;
                     else
@@ -854,7 +854,7 @@ namespace Internal.Runtime.TypeLoader
 
             void** baseOffsetPtr = (void**)gcdesc - 1;
 
-#if BIT64
+#if TARGET_64BIT
             int* ptr = (int*)baseOffsetPtr - 1;
 #else
             short* ptr = (short*)baseOffsetPtr - 1;

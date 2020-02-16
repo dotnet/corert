@@ -3,16 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 
-#if ARM
-#define _TARGET_ARM_
+#if TARGET_ARM
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
 #define CALLDESCR_FPARGREGSARERETURNREGS           // The return value floating point registers are the same as the argument registers
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define FEATURE_HFA
-#elif ARM64
-#define _TARGET_ARM64_
+#elif TARGET_ARM64
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
 #define CALLDESCR_FPARGREGSARERETURNREGS           // The return value floating point registers are the same as the argument registers
@@ -20,26 +18,23 @@
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
 #define FEATURE_HFA
-#elif X86
-#define _TARGET_X86_
+#elif TARGET_X86
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #define CALLINGCONVENTION_CALLEE_POPS
-#elif AMD64
+#elif TARGET_AMD64
 #if UNIXAMD64
 #define UNIX_AMD64_ABI
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #else
 #endif
 #define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
-#define _TARGET_AMD64_
 #define CALLDESCR_FPARGREGSARERETURNREGS           // The return value floating point registers are the same as the argument registers
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
-#elif WASM
-#define _TARGET_WASM_
+#elif TARGET_WASM
 #else
 #error Unknown architecture!
 #endif

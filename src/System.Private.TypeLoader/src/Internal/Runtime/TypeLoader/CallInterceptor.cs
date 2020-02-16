@@ -3,16 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 
-#if ARM
-#define _TARGET_ARM_
+#if TARGET_ARM
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
 #define CALLDESCR_FPARGREGSARERETURNREGS           // The return value floating point registers are the same as the argument registers
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define FEATURE_HFA
-#elif ARM64
-#define _TARGET_ARM64_
+#elif TARGET_ARM64
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
 #define CALLDESCR_FPARGREGSARERETURNREGS           // The return value floating point registers are the same as the argument registers
@@ -20,26 +18,23 @@
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
 #define FEATURE_HFA
-#elif X86
-#define _TARGET_X86_
+#elif TARGET_X86
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #define CALLINGCONVENTION_CALLEE_POPS
-#elif AMD64
+#elif TARGET_AMD64
 #if UNIXAMD64
 #define UNIX_AMD64_ABI
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #else
 #endif
 #define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
-#define _TARGET_AMD64_
 #define CALLDESCR_FPARGREGSARERETURNREGS           // The return value floating point registers are the same as the argument registers
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
-#elif WASM
-#define _TARGET_WASM_
+#elif TARGET_WASM
 #else
 #error Unknown architecture!
 #endif
@@ -481,7 +476,7 @@ namespace Internal.Runtime.CallInterceptor
                     {
                         case CorElementType.ELEMENT_TYPE_I1:
                         case CorElementType.ELEMENT_TYPE_I2:
-#if BIT64
+#if TARGET_64BIT
                         case CorElementType.ELEMENT_TYPE_I4:
 #endif
                             callConversionOps.Add(new CallConversionOperation(
@@ -500,7 +495,7 @@ namespace Internal.Runtime.CallInterceptor
                         case CorElementType.ELEMENT_TYPE_BOOLEAN:
                         case CorElementType.ELEMENT_TYPE_U2:
                         case CorElementType.ELEMENT_TYPE_CHAR:
-#if BIT64
+#if TARGET_64BIT
                         case CorElementType.ELEMENT_TYPE_U4:
 #endif
                             callConversionOps.Add(new CallConversionOperation(
@@ -517,7 +512,7 @@ namespace Internal.Runtime.CallInterceptor
 
                         default:
                             {
-#if ARM64
+#if TARGET_ARM64
                                 if (ofsCallee < 0 && argTypeHandle.IsHFA() && argTypeHandle.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
                                 {
                                     // S and D registers overlap. The FP block of the transition block has 64-bit slots that are used for both floats and doubles.
@@ -584,7 +579,7 @@ namespace Internal.Runtime.CallInterceptor
                 }
                 else
                 {
-#if ARM64
+#if TARGET_ARM64
                     if (returnType.IsHFA() && returnType.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
                     {
                         // S and D registers overlap. The return buffer has 64-bit slots that are used for both floats and doubles.
@@ -703,7 +698,7 @@ namespace Internal.Runtime.CallInterceptor
                     case OpCode.COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK:
                         s = "COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK";
                         break;
-#if ARM64
+#if TARGET_ARM64
                     case OpCode.ARM64_COMPACT_X_FLOATS_INTO_HFA_AT_OFFSET_Y_IN_TRANSITION_BLOCK:
                         s = "ARM64_COMPACT_X_FLOATS_INTO_HFA_AT_OFFSET_Y_IN_TRANSITION_BLOCK";
                         break;
@@ -810,7 +805,7 @@ namespace Internal.Runtime.CallInterceptor
             CALL_DESCR_NATIVE_WITH_RETBUF_AS_LOCALBLOCK_X_POINTER_Y_STACKSLOTS_Z_FPCALLINFO_W,
             COPY_X_BYTES_FROM_RETBUF_TO_LOCALBLOCK_Y_POINTER_Z,
             COPY_GENERIC_CONTEXT_TO_OFFSET_X_IN_TRANSITION_BLOCK,
-#if ARM64
+#if TARGET_ARM64
             ARM64_COMPACT_X_FLOATS_INTO_HFA_AT_OFFSET_Y_IN_TRANSITION_BLOCK,
             ARM64_EXPAND_X_FLOATS_INTO_HFA_IN_RETURN_BLOCK,
             ARM64_COPY_X_HFA_FLOATS_FROM_LOCALBLOCK_Y_POINTER_Z_TO_OFFSET_W_IN_TRANSITION_BLOCK,
@@ -935,7 +930,7 @@ namespace Internal.Runtime.CallInterceptor
                         }
                         break;
 
-#if ARM64
+#if TARGET_ARM64
                     case CallConversionOperation.OpCode.ARM64_COMPACT_X_FLOATS_INTO_HFA_AT_OFFSET_Y_IN_TRANSITION_BLOCK:
                         {
                             Debug.Assert(op.X > 0 && op.X <= 4);
@@ -945,7 +940,7 @@ namespace Internal.Runtime.CallInterceptor
                                 pFPRegs[i] = pFPRegs[i * 2];
 
 #if CCCONVERTER_TRACE
-                            CallingConventionConverterLogger.WriteLine("     -> Compact " + op.X.LowLevelToString() + " ARM64 HFA floats at [" + new IntPtr(pFPRegs).LowLevelToString() + "]");
+                            CallingConventionConverterLogger.WriteLine("     -> Compact " + op.X.LowLevelToString() + " TARGET_ARM64 HFA floats at [" + new IntPtr(pFPRegs).LowLevelToString() + "]");
 #endif
                         }
                         break;
@@ -963,7 +958,7 @@ namespace Internal.Runtime.CallInterceptor
                             }
 
 #if CCCONVERTER_TRACE
-                            CallingConventionConverterLogger.WriteLine("     -> Expand " + op.X.LowLevelToString() + " ARM64 HFA floats at [" + new IntPtr(pReturnBlock).LowLevelToString() + "]");
+                            CallingConventionConverterLogger.WriteLine("     -> Expand " + op.X.LowLevelToString() + " TARGET_ARM64 HFA floats at [" + new IntPtr(pReturnBlock).LowLevelToString() + "]");
 #endif
                         }
                         break;
@@ -981,7 +976,7 @@ namespace Internal.Runtime.CallInterceptor
                             }
 
 #if CCCONVERTER_TRACE
-                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " ARM64 HFA floats from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " TARGET_ARM64 HFA floats from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
 #endif
                         }
                         break;
@@ -996,7 +991,7 @@ namespace Internal.Runtime.CallInterceptor
                                 pDst[i] = pSrc[i * 2];
 
 #if CCCONVERTER_TRACE
-                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " ARM64 HFA floats from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " TARGET_ARM64 HFA floats from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
 #endif
                         }
                         break;
@@ -1103,7 +1098,7 @@ namespace Internal.Runtime.CallInterceptor
                         break;
 
                     case CallConversionOperation.OpCode.SETUP_CALLERPOP_X_BYTES:
-#if X86
+#if TARGET_X86
                         ((TransitionBlock*)locals.TransitionBlockPtr)->m_argumentRegisters.ecx = new IntPtr(op.X);
 #else
                         Debug.Assert(false);
@@ -1112,9 +1107,9 @@ namespace Internal.Runtime.CallInterceptor
 
                     case CallConversionOperation.OpCode.RETURN_RETBUF_FROM_OFFSET_X_IN_TRANSITION_BLOCK:
                         {
-#if X86
+#if TARGET_X86
                             CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
-                            // On X86 the return buffer pointer is returned in eax.
+                            // On TARGET_X86 the return buffer pointer is returned in eax.
                             CallConverterThunk.t_NonArgRegisterReturnSpace.returnValue = *(IntPtr*)(locals.TransitionBlockPtr + op.X);
                             locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
 #else
@@ -1126,7 +1121,7 @@ namespace Internal.Runtime.CallInterceptor
 
                     case CallConversionOperation.OpCode.RETURN_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
                         {
-#if X86
+#if TARGET_X86
                             CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
                             fixed (ReturnBlock* retBlk = &CallConverterThunk.t_NonArgRegisterReturnSpace)
                             {
@@ -1148,7 +1143,7 @@ namespace Internal.Runtime.CallInterceptor
 
                     case CallConversionOperation.OpCode.RETURN_SIGNEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
                         {
-#if X86
+#if TARGET_X86
                             CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
                             fixed (ReturnBlock* retBlk = &CallConverterThunk.t_NonArgRegisterReturnSpace)
                             {
@@ -1169,7 +1164,7 @@ namespace Internal.Runtime.CallInterceptor
 
                     case CallConversionOperation.OpCode.RETURN_ZEROEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z:
                         {
-#if X86
+#if TARGET_X86
                             CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
                             fixed (ReturnBlock* retBlk = &CallConverterThunk.t_NonArgRegisterReturnSpace)
                             {
@@ -1195,7 +1190,7 @@ namespace Internal.Runtime.CallInterceptor
                             MemoryHelpers.Memset((IntPtr)pReturnBlock, IntPtr.Size, 0);
                             Buffer.MemoryCopy(locals.GetLocalBlock(op.X).GetRawMemoryPointer()[op.Y].ToPointer(), pReturnBlock, op.Z, op.Z);
                             locals.IntPtrReturnVal = CallConverterThunk.ReturnVoidReturnThunk;
-#elif X86
+#elif TARGET_X86
                             CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
                             fixed (ReturnBlock* pReturnBlock = &CallConverterThunk.t_NonArgRegisterReturnSpace)
                             {
@@ -1591,7 +1586,7 @@ namespace Internal.Runtime.CallInterceptor
                 }
                 else
                 {
-#if ARM64
+#if TARGET_ARM64
                     if (ofsCaller < 0 && argTypeHandle.IsHFA() && argTypeHandle.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
                     {
                         // S and D registers overlap. The FP block of the transition block will have the float values of the HFA struct stored in 64-bit slots. We cannot directly
@@ -1640,7 +1635,7 @@ namespace Internal.Runtime.CallInterceptor
             {
                 callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_FLOATINGPOINT_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z, CallConversionInterpreter.ArgBlock, 0, checked((int)callerArgs.GetFPReturnSize())));
 
-#if ARM64
+#if TARGET_ARM64
                 if (returnType.IsHFA() && returnType.GetHFAType() == CorElementType.ELEMENT_TYPE_R4)
                 {
                     // S and D registers overlap, so we need to re-write the float values into 64-bit slots to match the format of the UniversalTransitionBlock's FP return block
@@ -1665,7 +1660,7 @@ namespace Internal.Runtime.CallInterceptor
                 {
                     case CorElementType.ELEMENT_TYPE_I1:
                     case CorElementType.ELEMENT_TYPE_I2:
-#if BIT64
+#if TARGET_64BIT
                     case CorElementType.ELEMENT_TYPE_I4:
 #endif
                         callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_SIGNEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z, CallConversionInterpreter.ArgBlock, 0, checked((int)returnType.GetSize())));
@@ -1675,7 +1670,7 @@ namespace Internal.Runtime.CallInterceptor
                     case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     case CorElementType.ELEMENT_TYPE_U2:
                     case CorElementType.ELEMENT_TYPE_CHAR:
-#if BIT64
+#if TARGET_64BIT
                     case CorElementType.ELEMENT_TYPE_U4:
 #endif
                         callConversionOps.Add(new CallConversionOperation(CallConversionOperation.OpCode.RETURN_ZEROEXTENDED_INTEGER_BYVALUE_FROM_LOCALBLOCK_X_POINTER_Y_OF_SIZE_Z, CallConversionInterpreter.ArgBlock, 0, checked((int)returnType.GetSize())));
@@ -1713,7 +1708,7 @@ namespace Internal.Runtime.CallInterceptor
             return locals.IntPtrReturnVal;
         }
 
-#if _TARGET_X86_
+#if TARGET_X86
         [NativeCallable(CallingConvention = System.Runtime.InteropServices.CallingConvention.FastCall)]
 #else
         [NativeCallable]

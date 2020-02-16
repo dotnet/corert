@@ -17,7 +17,7 @@ namespace Internal.Runtime.CompilerHelpers
     [CLSCompliant(false)]
     public static class MathHelpers
     {
-#if !BIT64
+#if !TARGET_64BIT
         //
         // 64-bit checked multiplication for 32-bit platforms
         //
@@ -213,7 +213,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             throw new ArithmeticException();
         }
-#endif // BIT64
+#endif // TARGET_64BIT
 
         [RuntimeExport("Dbl2IntOvf")]
         public static int Dbl2IntOvf(double val)
@@ -287,7 +287,7 @@ namespace Internal.Runtime.CompilerHelpers
             return ThrowIntOvf();
         }
 
-#if ARM
+#if TARGET_ARM
         [RuntimeImport(RuntimeLibrary, "RhpIDiv")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int RhpIDiv(int i, int j);
@@ -337,7 +337,7 @@ namespace Internal.Runtime.CompilerHelpers
             else
                 return RhpUMod(i, j);
         }
-#endif // ARM
+#endif // TARGET_ARM
 
         //
         // Matching return types of throw helpers enables tailcalling them. It improves performance 
@@ -368,7 +368,7 @@ namespace Internal.Runtime.CompilerHelpers
             throw new OverflowException();
         }
 
-#if ARM
+#if TARGET_ARM
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int ThrowIntDivByZero()
         {
@@ -386,6 +386,6 @@ namespace Internal.Runtime.CompilerHelpers
         {
             throw new ArithmeticException();
         }
-#endif // ARM
+#endif // TARGET_ARM
     }
 }

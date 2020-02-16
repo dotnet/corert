@@ -271,7 +271,7 @@ namespace System.Reflection.Runtime.General
 
             if (t.Equals(CommonRuntimeTypes.UIntPtr) || t.Equals(CommonRuntimeTypes.IntPtr))
             {
-#if BIT64
+#if TARGET_64BIT
                 return CommonRuntimeTypes.Int64;
 #else
                 return CommonRuntimeTypes.Int32;

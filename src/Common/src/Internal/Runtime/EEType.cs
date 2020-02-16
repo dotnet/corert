@@ -40,7 +40,7 @@ namespace Internal.Runtime
             {
                 if ((unchecked((uint)_interfaceType._pInterfaceEEType) & IndirectionConstants.IndirectionCellPointer) != 0)
                 {
-#if BIT64
+#if TARGET_64BIT
                     EEType** ppInterfaceEETypeViaIAT = (EEType**)(((ulong)_interfaceType._ppInterfaceEETypeViaIAT) - IndirectionConstants.IndirectionCellPointer);
 #else
                     EEType** ppInterfaceEETypeViaIAT = (EEType**)(((uint)_interfaceType._ppInterfaceEETypeViaIAT) - IndirectionConstants.IndirectionCellPointer);
@@ -116,7 +116,7 @@ namespace Internal.Runtime
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe partial struct EEType
     {
-#if BIT64
+#if TARGET_64BIT
         private const int POINTER_SIZE = 8;
         private const int PADDING = 1; // _numComponents is padded by one Int32 to make the first element pointer-aligned
 #else

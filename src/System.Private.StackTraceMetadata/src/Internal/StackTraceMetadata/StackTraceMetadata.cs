@@ -14,7 +14,7 @@ using Internal.TypeSystem;
 
 using ReflectionExecution = Internal.Reflection.Execution.ReflectionExecution;
 
-#if BIT64
+#if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
 #else

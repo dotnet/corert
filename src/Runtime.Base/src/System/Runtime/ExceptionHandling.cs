@@ -178,13 +178,13 @@ namespace System.Runtime
             FallbackFailFast(reason, unhandledException);
         }
 
-#if AMD64
+#if TARGET_AMD64
         [StructLayout(LayoutKind.Explicit, Size = 0x4d0)]
-#elif ARM
+#elif TARGET_ARM
         [StructLayout(LayoutKind.Explicit, Size = 0x1a0)]
-#elif X86
+#elif TARGET_X86
         [StructLayout(LayoutKind.Explicit, Size = 0x2cc)]
-#elif ARM64
+#elif TARGET_ARM64
         [StructLayout(LayoutKind.Explicit, Size = 0x390)]
 #else
         [StructLayout(LayoutKind.Explicit, Size = 0x10)] // this is small enough that it should trip an assert in RhpCopyContextFromExInfo
@@ -196,7 +196,7 @@ namespace System.Runtime
         internal static unsafe void* PointerAlign(void* ptr, int alignmentInBytes)
         {
             int alignMask = alignmentInBytes - 1;
-#if BIT64
+#if TARGET_64BIT
             return (void*)((((long)ptr) + alignMask) & ~alignMask);
 #else
             return (void*)((((int)ptr) + alignMask) & ~alignMask);
@@ -731,7 +731,7 @@ namespace System.Runtime
                 DebugScanCallFrame(exInfo._passNumber, frameIter.ControlPC, frameIter.SP);
 
                 if ((frameIter.SP == handlingFrameSP)
-#if ARM64
+#if TARGET_ARM64
                     && (frameIter.ControlPC == prevControlPC)
 #endif
                     )
