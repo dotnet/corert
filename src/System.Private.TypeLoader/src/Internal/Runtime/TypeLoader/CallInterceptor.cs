@@ -940,7 +940,7 @@ namespace Internal.Runtime.CallInterceptor
                                 pFPRegs[i] = pFPRegs[i * 2];
 
 #if CCCONVERTER_TRACE
-                            CallingConventionConverterLogger.WriteLine("     -> Compact " + op.X.LowLevelToString() + " TARGET_ARM64 HFA floats at [" + new IntPtr(pFPRegs).LowLevelToString() + "]");
+                            CallingConventionConverterLogger.WriteLine("     -> Compact " + op.X.LowLevelToString() + " ARM64 HFA floats at [" + new IntPtr(pFPRegs).LowLevelToString() + "]");
 #endif
                         }
                         break;
@@ -958,7 +958,7 @@ namespace Internal.Runtime.CallInterceptor
                             }
 
 #if CCCONVERTER_TRACE
-                            CallingConventionConverterLogger.WriteLine("     -> Expand " + op.X.LowLevelToString() + " TARGET_ARM64 HFA floats at [" + new IntPtr(pReturnBlock).LowLevelToString() + "]");
+                            CallingConventionConverterLogger.WriteLine("     -> Expand " + op.X.LowLevelToString() + " ARM64 HFA floats at [" + new IntPtr(pReturnBlock).LowLevelToString() + "]");
 #endif
                         }
                         break;
@@ -976,7 +976,7 @@ namespace Internal.Runtime.CallInterceptor
                             }
 
 #if CCCONVERTER_TRACE
-                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " TARGET_ARM64 HFA floats from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " ARM64 HFA floats from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
 #endif
                         }
                         break;
@@ -991,7 +991,7 @@ namespace Internal.Runtime.CallInterceptor
                                 pDst[i] = pSrc[i * 2];
 
 #if CCCONVERTER_TRACE
-                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " TARGET_ARM64 HFA floats from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
+                            CallingConventionConverterLogger.WriteLine("     -> Copy " + op.X.LowLevelToString() + " ARM64 HFA floats from [" + new IntPtr(pSrc).LowLevelToString() + "] to [" + new IntPtr(pDst).LowLevelToString() + "]");
 #endif
                         }
                         break;
@@ -1109,7 +1109,7 @@ namespace Internal.Runtime.CallInterceptor
                         {
 #if TARGET_X86
                             CallConverterThunk.SetupCallerActualReturnData(locals.TransitionBlockPtr);
-                            // On TARGET_X86 the return buffer pointer is returned in eax.
+                            // On X86 the return buffer pointer is returned in eax.
                             CallConverterThunk.t_NonArgRegisterReturnSpace.returnValue = *(IntPtr*)(locals.TransitionBlockPtr + op.X);
                             locals.IntPtrReturnVal = CallConverterThunk.ReturnIntegerPointReturnThunk;
 #else

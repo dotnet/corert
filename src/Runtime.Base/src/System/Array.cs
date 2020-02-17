@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -30,23 +27,21 @@ namespace System
                 return _numComponents;
             }
         }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private class RawData
-        {
-            public IntPtr Count; // Array._numComponents padded to IntPtr
-            public byte Data;
-        }
-
-        internal ref byte GetRawSzArrayData()
-        {
-            return ref Unsafe.As<RawData>(this).Data;
-        }
     }
 
     // To accommodate class libraries that wish to implement generic interfaces on arrays, all class libraries
     // are now required to provide an Array<T> class that derives from Array.
     internal class Array<T> : Array
     {
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal class RawArrayData
+    {
+        public uint Length; // Array._numComponents padded to IntPtr
+#if BIT64
+        public uint Padding;
+#endif
+        public byte Data;
     }
 }

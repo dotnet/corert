@@ -169,7 +169,7 @@ namespace Internal.Runtime.Augments
             if ((uint)index >= (uint)array.Length)
                 throw new IndexOutOfRangeException();
 
-            ref byte start = ref array.GetRawSzArrayData();
+            ref byte start = ref Unsafe.As<RawArrayData>(array).Data;
             return ref Unsafe.Add(ref start, (IntPtr)((nuint)index * array.ElementSize));
         }
 
