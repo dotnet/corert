@@ -14,7 +14,7 @@ using System.Threading;
 using Internal.Runtime.Augments;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
 #else
@@ -257,7 +257,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal static unsafe void FreeLibrary(IntPtr hModule)
         {
-#if !PLATFORM_UNIX
+#if !TARGET_UNIX
             Interop.mincore.FreeLibrary(hModule);
 #else
             Interop.Sys.FreeLibrary(hModule);
@@ -324,7 +324,7 @@ namespace Internal.Runtime.CompilerHelpers
         {
             byte* methodName = (byte*)pCell->MethodName;
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             pCell->Target = GetProcAddress(hModule, methodName, pCell->CharSetMangling);
 #else
             pCell->Target = Interop.Sys.GetProcAddress(hModule, methodName);
@@ -336,7 +336,7 @@ namespace Internal.Runtime.CompilerHelpers
             }
         }
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
         private static unsafe IntPtr GetProcAddress(IntPtr hModule, byte* methodName, CharSet charSetMangling)
         {
             // First look for the unmangled name.  If it is unicode function, we are going

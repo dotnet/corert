@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Reflection;
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
 using CpObj;
 #endif
 internal static class Program
@@ -142,7 +142,7 @@ internal static class Program
         var switchTestDefault = SwitchOp(5, 5, 20);
         EndTest(switchTestDefault == 0);
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
         StartTest("CpObj test");
         var cpObjTestA = new TestValue { Field = 1234 };
         var cpObjTestB = new TestValue { Field = 5678 };

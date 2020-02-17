@@ -8,39 +8,34 @@
 //
 
 //
-#if ARM
-#define _TARGET_ARM_
+#if TARGET_ARM
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define FEATURE_HFA
-#elif ARM64
-#define _TARGET_ARM64_
+#elif TARGET_ARM64
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
 #define FEATURE_HFA
-#elif X86
-#define _TARGET_X86_
+#elif TARGET_X86
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
-#elif AMD64
-#if PLATFORM_UNIX
+#elif TARGET_AMD64
+#if TARGET_UNIX
 #define UNIX_AMD64_ABI
 #define CALLDESCR_ARGREGS                          // CallDescrWorker has ArgumentRegister parameter
 #else
 #endif
 #define CALLDESCR_FPARGREGS                        // CallDescrWorker has FloatArgumentRegisters parameter
-#define _TARGET_AMD64_
 #define ENREGISTERED_RETURNTYPE_MAXSIZE
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE
 #define ENREGISTERED_PARAMTYPE_MAXSIZE
-#elif WASM
-#define _TARGET_WASM_
+#elif TARGET_WASM
 #else
 #error Unknown architecture!
 #endif
@@ -53,7 +48,7 @@ using System;
 
 namespace Internal.Runtime
 {
-#if _TARGET_AMD64_
+#if TARGET_AMD64
 #pragma warning disable 0169
 #if UNIX_AMD64_ABI
     struct ReturnBlock
@@ -126,7 +121,7 @@ namespace Internal.Runtime
         public const int STACK_ELEM_SIZE = 8;
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
-#elif _TARGET_ARM64_
+#elif TARGET_ARM64
 #pragma warning disable 0169
     struct ReturnBlock
     {
@@ -182,7 +177,7 @@ namespace Internal.Runtime
         public const int STACK_ELEM_SIZE = 8;
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
-#elif _TARGET_X86_
+#elif TARGET_X86
 #pragma warning disable 0169, 0649
     struct ReturnBlock
     {
@@ -222,7 +217,7 @@ namespace Internal.Runtime
         public const int STACK_ELEM_SIZE = 4;
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
-#elif _TARGET_ARM_
+#elif TARGET_ARM
 #pragma warning disable 0169
     struct ReturnBlock
     {
@@ -271,7 +266,7 @@ namespace Internal.Runtime
         public static int StackElemSize(int size) { return (((size) + STACK_ELEM_SIZE - 1) & ~(STACK_ELEM_SIZE - 1)); }
     }
 
-#elif _TARGET_WASM_
+#elif TARGET_WASM
 #pragma warning disable 0169
     struct ReturnBlock
     {
@@ -312,7 +307,7 @@ namespace Internal.Runtime
     {
 #pragma warning disable 0169,0649
 
-#if _TARGET_X86_
+#if TARGET_X86
         public ArgumentRegisters m_argumentRegisters;
         public static unsafe int GetOffsetOfArgumentRegisters()
         {
@@ -325,7 +320,7 @@ namespace Internal.Runtime
         }
         IntPtr m_ebp;
         IntPtr m_ReturnAddress;
-#elif _TARGET_AMD64_
+#elif TARGET_AMD64
 
 #if UNIX_AMD64_ABI
         public ReturnBlock m_returnBlock;
@@ -357,7 +352,7 @@ namespace Internal.Runtime
         }
 #endif // UNIX_AMD64_ABI
 
-#elif _TARGET_ARM_
+#elif TARGET_ARM
         public ReturnBlock m_returnBlock;
         public static unsafe int GetOffsetOfReturnValuesBlock()
         {
@@ -369,7 +364,7 @@ namespace Internal.Runtime
         {
             return sizeof(ReturnBlock);
         }
-#elif _TARGET_ARM64_
+#elif TARGET_ARM64
         public ReturnBlock m_returnBlock;
         public static unsafe int GetOffsetOfReturnValuesBlock()
         {
@@ -383,7 +378,7 @@ namespace Internal.Runtime
         }
 
         public IntPtr m_alignmentPad;
-#elif _TARGET_WASM_
+#elif TARGET_WASM
         public ReturnBlock m_returnBlock;
         public static unsafe int GetOffsetOfReturnValuesBlock()
         {
@@ -423,7 +418,7 @@ namespace Internal.Runtime
             return offset >= ofsArgRegs && offset < (int)(ofsArgRegs + ArchitectureConstants.ARGUMENTREGISTERS_SIZE);
         }
 
-#if !_TARGET_X86_
+#if !TARGET_X86
         public static unsafe int GetArgumentIndexFromOffset(int offset)
         {
             return ((offset - GetOffsetOfArgumentRegisters()) / IntPtr.Size);
@@ -461,7 +456,7 @@ namespace Internal.Runtime
             // This pointer is in the first argument register by default
             int ret = TransitionBlock.GetOffsetOfArgumentRegisters();
 
-#if _TARGET_X86_
+#if TARGET_X86
             // x86 is special as always
             ret += ArgumentRegisters.GetOffsetOfEcx();
 #endif

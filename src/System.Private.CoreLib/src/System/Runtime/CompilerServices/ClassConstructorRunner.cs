@@ -273,7 +273,7 @@ namespace System.Runtime.CompilerServices
 #endif
 
                 // WASMTODO: Remove this when the Initialize method gets called by the runtime startup
-#if WASM
+#if TARGET_WASM
                 if (s_cctorGlobalLock == null)
                 {
                     Interlocked.CompareExchange(ref s_cctorGlobalLock, new Lock(), null);
@@ -282,7 +282,7 @@ namespace System.Runtime.CompilerServices
                 {
                     Interlocked.CompareExchange(ref s_cctorArrays, new Cctor[10][], null);
                 }
-#endif // WASM
+#endif // TARGET_WASM
 
                 using (LockHolder.Hold(s_cctorGlobalLock))
                 {

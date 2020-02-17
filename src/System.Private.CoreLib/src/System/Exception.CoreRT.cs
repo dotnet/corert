@@ -239,7 +239,7 @@ namespace System
                     ex.AppendStackIP(IP, isFirstRethrowFrame);
 
                 // UNIX-TODO: RhpEtwExceptionThrown
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
                 if (isFirstFrame)
                 {
                     string typeName = !fatalOutOfMemory  ? ex.GetType().ToString() : "System.OutOfMemoryException";

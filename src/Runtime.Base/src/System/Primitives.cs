@@ -349,7 +349,7 @@ namespace System
             [Intrinsic]
             get
             {
-#if BIT64
+#if TARGET_64BIT
                 return 8;
 #else
                 return 4;
@@ -378,7 +378,7 @@ namespace System
         [Intrinsic]
         public unsafe long ToInt64()
         {
-#if BIT64
+#if TARGET_64BIT
             return (long)_value;
 #else
             return (long)(int)_value;
@@ -436,7 +436,7 @@ namespace System
         [Intrinsic]
         public static unsafe IntPtr operator +(IntPtr pointer, int offset)
         {
-#if BIT64
+#if TARGET_64BIT
             return new IntPtr((long)pointer._value + offset);
 #else
             return new IntPtr((int)pointer._value + offset);
@@ -478,7 +478,7 @@ namespace System
         [Intrinsic]
         public unsafe UIntPtr(ulong value)
         {
-#if BIT64
+#if TARGET_64BIT
             _value = (void*)value;
 #else
             _value = (void*)checked((uint)value);
@@ -506,7 +506,7 @@ namespace System
         [Intrinsic]
         public static unsafe explicit operator uint (UIntPtr value)
         {
-#if BIT64
+#if TARGET_64BIT
             return checked((uint)value._value);
 #else
             return (uint)value._value;

@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -408,7 +408,7 @@ namespace System.Runtime
         [DllImport(RuntimeLibrary, EntryPoint = "RhFlushProcessWriteBuffers", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void RhFlushProcessWriteBuffers();
 
-#if !PLATFORM_UNIX
+#if !TARGET_UNIX
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         // ExactSpelling = 'true' to force MCG to resolve it to default
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
@@ -626,7 +626,7 @@ namespace System.Runtime
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetModuleFileName")]
-#if PLATFORM_UNIX
+#if TARGET_UNIX
         internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out byte* moduleName);
 #else
         internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out char* moduleName);
@@ -661,7 +661,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetCurrentThreadStackBounds")]
         internal static extern void RhGetCurrentThreadStackBounds(out IntPtr pStackLow, out IntPtr pStackHigh);
 
-#if PLATFORM_UNIX
+#if TARGET_UNIX
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadExitCallback")]
         internal static extern bool RhSetThreadExitCallback(IntPtr pCallback);
@@ -768,7 +768,7 @@ namespace System.Runtime
         internal extern static long InterlockedCompareExchange(ref long location1, long value, long comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-#if BIT64
+#if TARGET_64BIT
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg64")]
 #else
         [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg32")]
@@ -1189,7 +1189,7 @@ namespace System.Runtime
             private ushort _widenMask;
 
 
-#if BIT64
+#if TARGET_64BIT
             const byte log2PointerSize = 3;
 #else
             private const byte log2PointerSize = 2;

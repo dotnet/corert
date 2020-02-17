@@ -5,7 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-#if BIT64
+#if TARGET_64BIT
 using nint = System.Int64;
 #else
 using nint = System.Int32;

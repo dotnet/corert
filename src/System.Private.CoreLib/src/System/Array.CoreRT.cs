@@ -18,7 +18,7 @@ using Internal.Reflection.Core.NonPortable;
 using Internal.IntrinsicSupport;
 using EEType = Internal.Runtime.EEType;
 
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -37,7 +37,7 @@ namespace System
         private int _numComponents;
 #pragma warning restore
 
-#if BIT64
+#if TARGET_64BIT
         private const int POINTER_SIZE = 8;
 #else
         private const int POINTER_SIZE = 4;

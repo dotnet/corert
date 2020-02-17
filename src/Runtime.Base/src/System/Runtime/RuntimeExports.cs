@@ -400,7 +400,7 @@ namespace System.Runtime
             regionDesc->_regionPointerHigh = regionPointerHigh;
 
             // Activate the region for processing
-#if BIT64
+#if TARGET_64BIT
             ulong hash = ConservativelyReportedRegionDesc.MagicNumber64;
             hash = ((hash << 13) ^ hash) ^ (ulong)regionPointerLow;
             hash = ((hash << 13) ^ hash) ^ (ulong)regionPointerHigh;

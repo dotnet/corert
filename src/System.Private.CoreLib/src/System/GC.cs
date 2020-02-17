@@ -17,7 +17,7 @@ using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime;
 
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -443,7 +443,7 @@ namespace System
 
         // Support for AddMemoryPressure and RemoveMemoryPressure below.
         private const uint PressureCount = 4;
-#if BIT64
+#if TARGET_64BIT
         private const uint MinGCMemoryPressureBudget = 4 * 1024 * 1024;
 #else
         private const uint MinGCMemoryPressureBudget = 3 * 1024 * 1024;
@@ -523,7 +523,7 @@ namespace System
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-#if !BIT64
+#if !TARGET_64BIT
             if (bytesAllocated > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated),
@@ -592,7 +592,7 @@ namespace System
                         SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-#if !BIT64
+#if !TARGET_64BIT
             if (bytesAllocated > int.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(bytesAllocated),

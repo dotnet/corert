@@ -913,7 +913,7 @@ again:
                     {
                         IntPtr val1 = op1.AsNativeIntUnchecked();
                         IntPtr val2 = op2.AsNativeIntUnchecked();
-#if BIT64
+#if TARGET_64BIT
                         if (opcode == ILOpcode.ceq || opcode == ILOpcode.cgt || opcode == ILOpcode.clt)
                         {
                             if (op1.Kind == StackValueKind.Int32)
@@ -1842,7 +1842,7 @@ again:
                         IntPtr val1 = op1.AsNativeIntUnchecked();
                         IntPtr val2 = op2.AsNativeIntUnchecked();
                         IntPtr result = default(IntPtr);
-#if BIT64
+#if TARGET_64BIT
                         if (opcode == ILOpcode.add || opcode == ILOpcode.add_ovf
                             || opcode == ILOpcode.sub || opcode == ILOpcode.sub_ovf
                             || opcode == ILOpcode.mul || opcode == ILOpcode.mul_ovf

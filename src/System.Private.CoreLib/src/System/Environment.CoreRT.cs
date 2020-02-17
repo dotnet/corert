@@ -56,7 +56,7 @@ namespace System
         {
             // TODO: shut down threading etc.
 
-#if !WASM // WASMTODO
+#if !TARGET_WASM // WASMTODO
             AppContext.OnProcessExit();
 #endif
         }
