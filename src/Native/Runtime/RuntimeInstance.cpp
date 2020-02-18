@@ -821,34 +821,35 @@ enum RuntimeHelperKind
 // The dictionary codegen expects a pointer that points at a memory location that points to the method pointer
 // Create indirections for all helpers used below
 
-#define DECLARE_INDIRECTION(RET_TYPE, HELPER_NAME, ARGS) \
+#define DECLARE_INDIRECTION_TYPED(RET_TYPE, HELPER_NAME, ARGS) \
     EXTERN_C RET_TYPE HELPER_NAME ARGS; \
     const PTR_VOID indirection_##HELPER_NAME = (PTR_VOID)&HELPER_NAME
+#define DECLARE_INDIRECTION(HELPER_NAME) DECLARE_INDIRECTION_TYPED(void, HELPER_NAME, ())
 
 #define INDIRECTION(HELPER_NAME) ((PTR_VOID)&indirection_##HELPER_NAME)
 
-DECLARE_INDIRECTION(void, RhpNewFast, ());
-DECLARE_INDIRECTION(void, RhpNewFinalizable, ());
+DECLARE_INDIRECTION(RhpNewFast);
+DECLARE_INDIRECTION(RhpNewFinalizable);
 
-DECLARE_INDIRECTION(void, RhpNewArray, ());
+DECLARE_INDIRECTION(RhpNewArray);
 
-DECLARE_INDIRECTION(void *, RhTypeCast_IsInstanceOf, (void *, void*));
-DECLARE_INDIRECTION(void *, RhTypeCast_CheckCast, (void *, void*));
-DECLARE_INDIRECTION(void *, RhTypeCast_IsInstanceOfClass, (void *, void*));
-DECLARE_INDIRECTION(void *, RhTypeCast_CheckCastClass, (void *, void*));
-DECLARE_INDIRECTION(void *, RhTypeCast_IsInstanceOfArray, (void *, void*));
-DECLARE_INDIRECTION(void *, RhTypeCast_CheckCastArray, (void *, void*));
-DECLARE_INDIRECTION(void *, RhTypeCast_IsInstanceOfInterface, (void *, void*));
-DECLARE_INDIRECTION(void *, RhTypeCast_CheckCastInterface, (void *, void*));
+DECLARE_INDIRECTION_TYPED(void *, RhTypeCast_IsInstanceOf, (void *, void*));
+DECLARE_INDIRECTION_TYPED(void *, RhTypeCast_CheckCast, (void *, void*));
+DECLARE_INDIRECTION_TYPED(void *, RhTypeCast_IsInstanceOfClass, (void *, void*));
+DECLARE_INDIRECTION_TYPED(void *, RhTypeCast_CheckCastClass, (void *, void*));
+DECLARE_INDIRECTION_TYPED(void *, RhTypeCast_IsInstanceOfArray, (void *, void*));
+DECLARE_INDIRECTION_TYPED(void *, RhTypeCast_CheckCastArray, (void *, void*));
+DECLARE_INDIRECTION_TYPED(void *, RhTypeCast_IsInstanceOfInterface, (void *, void*));
+DECLARE_INDIRECTION_TYPED(void *, RhTypeCast_CheckCastInterface, (void *, void*));
 
-DECLARE_INDIRECTION(void, RhTypeCast_CheckVectorElemAddr, (void *, void *));
+DECLARE_INDIRECTION_TYPED(void, RhTypeCast_CheckVectorElemAddr, (void *, void *));
 
 #ifdef _ARM_
-DECLARE_INDIRECTION(void, RhpNewFinalizableAlign8, ());
-DECLARE_INDIRECTION(void, RhpNewFastMisalign, ());
-DECLARE_INDIRECTION(void, RhpNewFastAlign8, ());
+DECLARE_INDIRECTION(RhpNewFinalizableAlign8);
+DECLARE_INDIRECTION(RhpNewFastMisalign);
+DECLARE_INDIRECTION(RhpNewFastAlign8);
 
-DECLARE_INDIRECTION(void, RhpNewArrayAlign8);
+DECLARE_INDIRECTION(RhpNewArrayAlign8);
 #endif
 
 COOP_PINVOKE_HELPER(PTR_VOID, RhGetRuntimeHelperForType, (EEType * pEEType, int helperKind))
