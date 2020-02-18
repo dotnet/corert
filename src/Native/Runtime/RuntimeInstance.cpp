@@ -832,8 +832,8 @@ DECLARE_INDIRECTION(Object *, RhpNewFinalizable, (EEType *));
 
 DECLARE_INDIRECTION(Array *, RhpNewArray, (EEType *, int));
 
-DECLARE_INDIRECTION(Object *, RhTypeCast_IsInstanceOf, (void *, Object *));
-DECLARE_INDIRECTION(Object *, RhTypeCast_CheckCast, (void *, Object *));
+DECLARE_INDIRECTION(Object *, RhTypeCast_IsInstanceOf, (EEType *, Object *));
+DECLARE_INDIRECTION(Object *, RhTypeCast_CheckCast, (EEType *, Object *));
 DECLARE_INDIRECTION(Object *, RhTypeCast_IsInstanceOfClass, (EEType *, Object *));
 DECLARE_INDIRECTION(Object *, RhTypeCast_CheckCastClass, (EEType *, Object *));
 DECLARE_INDIRECTION(Object *, RhTypeCast_IsInstanceOfArray, (EEType *, Object *));
