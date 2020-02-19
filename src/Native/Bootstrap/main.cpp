@@ -342,7 +342,7 @@ static int InitializeRuntime()
     if (!RhInitialize())
         return -1;
 
-#if defined(CPPCODEGEN)
+#if defined(CPPCODEGEN) || defined(_WASM_)
     RhpEnableConservativeStackReporting();
 #endif // CPPCODEGEN
 
@@ -363,7 +363,7 @@ static int InitializeRuntime()
 #ifndef CPPCODEGEN
     InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
 #elif defined _WASM_
-    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 1, nullptr, 0);
+    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 1, (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
 #else // !CPPCODEGEN
     InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
 #endif // !CPPCODEGEN

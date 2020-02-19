@@ -28,6 +28,8 @@ internal static class Program
         TestSByteExtend(); 
         TestMetaData();
 
+        TestGC();
+
         Add(1, 2);
         PrintLine("Hello from C#!");
         int tempInt = 0;
@@ -335,6 +337,48 @@ internal static class Program
 
         PrintLine("Done");
         return Success ? 100 : -1;
+    }
+
+    private static void TestGC()
+    {
+        StartTest("GC");
+
+        var weakReference = MethodWithObjectInShadowStack();
+        GC.Collect();
+        GC.Collect();
+        if (weakReference.IsAlive)
+        {
+            FailTest("object alive when has no references");
+            return;
+        }
+        EndTest(true);
+    }
+
+    private static WeakReference MethodWithObjectInShadowStack()
+    {
+        var o = new object();
+        var gen = GC.GetGeneration(o);
+        PrintLine(gen.ToString());
+        var wr = new WeakReference(o);
+        if (!wr.IsAlive)
+        {
+            FailTest("object not alive when still referenced and not collected");
+            return wr;
+        }
+        GC.Collect();
+        GC.Collect();
+        if (!wr.IsAlive)
+        {
+            FailTest("object not alive when still referenced");
+            return wr;
+        }
+        o = null;
+        if (!wr.IsAlive)
+        {
+            FailTest("object not alive when not collected");
+            return wr;
+        }
+        return wr;
     }
 
     private static void StartTest(string testDescription)
@@ -1412,7 +1456,7 @@ public class TestClass
 
     public TestClass(int number)
     {
-        if(number != 1337)
+        if (number != 1337)
             throw new Exception();
     }
 
@@ -1426,8 +1470,8 @@ public class TestClass
     {
         Program.PrintLine("Virtual Slot Test: Ok If second");
     }
-	
-	public virtual void TestVirtualMethod2(string str)
+
+    public virtual void TestVirtualMethod2(string str)
     {
         Program.PrintLine("Virtual Slot Test 2: Ok");
     }
@@ -1454,7 +1498,7 @@ public class TestDerivedClass : TestClass
         Program.PrintLine("Virtual Slot Test: Ok");
         base.TestVirtualMethod(str);
     }
-    
+
     public override string ToString()
     {
         throw new Exception();
