@@ -4,16 +4,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler;
-using ILCompiler.CodeGen;
 
 using ILCompiler.DependencyAnalysis;
-using LLVMSharp;
+using LLVMSharp.Interop;
 
 namespace Internal.IL
 {
@@ -118,8 +116,8 @@ namespace Internal.IL
 
         internal static LLVMValueRef MakeFatPointer(LLVMBuilderRef builder, LLVMValueRef targetLlvmFunction, WebAssemblyCodegenCompilation compilation)
         {
-            var asInt = LLVM.BuildPtrToInt(builder, targetLlvmFunction, LLVMTypeRef.Int32Type(), "toInt");
-            return LLVM.BuildBinOp(builder, LLVMOpcode.LLVMOr, asInt, LLVM.ConstInt(LLVM.Int32Type(), (ulong)compilation.TypeSystemContext.Target.FatFunctionPointerOffset, LLVMMisc.False), "makeFat");
+            var asInt = builder.BuildPtrToInt(targetLlvmFunction, LLVMTypeRef.Int32, "toInt");
+            return builder.BuildBinOp(LLVMOpcode.LLVMOr, asInt, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)compilation.TypeSystemContext.Target.FatFunctionPointerOffset, false), "makeFat");
         }
 
         private static IList<string> GetParameterNamesForMethod(MethodDesc method)

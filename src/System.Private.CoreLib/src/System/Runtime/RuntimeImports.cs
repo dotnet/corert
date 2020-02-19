@@ -664,7 +664,7 @@ namespace System.Runtime
 #if TARGET_UNIX
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhSetThreadExitCallback")]
-        internal static extern bool RhSetThreadExitCallback(IntPtr pCallback);
+        internal static extern void RhSetThreadExitCallback(IntPtr pCallback);
 #endif
 
         // Functions involved in thunks from managed to managed functions (Universal transition transitions 
@@ -1070,10 +1070,10 @@ namespace System.Runtime
         internal static extern unsafe float modff(float x, float* intptr);
 
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
-        internal static extern unsafe void memmove(byte* dmem, byte* smem, nuint size);
+        internal static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
 
         [DllImport(RuntimeImports.RuntimeLibrary, ExactSpelling = true)]
-        internal static extern unsafe void memset(byte* mem, int value, nuint size);
+        internal static extern unsafe void* memset(byte* mem, int value, nuint size);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpArrayCopy")]

@@ -83,7 +83,7 @@ UInt64 DebugFuncEval::GetMostRecentFuncEvalHijackInstructionPointer()
 
 #endif //!DACCESS_COMPILE
 
-EXTERN_C void * RhpDebugFuncEvalHelper;
-GPTR_IMPL_INIT(PTR_VOID, g_RhpDebugFuncEvalHelperAddr, &RhpDebugFuncEvalHelper);
+EXTERN_C void RhpDebugFuncEvalHelper(void*, void*);
+GPTR_IMPL_INIT(PTR_VOID, g_RhpDebugFuncEvalHelperAddr, (void **)(&RhpDebugFuncEvalHelper));
 
 GPTR_IMPL_INIT(PTR_VOID, g_RhpInitiateFuncEvalAbortAddr, (void**)&RhpInitiateFuncEvalAbort);

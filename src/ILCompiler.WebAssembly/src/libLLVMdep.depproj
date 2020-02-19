@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="libLLVM">
-      <Version>6.0.0-beta1</Version>
+      <Version>9.0.0</Version>
     </PackageReference>
   </ItemGroup>
 

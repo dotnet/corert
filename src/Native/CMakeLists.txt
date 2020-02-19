@@ -131,7 +131,7 @@ if (CLR_CMAKE_PLATFORM_UNIX)
     if(CLR_CMAKE_PLATFORM_DARWIN)
         # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
         add_compile_options(-fstack-protector)
-    else()
+    elseif(NOT CLR_CMAKE_PLATFORM_WASM)
         add_compile_options(-fstack-protector-strong)
     endif(CLR_CMAKE_PLATFORM_DARWIN)
 
