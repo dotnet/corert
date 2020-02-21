@@ -1565,7 +1565,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
 
     if (strcmp(key, "GCgen0size") == 0)
     {
-#ifdef USE_PORTABLE_HELPERS
+#if defined(USE_PORTABLE_HELPERS) && !defined(_WASM_)
         // CORERT-TODO: remove this
         //              https://github.com/dotnet/corert/issues/2033
         *value = 100 * 1024 * 1024;

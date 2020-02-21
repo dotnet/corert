@@ -343,6 +343,13 @@ internal static class Program
     {
         StartTest("GC");
 
+        var genOfNewObject = GC.GetGeneration(new object());
+        PrintLine("Generation of new object " + genOfNewObject.ToString());
+        if(genOfNewObject != 0)
+        {
+            FailTest("Gen of new object was " + genOfNewObject);
+            return;
+        }
         var weakReference = MethodWithObjectInShadowStack();
         GC.Collect();
         GC.Collect();
@@ -351,14 +358,25 @@ internal static class Program
             FailTest("object alive when has no references");
             return;
         }
+        // create enough arrays to go over 5GB which should force older arrays to get collected
+        // use array of size 1MB, then iterate 5*1024 times
+        for(var i = 0; i < 5 * 1024; i++)
+        {
+            PrintString("i is ");
+            PrintLine(i.ToString());
+            var a = new int[256 * 1024]; // ints are 4 bytes so this is 1MB
+        }
+        for(var i = 0; i < 3; i++)
+        {
+            PrintString("GC Collection Count " + i.ToString() + " ");
+            PrintLine(GC.CollectionCount(i).ToString());
+        }
         EndTest(true);
     }
 
     private static WeakReference MethodWithObjectInShadowStack()
     {
         var o = new object();
-        var gen = GC.GetGeneration(o);
-        PrintLine(gen.ToString());
         var wr = new WeakReference(o);
         if (!wr.IsAlive)
         {

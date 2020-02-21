@@ -140,7 +140,9 @@ void Thread::ResetCachedTransitionFrame()
 void Thread::EnablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
+#if !defined(_WASM_)
     ASSERT(m_pHackPInvokeTunnel != NULL);
+#endif
 
     Unhijack();
 
