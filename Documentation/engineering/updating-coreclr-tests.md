@@ -6,7 +6,7 @@ The set of CoreCLR tests run as part of CoreRT's CI and available via `tests\run
    1. Go to https://github.com/dotnet/runtime/pulls and open the most-recently passing PR (it should have a green check mark next to it)
    2. In the CI checks, open the details for `Windows_NT x64 Debug Build and Test`
    3. Navigate through `Build Artifacts` -> `bin` -> `tests`
-   4. Copy the URL to `tests.zip`
+   4. Copy the URL to `tests.zip` (**TODO: Zip archive no longer built, has to be retooled at https://github.com/dotnet/runtime side**)
 2. Retain the CI build so Jenkins doesn't delete `tests.zip`
    1. In the PR job page (where you clicked `Build Artifacts` earlier) ensure you're logged in to Jenkins
    2. Click the `Keep this build forever` button at the top-right
