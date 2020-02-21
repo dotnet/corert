@@ -41,13 +41,13 @@
 
 ## Interop
 
-- Move MCG [Marshaling Code Generator](http://blogs.msdn.com/b/dotnet/archive/2014/06/13/net-native-deep-dive-debugging-into-interop-code.aspx) to github
-- Package MCG as standalone tool
-- Integrate MCG with ILToNative toolchain
+- Move MCG [Marshaling Code Generator](http://blogs.msdn.com/b/dotnet/archive/2014/06/13/net-native-deep-dive-debugging-into-interop-code.aspx) to github (abandoned, see https://github.com/dotnet/corert/issues/4219#issuecomment-587232693)
+- Package MCG as standalone tool (abandoned)
+- Integrate MCG with ILToNative toolchain (abandoned)
 
 ## Framework
 
-- Move all .NET Native System.Private* libraries over to github
+- [x] Move all .NET Native System.Private* libraries over to github
 - Complete .NET Native specific libraries in corefx (build, port to Unix)
 - Port to Win32/Unix
 
