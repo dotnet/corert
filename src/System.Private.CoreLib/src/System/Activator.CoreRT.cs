@@ -50,8 +50,10 @@ namespace System
                     throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, typeof(T)));
 
                 // Grab a pointer to the optimized allocator for the type and call it.
-                IntPtr allocator = AllocatorOf<T>();
-                T t = RawCalliHelper.Call<T>(allocator, EETypePtr.EETypePtrOf<T>().RawValue);
+                // TODO: we need RyuJIT to respect that RawCalliHelper doesn't do fat pointer transform
+                // IntPtr allocator = AllocatorOf<T>();
+                // T t = RawCalliHelper.Call<T>(allocator, EETypePtr.EETypePtrOf<T>().RawValue);
+                T t = (T)RuntimeImports.RhNewObject(EETypePtr.EETypePtrOf<T>());
 
                 try
                 {
