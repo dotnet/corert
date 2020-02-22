@@ -210,6 +210,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.MethodEntry:
                 case ReadyToRunHelperId.VirtualDispatchCell:
                 case ReadyToRunHelperId.DefaultConstructor:
+                case ReadyToRunHelperId.ObjectAllocator:
                 case ReadyToRunHelperId.TypeHandleForCasting:
                     {
                         EmitDictionaryLookup(factory, ref encoder, contextRegister, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);

@@ -109,10 +109,18 @@ namespace Internal.JitInterface
                         lookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_RUNTIMEHANDLE_CLASS;
                     }
 
-                    lookup.runtimeLookup.indirections = (ushort)genericLookup.NumberOfIndirections;
+                    lookup.runtimeLookup.indirections = (ushort)(genericLookup.NumberOfIndirections + (genericLookup.IndirectLastOffset ? 1 : 0));
                     lookup.runtimeLookup.offset0 = (IntPtr)genericLookup[0];
                     if (genericLookup.NumberOfIndirections > 1)
+                    {
                         lookup.runtimeLookup.offset1 = (IntPtr)genericLookup[1];
+                        if (genericLookup.IndirectLastOffset)
+                            lookup.runtimeLookup.offset2 = IntPtr.Zero;
+                    }
+                    else if (genericLookup.IndirectLastOffset)
+                    {
+                        lookup.runtimeLookup.offset1 = IntPtr.Zero;
+                    }
                     lookup.runtimeLookup.testForFixup = false; // TODO: this will be needed in true multifile
                     lookup.runtimeLookup.testForNull = false;
                     lookup.runtimeLookup.indirectFirstOffset = false;
@@ -1525,6 +1533,9 @@ namespace Internal.JitInterface
                     break;
                 case "DefaultConstructorOf":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.DefaultConstructor, ref pResult.lookup);
+                    break;
+                case "AllocatorOf":
+                    ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.ObjectAllocator, ref pResult.lookup);
                     break;
             }
         }

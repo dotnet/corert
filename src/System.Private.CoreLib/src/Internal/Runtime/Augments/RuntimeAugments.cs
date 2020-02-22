@@ -201,7 +201,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetFallbackDefaultConstructor()
         {
-            return System.Runtime.InteropServices.AddrofIntrinsics.AddrOf<Action>(System.Activator.ClassWithMissingConstructor.MissingDefaultConstructorStaticEntryPoint);
+            return Activator.GetFallbackDefaultConstructor();
         }
 
         //

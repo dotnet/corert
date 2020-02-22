@@ -67,6 +67,8 @@ namespace ILCompiler.DependencyAnalysis
                     return ((DelegateCreationInfo)target).GetLookupKind(factory);
                 case ReadyToRunHelperId.DefaultConstructor:
                     return factory.GenericLookup.DefaultCtorLookupResult((TypeDesc)target);
+                case ReadyToRunHelperId.ObjectAllocator:
+                    return factory.GenericLookup.ObjectAllocator((TypeDesc)target);
                 default:
                     throw new NotImplementedException();
             }
@@ -252,6 +254,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                 case ReadyToRunHelperId.GetThreadStaticBase:
                 case ReadyToRunHelperId.DefaultConstructor:
+                case ReadyToRunHelperId.ObjectAllocator:
                     return comparer.Compare((TypeDesc)_target, (TypeDesc)((ReadyToRunGenericHelperNode)other)._target);
                 case ReadyToRunHelperId.MethodHandle:
                 case ReadyToRunHelperId.MethodDictionary:
