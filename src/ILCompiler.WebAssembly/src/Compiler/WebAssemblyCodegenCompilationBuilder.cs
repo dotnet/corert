@@ -48,11 +48,6 @@ namespace ILCompiler
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(new CompilerComparer()));
             return new WebAssemblyCodegenCompilation(graph, factory, _compilationRoots, _ilProvider, _debugInformationProvider, _logger, _config);
         }
-
-        public override CompilationBuilder UseJitPath(string jitPath)
-        {
-            throw new NotImplementedException();
-        }
     }
 
     internal class WebAssemblyCodegenConfigProvider

@@ -12,9 +12,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Jit">
+    <PackageReference Include="Microsoft.NETCore.App.Runtime.$(NuPkgRid)">
       <Version>$(RyuJITVersion)</Version>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <FileToInclude Include="clrjit" />
   </ItemGroup>
 
   <Target Name="RenameToJitIlc">

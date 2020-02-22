@@ -315,6 +315,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>Internal\TypeSystem\IAssemblyDesc.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\IModuleResolver.cs">
+      <Link>Internal\TypeSystem\IModuleResolver.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedMethod.cs">
       <Link>Internal\TypeSystem\InstantiatedMethod.cs</Link>
     </Compile>
