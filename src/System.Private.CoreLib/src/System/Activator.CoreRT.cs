@@ -15,100 +15,96 @@ using System.Runtime.Remoting;
 using System.Runtime;
 
 using Internal.Reflection.Augments;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
     public static partial class Activator
     {
-        // The following 2 methods and helper class implement the functionality of Activator.CreateInstance<T>()
-
+        // The following methods and helper class implement the functionality of Activator.CreateInstance<T>()
+        // The implementation relies on several compiler intrinsics that expand to quick dictionary lookups in shared
+        // code, and direct constant references in unshared code.
+        //
         // This method is the public surface area. It wraps the CreateInstance intrinsic with the appropriate try/catch
         // block so that the correct exceptions are generated. Also, it handles the cases where the T type doesn't have 
-        // a default constructor. (Those result in running the ClassWithMissingConstructor's .ctor, which flips the magic
-        // thread static to cause the CreateInstance<T> method to throw the right exception.)
-        //
+        // a default constructor.
         [DebuggerGuidedStepThrough]
         public static T CreateInstance<T>()
         {
-            T t = default(T);
-
-            bool missingDefaultConstructor = false;
-
-            EETypePtr eetype = EETypePtr.EETypePtrOf<T>();
-
             if (!RuntimeHelpers.IsReference<T>())
             {
-                // Early out for valuetypes since we don't support default constructors anyway.
+                // Early out for valuetypes since we don't support default constructors anyway for now.
                 // This lets codegens that expand IsReference<T> optimize away the rest of this code.
-            }
-            else if (eetype.ComponentSize != 0)
-            {
-                // ComponentSize > 0 indicates an array-like type (e.g. string, array, etc).
-                // Allocating this using the normal allocator would result in silent heap corruption.
-                missingDefaultConstructor = true;
-            }
-            else if (eetype.IsInterface)
-            {
-                // Do not attempt to allocate interface types either
-                missingDefaultConstructor = true;
+                return default;
             }
             else
             {
-                bool oldValueOfMissingDefaultCtorMarkerBool = s_createInstanceMissingDefaultConstructor;
+                // Grab the pointer to the default constructor of the type. If T doesn't have a default
+                // constructor, the intrinsic returns a marker pointer that we check for.
+                IntPtr defaultConstructor = DefaultConstructorOf<T>();
+
+                // Check if we got the marker back.
+                //
+                // TODO: might want to disambiguate the different cases for abstract class, interface, etc.
+                if (defaultConstructor == DefaultConstructorOf<ClassWithMissingConstructor>())
+                    throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, typeof(T)));
+
+                // Grab a pointer to the optimized allocator for the type and call it.
+                // TODO: we need RyuJIT to respect that RawCalliHelper doesn't do fat pointer transform
+                // IntPtr allocator = AllocatorOf<T>();
+                // T t = RawCalliHelper.Call<T>(allocator, EETypePtr.EETypePtrOf<T>().RawValue);
+                T t = (T)RuntimeImports.RhNewObject(EETypePtr.EETypePtrOf<T>());
 
                 try
                 {
-                    t = (T)(RuntimeImports.RhNewObject(eetype));
-
-                    // Run the default constructor. If the default constructor was missing, codegen
-                    // will expand DefaultConstructorOf to ClassWithMissingConstructor::.ctor
-                    // and we detect that later.
-                    IntPtr defaultConstructor = DefaultConstructorOf<T>();
+                    // Call the default constructor on the allocated instance.
                     RawCalliHelper.Call(defaultConstructor, t);
+
+                    // Debugger goo so that stepping in works. Only affects debug info generation.
+                    // The call gets optimized away.
                     DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+
+                    return t;
                 }
                 catch (Exception e)
                 {
                     throw new TargetInvocationException(e);
                 }
-
-                if (s_createInstanceMissingDefaultConstructor != oldValueOfMissingDefaultCtorMarkerBool)
-                {
-                    missingDefaultConstructor = true;
-
-                    // We didn't call the real .ctor (because there wasn't one), but we still allocated
-                    // an uninitialized object. If it has a finalizer, it would run - prevent that.
-                    GC.SuppressFinalize(t);
-                }
             }
-
-            if (missingDefaultConstructor)
-            {
-                throw new MissingMethodException(SR.Format(SR.MissingConstructor_Name, typeof(T)));
-            }
-
-            return t;
         }
 
         [Intrinsic]
         private static IntPtr DefaultConstructorOf<T>()
         {
-            // Codegens must expand this intrinsic.
+            // Codegens must expand this intrinsic to the pointer to the default constructor of T
+            // or to a marker that lets us detect there's no default constructor.
             // We could implement a fallback with the type loader if we wanted to, but it will be slow and unreliable.
             throw new NotSupportedException();
         }
 
-        [ThreadStatic]
-        internal static bool s_createInstanceMissingDefaultConstructor;
-        internal class ClassWithMissingConstructor
+        [Intrinsic]
+        private static IntPtr AllocatorOf<T>()
         {
+            // Codegens must expand this intrinsic to the pointer to the allocator suitable to allocate an instance of T.
+            // We could implement a fallback with the type loader if we wanted to, but it will be slow and unreliable.
+            throw new NotSupportedException();
+        }
+
+        internal static IntPtr GetFallbackDefaultConstructor()
+        {
+            return DefaultConstructorOf<ClassWithMissingConstructor>();
+        }
+
+        // Marker class. DefaultConstructorOf<T> expands to this type's constructor if
+        // the constructor is missing.
+        private class ClassWithMissingConstructor
+        {
+            public Guid G;
+
             private ClassWithMissingConstructor()
             {
-                s_createInstanceMissingDefaultConstructor = !s_createInstanceMissingDefaultConstructor;
-            }
-            internal static void MissingDefaultConstructorStaticEntryPoint()
-            {
-                s_createInstanceMissingDefaultConstructor = !s_createInstanceMissingDefaultConstructor;
+                // Ensure we have a unique method body for this that never gets folded with another ctor.
+                G = new Guid(0x68be9718, 0xf787, 0x45ab, 0x84, 0x3b, 0x1f, 0x31, 0xb6, 0x12, 0x65, 0xeb);
             }
         }
 

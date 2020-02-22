@@ -380,6 +380,20 @@ namespace Internal.IL
                     return;
                 }
 
+                if (IsActivatorAllocatorOf(method))
+                {
+                    if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                    {
+                        _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.ObjectAllocator, runtimeDeterminedMethod.Instantiation[0]), reason);
+                    }
+                    else
+                    {
+                        _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.ObjectAllocator, method.Instantiation[0]), reason);
+                    }
+
+                    return;
+                }
+
                 if (method.OwningType.IsByReferenceOfT && (method.IsConstructor || method.Name == "get_Value"))
                 {
                     return;
@@ -1134,6 +1148,20 @@ namespace Internal.IL
         private bool IsActivatorDefaultConstructorOf(MethodDesc method)
         {
             if (method.IsIntrinsic && method.Name == "DefaultConstructorOf" && method.Instantiation.Length == 1)
+            {
+                MetadataType owningType = method.OwningType as MetadataType;
+                if (owningType != null)
+                {
+                    return owningType.Name == "Activator" && owningType.Namespace == "System";
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsActivatorAllocatorOf(MethodDesc method)
+        {
+            if (method.IsIntrinsic && method.Name == "AllocatorOf" && method.Instantiation.Length == 1)
             {
                 MetadataType owningType = method.OwningType as MetadataType;
                 if (owningType != null)

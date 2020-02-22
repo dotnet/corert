@@ -240,6 +240,7 @@ namespace ILCompiler
                 case ReadyToRunHelperId.NecessaryTypeHandle:
                 case ReadyToRunHelperId.DefaultConstructor:
                 case ReadyToRunHelperId.TypeHandleForCasting:
+                case ReadyToRunHelperId.ObjectAllocator:
                     return ((TypeDesc)targetOfLookup).IsRuntimeDeterminedSubtype;
 
                 case ReadyToRunHelperId.MethodDictionary:
@@ -297,6 +298,11 @@ namespace ILCompiler
                             ctor = classWithMissingCtor.GetParameterlessConstructor();
                         }
                         return NodeFactory.CanonicalEntrypoint(ctor);
+                    }
+                case ReadyToRunHelperId.ObjectAllocator:
+                    {
+                        var type = (TypeDesc)targetOfLookup;
+                        return NodeFactory.ExternSymbol(JitHelper.GetNewObjectHelperForType(type));
                     }
 
                 default:
@@ -370,15 +376,17 @@ namespace ILCompiler
                     {
                         int dictionaryOffset = dictionarySlot * pointerSize;
 
+                        bool indirectLastOffset = lookup.LookupResultReferenceType(_nodeFactory) == GenericLookupResultReferenceType.Indirect;
+
                         if (contextSource == GenericContextSource.MethodParameter)
                         {
-                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset);
+                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, dictionaryOffset, indirectLastOffset: indirectLastOffset);
                         }
                         else
                         {
                             int vtableSlot = VirtualMethodSlotHelper.GetGenericDictionarySlot(_nodeFactory, contextMethod.OwningType);
                             int vtableOffset = EETypeNode.GetVTableOffset(pointerSize) + vtableSlot * pointerSize;
-                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset);
+                            return GenericDictionaryLookup.CreateFixedLookup(contextSource, vtableOffset, dictionaryOffset, indirectLastOffset: indirectLastOffset);
                         }
                     }
                 }

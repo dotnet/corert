@@ -22,6 +22,7 @@ namespace ILCompiler
 
         private readonly short _offset1;
         private readonly short _offset2;
+        private readonly bool _indirectLastOffset;
 
         /// <summary>
         /// Gets the information about the source of the generic context for shared code.
@@ -97,23 +98,33 @@ namespace ILCompiler
             }
         }
 
-        private GenericDictionaryLookup(GenericContextSource contextSource, int offset1, int offset2, object helperObject)
+        public bool IndirectLastOffset
+        {
+            get
+            {
+                Debug.Assert(!UseHelper);
+                return _indirectLastOffset;
+            }
+        }
+
+        private GenericDictionaryLookup(GenericContextSource contextSource, int offset1, int offset2, object helperObject, bool indirectLastOffset)
         {
             ContextSource = contextSource;
             _offset1 = checked((short)offset1);
             _offset2 = checked((short)offset2);
             _helperObject = helperObject;
+            _indirectLastOffset = indirectLastOffset;
         }
 
-        public static GenericDictionaryLookup CreateFixedLookup(GenericContextSource contextSource, int offset1, int offset2 = UseHelperOffset)
+        public static GenericDictionaryLookup CreateFixedLookup(GenericContextSource contextSource, int offset1, int offset2 = UseHelperOffset, bool indirectLastOffset = false)
         {
             Debug.Assert(offset1 != UseHelperOffset);
-            return new GenericDictionaryLookup(contextSource, offset1, offset2, null);
+            return new GenericDictionaryLookup(contextSource, offset1, offset2, null, indirectLastOffset);
         }
 
         public static GenericDictionaryLookup CreateHelperLookup(GenericContextSource contextSource, ReadyToRunHelperId helperId, object helperObject)
         {
-            return new GenericDictionaryLookup(contextSource, UseHelperOffset, checked((short)helperId), helperObject);
+            return new GenericDictionaryLookup(contextSource, UseHelperOffset, checked((short)helperId), helperObject, indirectLastOffset: false);
         }
     }
 
