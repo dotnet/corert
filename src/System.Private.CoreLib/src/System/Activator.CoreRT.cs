@@ -97,8 +97,12 @@ namespace System
         // the constructor is missing.
         private class ClassWithMissingConstructor
         {
+            public Guid G;
+
             private ClassWithMissingConstructor()
             {
+                // Ensure we have a unique method body for this that never gets folded with another ctor.
+                G = new Guid(0x68be9718, 0xf787, 0x45ab, 0x84, 0x3b, 0x1f, 0x31, 0xb6, 0x12, 0x65, 0xeb);
             }
         }
 
