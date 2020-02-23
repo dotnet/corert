@@ -109,29 +109,22 @@ namespace Internal.StackTraceGenerator
             }
         }
 
+        private static readonly Guid CLSID_DiaSource = new Guid(0xE6756135, 0x1E65, 0x4D17, 0x85, 0x76, 0x61, 0x07, 0x61, 0x39, 0x8C, 0x3C); // msdia140.dll
+        private static readonly Guid IID_IDiaDataSource = new Guid(0x79F1BB5F, 0xB66E, 0x48E5, 0xB6, 0xA9, 0x15, 0x45, 0xC3, 0x23, 0xCA, 0x3D);
+
         //
         // Get a IDiaDataSource object
         //
-        private static IDiaDataSource GetDiaDataSource()
+        private static unsafe IDiaDataSource GetDiaDataSource()
         {
-            Guid iid = Guids.IID_IDiaDataSource;
-            int hr;
-            foreach (Guid clsId in Guids.DiaSource_CLSIDs)
+            fixed (Guid* pclsid = &CLSID_DiaSource)
             {
-                unsafe
+                fixed (Guid* piid = &IID_IDiaDataSource)
                 {
-                    byte[] _clsid = clsId.ToByteArray();
-                    byte[] _iid = iid.ToByteArray();
-                    fixed (byte* pclsid = &_clsid[0])
-                    {
-                        fixed (byte* piid = &_iid[0])
-                        {
-                            IntPtr _dataSource;
-                            hr = CoCreateInstance(pclsid, (IntPtr)0, CLSCTX_INPROC, piid, out _dataSource);
-                            if (hr == S_OK)
-                                return new IDiaDataSource(_dataSource);
-                        }
-                    }
+                    IntPtr _dataSource;
+                    int hr = CoCreateInstance(pclsid, (IntPtr)0, CLSCTX_INPROC, piid, out _dataSource);
+                    if (hr == S_OK)
+                        return new IDiaDataSource(_dataSource);
                 }
             }
             return null;
@@ -640,7 +633,7 @@ namespace Internal.StackTraceGenerator
         // The toolchain will not include this library in the dependency closure as long as (1) the program is being compiled as a store app and not a console .exe
         // and (2) the /buildType switch passed to ILC is set to the "ret".
         [DllImport("api-ms-win-core-com-l1-1-0.dll", ExactSpelling = true)]
-        private static extern unsafe int CoCreateInstance(byte* rclsid, IntPtr pUnkOuter, int dwClsContext, byte* riid, out IntPtr ppv);
+        private static extern unsafe int CoCreateInstance(Guid* rclsid, IntPtr pUnkOuter, int dwClsContext, Guid* riid, out IntPtr ppv);
 
         private const int S_OK = 0;
         private const int CLSCTX_INPROC = 0x3;

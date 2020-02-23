@@ -20,15 +20,7 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public static void InitializeLibrary()
         {
-#if PROJECTN || CORECLR
-            __vtable_IUnknown.Initialize();
-            McgModuleManager.Initialize();
-#endif
-
-#if !CORECLR
-            /// @TODO: enable this for Mcg on CoreCLR scenario
             RuntimeAugments.InitializeInteropLookups(RuntimeInteropData.Instance);
-#endif
         }
     }
 }

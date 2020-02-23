@@ -40,15 +40,11 @@ namespace System
             return (Internal.Runtime.EEType*)(void*)_value;
         }
 
-#if !PROJECTN
-        // This does not work on ProjectN (with no fallback) because Runtime.Base doesn't have enough infrastructure
-        // to let us express typeof(T).TypeHandle.ToEETypePtr().
         [Intrinsic]
         internal static EETypePtr EETypePtrOf<T>()
         {
             throw new NotImplementedException();
         }
-#endif
 
         internal unsafe uint BaseSize
         {
