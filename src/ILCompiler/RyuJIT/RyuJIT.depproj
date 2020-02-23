@@ -18,7 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <FileToInclude Include="clrjit" />
+    <FileToInclude Include="clrjit" Condition="'$(TargetsUnix)' != 'true'" />
+    <FileToInclude Include="libclrjit" Condition="'$(TargetsUnix)' == 'true'" />
   </ItemGroup>
 
   <Target Name="RenameToJitIlc">
