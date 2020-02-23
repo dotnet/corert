@@ -103,6 +103,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\FieldLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\FieldLayoutAlgorithm.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\IModuleResolver.cs">
+      <Link>TypeSystem\Common\IModuleResolver.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\InstantiatedMethod.cs">
       <Link>TypeSystem\Common\InstantiatedMethod.cs</Link>
     </Compile>

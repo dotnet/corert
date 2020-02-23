@@ -73,9 +73,9 @@ namespace Internal.Runtime.JitSupport
                     Compilation compilation = new Compilation(_context);
                     _nodeFactory = compilation.NodeFactory;
 
-                    JitConfigProvider configProvider = new JitConfigProvider(new CorJitFlag[] { CorJitFlag.CORJIT_FLAG_DEBUG_CODE }, Array.Empty<KeyValuePair<string, string>>());
+                    JitConfigProvider.Initialize(new CorJitFlag[] { CorJitFlag.CORJIT_FLAG_DEBUG_CODE }, Array.Empty<KeyValuePair<string, string>>());
 
-                    _corInfoImpl = new CorInfoImpl(compilation, configProvider);
+                    _corInfoImpl = new CorInfoImpl(compilation);
                 }
 
                 MethodDesc methodToCompile = methodEntrypoint.MethodIdentifier.ToMethodDesc(_context);

@@ -20,7 +20,6 @@ namespace ILCompiler
     public sealed class RyuJitCompilation : Compilation
     {
         private readonly ConditionalWeakTable<Thread, CorInfoImpl> _corinfos = new ConditionalWeakTable<Thread, CorInfoImpl>();
-        private readonly JitConfigProvider _jitConfigProvider;
         internal readonly RyuJitCompilationOptions _compilationOptions;
         private readonly ExternSymbolMappedField _hardwareIntrinsicFlags;
         private CountdownEvent _compilationCountdown;
@@ -33,11 +32,9 @@ namespace ILCompiler
             DebugInformationProvider debugInformationProvider,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
-            JitConfigProvider configProvider,
             RyuJitCompilationOptions options)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, logger)
         {
-            _jitConfigProvider = configProvider;
             _compilationOptions = options;
             _hardwareIntrinsicFlags = new ExternSymbolMappedField(nodeFactory.TypeSystemContext.GetWellKnownType(WellKnownType.Int32), "g_cpuFeatures");
         }
@@ -97,7 +94,7 @@ namespace ILCompiler
 
             WaitCallback compileSingleMethodDelegate = m =>
             {
-                CorInfoImpl corInfo = _corinfos.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this, _jitConfigProvider));
+                CorInfoImpl corInfo = _corinfos.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
                 CompileSingleMethod(corInfo, (MethodCodeNode)m);
             };
 
@@ -117,7 +114,7 @@ namespace ILCompiler
 
         private void CompileSingleThreaded(List<MethodCodeNode> methodsToCompile)
         {
-            CorInfoImpl corInfo = _corinfos.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this, _jitConfigProvider));
+            CorInfoImpl corInfo = _corinfos.GetValue(Thread.CurrentThread, thread => new CorInfoImpl(this));
 
             foreach (MethodCodeNode methodCodeNodeNeedingCode in methodsToCompile)
             {
