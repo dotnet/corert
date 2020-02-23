@@ -39,7 +39,7 @@ namespace Internal.StackGenerator.Dia
         }
     }
 
-    internal unsafe class IDiaSession : ComInterface
+    internal sealed class IDiaSession : ComInterface
     {
         public IDiaSession(IntPtr punk)
             : base(punk)
