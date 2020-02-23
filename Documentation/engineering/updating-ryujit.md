@@ -7,7 +7,7 @@ Following steps are necessary to pick up a new version of RyuJIT code generation
     1. If an enum was modified, port the change to the managed version of the enum manually.
     2. If a JitInterface method was added or changed, update `src\JitInterface\src\ThunkGenerator\ThunkInput.txt` and run the generation script next to the file to regenerate `CorInfoBase.cs` and `jitinterface.h`. Update the managed implementation of the method in `CorInfoImpl.cs` manually.
     3. If the JitInterface GUID was updated (`JITEEVersionIdentifier` in `corinfo.h`), update it in `src\Native\jitinterface\jitwrapper.cpp`
-3. Determine the latest Microsoft.NETCore.Jit package to use (**TODO: This package is no longer built. Has to be retooled**)
+3. Determine the latest Microsoft.NETCore.App.Runtime package to use
     1. Go to https://dnceng.visualstudio.com/internal/_build?definitionId=244 and select the latest successful *scheduled build* of the master branch. Success is defined by the "Publish to Build Asset Registry Job" succeeding (currently various test legs fail).
     2. Select the "Build Windows_NT x64 release Job" and open its "Publish packages to blob feed" log
     3. On the first page of the log, note the package version of the various .nupkg package files being processed
