@@ -431,8 +431,7 @@ namespace System
         {
             get
             {
-                EETypeElementType corElementType = this.ElementType;
-                return RuntimeImports.GetRhCorElementTypeInfo(corElementType);
+                return RuntimeImports.GetRhCorElementTypeInfo(CorElementType);
             }
         }
 

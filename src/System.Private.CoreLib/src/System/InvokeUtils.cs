@@ -149,67 +149,67 @@ namespace System
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            EETypeElementType dstElementType = dstEEType.ElementType;
-            if (!srcEEType.CorElementTypeInfo.CanWidenTo(dstElementType))
+            CorElementType dstCorElementType = dstEEType.CorElementType;
+            if (!srcEEType.CorElementTypeInfo.CanWidenTo(dstCorElementType))
             {
                 dstObject = null;
                 return CreateChangeTypeArgumentException(srcEEType, dstEEType);
             }
 
-            switch (dstElementType)
+            switch (dstCorElementType)
             {
-                case EETypeElementType.Boolean:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     bool boolValue = Convert.ToBoolean(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, boolValue ? 1 : 0) : boolValue;
                     break;
 
-                case EETypeElementType.Char:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     char charValue = Convert.ToChar(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, charValue) : charValue;
                     break;
 
-                case EETypeElementType.SByte:
+                case CorElementType.ELEMENT_TYPE_I1:
                     sbyte sbyteValue = Convert.ToSByte(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
                     break;
 
-                case EETypeElementType.Int16:
+                case CorElementType.ELEMENT_TYPE_I2:
                     short shortValue = Convert.ToInt16(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
                     break;
 
-                case EETypeElementType.Int32:
+                case CorElementType.ELEMENT_TYPE_I4:
                     int intValue = Convert.ToInt32(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
                     break;
 
-                case EETypeElementType.Int64:
+                case CorElementType.ELEMENT_TYPE_I8:
                     long longValue = Convert.ToInt64(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
                     break;
 
-                case EETypeElementType.Byte:
+                case CorElementType.ELEMENT_TYPE_U1:
                     byte byteValue = Convert.ToByte(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
                     break;
 
-                case EETypeElementType.UInt16:
+                case CorElementType.ELEMENT_TYPE_U2:
                     ushort ushortValue = Convert.ToUInt16(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, ushortValue) : ushortValue;
                     break;
 
-                case EETypeElementType.UInt32:
+                case CorElementType.ELEMENT_TYPE_U4:
                     uint uintValue = Convert.ToUInt32(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, uintValue) : uintValue;
                     break;
 
-                case EETypeElementType.UInt64:
+                case CorElementType.ELEMENT_TYPE_U8:
                     ulong ulongValue = Convert.ToUInt64(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, (long)ulongValue) : ulongValue;
                     break;
 
-                case EETypeElementType.Single:
-                    if (srcEEType.ElementType == EETypeElementType.Char)
+                case CorElementType.ELEMENT_TYPE_R4:
+                    if (srcEEType.CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
                     {
                         dstObject = (float)(char)srcObject;
                     }
@@ -219,8 +219,8 @@ namespace System
                     }
                     break;
 
-                case EETypeElementType.Double:
-                    if (srcEEType.ElementType == EETypeElementType.Char)
+                case CorElementType.ELEMENT_TYPE_R8:
+                    if (srcEEType.CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
                     {
                         dstObject = (double)(char)srcObject;
                     }
@@ -231,7 +231,7 @@ namespace System
                     break;
 
                 default:
-                    Debug.Fail("Unexpected ElementType: " + dstElementType + ": Not a valid widening target.");
+                    Debug.Fail("Unexpected CorElementType: " + dstCorElementType + ": Not a valid widening target.");
                     dstObject = null;
                     return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
