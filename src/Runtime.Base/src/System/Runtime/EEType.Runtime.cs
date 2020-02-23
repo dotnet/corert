@@ -157,7 +157,7 @@ namespace Internal.Runtime
         // The binder sets a special CorElementType for this well known type
         internal static unsafe bool IsSystemArray(EEType* pEEType)
         {
-            return (pEEType->CorElementType == CorElementType.ELEMENT_TYPE_ARRAY);
+            return (pEEType->ElementType == EETypeElementType.SystemArray);
         }
     }
 }

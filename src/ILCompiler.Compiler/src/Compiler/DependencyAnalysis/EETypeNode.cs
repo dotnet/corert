@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
     ///                 | and 0 for all other types.
     ///                 |
     /// UInt16          | EETypeKind (Normal, Array, Pointer type). Flags for: IsValueType, IsCrossModule, HasPointers,
-    ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum CorElementType to
+    ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum EETypeElementType to
     ///                 | record whether it's back by an Int32, Int16 etc
     ///                 |
     /// Uint32          | Base size.

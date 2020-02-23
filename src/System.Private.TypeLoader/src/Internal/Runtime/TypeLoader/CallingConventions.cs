@@ -163,13 +163,30 @@ namespace Internal.Runtime.CallConverter
 
             // The core redhawk runtime has a slightly different concept of what CorElementType should be for a type. It matches for primitive and enum types
             // but for other types, it doesn't match the needs in this file.
-            CorElementType rhCorElementType = _eeType->CorElementType;
+            EETypeElementType rhCorElementType = _eeType->ElementType;
 
-            if (((rhCorElementType >= CorElementType.ELEMENT_TYPE_BOOLEAN) && (rhCorElementType <= CorElementType.ELEMENT_TYPE_R8)) ||
-                    (rhCorElementType == CorElementType.ELEMENT_TYPE_I) ||
-                    (rhCorElementType == CorElementType.ELEMENT_TYPE_U))
+            if (rhCorElementType >= EETypeElementType.Boolean && rhCorElementType <= EETypeElementType.UInt64)
             {
-                return rhCorElementType; // If Redhawk thinks the corelementtype is a primitive type, then it agree with the concept of corelement type needed in this codebase.
+                Debug.Assert((int)EETypeElementType.Boolean == (int)CorElementType.ELEMENT_TYPE_BOOLEAN);
+                Debug.Assert((int)EETypeElementType.Int32 == (int)CorElementType.ELEMENT_TYPE_I4);
+                Debug.Assert((int)EETypeElementType.UInt64 == (int)CorElementType.ELEMENT_TYPE_U8);
+                return (CorElementType)rhCorElementType;
+            }
+            else if (rhCorElementType == EETypeElementType.Single)
+            {
+                return CorElementType.ELEMENT_TYPE_R4;
+            }
+            else if (rhCorElementType == EETypeElementType.Double)
+            {
+                return CorElementType.ELEMENT_TYPE_R8;
+            }
+            else if (rhCorElementType == EETypeElementType.IntPtr)
+            {
+                return CorElementType.ELEMENT_TYPE_I;
+            }
+            else if (rhCorElementType == EETypeElementType.UIntPtr)
+            {
+                return CorElementType.ELEMENT_TYPE_U;
             }
             else if (_eeType == typeof(void).TypeHandle.ToEETypePtr())
             {
@@ -1802,5 +1819,38 @@ namespace Internal.Runtime.CallConverter
             return false;
 #endif
         }
-    };
+    }
+
+    internal enum CorElementType
+    {
+        ELEMENT_TYPE_END = 0x00,
+
+        ELEMENT_TYPE_VOID = 0x1,
+        ELEMENT_TYPE_BOOLEAN = 0x2,
+        ELEMENT_TYPE_CHAR = 0x3,
+        ELEMENT_TYPE_I1 = 0x4,
+        ELEMENT_TYPE_U1 = 0x5,
+        ELEMENT_TYPE_I2 = 0x6,
+        ELEMENT_TYPE_U2 = 0x7,
+        ELEMENT_TYPE_I4 = 0x8,
+        ELEMENT_TYPE_U4 = 0x9,
+        ELEMENT_TYPE_I8 = 0xa,
+        ELEMENT_TYPE_U8 = 0xb,
+        ELEMENT_TYPE_R4 = 0xc,
+        ELEMENT_TYPE_R8 = 0xd,
+        ELEMENT_TYPE_STRING = 0xe,
+        ELEMENT_TYPE_PTR = 0xf,
+        ELEMENT_TYPE_BYREF = 0x10,
+        ELEMENT_TYPE_VALUETYPE = 0x11,
+        ELEMENT_TYPE_CLASS = 0x12,
+
+        ELEMENT_TYPE_ARRAY = 0x14,
+
+        ELEMENT_TYPE_TYPEDBYREF = 0x16,
+        ELEMENT_TYPE_I = 0x18,
+        ELEMENT_TYPE_U = 0x19,
+        ELEMENT_TYPE_FNPTR = 0x1b,
+        ELEMENT_TYPE_OBJECT = 0x1c,
+        ELEMENT_TYPE_SZARRAY = 0x1d,
+    }
 }

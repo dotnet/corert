@@ -125,33 +125,44 @@ public:
         { return &m_dispatchMap[m_entryCount]; }
 };
 
-#if !defined(BINDER)
 //-------------------------------------------------------------------------------------------------
-// The subset of CLR-style CorElementTypes that Redhawk knows about at runtime (just the primitives and a
-// special case for ELEMENT_TYPE_ARRAY used to mark the System.Array EEType).
-enum CorElementType : UInt8
+// The subset of TypeFlags that Redhawk knows about at runtime
+// This should match the TypeFlags enum in the managed type system.
+enum EETypeElementType : UInt8
 {
-    ELEMENT_TYPE_END        = 0x0,
+    // Primitive
+    ElementType_Unknown = 0x00,
+    ElementType_Void = 0x01,
+    ElementType_Boolean = 0x02,
+    ElementType_Char = 0x03,
+    ElementType_SByte = 0x04,
+    ElementType_Byte = 0x05,
+    ElementType_Int16 = 0x06,
+    ElementType_UInt16 = 0x07,
+    ElementType_Int32 = 0x08,
+    ElementType_UInt32 = 0x09,
+    ElementType_Int64 = 0x0A,
+    ElementType_UInt64 = 0x0B,
+    ElementType_IntPtr = 0x0C,
+    ElementType_UIntPtr = 0x0D,
+    ElementType_Single = 0x0E,
+    ElementType_Double = 0x0F,
 
-    ELEMENT_TYPE_BOOLEAN    = 0x2,
-    ELEMENT_TYPE_CHAR       = 0x3,
-    ELEMENT_TYPE_I1         = 0x4,
-    ELEMENT_TYPE_U1         = 0x5,
-    ELEMENT_TYPE_I2         = 0x6,
-    ELEMENT_TYPE_U2         = 0x7,
-    ELEMENT_TYPE_I4         = 0x8,
-    ELEMENT_TYPE_U4         = 0x9,
-    ELEMENT_TYPE_I8         = 0xa,
-    ELEMENT_TYPE_U8         = 0xb,
-    ELEMENT_TYPE_R4         = 0xc,
-    ELEMENT_TYPE_R8         = 0xd,
+    ElementType_ValueType = 0x10,
+    // Enum = 0x11, // EETypes store enums as their underlying type
+    ElementType_Nullable = 0x12,
+    // Unused 0x13,
 
-    ELEMENT_TYPE_ARRAY      = 0x14,
+    ElementType_Class = 0x14,
+    ElementType_Interface = 0x15,
 
-    ELEMENT_TYPE_I          = 0x18,
-    ELEMENT_TYPE_U          = 0x19,
+    ElementType_SystemArray = 0x16, // System.Array type
+
+    ElementType_Array = 0x17,
+    ElementType_SzArray = 0x18,
+    ElementType_ByRef = 0x19,
+    ElementType_Pointer = 0x1A,
 };
-#endif // !BINDER
 
 //-------------------------------------------------------------------------------------------------
 // Support for encapsulating the location of fields in the EEType that have variable offsets or may be
@@ -274,9 +285,9 @@ private:
         // This type is generic.
         IsGenericFlag           = 0x0400,
 
-        // We are storing a CorElementType in the upper bits for unboxing enums
-        CorElementTypeMask      = 0xf800,
-        CorElementTypeShift     = 11,
+        // We are storing a EETypeElementType in the upper bits for unboxing enums
+        ElementTypeMask      = 0xf800,
+        ElementTypeShift     = 11,
     };
 
 public:
@@ -515,12 +526,8 @@ public:
     bool IsSystemObject()
         { return !IsParameterizedType() && !IsInterface() && get_BaseType() == NULL; }
 
-    CorElementType GetCorElementType()
-        { return (CorElementType)((m_usFlags & CorElementTypeMask) >> CorElementTypeShift); }
-
-    // Is this type specifically System.Array?
-    bool IsSystemArray()
-        { return GetCorElementType() == ELEMENT_TYPE_ARRAY; }
+    EETypeElementType GetElementType()
+        { return (EETypeElementType)((m_usFlags & ElementTypeMask) >> ElementTypeShift); }
 
 #ifndef BINDER
     // Determine whether a type requires 8-byte alignment for its fields (required only on certain platforms,

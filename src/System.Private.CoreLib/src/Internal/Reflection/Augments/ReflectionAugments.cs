@@ -22,7 +22,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
 
-using RhCorElementType = System.Runtime.RuntimeImports.RhCorElementType;
+using EETypeElementType = Internal.Runtime.EETypeElementType;
 
 using EnumInfo = Internal.Runtime.Augments.EnumInfo;
 
@@ -62,21 +62,21 @@ namespace Internal.Reflection.Augments
 
             // Note: Type.GetTypeCode() is expected to return the underlying type's TypeCode for enums. EETypePtr.CorElementType does the same,
             // so this one switch handles both cases.
-            RhCorElementType rhType = eeType.CorElementType;
+            EETypeElementType rhType = eeType.ElementType;
             switch (rhType)
             {
-                case RhCorElementType.ELEMENT_TYPE_BOOLEAN: return TypeCode.Boolean;
-                case RhCorElementType.ELEMENT_TYPE_CHAR: return TypeCode.Char;
-                case RhCorElementType.ELEMENT_TYPE_I1: return TypeCode.SByte;
-                case RhCorElementType.ELEMENT_TYPE_U1: return TypeCode.Byte;
-                case RhCorElementType.ELEMENT_TYPE_I2: return TypeCode.Int16;
-                case RhCorElementType.ELEMENT_TYPE_U2: return TypeCode.UInt16;
-                case RhCorElementType.ELEMENT_TYPE_I4: return TypeCode.Int32;
-                case RhCorElementType.ELEMENT_TYPE_U4: return TypeCode.UInt32;
-                case RhCorElementType.ELEMENT_TYPE_I8: return TypeCode.Int64;
-                case RhCorElementType.ELEMENT_TYPE_U8: return TypeCode.UInt64;
-                case RhCorElementType.ELEMENT_TYPE_R4: return TypeCode.Single;
-                case RhCorElementType.ELEMENT_TYPE_R8: return TypeCode.Double;
+                case EETypeElementType.Boolean: return TypeCode.Boolean;
+                case EETypeElementType.Char: return TypeCode.Char;
+                case EETypeElementType.SByte: return TypeCode.SByte;
+                case EETypeElementType.Byte: return TypeCode.Byte;
+                case EETypeElementType.Int16: return TypeCode.Int16;
+                case EETypeElementType.UInt16: return TypeCode.UInt16;
+                case EETypeElementType.Int32: return TypeCode.Int32;
+                case EETypeElementType.UInt32: return TypeCode.UInt32;
+                case EETypeElementType.Int64: return TypeCode.Int64;
+                case EETypeElementType.UInt64: return TypeCode.UInt64;
+                case EETypeElementType.Single: return TypeCode.Single;
+                case EETypeElementType.Double: return TypeCode.Double;
                 default:
                     break;
             }

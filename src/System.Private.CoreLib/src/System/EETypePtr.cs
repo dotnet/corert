@@ -17,7 +17,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 using EEType = Internal.Runtime.EEType;
+using EETypeElementType = Internal.Runtime.EETypeElementType;
 using EETypeRef = Internal.Runtime.EETypeRef;
+using CorElementType = System.Reflection.CorElementType;
 
 namespace System
 {
@@ -175,10 +177,7 @@ namespace System
         {
             get
             {
-                RuntimeImports.RhCorElementType et = CorElementType;
-                return ((et >= RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN) && (et <= RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8)) ||
-                    (et == RuntimeImports.RhCorElementType.ELEMENT_TYPE_I) ||
-                    (et == RuntimeImports.RhCorElementType.ELEMENT_TYPE_U);
+                return ElementType < EETypeElementType.ValueType;
             }
         }
 
@@ -385,13 +384,46 @@ namespace System
             }
         }
 
-        internal RuntimeImports.RhCorElementType CorElementType
+        internal CorElementType CorElementType
         {
             get
             {
-                Debug.Assert((int)Internal.Runtime.CorElementType.ELEMENT_TYPE_I1 == (int)RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1);
-                Debug.Assert((int)Internal.Runtime.CorElementType.ELEMENT_TYPE_R8 == (int)RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8);
-                return (RuntimeImports.RhCorElementType)_value->CorElementType;
+                Debug.Assert((int)CorElementType.ELEMENT_TYPE_BOOLEAN == (int)EETypeElementType.Boolean);
+                Debug.Assert((int)CorElementType.ELEMENT_TYPE_I1 == (int)EETypeElementType.SByte);
+                Debug.Assert((int)CorElementType.ELEMENT_TYPE_I8 == (int)EETypeElementType.Int64);
+                EETypeElementType elementType = ElementType;
+
+                if (elementType <= EETypeElementType.UInt64)
+                    return (CorElementType)elementType;
+                else if (elementType == EETypeElementType.Single)
+                    return CorElementType.ELEMENT_TYPE_R4;
+                else if (elementType == EETypeElementType.Double)
+                    return CorElementType.ELEMENT_TYPE_R8;
+                else if (elementType == EETypeElementType.IntPtr)
+                    return CorElementType.ELEMENT_TYPE_I;
+                else if (elementType == EETypeElementType.UIntPtr)
+                    return CorElementType.ELEMENT_TYPE_U;
+                else if (IsValueType)
+                    return CorElementType.ELEMENT_TYPE_VALUETYPE;
+                else if (IsByRef)
+                    return CorElementType.ELEMENT_TYPE_BYREF;
+                else if (IsPointer)
+                    return CorElementType.ELEMENT_TYPE_PTR;
+                else if (IsSzArray)
+                    return CorElementType.ELEMENT_TYPE_SZARRAY;
+                else if (IsArray)
+                    return CorElementType.ELEMENT_TYPE_ARRAY;
+                else
+                    return CorElementType.ELEMENT_TYPE_CLASS;
+
+            }
+        }
+
+        internal EETypeElementType ElementType
+        {
+            get
+            {
+                return _value->ElementType;
             }
         }
 
@@ -399,7 +431,7 @@ namespace System
         {
             get
             {
-                RuntimeImports.RhCorElementType corElementType = this.CorElementType;
+                EETypeElementType corElementType = this.ElementType;
                 return RuntimeImports.GetRhCorElementTypeInfo(corElementType);
             }
         }
