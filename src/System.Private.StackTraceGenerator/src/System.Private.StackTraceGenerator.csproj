@@ -16,8 +16,6 @@
     <Compile Include="Internal\StackTraceGenerator\StackTraceGenerator.Windows.cs" />
     <Compile Include="Internal\LightweightInterop\ComInterface.cs" />
     <Compile Include="Internal\LightweightInterop\StdCall.cs" />
-    <Compile Include="Internal\LightweightInterop\MarshalExtensions.cs" />
-    <Compile Include="Internal\Dia\Guids.cs" />
     <Compile Include="Internal\Dia\StdCall.cs" />
     <Compile Include="Internal\Dia\DiaEnums.cs" />
     <Compile Include="Internal\Dia\DiaInterfaces.cs" />

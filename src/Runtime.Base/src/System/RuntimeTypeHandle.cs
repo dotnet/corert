@@ -21,12 +21,10 @@ namespace System
     {
         private EETypePtr _pEEType;
 
-#if !PROJECTN
         [Intrinsic]
         internal static unsafe IntPtr GetValueInternal(RuntimeTypeHandle handle)
         {
             return (IntPtr)handle._pEEType.ToPointer();
         }
-#endif
     }
 }
