@@ -62,6 +62,7 @@ See the LICENSE file in the project root for more information.
       <NativeLibrary Include="uuid.lib" />
       <NativeLibrary Include="bcrypt.lib" />
       <NativeLibrary Include="normaliz.lib" />
+      <NativeLibrary Include="crypt32.lib" />
     </ItemGroup>
 
     <ItemGroup>
