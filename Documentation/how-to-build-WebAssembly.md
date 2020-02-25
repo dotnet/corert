@@ -33,7 +33,8 @@ This is Windows only for now.
 
 # How to run a WebAssembly application #
 1. Ensure you have Edge (Windows only), Chrome or [Firefox](https://www.getfirefox.com).
-2. Launch HTTP server which will serve folder with generated html/wasm files. For example `http-server` from npm will serve, but any other option can do too. Without HTTP server, browser will prevent donwloading wasm file.
+2. Launch HTTP server which will serve folder with generated html/wasm files. For example `http-server` from npm will serve, but any other option can do too. Without HTTP server, browser will prevent donwloading wasm file due to CORS restrictions.
+ *Note*: If you have FireFox, you can disable CORS for local files by go to `about:config`, set `privacy_file_unique_origin` to `false` and restart FireFox. Once that changes applied you will be able to open HTML files locally.
 3. Open the generated html file in the browser and look at the on-screen console for output.
 
 # Useful tips #
