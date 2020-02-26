@@ -3,7 +3,7 @@
 ## Build WebAssembly on Windows ##
 
 1. Install Emscripten by following the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html). 
-2. Follow the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#updating-the-sdk) to update Emscripten to fastcomp 1.38.45 ```./emsdk install 1.38.45-fastcomp``` followed by ```./emsdk activate 1.38.45-fastcomp```
+2. Follow the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#updating-the-sdk) to update Emscripten to 1.39.8 ```./emsdk install 1.39.8``` followed by ```./emsdk activate 1.39.8```
 3. Install [Firefox](https://www.getfirefox.com) (for testing).
 3. Get CoreRT set up by following the [Visual Studio instructions](how-to-build-and-run-ilcompiler-in-visual-studio.md).
 4. Build the WebAssembly runtime by running ```build.cmd wasm``` from the repo root.
@@ -32,8 +32,10 @@ This is Windows only for now.
 2. To compile that to WebAssembly, run ```emcc HelloWasm.bc  -s ALLOW_MEMORY_GROWTH=1  C:\corert\bin\WebAssembly.wasm.Debug\sdk\libPortableRuntime.bc C:\corert\bin\WebAssembly.wasm.Debug\sdk\libbootstrappercpp.bc -s WASM=1 -o HelloWasm.html``` (if emcc isn't on your path, you'll need to launch an Emscripten command prompt to do this). That will generate a .wasm file with your code as well as html and js files to run it.
 
 # How to run a WebAssembly application #
-1. Ensure you have Edge 41 (Windows only) or above or [Firefox](https://www.getfirefox.com).
-2. Open the generated html file in Edge or Firefox and look at the on-screen console for output.
+1. Ensure you have Edge (Windows only), Chrome or [Firefox](https://www.getfirefox.com).
+2. Launch HTTP server which will serve folder with generated html/wasm files. For example `http-server` from npm will serve, but any other option can do too. Without HTTP server, browser will prevent donwloading wasm file due to CORS restrictions.
+ *Note*: If you have FireFox, you can disable CORS for local files by going to `about:config`, setting `privacy_file_unique_origin` to `false` and restarting FireFox. Once the changes are applied you will be able to open HTML files directly from the file system without an HTTP server.
+3. Open the generated html file in the browser and look at the on-screen console for output.
 
 # Useful tips #
 * To manually make ILC compile to WebAssembly, add ```--wasm``` to the command line.
