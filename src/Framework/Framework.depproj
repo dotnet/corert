@@ -49,6 +49,12 @@
     <FileToExclude Include="System.Runtime.InteropServices.WindowsRuntime" />
     <FileToExclude Include="System.Runtime.WindowsRuntime" />
     <FileToExclude Include="System.Runtime.WindowsRuntime.UI.Xaml" />
+
+    <!-- Unmanaged .dlls -->
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.x86" />
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.amd64" />
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.arm" />
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.arm64" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
