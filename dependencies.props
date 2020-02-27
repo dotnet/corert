@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RyuJITVersion Condition="'$(RyuJITVersion)' == ''">5.0.0-preview.1.20118.7</RyuJITVersion>
     <ObjectWriterVersion Condition="'$(ObjectWriterVersion)' == ''">1.0.0-alpha-28204-03</ObjectWriterVersion>
-    <RuntimeLibrariesVersion Condition="'$(RuntimeLibrariesVersion)' == ''">5.0.0-preview.1.20118.7</RuntimeLibrariesVersion>
+    <RuntimeLibrariesVersion Condition="'$(RuntimeLibrariesVersion)' == ''">5.0.0-preview.1.20114.1</RuntimeLibrariesVersion>
     <CoreFxUapVersion Condition="'$(CoreFxUapVersion)' == ''">4.7.0-preview6.19265.2</CoreFxUapVersion>
     <MicrosoftNETCoreAppPackageVersion Condition="'$(MicrosoftNETCoreAppPackageVersion)' == ''">2.1.14</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftDotNetTestSdkVersion Condition="'$(MicrosoftDotNetTestSdkVersion)' == ''">15.8.0</MicrosoftDotNetTestSdkVersion>
