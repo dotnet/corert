@@ -332,7 +332,7 @@ namespace System.Threading
         /// appropriate for the processor.
         /// TODO: See issue https://github.com/dotnet/corert/issues/4430
         /// </summary>
-        internal static readonly int OptimalMaxSpinWaitsPerSpinIteration = 64;
+        internal const int OptimalMaxSpinWaitsPerSpinIteration = 64;
 
         public static void SpinWait(int iterations) => RuntimeImports.RhSpinWait(iterations);
 
