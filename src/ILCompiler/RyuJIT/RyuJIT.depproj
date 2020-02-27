@@ -18,8 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <FileToInclude Include="clrjit" Condition="'$(TargetsUnix)' != 'true'" />
-    <FileToInclude Include="libclrjit" Condition="'$(TargetsUnix)' == 'true'" />
+    <FileToInclude Include="clrjit" Condition="'$(OSEnvironment)' == 'Windows_NT'" />
+    <FileToInclude Include="libclrjit" Condition="'$(OSEnvironment)' != 'Windows_NT'" />
   </ItemGroup>
 
   <Target Name="RenameToJitIlc">
