@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.Jit</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;SUPPORTS_NATIVE_METADATA_TYPE_LOADING;$(DefineConstants)</DefineConstants>
@@ -19,7 +19,7 @@
   </PropertyGroup>
   <!-- Setup the right references -->
   <ItemGroup>
-    <ProjectReference Include="..\..\Framework\Framework.depprojj">
+    <ProjectReference Include="..\..\Framework\Framework.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>

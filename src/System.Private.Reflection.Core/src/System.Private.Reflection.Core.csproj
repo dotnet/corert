@@ -4,7 +4,7 @@
     <AssemblyName>System.Private.Reflection.Core</AssemblyName>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>

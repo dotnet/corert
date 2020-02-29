@@ -13,7 +13,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|arm64'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|arm64'" />
   <PropertyGroup>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>TYPE_LOADER_IMPLEMENTATION;$(DefineConstants)</DefineConstants>
