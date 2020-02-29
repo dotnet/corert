@@ -33,7 +33,8 @@
   <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
     <ProjectReference Include="..\..\System.Private.Interop\src\System.Private.Interop.Experimental.csproj" />
-    <ReferencePath Include="$(FrameworkReferencePath)\System.Private.Reflection.Metadata.Ecma335.dll" />
+    <ReferencePath Include="$(FrameworkReferencePath)\System.Collections.Immutable.dll" />
+    <ReferencePath Include="$(FrameworkReferencePath)\System.Reflection.Metadata.dll" />
   </ItemGroup>
   <ItemGroup Condition="'$(EcmaMetadataSupport)' == 'true'">
     <Compile Include="System\Reflection\Runtime\Assemblies\EcmaFormat\EcmaFormatRuntimeAssembly.cs" />
