@@ -159,6 +159,12 @@ namespace ILCompiler
 
         }
 
+        public bool IsFatPointerCandidate(MethodDesc containingMethod, MethodSignature signature)
+        {
+            // The current plan seem to be to copy paste from ILCompiler.Compilation, but that's not a sustainable plan
+            throw new NotImplementedException();
+        }
+
         public sealed class LazyPInvokePolicy : PInvokeILEmitterConfiguration
         {
             public override bool GenerateDirectCall(string libraryName, string methodName)
