@@ -145,7 +145,7 @@
 
     <RestoreOutputPath Condition="'$(RestoreOutputPath)'==''">$(IntermediateOutputPath)</RestoreOutputPath>
 
-    <FrameworkReferencePath Condition="'$(FrameworkReferencePath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/Framework</FrameworkReferencePath>
+    <FrameworkReferencePath Condition="'$(FrameworkReferencePath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/framework</FrameworkReferencePath>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
   </PropertyGroup>
