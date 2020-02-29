@@ -48,6 +48,14 @@ namespace System.Reflection.Runtime.General
             return RuntimeAssembly.GetRuntimeAssemblyFromByteArray(rawAssembly, pdbSymbolStore);
         }
 
+        public sealed override Assembly Load(string assemblyPath)
+        {
+            if (assemblyPath == null)
+                throw new ArgumentNullException(nameof(assemblyPath));
+
+            return RuntimeAssembly.GetRuntimeAssemblyFromPath(assemblyPath);
+        }
+
         //
         // This overload of GetMethodForHandle only accepts handles for methods declared on non-generic types (the method, however,
         // can be an instance of a generic method.) To resolve handles for methods declared on generic types, you must pass

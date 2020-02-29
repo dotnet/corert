@@ -47,6 +47,8 @@
     <ReferencePath Include="$(FrameworkReferencePath)\System.Runtime.dll" />
     <ReferencePath Include="$(FrameworkReferencePath)\System.Collections.Immutable.dll" />
     <ReferencePath Include="$(FrameworkReferencePath)\System.Reflection.Metadata.dll" />
+    <ReferencePath Include="$(FrameworkReferencePath)\System.IO.MemoryMappedFiles.dll" />
+    <ReferencePath Include="$(FrameworkReferencePath)\System.Runtime.InteropServices.dll" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />

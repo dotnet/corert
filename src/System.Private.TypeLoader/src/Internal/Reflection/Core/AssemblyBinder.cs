@@ -34,6 +34,8 @@ namespace Internal.Reflection.Core
 
         public abstract bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult result, out Exception exception);
 
+        public abstract bool Bind(string assemblyPath, out AssemblyBindResult bindResult, out Exception exception);
+
         public abstract IList<AssemblyBindResult> GetLoadedAssemblies();
     }
 }
