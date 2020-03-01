@@ -80,5 +80,12 @@
     <Delete Files="$(PublishDir)\$(TargetName).pdb"/>    
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName).pdb" DestinationFolder="$(PublishDir)" />  
   </Target>
+  
+  <Target Name="CopyJitLibrary" Condition="'$(ExperimentalJitSupport)' == 'true'" AfterTargets="Publish">
+    <ItemGroup>
+      <ClrJitIlc Include="$(IlcPath)\tools\clrjitilc.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ClrJitIlc)" DestinationFolder="$(PublishDir)" />
+  </Target>
 
 </Project>
