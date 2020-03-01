@@ -1079,20 +1079,20 @@ internal class ReflectionTest
                     throw new Exception("PartialCanon");
             }
 
-#if !MULTIMODULE_BUILD
 #if !CODEGEN_CPP // https://github.com/dotnet/corert/issues/7799
-            Console.WriteLine("Search through a forwarder");
-            {
-                Type t = Type.GetType("System.Collections.Generic.List`1, System.Collections", throwOnError: false);
-                if (t == null)
-                    throw new Exception("List");
-            }
-
             Console.WriteLine("Search in system assembly");
             {
                 Type t = Type.GetType("System.Runtime.CompilerServices.SuppressIldasmAttribute", throwOnError: false);
                 if (t == null)
                     throw new Exception("SuppressIldasmAttribute");
+            }
+
+#if !MULTIMODULE_BUILD
+            Console.WriteLine("Search through a forwarder");
+            {
+                Type t = Type.GetType("System.Collections.Generic.List`1, System.Collections", throwOnError: false);
+                if (t == null)
+                    throw new Exception("List");
             }
 
             Console.WriteLine("Search in mscorlib");
@@ -1157,7 +1157,9 @@ internal class ReflectionTest
         {
             Assert.Equal("System.Private.CoreLib", Assembly.Load("System.Private.CoreLib, PublicKeyToken=cccccccccccccccc").GetName().Name);
             Assert.Equal("System.Console", Assembly.Load("System.Console, PublicKeyToken=cccccccccccccccc").GetName().Name);
+#if !MULTIMODULE_BUILD
             Assert.Equal("mscorlib", Assembly.Load("mscorlib, PublicKeyToken=cccccccccccccccc").GetName().Name);
+#endif
         }
     }
 
