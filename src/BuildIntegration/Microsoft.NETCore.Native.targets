@@ -195,8 +195,8 @@ See the LICENSE file in the project root for more information.
       <IlcArg Include="@(RdXmlFile->'--rdxml:%(Identity)')" />
       <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) != ''" Include="--nativelib" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
-      <ILcArg Condition="'$(Platform)' == 'wasm'" Include="--wasm" />
-      <ILcArg Condition="'$(ExperimentalDynamicCodeSupport)' == 'true'" Include="--nometadatablocking" />
+      <IlcArg Condition="'$(Platform)' == 'wasm'" Include="--wasm" />
+      <IlcArg Condition="'$(ExperimentalDynamicCodeSupport)' == 'true'" Include="--nometadatablocking" />
       <IlcArg Include="@(AutoInitializedAssemblies->'--initassembly:%(Identity)')" />
       <IlcArg Include="@(AppContextSwitchOverrides->'--appcontextswitch:%(Identity)')" />
       <IlcArg Condition="$(ServerGarbageCollection) != ''" Include="--runtimeopt:RH_UseServerGC=1" />
