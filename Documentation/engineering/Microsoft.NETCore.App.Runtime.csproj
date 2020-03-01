@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    This is a dummy project to find the latest Microsoft.NETCore.App.Runtime version
+
+    Running "dotnet restore" against this project will fail. The error message includes 
+    the latest Microsoft.NETCore.App.Runtime version.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.App.Runtime.win-x64" Version="5.*" />
+  </ItemGroup>
+
+</Project>
