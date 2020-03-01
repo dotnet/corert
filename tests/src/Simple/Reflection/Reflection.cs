@@ -54,8 +54,8 @@ internal class ReflectionTest
         TestReflectionInvoke.Run();
 #if !CODEGEN_CPP
         TestByRefReturnInvoke.Run();
-#endif
         TestAssemblyLoad.Run();
+#endif
         return 100;
     }
 
