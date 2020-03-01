@@ -55,6 +55,7 @@ internal class ReflectionTest
 #if !CODEGEN_CPP
         TestByRefReturnInvoke.Run();
 #endif
+        TestAssemblyLoad.Run();
         return 100;
     }
 
@@ -1087,11 +1088,18 @@ internal class ReflectionTest
                     throw new Exception("List");
             }
 
-            Console.WriteLine("Search in mscorlib");
+            Console.WriteLine("Search in system assembly");
             {
                 Type t = Type.GetType("System.Runtime.CompilerServices.SuppressIldasmAttribute", throwOnError: false);
                 if (t == null)
                     throw new Exception("SuppressIldasmAttribute");
+            }
+
+            Console.WriteLine("Search in mscorlib");
+            {
+                Type t = Type.GetType("System.Runtime.CompilerServices.CompilerGlobalScopeAttribute, mscorlib", throwOnError: false);
+                if (t == null)
+                    throw new Exception("CompilerGlobalScopeAttribute");
             }
 #endif
 #endif
@@ -1140,6 +1148,16 @@ internal class ReflectionTest
             Type enumType = mi.GetParameters()[0].ParameterType;
             if (Enum.GetUnderlyingType(enumType) != typeof(int))
                 throw new Exception();
+        }
+    }
+
+    class TestAssemblyLoad
+    {
+        public static void Run()
+        {
+            Assert.Equal("System.Private.CoreLib", Assembly.Load("System.Private.CoreLib, PublicKeyToken=cccccccccccccccc").GetName().Name);
+            Assert.Equal("System.Console", Assembly.Load("System.Console, PublicKeyToken=cccccccccccccccc").GetName().Name);
+            Assert.Equal("mscorlib", Assembly.Load("mscorlib, PublicKeyToken=cccccccccccccccc").GetName().Name);
         }
     }
 

@@ -57,12 +57,6 @@ namespace Internal.Reflection.Execution
             ReflectionExecutionDomainCallbacksImplementation runtimeCallbacks = new ReflectionExecutionDomainCallbacksImplementation(executionDomain, executionEnvironment);
             RuntimeAugments.Initialize(runtimeCallbacks);
 
-            DefaultAssemblyNamesForGetType =
-                new String[]
-                {
-                    AssemblyBinder.DefaultAssemblyNameForGetType,
-                };
-
             ExecutionEnvironment = executionEnvironment;
         }
 
@@ -83,7 +77,7 @@ namespace Internal.Reflection.Execution
         {
             LowLevelListWithIList<String> defaultAssemblies = new LowLevelListWithIList<String>();
             defaultAssemblies.Add(callingAssemblyName);
-            defaultAssemblies.AddRange(DefaultAssemblyNamesForGetType);
+            defaultAssemblies.Add(AssemblyBinder.DefaultAssemblyNameForGetType);
             return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
         }
 
@@ -119,8 +113,6 @@ namespace Internal.Reflection.Execution
         }
 
         internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }
-
-        internal static IList<string> DefaultAssemblyNamesForGetType;
     }
 }
 
