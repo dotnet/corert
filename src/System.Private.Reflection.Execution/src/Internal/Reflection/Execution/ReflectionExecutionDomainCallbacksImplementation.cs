@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 
 using Internal.Runtime.Augments;
 
+using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Execution.PayForPlayExperience;
 using Internal.Reflection.Extensions.NonPortable;
@@ -33,17 +34,11 @@ namespace Internal.Reflection.Execution
 
         public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, string defaultAssemblyName)
         {
-            if (defaultAssemblyName == null)
-            {
-                return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ReflectionExecution.DefaultAssemblyNamesForGetType);
-            }
-            else
-            {
-                LowLevelListWithIList<String> defaultAssemblies = new LowLevelListWithIList<String>();
+            LowLevelListWithIList<String> defaultAssemblies = new LowLevelListWithIList<String>();
+            if (defaultAssemblyName != null)
                 defaultAssemblies.Add(defaultAssemblyName);
-                defaultAssemblies.AddRange(ReflectionExecution.DefaultAssemblyNamesForGetType);
-                return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
-            }
+            defaultAssemblies.Add(AssemblyBinder.DefaultAssemblyNameForGetType);
+            return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
         }
 
         public sealed override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle)

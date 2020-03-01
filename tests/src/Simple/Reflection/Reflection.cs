@@ -54,6 +54,7 @@ internal class ReflectionTest
         TestReflectionInvoke.Run();
 #if !CODEGEN_CPP
         TestByRefReturnInvoke.Run();
+        TestAssemblyLoad.Run();
 #endif
         return 100;
     }
@@ -1078,8 +1079,15 @@ internal class ReflectionTest
                     throw new Exception("PartialCanon");
             }
 
-#if !MULTIMODULE_BUILD
 #if !CODEGEN_CPP // https://github.com/dotnet/corert/issues/7799
+            Console.WriteLine("Search in system assembly");
+            {
+                Type t = Type.GetType("System.Runtime.CompilerServices.SuppressIldasmAttribute", throwOnError: false);
+                if (t == null)
+                    throw new Exception("SuppressIldasmAttribute");
+            }
+
+#if !MULTIMODULE_BUILD
             Console.WriteLine("Search through a forwarder");
             {
                 Type t = Type.GetType("System.Collections.Generic.List`1, System.Collections", throwOnError: false);
@@ -1089,9 +1097,9 @@ internal class ReflectionTest
 
             Console.WriteLine("Search in mscorlib");
             {
-                Type t = Type.GetType("System.Runtime.CompilerServices.SuppressIldasmAttribute", throwOnError: false);
+                Type t = Type.GetType("System.Runtime.CompilerServices.CompilerGlobalScopeAttribute, mscorlib", throwOnError: false);
                 if (t == null)
-                    throw new Exception("SuppressIldasmAttribute");
+                    throw new Exception("CompilerGlobalScopeAttribute");
             }
 #endif
 #endif
@@ -1140,6 +1148,18 @@ internal class ReflectionTest
             Type enumType = mi.GetParameters()[0].ParameterType;
             if (Enum.GetUnderlyingType(enumType) != typeof(int))
                 throw new Exception();
+        }
+    }
+
+    class TestAssemblyLoad
+    {
+        public static void Run()
+        {
+            Assert.Equal("System.Private.CoreLib", Assembly.Load("System.Private.CoreLib, PublicKeyToken=cccccccccccccccc").GetName().Name);
+            Assert.Equal("System.Console", Assembly.Load("System.Console, PublicKeyToken=cccccccccccccccc").GetName().Name);
+#if !MULTIMODULE_BUILD
+            Assert.Equal("mscorlib", Assembly.Load("mscorlib, PublicKeyToken=cccccccccccccccc").GetName().Name);
+#endif
         }
     }
 

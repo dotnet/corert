@@ -44,23 +44,6 @@ namespace System.Reflection
         }
 
         //
-        // Ensure that the PublicKeyOrPublicKeyToken (if non-null) is the short token form.
-        //
-        public static RuntimeAssemblyName CanonicalizePublicKeyToken(this RuntimeAssemblyName name)
-        {
-            AssemblyNameFlags flags = name.Flags;
-            if ((flags & AssemblyNameFlags.PublicKey) == 0)
-                return name;
-
-            flags &= ~AssemblyNameFlags.PublicKey;
-            byte[] publicKeyOrToken = name.PublicKeyOrToken;
-            if (publicKeyOrToken != null)
-                publicKeyOrToken = ComputePublicKeyToken(publicKeyOrToken);
-
-            return new RuntimeAssemblyName(name.Name, name.Version, name.CultureName, flags, publicKeyOrToken);
-        }
-
-        //
         // These helpers convert between the combined flags+contentType+processorArchitecture value and the separated parts.
         //
         // Since these are only for trusted callers, they do NOT check for out of bound bits. 
