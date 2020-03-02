@@ -130,22 +130,22 @@ namespace System.Runtime
             if (TypeCast.AreTypesEquivalentInternal(pEEType, ptrUnboxToEEType))
                 return true;
 
-            if (pEEType->CorElementType == ptrUnboxToEEType->CorElementType)
+            if (pEEType->ElementType == ptrUnboxToEEType->ElementType)
             {
                 // Enum's and primitive types should pass the UnboxAny exception cases
                 // if they have an exactly matching cor element type.
-                switch (ptrUnboxToEEType->CorElementType)
+                switch (ptrUnboxToEEType->ElementType)
                 {
-                    case CorElementType.ELEMENT_TYPE_I1:
-                    case CorElementType.ELEMENT_TYPE_U1:
-                    case CorElementType.ELEMENT_TYPE_I2:
-                    case CorElementType.ELEMENT_TYPE_U2:
-                    case CorElementType.ELEMENT_TYPE_I4:
-                    case CorElementType.ELEMENT_TYPE_U4:
-                    case CorElementType.ELEMENT_TYPE_I8:
-                    case CorElementType.ELEMENT_TYPE_U8:
-                    case CorElementType.ELEMENT_TYPE_I:
-                    case CorElementType.ELEMENT_TYPE_U:
+                    case EETypeElementType.Byte:
+                    case EETypeElementType.SByte:
+                    case EETypeElementType.Int16:
+                    case EETypeElementType.UInt16:
+                    case EETypeElementType.Int32:
+                    case EETypeElementType.UInt32:
+                    case EETypeElementType.Int64:
+                    case EETypeElementType.UInt64:
+                    case EETypeElementType.IntPtr:
+                    case EETypeElementType.UIntPtr:
                         return true;
                 }
             }

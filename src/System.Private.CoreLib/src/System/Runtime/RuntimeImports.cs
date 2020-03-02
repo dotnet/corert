@@ -10,6 +10,8 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
+using CorElementType = System.Reflection.CorElementType;
+
 #if TARGET_64BIT
 using nuint = System.UInt64;
 #else
@@ -1083,28 +1085,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpArrayClear")]
         internal static extern bool TryArrayClear(Array array, int index, int length);
 
-        // Only the values defined below are valid. Any other value returned from RhGetCorElementType
-        // indicates only that the type is not one of the primitives defined below and is otherwise undefined
-        // and subject to change.
-        internal enum RhCorElementType : byte
-        {
-            ELEMENT_TYPE_BOOLEAN = 0x2,
-            ELEMENT_TYPE_CHAR = 0x3,
-            ELEMENT_TYPE_I1 = 0x4,
-            ELEMENT_TYPE_U1 = 0x5,
-            ELEMENT_TYPE_I2 = 0x6,
-            ELEMENT_TYPE_U2 = 0x7,
-            ELEMENT_TYPE_I4 = 0x8,
-            ELEMENT_TYPE_U4 = 0x9,
-            ELEMENT_TYPE_I8 = 0xa,
-            ELEMENT_TYPE_U8 = 0xb,
-            ELEMENT_TYPE_R4 = 0xc,
-            ELEMENT_TYPE_R8 = 0xd,
-            ELEMENT_TYPE_I = 0x18,
-            ELEMENT_TYPE_U = 0x19,
-        }
-
-        internal static RhCorElementTypeInfo GetRhCorElementTypeInfo(RuntimeImports.RhCorElementType elementType)
+        internal static RhCorElementTypeInfo GetRhCorElementTypeInfo(CorElementType elementType)
         {
             return RhCorElementTypeInfo.GetRhCorElementTypeInfo(elementType);
         }
@@ -1149,14 +1130,14 @@ namespace System.Runtime
             // This is a port of InvokeUtil::CanPrimitiveWiden() in the desktop runtime. This is used by various apis such as Array.SetValue()
             // and Delegate.DynamicInvoke() which allow value-preserving widenings from one primitive type to another.
             //
-            public bool CanWidenTo(RuntimeImports.RhCorElementType targetElementType)
+            public bool CanWidenTo(CorElementType targetElementType)
             {
                 // Caller expected to ensure that both sides are primitive before calling us.
                 Debug.Assert(this.IsPrimitive);
                 Debug.Assert(GetRhCorElementTypeInfo(targetElementType).IsPrimitive);
 
                 // Once we've asserted that the target is a primitive, we can also assert that it is >= ET_BOOLEAN.
-                Debug.Assert(targetElementType >= RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN);
+                Debug.Assert(targetElementType >= CorElementType.ELEMENT_TYPE_BOOLEAN);
                 byte targetElementTypeAsByte = (byte)targetElementType;
                 ushort mask = (ushort)(1 << targetElementTypeAsByte);  // This is expected to overflow on larger ET_I and ET_U - this is ok and anticipated.
                 if (0 != (_widenMask & mask))
@@ -1164,7 +1145,7 @@ namespace System.Runtime
                 return false;
             }
 
-            internal static RhCorElementTypeInfo GetRhCorElementTypeInfo(RuntimeImports.RhCorElementType elementType)
+            internal static RhCorElementTypeInfo GetRhCorElementTypeInfo(CorElementType elementType)
             {
                 // The _lookupTable array only covers a subset of RhCorElementTypes, so we return a default 
                 // info when someone asks for an elementType which does not have an entry in the table.

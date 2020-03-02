@@ -1249,11 +1249,11 @@ namespace Internal.Runtime
             }
         }
 
-        internal CorElementType CorElementType
+        internal EETypeElementType ElementType
         {
             get
             {
-                return (CorElementType)((_usFlags & (ushort)EETypeFlags.CorElementTypeMask) >> (ushort)EETypeFlags.CorElementTypeShift);
+                return (EETypeElementType)((_usFlags & (ushort)EETypeFlags.ElementTypeMask) >> (ushort)EETypeFlags.ElementTypeShift);
             }
         }
 

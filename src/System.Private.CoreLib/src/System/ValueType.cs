@@ -155,11 +155,11 @@ namespace System
 
                 Debug.Assert(!fieldType.IsPointer);
 
-                if (fieldType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4)
+                if (fieldType.ElementType == Internal.Runtime.EETypeElementType.Single)
                 {
                     hashCode = Unsafe.Read<float>(ref fieldData).GetHashCode();
                 }
-                else if (fieldType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8)
+                else if (fieldType.ElementType == Internal.Runtime.EETypeElementType.Double)
                 {
                     hashCode = Unsafe.Read<double>(ref fieldData).GetHashCode();
                 }

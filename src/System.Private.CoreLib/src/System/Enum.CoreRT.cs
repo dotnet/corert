@@ -9,7 +9,8 @@ using Internal.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 
-using CorElementType = System.Runtime.RuntimeImports.RhCorElementType;
+using CorElementType = System.Reflection.CorElementType;
+using EETypeElementType = Internal.Runtime.EETypeElementType;
 
 namespace System
 {
@@ -72,7 +73,10 @@ namespace System
             }
         }
 
-        private CorElementType InternalGetCorElementType() => this.EETypePtr.CorElementType;
+        private CorElementType InternalGetCorElementType()
+        {
+            return this.EETypePtr.CorElementType;
+        }
 
         [Intrinsic]
         public bool HasFlag(Enum flag)
@@ -122,49 +126,49 @@ namespace System
                 result = 0;
                 return false;
             }
-            CorElementType corElementType = eeType.CorElementType;
+            EETypeElementType elementType = eeType.ElementType;
 
             ref byte pValue = ref value.GetRawData();
 
-            switch (corElementType)
+            switch (elementType)
             {
-                case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                case EETypeElementType.Boolean:
                     result = Unsafe.As<byte, bool>(ref pValue) ? 1UL : 0UL;
                     return true;
 
-                case CorElementType.ELEMENT_TYPE_CHAR:
+                case EETypeElementType.Char:
                     result = (ulong)(long)Unsafe.As<byte, char>(ref pValue);
                     return true;
 
-                case CorElementType.ELEMENT_TYPE_I1:
+                case EETypeElementType.SByte:
                     result = (ulong)(long)Unsafe.As<byte, sbyte>(ref pValue);
                     return true;
 
-                case CorElementType.ELEMENT_TYPE_U1:
+                case EETypeElementType.Byte:
                     result = (ulong)(long)Unsafe.As<byte, byte>(ref pValue);
                     return true;
 
-                case CorElementType.ELEMENT_TYPE_I2:
+                case EETypeElementType.Int16:
                     result = (ulong)(long)Unsafe.As<byte, short>(ref pValue);
                     return true;
 
-                case CorElementType.ELEMENT_TYPE_U2:
+                case EETypeElementType.UInt16:
                     result = (ulong)(long)Unsafe.As<byte, ushort>(ref pValue);
                     return true;
 
-                case CorElementType.ELEMENT_TYPE_I4:
+                case EETypeElementType.Int32:
                     result = (ulong)(long)Unsafe.As<byte, int>(ref pValue);
                     return true;
 
-                case CorElementType.ELEMENT_TYPE_U4:
+                case EETypeElementType.UInt32:
                     result = (ulong)(long)Unsafe.As<byte, uint>(ref pValue);
                     return true;
 
-                case CorElementType.ELEMENT_TYPE_I8:
+                case EETypeElementType.Int64:
                     result = (ulong)(long)Unsafe.As<byte, long>(ref pValue);
                     return true;
 
-                case CorElementType.ELEMENT_TYPE_U8:
+                case EETypeElementType.UInt64:
                     result = (ulong)(long)Unsafe.As<byte, ulong>(ref pValue);
                     return true;
 
@@ -325,26 +329,26 @@ namespace System
             // On Debug builds, include the big-endian code to help deter bitrot (the "Conditional("BIGENDIAN")" will prevent it from executing on little-endian). 
             // On Release builds, exclude code to deter IL bloat and toolchain work.
 #if BIGENDIAN || DEBUG
-            CorElementType corElementType = enumEEType.CorElementType;
-            switch (corElementType)
+            EETypeElementType elementType = enumEEType.ElementType;
+            switch (elementType)
             {
-                case CorElementType.ELEMENT_TYPE_I1:
-                case CorElementType.ELEMENT_TYPE_U1:
+                case EETypeElementType.SByte:
+                case EETypeElementType.Byte:
                     pValue += sizeof(long) - sizeof(byte);
                     break;
 
-                case CorElementType.ELEMENT_TYPE_I2:
-                case CorElementType.ELEMENT_TYPE_U2:
+                case EETypeElementType.Int16:
+                case EETypeElementType.UInt16:
                     pValue += sizeof(long) - sizeof(short);
                     break;
 
-                case CorElementType.ELEMENT_TYPE_I4:
-                case CorElementType.ELEMENT_TYPE_U4:
+                case EETypeElementType.Int32:
+                case EETypeElementType.UInt32:
                     pValue += sizeof(long) - sizeof(int);
                     break;
 
-                case CorElementType.ELEMENT_TYPE_I8:
-                case CorElementType.ELEMENT_TYPE_U8:
+                case EETypeElementType.Int64:
+                case EETypeElementType.UInt64:
                     break;
 
                 default:

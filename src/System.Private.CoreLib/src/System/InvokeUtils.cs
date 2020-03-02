@@ -12,6 +12,7 @@ using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
+using EETypeElementType = Internal.Runtime.EETypeElementType;
 using Interlocked = System.Threading.Interlocked;
 
 namespace System
@@ -148,7 +149,7 @@ namespace System
                 return CreateChangeTypeException(srcEEType, dstEEType, semantics);
             }
 
-            RuntimeImports.RhCorElementType dstCorElementType = dstEEType.CorElementType;
+            CorElementType dstCorElementType = dstEEType.CorElementType;
             if (!srcEEType.CorElementTypeInfo.CanWidenTo(dstCorElementType))
             {
                 dstObject = null;
@@ -157,58 +158,58 @@ namespace System
 
             switch (dstCorElementType)
             {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     bool boolValue = Convert.ToBoolean(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, boolValue ? 1 : 0) : boolValue;
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     char charValue = Convert.ToChar(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, charValue) : charValue;
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     sbyte sbyteValue = Convert.ToSByte(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, sbyteValue) : sbyteValue;
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     short shortValue = Convert.ToInt16(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, shortValue) : shortValue;
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     int intValue = Convert.ToInt32(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, intValue) : intValue;
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     long longValue = Convert.ToInt64(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, longValue) : longValue;
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     byte byteValue = Convert.ToByte(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, byteValue) : byteValue;
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     ushort ushortValue = Convert.ToUInt16(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, ushortValue) : ushortValue;
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     uint uintValue = Convert.ToUInt32(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, uintValue) : uintValue;
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     ulong ulongValue = Convert.ToUInt64(srcObject);
                     dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, (long)ulongValue) : ulongValue;
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
-                    if (srcEEType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR)
+                case CorElementType.ELEMENT_TYPE_R4:
+                    if (srcEEType.CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
                     {
                         dstObject = (float)(char)srcObject;
                     }
@@ -218,8 +219,8 @@ namespace System
                     }
                     break;
 
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
-                    if (srcEEType.CorElementType == RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR)
+                case CorElementType.ELEMENT_TYPE_R8:
+                    if (srcEEType.CorElementType == CorElementType.ELEMENT_TYPE_CHAR)
                     {
                         dstObject = (double)(char)srcObject;
                     }
@@ -792,7 +793,7 @@ namespace System
                     }
                     else
                     {
-                        if (widenAndCompareType.ToEETypePtr().CorElementType != incomingParam.EETypePtr.CorElementType)
+                        if (widenAndCompareType.ToEETypePtr().ElementType != incomingParam.EETypePtr.ElementType)
                         {
                             System.Diagnostics.Debug.Assert(paramType == DynamicInvokeParamType.In);
                             incomingParam = InvokeUtils.CheckArgument(incomingParam, widenAndCompareType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, s_binderBundle, s_getExactTypeForCustomBinder);

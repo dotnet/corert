@@ -787,21 +787,21 @@ bool EETypesEquivalentEnoughForUnboxing(EEType *pObjectEEType, EEType *pUnboxToE
     if (pObjectEEType->IsEquivalentTo(pUnboxToEEType))
         return true;
 
-    if (pObjectEEType->GetCorElementType() == pUnboxToEEType->GetCorElementType())
+    if (pObjectEEType->GetElementType() == pUnboxToEEType->GetElementType())
     {
-        // Enums and primitive types can unbox if their CorElementTypes exactly match
-        switch (pObjectEEType->GetCorElementType())
+        // Enums and primitive types can unbox if their EETypeElementTypes exactly match
+        switch (pObjectEEType->GetElementType())
         {
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-        case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_U:
+        case ElementType_SByte:
+        case ElementType_Byte:
+        case ElementType_Int16:
+        case ElementType_UInt16:
+        case ElementType_Int32:
+        case ElementType_UInt32:
+        case ElementType_Int64:
+        case ElementType_UInt64:
+        case ElementType_IntPtr:
+        case ElementType_UIntPtr:
             return true;
         default:
             break;
