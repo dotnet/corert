@@ -33,10 +33,10 @@ namespace System.Reflection.Runtime.Assemblies
     //-----------------------------------------------------------------------------------------------------------
     internal partial class RuntimeAssembly
     {
-        static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly)
+        static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, string assemblyPath, ref RuntimeAssembly runtimeAssembly)
         {
             if (bindResult.EcmaMetadataReader != null)
-                runtimeAssembly = EcmaFormatRuntimeAssembly.GetRuntimeAssembly(bindResult.EcmaMetadataReader);
+                runtimeAssembly = EcmaFormatRuntimeAssembly.GetRuntimeAssembly(bindResult.EcmaMetadataReader, assemblyPath);
         }
     }
 }
@@ -45,9 +45,9 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 {
     internal sealed partial class EcmaFormatRuntimeAssembly
     {
-        internal static RuntimeAssembly GetRuntimeAssembly(MetadataReader ecmaMetadataReader)
+        internal static RuntimeAssembly GetRuntimeAssembly(MetadataReader ecmaMetadataReader, string assemblyPath = null)
         {
-            return s_EcmaAssemblyDispenser.GetOrAdd(new EcmaRuntimeAssemblyKey(ecmaMetadataReader));
+            return s_EcmaAssemblyDispenser.GetOrAdd(new EcmaRuntimeAssemblyKey(ecmaMetadataReader, assemblyPath));
         }
 
         private static readonly Dispenser<EcmaRuntimeAssemblyKey, RuntimeAssembly> s_EcmaAssemblyDispenser =
@@ -55,15 +55,16 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                 DispenserScenario.Scope_Assembly,
                 delegate (EcmaRuntimeAssemblyKey assemblyDefinition)
                 {
-                    return (RuntimeAssembly)new EcmaFormatRuntimeAssembly(assemblyDefinition.Reader);
+                    return (RuntimeAssembly)new EcmaFormatRuntimeAssembly(assemblyDefinition.Reader, assemblyDefinition.AssemblyPath);
                 }
         );
 
         private struct EcmaRuntimeAssemblyKey : IEquatable<EcmaRuntimeAssemblyKey>
         {
-            public EcmaRuntimeAssemblyKey(MetadataReader reader)
+            public EcmaRuntimeAssemblyKey(MetadataReader reader, string assemblyPath)
             {
                 Reader = reader;
+                AssemblyPath = assemblyPath;
             }
 
             public override bool Equals(Object obj)
@@ -86,6 +87,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             }
 
             public MetadataReader Reader { get; }
+            public string AssemblyPath { get; }
         }
     }
 }

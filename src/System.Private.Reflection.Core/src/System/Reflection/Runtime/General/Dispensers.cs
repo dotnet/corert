@@ -14,7 +14,6 @@ using System.Reflection.Runtime.PropertyInfos;
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
-
 //=================================================================================================================
 // This file collects the various chokepoints that create the various Runtime*Info objects. This allows
 // easy reviewing of the overall caching and unification policy.
@@ -35,8 +34,7 @@ namespace System.Reflection.Runtime.Assemblies
         /// </summary>
         internal static RuntimeAssembly GetRuntimeAssembly(RuntimeAssemblyName assemblyRefName)
         {
-            RuntimeAssembly result;
-            Exception assemblyLoadException = TryGetRuntimeAssembly(assemblyRefName, out result);
+            Exception assemblyLoadException = TryGetRuntimeAssembly(assemblyRefName, out RuntimeAssembly result);
             if (assemblyLoadException != null)
                 throw assemblyLoadException;
             return result;
@@ -48,9 +46,7 @@ namespace System.Reflection.Runtime.Assemblies
         internal static RuntimeAssembly GetRuntimeAssemblyFromByteArray(byte[] rawAssembly, byte[] pdbSymbolStore)
         {
             AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
-            AssemblyBindResult bindResult;
-            Exception exception;
-            if (!binder.Bind(rawAssembly, pdbSymbolStore, out bindResult, out exception))
+            if (!binder.Bind(rawAssembly, pdbSymbolStore, out AssemblyBindResult bindResult, out Exception exception))
             {
                 if (exception != null)
                     throw exception;
@@ -59,6 +55,24 @@ namespace System.Reflection.Runtime.Assemblies
             }
 
             RuntimeAssembly result = GetRuntimeAssembly(bindResult);
+            return result;
+        }
+
+        /// <summary>
+        /// Returns non-null or throws.
+        /// </summary>
+        internal static RuntimeAssembly GetRuntimeAssemblyFromPath(string assemblyPath)
+        {
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            if (!binder.Bind(assemblyPath, out AssemblyBindResult bindResult, out Exception exception))
+            {
+                if (exception != null)
+                    throw exception;
+                else
+                    throw new BadImageFormatException();
+            }
+
+            RuntimeAssembly result = GetRuntimeAssembly(bindResult, assemblyPath);
             return result;
         }
 
@@ -95,16 +109,14 @@ namespace System.Reflection.Runtime.Assemblies
                 delegate (RuntimeAssemblyName assemblyRefName)
                 {
                     AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
-                    AssemblyBindResult bindResult;
-                    Exception exception;
-                    if (!binder.Bind(assemblyRefName, cacheMissedLookups: true, out bindResult, out exception))
+                    if (!binder.Bind(assemblyRefName, cacheMissedLookups: true, out AssemblyBindResult bindResult, out Exception exception))
                         return exception;
 
                     return GetRuntimeAssembly(bindResult);
                 }
         );
 
-        private static RuntimeAssembly GetRuntimeAssembly(AssemblyBindResult bindResult)
+        private static RuntimeAssembly GetRuntimeAssembly(AssemblyBindResult bindResult, string assemblyPath = null)
         {
             RuntimeAssembly result = null;
 
@@ -112,7 +124,7 @@ namespace System.Reflection.Runtime.Assemblies
             if (result != null)
                 return result;
 
-            GetEcmaRuntimeAssembly(bindResult, ref result);
+            GetEcmaRuntimeAssembly(bindResult, assemblyPath, ref result);
             if (result != null)
                 return result;
 
@@ -121,7 +133,7 @@ namespace System.Reflection.Runtime.Assemblies
 
         // Use C# partial method feature to avoid complex #if logic, whichever code files are included will drive behavior
         static partial void GetNativeFormatRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
-        static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, ref RuntimeAssembly runtimeAssembly);
+        static partial void GetEcmaRuntimeAssembly(AssemblyBindResult bindResult, string assemblyPath, ref RuntimeAssembly runtimeAssembly);
     }
 }
 

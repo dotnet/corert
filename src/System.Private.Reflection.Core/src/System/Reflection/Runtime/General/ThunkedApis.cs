@@ -58,7 +58,7 @@ namespace System.Reflection.Runtime.Assemblies
             return GetManifestResourceStream(sb.ToString());
         }
 
-        public sealed override string Location
+        public override string Location
         {
             get
             {
@@ -69,7 +69,24 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
-        public sealed override string CodeBase { get { throw new PlatformNotSupportedException(); } }
+        public sealed override string CodeBase
+        {
+            get
+            {
+                var assemblyPath = Location;
+                if (string.IsNullOrEmpty(assemblyPath))
+                {
+                    assemblyPath = Path.Combine(AppContext.BaseDirectory, typeof(object).Assembly.ManifestModule.Name);
+                }
+                assemblyPath = assemblyPath.Replace('\\', '/');
+                if (assemblyPath.StartsWith('/'))
+                {
+                    return "file://" + assemblyPath;
+                }
+                return "file:///" + assemblyPath;
+            }
+        }
+
         public sealed override Assembly GetSatelliteAssembly(CultureInfo culture) { throw new PlatformNotSupportedException(); }
         public sealed override Assembly GetSatelliteAssembly(CultureInfo culture, Version version) { throw new PlatformNotSupportedException(); }
         public sealed override AssemblyName[] GetReferencedAssemblies() { throw new PlatformNotSupportedException(); }
@@ -94,7 +111,7 @@ namespace System.Reflection.Runtime.EventInfos
 {
     internal abstract partial class RuntimeEventInfo
     {
-        public sealed override MethodInfo GetAddMethod(bool nonPublic) =>  AddMethod.FilterAccessor(nonPublic);
+        public sealed override MethodInfo GetAddMethod(bool nonPublic) => AddMethod.FilterAccessor(nonPublic);
         public sealed override MethodInfo GetRemoveMethod(bool nonPublic) => RemoveMethod.FilterAccessor(nonPublic);
         public sealed override MethodInfo GetRaiseMethod(bool nonPublic) => RaiseMethod?.FilterAccessor(nonPublic);
     }
@@ -106,7 +123,7 @@ namespace System.Reflection.Runtime.MethodInfos
     {
         public sealed override MethodImplAttributes GetMethodImplementationFlags() => MethodImplementationFlags;
         public sealed override ICustomAttributeProvider ReturnTypeCustomAttributes => ReturnParameter;
-        
+
         // Partial trust doesn't exist in Aot so these legacy apis are meaningless. Will report everything as SecurityCritical by fiat.
         public sealed override bool IsSecurityCritical => true;
         public sealed override bool IsSecuritySafeCritical => false;
