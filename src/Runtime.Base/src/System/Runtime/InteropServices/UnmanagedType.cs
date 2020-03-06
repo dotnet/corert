@@ -4,5 +4,5 @@
 
 namespace System.Runtime.InteropServices
 {
-    internal class UnmanagedType { }
+    public class UnmanagedType { }
 }

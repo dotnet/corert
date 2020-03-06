@@ -9,7 +9,7 @@ namespace System
     // An IDE may use this information to provide a richer
     // development experience.
     [AttributeUsage(AttributeTargets.Enum, Inherited = false)]
-    internal class FlagsAttribute : Attribute
+    public class FlagsAttribute : Attribute
     {
         public FlagsAttribute()
         {

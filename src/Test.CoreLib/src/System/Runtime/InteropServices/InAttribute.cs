@@ -4,12 +4,11 @@
 
 namespace System.Runtime.InteropServices
 {
-    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    public sealed class FieldOffsetAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public sealed class InAttribute : Attribute
     {
-        public FieldOffsetAttribute(int offset)
+        public InAttribute()
         {
         }
-        public int Value { get { return 0; } }
     }
 }
