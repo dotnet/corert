@@ -9,6 +9,8 @@ namespace System.Runtime.InteropServices
     {
         public CallingConvention CallingConvention;
 
+        public string EntryPoint;
+
         public DllImportAttribute(string dllName)
         {
         }
