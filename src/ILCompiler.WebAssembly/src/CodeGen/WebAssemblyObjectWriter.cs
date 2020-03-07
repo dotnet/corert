@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         private string GetBaseSymbolName(ISymbolNode symbol, NameMangler nameMangler, bool objectWriterUse = false)
         {
-            if (symbol is WebAssemblyMethodCodeNode)
+            if (symbol is WebAssemblyMethodCodeNode || symbol is WebAssemblyBlockRefNode)
             {
                 return symbol.GetMangledName(nameMangler);
             }
@@ -96,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private static int GetNumericOffsetFromBaseSymbolValue(ISymbolNode symbol)
         {
-            if (symbol is WebAssemblyMethodCodeNode)
+            if (symbol is WebAssemblyMethodCodeNode || symbol is WebAssemblyBlockRefNode)
             {
                 return 0;
             }
@@ -538,8 +538,7 @@ namespace ILCompiler.DependencyAnalysis
                 return pointerSize;
             }
             int offsetFromBase = GetNumericOffsetFromBaseSymbolValue(target) + target.Offset;
-
-            return EmitSymbolRef(realSymbolName, offsetFromBase, target is WebAssemblyMethodCodeNode, relocType, delta);
+            return EmitSymbolRef(realSymbolName, offsetFromBase, target is WebAssemblyMethodCodeNode || target is WebAssemblyBlockRefNode, relocType, delta);
         }
 
         public void EmitBlobWithRelocs(byte[] blob, Relocation[] relocs)
@@ -782,7 +781,6 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         // Emit symbol definitions if necessary
                         objectWriter.EmitSymbolDefinition(i);
-
                         if (i == nextRelocOffset)
                         {
                             Relocation reloc = relocs[nextRelocIndex];
@@ -804,7 +802,6 @@ namespace ILCompiler.DependencyAnalysis
                                     symbolToWrite = factory.ConstructedTypeSymbol(eeTypeNode.Type);
                                 }
                             }
-
                             int size = objectWriter.EmitSymbolReference(symbolToWrite, (int)delta, reloc.RelocType);
 
                             /*
