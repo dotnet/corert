@@ -2619,15 +2619,56 @@ namespace Internal.IL
                 builder.BuildCondBr(eqZ, notFatBranch, fatBranch);
                 // then
                 builder.PositionAtEnd(notFatBranch);
-                var notFatReturn = _builder.BuildCall( fn, llvmArgs.ToArray(), string.Empty);
+
+                ExceptionRegion currentTryRegion = GetCurrentTryRegion();
+
+                LLVMValueRef notFatReturn;
+                //TODO refactor this call/invoke switch to method
+                if (currentTryRegion == null || fromLandingPad) // not handling exceptions that occur in the LLVM landing pad determining the EH handler 
+                {
+                    notFatReturn = builder.BuildCall(fn, llvmArgs.ToArray(), string.Empty);
+                }
+                else
+                {
+                    nextInstrBlock = _currentFunclet.AppendBasicBlock(String.Format("Try{0:X}", _currentOffset));
+
+                    notFatReturn = builder.BuildInvoke(fn, llvmArgs.ToArray(),
+                        nextInstrBlock, GetOrCreateLandingPad(currentTryRegion, _currentFunclet, _currentFunclet.GetParam(0)), string.Empty);
+
+                    _curBasicBlock = nextInstrBlock;
+                    _currentBasicBlock.LLVMBlocks.Add(_curBasicBlock);
+                    _currentBasicBlock.LastInternalBlock = _curBasicBlock;
+                    builder.PositionAtEnd(_curBasicBlock);
+                }
+
+//                var notFatReturn = _builder.BuildCall( fn, llvmArgs.ToArray(), string.Empty);
                 builder.BuildBr(endifBlock);
 
                 // else
+                LLVMValueRef fatReturn;
                 builder.PositionAtEnd(fatBranch);
                 var fnWithDict = builder.BuildCast(LLVMOpcode.LLVMBitCast, fn, LLVMTypeRef.CreatePointer(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, true), 0), "fnWithDict");
                 var dictDereffed = builder.BuildLoad(builder.BuildLoad( dict, "l1"), "l2");
                 llvmArgs.Insert(needsReturnSlot ? 2 : 1, dictDereffed);
-                var fatReturn = builder.BuildCall( fnWithDict, llvmArgs.ToArray(), string.Empty);
+                if (currentTryRegion == null || fromLandingPad) // not handling exceptions that occur in the LLVM landing pad determining the EH handler 
+                {
+                    fatReturn = builder.BuildCall(fnWithDict, llvmArgs.ToArray(), string.Empty);
+                }
+                else
+                {
+                    nextInstrBlock = _currentFunclet.AppendBasicBlock(String.Format("Try{0:X}", _currentOffset));
+
+                    fatReturn = builder.BuildInvoke(fnWithDict, llvmArgs.ToArray(),
+                        nextInstrBlock, GetOrCreateLandingPad(currentTryRegion, _currentFunclet, _currentFunclet.GetParam(0)), string.Empty);
+
+                    _curBasicBlock = nextInstrBlock;
+                    _currentBasicBlock.LLVMBlocks.Add(_curBasicBlock);
+                    _currentBasicBlock.LastInternalBlock = _curBasicBlock;
+                    builder.PositionAtEnd(_curBasicBlock);
+                }
+                //var fatReturn = builder.BuildCall( fnWithDict, llvmArgs.ToArray(), string.Empty);
+
+
                 builder.BuildBr(endifBlock);
 
                 // endif

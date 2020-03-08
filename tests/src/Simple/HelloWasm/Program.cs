@@ -1160,6 +1160,8 @@ internal static class Program
         TestTryCatchWithCallInIf();
 
         TestThrowInCatch();
+
+        TestExceptionInGvmCall();
     }
 
     private static void TestTryCatchNoException()
@@ -1305,6 +1307,39 @@ internal static class Program
             }
         }
         EndTest(i == 11);
+    }
+
+    private static void TestExceptionInGvmCall()
+    {
+        StartTest("TestExceptionInGvmCall");
+
+        var shouldBeFalse = CatchGvmThrownException(new GenBase<string>(), (string)null);
+        PrintLine("not thrown ok");
+        var shouldBeTrue = CatchGvmThrownException(new DerivedThrows<string>(), (string)null);
+
+        EndTest(shouldBeTrue && !shouldBeFalse);
+    }
+
+    class DerivedThrows<A> : GenBase<A>
+    {
+        public override string GMethod1<T>(T t1, T t2) { throw new Exception("ToStringThrows"); }
+    }
+    
+    private static bool CatchGvmThrownException<T>(GenBase<T> g, T p)
+    {
+        try
+        {
+            var i = 1;
+            if (i == 1)
+            {
+                g.GMethod1(p, p);
+            }
+        }
+        catch (Exception e)
+        {
+            return e.Message == "ToStringThrows";
+        }
+        return false;
     }
 
     private static void ThrowException(Exception e)
