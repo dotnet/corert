@@ -231,14 +231,21 @@
     <Compile Include="..\..\Runtime.Base\src\Internal\Runtime\CompilerServices\Unsafe.cs">
       <Link>Internal\Runtime\CompilerServices\Unsafe.cs</Link>
     </Compile>
+    <Compile Include="System\Diagnostics\CodeAnalysis\DoesNotReturnAttribute.cs" />
+    <Compile Include="System\Reflection\DefaultMemberAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\MemoryMarshalExtensions.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Runtime\RuntimeHelpers.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Array.cs" />
+    <Compile Include="System\ByReference.cs" />
+    <Compile Include="System\IDisposable.cs" />
+    <Compile Include="System\Span.cs" />
+    <Compile Include="System\ReadOnlySpan.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\Type.cs" />

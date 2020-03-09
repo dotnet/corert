@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -11,14 +12,15 @@ namespace Internal.Runtime.CompilerHelpers
     /// </summary>
     internal static class ThrowHelpers
     {
+        [DoesNotReturn]
+        internal static void ThrowIndexOutOfRangeException()
+        {
+            throw new IndexOutOfRangeException();
+        }
+
         private static void ThrowOverflowException()
         {
             throw new OverflowException();
-        }
-
-        private static void ThrowIndexOutOfRangeException()
-        {
-            throw new IndexOutOfRangeException();
         }
 
         private static void ThrowNullReferenceException()
