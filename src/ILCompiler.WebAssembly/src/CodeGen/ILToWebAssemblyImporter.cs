@@ -5010,10 +5010,6 @@ namespace Internal.IL
         {
             var builder = new ObjectDataBuilder();
             builder.RequireInitialAlignment(1);
-            if (_method.Name == "TestCatchExceptionType")
-            {
-
-            }
             int totalClauses = _exceptionRegions.Length;
 
             // Count the number of special markers that will be needed
