@@ -747,9 +747,9 @@ internal static class Program
 
         var genericType = typeof(List<object>);
         StartTest("type of generic");
-        if (genericType.FullName != "System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]]")
+        if (genericType.FullName.Substring(0, genericType.FullName.LastIndexOf(",")) != "System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral")
         {
-            FailTest("expected System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]] but was " + genericType.FullName);
+            FailTest("expected System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral... but was " + genericType.FullName);
         }
         else
         {
