@@ -283,13 +283,7 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
     // Save the EEType for instrumentation purposes.
     RedhawkGCInterface::SetLastAllocEEType(pEEType);
 
-    Object * pObject;
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (uFlags & GC_ALLOC_ALIGN8)
-        pObject = GCHeapUtilities::GetGCHeap()->AllocAlign8(pThread->GetAllocContext(), cbSize, uFlags);
-    else
-#endif // FEATURE_64BIT_ALIGNMENT
-        pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
+    Object * pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
 
     // NOTE: we cannot call PublishObject here because the object isn't initialized!
 
