@@ -354,15 +354,6 @@ inline UInt8 EEType::GetNullableValueOffset()
     return pOptFields->GetNullableValueOffset(0) + 1;
 }
 
-inline void EEType::set_GenericComposition(GenericComposition *pGenericComposition)
-{
-    ASSERT(IsGeneric() && IsDynamicType());
-
-    UInt32 cbOffset = GetFieldOffset(ETF_GenericComposition);
-
-    *(GenericComposition **)((UInt8*)this + cbOffset) = pGenericComposition;
-}
-
 inline EEType * EEType::get_DynamicTemplateType()
 {
     ASSERT(IsDynamicType());
@@ -376,32 +367,11 @@ inline EEType * EEType::get_DynamicTemplateType()
 #endif
 }
 
-inline void EEType::set_DynamicGcStatics(UInt8 *pStatics)
-{
-    UInt32 cbOffset = GetFieldOffset(ETF_DynamicGcStatics);
-
-    *(UInt8**)((UInt8*)this + cbOffset) = pStatics;
-}
-
-inline void EEType::set_DynamicNonGcStatics(UInt8 *pStatics)
-{
-    UInt32 cbOffset = GetFieldOffset(ETF_DynamicNonGcStatics);
-
-    *(UInt8**)((UInt8*)this + cbOffset) = pStatics;
-}
-
 inline UInt32 EEType::get_DynamicThreadStaticOffset()
 {
     UInt32 cbOffset = GetFieldOffset(ETF_DynamicThreadStaticOffset);
 
     return *(UInt32*)((UInt8*)this + cbOffset);
-}
-
-inline void EEType::set_DynamicThreadStaticOffset(UInt32 threadStaticOffset)
-{
-    UInt32 cbOffset = GetFieldOffset(ETF_DynamicThreadStaticOffset);
-
-    *(UInt32*)((UInt8*)this + cbOffset) = threadStaticOffset;
 }
 
 inline DynamicModule * EEType::get_DynamicModule()
@@ -752,13 +722,6 @@ inline GenericVarianceType *GenericComposition::GetVariance()
 {
     ASSERT(m_hasVariance);
     return (GenericVarianceType *)(((UInt8 *)this) + offsetof(GenericComposition, m_arguments[m_arity]));
-}
-
-inline void GenericComposition::SetVariance(UInt32 index, GenericVarianceType variance)
-{
-    ASSERT(index < m_arity);
-    GenericVarianceType *pVariance = GetVariance();
-    pVariance[index] = variance;
 }
 
 #endif // __eetype_inl__

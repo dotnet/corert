@@ -62,6 +62,16 @@ namespace Internal.Runtime.TypeLoader
             rtth.ToEETypePtr()->GenericDefinition = genericDefinitionHandle.ToEETypePtr();
         }
 
+        public static unsafe void SetGenericVariance(this RuntimeTypeHandle rtth, int argumentIndex, GenericVariance variance)
+        {
+            rtth.ToEETypePtr()->GenericVariance[argumentIndex] = variance;
+        }
+
+        public static unsafe void SetGenericArity(this RuntimeTypeHandle rtth, uint arity)
+        {
+            rtth.ToEETypePtr()->GenericArity = arity;
+        }
+
         public static unsafe void SetGenericArgument(this RuntimeTypeHandle rtth, int argumentIndex, RuntimeTypeHandle argumentType)
         {
             rtth.ToEETypePtr()->GenericArguments[argumentIndex].Value = argumentType.ToEETypePtr();
@@ -142,6 +152,8 @@ namespace Internal.Runtime.TypeLoader
             DynamicModule* dynamicModulePtr = null;
             IntPtr gcStaticData = IntPtr.Zero;
             IntPtr gcStaticsIndirection = IntPtr.Zero;
+            IntPtr nonGcStaticData = IntPtr.Zero;
+            IntPtr genericComposition = IntPtr.Zero;
 
             try
             {
@@ -241,12 +253,14 @@ namespace Internal.Runtime.TypeLoader
 
                     if (state.TypeBeingBuilt.HasVariance)
                     {
-                        state.GenericVarianceFlags = new int[state.TypeBeingBuilt.Instantiation.Length];
+                        state.GenericVarianceFlags = new GenericVariance[state.TypeBeingBuilt.Instantiation.Length];
                         int i = 0;
 
                         foreach (GenericParameterDesc gpd in state.TypeBeingBuilt.GetTypeDefinition().Instantiation)
                         {
-                            state.GenericVarianceFlags[i] = (int)gpd.Variance;
+                            Debug.Assert((int)Internal.Runtime.GenericVariance.Covariant == (int)Internal.TypeSystem.GenericVariance.Covariant);
+                            Debug.Assert((int)Internal.Runtime.GenericVariance.Contravariant == (int)Internal.TypeSystem.GenericVariance.Contravariant);
+                            state.GenericVarianceFlags[i] = (GenericVariance)gpd.Variance;
                             i++;
                         }
                         Debug.Assert(i == state.GenericVarianceFlags.Length);
@@ -616,19 +630,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     // Use object as the template type for non-template based EETypes. This will
                     // allow correct Module identification for types.
-
-                    if (state.TypeBeingBuilt.HasVariance)
-                    {
-                        // TODO! We need to have a variant EEType here if the type has variance, as the 
-                        // CreateGenericInstanceDescForType requires it. However, this is a ridiculous api surface
-                        // When we remove GenericInstanceDescs from the product, get rid of this weird special
-                        // case
-                        pEEType->DynamicTemplateType = typeof(IEnumerable<int>).TypeHandle.ToEETypePtr();
-                    }
-                    else
-                    {
-                        pEEType->DynamicTemplateType = typeof(object).TypeHandle.ToEETypePtr();
-                    }
+                    pEEType->DynamicTemplateType = typeof(object).TypeHandle.ToEETypePtr();
                 }
 
                 int nonGCStaticDataOffset = 0;
@@ -677,27 +679,22 @@ namespace Internal.Runtime.TypeLoader
 
                 if (isGeneric)
                 {
-                    if (!RuntimeAugments.CreateGenericInstanceDescForType(*(RuntimeTypeHandle*)&pEEType, arity, state.NonGcDataSize, nonGCStaticDataOffset,
-                        state.GcDataSize, (int)state.ThreadStaticOffset, state.GcStaticDesc, state.ThreadStaticDesc, state.GenericVarianceFlags))
+                    genericComposition = MemoryHelpers.AllocateMemory(EEType.GetGenericCompositionSize(arity, pEEType->HasGenericVariance));
+                    pEEType->SetGenericComposition(genericComposition);
+
+                    if (state.NonGcDataSize > 0)
                     {
-                        throw new OutOfMemoryException();
+                        nonGcStaticData = MemoryHelpers.AllocateMemory(state.NonGcDataSize);
+                        MemoryHelpers.Memset(nonGcStaticData, state.NonGcDataSize, 0);
+                        Debug.Assert(nonGCStaticDataOffset <= state.NonGcDataSize);
+                        pEEType->DynamicNonGcStaticsData = (IntPtr)((byte*)nonGcStaticData + nonGCStaticDataOffset);
                     }
                 }
-                else
+
+                if (!isGenericEETypeDef && state.ThreadDataSize != 0)
                 {
-                    Debug.Assert(arity == 0 || isGenericEETypeDef);
-                    // We don't need to report the non-gc and gc static data regions and allocate them for non-generics, 
-                    // as we currently place these fields directly into the image
-                    if (!isGenericEETypeDef && state.ThreadDataSize != 0)
-                    {
-                        // Types with thread static fields ALWAYS get a GID. The GID is used to perform GC 
-                        // and lifetime management of the thread static data. However, these GIDs are only used for that
-                        // so the specified GcDataSize, etc are 0
-                        if (!RuntimeAugments.CreateGenericInstanceDescForType(*(RuntimeTypeHandle*)&pEEType, 0, 0, 0, 0, (int)state.ThreadStaticOffset, IntPtr.Zero, state.ThreadStaticDesc, null))
-                        {
-                            throw new OutOfMemoryException();
-                        }
-                    }
+                    // TODO: thread statics
+                    throw new NotSupportedException();
                 }
 
                 if (state.Dictionary != null)
@@ -729,6 +726,10 @@ namespace Internal.Runtime.TypeLoader
                         RuntimeAugments.RhHandleFree(gcStaticData);
                     if (gcStaticsIndirection != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(gcStaticsIndirection);
+                    if (genericComposition != IntPtr.Zero)
+                        MemoryHelpers.FreeMemory(genericComposition);
+                    if (nonGcStaticData != IntPtr.Zero)
+                        MemoryHelpers.FreeMemory(nonGcStaticData);
                 }
             }
         }
