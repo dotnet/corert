@@ -691,6 +691,10 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhpInitMultibyte")]
+        internal static extern unsafe void RhpInitMultibyte(ref byte dmem, int c, nuint size);
+
         // The GC conservative reporting descriptor is a special structure of data that the GC
         // parses to determine whether there are specific regions of memory that it should not
         // collect or move around.
