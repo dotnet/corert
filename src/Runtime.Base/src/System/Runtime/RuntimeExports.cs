@@ -233,16 +233,11 @@ namespace System.Runtime
             {
                 Debug.Assert(pUnboxToEEType != null && pUnboxToEEType->IsNullable);
 
-                // The first field of the Nullable is a Boolean which we must set to false in this case to indicate no
-                // value is present.
-                Unsafe.As<byte, bool>(ref data) = false;
-
-                // Clear the value (in case there were GC references we wish to stop reporting).
-                EEType* nullableType = pUnboxToEEType->NullableType;
+                // Set HasValue to false and clear the value (in case there were GC references we wish to stop reporting).
                 InternalCalls.RhpInitMultibyte(
-                    ref Unsafe.Add(ref data, pUnboxToEEType->NullableValueOffset),
+                    ref data,
                     0,
-                    (nuint)(nullableType->BaseSize - (sizeof(ObjHeader) + sizeof(EEType*) + nullableType->ValueTypeFieldPadding)));
+                    (nuint)(pUnboxToEEType->BaseSize - (sizeof(ObjHeader) + sizeof(EEType*) + pUnboxToEEType->ValueTypeFieldPadding)));
 
                 return;
             }
