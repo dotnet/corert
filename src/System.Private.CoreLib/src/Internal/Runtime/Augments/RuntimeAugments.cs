@@ -596,17 +596,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetGCDescSize(eeType);
         }
 
-        public static unsafe bool CreateGenericInstanceDescForType(RuntimeTypeHandle typeHandle, int arity, int nonGcStaticDataSize,
-            int nonGCStaticDataOffset, int gcStaticDataSize, int threadStaticsOffset, IntPtr gcStaticsDesc, IntPtr threadStaticsDesc, int[] genericVarianceFlags)
-        {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            fixed (int* pGenericVarianceFlags = genericVarianceFlags)
-            {
-                return RuntimeImports.RhCreateGenericInstanceDescForType2(eeType, arity, nonGcStaticDataSize, nonGCStaticDataOffset, gcStaticDataSize,
-                    threadStaticsOffset, gcStaticsDesc.ToPointer(), threadStaticsDesc.ToPointer(), pGenericVarianceFlags);
-            }
-        }
-
         public static int GetInterfaceCount(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().Interfaces.Count;

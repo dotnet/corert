@@ -472,6 +472,25 @@ namespace Internal.Runtime
             }
         }
 
+#if TYPE_LOADER_IMPLEMENTATION
+        internal static int GetGenericCompositionSize(int numArguments, bool hasVariance)
+        {
+            return IntPtr.Size
+                + numArguments * IntPtr.Size
+                + (hasVariance ? numArguments * sizeof(GenericVariance) : 0);
+        }
+
+        internal void SetGenericComposition(IntPtr data)
+        {
+            Debug.Assert(IsGeneric && IsDynamicType);
+            UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
+            fixed (EEType* pThis = &this)
+            {
+                *((IntPtr*)((byte*)pThis + cbOffset)) = data;
+            }
+        }
+#endif
+
         internal uint GenericArity
         {
             get
@@ -482,6 +501,15 @@ namespace Internal.Runtime
 
                 return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->Arity;
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsDynamicType);
+                // GenericComposition is a readonly struct, so we just blit the bytes over. Asserts guard changes to the layout.
+                *((ushort*)GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value) = checked((ushort)value);
+                Debug.Assert(GenericArity == (ushort)value);
+            }
+#endif
         }
 
         internal EETypeRef* GenericArguments

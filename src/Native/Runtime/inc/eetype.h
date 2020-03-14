@@ -558,20 +558,15 @@ public:
     bool HasDynamicallyAllocatedDispatchMap()
         { return (get_RareFlags() & HasDynamicallyAllocatedDispatchMapFlag) != 0; }
 
-    inline void set_GenericComposition(GenericComposition *);
-
     // Retrieve template used to create the dynamic type
     EEType * get_DynamicTemplateType();
 
     bool HasDynamicGcStatics() { return (get_RareFlags() & IsDynamicTypeWithGcStaticsFlag) != 0; }
-    void set_DynamicGcStatics(UInt8 *pStatics);
 
     bool HasDynamicNonGcStatics() { return (get_RareFlags() & IsDynamicTypeWithNonGcStaticsFlag) != 0; }
-    void set_DynamicNonGcStatics(UInt8 *pStatics);
 
     bool HasDynamicThreadStatics() { return (get_RareFlags() & IsDynamicTypeWithThreadStaticsFlag) != 0; }
     UInt32 get_DynamicThreadStaticOffset();
-    void set_DynamicThreadStaticOffset(UInt32 threadStaticOffset);
 
     UInt32 GetHashCode();
 
@@ -662,22 +657,6 @@ class GenericComposition
     GenericVarianceType m_variance[/*arity*/1];
 
 public:
-    static size_t GetSize(UInt16 arity, bool hasVariance)
-    {
-        size_t cbSize = offsetof(GenericComposition, m_arguments[arity]);
-        if (hasVariance)
-            cbSize += sizeof(GenericVarianceType)*arity;
-
-        return cbSize;
-    }
-
-    void Init(UInt16 arity, bool hasVariance)
-    {
-        memset(this, 0, GetSize(arity, hasVariance));
-        m_arity = arity;
-        m_hasVariance = hasVariance;
-    }
-
     UInt32 GetArity()
     {
         return m_arity;
@@ -692,8 +671,6 @@ public:
     }
 #endif
     GenericVarianceType *GetVariance();
-
-    void SetVariance(UInt32 index, GenericVarianceType variance);
 
     bool Equals(GenericComposition *that);
 };
