@@ -45,17 +45,12 @@ namespace Internal.Runtime
 
         public static UInt16 ComputeFlags(TypeDesc type)
         {
-            UInt16 flags = (UInt16)EETypeKind.CanonicalEEType;
+            UInt16 flags = type.IsParameterizedType ?
+                (UInt16)EETypeKind.ParameterizedEEType : (UInt16)EETypeKind.CanonicalEEType;
 
-            if (type.IsInterface)
-            {
-                flags |= (UInt16)EETypeFlags.IsInterfaceFlag;
-            }
-
-            if (type.IsValueType)
-            {
-                flags |= (UInt16)EETypeFlags.ValueTypeFlag;
-            }
+            // The top 5 bits of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
+            EETypeElementType elementType = ComputeEETypeElementType(type);
+            flags |= (UInt16)((UInt16)elementType << (UInt16)EETypeFlags.ElementTypeShift);
 
             if (type.IsGenericDefinition)
             {
@@ -63,11 +58,6 @@ namespace Internal.Runtime
 
                 // Generic type definition EETypes don't set the other flags.
                 return flags;
-            }
-
-            if (type.IsArray || type.IsPointer || type.IsByRef)
-            {
-                flags = (UInt16)EETypeKind.ParameterizedEEType;
             }
 
             if (type.HasFinalizer)
@@ -100,19 +90,6 @@ namespace Internal.Runtime
                     flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
                 }
             }
-
-            flags |= ComputeElementTypeFlags(type);
-
-            return flags;
-        }
-
-        public static UInt16 ComputeElementTypeFlags(TypeDesc type)
-        {
-            UInt16 flags = 0;
-
-            // The top 5 bits of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
-            EETypeElementType elementType = ComputeEETypeElementType(type);
-            flags |= (UInt16)((UInt16)elementType << (UInt16)EETypeFlags.ElementTypeShift);
 
             return flags;
         }

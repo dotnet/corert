@@ -260,8 +260,7 @@ private:
         // through m_pRelatedType to get to the related type in the other module.
         RelatedTypeViaIATFlag   = 0x0004,
 
-        // This EEType represents a value type
-        ValueTypeFlag           = 0x0008,
+        // Unused           = 0x0008,
 
         // This EEType represents a type which requires finalization
         HasFinalizerFlag        = 0x0010,
@@ -279,8 +278,7 @@ private:
         // This type has optional fields present.
         OptionalFieldsFlag      = 0x0100,
 
-        // This EEType represents an interface.
-        IsInterfaceFlag         = 0x0200,
+        // Unused         = 0x0200,
 
         // This type is generic.
         IsGenericFlag           = 0x0400,
@@ -392,9 +390,11 @@ public:
     bool IsRelatedTypeViaIAT()
         { return ((m_usFlags & (UInt16)RelatedTypeViaIATFlag) != 0); }
 
-    // PREFER: get_ParameterizedTypeShape() >= SZARRAY_BASE_SIZE
     bool IsArray()
-        { return IsParameterizedType() && get_ParameterizedTypeShape() > 1 /* ParameterizedTypeShapeConstants.ByRef */; }
+    {
+        EETypeElementType elementType = GetElementType();
+        return elementType == ElementType_Array || elementType == ElementType_SzArray;
+    }
 
     bool IsParameterizedType()
         { return (get_Kind() == ParameterizedEEType); }
@@ -406,7 +406,7 @@ public:
         { return get_Kind() == CanonicalEEType; }
 
     bool IsInterface()
-        { return ((m_usFlags & (UInt16)IsInterfaceFlag) != 0); }
+        { return GetElementType() == ElementType_Interface; }
 
     EEType * get_CanonicalEEType();
 
@@ -420,7 +420,7 @@ public:
     UInt32 get_ParameterizedTypeShape() { return m_uBaseSize; }
 
     bool get_IsValueType()
-        { return ((m_usFlags & (UInt16)ValueTypeFlag) != 0); }
+        { return GetElementType() < ElementType_Class; }
 
     bool HasFinalizer()
     {
