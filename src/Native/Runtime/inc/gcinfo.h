@@ -592,15 +592,6 @@ private:
     // for decode state.
     UInt32 funcletOffset; // non-zero indicates that this GCInfoHeader is for a funclet
 
-#if defined(BINDER)
-public:
-    UInt32 cbThisCodeBody;
-    GCInfoHeader * pNextFunclet;
-private:
-    ;
-#endif // BINDER
-
-
 public:
     //
     // CONSTANTS / STATIC STUFF
@@ -1072,11 +1063,6 @@ public:
         return hasCommonVars;
     }
 
-#if defined(RHDUMP) && !defined(_TARGET_AMD64_)
-    // Due to the wackiness of RhDump, we need this method defined, even though it won't ever be called.
-    int GetFramePointerOffset() { ASSERT(!"UNREACHABLE"); __assume(0); }
-#endif // defined(RHDUMP) && !defined(_TARGET_AMD64_)
-
 #ifdef _TARGET_AMD64_
     static const UInt32 SKEW_FOR_OFFSET_FROM_SP = 0x10;
 
@@ -1342,38 +1328,6 @@ public:
         pDest = pDest ? (pDest + size) : pDest;
         return size;
     }
-
-    size_t EncodeFuncletInfo(UInt8 * & pDest)
-    {
-        UNREFERENCED_PARAMETER(pDest);
-        size_t size = 0;
-#if defined(BINDER)
-        if (hasFunclets)
-        {
-            UInt32 nFunclets = 0;
-            for (GCInfoHeader * pCur = pNextFunclet; pCur != NULL; pCur = pCur->pNextFunclet)
-                nFunclets++;
-
-            // first write out the number of funclets
-            size += WriteUnsigned(pDest, nFunclets);
-
-            // cbThisCodeBody is the size, but what we end up encoding is the size of all the code bodies 
-            // except for the last one (because the last one's size can be implicitly figured out by the size
-            // of the method).  So we have to save the size of the 'main body' and not the size of the last
-            // funclet.  In the encoding, this will look like the offset of a given funclet from the start of
-            // the previous code body.  We like relative offsets because they'll encode to be smaller.
-            for (GCInfoHeader * pCur = this; pCur->pNextFunclet != NULL; pCur = pCur->pNextFunclet)
-                size += WriteUnsigned(pDest, pCur->cbThisCodeBody);
-
-            // now encode all the funclet headers
-            for (GCInfoHeader * pCur = pNextFunclet; pCur != NULL; pCur = pCur->pNextFunclet)
-                size += pCur->EncodeHeader(pDest);
-        }
-#else // BINDER
-        ASSERT(!"NOT REACHABLE");
-#endif // BINDER
-        return size;
-    }
 #endif // DACCESS_COMPILE
 
     UInt16 ToUInt16(UInt32 val)
@@ -1621,16 +1575,6 @@ public:
         *pEncodedFuncletStartOffsets = pbDecode;
     }
 
-#ifdef BINDER
-    bool IsOffsetInFunclet(UInt32 offset)
-    {
-        if (!hasFunclets)
-            return false;
-
-        return (offset >= cbThisCodeBody);
-    }
-#endif // BINDER
-
     bool IsValidEpilogOffset(UInt32 epilogOffset, UInt32 epilogSize)
     {
         if (!this->HasVaryingEpilogSizes())
@@ -1638,248 +1582,7 @@ public:
         else
             return (epilogOffset < epilogSize);
     }
-
-#ifdef RHDUMP
-    char const * GetBoolStr(bool val) { return val ? " true" : "false"; }
-
-    char const * GetRetKindStr(MethodReturnKind kind)
-    {
-        switch (kind)
-        {
-        case MRK_ReturnsScalar:     return "scalar";
-        case MRK_ReturnsObject:     return "object";
-        case MRK_ReturnsByref:      return "byref";
-        case MRK_ReturnsToNative:   return "native";
-#if defined(_TARGET_ARM64_)
-        case MRK_Scalar_Obj:        return "{scalar, object}";
-        case MRK_Scalar_Byref:      return "{scalar, byref}";
-        case MRK_Obj_Obj:           return "{object, object}";
-        case MRK_Obj_Byref:         return "{object, byref}";
-        case MRK_Byref_Obj:         return "{byref, object}";
-        case MRK_Byref_Byref:       return "{byref, byref}";
-#endif // defined(_TARGET_ARM64_)
-        default:                    return "unknown";
-        }
-    }
-
-#define PRINT_CALLEE_SAVE(name, mask, val) {if ((val) & (mask)) { printf(name); }}
-
-    void PrintCalleeSavedRegs(UInt32 calleeSavedRegMask)
-    {
-#ifdef _TARGET_ARM_
-        PRINT_CALLEE_SAVE(" r4" , CSR_MASK_R4 , calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r5" , CSR_MASK_R5 , calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r6" , CSR_MASK_R6 , calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r7" , CSR_MASK_R7 , calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r8" , CSR_MASK_R8 , calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r9" , CSR_MASK_R9 , calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r10", CSR_MASK_R10, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r11", CSR_MASK_R11, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" lr" , CSR_MASK_LR , calleeSavedRegMask);
-#elif defined(_TARGET_ARM64_)
-        PRINT_CALLEE_SAVE(" lr" , CSR_MASK_LR , calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" x19", CSR_MASK_X19, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" x20", CSR_MASK_X20, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" x21", CSR_MASK_X21, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" x22", CSR_MASK_X22, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" x23", CSR_MASK_X23, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" x24", CSR_MASK_X24, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" x25", CSR_MASK_X25, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" x26", CSR_MASK_X26, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" x27", CSR_MASK_X27, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" x28", CSR_MASK_X28, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" fp" , CSR_MASK_FP , calleeSavedRegMask);
-#elif defined(_TARGET_X86_)
-        PRINT_CALLEE_SAVE(" ebx", CSR_MASK_RBX, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" esi", CSR_MASK_RSI, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" edi", CSR_MASK_RDI, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" ebp", CSR_MASK_RBP, calleeSavedRegMask);
-#elif defined(_TARGET_AMD64_)
-        PRINT_CALLEE_SAVE(" rbx", CSR_MASK_RBX, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" rsi", CSR_MASK_RSI, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" rdi", CSR_MASK_RDI, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" rbp", CSR_MASK_RBP, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r12", CSR_MASK_R12, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r13", CSR_MASK_R13, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r14", CSR_MASK_R14, calleeSavedRegMask);
-        PRINT_CALLEE_SAVE(" r15", CSR_MASK_R15, calleeSavedRegMask);
-#else
-#error unknown architecture
-#endif
-    }
-
-    void PrintRegNumber(UInt8 regNumber)
-    {
-        switch (regNumber)
-        {
-        default: printf("???"); break;
-#ifdef _TARGET_ARM_
-        case RN_R0:     printf(" r0"); break;
-        case RN_R1:     printf(" r1"); break;
-        case RN_R2:     printf(" r2"); break;
-        case RN_R3:     printf(" r3"); break;
-        case RN_R4:     printf(" r4"); break;
-        case RN_R5:     printf(" r5"); break;
-        case RN_R6:     printf(" r6"); break;
-        case RN_R7:     printf(" r7"); break;
-        case RN_R8:     printf(" r8"); break;
-        case RN_R9:     printf(" r9"); break;
-        case RN_R10:    printf("r10"); break;
-        case RN_R11:    printf("r11"); break;
-        case RN_R12:    printf("r12"); break;
-        case RN_SP:     printf(" sp"); break;
-        case RN_LR:     printf(" lr"); break;
-        case RN_PC:     printf(" pc"); break;
-#elif defined(_TARGET_ARM64_)
-        case RN_X0:     printf(" x0"); break;
-        case RN_X1:     printf(" x1"); break;
-        case RN_X2:     printf(" x2"); break;
-        case RN_X3:     printf(" x3"); break;
-        case RN_X4:     printf(" x4"); break;
-        case RN_X5:     printf(" x5"); break;
-        case RN_X6:     printf(" x6"); break;
-        case RN_X7:     printf(" x7"); break;
-        case RN_X8:     printf(" x8"); break;
-        case RN_X9:     printf(" x9"); break;
-        case RN_X10:    printf("x10"); break;
-        case RN_X11:    printf("x11"); break;
-        case RN_X12:    printf("x12"); break;
-        case RN_X13:    printf("x13"); break;
-        case RN_X14:    printf("x14"); break;
-        case RN_X15:    printf("x15"); break;
-
-        case RN_XIP0:   printf("xip0"); break;
-        case RN_XIP1:   printf("xip1"); break;
-        case RN_XPR:    printf("xpr"); break;
-
-        case RN_X19:    printf("x19"); break;
-        case RN_X20:    printf("x20"); break;
-        case RN_X21:    printf("x21"); break;
-        case RN_X22:    printf("x22"); break;
-        case RN_X23:    printf("x23"); break;
-        case RN_X24:    printf("x24"); break;
-        case RN_X25:    printf("x25"); break;
-        case RN_X26:    printf("x26"); break;
-        case RN_X27:    printf("x27"); break;
-        case RN_X28:    printf("x28"); break;
-
-        case RN_FP:     printf(" fp"); break;
-        case RN_LR:     printf(" lr"); break;
-        case RN_SP:     printf(" sp"); break;
-#elif defined(_TARGET_X86_)
-        case RN_EAX:    printf("eax"); break;
-        case RN_ECX:    printf("ecx"); break;
-        case RN_EDX:    printf("edx"); break;
-        case RN_EBX:    printf("ebx"); break;
-        case RN_ESP:    printf("esp"); break;
-        case RN_EBP:    printf("ebp"); break;
-        case RN_ESI:    printf("esi"); break;
-        case RN_EDI:    printf("edi"); break;
-#elif defined(_TARGET_AMD64_)
-        case RN_EAX:    printf("rax"); break;
-        case RN_ECX:    printf("rcx"); break;
-        case RN_EDX:    printf("rdx"); break;
-        case RN_EBX:    printf("rbx"); break;
-        case RN_ESP:    printf("rsp"); break;
-        case RN_EBP:    printf("rbp"); break;
-        case RN_ESI:    printf("rsi"); break;
-        case RN_EDI:    printf("rdi"); break;
-        case RN_R8:     printf(" r8"); break;
-        case RN_R9:     printf(" r9"); break;
-        case RN_R10:    printf("r10"); break;
-        case RN_R11:    printf("r11"); break;
-        case RN_R12:    printf("r12"); break;
-        case RN_R13:    printf("r13"); break;
-        case RN_R14:    printf("r14"); break;
-        case RN_R15:    printf("r15"); break;
-#else
-#error unknown architecture
-#endif
-        }
-    }
-
-    void Dump()
-    {
-        printf("  | prologSize:   %02X""  | epilogSize:    %02X""  | epilogCount:    %02X""  | epilogAtEnd:  %s\n",
-            GetPrologSize(), HasVaryingEpilogSizes() ? 0 : GetFixedEpilogSize(), epilogCount, GetBoolStr(epilogAtEnd));
-        printf("  | frameSize:  %04X""  | ebpFrame:   %s""  | hasFunclets: %s""  | returnKind:  %s\n",
-            GetFrameSize(), GetBoolStr(ebpFrame), GetBoolStr(hasFunclets), GetRetKindStr(GetReturnKind()));
-        printf("  | regMask:    %04X"  "  {", calleeSavedRegMask);
-        PrintCalleeSavedRegs(calleeSavedRegMask);
-        printf(" }\n");
-        if (HasDynamicAlignment())
-        {
-            printf("  | stackAlign:   %02X""  | paramPtrReg:  ", GetDynamicAlignment());
-            PrintRegNumber(paramPointerReg);
-            printf("\n");
-        }
-        if (hasGSCookie)
-        {
-            printf("  | gsCookieOffset:   %04X\n", GetGSCookieOffset());
-        }
-#ifdef _TARGET_ARM_
-        if (arm_areParmOrVfpRegsPushed)
-        {
-            if (arm_parmRegsPushedSet != 0)
-            {
-                printf("  | parmRegs:     %02X  {", arm_parmRegsPushedSet);
-                PRINT_CALLEE_SAVE(" r0", SR_MASK_R0, arm_parmRegsPushedSet);
-                PRINT_CALLEE_SAVE(" r1", SR_MASK_R1, arm_parmRegsPushedSet);
-                PRINT_CALLEE_SAVE(" r2", SR_MASK_R2, arm_parmRegsPushedSet);
-                PRINT_CALLEE_SAVE(" r3", SR_MASK_R3, arm_parmRegsPushedSet);
-                printf(" }\n");
-            }
-            if (arm_vfpRegPushedCount != 0)
-            {
-                printf("  | vfpRegs:    %d(%d)  {", arm_vfpRegFirstPushed, arm_vfpRegPushedCount);
-                printf(" d%d", arm_vfpRegFirstPushed);
-                if (arm_vfpRegPushedCount > 1)
-                    printf("-d%d", arm_vfpRegFirstPushed + arm_vfpRegPushedCount - 1);
-                printf(" }\n");
-            }
-        }
-#elif defined(_TARGET_ARM64_)
-        if (arm64_areParmOrVfpRegsPushed)
-        {
-            if (arm64_parmRegsPushedCount != 0)
-            {
-                printf("  | parmRegsCount: %d\n", arm64_parmRegsPushedCount);
-            }
-            if (arm64_vfpRegsPushedMask != 0)
-            {
-                printf("  | vfpRegs:      %02X  {", arm64_vfpRegsPushedMask);
-                for (int reg = 0; reg < 8; reg++)
-                {
-                    if (arm64_vfpRegsPushedMask & (1 << reg))
-                        printf(" d%d", reg + 8);
-                }
-                printf(" }\n");
-            }
-        }
-#elif defined(_TARGET_AMD64_)
-        if (x64_hasSavedXmmRegs)
-        {
-            printf("  | xmmRegs:    %04X  {", x64_savedXmmRegMask);
-            for (int reg = 6; reg < 16; reg++)
-            {
-                if (x64_savedXmmRegMask & (1<<reg))
-                    printf(" xmm%d", reg);
-            }
-            printf(" }\n");
-        }
-#endif // _TARGET_ARM_
-
-        // x64_framePtrOffsetSmall / [opt] x64_framePtrOffset
-        // x86_argCountLow [opt] x86_argCountHigh
-        // x86_argCountIsLarge
-        // x86_hasStackChanges
-        // [opt] reversePinvokeFrameOffset
-        // [opt] numFunclets
-    }
-#endif // RHDUMP
 };
-
-
 
 /*****************************************************************************/
 #endif //_GCINFO_H_

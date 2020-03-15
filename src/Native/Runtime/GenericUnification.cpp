@@ -250,9 +250,6 @@ bool GenericComposition::Equals(GenericComposition *that)
         if (thisArg == thatArg)
             continue;
 
-        if (thisArg == CANON_EETYPE || thatArg == CANON_EETYPE)
-            return false;
-
         if (!thisArg->IsEquivalentTo(thatArg))
             return false;
     }

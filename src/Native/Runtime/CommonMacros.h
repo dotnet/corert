@@ -211,7 +211,7 @@ extern unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #endif // !__llvm__
 
 #ifndef __GCENV_BASE_INCLUDED__
-#if !defined(_INC_WINDOWS) && !defined(BINDER)
+#if !defined(_INC_WINDOWS)
 #ifdef _WIN32
 // this must exactly match the typedef used by windows.h
 typedef long HRESULT;
@@ -223,7 +223,7 @@ typedef int32_t HRESULT;
 #define E_FAIL 0x80004005
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
-#endif // !defined(_INC_WINDOWS) && !defined(BINDER)
+#endif // !defined(_INC_WINDOWS)
 #endif // __GCENV_BASE_INCLUDED__
 
 #endif // __COMMONMACROS_H__
