@@ -2628,10 +2628,6 @@ namespace Internal.IL
 
         private ExpressionEntry ImportRawPInvoke(MethodDesc method, StackEntry[] arguments, TypeDesc forcedReturnType = null)
         {
-            //emscripten dies if this is output because its expected to have i32, i32, i64. But the runtime has defined it as i8*, i8*, i64
-            if (method.Name == "memmove")
-                throw new NotImplementedException();
-
             string realMethodName = method.Name;
 
             if (method.IsPInvoke)
