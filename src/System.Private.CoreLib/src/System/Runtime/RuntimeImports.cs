@@ -436,11 +436,6 @@ namespace System.Runtime
         internal static extern int RhGetGCDescSize(EETypePtr eeType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhCreateGenericInstanceDescForType2")]
-        internal static extern unsafe bool RhCreateGenericInstanceDescForType2(EETypePtr pEEType, int arity, int nonGcStaticDataSize,
-            int nonGCStaticDataOffset, int gcStaticDataSize, int threadStaticsOffset, void* pGcStaticsDesc, void* pThreadStaticsDesc, int* pGenericVarianceFlags);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewInterfaceDispatchCell")]
         internal static extern unsafe IntPtr RhNewInterfaceDispatchCell(EETypePtr pEEType, int slotNumber);
 

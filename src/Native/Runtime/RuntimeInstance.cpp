@@ -685,93 +685,6 @@ bool RuntimeInstance::AddDynamicThreadStaticGcData(UInt32 uiTlsIndex, UInt32 uiT
     return true;
 }
 
-bool RuntimeInstance::CreateGenericAndStaticInfo(EEType *             pEEType,
-                                                 EEType *             pTemplateType,
-                                                 UInt32               arity,
-                                                 UInt32               nonGcStaticDataSize,
-                                                 UInt32               nonGCStaticDataOffset,
-                                                 UInt32               gcStaticDataSize,
-                                                 UInt32               threadStaticOffset,
-                                                 StaticGcDesc *       pGcStaticsDesc,
-                                                 StaticGcDesc *       pThreadStaticsDesc,
-                                                 UInt32*              pGenericVarianceFlags)
-{
-    NewArrayHolder<UInt8> pGenericCompositionMemory;
-    if (arity != 0)
-    {
-        // Note: arity is limited to a maximum value of 65535 on the managed layer
-        ASSERT(arity == (UInt16)arity);
-        assert(pEEType->IsGeneric());
-
-        // prepare generic composition
-        size_t cbGenericCompositionSize = GenericComposition::GetSize((UInt16)arity, pTemplateType->HasGenericVariance());
-        pGenericCompositionMemory = new (nothrow) UInt8[cbGenericCompositionSize];
-        if (pGenericCompositionMemory == NULL)
-            return false;
-
-        GenericComposition *pGenericComposition = (GenericComposition *)(UInt8 *)pGenericCompositionMemory;
-        pGenericComposition->Init((UInt16)arity, pTemplateType->HasGenericVariance());
-
-        // fill in variance flags
-        if (pTemplateType->HasGenericVariance())
-        {
-            ASSERT(pEEType->HasGenericVariance() && pGenericVarianceFlags != NULL);
-
-            for (UInt32 i = 0; i < arity; i++)
-            {
-                GenericVarianceType variance = (GenericVarianceType)pGenericVarianceFlags[i];
-                pGenericComposition->SetVariance(i, variance);
-            }
-        }
-        pEEType->set_GenericComposition(pGenericComposition);
-    }
-
-    NewArrayHolder<UInt8> pNonGcStaticData;
-    if (nonGcStaticDataSize > 0)
-    {
-        // The value of nonGcStaticDataSize is read from native layout info in the managed layer, where
-        // there is also a check that it does not exceed the max value of a signed Int32
-        ASSERT(nonGCStaticDataOffset <= nonGcStaticDataSize);
-        pNonGcStaticData = new (nothrow) UInt8[nonGcStaticDataSize];
-        if (pNonGcStaticData == NULL)
-            return false;
-        memset(pNonGcStaticData, 0, nonGcStaticDataSize);
-        pEEType->set_DynamicNonGcStatics(pNonGcStaticData + nonGCStaticDataOffset);
-    }
-
-    NewArrayHolder<UInt8> pGcStaticData;
-#ifdef PROJECTN
-    if (gcStaticDataSize > 0)
-    {
-        // The value of gcStaticDataSize is read from native layout info in the managed layer, where
-        // there is also a check that it does not exceed the max value of a signed Int32
-        pGcStaticData = new (nothrow) UInt8[gcStaticDataSize];
-        if (pGcStaticData == NULL)
-            return false;
-        memset(pGcStaticData, 0, gcStaticDataSize);
-        pEEType->set_DynamicGcStatics(pGcStaticData);
-        if (!AddDynamicGcStatics(pGcStaticData, pGcStaticsDesc))
-            return false;
-    }
-#endif
-
-    if (threadStaticOffset != 0)
-    {
-        // Note: TLS index not used for dynamically created types
-        pEEType->set_DynamicThreadStaticOffset(threadStaticOffset);
-        if (pThreadStaticsDesc != NULL)
-        {
-            if (!AddDynamicThreadStaticGcData(0, threadStaticOffset, pThreadStaticsDesc))
-                return false;
-        }
-    }
-
-    pGenericCompositionMemory.SuppressRelease();
-    pNonGcStaticData.SuppressRelease();
-    pGcStaticData.SuppressRelease();
-    return true;
-}
-
 bool RuntimeInstance::UnifyGenerics(GenericUnificationDesc *descs, UInt32 descCount, void **pIndirCells, UInt32 indirCellCount)
 {
     if (m_pGenericUnificationHashtable == nullptr)
@@ -782,24 +695,6 @@ bool RuntimeInstance::UnifyGenerics(GenericUnificationDesc *descs, UInt32 descCo
     }
 
     return m_pGenericUnificationHashtable->UnifyDescs(descs, descCount, (UIntTarget*)pIndirCells, indirCellCount);
-}
-
-COOP_PINVOKE_HELPER(bool, RhCreateGenericInstanceDescForType2, (EEType *        pEEType,
-                                                                UInt32          arity,
-                                                                UInt32          nonGcStaticDataSize,
-                                                                UInt32          nonGCStaticDataOffset,
-                                                                UInt32          gcStaticDataSize,
-                                                                UInt32          threadStaticsOffset,
-                                                                StaticGcDesc *  pGcStaticsDesc,
-                                                                StaticGcDesc *  pThreadStaticsDesc,
-                                                                UInt32*         pGenericVarianceFlags))
-{
-    ASSERT(pEEType->IsDynamicType());
-
-    EEType * pTemplateType = pEEType->get_DynamicTemplateType();
-
-    return GetRuntimeInstance()->CreateGenericAndStaticInfo(pEEType, pTemplateType, arity, nonGcStaticDataSize, nonGCStaticDataOffset, gcStaticDataSize,
-        threadStaticsOffset, pGcStaticsDesc, pThreadStaticsDesc, pGenericVarianceFlags);
 }
 
 COOP_PINVOKE_HELPER(UInt32, RhGetGCDescSize, (EEType* pEEType))
