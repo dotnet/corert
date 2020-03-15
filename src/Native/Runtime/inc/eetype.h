@@ -175,7 +175,6 @@ enum EETypeField
     ETF_InterfaceMap,
     ETF_Finalizer,
     ETF_OptionalFieldsPtr,
-    ETF_NullableType,
     ETF_SealedVirtualSlots,
     ETF_DynamicTemplateType,
     ETF_DynamicDispatchMap,
@@ -302,11 +301,9 @@ public:
         // Old unused flag
         UNUSED1                 = 0x00000002,
 
-        // Type is an instantiation of Nullable<T>.
-        IsNullableFlag          = 0x00000004,
+        // unused               = 0x00000004,
 
-        // Nullable target type stashed in the EEType is indirected via the IAT.
-        NullableTypeViaIATFlag  = 0x00000008,
+        // unused               = 0x00000008,
 
         // This EEType was created by dynamic type loader
         IsDynamicTypeFlag       = 0x00000010,
@@ -537,15 +534,7 @@ public:
 
     // Determine whether a type is an instantiation of Nullable<T>.
     bool IsNullable()
-        { return (get_RareFlags() & IsNullableFlag) != 0; }
-
-    // Indicates whether the target type associated with a Nullable<T> instantiation is indirected via the
-    // IAT.
-    bool IsNullableTypeViaIAT()
-        { return (get_RareFlags() & NullableTypeViaIATFlag) != 0; }
-
-    // Retrieve the value type T from a Nullable<T>.
-    EEType * GetNullableType();
+        { return GetElementType() == ElementType_Nullable; }
 
     // Retrieve the offset of the value embedded in a Nullable<T>.
     UInt8 GetNullableValueOffset();
@@ -599,37 +588,8 @@ public:
     // change layout rules we might have to change the arguments to the methods below but in doing so we will
     // instantly identify all the other parts of the binder and runtime that need to be updated.
 
-#ifdef BINDER
-    // Determine whether a particular EEType will need optional fields. Binder only at the moment since it's
-    // less useful at runtime and far easier to specify in terms of a binder MethodTable.
-    static inline bool RequiresOptionalFields(MethodTable * pMT);
-#endif
-
-    // Calculate the size of an EEType including vtable, interface map and optional pointers (though not any
-    // optional fields stored out-of-line). Does not include the size of GC series information.
-    static inline UInt32 GetSizeofEEType(UInt32 cVirtuals,
-                                         UInt32 cInterfaces,
-                                         bool fHasFinalizer,
-                                         bool fRequiresOptionalFields,
-                                         bool fRequiresNullableType,
-                                         bool fHasSealedVirtuals,
-                                         bool fHasGenericInfo);
-
-#ifdef BINDER
-    // Version of the above usable from the binder where all the type layout information can be gleaned from a
-    // MethodTable.
-    static inline UInt32 GetSizeofEEType(MethodTable *pMT, bool fHasGenericInfo);
-#endif // BINDER
-
     // Calculate the offset of a field of the EEType that has a variable offset.
     inline UInt32 GetFieldOffset(EETypeField eField);
-
-#ifdef BINDER
-    // Version of the above usable from the binder where all the type layout information can be gleaned from a
-    // MethodTable.
-    static inline UInt32 GetFieldOffset(EETypeField eField,
-                                        MethodTable * pMT);
-#endif // BINDER
 
 #ifndef BINDER
     // Validate an EEType extracted from an object.

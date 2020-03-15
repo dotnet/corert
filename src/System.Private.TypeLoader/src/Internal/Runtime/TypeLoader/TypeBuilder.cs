@@ -1343,12 +1343,6 @@ namespace Internal.Runtime.TypeLoader
                 // pointers to calling convention conversion thunks
                 if (state.TemplateType != null && state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                     FinishVTableCallingConverterThunks(type, state);
-
-                if (RuntimeAugments.IsNullable(state.HalfBakedRuntimeTypeHandle))
-                {
-                    Debug.Assert(typeAsDefType.Instantiation.Length == 1);
-                    state.HalfBakedRuntimeTypeHandle.SetNullableType(GetRuntimeTypeHandle(typeAsDefType.Instantiation[0]));
-                }
             }
             else if (type is ParameterizedType)
             {

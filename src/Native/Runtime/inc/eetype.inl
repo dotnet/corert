@@ -45,7 +45,6 @@ inline PTR_UInt8 FollowRelativePointer(const Int32 *pDist)
 
 inline PTR_Code EEType::get_SealedVirtualSlot(UInt16 slotNumber)
 {
-    ASSERT(!IsNullable());
     ASSERT((get_RareFlags() & HasSealedVTableEntriesFlag) != 0);
 
     if (IsDynamicType())
@@ -323,20 +322,6 @@ inline UInt32 EEType::get_RareFlags()
     return pOptFields->GetRareFlags(0);
 }
 
-// Retrieve the value type T from a Nullable<T>.
-inline EEType * EEType::GetNullableType()
-{
-    ASSERT(IsNullable());
-
-    UInt32 cbNullableTypeOffset = GetFieldOffset(ETF_NullableType);
-
-    // The type pointer may be indirected via the IAT if the type is defined in another module.
-    if (IsNullableTypeViaIAT())
-        return **(EEType***)((UInt8*)this + cbNullableTypeOffset);
-    else
-        return *(EEType**)((UInt8*)this + cbNullableTypeOffset);
-}
-
 // Retrieve the offset of the value embedded in a Nullable<T>.
 inline UInt8 EEType::GetNullableValueOffset()
 {
@@ -390,91 +375,6 @@ inline DynamicModule * EEType::get_DynamicModule()
 
 #endif // !BINDER
 
-#ifdef BINDER
-// Determine whether a particular EEType will need optional fields. Binder only at the moment since it's
-// less useful at runtime and far easier to specify in terms of a binder MethodTable.
-/*static*/ inline bool EEType::RequiresOptionalFields(MethodTable * pMT)
-{
-    MethodTable * pElementMT = pMT->IsArray() ?
-        ((ArrayClass*)pMT->GetClass())->GetApproxArrayElementTypeHandle().AsMethodTable() :
-        NULL;
-
-    bool isMdArray = pMT->IsArray() && ((ArrayClass*)pMT->GetClass())->GetRank() > 0;
-    bool isPointerArray = pMT->IsArray() && ((ArrayClass*)pMT->GetClass())->GetPointerRank() > 0;
-    bool isSpecialArray = isMdArray || isPointerArray;
-    bool fHasSealedVirtuals = !isSpecialArray && (pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots()));
-    bool hasICastableMethods = false;
-
-    if (pMT->IsICastable())
-    {
-        SLOT_INDEX *icastableMethod = pMT->GetICastableMethods();
-        if (icastableMethod[0] != INVALID_SLOT_INDEX)
-            hasICastableMethods = true;
-        if (icastableMethod[1] != INVALID_SLOT_INDEX)
-            hasICastableMethods = true;
-    }
-
-
-    return
-        // Do we need a padding size for value types or unsealed classes? that could be unboxed?
-        (!pMT->IsArray() && 
-            (!pMT->IsInterface() && (pMT->IsValueTypeOrEnum() || !IsTdSealed(pMT->GetClass()->GetAttrClass()))) &&
-            (((pMT->GetBaseSize() - SYNC_BLOCK_SKEW) - pMT->GetClass()->GetNumInstanceFieldBytes()) > 0)) ||
-        // Do we need a alignment for value types?
-        (pMT->IsValueTypeOrEnum() &&
-            (pMT->GetClass()->GetAlignmentRequirement() != POINTER_SIZE)) ||
-#ifdef _TARGET_ARM_
-        // Do we need a rare flags field for a class or structure that requires 64-bit alignment on ARM?
-        (pMT->GetClass()->GetAlignmentRequirement() > 4) ||
-        (pMT->IsArray() && pElementMT->IsValueTypeOrEnum() && (pElementMT->GetClass()->GetAlignmentRequirement() > 4)) ||
-        (pMT->IsHFA()) ||
-#endif
-        // Do we need a DispatchMap?
-        (!isSpecialArray && pMT->GetDispatchMap() != NULL && !pMT->GetDispatchMap()->IsEmpty()) ||
-        // Do we need to cache ICastable method vtable slots?
-        hasICastableMethods ||
-        // Is the class a Nullable<T> instantiation (need to store the flag and possibly a field offset)?
-        pMT->IsNullable() ||
-        (pMT->HasStaticClassConstructor() && !pMT->HasEagerStaticClassConstructor() ||
-        // need a rare flag to indicate presence of sealed virtuals
-        fHasSealedVirtuals ||
-        // Is this an abstract class?
-        (!pMT->IsInterface() && pMT->GetClass()->IsAbstract()) ||
-        // Is this a ByRefLike structure?
-        pMT->IsByRefLike());
-}
-#endif
-
-// Calculate the size of an EEType including vtable, interface map and optional pointers (though not any
-// optional fields stored out-of-line). Does not include the size of GC series information.
-/*static*/ inline UInt32 EEType::GetSizeofEEType(UInt32 cVirtuals,
-                                                 UInt32 cInterfaces,
-                                                 bool fHasFinalizer,
-                                                 bool fRequiresOptionalFields,
-                                                 bool fRequiresNullableType,
-                                                 bool fHasSealedVirtuals,
-                                                 bool fHasGenericInfo)
-{
-    // We don't support nullables with sealed virtuals at this time -
-    // the issue is that if both the nullable eetype and the sealed virtuals may be present,
-    // we need to detect the presence of at least one of them by looking at the EEType.
-    // In the case of nullable, we'd need to fetch the rare flags, which is annoying,
-    // an in the case of the sealed virtual slots, the information is implicit in the dispatch
-    // map, which is even more annoying. 
-    // So as long as nullables don't have sealed virtual slots, it's better to make that
-    // an invariant and *not* test for nullable at run time.
-    ASSERT(!(fRequiresNullableType && fHasSealedVirtuals));
-
-    return offsetof(EEType, m_VTable)
-        + (sizeof(UIntTarget) * cVirtuals)
-        + (sizeof(EEInterfaceInfo) * cInterfaces)
-        + (fHasFinalizer ? sizeof(UIntTarget) : 0)
-        + (fRequiresOptionalFields ? sizeof(UIntTarget) : 0)
-        + (fRequiresNullableType ? sizeof(UIntTarget) : 0)
-        + (fHasSealedVirtuals ? sizeof(Int32) : 0)
-        + (fHasGenericInfo ? sizeof(UInt32)*2 : 0);
-}
-
 #if !defined(BINDER) && !defined(DACCESS_COMPILE)
 // get the base type of an array EEType - this is special because the base type of arrays is not explicitly
 // represented - instead the classlib has a common one for all arrays
@@ -488,22 +388,6 @@ inline EEType * EEType::GetArrayBaseType()
     return pArrayBaseType;
 }
 #endif // !defined(BINDER) && !defined(DACCESS_COMPILE)
-
-#ifdef BINDER
-// Version of the above usable from the binder where all the type layout information can be gleaned from a
-// MethodTable.
-/*static*/ inline UInt32 EEType::GetSizeofEEType(MethodTable *pMT, bool fHasGenericInfo)
-{
-    bool fHasSealedVirtuals = pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots());
-    return GetSizeofEEType(pMT->IsInterface() ? (pMT->HasPerInstInfo() ? 1 : 0) : pMT->GetNumVirtuals(),
-                           pMT->GetNumInterfaces(),
-                           pMT->HasFinalizer(),
-                           EEType::RequiresOptionalFields(pMT),
-                           pMT->IsNullable(),
-                           fHasSealedVirtuals,
-                           fHasGenericInfo);
-}
-#endif // BINDER
 
 // Calculate the offset of a field of the EEType that has a variable offset.
 __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
@@ -537,24 +421,12 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
     if (HasOptionalFields())
         cbOffset += sizeof(UIntTarget);
 
-    // Followed by the pointer to the type target of a Nullable<T>.
-    if (eField == ETF_NullableType)
-    {
-#ifndef BINDER
-        ASSERT(IsNullable());
-#endif
-        return cbOffset;
-    }
-
-    // OR, followed by the pointer to the sealed virtual slots
+    // Followed by the pointer to the sealed virtual slots
     if (eField == ETF_SealedVirtualSlots)
         return cbOffset;
 
     // Binder does not use DynamicTemplateType
 #ifndef BINDER
-    if (IsNullable())
-        cbOffset += sizeof(UIntTarget);
-
     UInt32 rareFlags = get_RareFlags();
 
     // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
@@ -630,87 +502,6 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
     ASSERT(!"Unknown EEType field type");
     return 0;
 }
-
-#ifdef BINDER
-// Version of the above usable from the binder where all the type layout information can be gleaned from a
-// MethodTable.
-/*static*/ inline UInt32 EEType::GetFieldOffset(EETypeField eField,
-                                                MethodTable * pMT)
-{
-    UInt32 numVTableSlots = pMT->IsInterface() ? (pMT->HasPerInstInfo() ? 1 : 0) : pMT->GetNumVirtuals();
-
-    // First part of EEType consists of the fixed portion followed by the vtable.
-    UInt32 cbOffset = offsetof(EEType, m_VTable) + (sizeof(UIntTarget) * numVTableSlots);
-
-    // Then we have the interface map.
-    if (eField == ETF_InterfaceMap)
-    {
-        return cbOffset;
-    }
-    cbOffset += sizeof(EEInterfaceInfo) * pMT->GetNumInterfaces();
-
-    // Followed by the pointer to the finalizer method.
-    if (eField == ETF_Finalizer)
-    {
-        return cbOffset;
-    }
-    if (pMT->HasFinalizer())
-        cbOffset += sizeof(UIntTarget);
-
-    // Followed by the pointer to the optional fields.
-    if (eField == ETF_OptionalFieldsPtr)
-    {
-        return cbOffset;
-    }
-    if (EEType::RequiresOptionalFields(pMT))
-        cbOffset += sizeof(UIntTarget);
-
-    // Followed by the pointer to the type target of a Nullable<T>.
-    if (eField == ETF_NullableType)
-    {
-        return cbOffset;
-    }
-
-    // OR, followed by the pointer to the sealed virtual slots
-    bool fHasSealedVirtuals = pMT->GetNumVirtuals() < (pMT->GetNumVtableSlots() + pMT->GetNumAdditionalVtableSlots());
-    if (eField == ETF_SealedVirtualSlots)
-    {
-        ASSERT(fHasSealedVirtuals);
-        return cbOffset;
-    }
-
-    if (fHasSealedVirtuals)
-    {
-        ASSERT(!pMT->IsNullable());
-        cbOffset += sizeof(UInt32);
-    }
-
-    if (pMT->IsNullable())
-    {
-        ASSERT(!fHasSealedVirtuals);
-        cbOffset += sizeof(UIntTarget);
-    }
-
-    if (pMT->HasPerInstInfo())
-    {
-        if (eField == ETF_GenericDefinition)
-        {
-            return cbOffset;
-        }
-        cbOffset += sizeof(UInt32);
-
-        if (eField == ETF_GenericComposition)
-        {
-            return cbOffset;
-        }
-    }
-
-    // Binder does not use DynamicTemplateType
-
-    ASSERT(!"Unknown EEType field type");
-    return 0;
-}
-#endif
 
 inline size_t GenericComposition::GetArgumentOffset(UInt32 index)
 {

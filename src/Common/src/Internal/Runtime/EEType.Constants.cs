@@ -120,15 +120,9 @@ namespace Internal.Runtime
         /// </summary>
         UNUSED1 = 0x00000002,
 
-        /// <summary>
-        /// Type is an instantiation of Nullable<T>.
-        /// </summary>
-        IsNullableFlag = 0x00000004,
+        // UNUSED = 0x00000004,
 
-        /// <summary>
-        /// Nullable target type stashed in the EEType is indirected via the IAT.
-        /// </summary>
-        NullableTypeViaIATFlag = 0x00000008,
+        // UNUSED = 0x00000008,
 
         /// <summary>
         /// This EEType was created by generic instantiation loader
@@ -197,7 +191,6 @@ namespace Internal.Runtime
         ETF_InterfaceMap,
         ETF_Finalizer,
         ETF_OptionalFieldsPtr,
-        ETF_NullableType,
         ETF_SealedVirtualSlots,
         ETF_DynamicTemplateType,
         ETF_DynamicDispatchMap,

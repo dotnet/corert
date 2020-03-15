@@ -346,7 +346,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (RareFlags & EETypeRareFlags.IsNullableFlag) != 0;
+                return ElementType == EETypeElementType.Nullable;
             }
         }
 
@@ -595,14 +595,6 @@ namespace Internal.Runtime
             get
             {
                 return (RareFlags & EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag) != 0;
-            }
-        }
-
-        internal bool IsNullableTypeViaIAT
-        {
-            get
-            {
-                return (RareFlags & EETypeRareFlags.NullableTypeViaIATFlag) != 0;
             }
         }
 
@@ -970,24 +962,9 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsNullable);
-                uint cbNullableTypeOffset = GetFieldOffset(EETypeField.ETF_NullableType);
-                fixed (EEType* pThis = &this)
-                {
-                    if (IsNullableTypeViaIAT)
-                        return **(EEType***)((byte*)pThis + cbNullableTypeOffset);
-                    else
-                        return *(EEType**)((byte*)pThis + cbNullableTypeOffset);
-                }
+                Debug.Assert(GenericArity == 1);
+                return GenericArguments[0].Value;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(IsNullable && IsDynamicType && !IsNullableTypeViaIAT);
-                UInt32 cbNullableTypeOffset = GetFieldOffset(EETypeField.ETF_NullableType);
-                fixed (EEType* pThis = &this)
-                    *((EEType**)((byte*)pThis + cbNullableTypeOffset)) = value;
-            }
-#endif
         }
 
         /// <summary>
@@ -1054,7 +1031,6 @@ namespace Internal.Runtime
 
         internal IntPtr GetSealedVirtualSlot(ushort slotNumber)
         {
-            Debug.Assert(!IsNullable);
             Debug.Assert((RareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0);
 
             fixed (EEType* pThis = &this)
@@ -1324,19 +1300,9 @@ namespace Internal.Runtime
             if (HasOptionalFields)
                 cbOffset += (uint)IntPtr.Size;
 
-            // Followed by the pointer to the type target of a Nullable<T>.
-            if (eField == EETypeField.ETF_NullableType)
-            {
-                Debug.Assert(IsNullable);
-                return cbOffset;
-            }
-
-            // OR, followed by the pointer to the sealed virtual slots
+            // Followed by the pointer to the sealed virtual slots
             if (eField == EETypeField.ETF_SealedVirtualSlots)
                 return cbOffset;
-
-            if (IsNullable)
-                cbOffset += (uint)IntPtr.Size;
 
             EETypeRareFlags rareFlags = RareFlags;
 
@@ -1434,29 +1400,17 @@ namespace Internal.Runtime
             UInt16 cInterfaces,
             bool fHasFinalizer,
             bool fRequiresOptionalFields,
-            bool fRequiresNullableType,
             bool fHasSealedVirtuals,
             bool fHasGenericInfo,
             bool fHasNonGcStatics,
             bool fHasGcStatics,
             bool fHasThreadStatics)
         {
-            // We don't support nullables with sealed virtuals at this time -
-            // the issue is that if both the nullable eetype and the sealed virtuals may be present,
-            // we need to detect the presence of at least one of them by looking at the EEType.
-            // In the case of nullable, we'd need to fetch the rare flags, which is annoying,
-            // an in the case of the sealed virtual slots, the information is implicit in the dispatch
-            // map, which is even more annoying. 
-            // So as long as nullables don't have sealed virtual slots, it's better to make that
-            // an invariant and *not* test for nullable at run time.
-            Debug.Assert(!(fRequiresNullableType && fHasSealedVirtuals), "nullables with sealed virtuals are not supported at this time");
-
             return (UInt32)(sizeof(EEType) +
                 (IntPtr.Size * cVirtuals) +
                 (sizeof(EEInterfaceInfo) * cInterfaces) +
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
-                (fRequiresNullableType ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
                 (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
