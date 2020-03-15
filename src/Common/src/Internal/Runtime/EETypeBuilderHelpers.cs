@@ -65,19 +65,18 @@ namespace Internal.Runtime
                 flags |= (UInt16)EETypeFlags.HasFinalizerFlag;
             }
 
-            if (!type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+            if (type.IsDefType
+                && !type.IsCanonicalSubtype(CanonicalFormKind.Universal)
+                && ((DefType)type).ContainsGCPointers)
             {
-                if (type.IsDefType && ((DefType)type).ContainsGCPointers)
+                flags |= (UInt16)EETypeFlags.HasPointersFlag;
+            }
+            else if (type.IsArray && !type.IsCanonicalSubtype(CanonicalFormKind.Universal))
+            {
+                var arrayElementType = ((ArrayType)type).ElementType;
+                if ((arrayElementType.IsValueType && ((DefType)arrayElementType).ContainsGCPointers) || arrayElementType.IsGCPointer)
                 {
                     flags |= (UInt16)EETypeFlags.HasPointersFlag;
-                }
-                else if (type.IsArray)
-                {
-                    var arrayElementType = ((ArrayType)type).ElementType;
-                    if ((arrayElementType.IsValueType && ((DefType)arrayElementType).ContainsGCPointers) || arrayElementType.IsGCPointer)
-                    {
-                        flags |= (UInt16)EETypeFlags.HasPointersFlag;
-                    }
                 }
             }
 
