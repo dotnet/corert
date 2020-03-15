@@ -1383,8 +1383,14 @@ namespace Internal.Runtime.TypeLoader
                     state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(GetRuntimeTypeHandle(((ByRefType)type).ParameterType));
 
                     // We used a pointer type for the template because they're similar enough. Adjust this to be a ByRef.
-                    unsafe { Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer); }
-                    state.HalfBakedRuntimeTypeHandle.SetParameterizedTypeShape(ParameterizedTypeShapeConstants.ByRef);
+                    unsafe
+                    {
+                        Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer);
+                        state.HalfBakedRuntimeTypeHandle.SetParameterizedTypeShape(ParameterizedTypeShapeConstants.ByRef);
+                        Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.Pointer);
+                        state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->Flags = EETypeBuilderHelpers.ComputeFlags(type);
+                        Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.ByRef);
+                    }
                 }
             }
             else
