@@ -13,6 +13,12 @@ using System.Runtime.CompilerServices;
 using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 
+#if TARGET_64BIT
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System.Runtime
 {
     internal static class RuntimeExports
@@ -180,7 +186,7 @@ namespace System.Runtime
                     throw ptrUnboxToEEType->GetClasslibException(exID);
                 }
 
-                InternalCalls.RhUnbox(o, ref data, ptrUnboxToEEType);
+                RhUnbox(o, ref data, ptrUnboxToEEType);
             }
             else
             {
@@ -216,7 +222,60 @@ namespace System.Runtime
             {
                 throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
-            InternalCalls.RhUnbox(obj, ref data, ptrUnboxToEEType);
+            RhUnbox(obj, ref data, ptrUnboxToEEType);
+        }
+
+        [RuntimeExport("RhUnbox")]
+        public static unsafe void RhUnbox(object obj, ref byte data, EEType* pUnboxToEEType)
+        {
+            // When unboxing to a Nullable the input object may be null.
+            if (obj == null)
+            {
+                Debug.Assert(pUnboxToEEType != null && pUnboxToEEType->IsNullable);
+
+                // Set HasValue to false and clear the value (in case there were GC references we wish to stop reporting).
+                InternalCalls.RhpInitMultibyte(
+                    ref data,
+                    0,
+                    (nuint)(pUnboxToEEType->BaseSize - (sizeof(ObjHeader) + sizeof(EEType*) + pUnboxToEEType->ValueTypeFieldPadding)));
+
+                return;
+            }
+
+            EEType* pEEType = obj.EEType;
+
+            // Can unbox value types only.
+            Debug.Assert(pEEType->IsValueType);
+
+            // A special case is that we can unbox a value type T into a Nullable<T>. It's the only case where
+            // pUnboxToEEType is useful.
+            Debug.Assert((pUnboxToEEType == null) || UnboxAnyTypeCompare(pEEType, pUnboxToEEType) || pUnboxToEEType->IsNullable);
+            if (pUnboxToEEType != null && pUnboxToEEType->IsNullable)
+            {
+                Debug.Assert(pUnboxToEEType->NullableType->IsEquivalentTo(pEEType));
+
+                // Set the first field of the Nullable to true to indicate the value is present.
+                Unsafe.As<byte, bool>(ref data) = true;
+
+                // Adjust the data pointer so that it points at the value field in the Nullable.
+                data = ref Unsafe.Add(ref data, pUnboxToEEType->NullableValueOffset);
+            }
+
+            nuint cbFields = (nuint)(pEEType->BaseSize - (sizeof(ObjHeader) + sizeof(EEType*) + pEEType->ValueTypeFieldPadding));
+            ref byte fields = ref obj.GetRawData();
+
+            if (pEEType->HasGCPointers)
+            {
+                // Copy the boxed fields into the new location in a GC safe manner
+                InternalCalls.RhBulkMoveWithWriteBarrier(ref data, ref fields, cbFields);
+            }
+            else
+            {
+                // Copy the boxed fields into the new location.
+                fixed (byte *pData = &data)
+                    fixed (byte* pFields = &fields)
+                        InternalCalls.memmove(pData, pFields, cbFields);
+            }
         }
 
         [RuntimeExport("RhArrayStoreCheckAny")]
