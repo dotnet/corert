@@ -31,7 +31,6 @@
 #include "CommonMacros.inl"
 #include "slist.inl"
 #include "eetype.inl"
-#include "OptionalFields.inl"
 
 #ifdef  FEATURE_GC_STRESS
 enum HijackType { htLoop, htCallsite };
