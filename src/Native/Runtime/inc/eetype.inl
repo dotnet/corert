@@ -43,7 +43,6 @@ inline PTR_UInt8 FollowRelativePointer(const Int32 *pDist)
 
 inline PTR_Code EEType::get_SealedVirtualSlot(UInt16 slotNumber)
 {
-    ASSERT(!IsNullable());
     ASSERT((get_RareFlags() & HasSealedVTableEntriesFlag) != 0);
 
     if (IsDynamicType())
@@ -315,20 +314,6 @@ inline UInt32 EEType::get_RareFlags()
     return pOptFields->GetRareFlags(0);
 }
 
-// Retrieve the value type T from a Nullable<T>.
-inline EEType * EEType::GetNullableType()
-{
-    ASSERT(IsNullable());
-
-    UInt32 cbNullableTypeOffset = GetFieldOffset(ETF_NullableType);
-
-    // The type pointer may be indirected via the IAT if the type is defined in another module.
-    if (IsNullableTypeViaIAT())
-        return **(EEType***)((UInt8*)this + cbNullableTypeOffset);
-    else
-        return *(EEType**)((UInt8*)this + cbNullableTypeOffset);
-}
-
 // Retrieve the offset of the value embedded in a Nullable<T>.
 inline UInt8 EEType::GetNullableValueOffset()
 {
@@ -380,36 +365,6 @@ inline DynamicModule * EEType::get_DynamicModule()
     }
 }
 
-// Calculate the size of an EEType including vtable, interface map and optional pointers (though not any
-// optional fields stored out-of-line). Does not include the size of GC series information.
-/*static*/ inline UInt32 EEType::GetSizeofEEType(UInt32 cVirtuals,
-                                                 UInt32 cInterfaces,
-                                                 bool fHasFinalizer,
-                                                 bool fRequiresOptionalFields,
-                                                 bool fRequiresNullableType,
-                                                 bool fHasSealedVirtuals,
-                                                 bool fHasGenericInfo)
-{
-    // We don't support nullables with sealed virtuals at this time -
-    // the issue is that if both the nullable eetype and the sealed virtuals may be present,
-    // we need to detect the presence of at least one of them by looking at the EEType.
-    // In the case of nullable, we'd need to fetch the rare flags, which is annoying,
-    // an in the case of the sealed virtual slots, the information is implicit in the dispatch
-    // map, which is even more annoying. 
-    // So as long as nullables don't have sealed virtual slots, it's better to make that
-    // an invariant and *not* test for nullable at run time.
-    ASSERT(!(fRequiresNullableType && fHasSealedVirtuals));
-
-    return offsetof(EEType, m_VTable)
-        + (sizeof(UIntTarget) * cVirtuals)
-        + (sizeof(EEInterfaceInfo) * cInterfaces)
-        + (fHasFinalizer ? sizeof(UIntTarget) : 0)
-        + (fRequiresOptionalFields ? sizeof(UIntTarget) : 0)
-        + (fRequiresNullableType ? sizeof(UIntTarget) : 0)
-        + (fHasSealedVirtuals ? sizeof(Int32) : 0)
-        + (fHasGenericInfo ? sizeof(UInt32)*2 : 0);
-}
-
 #if !defined(DACCESS_COMPILE)
 // get the base type of an array EEType - this is special because the base type of arrays is not explicitly
 // represented - instead the classlib has a common one for all arrays
@@ -456,19 +411,9 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
     if (HasOptionalFields())
         cbOffset += sizeof(UIntTarget);
 
-    // Followed by the pointer to the type target of a Nullable<T>.
-    if (eField == ETF_NullableType)
-    {
-        ASSERT(IsNullable());
-        return cbOffset;
-    }
-
-    // OR, followed by the pointer to the sealed virtual slots
+    // Followed by the pointer to the sealed virtual slots
     if (eField == ETF_SealedVirtualSlots)
         return cbOffset;
-
-    if (IsNullable())
-        cbOffset += sizeof(UIntTarget);
 
     UInt32 rareFlags = get_RareFlags();
 

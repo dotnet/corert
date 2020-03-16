@@ -77,11 +77,6 @@ namespace Internal.Runtime.TypeLoader
             rtth.ToEETypePtr()->GenericArguments[argumentIndex].Value = argumentType.ToEETypePtr();
         }
 
-        public static unsafe void SetNullableType(this RuntimeTypeHandle rtth, RuntimeTypeHandle T_typeHandle)
-        {
-            rtth.ToEETypePtr()->NullableType = T_typeHandle.ToEETypePtr();
-        }
-
         public static unsafe void SetRelatedParameterType(this RuntimeTypeHandle rtth, RuntimeTypeHandle relatedTypeHandle)
         {
             rtth.ToEETypePtr()->RelatedParameterType = relatedTypeHandle.ToEETypePtr();
@@ -306,7 +301,6 @@ namespace Internal.Runtime.TypeLoader
 
                     UInt32 rareFlags = optionalFields.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
                     rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeFlag;          // Set the IsDynamicTypeFlag
-                    rareFlags &= ~(uint)EETypeRareFlags.NullableTypeViaIATFlag;    // Remove the NullableTypeViaIATFlag flag
 
                     if (state.NumSealedVTableEntries > 0)
                         rareFlags |= (uint)EETypeRareFlags.HasSealedVTableEntriesFlag;
@@ -353,7 +347,6 @@ namespace Internal.Runtime.TypeLoader
 
                     if (isNullable)
                     {
-                        rareFlags |= (uint)EETypeRareFlags.IsNullableFlag;
                         uint nullableValueOffset = state.NullableValueOffset;
 
                         // The stored offset is never zero (Nullable has a boolean there indicating whether the value is valid). 
@@ -365,7 +358,6 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
-                        rareFlags &= ~(uint)EETypeRareFlags.IsNullableFlag;
                         optionalFields.ClearField(EETypeOptionalFieldTag.NullableValueOffset);
                     }
 
@@ -398,14 +390,12 @@ namespace Internal.Runtime.TypeLoader
                     // 2) The number of Interfaces (from the template)
                     // 3) Whether or not there is a finalizer (from the template)
                     // 4) Optional fields size
-                    // 5) Whether or not the type is nullable (from the template)
-                    // 6) Whether or not the type has sealed virtuals (from the TypeBuilderState)
+                    // 5) Whether or not the type has sealed virtuals (from the TypeBuilderState)
                     int cbEEType = (int)EEType.GetSizeofEEType(
                         numVtableSlots,
                         runtimeInterfacesLength,
                         hasFinalizer,
                         true,
-                        isNullable,
                         state.NumSealedVTableEntries > 0,
                         isGeneric,
                         state.NonGcDataSize != 0,

@@ -50,8 +50,6 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Pointer Size]  | Pointer to optional fields (optional)
     ///                 |
-    /// [Pointer Size]  | Pointer to the generic type argument of a Nullable&lt;T&gt; (optional)
-    ///                 |
     /// [Pointer Size]  | Pointer to the generic type definition EEType (optional)
     ///                 |
     /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
@@ -495,7 +493,6 @@ namespace ILCompiler.DependencyAnalysis
 
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
-            OutputNullableTypeParameter(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
             OutputGenericInstantiationDetails(factory, ref objData);
 
@@ -820,14 +817,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private void OutputNullableTypeParameter(NodeFactory factory, ref ObjectDataBuilder objData)
-        {
-            if (_type.IsNullable)
-            {
-                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_type.Instantiation[0]));
-            }
-        }
-
         private void OutputSealedVTable(NodeFactory factory, bool relocsOnly, ref ObjectDataBuilder objData)
         {
             if (EmitVirtualSlotsAndInterfaces && !_type.IsArrayTypeWithoutGenericInterfaces())
@@ -901,17 +890,6 @@ namespace ILCompiler.DependencyAnalysis
             uint flags = 0;
 
             MetadataType metadataType = _type as MetadataType;
-
-            if (_type.IsNullable)
-            {
-                flags |= (uint)EETypeRareFlags.IsNullableFlag;
-
-                // If the nullable type is not part of this compilation group, and
-                // the output binaries will be multi-file (not multiple object files linked together), indicate to the runtime
-                // that it should indirect through the import address table
-                if (factory.NecessaryTypeSymbol(_type.Instantiation[0]).RepresentsIndirectionCell)
-                    flags |= (uint)EETypeRareFlags.NullableTypeViaIATFlag;
-            }
 
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
             {
