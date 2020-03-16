@@ -5,13 +5,9 @@
 //
 // This header contains binder-generated data structures that the runtime consumes.
 //
-#ifndef RHDUMP_TARGET_NEUTRAL
 #include "TargetPtrs.h"
-#endif
-#ifndef RHDUMP
 #include "WellKnownMethods.h"
-#endif
-#if !defined(RHDUMP) || defined(RHDUMP_TARGET_NEUTRAL)
+
 //
 // Region Relative Addresses (RRAs)
 //
@@ -35,12 +31,7 @@
 // revisit the issue.
 //
 
-#ifdef RHDUMP
-// Always use RVAs
-typedef UInt32 RegionPtr;
-#else
 typedef TgtPTR_UInt8 RegionPtr; 
-#endif
 
 struct ModuleHeader
 {
@@ -146,23 +137,13 @@ struct ModuleHeader
                                                                    // in this module
 
     // Macro to generate an inline accessor for RRA-based fields.
-#ifdef RHDUMP
-#define DEFINE_GET_ACCESSOR(_field, _region)\
-    inline UInt64 Get##_field() { return Rra##_field == NULL_RRA ? NULL : RegionPtr[_region] + Rra##_field; }
-#else
 #define DEFINE_GET_ACCESSOR(_field, _region)\
     inline PTR_UInt8 Get##_field() { return Rra##_field == NULL_RRA ? NULL : RegionPtr[_region] + Rra##_field; }
-#endif
 
     // Similar macro to DEFINE_GET_ACCESSOR that handles data that is read-write normally but read-only if the
     // module is in standalone exe mode.
-#ifdef RHDUMP
-#define DEFINE_GET_ACCESSOR_RO_OR_RW_DATA(_field)\
-    inline UInt64 Get##_field() { return Rra##_field == NULL_RRA ? NULL : RegionPtr[(Flags & StandaloneExe) ? RDATA_REGION : DATA_REGION] + Rra##_field; }
-#else
 #define DEFINE_GET_ACCESSOR_RO_OR_RW_DATA(_field)\
     inline PTR_UInt8 Get##_field() { return Rra##_field == NULL_RRA ? NULL : RegionPtr[(Flags & StandaloneExe) ? RDATA_REGION : DATA_REGION] + Rra##_field; }
-#endif
 
     DEFINE_GET_ACCESSOR(SystemObjectEEType,         IAT_REGION);
 
@@ -203,7 +184,6 @@ struct ModuleHeader
 
     DEFINE_GET_ACCESSOR(ColdToHotMappingInfo,       RDATA_REGION);
 
-#ifndef RHDUMP
     // Macro to generate an inline accessor for well known methods (these are all TEXT-based RRAs since they
     // point to code).
 #define DEFINE_WELL_KNOWN_METHOD(_name)                                                                                     \
@@ -222,19 +202,13 @@ struct ModuleHeader
     }
 #include "WellKnownMethodList.h"
 #undef DEFINE_WELL_KNOWN_METHOD
-#endif // !RHDUMP
 };
-#ifndef RHDUMP
 typedef DPTR(ModuleHeader) PTR_ModuleHeader;
-#endif // !RHDUMP
 
 class GcPollInfo
 {
 public:
-
-#ifndef RHDUMP
     static const UInt32 indirCellsPerBitmapBit  = 64 / POINTER_SIZE;    // one cache line per bit
-#endif // !RHDUMP
 
     static const UInt32 cbChunkCommonCode_X64   = 17;
     static const UInt32 cbChunkCommonCode_X86   = 16;
@@ -263,7 +237,6 @@ public:
     static const UInt32 cbFullBundle            = cbBundleCommonCode + 
                                                   (entriesPerBundle * cbEntry);
 
-#ifndef RHDUMP
     static UInt32 EntryIndexToStubOffset(UInt32 entryIndex)
     {
 # if defined(_TARGET_ARM_)
@@ -274,7 +247,6 @@ public:
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_X86);
 # endif
     }
-#endif
 
     static UInt32 EntryIndexToStubOffset(UInt32 entryIndex, UInt32 cbChunkCommonCode)
     {
@@ -306,10 +278,6 @@ public:
 # endif
     }
 };
-#endif // !defined(RHDUMP) || defined(RHDUMP_TARGET_NEUTRAL)
-#if       !defined(RHDUMP) || !defined(RHDUMP_TARGET_NEUTRAL)
-
-
 
 struct StaticGcDesc
 {
@@ -332,13 +300,8 @@ struct StaticGcDesc
 #endif
 };
 
-#ifdef RHDUMP
-typedef StaticGcDesc * PTR_StaticGcDesc;
-typedef StaticGcDesc::GCSeries * PTR_StaticGcDescGCSeries;
-#else
 typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
 typedef DPTR(StaticGcDesc::GCSeries) PTR_StaticGcDescGCSeries;
-#endif
 
 class EEType;
 
@@ -469,7 +432,6 @@ struct InterfaceDispatchCell
         IDC_MaxVTableOffsetPlusOne = 0x1000,
     };
 
-#if !defined(RHDUMP) && !defined(BINDER)
     DispatchCellInfo GetDispatchCellInfo()
     {
         // Capture m_pCache into a local for safe access (this is a volatile read of a value that may be
@@ -566,7 +528,6 @@ struct InterfaceDispatchCell
             return 0;
         }
     }
-#endif // !RHDUMP && !BINDER
 };
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
@@ -803,13 +764,8 @@ struct PInvokeTransitionFrame
 #define OFFSETOF__Thread__m_pTransitionFrame 0x2c
 #endif
 
-#ifdef RHDUMP
-typedef EEType * PTR_EEType;
-typedef PTR_EEType * PTR_PTR_EEType;
-#else
 typedef DPTR(EEType) PTR_EEType;
 typedef DPTR(PTR_EEType) PTR_PTR_EEType;
-#endif
 
 struct EETypeRef
 {
@@ -871,8 +827,6 @@ struct StaticClassConstructionContext
     Int32       m_initialized;
 };
 
-#endif // !defined(RHDUMP) || !defined(RHDUMP_TARGET_NEUTRAL)
-
 #ifdef FEATURE_CUSTOM_IMPORTS
 struct CustomImportDescriptor
 {
@@ -892,16 +846,6 @@ enum RhEHClauseKind
 
 #define RH_EH_CLAUSE_TYPED_INDIRECT RH_EH_CLAUSE_UNUSED 
 
-#ifndef RHDUMP
-// as System::__Canon is not exported by the SharedLibrary.dll, it is represented by a special "pointer" for generic unification
-#ifdef BINDER
-static const UIntTarget CANON_EETYPE = 42;
-#else
-static const EEType * CANON_EETYPE = (EEType *)42;
-#endif
-#endif
-
-#ifndef RHDUMP
 // flags describing what a generic unification descriptor (below) describes or contains
 enum GenericUnificationFlags
 {
@@ -923,21 +867,12 @@ struct GenericUnificationDesc
     UInt32              m_hashCode;                     // hash code of the type or method
     UInt32              m_flags : 8;                    // GenericUnificationFlags (above)
     UInt32              m_indirCellCountOrOrdinal : 24; // # indir cells used or method ordinal
-#ifdef BINDER
-    UIntTarget          m_openType;                     // ref to open type
-    UIntTarget          m_genericComposition;           // ref to generic composition
-                                                        // (including type args of the enclosing type)
-#else
     EETypeRef           m_openType;                     // ref to open type
     GenericComposition *m_genericComposition;           // ref to generic composition
                                                         // (including type args of the enclosing type)
-#endif // BINDER
 
     inline UInt32 GetIndirCellIndex(GenericUnificationFlags flags)
     {
-#ifdef BINDER
-        assert((m_flags & flags) != 0);
-#endif // BINDER
         UInt32 indirCellIndex = 0;
 
         if (flags == GUF_EETYPE)
@@ -968,10 +903,6 @@ struct GenericUnificationDesc
         if (flags == GUF_METHOD_BODIES)
             return indirCellIndex;
 
-#ifdef BINDER
-        // not legal to have unboxing stubs without method bodies
-        assert((m_flags & (GUF_METHOD_BODIES| GUF_UNBOXING_STUBS)) == (GUF_METHOD_BODIES | GUF_UNBOXING_STUBS));
-#endif // BINDER
         if (flags & GUF_UNBOXING_STUBS)
         {
             // the remainining indirection cells should be for method bodies and instantiating/unboxing stubs
@@ -983,28 +914,8 @@ struct GenericUnificationDesc
             return indirCellIndex + remainingIndirCellCount/2;
         }
 
-#ifdef BINDER
-        assert(!"bad GUF flag parameter");
-#endif // BINDER
         return indirCellIndex;
     }
-
-#ifdef BINDER
-    inline void SetIndirCellCount(UInt32 indirCellCount)
-    {
-        // generic unification descs for methods always have 1 indirection cell
-        assert(!(m_flags & GUF_IS_METHOD));
-        m_indirCellCountOrOrdinal = indirCellCount;
-        assert(m_indirCellCountOrOrdinal == indirCellCount);
-    }
-
-    inline void SetOrdinal(UInt32 ordinal)
-    {
-        assert(m_flags & GUF_IS_METHOD);
-        m_indirCellCountOrOrdinal = ordinal;
-        assert(m_indirCellCountOrOrdinal == ordinal);
-    }
-#endif // !BINDER
 
     inline UInt32 GetIndirCellCount()
     {
@@ -1054,4 +965,3 @@ struct ColdToHotMapping
     SubSectionDesc  subSection[/*subSectionCount*/1];
     //  UINT32   hotRVAofColdMethod[/*coldMethodCount*/];
 };
-#endif

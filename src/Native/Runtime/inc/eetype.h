@@ -34,16 +34,11 @@ class EEInterfaceInfo
                m_pInterfaceEEType;
     }
 
-#ifndef RHDUMP
   private:
-#endif
     union
     {
         EEType *    m_pInterfaceEEType;         // m_uFlags == InterfaceFlagNormal
         EEType **   m_ppInterfaceEETypeViaIAT;  // m_uFlags == InterfaceViaIATFlag
-#if defined(RHDUMP) || defined(BINDER)
-        UIntTarget  m_ptrVal;  // ensure this structure is the right size in cross-build scenarios
-#endif // defined(RHDUMP) || defined(BINDER)
     };
 };
 
@@ -103,9 +98,6 @@ class DispatchMap
 {
     friend class CompactTypeBuilder;
     friend class MdilModule;
-#ifdef RHDUMP
-    friend struct Image;
-#endif
 private:
     UInt32           m_entryCount;
     DispatchMapEntry m_dispatchMap[0]; // at least one entry if any interfaces defined
@@ -189,12 +181,11 @@ enum EETypeField
 
 //-------------------------------------------------------------------------------------------------
 // Fundamental runtime type representation
-#ifndef RHDUMP
 typedef DPTR(class EEType) PTR_EEType;
 typedef DPTR(PTR_EEType) PTR_PTR_EEType;
 typedef DPTR(class OptionalFields) PTR_OptionalFields;
 typedef DPTR(PTR_OptionalFields) PTR_PTR_OptionalFields;
-#endif // !RHDUMP
+
 class EEType
 {
     friend class AsmOffsets;
@@ -202,11 +193,7 @@ class EEType
     friend class MetaDataEngine;
     friend class LimitedEEType;
 
-#ifdef RHDUMP
-public:
-#else
 private:
-#endif
     struct RelatedTypeUnion
     {
         union 
@@ -222,10 +209,6 @@ private:
             // Kinds.ParameterizedEEType
             EEType*  m_pRelatedParameterType;
             EEType** m_ppRelatedParameterTypeViaIAT;
-
-#if defined(RHDUMP) || defined(BINDER)
-            UIntTarget m_ptrVal;  // ensure this structure is the right size in cross-build scenarios
-#endif // defined(RHDUMP) || defined(BINDER)
         };
     };
 
@@ -260,8 +243,7 @@ private:
         // through m_pRelatedType to get to the related type in the other module.
         RelatedTypeViaIATFlag   = 0x0004,
 
-        // This EEType represents a value type
-        ValueTypeFlag           = 0x0008,
+        // Unused           = 0x0008,
 
         // This EEType represents a type which requires finalization
         HasFinalizerFlag        = 0x0010,
@@ -279,8 +261,7 @@ private:
         // This type has optional fields present.
         OptionalFieldsFlag      = 0x0100,
 
-        // This EEType represents an interface.
-        IsInterfaceFlag         = 0x0200,
+        // Unused         = 0x0200,
 
         // This type is generic.
         IsGenericFlag           = 0x0400,
@@ -371,7 +352,6 @@ public:
         GenericTypeDefEEType    = 0x0003,
     };
 
-#ifndef RHDUMP
     UInt32 get_BaseSize()
         { return m_uBaseSize; }
 
@@ -392,9 +372,11 @@ public:
     bool IsRelatedTypeViaIAT()
         { return ((m_usFlags & (UInt16)RelatedTypeViaIATFlag) != 0); }
 
-    // PREFER: get_ParameterizedTypeShape() >= SZARRAY_BASE_SIZE
     bool IsArray()
-        { return IsParameterizedType() && get_ParameterizedTypeShape() > 1 /* ParameterizedTypeShapeConstants.ByRef */; }
+    {
+        EETypeElementType elementType = GetElementType();
+        return elementType == ElementType_Array || elementType == ElementType_SzArray;
+    }
 
     bool IsParameterizedType()
         { return (get_Kind() == ParameterizedEEType); }
@@ -406,7 +388,7 @@ public:
         { return get_Kind() == CanonicalEEType; }
 
     bool IsInterface()
-        { return ((m_usFlags & (UInt16)IsInterfaceFlag) != 0); }
+        { return GetElementType() == ElementType_Interface; }
 
     EEType * get_CanonicalEEType();
 
@@ -420,7 +402,7 @@ public:
     UInt32 get_ParameterizedTypeShape() { return m_uBaseSize; }
 
     bool get_IsValueType()
-        { return ((m_usFlags & (UInt16)ValueTypeFlag) != 0); }
+        { return GetElementType() < ElementType_Class; }
 
     bool HasFinalizer()
     {
@@ -494,9 +476,7 @@ public:
 #endif
     }
 
-#ifndef BINDER
     DispatchMap *GetDispatchMap();
-#endif // !BINDER
 
     // Used only by GC initialization, this initializes the EEType used to mark free entries in the GC heap.
     // It should be an array type with a component size of one (so the GC can easily size it as appropriate)
@@ -529,7 +509,6 @@ public:
     EETypeElementType GetElementType()
         { return (EETypeElementType)((m_usFlags & ElementTypeMask) >> ElementTypeShift); }
 
-#ifndef BINDER
     // Determine whether a type requires 8-byte alignment for its fields (required only on certain platforms,
     // only ARM so far).
     bool RequiresAlign8()
@@ -583,7 +562,6 @@ public:
 
     // Get flags that are less commonly set on EETypes.
     inline UInt32 get_RareFlags();
-#endif // !BINDER
 
     static inline UInt32 ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment);
 
@@ -599,12 +577,6 @@ public:
     // change layout rules we might have to change the arguments to the methods below but in doing so we will
     // instantly identify all the other parts of the binder and runtime that need to be updated.
 
-#ifdef BINDER
-    // Determine whether a particular EEType will need optional fields. Binder only at the moment since it's
-    // less useful at runtime and far easier to specify in terms of a binder MethodTable.
-    static inline bool RequiresOptionalFields(MethodTable * pMT);
-#endif
-
     // Calculate the size of an EEType including vtable, interface map and optional pointers (though not any
     // optional fields stored out-of-line). Does not include the size of GC series information.
     static inline UInt32 GetSizeofEEType(UInt32 cVirtuals,
@@ -615,45 +587,24 @@ public:
                                          bool fHasSealedVirtuals,
                                          bool fHasGenericInfo);
 
-#ifdef BINDER
-    // Version of the above usable from the binder where all the type layout information can be gleaned from a
-    // MethodTable.
-    static inline UInt32 GetSizeofEEType(MethodTable *pMT, bool fHasGenericInfo);
-#endif // BINDER
-
     // Calculate the offset of a field of the EEType that has a variable offset.
     inline UInt32 GetFieldOffset(EETypeField eField);
 
-#ifdef BINDER
-    // Version of the above usable from the binder where all the type layout information can be gleaned from a
-    // MethodTable.
-    static inline UInt32 GetFieldOffset(EETypeField eField,
-                                        MethodTable * pMT);
-#endif // BINDER
-
-#ifndef BINDER
     // Validate an EEType extracted from an object.
     bool Validate(bool assertOnFail = true);
-#endif // !BINDER
 
-#if !defined(BINDER) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
     // get the base type of an array EEType - this is special because the base type of arrays is not explicitly
     // represented - instead the classlib has a common one for all arrays
     EEType * GetArrayBaseType();
-#endif // !defined(BINDER) && !defined(DACCESS_COMPILE)
-
-#endif // !RHDUMP
+#endif // !defined(DACCESS_COMPILE)
 };
 
 class GenericComposition
 {
     UInt16              m_arity;
     UInt8               m_hasVariance;
-#ifdef BINDER
-    UIntTarget          m_arguments[/*arity*/1];  // to make the size come out right for cross-bind
-#else
     EEType             *m_arguments[/*arity*/1];
-#endif
     GenericVarianceType m_variance[/*arity*/1];
 
 public:
@@ -664,12 +615,11 @@ public:
 
     size_t GetArgumentOffset(UInt32 index);
 
-#ifndef BINDER
     EETypeRef *GetArguments()
     {
         return (EETypeRef *)m_arguments;
     }
-#endif
+
     GenericVarianceType *GetVariance();
 
     bool Equals(GenericComposition *that);
