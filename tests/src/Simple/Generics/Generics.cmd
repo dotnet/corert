@@ -2,7 +2,7 @@
 setlocal
 
 IF /i "%__Mode%"=="wasm" (
-    call emrun --browser=firefox --browser_args=-headless --safe_firefox_profile --silence_timeout 100 "%1\%2" 
+    call %EMSDK_NODE% "%1\%2"
 ) ELSE (
     "%1\%2"
 )
