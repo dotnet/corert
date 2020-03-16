@@ -21,10 +21,8 @@ public:
     UInt32 GetMethodIndex();
 };
 
-#ifndef RHDUMP
 struct ModuleHeader;
 typedef DPTR(ModuleHeader) PTR_ModuleHeader;
-#endif // RHDUMP
 
 class SectionMethodList
 {
@@ -63,9 +61,7 @@ class SectionMethodList
 public:
     SectionMethodList();
 
-#ifndef RHDUMP
     bool    Init(ModuleHeader * pHdr);
-#endif // RHDUMP
     bool    Init(UInt32 uFlags, UInt32 numMethods, UInt8 * pbCodeMapInfo, UInt8 * pbEHInfo);
     void    GetMethodInfo(UInt32 uSectionOffset, UInt32 * puMethodIndex, 
                           UInt32 * puMethodStartSectionOffset, UInt32 * puMethodSize);

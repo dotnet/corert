@@ -379,7 +379,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType && ParameterizedTypeShape >= SZARRAY_BASE_SIZE;
+                EETypeElementType elementType = ElementType;
+                return elementType == EETypeElementType.Array || elementType == EETypeElementType.SzArray;
             }
         }
 
@@ -405,7 +406,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsArray && ParameterizedTypeShape == SZARRAY_BASE_SIZE;
+                return ElementType == EETypeElementType.SzArray;
             }
         }
 
@@ -544,8 +545,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType &&
-                    ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer;
+                return ElementType == EETypeElementType.Pointer;
             }
         }
 
@@ -553,8 +553,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType &&
-                    ParameterizedTypeShape == ParameterizedTypeShapeConstants.ByRef;
+                return ElementType == EETypeElementType.ByRef;
             }
         }
 
@@ -562,7 +561,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.IsInterfaceFlag) != 0);
+                return ElementType == EETypeElementType.Interface;
             }
         }
 
@@ -717,7 +716,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.ValueTypeFlag) != 0);
+                return ElementType < EETypeElementType.Class;
             }
         }
 

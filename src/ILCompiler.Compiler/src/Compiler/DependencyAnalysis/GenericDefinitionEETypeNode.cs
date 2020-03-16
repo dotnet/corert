@@ -44,11 +44,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.AddSymbol(this);
             EETypeRareFlags rareFlags = 0;
 
-            short flags = (short)EETypeKind.GenericTypeDefEEType;
-            if (_type.IsValueType)
-                flags |= (short)EETypeFlags.ValueTypeFlag;
-            if (_type.IsInterface)
-                flags |= (short)EETypeFlags.IsInterfaceFlag;
+            ushort flags = EETypeBuilderHelpers.ComputeFlags(_type);
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
                 rareFlags = rareFlags | EETypeRareFlags.HasCctorFlag;
             if (_type.IsByRefLike)
@@ -58,12 +54,10 @@ namespace ILCompiler.DependencyAnalysis
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.RareFlags, (uint)rareFlags);
 
             if (HasOptionalFields)
-                flags |= (short)EETypeFlags.OptionalFieldsFlag;
-
-            flags |= (short)EETypeBuilderHelpers.ComputeElementTypeFlags(_type);
+                flags |= (ushort)EETypeFlags.OptionalFieldsFlag;
 
             dataBuilder.EmitShort((short)_type.Instantiation.Length);
-            dataBuilder.EmitShort(flags);
+            dataBuilder.EmitUShort(flags);
             dataBuilder.EmitInt(0);         // Base size is always 0
             dataBuilder.EmitZeroPointer();  // No related type
             dataBuilder.EmitShort(0);       // No VTable

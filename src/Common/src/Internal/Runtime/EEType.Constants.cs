@@ -27,10 +27,7 @@ namespace Internal.Runtime
         /// </summary>
         RelatedTypeViaIATFlag = 0x0004,
 
-        /// <summary>
-        /// This EEType represents a value type.
-        /// </summary>
-        ValueTypeFlag = 0x0008,
+        // Unused = 0x0008,
 
         /// <summary>
         /// This EEType represents a type which requires finalization.
@@ -58,10 +55,7 @@ namespace Internal.Runtime
         /// </summary>
         OptionalFieldsFlag = 0x0100,
 
-        /// <summary>
-        /// This EEType represents an interface.
-        /// </summary>
-        IsInterfaceFlag = 0x0200,
+        // Unused = 0x0200,
 
         /// <summary>
         /// This type is generic.

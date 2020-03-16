@@ -216,11 +216,7 @@ namespace Internal.Runtime.TypeLoader
                 {
                     flags = (ushort)EETypeKind.GenericTypeDefEEType;
                     isValueType = state.TypeBeingBuilt.IsValueType;
-                    if (isValueType)
-                        flags |= (ushort)EETypeFlags.ValueTypeFlag;
-
-                    if (state.TypeBeingBuilt.IsInterface)
-                        flags |= (ushort)EETypeFlags.IsInterfaceFlag;
+                    flags = EETypeBuilderHelpers.ComputeFlags(state.TypeBeingBuilt);
                     hasFinalizer = false;
                     isArray = false;
                     isNullable = false;
@@ -1038,6 +1034,9 @@ namespace Internal.Runtime.TypeLoader
             state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->RelatedParameterType = pointeeTypeHandle.ToEETypePtr();
 
             // We used a pointer as a template. We need to make this a byref.
+            Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.Pointer);
+            state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->Flags = EETypeBuilderHelpers.ComputeFlags(byRefType);
+            Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.ByRef);
             Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer);
             state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape = ParameterizedTypeShapeConstants.ByRef;
 
@@ -1061,7 +1060,7 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(IntPtr.Zero == state.GcStaticDesc);
                 Debug.Assert(IntPtr.Zero == state.ThreadStaticDesc);
 
-                // Pointers and ByRefs only differ by the ParameterizedTypeShape value.
+                // Pointers and ByRefs only differ by the ParameterizedTypeShape and ElementType value.
                 RuntimeTypeHandle templateTypeHandle = typeof(void*).TypeHandle;
 
                 pTemplateEEType = templateTypeHandle.ToEETypePtr();

@@ -11,6 +11,12 @@ using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
 
+#if TARGET_64BIT
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System.Runtime
 {
     internal enum DispatchCellType
@@ -170,11 +176,6 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Sometimes)]
         internal extern static unsafe void RhpBox(object obj, ref byte data);
 
-        [RuntimeImport(Redhawk.BaseName, "RhUnbox")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal extern static unsafe void RhUnbox(object obj, ref byte data, EEType* pUnboxToEEType);
-
         [RuntimeImport(Redhawk.BaseName, "RhpCopyObjectContents")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
@@ -189,6 +190,18 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe void RhpAssignRef(ref object address, object obj);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(Redhawk.BaseName, "RhpInitMultibyte")]
+        internal static extern unsafe ref byte RhpInitMultibyte(ref byte dmem, int c, nuint size);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(Redhawk.BaseName, "memmove")]
+        internal static extern unsafe void* memmove(byte* dmem, byte* smem, nuint size);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(Redhawk.BaseName, "RhBulkMoveWithWriteBarrier")]
+        internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
 
 #if FEATURE_GC_STRESS
         //

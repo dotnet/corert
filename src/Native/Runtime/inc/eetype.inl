@@ -5,12 +5,10 @@
 #ifndef __eetype_inl__
 #define __eetype_inl__
 //-----------------------------------------------------------------------------------------------------------
-#ifndef BINDER
 inline UInt32 EEType::GetHashCode()
 {
     return m_uHashCode;
 }
-#endif
 
 //-----------------------------------------------------------------------------------------------------------
 inline EEInterfaceInfo & EEInterfaceInfoMap::operator[](UInt16 idx)
@@ -33,7 +31,7 @@ inline PTR_PTR_Code EEType::get_SlotPtr(UInt16 slotNumber)
     return dac_cast<PTR_PTR_Code>(dac_cast<TADDR>(this) + offsetof(EEType, m_VTable)) + slotNumber;
 }
 
-#if !defined(BINDER) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 inline PTR_UInt8 FollowRelativePointer(const Int32 *pDist)
 {
     Int32 dist = *pDist;
@@ -61,7 +59,7 @@ inline PTR_Code EEType::get_SealedVirtualSlot(UInt16 slotNumber)
         return result;
     }
 }
-#endif // !BINDER && !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE
 
 //-----------------------------------------------------------------------------------------------------------
 inline EEType * EEType::get_BaseType()
@@ -73,17 +71,12 @@ inline EEType * EEType::get_BaseType()
         return NULL;
 #endif
 
-#if defined(BINDER)
-    // Does not yet handle arrays properly.
-    ASSERT(!IsParameterizedType());
-#endif
-
     if (IsCloned())
     {
         return get_CanonicalEEType()->get_BaseType();
     }
 
-#if !defined(BINDER) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
     if (IsParameterizedType())
     {
         if (IsArray())
@@ -103,7 +96,7 @@ inline EEType * EEType::get_BaseType()
     return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pBaseType));
 }
 
-#if !defined(BINDER) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 //-----------------------------------------------------------------------------------------------------------
 inline bool EEType::HasDispatchMap()
 {
@@ -144,7 +137,7 @@ inline DispatchMap * EEType::GetDispatchMap()
 
     return GetTypeManagerPtr()->AsTypeManager()->GetDispatchMapLookupTable()[idxDispatchMap];
 }
-#endif // !BINDER && !DACCESS_COMPILE
+#endif // !DACCESS_COMPILE
 
 //-----------------------------------------------------------------------------------------------------------
 inline EEInterfaceInfoMap EEType::GetInterfaceMap()
@@ -252,7 +245,6 @@ inline UInt32 EEType::ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UIn
     return paddingLowBits | paddingHighBits | alignmentLog2Bits;
 }
 
-#ifndef BINDER
 // Retrieve optional fields associated with this EEType. May be NULL if no such fields exist.
 inline PTR_OptionalFields EEType::get_OptionalFields()
 {
@@ -373,9 +365,7 @@ inline DynamicModule * EEType::get_DynamicModule()
     }
 }
 
-#endif // !BINDER
-
-#if !defined(BINDER) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 // get the base type of an array EEType - this is special because the base type of arrays is not explicitly
 // represented - instead the classlib has a common one for all arrays
 inline EEType * EEType::GetArrayBaseType()
@@ -387,7 +377,7 @@ inline EEType * EEType::GetArrayBaseType()
     EEType * pArrayBaseType = pModule->GetArrayBaseType();
     return pArrayBaseType;
 }
-#endif // !defined(BINDER) && !defined(DACCESS_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 // Calculate the offset of a field of the EEType that has a variable offset.
 __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
@@ -425,8 +415,6 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
     if (eField == ETF_SealedVirtualSlots)
         return cbOffset;
 
-    // Binder does not use DynamicTemplateType
-#ifndef BINDER
     UInt32 rareFlags = get_RareFlags();
 
     // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
@@ -497,7 +485,6 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
     }
     if ((rareFlags & IsDynamicTypeWithThreadStaticsFlag) != 0)
         cbOffset += sizeof(UInt32);
-#endif // !BINDER
 
     ASSERT(!"Unknown EEType field type");
     return 0;

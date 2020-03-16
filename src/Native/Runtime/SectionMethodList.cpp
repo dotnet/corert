@@ -31,7 +31,6 @@ SectionMethodList::SectionMethodList() :
 {
 }
 
-#ifndef RHDUMP
 bool SectionMethodList::Init(ModuleHeader * pHdr)
 {
     // Initialize our flags with the subset from the ModuleHeader that translate directly.
@@ -39,7 +38,6 @@ bool SectionMethodList::Init(ModuleHeader * pHdr)
     UInt32 uFlags = pHdr->Flags & ModuleHeader::FlagsMatchingSMLFlagsMask;
     return Init(uFlags, pHdr->CountOfMethods, pHdr->GetCodeMapInfo(), pHdr->GetEHInfo());
 }
-#endif // RHDUMP
 
 bool SectionMethodList::Init(UInt32 uFlags, UInt32 numMethods, UInt8 * pbCodeMapInfo, UInt8 * pbEHInfo)
 {
