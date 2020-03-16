@@ -193,7 +193,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(Redhawk.BaseName, "RhpInitMultibyte")]
-        internal static extern unsafe void RhpInitMultibyte(ref byte dmem, int c, nuint size);
+        internal static extern unsafe ref byte RhpInitMultibyte(ref byte dmem, int c, nuint size);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(Redhawk.BaseName, "memmove")]
