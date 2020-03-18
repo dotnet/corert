@@ -7,7 +7,7 @@ Analysis techniques for the dependency graph.
 1. Use the ILCompiler-DependencyGraph-Viewer tool (if running on Windows). This tool is located in src\ILCompiler.DependencyAnalysisFramework\ILCompiler-DependencyGraph-Viewer
   - This is the only convenient way to examine the graph while also simultaneously debugging the compiler.
   - While this is currently Windows only due to use of WinForms, it would be fairly straightforward to make a command line based tool.
-  - Dependency graph do not support multiple simultaneous logging facilities, so make sure that you do not set IlcGenerateDgmlFile or invoke ILCompiler ith DGML generation on.
+  - Dependency graph does not support multiple simultaneous logging facilities, so make sure that you do not set IlcGenerateDgmlFile or invoke ILCompiler with the DGML generation turned on.
 2. Pass command line switches to the compiler to generate a dependency graph dgml file. This will produce the same data as is viewable in the viewer tool, but in a textual xml format.
   - Future efforts may make the xml file loadable by the viewer tool.
 3. Instrument the compiler dependency analysis. (This may be necessary in cases where the viewer is unable to provide sufficient information about why the graph is structured as it is.)
