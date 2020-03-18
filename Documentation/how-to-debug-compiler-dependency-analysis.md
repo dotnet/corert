@@ -40,7 +40,7 @@ Once the interesting node(s) have been identified in the dependency graph window
 WhyDGML
 =======
 This tool visualizes paths from a node of interest to the roots.
-The input to the tool is the DGML file and name of a node of interest. The output is the list of reasons why that node was include.
+The input to the tool is the DGML file and name of a node of interest. The output is the list of reasons why that node was included.
 
 This tool located in folder `src\ILCompiler.DependencyAnalysisFramework\WhyDgml`
 
