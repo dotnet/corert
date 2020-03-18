@@ -1816,10 +1816,7 @@ if sys.version_info.major < 3:
         return unicode(s, "utf-8")
 else:
     def to_unicode(s):
-        if not isinstance(s, str):
-            return str(s, "utf-8")
-        else:
-            return s
+        return s
 
 def delete_existing_wrappers(test_location):
     """ Delete the existing xunit wrappers
