@@ -151,26 +151,22 @@ namespace Internal.IL
 
             return null;
         }
-        static void BuildCatchFunclet(LLVMModuleRef module)
+
+        static void BuildCatchFunclet(LLVMModuleRef module, string funcletName, LLVMTypeRef[] funcletArgTypes, bool passGenericContext = false)
         {
-            LlvmCatchFunclet = module.AddFunction("LlvmCatchFunclet", LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, 
-                new LLVMTypeRef[]
-                {
-                    LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
-                    LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)}, false), 0), // pHandlerIP - catch funcletAddress
-                    LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
-                }, false));
+            LlvmCatchFunclet = module.AddFunction(funcletName, LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, 
+                funcletArgTypes, false));
             var block = LlvmCatchFunclet.AppendBasicBlock("Catch");
             LLVMBuilderRef funcletBuilder = Context.CreateBuilder();
             funcletBuilder.PositionAtEnd( block);
 
-            LLVMValueRef ex = LlvmCatchFunclet.GetParam(0);
-            LLVMValueRef catchFunclet = LlvmCatchFunclet.GetParam(1);
-            LLVMValueRef castShadowStack = LlvmCatchFunclet.GetParam(2);
-
             List<LLVMValueRef> llvmArgs = new List<LLVMValueRef>();
-            llvmArgs.Add(castShadowStack);
-            LLVMValueRef leaveToILOffset = funcletBuilder.BuildCall(catchFunclet, llvmArgs.ToArray(), string.Empty);
+            llvmArgs.Add(LlvmCatchFunclet.GetParam(2));
+            if (passGenericContext)
+            {
+                llvmArgs.Add(LlvmCatchFunclet.GetParam(3));
+            }
+            LLVMValueRef leaveToILOffset = funcletBuilder.BuildCall(LlvmCatchFunclet.GetParam(1), llvmArgs.ToArray(), string.Empty);
             funcletBuilder.BuildRet(leaveToILOffset);
             funcletBuilder.Dispose();
         }

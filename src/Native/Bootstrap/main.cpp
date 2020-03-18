@@ -268,9 +268,12 @@ extern "C" void RhpThrowHwEx()
 #if defined(_WASM_)
 // returns the Leave target
 extern "C" uint32_t LlvmCatchFunclet(void * exceptionObj, void* pHandlerIP, void* pvRegDisplay); 
-extern "C" uint32_t RhpCallCatchFunclet(void * exceptionObj, void* pHandlerIP, void* pvRegDisplay, void *exInfo /* not using, but left to keep the signature the same */)
+extern "C" uint32_t LlvmCatchFuncletGeneric(void * exceptionObj, void* pHandlerIP, void* pvRegDisplay, void * genericContext); 
+extern "C" uint32_t RhpCallCatchFunclet(void * exceptionObj, void* pHandlerIP, void* pvRegDisplay, void *exInfo /* generic context, if any */)
 {
-    return LlvmCatchFunclet(exceptionObj, pHandlerIP, pvRegDisplay);
+    return exInfo 
+        ? LlvmCatchFuncletGeneric(exceptionObj, pHandlerIP, pvRegDisplay, exInfo)
+        : LlvmCatchFunclet(exceptionObj, pHandlerIP, pvRegDisplay);
 }
 #else 
 extern "C" uint32_t RhpCallCatchFunclet(void *, void*, void*, void*)

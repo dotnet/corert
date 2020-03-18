@@ -2617,58 +2617,19 @@ namespace Internal.IL
                 var fatBranch = _currentFunclet.AppendBasicBlock("fat");
                 var endifBlock = _currentFunclet.AppendBasicBlock("endif");
                 builder.BuildCondBr(eqZ, notFatBranch, fatBranch);
+                
                 // then
                 builder.PositionAtEnd(notFatBranch);
-
                 ExceptionRegion currentTryRegion = GetCurrentTryRegion();
-
-                LLVMValueRef notFatReturn;
-                //TODO refactor this call/invoke switch to method
-                if (currentTryRegion == null || fromLandingPad) // not handling exceptions that occur in the LLVM landing pad determining the EH handler 
-                {
-                    notFatReturn = builder.BuildCall(fn, llvmArgs.ToArray(), string.Empty);
-                }
-                else
-                {
-                    nextInstrBlock = _currentFunclet.AppendBasicBlock(String.Format("Try{0:X}", _currentOffset));
-
-                    notFatReturn = builder.BuildInvoke(fn, llvmArgs.ToArray(),
-                        nextInstrBlock, GetOrCreateLandingPad(currentTryRegion, _currentFunclet, _currentFunclet.GetParam(0)), string.Empty);
-
-                    _curBasicBlock = nextInstrBlock;
-                    _currentBasicBlock.LLVMBlocks.Add(_curBasicBlock);
-                    _currentBasicBlock.LastInternalBlock = _curBasicBlock;
-                    builder.PositionAtEnd(_curBasicBlock);
-                }
-
-//                var notFatReturn = _builder.BuildCall( fn, llvmArgs.ToArray(), string.Empty);
+                LLVMValueRef notFatReturn = CallOrInvoke(fromLandingPad, builder, currentTryRegion, fn, llvmArgs, ref nextInstrBlock);
                 builder.BuildBr(endifBlock);
 
                 // else
-                LLVMValueRef fatReturn;
                 builder.PositionAtEnd(fatBranch);
                 var fnWithDict = builder.BuildCast(LLVMOpcode.LLVMBitCast, fn, LLVMTypeRef.CreatePointer(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, true), 0), "fnWithDict");
                 var dictDereffed = builder.BuildLoad(builder.BuildLoad( dict, "l1"), "l2");
                 llvmArgs.Insert(needsReturnSlot ? 2 : 1, dictDereffed);
-                if (currentTryRegion == null || fromLandingPad) // not handling exceptions that occur in the LLVM landing pad determining the EH handler 
-                {
-                    fatReturn = builder.BuildCall(fnWithDict, llvmArgs.ToArray(), string.Empty);
-                }
-                else
-                {
-                    nextInstrBlock = _currentFunclet.AppendBasicBlock(String.Format("Try{0:X}", _currentOffset));
-
-                    fatReturn = builder.BuildInvoke(fnWithDict, llvmArgs.ToArray(),
-                        nextInstrBlock, GetOrCreateLandingPad(currentTryRegion, _currentFunclet, _currentFunclet.GetParam(0)), string.Empty);
-
-                    _curBasicBlock = nextInstrBlock;
-                    _currentBasicBlock.LLVMBlocks.Add(_curBasicBlock);
-                    _currentBasicBlock.LastInternalBlock = _curBasicBlock;
-                    builder.PositionAtEnd(_curBasicBlock);
-                }
-                //var fatReturn = builder.BuildCall( fnWithDict, llvmArgs.ToArray(), string.Empty);
-
-
+                LLVMValueRef fatReturn = CallOrInvoke(fromLandingPad, builder, currentTryRegion, fnWithDict, llvmArgs, ref nextInstrBlock);
                 builder.BuildBr(endifBlock);
 
                 // endif
@@ -2684,24 +2645,7 @@ namespace Internal.IL
             }
             else
             {
-                ExceptionRegion currentTryRegion = GetCurrentTryRegion();
-
-                if (currentTryRegion == null || fromLandingPad) // not handling exceptions that occur in the LLVM landing pad determining the EH handler 
-                {
-                    llvmReturn = builder.BuildCall(fn, llvmArgs.ToArray(), string.Empty);
-                }
-                else
-                {
-                    nextInstrBlock = _currentFunclet.AppendBasicBlock(String.Format("Try{0:X}", _currentOffset));
-
-                    llvmReturn = builder.BuildInvoke(fn, llvmArgs.ToArray(),
-                        nextInstrBlock, GetOrCreateLandingPad(currentTryRegion, _currentFunclet, _currentFunclet.GetParam(0)), string.Empty);
-
-                    _curBasicBlock = nextInstrBlock;
-                    _currentBasicBlock.LLVMBlocks.Add(_curBasicBlock);
-                    _currentBasicBlock.LastInternalBlock = _curBasicBlock;
-                    builder.PositionAtEnd(_curBasicBlock);
-                }
+                llvmReturn = CallOrInvoke(fromLandingPad, builder, GetCurrentTryRegion(), fn, llvmArgs, ref nextInstrBlock);
             }
 
             if (!returnType.IsVoid)
@@ -2721,6 +2665,29 @@ namespace Internal.IL
             {
                 return (null, default(LLVMBasicBlockRef));
             }
+        }
+
+        LLVMValueRef CallOrInvoke(bool fromLandingPad, LLVMBuilderRef builder, ExceptionRegion currentTryRegion,
+            LLVMValueRef fn, List<LLVMValueRef> llvmArgs, ref LLVMBasicBlockRef nextInstrBlock)
+        {
+            LLVMValueRef retVal;
+            if (currentTryRegion == null || fromLandingPad) // not handling exceptions that occur in the LLVM landing pad determining the EH handler 
+            {
+                retVal = builder.BuildCall(fn, llvmArgs.ToArray(), string.Empty);
+            }
+            else
+            {
+                nextInstrBlock = _currentFunclet.AppendBasicBlock(String.Format("Try{0:X}", _currentOffset));
+
+                retVal = builder.BuildInvoke(fn, llvmArgs.ToArray(),
+                    nextInstrBlock, GetOrCreateLandingPad(currentTryRegion), string.Empty);
+
+                _curBasicBlock = nextInstrBlock;
+                _currentBasicBlock.LLVMBlocks.Add(_curBasicBlock);
+                _currentBasicBlock.LastInternalBlock = _curBasicBlock;
+                builder.PositionAtEnd(_curBasicBlock);
+            }
+            return retVal;
         }
 
         // generic structs need to be cast to the actualReturnType
@@ -2806,9 +2773,9 @@ namespace Internal.IL
             return GetLLVMBasicBlockForBlock(_basicBlocks[tryRegion.ILRegion.HandlerOffset]);
         }
 
-        private LLVMBasicBlockRef GetOrCreateLandingPad(ExceptionRegion tryRegion, LLVMValueRef funclet, LLVMValueRef shadowStack)
+        private LLVMBasicBlockRef GetOrCreateLandingPad(ExceptionRegion tryRegion)
         {
-            Tuple<int, IntPtr> landingPadKey = Tuple.Create(tryRegion.ILRegion.TryOffset, funclet.Handle);
+            Tuple<int, IntPtr> landingPadKey = Tuple.Create(tryRegion.ILRegion.TryOffset, _currentFunclet.Handle);
             if (_landingPads.TryGetValue(landingPadKey, out LLVMBasicBlockRef landingPad))
             {
                 return landingPad;
@@ -2842,7 +2809,28 @@ namespace Internal.IL
                                                                                                                                     LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
                                                                                                                                     LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
                                                                                                                                 }, false));
-                BuildCatchFunclet(Module);
+                BuildCatchFunclet(Module, "LlvmCatchFuncletGeneric", 
+                    new LLVMTypeRef[]
+                    {
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, new LLVMTypeRef[]
+                        {
+                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 
+                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)
+                        }, false), 0), // pHandlerIP - catch funcletAddress, generic context
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // generic context
+                    }, true /* add the generic context param */);
+                BuildCatchFunclet(Module, "LlvmCatchFunclet", 
+                    new LLVMTypeRef[]
+                    {
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, new LLVMTypeRef[]
+                        {
+                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)
+                        }, false), 0), // pHandlerIP - catch funcletAddress
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
+                    });
                 BuildFinallyFunclet(Module);
             }
 
@@ -2900,10 +2888,10 @@ namespace Internal.IL
                                   {
                                       CastIfNecessary(landingPadBuilder, managedPtr, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)),
                                       CastIfNecessary(landingPadBuilder, handlerFunc, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)), /* catch funclet address */
-                                      shadowStack,
-                                      LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0))
+                                      _currentFunclet.GetParam(0),
+                                      GetGenericContextParamForFunclet()
                                   };
-            var leaveReturnValue = landingPadBuilder.BuildCall(RhpCallCatchFunclet, callCatchArgs, "");
+            LLVMValueRef leaveReturnValue = landingPadBuilder.BuildCall(RhpCallCatchFunclet, callCatchArgs, "");
 
             landingPadBuilder.BuildStore(leaveReturnValue, leaveDestination);
             landingPadBuilder.BuildBr(secondPassBlock);
@@ -2917,7 +2905,7 @@ namespace Internal.IL
                                                       new ExpressionEntry(StackValueKind.Int32, "idxTryLandingStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)tryRegion.ILRegion.TryOffset, false)),
                                                       new ExpressionEntry(StackValueKind.ByRef, "refFrameIter", ehInfoIterator),
                                                       new ExpressionEntry(StackValueKind.Int32, "idxLimit", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0xFFFFFFFFu, false)),
-                                                      new ExpressionEntry(StackValueKind.ByRef, "shadowStack", shadowStack)
+                                                      new ExpressionEntry(StackValueKind.ByRef, "shadowStack", _currentFunclet.GetParam(0))
                                                   };
             CallRuntime(_compilation.TypeSystemContext, "EH", "InvokeSecondPassWasm", secondPassArgs, null, true, builder: landingPadBuilder);
 
@@ -2926,7 +2914,7 @@ namespace Internal.IL
             landingPadBuilder.PositionAtEnd(catchLeaveBlock);
 
             // Use the else as the path for no exception handler found for this exception
-            var @switch = landingPadBuilder.BuildSwitch(CastIfNecessary(landingPadBuilder, leaveDestination, LLVMTypeRef.Int32), GetOrCreateUnreachableBlock(), 1 /* number of cases, but fortunately this doesn't seem to make much difference */);
+            LLVMValueRef @switch = landingPadBuilder.BuildSwitch(landingPadBuilder.BuildLoad(leaveDestination, "loadLeaveDest"), GetOrCreateUnreachableBlock(), 1 /* number of cases, but fortunately this doesn't seem to make much difference */);
 
             if (_leaveTargets != null)
             {
@@ -4156,7 +4144,7 @@ namespace Internal.IL
             }
             else
             {
-                _builder.BuildInvoke(RhpThrowEx, args, GetOrCreateUnreachableBlock(), GetOrCreateLandingPad(currentExceptionRegion, _currentFunclet, _currentFunclet.GetParam(0)), "");
+                _builder.BuildInvoke(RhpThrowEx, args, GetOrCreateUnreachableBlock(), GetOrCreateLandingPad(currentExceptionRegion), "");
             }
 
             for (int i = 0; i < _exceptionRegions.Length; i++)
@@ -4683,6 +4671,13 @@ namespace Internal.IL
         bool FuncletsRequireHiddenContext()
         {
             return _method.IsSharedByGenericInstantiations && !_method.AcquiresInstMethodTableFromThis();
+        }
+
+        LLVMValueRef GetGenericContextParamForFunclet()
+        {
+            return FuncletsRequireHiddenContext()
+                ? GetGenericContext()
+                : LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0));
         }
 
         private LLVMValueRef ArrayBaseSizeRef()

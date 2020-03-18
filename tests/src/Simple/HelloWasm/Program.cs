@@ -1314,7 +1314,6 @@ internal static class Program
         StartTest("TestExceptionInGvmCall");
 
         var shouldBeFalse = CatchGvmThrownException(new GenBase<string>(), (string)null);
-        PrintLine("not thrown ok");
         var shouldBeTrue = CatchGvmThrownException(new DerivedThrows<string>(), (string)null);
 
         EndTest(shouldBeTrue && !shouldBeFalse);
@@ -1337,7 +1336,7 @@ internal static class Program
         }
         catch (Exception e)
         {
-            return e.Message == "ToStringThrows";
+            return e.Message == "ToStringThrows"; // also testing here that we can return a value out of a catch
         }
         return false;
     }
