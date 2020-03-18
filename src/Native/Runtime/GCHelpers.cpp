@@ -336,10 +336,14 @@ static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEETy
         }
     }
 
+    UInt32 uFlags = GC_ALLOC_ZEROING_OPTIONAL;
+    if (size > RH_LARGE_OBJECT_SIZE)
+        uFlags |= GC_ALLOC_LARGE_OBJECT_HEAP;
+
     // Save the EEType for instrumentation purposes.
     RedhawkGCInterface::SetLastAllocEEType(pArrayEEType);
 
-    Array* pArray = (Array*)GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), size, GC_ALLOC_ZEROING_OPTIONAL);
+    Array* pArray = (Array*)GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), size, uFlags);
     if (pArray == NULL)
     {
         return NULL;

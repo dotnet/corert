@@ -280,6 +280,9 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
         }
     }
 
+    if (cbSize > RH_LARGE_OBJECT_SIZE)
+        uFlags |= GC_ALLOC_LARGE_OBJECT_HEAP;
+
     // Save the EEType for instrumentation purposes.
     RedhawkGCInterface::SetLastAllocEEType(pEEType);
 
