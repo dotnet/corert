@@ -4,9 +4,11 @@
 
     <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
     <!-- Define the name of the runtime specific compiler package to import -->
-    <PortableRuntimeIdentifier>$(RuntimeIdentifier)</PortableRuntimeIdentifier>
-    <PortableRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('win'))">win-$(PlatformTarget)</PortableRuntimeIdentifier>
-    <PortableRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx-$(PlatformTarget)</PortableRuntimeIdentifier>
+    <PortableRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('win'))">win</PortableRuntimeIdentifier>
+    <PortableRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</PortableRuntimeIdentifier>
+    <PortableRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('linux-musl')) OR $(RuntimeIdentifier.StartsWith('alpine'))">linux-musl</PortableRuntimeIdentifier>
+    <PortableRuntimeIdentifier Condition="'$(PortableRuntimeIdentifier)' == ''">linux</PortableRuntimeIdentifier>
+    <PortableRuntimeIdentifier>$(PortableRuntimeIdentifier)-$(PlatformTarget)</PortableRuntimeIdentifier>
     <RuntimeIlcPackageName>runtime.$(PortableRuntimeIdentifier).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
     <IlcCalledViaPackage>true</IlcCalledViaPackage>
 
