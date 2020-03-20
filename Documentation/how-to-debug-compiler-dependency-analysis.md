@@ -7,6 +7,7 @@ Analysis techniques for the dependency graph.
 1. Use the ILCompiler-DependencyGraph-Viewer tool (if running on Windows). This tool is located in src\ILCompiler.DependencyAnalysisFramework\ILCompiler-DependencyGraph-Viewer
   - This is the only convenient way to examine the graph while also simultaneously debugging the compiler.
   - While this is currently Windows only due to use of WinForms, it would be fairly straightforward to make a command line based tool.
+  - Dependency graph does not support multiple simultaneous logging facilities, so make sure that you do not set IlcGenerateDgmlFile or invoke ILCompiler with the DGML generation turned on.
 2. Pass command line switches to the compiler to generate a dependency graph dgml file. This will produce the same data as is viewable in the viewer tool, but in a textual xml format.
   - Future efforts may make the xml file loadable by the viewer tool.
 3. Instrument the compiler dependency analysis. (This may be necessary in cases where the viewer is unable to provide sufficient information about why the graph is structured as it is.)
@@ -35,3 +36,12 @@ Usage instructions:
 Once the interesting node(s) have been identified in the dependency graph window, select one of them, and then press Explore.
   - In the Node Explorer window, the Dependent nodes (the ones which dependend on the current node are the nodes displayed above, and the Dependee nodes (the nodes that this node depends on) are displayed below. Each node in the list is paired with a textual reason as to why that edge in the graph exists.
   - Select a node to explore further and press the corresponding button to make it happen.
+
+WhyDGML
+=======
+This tool visualizes paths from a node of interest to the roots.
+The input to the tool is the DGML file and name of a node of interest. The output is the list of reasons why that node was included.
+
+This tool located in folder `src\ILCompiler.DependencyAnalysisFramework\WhyDgml`
+
+See https://github.com/dotnet/corert/pull/7962 for example of usage and output.
