@@ -13,8 +13,6 @@ typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
 class TypeManager;
 struct ModuleHeader;
 enum GenericVarianceType : UInt8;
-struct GenericUnificationDesc;
-class GenericUnificationHashtable;
 
 #include "ICodeManager.h"
 
@@ -75,54 +73,6 @@ private:
     bool                        m_fProfileThreadCreated;
 #endif
 
-    // describes static data areas containing GC pointers
-    // for dynamically loaded types or unified generic instances
-    struct StaticGCRefsDesc
-    {
-        PTR_StaticGcDesc        m_pStaticGcInfo;
-        PTR_UInt8               m_pbStaticData;
-    };
-
-    // describes a chunk of such descriptors to improve locality
-    struct  StaticGCRefsDescChunk
-    {
-        static const size_t     MAX_DESC_COUNT = 1000;
-        StaticGCRefsDescChunk  *m_pNextChunk;
-        UInt32                  m_uiDescCount;
-        StaticGCRefsDesc        m_rgDesc[MAX_DESC_COUNT];
-
-        StaticGCRefsDescChunk() : m_uiDescCount(0) {}
-    };
-
-    StaticGCRefsDescChunk      *m_pStaticGCRefsDescChunkList;
-
-    // describes thread static data areas containing GC pointers
-    // for dynamically loaded types or unified generic instances
-    struct ThreadStaticGCRefsDesc
-    {
-        PTR_StaticGcDesc        m_pThreadStaticGcInfo;
-        UInt32                  m_uiTlsIndex;
-        UInt32                  m_uiFieldStartOffset;
-    };
-
-    // describes a chunk of such descriptors to improve locality
-    struct ThreadStaticGCRefsDescChunk
-    {
-        static const size_t     MAX_DESC_COUNT = 100;
-        ThreadStaticGCRefsDescChunk *m_pNextChunk;
-        UInt32                  m_uiDescCount;
-        ThreadStaticGCRefsDesc  m_rgDesc[MAX_DESC_COUNT];
-
-        ThreadStaticGCRefsDescChunk() : m_uiDescCount(0) {}
-    };
-
-    ThreadStaticGCRefsDescChunk *m_pThreadStaticGCRefsDescChunkList;
-
-    // Lock protecting above lists
-    ReaderWriterLock            m_StaticGCRefLock;
-
-    GenericUnificationHashtable *m_pGenericUnificationHashtable;
-
     bool                        m_conservativeStackReportingEnabled;
 
     struct  UnboxingStubsRegion
@@ -181,12 +131,6 @@ public:
 
     void EnableGcPollStress();
     void UnsychronizedResetHijackedLoops();
-
-    bool AddDynamicGcStatics(UInt8 *pGcStaticData, StaticGcDesc *pGcStaticsDesc);
-
-    bool AddDynamicThreadStaticGcData(UInt32 uiTlsIndex, UInt32 uiThreadStaticOffset, StaticGcDesc *pGcStaticsDesc);
-
-    bool UnifyGenerics(GenericUnificationDesc *descs, UInt32 descCount, void  **pIndirCells, UInt32 indirCellCount);
 
 #ifdef FEATURE_PROFILING
     void InitProfiling(ModuleHeader *pModuleHeader);

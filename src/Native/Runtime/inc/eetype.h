@@ -471,11 +471,6 @@ public:
     // not query them and the rest of the runtime will never hold a reference to free object.
     inline void InitializeAsGcFreeType();
 
-    // Initialize an existing EEType as an array type with specific element type. This is another specialized
-    // method used only during the unification of generic instantiation types. It might need modification if
-    // needed in any other scenario.
-    inline void InitializeAsArrayType(EEType * pElementType, UInt32 baseSize);
-
 #ifdef DACCESS_COMPILE
     bool DacVerify();
     static bool DacVerifyWorker(EEType* pThis);

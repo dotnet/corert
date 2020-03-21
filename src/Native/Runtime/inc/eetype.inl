@@ -166,22 +166,6 @@ inline bool EEType::DacVerifyWorker(EEType* pThis)
 }
 #endif
 
-// Initialize an existing EEType as an array type with specific element type. This is another specialized
-// method used only during the unification of generic instantiation types. It might need modification if
-// needed in any other scenario.
-inline void EEType::InitializeAsArrayType(EEType * pElementType, UInt32 baseSize)
-{
-    // This type will never appear in an object header on the heap (or otherwise be made available to the GC).
-    // It is used only when signature matching generic type instantiations. Only a subset of the type fields
-    // need to be filled in correctly as a result.
-    m_usComponentSize = 0;
-    m_usFlags = ParameterizedEEType;
-    m_uBaseSize = baseSize;
-    m_RelatedType.m_pRelatedParameterType = pElementType;
-    m_usNumVtableSlots = 0;
-    m_usNumInterfaces = 0;
-}
-
 /* static */
 inline UInt32 EEType::ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment)
 {

@@ -26,7 +26,6 @@
 #include "eetype.h"
 #include "varint.h"
 #include "DebugEventSource.h"
-#include "GenericUnification.h"
 
 #include "CommonMacros.inl"
 #include "slist.inl"
@@ -175,9 +174,6 @@ ReaderWriterLock& RuntimeInstance::GetTypeManagerLock()
 
 RuntimeInstance::RuntimeInstance() : 
     m_pThreadStore(NULL),
-    m_pStaticGCRefsDescChunkList(NULL),
-    m_pThreadStaticGCRefsDescChunkList(NULL),
-    m_pGenericUnificationHashtable(NULL),
     m_conservativeStackReportingEnabled(false),
     m_pUnboxingStubsRegion(NULL)
 {
@@ -414,60 +410,6 @@ void RuntimeInstance::EnableGcPollStress()
 void RuntimeInstance::UnsychronizedResetHijackedLoops()
 {
 }
-
-bool RuntimeInstance::AddDynamicGcStatics(UInt8 *pGcStaticData, StaticGcDesc *pGcStaticsDesc)
-{
-    ReaderWriterLock::WriteHolder write(&m_StaticGCRefLock);
-
-    StaticGCRefsDescChunk *pChunk = m_pStaticGCRefsDescChunkList;
-    if (pChunk == NULL || pChunk->m_uiDescCount >= StaticGCRefsDescChunk::MAX_DESC_COUNT)
-    {
-        pChunk = new (nothrow) StaticGCRefsDescChunk();
-        if (pChunk == NULL)
-            return false;
-        pChunk->m_pNextChunk = m_pStaticGCRefsDescChunkList;
-        m_pStaticGCRefsDescChunkList = pChunk;
-    }
-    UInt32 uiDescCount = pChunk->m_uiDescCount++;
-    pChunk->m_rgDesc[uiDescCount].m_pStaticGcInfo = pGcStaticsDesc;
-    pChunk->m_rgDesc[uiDescCount].m_pbStaticData = pGcStaticData;
-
-    return true;
-}
-
-bool RuntimeInstance::AddDynamicThreadStaticGcData(UInt32 uiTlsIndex, UInt32 uiThreadStaticOffset, StaticGcDesc *pThreadStaticsDesc)
-{
-    ReaderWriterLock::WriteHolder write(&m_StaticGCRefLock);
-
-    ThreadStaticGCRefsDescChunk *pChunk = m_pThreadStaticGCRefsDescChunkList;
-    if (pChunk == NULL || pChunk->m_uiDescCount >= ThreadStaticGCRefsDescChunk::MAX_DESC_COUNT)
-    {
-        pChunk = new (nothrow) ThreadStaticGCRefsDescChunk();
-        if (pChunk == NULL)
-            return false;
-        pChunk->m_pNextChunk = m_pThreadStaticGCRefsDescChunkList;
-        m_pThreadStaticGCRefsDescChunkList = pChunk;
-    }
-    UInt32 uiDescCount = pChunk->m_uiDescCount++;
-    pChunk->m_rgDesc[uiDescCount].m_pThreadStaticGcInfo = pThreadStaticsDesc;
-    pChunk->m_rgDesc[uiDescCount].m_uiTlsIndex = uiTlsIndex;
-    pChunk->m_rgDesc[uiDescCount].m_uiFieldStartOffset = uiThreadStaticOffset;
-
-    return true;
-}
-
-bool RuntimeInstance::UnifyGenerics(GenericUnificationDesc *descs, UInt32 descCount, void **pIndirCells, UInt32 indirCellCount)
-{
-    if (m_pGenericUnificationHashtable == nullptr)
-    {
-        m_pGenericUnificationHashtable = new GenericUnificationHashtable();
-        if (m_pGenericUnificationHashtable == nullptr)
-            return false;
-    }
-
-    return m_pGenericUnificationHashtable->UnifyDescs(descs, descCount, (UIntTarget*)pIndirCells, indirCellCount);
-}
-
 COOP_PINVOKE_HELPER(UInt32, RhGetGCDescSize, (EEType* pEEType))
 {
     return RedhawkGCInterface::GetGCDescSize(pEEType);
