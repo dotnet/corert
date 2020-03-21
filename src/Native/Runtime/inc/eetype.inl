@@ -61,41 +61,6 @@ inline PTR_Code EEType::get_SealedVirtualSlot(UInt16 slotNumber)
 }
 #endif // !DACCESS_COMPILE
 
-//-----------------------------------------------------------------------------------------------------------
-inline EEType * EEType::get_BaseType()
-{
-#ifdef DACCESS_COMPILE
-    // Easy way to cope with the get_BaseType calls throughout the DACCESS code; better than chasing down
-    // all uses and changing them to check for array.
-    if (IsParameterizedType())
-        return NULL;
-#endif
-
-    if (IsCloned())
-    {
-        return get_CanonicalEEType()->get_BaseType();
-    }
-
-#if !defined(DACCESS_COMPILE)
-    if (IsParameterizedType())
-    {
-        if (IsArray())
-            return GetArrayBaseType();
-        else
-            return NULL;
-    }
-#endif
-
-    ASSERT(IsCanonical());
-
-    if (IsRelatedTypeViaIAT())
-    {
-        return *PTR_PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_ppBaseTypeViaIAT));
-    }
-
-    return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pBaseType));
-}
-
 #if !defined(DACCESS_COMPILE)
 //-----------------------------------------------------------------------------------------------------------
 inline bool EEType::HasDispatchMap()
@@ -364,20 +329,6 @@ inline DynamicModule * EEType::get_DynamicModule()
         return nullptr;
     }
 }
-
-#if !defined(DACCESS_COMPILE)
-// get the base type of an array EEType - this is special because the base type of arrays is not explicitly
-// represented - instead the classlib has a common one for all arrays
-inline EEType * EEType::GetArrayBaseType()
-{
-    EEType *pEEType = this;
-    if (pEEType->IsDynamicType())
-        pEEType = pEEType->get_DynamicTemplateType();
-    Module * pModule = GetRuntimeInstance()->FindModuleByReadOnlyDataAddress(pEEType);
-    EEType * pArrayBaseType = pModule->GetArrayBaseType();
-    return pArrayBaseType;
-}
-#endif // !defined(DACCESS_COMPILE)
 
 // Calculate the offset of a field of the EEType that has a variable offset.
 __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)

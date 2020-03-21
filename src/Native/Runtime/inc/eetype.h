@@ -9,7 +9,6 @@
 //-------------------------------------------------------------------------------------------------
 // Forward declarations
 
-class MdilModule;
 class EEType;
 class OptionalFields;
 class TypeManager;
@@ -24,8 +23,6 @@ class GenericComposition;
 
 class EEInterfaceInfo
 {
-    friend class MdilModule;
-
   public:
     EEType * GetInterfaceEEType()
     {
@@ -96,8 +93,6 @@ struct DispatchMapEntry
 // Represents the contributions that a type makes to its interface implementations.
 class DispatchMap
 {
-    friend class CompactTypeBuilder;
-    friend class MdilModule;
 private:
     UInt32           m_entryCount;
     DispatchMapEntry m_dispatchMap[0]; // at least one entry if any interfaces defined
@@ -188,9 +183,6 @@ typedef DPTR(PTR_OptionalFields) PTR_PTR_OptionalFields;
 class EEType
 {
     friend class AsmOffsets;
-    friend class MdilModule;
-    friend class MetaDataEngine;
-    friend class LimitedEEType;
 
 private:
     struct RelatedTypeUnion
@@ -389,8 +381,6 @@ public:
 
     EEType * get_CanonicalEEType();
 
-    EEType * get_BaseType();
-
     EEType * get_RelatedParameterType();
 
     // A parameterized type shape less than SZARRAY_BASE_SIZE indicates that this is not
@@ -498,11 +488,6 @@ public:
     void SetHasGenericVariance()
         { m_usFlags |= GenericVarianceFlag; }
 
-    // Is this type specialized System.Object? We use the fact that only System.Object and interfaces have no
-    // parent type.
-    bool IsSystemObject()
-        { return !IsParameterizedType() && !IsInterface() && get_BaseType() == NULL; }
-
     EETypeElementType GetElementType()
         { return (EETypeElementType)((m_usFlags & ElementTypeMask) >> ElementTypeShift); }
 
@@ -571,12 +556,6 @@ public:
 
     // Validate an EEType extracted from an object.
     bool Validate(bool assertOnFail = true);
-
-#if !defined(DACCESS_COMPILE)
-    // get the base type of an array EEType - this is special because the base type of arrays is not explicitly
-    // represented - instead the classlib has a common one for all arrays
-    EEType * GetArrayBaseType();
-#endif // !defined(DACCESS_COMPILE)
 };
 
 class GenericComposition

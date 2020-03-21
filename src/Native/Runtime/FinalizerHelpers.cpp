@@ -14,7 +14,6 @@
 #include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "shash.h"
-#include "module.h"
 
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
@@ -261,30 +260,4 @@ COOP_PINVOKE_HELPER(OBJECTREF, RhpGetNextFinalizableObject, ())
         // We've found the first finalizable object, return it to the caller.
         return refNext;
     }
-}
-
-// This function walks the list of modules looking for any module that is a class library and has not yet 
-// had its finalizer init callback invoked.  It gets invoked in a loop, so it's technically O(n*m), but the
-// number of classlibs subscribing to this callback is almost certainly going to be 1.
-COOP_PINVOKE_HELPER(void *, RhpGetNextFinalizerInitCallback, ())
-{
-    FOREACH_MODULE(pModule)
-    {
-        if (pModule->IsClasslibModule()
-            && !pModule->IsFinalizerInitComplete())
-        {
-            pModule->SetFinalizerInitComplete();
-            void * retval = pModule->GetClasslibInitializeFinalizerThread();
-
-            // The caller loops until we return null, so we should only be returning null if we've walked all
-            // the modules and found no callbacks yet to be made.
-            if (retval != NULL)
-            {
-                return retval;
-            }
-        }
-    }
-    END_FOREACH_MODULE;
-
-    return NULL;
 }

@@ -17,8 +17,6 @@ namespace System.Runtime
     // We choose this name to avoid clashing with any future public class with the name Finalizer. 
     internal static class __Finalizer
     {
-        private static bool s_fHaveNewClasslibs /* = false */;
-
         [NativeCallable(EntryPoint = "ProcessFinalizers", CallingConvention = CallingConvention.Cdecl)]
         public static void ProcessFinalizers()
         {
@@ -32,12 +30,6 @@ namespace System.Runtime
                 // otherwise memory is low and we should initiate a collection. 
                 if (InternalCalls.RhpWaitForFinalizerRequest() != 0)
                 {
-                    if (s_fHaveNewClasslibs)
-                    {
-                        s_fHaveNewClasslibs = false;
-                        MakeFinalizerInitCallbacks();
-                    }
-
                     DrainQueue();
 
                     // Tell anybody that's interested that the finalization pass is complete (there is a race condition here
@@ -71,28 +63,6 @@ namespace System.Runtime
                 // anything).
                 CalliIntrinsics.CallVoid(target.EEType->FinalizerCode, target);
             }
-        }
-
-        // Each class library can sign up for a callback to run code on the finalizer thread before any 
-        // objects derived from that class library's System.Object are finalized.  This is where we make those
-        // callbacks.  When a class library is loaded, we set the s_fHasNewClasslibs flag and then the next
-        // time the finalizer runs, we call this function to make any outstanding callbacks.
-        private static unsafe void MakeFinalizerInitCallbacks()
-        {
-            while (true)
-            {
-                IntPtr pfnFinalizerInitCallback = InternalCalls.RhpGetNextFinalizerInitCallback();
-                if (pfnFinalizerInitCallback == IntPtr.Zero)
-                    return;
-
-                CalliIntrinsics.CallVoid(pfnFinalizerInitCallback);
-            }
-        }
-
-        [RuntimeExport("RhpSetHaveNewClasslibs")]
-        public static void RhpSetHaveNewClasslibs()
-        {
-            s_fHaveNewClasslibs = true;
         }
     }
 }

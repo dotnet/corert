@@ -42,11 +42,6 @@ set(COMMON_RUNTIME_SOURCES
     UniversalTransitionHelpers.cpp
     yieldprocessornormalized.cpp
 
-    # ProjectN only
-    # gcdump.cpp
-    # module.cpp
-    # RHCodeMan.cpp
-
     ../gc/gceventstatus.cpp
     ../gc/gcload.cpp
     ../gc/gcconfig.cpp

@@ -16,7 +16,6 @@
 #include "RuntimeInstance.h"
 #include "gcrhinterface.h"
 #include "shash.h"
-#include "module.h"
 #include "DebugEventSource.h"
 
 #include "slist.inl"
@@ -33,16 +32,6 @@ bool EventEnabled(DebugEventType eventType)
            ((g_DebuggerEventsFilter & (1 << ((int)eventType-1))) != 0);
 }
 
-void DebugEventSource::SendModuleLoadEvent(Module* pModule)
-{
-    if(!EventEnabled(DEBUG_EVENT_TYPE_LOAD_MODULE))
-        return;
-    DebugEventPayload payload;
-    payload.type = DEBUG_EVENT_TYPE_LOAD_MODULE;
-    payload.ModuleLoadUnload.pModuleHeader = (CORDB_ADDRESS)pModule->GetModuleHeader();
-    SendRawEvent(&payload);
-}
-
 void DebugEventSource::SendModuleLoadEvent(void* pAddressInModule)
 {
     if(!EventEnabled(DEBUG_EVENT_TYPE_LOAD_MODULE))
@@ -50,16 +39,6 @@ void DebugEventSource::SendModuleLoadEvent(void* pAddressInModule)
     DebugEventPayload payload;
     payload.type = DEBUG_EVENT_TYPE_LOAD_MODULE;
     payload.ModuleLoadUnload.pModuleHeader = (CORDB_ADDRESS)pAddressInModule;
-    SendRawEvent(&payload);
-}
-
-void DebugEventSource::SendModuleUnloadEvent(Module* pModule)
-{
-    if(!EventEnabled(DEBUG_EVENT_TYPE_UNLOAD_MODULE))
-        return;
-    DebugEventPayload payload;
-    payload.type = DEBUG_EVENT_TYPE_UNLOAD_MODULE;
-    payload.ModuleLoadUnload.pModuleHeader = (CORDB_ADDRESS)pModule->GetModuleHeader();
     SendRawEvent(&payload);
 }
 

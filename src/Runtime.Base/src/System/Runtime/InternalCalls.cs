@@ -323,11 +323,6 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe IntPtr RhpGetICastableGetImplTypeMethod(EEType* pEEType);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpGetNextFinalizerInitCallback")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe IntPtr RhpGetNextFinalizerInitCallback();
-
         [RuntimeImport(Redhawk.BaseName, "RhpCallCatchFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]

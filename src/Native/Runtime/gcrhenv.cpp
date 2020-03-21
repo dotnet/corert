@@ -30,7 +30,7 @@
 
 #include "shash.h"
 #include "RWLock.h"
-#include "module.h"
+#include "TypeManager.h"
 #include "RuntimeInstance.h"
 #include "objecthandle.h"
 #include "eetype.inl"

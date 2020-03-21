@@ -40,7 +40,7 @@
 #include "slist.h"
 #include "RWLock.h"
 #include "shash.h"
-#include "module.h"
+#include "TypeManager.h"
 #include "RuntimeInstance.h"
 #include "eetype.inl"
 #include "volatile.h"
