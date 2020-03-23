@@ -30,7 +30,7 @@
 #include "thread.inl"
 #include "gcrhinterface.h"
 #include "shash.h"
-#include "module.h"
+#include "TypeManager.h"
 #include "eetype.h"
 #include "ObjectLayout.h"
 #include "slist.inl"
@@ -100,15 +100,6 @@ COOP_PINVOKE_HELPER(UInt32, RhGetLoadedOSModules, (Array * pResultArray))
 
     UInt32 cModules = 0;
 
-    FOREACH_MODULE(pModule)
-    {
-        if (pResultArray && (cModules < cResultArrayElements))
-            pResultElements[cModules] = pModule->GetOsModuleHandle();
-
-        cModules++;
-    }
-    END_FOREACH_MODULE
-
     ReaderWriterLock::ReadHolder read(&GetRuntimeInstance()->GetTypeManagerLock());
 
     RuntimeInstance::OsModuleList *osModules = GetRuntimeInstance()->GetOsModuleList();
@@ -125,11 +116,6 @@ COOP_PINVOKE_HELPER(UInt32, RhGetLoadedOSModules, (Array * pResultArray))
 
 COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
 {
-    Module * pModule = GetRuntimeInstance()->FindModuleByAddress(pPointerVal);
-
-    if (pModule != NULL)
-        return pModule->GetOsModuleHandle();
-
     ICodeManager * pCodeManager = GetRuntimeInstance()->FindCodeManagerByAddress(pPointerVal);
 
     if (pCodeManager != NULL)
@@ -203,58 +189,6 @@ COOP_PINVOKE_HELPER(DispatchMap *, RhpGetDispatchMap, (EEType * pEEType))
     return pEEType->GetDispatchMap();
 }
 
-// Obtain the address of a thread static field for the current thread given the enclosing type and a field cookie
-// obtained from a fixed up binder blob field record.
-COOP_PINVOKE_HELPER(UInt8 *, RhGetThreadStaticFieldAddress, (EEType * pEEType, UInt32 startingOffsetInTlsBlock, UInt32 fieldOffset))
-{
-    RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
-
-    // We need two pieces of information to locate a thread static field for the current thread: a TLS index
-    // (one assigned per module) and an offset into the block of data allocated for each thread for that TLS
-    // index.
-    UInt32 uiTlsIndex;
-    UInt32 uiFieldOffset;
-
-    if (pEEType->IsDynamicType())
-    {
-        // Specific TLS storage is allocated for each dynamic type. There is no starting offset since it's not a 
-        // TLS storage block shared by multiple types.
-        ASSERT(startingOffsetInTlsBlock == 0);
-
-        // Special case for thread static fields on dynamic types: the TLS storage is managed by the runtime
-        // for each dynamically created type with thread statics. The TLS storage size allocated for each type
-        // is the size of all the thread statics on that type. We use the field offset to get the thread static
-        // data for that field on the current thread.
-        UInt8* pTlsStorage = ThreadStore::GetCurrentThread()->GetThreadLocalStorageForDynamicType(pEEType->get_DynamicThreadStaticOffset());
-        ASSERT(pTlsStorage != NULL);
-        return pTlsStorage + fieldOffset;
-    }
-    else
-    {
-        /* TODO: CORERT */
-
-        // The startingOffsetInTlsBlock is an offset from the base of all Redhawk thread statics
-        // to the field. The TLS index and offset adjustment (in cases where the module was linked with native
-        // code using .tls) is that from the exe module.
-
-        // In the separate compilation case, the generic unification logic should assure
-        // that the pEEType parameter passed in is indeed the "winner" of generic unification,
-        // not one of the "losers".
-        // TODO: come up with an assert to check this.
-        Module * pModule = pRuntimeInstance->FindModuleByReadOnlyDataAddress(pEEType);
-        if (pModule == NULL)
-            pModule = pRuntimeInstance->FindModuleByDataAddress(pEEType);
-        ASSERT(pModule != NULL);
-        ModuleHeader * pExeModuleHeader = pModule->GetModuleHeader();
-
-        uiTlsIndex = *pExeModuleHeader->PointerToTlsIndex;
-        uiFieldOffset = pExeModuleHeader->TlsStartOffset + startingOffsetInTlsBlock + fieldOffset;
-
-        // Now look at the current thread and retrieve the address of the field.
-        return ThreadStore::GetCurrentThread()->GetThreadLocalStorage(uiTlsIndex, uiFieldOffset);
-    }
-}
-
 #if _TARGET_ARM_
 //*****************************************************************************
 //  Extract the 16-bit immediate from ARM Thumb2 Instruction (format T2_N)
@@ -313,21 +247,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
     // First, check the unboxing stubs regions known by the runtime (if any exist)
     if (!GetRuntimeInstance()->IsUnboxingStub(pCodeOrg))
     {
-        // Search for the module containing the code
-        FOREACH_MODULE(pCurrentModule)
-        {
-            // If the code pointer doesn't point to a module's stub range,
-            // it can't be pointing to a stub
-            if (pCurrentModule->ContainsStubAddress(pCodeOrg))
-            {
-                pModule = pCurrentModule;
-                break;
-            }
-        }
-        END_FOREACH_MODULE;
-
-        if (pModule == NULL)
-            return pCodeOrg;
+        return pCodeOrg;
     }
 
 #ifdef _TARGET_AMD64_
@@ -353,7 +273,6 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
         // normal import stub - dist to IAT cell is relative to the point *after* the instruction
         Int32 distToIatCell = *(Int32 *)&pCode[2];
         UInt8 ** pIatCell = (UInt8 **)(pCode + 6 + distToIatCell);
-        ASSERT(pModule == NULL || pModule->ContainsDataAddress(pIatCell));
         return *pIatCell;
     }
     // is this an unboxing stub followed by a relative jump?
@@ -466,64 +385,6 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
 
     return pCodeOrg;
 }
-
-// Given a pointer to code, find out if this points to a jump stub, and if so, return the address that stub jumps to
-COOP_PINVOKE_HELPER(UInt8 *, RhGetJmpStubCodeTarget, (UInt8 * pCodeOrg))
-{
-    // Search for the module containing the code
-    FOREACH_MODULE(pModule)
-    {
-        // If the code pointer doesn't point to a module's stub range,
-        // it can't be pointing to a stub
-        if (!pModule->ContainsStubAddress(pCodeOrg))
-            continue;
-
-#ifdef _TARGET_AMD64_
-        UInt8 * pCode = pCodeOrg;
-
-        // if this is a jmp stub
-        if (pCode[0] == 0xe9)
-        {
-            // relative jump - dist is relative to the point *after* the instruction
-            Int32 distToTarget = *(Int32 *)&pCode[1];
-            UInt8 * target = pCode + 5 + distToTarget;
-            return target;
-        }
-        return pCodeOrg;
-
-#elif _TARGET_X86_
-        UInt8 * pCode = pCodeOrg;
-
-        // if this is a jmp stub
-        if (pCode[0] == 0xe9)
-        {
-            // relative jump - dist is relative to the point *after* the instruction
-            Int32 distToTarget = *(Int32 *)&pCode[1];
-            UInt8 * pTarget = pCode + 5 + distToTarget;
-            return pTarget;
-        }
-        return pCodeOrg;
-
-#elif _TARGET_ARM_
-        UInt16 * pCode = (UInt16 *)((size_t)pCodeOrg & ~THUMB_CODE);
-        // if this is a jmp stub
-        if ((pCode[0] & 0xf800) == 0xf000 && (pCode[1] & 0xd000) == 0x9000)
-        {
-            Int32 distToTarget = GetThumb2BlRel24(pCode);
-            UInt8 * pTarget = (UInt8 *)(pCode + 2) + distToTarget + THUMB_CODE;
-            return (UInt8 *)pTarget;
-        }
-#elif _TARGET_ARM64_
-        PORTABILITY_ASSERT("@TODO: FIXME:ARM64");
-#else
-        PORTABILITY_ASSERT("RhGetJmpStubCodeTarget");
-#endif
-    }
-    END_FOREACH_MODULE;
-
-    return pCodeOrg;
-}
-
 
 //
 // Return true if the array slice is valid
@@ -696,8 +557,8 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
 
 EXTERN_C void * FASTCALL RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader)
 {
-    Module * pModule = GetRuntimeInstance()->FindModuleByReadOnlyDataAddress(pModuleHeader);
-    return pModule->RecoverLoopHijackTarget(entryIndex, pModuleHeader);
+    assert(!"NYI");
+    return NULL;
 }
 
 COOP_PINVOKE_HELPER(Int32, RhGetProcessCpuCount, ())

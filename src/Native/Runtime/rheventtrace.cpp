@@ -17,7 +17,6 @@
 #include "rwlock.h"
 #include "runtimeinstance.h"
 #include "shash.h"
-#include "module.h"
 #include "eventtracepriv.h"
 #include "shash.inl"
 #include "palredhawk.h"
@@ -359,45 +358,6 @@ void ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
 
     _ASSERTE(pLogger != NULL);
     pLogger->LogTypeAndParameters(thAsAddr, typeLogBehavior);
-
-#endif // defined(FEATURE_EVENT_TRACE)
-}
-
-
-void ETW::LoaderLog::SendModuleEvent(Module * pModule)
-{
-#if defined(FEATURE_EVENT_TRACE)
-    if (!(MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled) ||
-        !PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &ModuleLoad_V2))
-    {
-        return;
-    }
-
-    const WCHAR * wszModuleFileName = NULL;
-
-    PalGetModuleFileName(&wszModuleFileName, pModule->GetOsModuleHandle());
-
-    GUID signature;
-    DWORD dwAge;
-    WCHAR wszPath[1024];
-    PalGetPDBInfo(pModule->GetOsModuleHandle(), &signature, &dwAge, wszPath, COUNTOF(wszPath));
-
-    GUID zeroGuid = { 0 };
-    FireEtwModuleLoad_V2(
-        ULONGLONG(pModule),
-        0,                      // AssemblyID
-        0,                      // Module Flags
-        0,                      // Reserved1, 
-        NULL,                   // ModuleILPath, 
-        wszModuleFileName,      // ModuleNativePath, 
-        GetClrInstanceId(),
-        &zeroGuid,              // ManagedPdbSignature,
-        0,                      // ManagedPdbAge, 
-        NULL,                   // ManagedPdbBuildPath, 
-        &signature,             // NativePdbSignature,
-        dwAge,                  // NativePdbAge, 
-        wszPath                 // NativePdbBuildPath, 
-        );
 
 #endif // defined(FEATURE_EVENT_TRACE)
 }

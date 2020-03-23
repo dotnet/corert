@@ -17,9 +17,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <evntprov.h>
-#ifdef PROJECTN
-#include <roapi.h>
-#endif
 
 #include "holder.h"
 

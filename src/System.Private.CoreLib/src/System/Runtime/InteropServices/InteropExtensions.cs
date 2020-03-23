@@ -109,9 +109,7 @@ namespace System.Runtime.InteropServices
             RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
 
             IntPtr funcPtr = del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
-
-            // if the function pointer points to a jump stub return the target
-            return RuntimeImports.RhGetJmpStubCodeTarget(funcPtr);
+            return funcPtr;
         }
 
         public static IntPtr GetRawValue(this RuntimeTypeHandle handle)

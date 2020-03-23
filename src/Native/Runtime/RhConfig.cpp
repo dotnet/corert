@@ -22,7 +22,6 @@
 #include "threadstore.h"
 #include "RuntimeInstance.h"
 #include "shash.h"
-#include "module.h"
 #include "RhConfig.h"
 
 #include <string.h>

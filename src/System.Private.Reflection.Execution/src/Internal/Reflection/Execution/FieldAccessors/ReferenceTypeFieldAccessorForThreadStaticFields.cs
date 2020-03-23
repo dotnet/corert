@@ -16,14 +16,16 @@ namespace Internal.Reflection.Execution.FieldAccessors
 
         protected sealed override Object GetFieldBypassCctor()
         {
-            IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(DeclaringTypeHandle, ThreadStaticsBlockOffset, FieldOffset);
-            return RuntimeAugments.LoadReferenceTypeField(fieldAddress);
+            throw new NotImplementedException();
+            // IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(DeclaringTypeHandle, ThreadStaticsBlockOffset, FieldOffset);
+            // return RuntimeAugments.LoadReferenceTypeField(fieldAddress);
         }
 
         protected sealed override void UncheckedSetFieldBypassCctor(Object value)
         {
-            IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(DeclaringTypeHandle, ThreadStaticsBlockOffset, FieldOffset);
-            RuntimeAugments.StoreReferenceTypeField(fieldAddress, value);
+            throw new NotImplementedException();
+            // IntPtr fieldAddress = RuntimeAugments.GetThreadStaticFieldAddress(DeclaringTypeHandle, ThreadStaticsBlockOffset, FieldOffset);
+            // RuntimeAugments.StoreReferenceTypeField(fieldAddress, value);
         }
     }
 }

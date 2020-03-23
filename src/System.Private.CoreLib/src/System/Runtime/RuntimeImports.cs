@@ -579,10 +579,6 @@ namespace System.Runtime
         internal static extern IntPtr RhGetOSModuleForMrt();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticFieldAddress")]
-        internal static extern unsafe byte* RhGetThreadStaticFieldAddress(EETypePtr pEEType, int threadStaticsBlockOffset, int fieldOffset);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadStaticStorageForModule")]
         internal static unsafe extern object[] RhGetThreadStaticStorageForModule(int moduleIndex);
 
@@ -609,10 +605,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCodeTarget")]
         public static extern IntPtr RhGetCodeTarget(IntPtr pCode);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetJmpStubCodeTarget")]
-        internal static extern IntPtr RhGetJmpStubCodeTarget(IntPtr pCode);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetTargetOfUnboxingAndInstantiatingStub")]

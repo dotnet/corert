@@ -17,7 +17,6 @@ set(COMMON_RUNTIME_SOURCES
     gcrhenv.cpp
     gcrhscan.cpp
     GcStressControl.cpp
-    GenericUnification.cpp
     HandleTableHelpers.cpp
     MathHelpers.cpp
     MiscHelpers.cpp
@@ -30,7 +29,6 @@ set(COMMON_RUNTIME_SOURCES
     RhConfig.cpp
     RuntimeInstance.cpp
     RWLock.cpp
-    SectionMethodList.cpp
     sha1.cpp
     StackFrameIterator.cpp
     startup.cpp
@@ -41,11 +39,6 @@ set(COMMON_RUNTIME_SOURCES
     threadstore.cpp
     UniversalTransitionHelpers.cpp
     yieldprocessornormalized.cpp
-
-    # ProjectN only
-    # gcdump.cpp
-    # module.cpp
-    # RHCodeMan.cpp
 
     ../gc/gceventstatus.cpp
     ../gc/gcload.cpp

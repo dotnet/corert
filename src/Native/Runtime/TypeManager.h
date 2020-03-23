@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 #pragma once
 #include "ModuleHeaders.h"
+#include "ICodeManager.h"
 
 struct StaticGcDesc;
 class DispatchMap;

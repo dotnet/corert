@@ -61,41 +61,6 @@ inline PTR_Code EEType::get_SealedVirtualSlot(UInt16 slotNumber)
 }
 #endif // !DACCESS_COMPILE
 
-//-----------------------------------------------------------------------------------------------------------
-inline EEType * EEType::get_BaseType()
-{
-#ifdef DACCESS_COMPILE
-    // Easy way to cope with the get_BaseType calls throughout the DACCESS code; better than chasing down
-    // all uses and changing them to check for array.
-    if (IsParameterizedType())
-        return NULL;
-#endif
-
-    if (IsCloned())
-    {
-        return get_CanonicalEEType()->get_BaseType();
-    }
-
-#if !defined(DACCESS_COMPILE)
-    if (IsParameterizedType())
-    {
-        if (IsArray())
-            return GetArrayBaseType();
-        else
-            return NULL;
-    }
-#endif
-
-    ASSERT(IsCanonical());
-
-    if (IsRelatedTypeViaIAT())
-    {
-        return *PTR_PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_ppBaseTypeViaIAT));
-    }
-
-    return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pBaseType));
-}
-
 #if !defined(DACCESS_COMPILE)
 //-----------------------------------------------------------------------------------------------------------
 inline bool EEType::HasDispatchMap()
@@ -200,22 +165,6 @@ inline bool EEType::DacVerifyWorker(EEType* pThis)
     return true;
 }
 #endif
-
-// Initialize an existing EEType as an array type with specific element type. This is another specialized
-// method used only during the unification of generic instantiation types. It might need modification if
-// needed in any other scenario.
-inline void EEType::InitializeAsArrayType(EEType * pElementType, UInt32 baseSize)
-{
-    // This type will never appear in an object header on the heap (or otherwise be made available to the GC).
-    // It is used only when signature matching generic type instantiations. Only a subset of the type fields
-    // need to be filled in correctly as a result.
-    m_usComponentSize = 0;
-    m_usFlags = ParameterizedEEType;
-    m_uBaseSize = baseSize;
-    m_RelatedType.m_pRelatedParameterType = pElementType;
-    m_usNumVtableSlots = 0;
-    m_usNumInterfaces = 0;
-}
 
 /* static */
 inline UInt32 EEType::ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment)
@@ -364,20 +313,6 @@ inline DynamicModule * EEType::get_DynamicModule()
         return nullptr;
     }
 }
-
-#if !defined(DACCESS_COMPILE)
-// get the base type of an array EEType - this is special because the base type of arrays is not explicitly
-// represented - instead the classlib has a common one for all arrays
-inline EEType * EEType::GetArrayBaseType()
-{
-    EEType *pEEType = this;
-    if (pEEType->IsDynamicType())
-        pEEType = pEEType->get_DynamicTemplateType();
-    Module * pModule = GetRuntimeInstance()->FindModuleByReadOnlyDataAddress(pEEType);
-    EEType * pArrayBaseType = pModule->GetArrayBaseType();
-    return pArrayBaseType;
-}
-#endif // !defined(DACCESS_COMPILE)
 
 // Calculate the offset of a field of the EEType that has a variable offset.
 __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
