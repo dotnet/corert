@@ -189,40 +189,6 @@ COOP_PINVOKE_HELPER(DispatchMap *, RhpGetDispatchMap, (EEType * pEEType))
     return pEEType->GetDispatchMap();
 }
 
-// Obtain the address of a thread static field for the current thread given the enclosing type and a field cookie
-// obtained from a fixed up binder blob field record.
-COOP_PINVOKE_HELPER(UInt8 *, RhGetThreadStaticFieldAddress, (EEType * pEEType, UInt32 startingOffsetInTlsBlock, UInt32 fieldOffset))
-{
-    RuntimeInstance * pRuntimeInstance = GetRuntimeInstance();
-
-    // We need two pieces of information to locate a thread static field for the current thread: a TLS index
-    // (one assigned per module) and an offset into the block of data allocated for each thread for that TLS
-    // index.
-    UInt32 uiTlsIndex;
-    UInt32 uiFieldOffset;
-
-    if (pEEType->IsDynamicType())
-    {
-        // Specific TLS storage is allocated for each dynamic type. There is no starting offset since it's not a 
-        // TLS storage block shared by multiple types.
-        ASSERT(startingOffsetInTlsBlock == 0);
-
-        // Special case for thread static fields on dynamic types: the TLS storage is managed by the runtime
-        // for each dynamically created type with thread statics. The TLS storage size allocated for each type
-        // is the size of all the thread statics on that type. We use the field offset to get the thread static
-        // data for that field on the current thread.
-        UInt8* pTlsStorage = ThreadStore::GetCurrentThread()->GetThreadLocalStorageForDynamicType(pEEType->get_DynamicThreadStaticOffset());
-        ASSERT(pTlsStorage != NULL);
-        return pTlsStorage + fieldOffset;
-    }
-    else
-    {
-        /* TODO: CORERT */
-
-        assert(!"NYI");
-    }
-}
-
 #if _TARGET_ARM_
 //*****************************************************************************
 //  Extract the 16-bit immediate from ARM Thumb2 Instruction (format T2_N)
