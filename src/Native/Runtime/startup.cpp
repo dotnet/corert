@@ -376,9 +376,6 @@ COOP_PINVOKE_HELPER(void, RhpEnableConservativeStackReporting, ())
 //
 COOP_PINVOKE_HELPER(void, RhpShutdown, ())
 {
-#ifdef FEATURE_PROFILING
-    GetRuntimeInstance()->WriteProfileInfo();
-#endif // FEATURE_PROFILING
     // Indicate that runtime shutdown is complete and that the caller is about to start shutting down the entire process.
     g_processShutdownHasStarted = true;
 }
