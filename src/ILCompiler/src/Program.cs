@@ -496,7 +496,7 @@ namespace ILCompiler
                     ? new FrameworkStringResourceBlockingPolicy()
                     : (ManifestResourceBlockingPolicy)new NoManifestResourceBlockingPolicy();
 
-                metadataGenerationOptions = UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
+                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
                 if (_completeTypesMetadata)
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
                 if (_scanReflection)
