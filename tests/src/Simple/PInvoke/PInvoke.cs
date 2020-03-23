@@ -746,6 +746,12 @@ namespace PInvokeTests
             public int f3;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        public class ClassForTestingFlowAnalysis
+        {
+            public int Field;
+        }
+
         private static void TestStruct()
         {
             Console.WriteLine("Testing Structs");
@@ -983,6 +989,9 @@ namespace PInvokeTests
             {
                 Marshal.FreeHGlobal(nbc_memory);
             }
+
+            int cftf_size = Marshal.SizeOf(typeof(ClassForTestingFlowAnalysis));
+            ThrowIfNotEquals(4, cftf_size, "ClassForTestingFlowAnalysis marshalling Marshal API failed");
         }
     }
 
