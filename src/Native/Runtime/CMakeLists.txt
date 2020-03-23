@@ -29,7 +29,6 @@ set(COMMON_RUNTIME_SOURCES
     RhConfig.cpp
     RuntimeInstance.cpp
     RWLock.cpp
-    SectionMethodList.cpp
     sha1.cpp
     StackFrameIterator.cpp
     startup.cpp
