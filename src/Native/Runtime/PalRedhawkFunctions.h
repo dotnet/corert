@@ -184,10 +184,4 @@ inline void PalRaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UIn
 {
     RaiseFailFastException(arg1, arg2, arg3);
 }
-
-extern "C" UInt32_BOOL __stdcall WriteFile(HANDLE, const void *, UInt32, UInt32 *, LPOVERLAPPED);
-inline UInt32_BOOL PalWriteFile(HANDLE arg1, const void * arg2, UInt32 arg3, UInt32 * arg4, LPOVERLAPPED arg5)
-{
-    return WriteFile(arg1, arg2, arg3, arg4, arg5);
-}
 #endif 
