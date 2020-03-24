@@ -11,7 +11,6 @@ class ICodeManager;
 struct StaticGcDesc;
 typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
 class TypeManager;
-struct ModuleHeader;
 enum GenericVarianceType : UInt8;
 
 #include "ICodeManager.h"
@@ -64,14 +63,6 @@ public:
     
 private:
     TypeManagerList             m_TypeManagerList;
-
-#ifdef FEATURE_PROFILING
-    // The thread writing the profile data is created lazily, whenever
-    // a module with a profile section is registered.
-    // To avoid starting the thread more than once, this flag indicates
-    // whether the thread has been created already.
-    bool                        m_fProfileThreadCreated;
-#endif
 
     bool                        m_conservativeStackReportingEnabled;
 
@@ -131,12 +122,6 @@ public:
 
     void EnableGcPollStress();
     void UnsychronizedResetHijackedLoops();
-
-#ifdef FEATURE_PROFILING
-    void InitProfiling(ModuleHeader *pModuleHeader);
-    void WriteProfileInfo();
-#endif // FEATURE_PROFILING
-
 };
 typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
 

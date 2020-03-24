@@ -555,12 +555,6 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
 
 #endif // PLATFORM_UNIX
 
-EXTERN_C void * FASTCALL RecoverLoopHijackTarget(UInt32 entryIndex, ModuleHeader * pModuleHeader)
-{
-    assert(!"NYI");
-    return NULL;
-}
-
 COOP_PINVOKE_HELPER(Int32, RhGetProcessCpuCount, ())
 {
     return PalGetProcessCpuCount();

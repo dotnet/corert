@@ -364,10 +364,6 @@ bool RuntimeInstance::Initialize(HANDLE hPalInstance)
     pRuntimeInstance->m_pThreadStore = pThreadStore;
     pRuntimeInstance->m_hPalInstance = hPalInstance;
 
-#ifdef FEATURE_PROFILING
-    pRuntimeInstance->m_fProfileThreadCreated = false;
-#endif
-
     ASSERT_MSG(g_pTheRuntimeInstance == NULL, "multi-instances are not supported");
     g_pTheRuntimeInstance = pRuntimeInstance;
 
