@@ -162,7 +162,7 @@ LEAF_ENTRY RhpInitialInterfaceDispatch, _TEXT
 LEAF_END RhpInitialInterfaceDispatch, _TEXT
 
 // No as alternate entry due to missed thumb bit in this case
-// See https://github.com/dotnet/coreclr/issues/12953
+// See https://github.com/dotnet/runtime/issues/8608
 LEAF_ENTRY RhpInitialDynamicInterfaceDispatch, _TEXT
         // Just tail call to the cache miss helper.
         b           C_FUNC(RhpInterfaceDispatchSlow)

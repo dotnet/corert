@@ -3,7 +3,7 @@
 # This is the Unix equivalent of build-and-run-test.cmd
 # It is invoked by each test's bash script. The reason it's called corerun is that
 # the unix CoreCLR tests don't have a custom runner override environment variable.
-# See issue https://github.com/dotnet/coreclr/issues/9007
+# See issue https://github.com/dotnet/runtime/issues/7252
 
 export TestExecutable=$2
 export TestFileName=${TestExecutable%.exe}

@@ -1098,15 +1098,15 @@
                 },
                 {
                     "name": "System.Tests.DecimalTests.Remainder",
-                    "reason": "https://github.com/dotnet/coreclr/issues/12605"
+                    "reason": "https://github.com/dotnet/runtime/issues/8472"
                 },
                 {
                     "name": "System.Tests.DecimalTests.Remainder_Invalid",
-                    "reason": "https://github.com/dotnet/coreclr/issues/12605"
+                    "reason": "https://github.com/dotnet/runtime/issues/8472"
                 },
                 {
                     "name": "System.Tests.DecimalTests+BigIntegerMod.Test",
-                    "reason": "https://github.com/dotnet/coreclr/issues/12605"
+                    "reason": "https://github.com/dotnet/runtime/issues/8472"
                 },
                 {
                     "name": "System.Tests.DecimalTests.Round_InvalidMidpointRounding_ThrowsArgumentException",
