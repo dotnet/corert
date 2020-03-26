@@ -31,7 +31,7 @@
   {
     ret
   }
-  //this is copied from the test case for https://github.com/dotnet/coreclr/issues/14784
+  //this is copied from the test case for https://github.com/dotnet/runtime/issues/9210
   //its been adapted to remove the requirement for Console.WriteLine because thats not supported in WASM
   //it can be removed once we have support for Console.WriteLine and can run the CoreCLR tests
   .method public static int32 InlineAssignByte()

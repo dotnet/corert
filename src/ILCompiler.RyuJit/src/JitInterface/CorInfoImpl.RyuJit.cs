@@ -638,7 +638,7 @@ namespace Internal.JitInterface
                 builder.EmitCompressedUInt((uint)clause.TryOffset);
 
                 // clause.TryLength returned by the JIT is actually end offset...
-                // https://github.com/dotnet/coreclr/issues/3585
+                // https://github.com/dotnet/runtime/issues/5282
                 int tryLength = (int)clause.TryLength - (int)clause.TryOffset;
                 builder.EmitCompressedUInt((uint)((tryLength << 2) | (int)clauseKind));
 
