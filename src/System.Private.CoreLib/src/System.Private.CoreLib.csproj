@@ -83,8 +83,8 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs">
       <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.RVA.cs">
-      <Link>Internal\Runtime\TypeManagerHandle.RVA.cs</Link>
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.Equality.cs">
+      <Link>Internal\Runtime\TypeManagerHandle.Equality.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupDebug.cs">
       <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupDebug.cs</Link>

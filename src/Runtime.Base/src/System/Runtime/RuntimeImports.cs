@@ -10,36 +10,6 @@ using Internal.Runtime;
 
 namespace System.Runtime
 {
-    public struct TypeManagerHandle
-    {
-        private IntPtr _handleValue;
-
-        public TypeManagerHandle(IntPtr handleValue)
-        {
-            _handleValue = handleValue;
-        }
-
-        public IntPtr GetIntPtrUNSAFE()
-        {
-            return _handleValue;
-        }
-
-        public static bool operator ==(TypeManagerHandle left, TypeManagerHandle right)
-        {
-            return left._handleValue == right._handleValue;
-        }
-
-        public static bool operator !=(TypeManagerHandle left, TypeManagerHandle right)
-        {
-            return left._handleValue != right._handleValue;
-        }
-
-        public bool Equals(TypeManagerHandle other)
-        {
-            return _handleValue == other._handleValue;
-        }
-    }
-
     internal static class RuntimeImports
     {
         private const string RuntimeLibrary = "[MRT]";

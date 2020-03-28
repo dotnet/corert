@@ -72,12 +72,6 @@ EXTERN_C REDHAWK_API void __cdecl RhFlushProcessWriteBuffers()
     PalFlushProcessWriteBuffers();
 }
 
-// Return the DispatchMap pointer of a type
-COOP_PINVOKE_HELPER(DispatchMap*, RhGetDispatchMapForType, (EEType * pEEType))
-{
-    return pEEType->GetDispatchMap();
-}
-
 // Get the list of currently loaded Redhawk modules (as OS HMODULE handles). The caller provides a reference
 // to an array of pointer-sized elements and we return the total number of modules currently loaded (whether
 // that is less than, equal to or greater than the number of elements in the array). If there are more modules
@@ -177,16 +171,6 @@ COOP_PINVOKE_HELPER(void *, GetClasslibCCtorCheck, (void * pReturnAddress))
 COOP_PINVOKE_HELPER(void *, RhGetTargetOfUnboxingAndInstantiatingStub, (void * pUnboxStub))
 {
     return GetRuntimeInstance()->GetTargetOfUnboxingAndInstantiatingStub(pUnboxStub);
-}
-
-COOP_PINVOKE_HELPER(Boolean, RhpHasDispatchMap, (EEType * pEEType))
-{
-    return pEEType->HasDispatchMap();
-}
-
-COOP_PINVOKE_HELPER(DispatchMap *, RhpGetDispatchMap, (EEType * pEEType))
-{
-    return pEEType->GetDispatchMap();
 }
 
 #if _TARGET_ARM_

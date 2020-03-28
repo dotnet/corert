@@ -61,49 +61,6 @@ inline PTR_Code EEType::get_SealedVirtualSlot(UInt16 slotNumber)
 }
 #endif // !DACCESS_COMPILE
 
-#if !defined(DACCESS_COMPILE)
-//-----------------------------------------------------------------------------------------------------------
-inline bool EEType::HasDispatchMap()
-{
-    if (!HasInterfaces())
-        return false;
-    OptionalFields *optionalFields = get_OptionalFields();
-    if (optionalFields == NULL)
-        return false;
-    UInt32 idxDispatchMap = optionalFields->GetDispatchMap(0xffffffff);
-    if (idxDispatchMap == 0xffffffff)
-    {
-        if (HasDynamicallyAllocatedDispatchMap())
-            return true;
-        else if (IsDynamicType())
-            return get_DynamicTemplateType()->HasDispatchMap();
-        return false;
-    }
-    return true;
-}
-
-inline DispatchMap * EEType::GetDispatchMap()
-{
-    if (!HasInterfaces())
-        return NULL;
-
-    // Get index of DispatchMap pointer in the lookup table stored in this EEType's module.
-    OptionalFields *optionalFields = get_OptionalFields();
-    if (optionalFields == NULL)
-        return NULL;
-    UInt32 idxDispatchMap = optionalFields->GetDispatchMap(0xffffffff);
-    if ((idxDispatchMap == 0xffffffff) && IsDynamicType())
-    {
-        if (HasDynamicallyAllocatedDispatchMap())
-            return *(DispatchMap **)((UInt8*)this + GetFieldOffset(ETF_DynamicDispatchMap));
-        else
-            return get_DynamicTemplateType()->GetDispatchMap();
-    }
-
-    return GetTypeManagerPtr()->AsTypeManager()->GetDispatchMapLookupTable()[idxDispatchMap];
-}
-#endif // !DACCESS_COMPILE
-
 //-----------------------------------------------------------------------------------------------------------
 inline EEInterfaceInfoMap EEType::GetInterfaceMap()
 {

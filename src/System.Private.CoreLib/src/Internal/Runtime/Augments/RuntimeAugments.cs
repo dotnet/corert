@@ -196,7 +196,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetDispatchMapForType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetDispatchMapForType(CreateEETypePtr(typeHandle));
+            return CreateEETypePtr(typeHandle).DispatchMap;
         }
 
         public static IntPtr GetFallbackDefaultConstructor()

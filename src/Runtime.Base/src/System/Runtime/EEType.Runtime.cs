@@ -12,15 +12,6 @@ namespace Internal.Runtime
     // Extensions to EEType that are specific to the use in Runtime.Base.
     internal unsafe partial struct EEType
     {
-        internal DispatchResolve.DispatchMap* DispatchMap
-        {
-            get
-            {
-                fixed (EEType* pThis = &this)
-                    return InternalCalls.RhpGetDispatchMap(pThis);
-            }
-        }
-
         internal EEType* GetArrayEEType()
         {
             fixed (EEType* pThis = &this)

@@ -831,6 +831,31 @@ namespace Internal.Runtime
             }
         }
 
+        internal DispatchMap* DispatchMap
+        {
+            get
+            {
+                if (NumInterfaces == 0)
+                    return null;
+                byte* optionalFields = OptionalFieldsPtr;
+                if (optionalFields == null)
+                    return null;
+                uint idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, 0xffffffff);
+                if (idxDispatchMap == 0xffffffff && IsDynamicType)
+                {
+                    if (HasDynamicallyAllocatedDispatchMap)
+                    {
+                        fixed (EEType* pThis = &this)
+                            return *(DispatchMap**)((byte*)pThis + GetFieldOffset(EETypeField.ETF_DynamicDispatchMap));
+                    }
+                    else
+                        return DynamicTemplateType->DispatchMap;
+                }
+
+                return ((DispatchMap**)TypeManager.DispatchMap)[idxDispatchMap];
+            }
+        }
+
         // Get the address of the finalizer method for finalizable types.
         internal IntPtr FinalizerCode
         {
@@ -1194,12 +1219,12 @@ namespace Internal.Runtime
         }
 
 #if EETYPE_TYPE_MANAGER
-        internal IntPtr TypeManager
+        internal TypeManagerHandle TypeManager
         {
             get
             {
                 // This is always a pointer to a pointer to a type manager
-                return *(IntPtr*)_ppTypeManager;
+                return *(TypeManagerHandle*)_ppTypeManager;
             }
         }
 #if TYPE_LOADER_IMPLEMENTATION

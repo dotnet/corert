@@ -41,7 +41,7 @@ TypeManager * TypeManager::Create(HANDLE osModule, void * pModuleHeader, void** 
 }
 
 TypeManager::TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader, void** pClasslibFunctions, UInt32 nClasslibFunctions)
-    : m_osModule(osModule), m_pHeader(pHeader), m_pDispatchMapTable(nullptr),
+    : m_osModule(osModule), m_pHeader(pHeader),
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
     int length;
@@ -51,6 +51,7 @@ TypeManager::TypeManager(HANDLE osModule, ReadyToRunHeader * pHeader, void** pCl
     m_pThreadStaticsGCInfo = (StaticGcDesc*)GetModuleSection(ReadyToRunSectionType::ThreadStaticGCDescRegion, &length);
     m_pTlsIndex = (UInt32*)GetModuleSection(ReadyToRunSectionType::ThreadStaticIndex, &length);
     m_pLoopHijackFlag = (UInt32*)GetModuleSection(ReadyToRunSectionType::LoopHijackFlag, &length);
+    m_pDispatchMapTable = (DispatchMap **)GetModuleSection(ReadyToRunSectionType::InterfaceDispatchTable, &length);
 }
 
 void * TypeManager::GetModuleSection(ReadyToRunSectionType sectionId, int * length)
@@ -82,18 +83,6 @@ void * TypeManager::GetClasslibFunction(ClasslibFunctionId functionId)
         return nullptr;
 
     return m_pClasslibFunctions[id];
-}
-
-DispatchMap** TypeManager::GetDispatchMapLookupTable()
-{
-    if (m_pDispatchMapTable == nullptr)
-    {
-        int length = 0;
-        DispatchMap ** pDispatchMapTable = (DispatchMap **)GetModuleSection(ReadyToRunSectionType::InterfaceDispatchTable, &length);
-        m_pDispatchMapTable = pDispatchMapTable;
-    }
-
-    return m_pDispatchMapTable;
 }
 
 bool TypeManager::ModuleInfoRow::HasEndPointer()
