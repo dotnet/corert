@@ -285,6 +285,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Relocation.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\SettableReadOnlyDataBlob.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsNode.cs" />

@@ -136,6 +136,7 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\Relocation.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\DependencyAnalysis\SettableReadOnlyDataBlob.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\DelegateCreationInfo.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\JitHelper.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\GenericDictionaryLookup.cs" />
@@ -156,6 +157,7 @@
     <Compile Include="$(JitInterfaceBasePath)\CorInfoHelpFunc.cs" />
     <Compile Include="$(JitInterfaceBasePath)\CorInfoImpl.cs" />
     <Compile Include="$(JitInterfaceBasePath)\CorInfoImpl.Intrinsics.cs" />
+    <Compile Include="$(JitInterfaceBasePath)\CorInfoInstructionSet.cs" />
     <Compile Include="$(JitInterfaceBasePath)\CorInfoTypes.cs" />
     <Compile Include="$(JitInterfaceBasePath)\CorInfoTypes.VarInfo.cs" />
     <Compile Include="$(JitInterfaceBasePath)\JitConfigProvider.cs" />
