@@ -113,8 +113,30 @@ namespace System.Runtime
             {
                 result = InternalCalls.RhpNewFast(ptrEEType);
             }
-            InternalCalls.RhpBox(result, ref Unsafe.Add(ref data, dataOffset));
+            RhpBox(result, ref Unsafe.Add(ref data, dataOffset));
             return result;
+        }
+
+        [RuntimeExport("RhpBox")]
+        public static unsafe void RhpBox(object obj, ref byte data)
+        {
+            EEType* pEEType = obj.EEType;
+
+            // Can box value types only (which also implies no finalizers).
+            Debug.Assert(pEEType->IsValueType && !pEEType->IsFinalizable);
+
+            // Copy the unboxed value type data into the new object.
+            // Perform any write barriers necessary for embedded reference fields.
+            if (pEEType->HasGCPointers)
+            {
+                InternalCalls.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref data, pEEType->ValueTypeSize);
+            }
+            else
+            {
+                fixed (byte* pFields = &obj.GetRawData())
+                fixed (byte* pData = &data)
+                    InternalCalls.memmove(pFields, pData, pEEType->ValueTypeSize);
+            }
         }
 
         [RuntimeExport("RhBoxAny")]
@@ -237,7 +259,7 @@ namespace System.Runtime
                 InternalCalls.RhpInitMultibyte(
                     ref data,
                     0,
-                    (nuint)(pUnboxToEEType->BaseSize - (sizeof(ObjHeader) + sizeof(EEType*) + pUnboxToEEType->ValueTypeFieldPadding)));
+                    pUnboxToEEType->ValueTypeSize);
 
                 return;
             }
@@ -261,20 +283,19 @@ namespace System.Runtime
                 data = ref Unsafe.Add(ref data, pUnboxToEEType->NullableValueOffset);
             }
 
-            nuint cbFields = (nuint)(pEEType->BaseSize - (sizeof(ObjHeader) + sizeof(EEType*) + pEEType->ValueTypeFieldPadding));
             ref byte fields = ref obj.GetRawData();
 
             if (pEEType->HasGCPointers)
             {
                 // Copy the boxed fields into the new location in a GC safe manner
-                InternalCalls.RhBulkMoveWithWriteBarrier(ref data, ref fields, cbFields);
+                InternalCalls.RhBulkMoveWithWriteBarrier(ref data, ref fields, pEEType->ValueTypeSize);
             }
             else
             {
                 // Copy the boxed fields into the new location.
                 fixed (byte *pData = &data)
                     fixed (byte* pFields = &fields)
-                        InternalCalls.memmove(pData, pFields, cbFields);
+                        InternalCalls.memmove(pData, pFields, pEEType->ValueTypeSize);
             }
         }
 
