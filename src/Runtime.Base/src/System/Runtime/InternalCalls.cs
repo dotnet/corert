@@ -171,11 +171,6 @@ namespace System.Runtime
         internal extern static unsafe object RhpNewFastMisalign(EEType * pEEType);
 #endif // FEATURE_64BIT_ALIGNMENT
 
-        [RuntimeImport(Redhawk.BaseName, "RhpBox")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Sometimes)]
-        internal extern static unsafe void RhpBox(object obj, ref byte data);
-
         [RuntimeImport(Redhawk.BaseName, "RhpCopyObjectContents")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]

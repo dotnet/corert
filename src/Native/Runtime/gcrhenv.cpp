@@ -754,34 +754,6 @@ COOP_PINVOKE_HELPER(Boolean, RhCompareObjectContentsAndPadding, (Object* pObj1, 
     return (memcmp(pbFields1, pbFields2, cbFields) == 0) ? Boolean_true : Boolean_false;
 }
 
-COOP_PINVOKE_HELPER(void, RhpBox, (Object * pObj, void * pData))
-{
-    EEType * pEEType = pObj->get_EEType();
-
-    // Can box value types only (which also implies no finalizers).
-    ASSERT(pEEType->get_IsValueType() && !pEEType->HasFinalizer());
-
-    // cbObject includes ObjHeader (sync block index) and the EEType* field from Object and is rounded up to
-    // suit GC allocation alignment requirements. cbFields on the other hand is just the raw size of the field
-    // data.
-    size_t cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
-    size_t cbObject = pEEType->get_BaseSize();
-    size_t cbFields = cbObject - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
-    
-    UInt8 * pbFields = (UInt8*)pObj + sizeof(EEType*);
-
-    // Copy the unboxed value type data into the new object.
-    // Perform any write barriers necessary for embedded reference fields.
-    if (pEEType->HasReferenceFields())
-    {
-        GCSafeCopyMemoryWithWriteBarrier(pbFields, pData, cbFields);
-    }
-    else
-    {
-        memcpy(pbFields, pData, cbFields);
-    }
-}
-
 // Thread static representing the last allocation.
 // This is used to log the type information for each slow allocation.
 DECLSPEC_THREAD

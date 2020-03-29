@@ -85,9 +85,11 @@ namespace System.Runtime
         [RuntimeExport("RhBox")]
         public static unsafe object RhBox(EETypePtr pEEType, ref byte data)
         {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            int dataOffset = 0;
-            object result;
+            EEType* ptrEEType = pEEType.ToPointer();
+            ref byte dataAdjustedForNullable = ref data;
+
+            // Can box value types only (which also implies no finalizers).
+            Debug.Assert(ptrEEType->IsValueType && !ptrEEType->IsFinalizable);
 
             // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
             // nullable's value is empty).
@@ -99,10 +101,11 @@ namespace System.Runtime
 
                 // Switch type we're going to box to the Nullable<T> target type and advance the data pointer
                 // to the value embedded within the nullable.
-                dataOffset = ptrEEType->NullableValueOffset;
+                dataAdjustedForNullable = ref Unsafe.Add(ref data, ptrEEType->NullableValueOffset);
                 ptrEEType = ptrEEType->NullableType;
             }
 
+            object result;
 #if FEATURE_64BIT_ALIGNMENT
             if (ptrEEType->RequiresAlign8)
             {
@@ -113,7 +116,20 @@ namespace System.Runtime
             {
                 result = InternalCalls.RhpNewFast(ptrEEType);
             }
-            InternalCalls.RhpBox(result, ref Unsafe.Add(ref data, dataOffset));
+
+            // Copy the unboxed value type data into the new object.
+            // Perform any write barriers necessary for embedded reference fields.
+            if (ptrEEType->HasGCPointers)
+            {
+                InternalCalls.RhBulkMoveWithWriteBarrier(ref result.GetRawData(), ref dataAdjustedForNullable, ptrEEType->ValueTypeSize);
+            }
+            else
+            {
+                fixed (byte* pFields = &result.GetRawData())
+                fixed (byte* pData = &dataAdjustedForNullable)
+                    InternalCalls.memmove(pFields, pData, ptrEEType->ValueTypeSize);
+            }
+
             return result;
         }
 
@@ -237,7 +253,7 @@ namespace System.Runtime
                 InternalCalls.RhpInitMultibyte(
                     ref data,
                     0,
-                    (nuint)(pUnboxToEEType->BaseSize - (sizeof(ObjHeader) + sizeof(EEType*) + pUnboxToEEType->ValueTypeFieldPadding)));
+                    pUnboxToEEType->ValueTypeSize);
 
                 return;
             }
@@ -261,20 +277,19 @@ namespace System.Runtime
                 data = ref Unsafe.Add(ref data, pUnboxToEEType->NullableValueOffset);
             }
 
-            nuint cbFields = (nuint)(pEEType->BaseSize - (sizeof(ObjHeader) + sizeof(EEType*) + pEEType->ValueTypeFieldPadding));
             ref byte fields = ref obj.GetRawData();
 
             if (pEEType->HasGCPointers)
             {
                 // Copy the boxed fields into the new location in a GC safe manner
-                InternalCalls.RhBulkMoveWithWriteBarrier(ref data, ref fields, cbFields);
+                InternalCalls.RhBulkMoveWithWriteBarrier(ref data, ref fields, pEEType->ValueTypeSize);
             }
             else
             {
                 // Copy the boxed fields into the new location.
                 fixed (byte *pData = &data)
                     fixed (byte* pFields = &fields)
-                        InternalCalls.memmove(pData, pFields, cbFields);
+                        InternalCalls.memmove(pData, pFields, pEEType->ValueTypeSize);
             }
         }
 
