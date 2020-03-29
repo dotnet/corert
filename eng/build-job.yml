@@ -77,7 +77,7 @@ jobs:
 
     - ${{ if contains(parameters.osGroup, 'WebAssembly') }}:
       # Install Wasm dependencies: emscripten
-      - script: eng\common\install-emscripten.cmd $(Build.SourcesDirectory)\wasm-tools
+      - script: eng\install-emscripten.cmd $(Build.SourcesDirectory)\wasm-tools
         displayName: Install/activate emscripten
 
     # Build product, but not if Wasm as that builds and runs tests in one go

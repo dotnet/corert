@@ -7,8 +7,8 @@ cd emsdk
 
 powershell -NoProfile -NoLogo -ExecutionPolicy ByPass -command "& """%~dp0update-machine-certs.ps1""" %*"
 
-rem call "%1"\..\native-tools\bin\python3\3.7.1\python3 emsdk.py install 1.39.8
-call emsdk install 1.39.8
+rem Use the python that is downloaded to native-tools explicitly as its not on the path
+call "%1"\..\native-tools\bin\python3 emsdk.py install 1.39.8
 if %errorlevel% NEQ 0 goto fail
 call emsdk activate 1.39.8
 if %errorlevel% NEQ 0 goto fail

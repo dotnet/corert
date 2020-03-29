@@ -1,6 +1,5 @@
 # This seems to update the machine cert store so that python can download the files as required by emscripten's install
 $WebsiteURL="storage.googleapis.com"
-#$WebsiteURL="https://storage.googleapis.com/webassembly/emscripten-releases-builds/deps/node-v12.9.1-win-x64.zip"
 Try {
     $Conn = New-Object System.Net.Sockets.TcpClient($WebsiteURL,443) 
   
