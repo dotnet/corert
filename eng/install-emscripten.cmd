@@ -12,7 +12,7 @@ call "%1"\..\native-tools\bin\python3 emsdk.py install 1.39.8
 if %errorlevel% NEQ 0 goto fail
 call emsdk activate 1.39.8
 if %errorlevel% NEQ 0 goto fail
-
+ 
 exit /b 0
 
 fail:
