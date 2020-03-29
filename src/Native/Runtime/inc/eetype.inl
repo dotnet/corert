@@ -11,13 +11,6 @@ inline UInt32 EEType::GetHashCode()
 }
 
 //-----------------------------------------------------------------------------------------------------------
-inline EEInterfaceInfo & EEInterfaceInfoMap::operator[](UInt16 idx)
-{
-    ASSERT(idx < m_cMap);
-    return m_pMap[idx];
-}
-
-//-----------------------------------------------------------------------------------------------------------
 inline PTR_Code EEType::get_Slot(UInt16 slotNumber)
 {
     ASSERT(slotNumber < m_usNumVtableSlots);
@@ -29,45 +22,6 @@ inline PTR_PTR_Code EEType::get_SlotPtr(UInt16 slotNumber)
 {
     ASSERT(slotNumber < m_usNumVtableSlots);
     return dac_cast<PTR_PTR_Code>(dac_cast<TADDR>(this) + offsetof(EEType, m_VTable)) + slotNumber;
-}
-
-#if !defined(DACCESS_COMPILE)
-inline PTR_UInt8 FollowRelativePointer(const Int32 *pDist)
-{
-    Int32 dist = *pDist;
-
-    PTR_UInt8 result = (PTR_UInt8)pDist + dist;
-
-    return result;
-}
-
-inline PTR_Code EEType::get_SealedVirtualSlot(UInt16 slotNumber)
-{
-    ASSERT((get_RareFlags() & HasSealedVTableEntriesFlag) != 0);
-
-    if (IsDynamicType())
-    {
-        UInt32 cbSealedVirtualSlotsTypeOffset = GetFieldOffset(ETF_SealedVirtualSlots);
-        PTR_PTR_Code pSealedVirtualsSlotTable = *(PTR_PTR_Code*)((PTR_UInt8)this + cbSealedVirtualSlotsTypeOffset);
-        return pSealedVirtualsSlotTable[slotNumber];
-    }
-    else
-    {
-        UInt32 cbSealedVirtualSlotsTypeOffset = GetFieldOffset(ETF_SealedVirtualSlots);
-        PTR_Int32 pSealedVirtualsSlotTable = (PTR_Int32)FollowRelativePointer((PTR_Int32)((PTR_UInt8)this + cbSealedVirtualSlotsTypeOffset));
-        PTR_Code result = FollowRelativePointer(&pSealedVirtualsSlotTable[slotNumber]);
-        return result;
-    }
-}
-#endif // !DACCESS_COMPILE
-
-//-----------------------------------------------------------------------------------------------------------
-inline EEInterfaceInfoMap EEType::GetInterfaceMap()
-{
-    UInt32 cbInterfaceMapOffset = GetFieldOffset(ETF_InterfaceMap);
-
-    return EEInterfaceInfoMap(reinterpret_cast<EEInterfaceInfo *>((UInt8*)this + cbInterfaceMapOffset),
-                              GetNumInterfaces());
 }
 
 #ifdef DACCESS_COMPILE
@@ -123,34 +77,6 @@ inline bool EEType::DacVerifyWorker(EEType* pThis)
 }
 #endif
 
-/* static */
-inline UInt32 EEType::ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment)
-{
-    // For the default case, return 0
-    if ((padding == 0) && (alignment == POINTER_SIZE))
-        return 0;
-
-    UInt32 alignmentLog2 = 0;
-    ASSERT(alignment != 0);
-
-    while ((alignment & 1) == 0)
-    {
-        alignmentLog2++;
-        alignment = alignment >> 1;
-    }
-    ASSERT(alignment == 1);
-
-    ASSERT(ValueTypePaddingMax >= padding);
-
-    alignmentLog2++; // Our alignment values here are adjusted by one to allow for a default of 0
-
-    UInt32 paddingLowBits = padding & ValueTypePaddingLowMask;
-    UInt32 paddingHighBits = ((padding & ~ValueTypePaddingLowMask) >> ValueTypePaddingAlignmentShift) << ValueTypePaddingHighShift;
-    UInt32 alignmentLog2Bits = alignmentLog2 << ValueTypePaddingAlignmentShift;
-    ASSERT((alignmentLog2Bits & ~ValueTypePaddingAlignmentMask) == 0);
-    return paddingLowBits | paddingHighBits | alignmentLog2Bits;
-}
-
 // Retrieve optional fields associated with this EEType. May be NULL if no such fields exist.
 inline PTR_OptionalFields EEType::get_OptionalFields()
 {
@@ -167,46 +93,6 @@ inline PTR_OptionalFields EEType::get_OptionalFields()
 #endif
 }
 
-// Retrieve the amount of padding added to value type fields in order to align them for boxed allocation on
-// the GC heap. This value to can be used along with the result of get_BaseSize to determine the size of a
-// value type embedded in the stack, and array or another type.
-inline UInt32 EEType::get_ValueTypeFieldPadding()
-{
-    OptionalFields * pOptFields = get_OptionalFields();
-
-    // If there are no optional fields then the padding must have been the default, 0.
-    if (!pOptFields)
-        return 0;
-
-    // Get the value from the optional fields. The default is zero if that particular field was not included.
-    // The low bits of this field is the ValueType field padding, the rest of the byte is the alignment if present
-    UInt32 ValueTypeFieldPaddingData = pOptFields->GetValueTypeFieldPadding(0);
-    UInt32 padding = ValueTypeFieldPaddingData & ValueTypePaddingLowMask;
-    // If there is additional padding, the other bits have that data
-    padding |= (ValueTypeFieldPaddingData & ValueTypePaddingHighMask) >> (ValueTypePaddingHighShift - ValueTypePaddingAlignmentShift);
-    return padding;
-}
-
-// Retrieve the alignment of this valuetype
-inline UInt32 EEType::get_ValueTypeFieldAlignment()
-{
-    OptionalFields * pOptFields = get_OptionalFields();
-
-    // If there are no optional fields then the alignment must have been the default, POINTER_SIZE.
-    if (!pOptFields)
-        return POINTER_SIZE;
-
-    // Get the value from the optional fields. The default is zero if that particular field was not included.
-    // The low bits of this field is the ValueType field padding, the rest of the byte is the alignment if present
-    UInt32 alignmentValue = (pOptFields->GetValueTypeFieldPadding(0) & ValueTypePaddingAlignmentMask)  >> ValueTypePaddingAlignmentShift;;
-
-    // Alignment is stored as 1 + the log base 2 of the alignment, except a 0 indicates standard pointer alignment.
-    if (alignmentValue == 0)
-        return POINTER_SIZE;
-    else
-        return 1 << (alignmentValue - 1);
-}
-
 // Get flags that are less commonly set on EETypes.
 inline UInt32 EEType::get_RareFlags()
 {
@@ -218,43 +104,6 @@ inline UInt32 EEType::get_RareFlags()
 
     // Get the flags from the optional fields. The default is zero if that particular field was not included.
     return pOptFields->GetRareFlags(0);
-}
-
-// Retrieve the offset of the value embedded in a Nullable<T>.
-inline UInt8 EEType::GetNullableValueOffset()
-{
-    ASSERT(IsNullable());
-
-    // Grab optional fields. If there aren't any then the offset was the default of 1 (immediately after the
-    // Nullable's boolean flag).
-    OptionalFields * pOptFields = get_OptionalFields();
-    if (pOptFields == NULL)
-        return 1;
-
-    // The offset is never zero (Nullable has a boolean there indicating whether the value is valid). So the
-    // offset is encoded - 1 to save space. The zero below is the default value if the field wasn't encoded at
-    // all.
-    return pOptFields->GetNullableValueOffset(0) + 1;
-}
-
-inline EEType * EEType::get_DynamicTemplateType()
-{
-    ASSERT(IsDynamicType());
-
-    UInt32 cbOffset = GetFieldOffset(ETF_DynamicTemplateType);
-
-#if defined(DACCESS_COMPILE)
-    return *(PTR_PTR_EEType)((dac_cast<TADDR>(this)) + cbOffset);
-#else
-    return *(EEType**)((UInt8*)this + cbOffset);
-#endif
-}
-
-inline UInt32 EEType::get_DynamicThreadStaticOffset()
-{
-    UInt32 cbOffset = GetFieldOffset(ETF_DynamicThreadStaticOffset);
-
-    return *(UInt32*)((UInt8*)this + cbOffset);
 }
 
 inline DynamicModule * EEType::get_DynamicModule()
@@ -381,17 +230,4 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
     ASSERT(!"Unknown EEType field type");
     return 0;
 }
-
-inline size_t GenericComposition::GetArgumentOffset(UInt32 index)
-{
-    ASSERT(index < m_arity);
-    return offsetof(GenericComposition, m_arguments[index]);
-}
-
-inline GenericVarianceType *GenericComposition::GetVariance()
-{
-    ASSERT(m_hasVariance);
-    return (GenericVarianceType *)(((UInt8 *)this) + offsetof(GenericComposition, m_arguments[m_arity]));
-}
-
 #endif // __eetype_inl__
