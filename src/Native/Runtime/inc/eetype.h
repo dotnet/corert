@@ -15,8 +15,6 @@ class TypeManager;
 struct TypeManagerHandle;
 class DynamicModule;
 struct EETypeRef;
-enum GenericVarianceType : UInt8;
-class GenericComposition;
 
 //-------------------------------------------------------------------------------------------------
 // Array of these represents the interfaces implemented by a type
@@ -37,46 +35,6 @@ class EEInterfaceInfo
         EEType *    m_pInterfaceEEType;         // m_uFlags == InterfaceFlagNormal
         EEType **   m_ppInterfaceEETypeViaIAT;  // m_uFlags == InterfaceViaIATFlag
     };
-};
-
-//-------------------------------------------------------------------------------------------------
-class EEInterfaceInfoMap
-{
-    friend class EEType;
-
-  public:
-    EEInterfaceInfoMap(EEInterfaceInfoMap const & other)
-        : m_pMap(NULL), m_cMap(0)
-    {
-        UNREFERENCED_PARAMETER(other);
-    }
-
-    EEInterfaceInfo & operator[](UInt16 idx);
-
-    typedef EEInterfaceInfo * Iterator;
-
-    UIntNative GetLength()
-        { return m_cMap; }
-
-    Iterator Begin()
-        { return Iterator(m_pMap); }
-
-    Iterator BeginAt(UInt16 idx)
-        { return Iterator(&operator[](idx)); }
-
-    Iterator End()
-        { return Iterator(m_pMap + m_cMap); }
-
-    EEInterfaceInfo * GetRawPtr()
-        { return m_pMap; }
-
-  private:
-    EEInterfaceInfoMap(EEInterfaceInfo * pMap, UInt16 cMap)
-        : m_pMap(pMap), m_cMap(cMap)
-        {}
-
-    EEInterfaceInfo * m_pMap;
-    UInt16            m_cMap;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -284,20 +242,6 @@ public:
         IsByRefLikeFlag                     = 0x00008000,
     };
 
-    // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
-    // if the alignment is 8 bytes or less. If the alignment is higher then there may be a need for more bits to hold
-    // the rest of the padding data.
-    // If paddings of greater than 7 bytes are necessary, then the high bits of the field represent that padding
-    enum ValueTypePaddingConstants
-    {
-        ValueTypePaddingLowMask = 0x7,
-        ValueTypePaddingHighMask = 0xFFFFFF00ul,
-        ValueTypePaddingMax = 0x07FFFFFF,
-        ValueTypePaddingHighShift = 8,
-        ValueTypePaddingAlignmentMask = 0xF8,
-        ValueTypePaddingAlignmentShift = 3,
-    };
-
 public:
 
     enum Kinds
@@ -317,8 +261,6 @@ public:
     PTR_Code get_Slot(UInt16 slotNumber);
 
     PTR_PTR_Code get_SlotPtr(UInt16 slotNumber);
-
-    PTR_Code get_SealedVirtualSlot(UInt16 slotNumber);
 
     Kinds get_Kind();
 
@@ -401,8 +343,6 @@ public:
     // How many vtable slots are there?
     UInt16 GetNumVtableSlots()
         { return m_usNumVtableSlots; }
-    void SetNumVtableSlots(UInt16 usNumSlots)
-        { m_usNumVtableSlots = usNumSlots; }
 
     // How many entries are in the interface map after the vtable slots?
     UInt16 GetNumInterfaces()
@@ -411,8 +351,6 @@ public:
     // Does this class (or its base classes) implement any interfaces?
     bool HasInterfaces()
         { return GetNumInterfaces() != 0; }
-        
-    EEInterfaceInfoMap GetInterfaceMap();
 
     bool IsGeneric()
         { return (m_usFlags & IsGenericFlag) != 0; }
@@ -443,8 +381,6 @@ public:
     // contra-variant. This only applies to interface and delegate types.
     bool HasGenericVariance()
         { return (m_usFlags & GenericVarianceFlag) != 0; }
-    void SetHasGenericVariance()
-        { m_usFlags |= GenericVarianceFlag; }
 
     EETypeElementType GetElementType()
         { return (EETypeElementType)((m_usFlags & ElementTypeMask) >> ElementTypeShift); }
@@ -458,40 +394,17 @@ public:
     bool IsNullable()
         { return GetElementType() == ElementType_Nullable; }
 
-    // Retrieve the offset of the value embedded in a Nullable<T>.
-    UInt8 GetNullableValueOffset();
-
     // Determine whether a type was created by dynamic type loader
     bool IsDynamicType()
         { return (get_RareFlags() & IsDynamicTypeFlag) != 0; }
-
-    // Retrieve template used to create the dynamic type
-    EEType * get_DynamicTemplateType();
-
-    bool HasDynamicGcStatics() { return (get_RareFlags() & IsDynamicTypeWithGcStaticsFlag) != 0; }
-
-    bool HasDynamicNonGcStatics() { return (get_RareFlags() & IsDynamicTypeWithNonGcStaticsFlag) != 0; }
-
-    bool HasDynamicThreadStatics() { return (get_RareFlags() & IsDynamicTypeWithThreadStaticsFlag) != 0; }
-    UInt32 get_DynamicThreadStaticOffset();
 
     UInt32 GetHashCode();
 
     // Retrieve optional fields associated with this EEType. May be NULL if no such fields exist.
     inline PTR_OptionalFields get_OptionalFields();
 
-    // Retrieve the amount of padding added to value type fields in order to align them for boxed allocation
-    // on the GC heap. This value to can be used along with the result of get_BaseSize to determine the size
-    // of a value type embedded in the stack, and array or another type.
-    inline UInt32 get_ValueTypeFieldPadding();
-
-    // Retrieve the alignment of this valuetype
-    inline UInt32 get_ValueTypeFieldAlignment();
-
     // Get flags that are less commonly set on EETypes.
     inline UInt32 get_RareFlags();
-
-    static inline UInt32 ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment);
 
     // Helper methods that deal with EEType topology (size and field layout). These are useful since as we
     // optimize for pay-for-play we increasingly want to customize exactly what goes into an EEType on a
@@ -510,31 +423,6 @@ public:
 
     // Validate an EEType extracted from an object.
     bool Validate(bool assertOnFail = true);
-};
-
-class GenericComposition
-{
-    UInt16              m_arity;
-    UInt8               m_hasVariance;
-    EEType             *m_arguments[/*arity*/1];
-    GenericVarianceType m_variance[/*arity*/1];
-
-public:
-    UInt32 GetArity()
-    {
-        return m_arity;
-    }
-
-    size_t GetArgumentOffset(UInt32 index);
-
-    EETypeRef *GetArguments()
-    {
-        return (EETypeRef *)m_arguments;
-    }
-
-    GenericVarianceType *GetVariance();
-
-    bool Equals(GenericComposition *that);
 };
 
 #pragma warning(pop)

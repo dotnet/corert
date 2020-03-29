@@ -585,16 +585,6 @@ struct EETypeRef
     }
 };
 
-// Generic type parameter variance type (these are allowed only on generic interfaces or delegates). The type
-// values must correspond to those defined in the CLR as CorGenericParamAttr (see corhdr.h).
-enum GenericVarianceType : UInt8
-{
-    GVT_NonVariant = 0,
-    GVT_Covariant = 1,
-    GVT_Contravariant = 2,
-    GVT_ArrayCovariant = 0x20,
-};
-
 // Blobs are opaque data passed from the compiler, through the binder and into the native image. At runtime we
 // provide a simple API to retrieve these blobs (they're keyed by a simple integer ID). Blobs are passed to
 // the binder from the compiler and stored in native images by the binder in a sequential stream, each blob
