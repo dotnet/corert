@@ -110,6 +110,9 @@
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs" >
       <Link>Common\NativeFormatReader.Primitives.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs" >
+      <Link>Common\TypeManagerHandle.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Condition="'$(Platform)'!='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />

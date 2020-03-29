@@ -11,21 +11,6 @@ namespace System.Runtime
 {
     internal static unsafe class DispatchResolve
     {
-        [StructLayout(LayoutKind.Sequential)]
-        public struct DispatchMapEntry
-        {
-            public ushort _usInterfaceIndex;
-            public ushort _usInterfaceMethodSlot;
-            public ushort _usImplMethodSlot;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct DispatchMap
-        {
-            public uint _entryCount;
-            public DispatchMapEntry _dispatchMap; // Actually a variable length array
-        }
-
         public static IntPtr FindInterfaceMethodImplementationTarget(EEType* pTgtType,
                                                                  EEType* pItfType,
                                                                  ushort itfSlotNumber)
@@ -174,8 +159,8 @@ namespace System.Runtime
             }
 
             DispatchMap* pMap = pTgtType->DispatchMap;
-            DispatchMapEntry* i = &pMap->_dispatchMap;
-            DispatchMapEntry* iEnd = (&pMap->_dispatchMap) + pMap->_entryCount;
+            DispatchMap.DispatchMapEntry* i = (*pMap)[0];
+            DispatchMap.DispatchMapEntry* iEnd = (*pMap)[(int)pMap->NumEntries];
             for (; i != iEnd; ++i)
             {
                 if (i->_usInterfaceMethodSlot == itfSlotNumber)

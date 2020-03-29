@@ -493,10 +493,6 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetRuntimeHelperForType")]
         internal static extern unsafe IntPtr RhGetRuntimeHelperForType(EETypePtr pEEType, RuntimeHelperKind kind);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetDispatchMapForType")]
-        internal static extern unsafe IntPtr RhGetDispatchMapForType(EETypePtr pEEType);
-
         //
         // Support for GC and HandleTable callouts.
         //

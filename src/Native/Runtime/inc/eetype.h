@@ -80,39 +80,6 @@ class EEInterfaceInfoMap
 };
 
 //-------------------------------------------------------------------------------------------------
-// use a non-compressed encoding for easier debugging for now...
-
-struct DispatchMapEntry
-{
-    UInt16    m_usInterfaceIndex;
-    UInt16    m_usInterfaceMethodSlot;
-    UInt16    m_usImplMethodSlot;
-};
-
-//-------------------------------------------------------------------------------------------------
-// Represents the contributions that a type makes to its interface implementations.
-class DispatchMap
-{
-private:
-    UInt32           m_entryCount;
-    DispatchMapEntry m_dispatchMap[0]; // at least one entry if any interfaces defined
-public:
-    bool IsEmpty()
-        { return m_entryCount == 0; }
-
-    size_t ComputeSize()
-        { return sizeof(m_entryCount) + sizeof(m_dispatchMap[0])*m_entryCount; }
-
-    typedef DispatchMapEntry * Iterator;
-
-    Iterator Begin()
-        { return &m_dispatchMap[0]; }
-
-    Iterator End()
-        { return &m_dispatchMap[m_entryCount]; }
-};
-
-//-------------------------------------------------------------------------------------------------
 // The subset of TypeFlags that Redhawk knows about at runtime
 // This should match the TypeFlags enum in the managed type system.
 enum EETypeElementType : UInt8
@@ -447,8 +414,6 @@ public:
         
     EEInterfaceInfoMap GetInterfaceMap();
 
-    bool HasDispatchMap();
-
     bool IsGeneric()
         { return (m_usFlags & IsGenericFlag) != 0; }
 
@@ -462,8 +427,6 @@ public:
         return NULL;
 #endif
     }
-
-    DispatchMap *GetDispatchMap();
 
     // Used only by GC initialization, this initializes the EEType used to mark free entries in the GC heap.
     // It should be an array type with a component size of one (so the GC can easily size it as appropriate)
@@ -501,10 +464,6 @@ public:
     // Determine whether a type was created by dynamic type loader
     bool IsDynamicType()
         { return (get_RareFlags() & IsDynamicTypeFlag) != 0; }
-
-    // Determine whether a *dynamic* type has a dynamically allocated DispatchMap
-    bool HasDynamicallyAllocatedDispatchMap()
-        { return (get_RareFlags() & HasDynamicallyAllocatedDispatchMapFlag) != 0; }
 
     // Retrieve template used to create the dynamic type
     EEType * get_DynamicTemplateType();

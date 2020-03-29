@@ -11,6 +11,7 @@ typedef unsigned char       UInt8;
 
 class TypeManager
 {
+    // NOTE: Part of this layout is a contract with the managed side in TypeManagerHandle.cs
     HANDLE                      m_osModule;
     ReadyToRunHeader *          m_pHeader;
     DispatchMap**               m_pDispatchMapTable;
@@ -28,7 +29,6 @@ class TypeManager
 public:
     static TypeManager * Create(HANDLE osModule, void * pModuleHeader, void** pClasslibFunctions, UInt32 nClasslibFunctions);
     void * GetModuleSection(ReadyToRunSectionType sectionId, int * length);
-    DispatchMap ** GetDispatchMapLookupTable();
     void EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData);
     HANDLE GetOsModuleHandle();
     void* GetClasslibFunction(ClasslibFunctionId functionId);

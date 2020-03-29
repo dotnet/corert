@@ -360,6 +360,14 @@ namespace System
             }
         }
 
+        internal IntPtr DispatchMap
+        {
+            get
+            {
+                return (IntPtr)_value->DispatchMap;
+            }
+        }
+
         // Has internal gc pointers. 
         internal bool HasPointers
         {
