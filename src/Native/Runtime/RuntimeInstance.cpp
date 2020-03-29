@@ -395,17 +395,6 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(UIntNative CallsiteIP)
 #endif // FEATURE_GC_STRESS
 }
 
-// This method should only be called during DllMain for modules with GcStress enabled.  The locking done by 
-// the loader is used to make it OK to call UnsynchronizedHijackAllLoops.
-void RuntimeInstance::EnableGcPollStress()
-{
-    assert(!"NYI");
-}
-
-// Only called from thread suspension code while all threads are still synchronized.
-void RuntimeInstance::UnsychronizedResetHijackedLoops()
-{
-}
 COOP_PINVOKE_HELPER(UInt32, RhGetGCDescSize, (EEType* pEEType))
 {
     return RedhawkGCInterface::GetGCDescSize(pEEType);
