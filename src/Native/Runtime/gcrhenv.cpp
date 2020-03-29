@@ -612,7 +612,6 @@ COOP_PINVOKE_HELPER(void, RhpInitializeGcStress, ())
 {
     g_fGcStressStarted = UInt32_TRUE;
     g_pConfig->SetGCStressLevel(EEConfig::GCSTRESS_INSTR_NGEN);   // this is the closest CLR equivalent to what we do.
-    GetRuntimeInstance()->EnableGcPollStress();
 }
 #endif // FEATURE_GC_STRESS
 
