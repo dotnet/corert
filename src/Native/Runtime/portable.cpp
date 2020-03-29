@@ -29,6 +29,8 @@
 #include "threadstore.inl"
 
 #include "eetype.h"
+#include "TypeManager.h"
+#include "eetype.inl"
 #include "ObjectLayout.h"
 
 #include "GCMemoryHelpers.h"
