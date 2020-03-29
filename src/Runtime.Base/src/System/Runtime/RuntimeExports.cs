@@ -85,9 +85,11 @@ namespace System.Runtime
         [RuntimeExport("RhBox")]
         public static unsafe object RhBox(EETypePtr pEEType, ref byte data)
         {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            int dataOffset = 0;
-            object result;
+            EEType* ptrEEType = pEEType.ToPointer();
+            ref byte dataAdjustedForNullable = ref data;
+
+            // Can box value types only (which also implies no finalizers).
+            Debug.Assert(ptrEEType->IsValueType && !ptrEEType->IsFinalizable);
 
             // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
             // nullable's value is empty).
@@ -99,10 +101,11 @@ namespace System.Runtime
 
                 // Switch type we're going to box to the Nullable<T> target type and advance the data pointer
                 // to the value embedded within the nullable.
-                dataOffset = ptrEEType->NullableValueOffset;
+                dataAdjustedForNullable = ref Unsafe.Add(ref data, ptrEEType->NullableValueOffset);
                 ptrEEType = ptrEEType->NullableType;
             }
 
+            object result;
 #if FEATURE_64BIT_ALIGNMENT
             if (ptrEEType->RequiresAlign8)
             {
@@ -113,30 +116,21 @@ namespace System.Runtime
             {
                 result = InternalCalls.RhpNewFast(ptrEEType);
             }
-            RhpBox(result, ref Unsafe.Add(ref data, dataOffset));
-            return result;
-        }
-
-        [RuntimeExport("RhpBox")]
-        public static unsafe void RhpBox(object obj, ref byte data)
-        {
-            EEType* pEEType = obj.EEType;
-
-            // Can box value types only (which also implies no finalizers).
-            Debug.Assert(pEEType->IsValueType && !pEEType->IsFinalizable);
 
             // Copy the unboxed value type data into the new object.
             // Perform any write barriers necessary for embedded reference fields.
-            if (pEEType->HasGCPointers)
+            if (ptrEEType->HasGCPointers)
             {
-                InternalCalls.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref data, pEEType->ValueTypeSize);
+                InternalCalls.RhBulkMoveWithWriteBarrier(ref result.GetRawData(), ref dataAdjustedForNullable, ptrEEType->ValueTypeSize);
             }
             else
             {
-                fixed (byte* pFields = &obj.GetRawData())
-                fixed (byte* pData = &data)
-                    InternalCalls.memmove(pFields, pData, pEEType->ValueTypeSize);
+                fixed (byte* pFields = &result.GetRawData())
+                fixed (byte* pData = &dataAdjustedForNullable)
+                    InternalCalls.memmove(pFields, pData, ptrEEType->ValueTypeSize);
             }
+
+            return result;
         }
 
         [RuntimeExport("RhBoxAny")]
