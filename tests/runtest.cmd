@@ -316,7 +316,7 @@ goto :eof
         if /i "%__Mode%"=="wasm" (
             REM Skip running if this is WASM build-only testing running in a different architecture's build
             if /i not "%CoreRT_BuildArch%"=="wasm" (goto :RecordTestResult)
-            set __Extension=html
+            set __Extension=js
         )
 
         if "!__SavedErrorLevel!"=="0" (

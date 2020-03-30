@@ -35,3 +35,16 @@ jobs:
     osIdentifier: Linux
     containerName: ubuntu_1604_x64_build_image
     ${{ insert }}: ${{ parameters.jobParameters }}
+
+# WebAssembly
+
+- ${{ if and(ne(parameters.jobParameters.testScenarios, 'CoreFX'), ne(parameters.buildConfig, 'release')) }}: # Don't want the second job as it would be a duplicate.  Release is failing the generics test so leave out for now.
+  - template: ${{ parameters.jobTemplate }}
+    parameters:
+      buildConfig: ${{ parameters.buildConfig }}
+      archType: wasm
+      osGroup: WebAssembly
+      osIdentifier: WebAssembly
+      ${{ each param in parameters.jobParameters }}:
+        ${{ if ne(param.key, 'testScenarios') }}: # Insert all properties other than "testScenarios"
+          ${{ param.key }}: ${{ param.value }}
