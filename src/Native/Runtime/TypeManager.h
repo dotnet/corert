@@ -53,9 +53,7 @@ private:
 };
 
 // TypeManagerHandle represents an AOT module in MRT based runtimes.
-// These handles are either a pointer to an OS module, or a pointer to a TypeManager
-// When this is a pointer to a TypeManager, then the pointer will have its lowest bit
-// set to indicate that it is a TypeManager pointer instead of OS module.
+// These handles are a pointer to a TypeManager.
 struct TypeManagerHandle
 {
     static TypeManagerHandle Null()
@@ -66,13 +64,6 @@ struct TypeManagerHandle
     }
 
     static TypeManagerHandle Create(TypeManager * value)
-    {
-        TypeManagerHandle handle;
-        handle._value = ((uint8_t *)value) + 1;
-        return handle;
-    }
-
-    static TypeManagerHandle Create(HANDLE value)
     {
         TypeManagerHandle handle;
         handle._value = value;

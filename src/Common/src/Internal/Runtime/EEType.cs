@@ -191,10 +191,8 @@ namespace Internal.Runtime
         private ushort _usNumVtableSlots;
         private ushort _usNumInterfaces;
         private uint _uHashCode;
-
-#if EETYPE_TYPE_MANAGER
         private IntPtr _ppTypeManager;
-#endif
+
         // vtable follows
 
         // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
@@ -1218,7 +1216,6 @@ namespace Internal.Runtime
 #endif
         }
 
-#if EETYPE_TYPE_MANAGER
         internal TypeManagerHandle TypeManager
         {
             get
@@ -1242,7 +1239,6 @@ namespace Internal.Runtime
             }
         }
 #endif
-#endif // EETYPE_TYPE_MANAGER
 
         internal unsafe EETypeRareFlags RareFlags
         {

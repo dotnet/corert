@@ -234,7 +234,6 @@ add_definitions(-DVERIFY_HEAP)
 add_definitions(-DCORERT)
 add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
 add_definitions(-D_LIB)
-add_definitions(-DEETYPE_TYPE_MANAGER)
 add_definitions(-DFEATURE_EMBEDDED_CONFIG)
 
 if(WIN32)

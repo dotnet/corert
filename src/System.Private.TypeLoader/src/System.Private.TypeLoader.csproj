@@ -30,9 +30,6 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(METADATA_TYPE_LOADER)' != ''">SUPPORTS_NATIVE_METADATA_TYPE_LOADING;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup>
-    <DefineConstants>EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(DynamicCodeSupport)' == 'true'">
     <DefineConstants>SUPPORT_DYNAMIC_CODE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>

@@ -39,11 +39,7 @@ ASM_CONST(3FFFFFDF,3FFFFFDF,MAX_STRING_LENGTH)
 ASM_OFFSET(    0,     0, EEType, m_usComponentSize)
 ASM_OFFSET(    2,     2, EEType, m_usFlags)
 ASM_OFFSET(    4,     4, EEType, m_uBaseSize)
-#if defined(EETYPE_TYPE_MANAGER)
 ASM_OFFSET(   18,    20, EEType, m_VTable)
-#else
-ASM_OFFSET(   14,    18, EEType, m_VTable)
-#endif
 
 ASM_OFFSET(    0,     0, Thread, m_rgbAllocContextBuffer)
 ASM_OFFSET(   28,    38, Thread, m_ThreadStateFlags)
