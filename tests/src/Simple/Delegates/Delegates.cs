@@ -52,7 +52,9 @@ public class BringUpTests
             result = Fail;
         }
 
+#if !CODEGEN_CPP
         TestLinqExpressions.Run();
+#endif
 
         return result;
     }
