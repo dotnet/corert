@@ -159,7 +159,7 @@ private:
         // through m_pRelatedType to get to the related type in the other module.
         RelatedTypeViaIATFlag   = 0x0004,
 
-        // Unused           = 0x0008,
+        IsDynamicTypeFlag       = 0x0008,
 
         // This EEType represents a type which requires finalization
         HasFinalizerFlag        = 0x0010,
@@ -203,8 +203,7 @@ public:
 
         // unused               = 0x00000008,
 
-        // This EEType was created by dynamic type loader
-        IsDynamicTypeFlag       = 0x00000010,
+        // unused               = 0x00000010,
 
         // This EEType has a Class Constructor
         HasCctorFlag            = 0x0000020,
@@ -396,7 +395,7 @@ public:
 
     // Determine whether a type was created by dynamic type loader
     bool IsDynamicType()
-        { return (get_RareFlags() & IsDynamicTypeFlag) != 0; }
+        { return (m_usFlags & IsDynamicTypeFlag) != 0; }
 
     UInt32 GetHashCode();
 

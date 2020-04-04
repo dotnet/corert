@@ -258,6 +258,8 @@ namespace Internal.Runtime.TypeLoader
                     }
                 }
 
+                flags |= (ushort)EETypeFlags.IsDynamicTypeFlag;
+
                 // TODO! Change to if template is Universal or non-Existent
                 if (state.TypeSize.HasValue)
                 {
@@ -300,7 +302,6 @@ namespace Internal.Runtime.TypeLoader
                     optionalFields = new OptionalFieldsRuntimeBuilder(pTemplateEEType != null ? pTemplateEEType->OptionalFieldsPtr : null);
 
                     UInt32 rareFlags = optionalFields.GetFieldValue(EETypeOptionalFieldTag.RareFlags, 0);
-                    rareFlags |= (uint)EETypeRareFlags.IsDynamicTypeFlag;          // Set the IsDynamicTypeFlag
 
                     if (state.NumSealedVTableEntries > 0)
                         rareFlags |= (uint)EETypeRareFlags.HasSealedVTableEntriesFlag;

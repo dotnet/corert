@@ -585,7 +585,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (RareFlags & EETypeRareFlags.IsDynamicTypeFlag) != 0;
+                return (_usFlags & (ushort)EETypeFlags.IsDynamicTypeFlag) != 0;
             }
         }
 
@@ -1349,7 +1349,7 @@ namespace Internal.Runtime
             }
             if (IsGeneric)
             {
-                if ((rareFlags & EETypeRareFlags.IsDynamicTypeFlag) != 0 || !SupportsRelativePointers)
+                if (IsDynamicType || !SupportsRelativePointers)
                     cbOffset += (uint)IntPtr.Size;
                 else
                     cbOffset += 4;
@@ -1362,7 +1362,7 @@ namespace Internal.Runtime
             }
             if (IsGeneric)
             {
-                if ((rareFlags & EETypeRareFlags.IsDynamicTypeFlag) != 0 || !SupportsRelativePointers)
+                if (IsDynamicType || !SupportsRelativePointers)
                     cbOffset += (uint)IntPtr.Size;
                 else
                     cbOffset += 4;

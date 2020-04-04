@@ -27,7 +27,10 @@ namespace Internal.Runtime
         /// </summary>
         RelatedTypeViaIATFlag = 0x0004,
 
-        // Unused = 0x0008,
+        /// <summary>
+        /// This type was dynamically allocated at runtime.
+        /// </summary>
+        IsDynamicTypeFlag = 0x0008,
 
         /// <summary>
         /// This EEType represents a type which requires finalization.
@@ -118,10 +121,7 @@ namespace Internal.Runtime
 
         // UNUSED = 0x00000008,
 
-        /// <summary>
-        /// This EEType was created by generic instantiation loader
-        /// </summary>
-        IsDynamicTypeFlag = 0x00000010,
+        // UNUSED = 0x00000010,
 
         /// <summary>
         /// This EEType has a Class Constructor
