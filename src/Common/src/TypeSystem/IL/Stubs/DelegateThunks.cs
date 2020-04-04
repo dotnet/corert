@@ -581,10 +581,12 @@ namespace Internal.IL.Stubs
                 codeStream.EmitStLoc(argsLocal);
             }
 
+            ILExceptionRegionBuilder tryFinallyRegion = null;
             if (hasRefArgs)
             {
                 // we emit a try/finally to update the args array even if an exception is thrown
-                // ilgen.BeginTryBody();
+                tryFinallyRegion = emitter.NewFinallyRegion();
+                codeStream.BeginTry(tryFinallyRegion);
             }
 
             codeStream.EmitLdArg(0);
@@ -613,11 +615,12 @@ namespace Internal.IL.Stubs
 
             if (hasRefArgs)
             {
-                // ILGeneratorLabel returnLabel = new ILGeneratorLabel();
-                // ilgen.Emit(OperationCode.Leave, returnLabel);
-                // copy back ref/out args
-                //ilgen.BeginFinallyBlock();
+                ILCodeLabel returnLabel = emitter.NewCodeLabel();
+                codeStream.Emit(ILOpcode.leave, returnLabel);
+                codeStream.EndTry(tryFinallyRegion);
 
+                // copy back ref/out args
+                codeStream.BeginHandler(tryFinallyRegion);
                 for (int i = 0; i < Signature.Length; i++)
                 {
                     TypeDesc paramType = Signature[i];
@@ -635,9 +638,9 @@ namespace Internal.IL.Stubs
                         codeStream.Emit(ILOpcode.stobj, paramToken);
                     }
                 }
-                // ilgen.Emit(OperationCode.Endfinally);
-                // ilgen.EndTryBody();
-                // ilgen.MarkLabel(returnLabel);
+                codeStream.Emit(ILOpcode.endfinally);
+                codeStream.EndHandler(tryFinallyRegion);
+                codeStream.EmitLabel(returnLabel);
             }
 
             if (hasReturnValue)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Linq.Expressions;
 
 using Pointer = System.Reflection.Pointer;
 
@@ -50,6 +51,8 @@ public class BringUpTests
             Console.WriteLine("Failed");
             result = Fail;
         }
+
+        TestLinqExpressions.Run();
 
         return result;
     }
@@ -431,5 +434,38 @@ class ClassWithByRefs
     public static void Mutate(ref string x)
     {
         x += "Mutated";
+    }
+}
+
+class TestLinqExpressions
+{
+    public static void ModifyByRefAndThrow(ref int i)
+    {
+        i = 123;
+        throw new Exception();
+    }
+
+    delegate void RefIntDelegate(ref int i);
+
+    public static void Run()
+    {
+        Console.WriteLine("Testing LINQ Expressions...");
+
+        {
+            ParameterExpression pX = Expression.Parameter(typeof(int).MakeByRefType());
+            RefIntDelegate del =
+                Expression.Lambda<RefIntDelegate>(
+                    Expression.Call(null, typeof(TestLinqExpressions).GetMethod(nameof(ModifyByRefAndThrow)), pX), pX).Compile();
+
+            int i = 0;
+            try
+            {
+                del(ref i);
+            }
+            catch (Exception) { }
+
+            if (i != 123)
+                throw new Exception();
+        }
     }
 }
