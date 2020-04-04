@@ -6,7 +6,7 @@ using System;
 
 namespace Internal.Runtime
 {
-    public partial struct TypeManagerHandle : IEquatable<TypeManagerHandle>
+    public unsafe partial struct TypeManagerHandle : IEquatable<TypeManagerHandle>
     {
         public static bool operator ==(TypeManagerHandle left, TypeManagerHandle right)
         {
@@ -20,7 +20,7 @@ namespace Internal.Runtime
 
         public override int GetHashCode()
         {
-            return _handleValue.GetHashCode();
+            return ((IntPtr)_handleValue).GetHashCode();
         }
 
         public override bool Equals(object o)
@@ -38,7 +38,7 @@ namespace Internal.Runtime
 
         public string LowLevelToString()
         {
-            return _handleValue.LowLevelToString();
+            return ((IntPtr)_handleValue).LowLevelToString();
         }
     }
 }

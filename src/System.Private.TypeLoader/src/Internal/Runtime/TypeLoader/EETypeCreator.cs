@@ -182,9 +182,7 @@ namespace Internal.Runtime.TypeLoader
                 bool isGenericEETypeDef = false;
                 bool isAbstractClass;
                 bool isByRefLike;
-#if EETYPE_TYPE_MANAGER
                 IntPtr typeManager = IntPtr.Zero;
-#endif
 
                 if (state.RuntimeInterfaces != null)
                 {
@@ -207,9 +205,7 @@ namespace Internal.Runtime.TypeLoader
                     isGeneric = pTemplateEEType->IsGeneric;
                     isAbstractClass = pTemplateEEType->IsAbstract && !pTemplateEEType->IsInterface;
                     isByRefLike = pTemplateEEType->IsByRefLike;
-#if EETYPE_TYPE_MANAGER
                     typeManager = pTemplateEEType->PointerToTypeManager;
-#endif
                     Debug.Assert(pTemplateEEType->NumInterfaces == runtimeInterfacesLength);
                 }
                 else if (state.TypeBeingBuilt.IsGenericDefinition)
@@ -429,9 +425,7 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->NumVtableSlots = numVtableSlots;
                     pEEType->NumInterfaces = runtimeInterfacesLength;
                     pEEType->HashCode = hashCodeOfNewType;
-#if EETYPE_TYPE_MANAGER
                     pEEType->PointerToTypeManager = typeManager;
-#endif
 
                     // Write the GCDesc
                     bool isSzArray = isArray ? state.ArrayRank < 1 : false;

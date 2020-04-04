@@ -9,13 +9,11 @@ namespace Internal.Runtime
 {
     /// <summary>
     /// TypeManagerHandle represents an AOT module in MRT based runtimes.
-    /// These handles are either a pointer to an OS module, or a pointer to a TypeManager
-    /// When this is a pointer to a TypeManager, then the pointer will have its lowest bit
-    /// set to indicate that it is a TypeManager pointer instead of OS module.
+    /// These handles are a pointer to a TypeManager
     /// </summary>
-    public partial struct TypeManagerHandle
+    public unsafe partial struct TypeManagerHandle
     {
-        private IntPtr _handleValue;
+        private TypeManager* _handleValue;
 
         // This is a partial definition of the TypeManager struct which is defined in TypeManager.h
         [StructLayout(LayoutKind.Sequential)]
@@ -28,30 +26,19 @@ namespace Internal.Runtime
 
         public TypeManagerHandle(IntPtr handleValue)
         {
-            _handleValue = handleValue;
+            _handleValue = (TypeManager*)handleValue;
         }
 
         public IntPtr GetIntPtrUNSAFE()
         {
-            return _handleValue;
+            return (IntPtr)_handleValue;
         }
 
         public bool IsNull
         {
             get
             {
-                return _handleValue == IntPtr.Zero;
-            }
-        }
-
-        private unsafe TypeManager* AsTypeManagerPtr
-        {
-            get
-            {
-                unsafe
-                {
-                    return (TypeManager*)(((byte*)(void*)_handleValue) - 1);
-                }
+                return _handleValue == null;
             }
         }
 
@@ -59,7 +46,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return AsTypeManagerPtr->OsHandle;
+                return _handleValue->OsHandle;
             }
         }
 
@@ -67,7 +54,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return AsTypeManagerPtr->DispatchMap;
+                return _handleValue->DispatchMap;
             }
         }
     }

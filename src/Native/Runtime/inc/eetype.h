@@ -135,9 +135,7 @@ private:
     UInt16              m_usNumVtableSlots;
     UInt16              m_usNumInterfaces;
     UInt32              m_uHashCode;
-#if defined(EETYPE_TYPE_MANAGER)
     TypeManagerHandle*  m_ppTypeManager;
-#endif
 
     TgtPTR_Void         m_VTable[];  // make this explicit so the binder gets the right alignment
 
@@ -358,11 +356,7 @@ public:
 
     TypeManagerHandle* GetTypeManagerPtr()
     { 
-#if defined(EETYPE_TYPE_MANAGER)
         return m_ppTypeManager;
-#else
-        return NULL;
-#endif
     }
 
     // Used only by GC initialization, this initializes the EEType used to mark free entries in the GC heap.

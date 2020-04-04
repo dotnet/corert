@@ -168,5 +168,5 @@ HANDLE TypeManager::GetOsModuleHandle()
 
 TypeManager* TypeManagerHandle::AsTypeManager()
 {
-    return (TypeManager*)(((uint8_t *)_value) - 1);
+    return (TypeManager*)_value;
 }
