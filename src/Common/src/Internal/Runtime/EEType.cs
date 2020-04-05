@@ -191,7 +191,6 @@ namespace Internal.Runtime
         private ushort _usNumVtableSlots;
         private ushort _usNumInterfaces;
         private uint _uHashCode;
-        private IntPtr _ppTypeManager;
 
         // vtable follows
 
@@ -861,9 +860,10 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsFinalizable);
 
-                // Finalizer code address is stored after the vtable and interface map.
-                fixed (EEType* pThis = &this)
-                    return *(IntPtr*)((byte*)pThis + sizeof(EEType) + (sizeof(void*) * _usNumVtableSlots) + (sizeof(EEInterfaceInfo) * NumInterfaces));
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer>(EETypeField.ETF_Finalizer).Value;
+
+                return GetField<RelativePointer>(EETypeField.ETF_Finalizer).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
@@ -871,7 +871,7 @@ namespace Internal.Runtime
                 Debug.Assert(IsDynamicType && IsFinalizable);
 
                 fixed (EEType* pThis = &this)
-                    *(IntPtr*)((byte*)pThis + sizeof(EEType) + (sizeof(void*) * _usNumVtableSlots) + (sizeof(EEInterfaceInfo) * NumInterfaces)) = value;
+                    *(IntPtr*)((byte*)pThis + GetFieldOffset(EETypeField.ETF_Finalizer)) = value;
             }
 #endif
         }
@@ -1094,15 +1094,16 @@ namespace Internal.Runtime
                 if (!HasOptionalFields)
                     return null;
 
-                uint cbOptionalFieldsOffset = GetFieldOffset(EETypeField.ETF_OptionalFieldsPtr);
-                fixed (EEType* pThis = &this)
-                {
-                    return *(byte**)((byte*)pThis + cbOptionalFieldsOffset);
-                }
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<byte>>(EETypeField.ETF_OptionalFieldsPtr).Value;
+
+                return GetField<RelativePointer<byte>>(EETypeField.ETF_OptionalFieldsPtr).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
+                Debug.Assert(IsDynamicType);
+
                 _usFlags |= (UInt16)EETypeFlags.OptionalFieldsFlag;
 
                 UInt32 cbOptionalFieldsOffset = GetFieldOffset(EETypeField.ETF_OptionalFieldsPtr);
@@ -1220,8 +1221,13 @@ namespace Internal.Runtime
         {
             get
             {
-                // This is always a pointer to a pointer to a type manager
-                return *(TypeManagerHandle*)_ppTypeManager;
+                IntPtr typeManagerIndirection;
+                if (IsDynamicType || !SupportsRelativePointers)
+                    typeManagerIndirection = GetField<Pointer>(EETypeField.ETF_TypeManagerIndirection).Value;
+                else
+                    typeManagerIndirection = GetField<RelativePointer>(EETypeField.ETF_TypeManagerIndirection).Value;
+
+                return *(TypeManagerHandle*)typeManagerIndirection;
             }
         }
 #if TYPE_LOADER_IMPLEMENTATION
@@ -1229,13 +1235,15 @@ namespace Internal.Runtime
         {
             get
             {
+                uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
                 // This is always a pointer to a pointer to a type manager
-                return _ppTypeManager;
+                return (IntPtr)(*(TypeManagerHandle**)((byte*)Unsafe.AsPointer(ref this) + cbOffset));
             }
-
             set
             {
-                _ppTypeManager = value;
+                uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
+                // This is always a pointer to a pointer to a type manager
+                *(TypeManagerHandle**)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = (TypeManagerHandle*)value;
             }
         }
 #endif
@@ -1302,6 +1310,15 @@ namespace Internal.Runtime
             }
             cbOffset += (uint)(sizeof(EEInterfaceInfo) * NumInterfaces);
 
+            uint relativeOrFullPointerOffset = (IsDynamicType || !SupportsRelativePointers ? (uint)IntPtr.Size : 4);
+
+            // Followed by the type manager indirection cell.
+            if (eField == EETypeField.ETF_TypeManagerIndirection)
+            {
+                return cbOffset;
+            }
+            cbOffset += relativeOrFullPointerOffset;
+
             // Followed by the pointer to the finalizer method.
             if (eField == EETypeField.ETF_Finalizer)
             {
@@ -1309,7 +1326,7 @@ namespace Internal.Runtime
                 return cbOffset;
             }
             if (IsFinalizable)
-                cbOffset += (uint)IntPtr.Size;
+                cbOffset += relativeOrFullPointerOffset;
 
             // Followed by the pointer to the optional fields.
             if (eField == EETypeField.ETF_OptionalFieldsPtr)
@@ -1318,7 +1335,7 @@ namespace Internal.Runtime
                 return cbOffset;
             }
             if (HasOptionalFields)
-                cbOffset += (uint)IntPtr.Size;
+                cbOffset += relativeOrFullPointerOffset;
 
             // Followed by the pointer to the sealed virtual slots
             if (eField == EETypeField.ETF_SealedVirtualSlots)
@@ -1328,7 +1345,7 @@ namespace Internal.Runtime
 
             // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
             if ((rareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
-                cbOffset += (IsDynamicType || !SupportsRelativePointers ? (uint)IntPtr.Size : 4);
+                cbOffset += relativeOrFullPointerOffset;
 
             if (eField == EETypeField.ETF_DynamicDispatchMap)
             {
@@ -1345,10 +1362,7 @@ namespace Internal.Runtime
             }
             if (IsGeneric)
             {
-                if (IsDynamicType || !SupportsRelativePointers)
-                    cbOffset += (uint)IntPtr.Size;
-                else
-                    cbOffset += 4;
+                cbOffset += relativeOrFullPointerOffset;
             }
 
             if (eField == EETypeField.ETF_GenericComposition)
@@ -1358,10 +1372,7 @@ namespace Internal.Runtime
             }
             if (IsGeneric)
             {
-                if (IsDynamicType || !SupportsRelativePointers)
-                    cbOffset += (uint)IntPtr.Size;
-                else
-                    cbOffset += 4;
+                cbOffset += relativeOrFullPointerOffset;
             }
 
             if (eField == EETypeField.ETF_DynamicModule)
@@ -1429,6 +1440,7 @@ namespace Internal.Runtime
             return (UInt32)(sizeof(EEType) +
                 (IntPtr.Size * cVirtuals) +
                 (sizeof(EEInterfaceInfo) * cInterfaces) +
+                sizeof(IntPtr) + // TypeManager
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
@@ -1465,6 +1477,21 @@ namespace Internal.Runtime
 
     // Wrapper around pointers
     [StructLayout(LayoutKind.Sequential)]
+    internal readonly struct Pointer
+    {
+        private readonly IntPtr _value;
+
+        public IntPtr Value
+        {
+            get
+            {
+                return _value;
+            }
+        }
+    }
+
+    // Wrapper around pointers
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe readonly struct Pointer<T> where T : unmanaged
     {
         private readonly T* _value;
@@ -1491,6 +1518,21 @@ namespace Internal.Runtime
                 if (((int)_value & IndirectionConstants.IndirectionCellPointer) == 0)
                     return _value;
                 return *(T**)((byte*)_value - IndirectionConstants.IndirectionCellPointer);
+            }
+        }
+    }
+
+    // Wrapper around relative pointers
+    [StructLayout(LayoutKind.Sequential)]
+    internal readonly struct RelativePointer
+    {
+        private readonly int _value;
+
+        public unsafe IntPtr Value
+        {
+            get
+            {
+                return (IntPtr)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
             }
         }
     }
