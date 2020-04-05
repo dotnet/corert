@@ -63,11 +63,8 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitShort(0);       // No VTable
             dataBuilder.EmitShort(0);       // No interface map
             dataBuilder.EmitInt(_type.GetHashCode());
-            dataBuilder.EmitPointerReloc(factory.TypeManagerIndirection);
-            if (HasOptionalFields)
-            {
-                dataBuilder.EmitPointerReloc(_optionalFieldsNode);
-            }
+            OutputTypeManagerIndirection(factory, ref dataBuilder);
+            OutputOptionalFields(factory, ref dataBuilder);
 
             return dataBuilder.ToObjectData();
         }

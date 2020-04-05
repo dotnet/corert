@@ -44,15 +44,15 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// Y * [Ptr Size]  | Pointers to interface map data structures (optional)
     ///                 |
-    /// [Pointer Size]  | Pointer to containing TypeManager indirection cell
+    /// [Relative ptr]  | Pointer to containing TypeManager indirection cell
     ///                 |
-    /// [Pointer Size]  | Pointer to finalizer method (optional)
+    /// [Relative ptr]  | Pointer to finalizer method (optional)
     ///                 |
-    /// [Pointer Size]  | Pointer to optional fields (optional)
+    /// [Relative ptr]  | Pointer to optional fields (optional)
     ///                 |
-    /// [Pointer Size]  | Pointer to the generic type definition EEType (optional)
+    /// [Relative ptr]  | Pointer to the generic type definition EEType (optional)
     ///                 |
-    /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
+    /// [Relative ptr]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
     public partial class EETypeNode : ObjectNode, IExportableSymbolNode, IEETypeNode, ISymbolDefinitionNode, ISymbolNodeWithLinkage
     {
@@ -490,8 +490,7 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitShort(interfaceCountReservation, 0);
             }
 
-            objData.EmitPointerReloc(factory.TypeManagerIndirection);
-
+            OutputTypeManagerIndirection(factory, ref objData);
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
@@ -806,15 +805,29 @@ namespace ILCompiler.DependencyAnalysis
             {
                 MethodDesc finalizerMethod = _type.GetFinalizer();
                 MethodDesc canonFinalizerMethod = finalizerMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                objData.EmitPointerReloc(factory.MethodEntrypoint(canonFinalizerMethod));
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(factory.MethodEntrypoint(canonFinalizerMethod), RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(factory.MethodEntrypoint(canonFinalizerMethod));
             }
         }
 
-        private void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
+        protected void OutputTypeManagerIndirection(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (factory.Target.SupportsRelativePointers)
+                objData.EmitReloc(factory.TypeManagerIndirection, RelocType.IMAGE_REL_BASED_RELPTR32);
+            else
+                objData.EmitPointerReloc(factory.TypeManagerIndirection);
+        }
+
+        protected void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
         {
             if (HasOptionalFields)
             {
-                objData.EmitPointerReloc(_optionalFieldsNode);
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(_optionalFieldsNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(_optionalFieldsNode);
             }
         }
 

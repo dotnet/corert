@@ -19,19 +19,13 @@
 
 using System;
 using System.Runtime;
-using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using Internal.Runtime;
-using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.CompilerServices;
-
-using Volatile = System.Threading.Volatile;
 
 #if TARGET_64BIT
 using nuint = System.UInt64;
@@ -41,6 +35,9 @@ using nuint = System.UInt32;
 
 namespace Internal.Runtime.Augments
 {
+    using BinderBundle = System.Reflection.BinderBundle;
+    using Pointer = System.Reflection.Pointer;
+
     [ReflectionBlocked]
     public static class RuntimeAugments
     {

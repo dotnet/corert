@@ -77,6 +77,16 @@ inline bool EEType::DacVerifyWorker(EEType* pThis)
 }
 #endif
 
+#if !defined(DACCESS_COMPILE)
+inline PTR_UInt8 FollowRelativePointer(const Int32* pDist)
+{
+    Int32 dist = *pDist;
+
+    PTR_UInt8 result = (PTR_UInt8)pDist + dist;
+
+    return result;
+}
+
 // Retrieve optional fields associated with this EEType. May be NULL if no such fields exist.
 inline PTR_OptionalFields EEType::get_OptionalFields()
 {
@@ -84,13 +94,17 @@ inline PTR_OptionalFields EEType::get_OptionalFields()
         return NULL;
 
     UInt32 cbOptionalFieldsOffset = GetFieldOffset(ETF_OptionalFieldsPtr);
-#if defined(DACCESS_COMPILE)
-    // this construct creates a "host address" for the optional field blob
-    return *(PTR_PTR_OptionalFields)((dac_cast<TADDR>(this)) + cbOptionalFieldsOffset);
-#else
-    return *(OptionalFields**)((UInt8*)this + cbOptionalFieldsOffset);
 
+#if !defined(USE_PORTABLE_HELPERS)
+    if (!IsDynamicType())
+    {
+        return (OptionalFields*)FollowRelativePointer((Int32*)((UInt8*)this + cbOptionalFieldsOffset));
+    }
+    else
 #endif
+    {
+        return *(OptionalFields**)((UInt8*)this + cbOptionalFieldsOffset);
+    }
 }
 
 // Get flags that are less commonly set on EETypes.
@@ -106,25 +120,22 @@ inline UInt32 EEType::get_RareFlags()
     return pOptFields->GetRareFlags(0);
 }
 
-inline DynamicModule * EEType::get_DynamicModule()
-{
-    if ((get_RareFlags() & HasDynamicModuleFlag) != 0)
-    {
-        UInt32 cbOffset = GetFieldOffset(ETF_DynamicModule);
-
-        return *(DynamicModule**)((UInt8*)this + cbOffset);
-    }
-    else
-    {
-        return nullptr;
-    }
-}
-
 inline TypeManagerHandle* EEType::GetTypeManagerPtr()
 {
     UInt32 cbOffset = GetFieldOffset(ETF_TypeManagerIndirection);
-    return *(TypeManagerHandle**)((UInt8*)this + cbOffset);
+
+#if !defined(USE_PORTABLE_HELPERS)
+    if (!IsDynamicType())
+    {
+        return (TypeManagerHandle*)FollowRelativePointer((Int32*)((UInt8*)this + cbOffset));
+    }
+    else
+#endif
+    {
+        return *(TypeManagerHandle**)((UInt8*)this + cbOffset);
+    }
 }
+#endif // !defined(DACCESS_COMPILE)
 
 // Calculate the offset of a field of the EEType that has a variable offset.
 __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
@@ -140,12 +151,19 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
     }
     cbOffset += sizeof(EEInterfaceInfo) * GetNumInterfaces();
 
+    const UInt32 relativeOrFullPointerOffset =
+#if USE_PORTABLE_HELPERS
+        sizeof(UIntTarget);
+#else
+        IsDynamicType() ? sizeof(UIntTarget) : sizeof(UInt32);
+#endif
+
     // Followed by the type manager indirection cell.
     if (eField == ETF_TypeManagerIndirection)
     {
         return cbOffset;
     }
-    cbOffset += sizeof(UIntTarget);
+    cbOffset += relativeOrFullPointerOffset;
 
     // Followed by the pointer to the finalizer method.
     if (eField == ETF_Finalizer)
@@ -154,7 +172,7 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
         return cbOffset;
     }
     if (HasFinalizer())
-        cbOffset += sizeof(UIntTarget);
+        cbOffset += relativeOrFullPointerOffset;
 
     // Followed by the pointer to the optional fields.
     if (eField == ETF_OptionalFieldsPtr)
@@ -163,7 +181,7 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
         return cbOffset;
     }
     if (HasOptionalFields())
-        cbOffset += sizeof(UIntTarget);
+        cbOffset += relativeOrFullPointerOffset;
 
     // Followed by the pointer to the sealed virtual slots
     if (eField == ETF_SealedVirtualSlots)
@@ -173,7 +191,7 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
 
     // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
     if (rareFlags & HasSealedVTableEntriesFlag)
-        cbOffset += (IsDynamicType() ? sizeof(UIntTarget) : sizeof(UInt32));
+        cbOffset += relativeOrFullPointerOffset;
 
     if (eField == ETF_DynamicDispatchMap)
     {
@@ -189,7 +207,7 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
         return cbOffset;
     }
     if (IsGeneric())
-        cbOffset += (IsDynamicType() ? sizeof(UIntTarget) : sizeof(UInt32));
+        cbOffset += relativeOrFullPointerOffset;
 
     if (eField == ETF_GenericComposition)
     {
@@ -197,7 +215,7 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
         return cbOffset;
     }
     if (IsGeneric())
-        cbOffset += (IsDynamicType() ? sizeof(UIntTarget) : sizeof(UInt32));
+        cbOffset += relativeOrFullPointerOffset;
 
     if (eField == ETF_DynamicModule)
     {
