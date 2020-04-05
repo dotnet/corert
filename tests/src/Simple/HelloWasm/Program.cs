@@ -331,6 +331,8 @@ internal static class Program
 
         TestImplicitUShortToUInt();
 
+        TestInterlockedExchange();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -362,8 +364,6 @@ internal static class Program
         // use array of size 1MB, then iterate 5*1024 times
         for(var i = 0; i < 5 * 1024; i++)
         {
-            PrintString("i is ");
-            PrintLine(i.ToString());
             var a = new int[256 * 1024]; // ints are 4 bytes so this is 1MB
         }
         for(var i = 0; i < 3; i++)
@@ -1395,6 +1395,17 @@ internal static class Program
         uint start;
         start = ReadUInt16();
         EndTest(start == 0x0000828f);
+    }
+
+    static void TestInterlockedExchange()
+    {
+        StartTest("InterlockedExchange");
+        int exInt1 = 1;
+        Interlocked.Exchange(ref exInt1, 2);
+
+        long exLong1 = 1;
+        Interlocked.Exchange(ref exLong1, 3);
+        EndTest(exInt1 == 2 && exLong1 == 3);
     }
 
     static ushort ReadUInt16()
