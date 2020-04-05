@@ -40,11 +40,11 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// UInt32          | Hash code
     ///                 |
-    /// [Pointer Size]  | Pointer to containing TypeManager indirection cell
-    ///                 |
     /// X * [Ptr Size]  | VTable entries (optional)
     ///                 |
     /// Y * [Ptr Size]  | Pointers to interface map data structures (optional)
+    ///                 |
+    /// [Pointer Size]  | Pointer to containing TypeManager indirection cell
     ///                 |
     /// [Pointer Size]  | Pointer to finalizer method (optional)
     ///                 |
@@ -462,7 +462,6 @@ namespace ILCompiler.DependencyAnalysis
             var interfaceCountReservation = objData.ReserveShort();
 
             objData.EmitInt(_type.GetHashCode());
-            objData.EmitPointerReloc(factory.TypeManagerIndirection);
 
             if (EmitVirtualSlotsAndInterfaces)
             {
@@ -491,6 +490,8 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitShort(interfaceCountReservation, 0);
             }
 
+            objData.EmitPointerReloc(factory.TypeManagerIndirection);
+
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
@@ -505,7 +506,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <param name="pointerSize">The size of a pointer in bytes in the target architecture</param>
         public static int GetVTableOffset(int pointerSize)
         {
-            return 16 + 2 * pointerSize;
+            return 16 + pointerSize;
         }
 
         protected virtual int GCDescSize => 0;

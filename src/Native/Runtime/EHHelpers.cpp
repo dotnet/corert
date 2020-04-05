@@ -27,6 +27,7 @@
 #include "stressLog.h"
 #include "rhbinder.h"
 #include "eetype.h"
+#include "eetype.inl"
 
 COOP_PINVOKE_HELPER(Boolean, RhpEHEnumInitFromStackFrameIterator, (
     StackFrameIterator* pFrameIter, void ** pMethodStartAddressOut, EHEnum* pEHEnum))

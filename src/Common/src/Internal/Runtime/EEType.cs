@@ -191,7 +191,6 @@ namespace Internal.Runtime
         private ushort _usNumVtableSlots;
         private ushort _usNumInterfaces;
         private uint _uHashCode;
-        private IntPtr _ppTypeManager;
 
         // vtable follows
 
@@ -863,7 +862,7 @@ namespace Internal.Runtime
 
                 // Finalizer code address is stored after the vtable and interface map.
                 fixed (EEType* pThis = &this)
-                    return *(IntPtr*)((byte*)pThis + sizeof(EEType) + (sizeof(void*) * _usNumVtableSlots) + (sizeof(EEInterfaceInfo) * NumInterfaces));
+                    return *(IntPtr*)((byte*)pThis + GetFieldOffset(EETypeField.ETF_Finalizer));
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
@@ -871,7 +870,7 @@ namespace Internal.Runtime
                 Debug.Assert(IsDynamicType && IsFinalizable);
 
                 fixed (EEType* pThis = &this)
-                    *(IntPtr*)((byte*)pThis + sizeof(EEType) + (sizeof(void*) * _usNumVtableSlots) + (sizeof(EEInterfaceInfo) * NumInterfaces)) = value;
+                    *(IntPtr*)((byte*)pThis + GetFieldOffset(EETypeField.ETF_Finalizer)) = value;
             }
 #endif
         }
@@ -1220,8 +1219,12 @@ namespace Internal.Runtime
         {
             get
             {
-                // This is always a pointer to a pointer to a type manager
-                return *(TypeManagerHandle*)_ppTypeManager;
+                uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
+                fixed (EEType* pThis = &this)
+                {
+                    // This is always a pointer to a pointer to a type manager
+                    return **(TypeManagerHandle**)((byte*)pThis + cbOffset);
+                }
             }
         }
 #if TYPE_LOADER_IMPLEMENTATION
@@ -1229,13 +1232,21 @@ namespace Internal.Runtime
         {
             get
             {
-                // This is always a pointer to a pointer to a type manager
-                return _ppTypeManager;
+                uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
+                fixed (EEType* pThis = &this)
+                {
+                    // This is always a pointer to a pointer to a type manager
+                    return (IntPtr)(*(TypeManagerHandle**)((byte*)pThis + cbOffset));
+                }
             }
-
             set
             {
-                _ppTypeManager = value;
+                uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
+                fixed (EEType* pThis = &this)
+                {
+                    // This is always a pointer to a pointer to a type manager
+                    *(TypeManagerHandle**)((byte*)pThis + cbOffset) = (TypeManagerHandle*)value;
+                }
             }
         }
 #endif
@@ -1301,6 +1312,13 @@ namespace Internal.Runtime
                 return cbOffset;
             }
             cbOffset += (uint)(sizeof(EEInterfaceInfo) * NumInterfaces);
+
+            // Followed by the type manager indirection cell.
+            if (eField == EETypeField.ETF_TypeManagerIndirection)
+            {
+                return cbOffset;
+            }
+            cbOffset += (uint)IntPtr.Size;
 
             // Followed by the pointer to the finalizer method.
             if (eField == EETypeField.ETF_Finalizer)
@@ -1429,6 +1447,7 @@ namespace Internal.Runtime
             return (UInt32)(sizeof(EEType) +
                 (IntPtr.Size * cVirtuals) +
                 (sizeof(EEInterfaceInfo) * cInterfaces) +
+                sizeof(IntPtr) + // TypeManager
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +

@@ -85,6 +85,7 @@ enum EETypeElementType : UInt8
 enum EETypeField
 {
     ETF_InterfaceMap,
+    ETF_TypeManagerIndirection,
     ETF_Finalizer,
     ETF_OptionalFieldsPtr,
     ETF_SealedVirtualSlots,
@@ -135,7 +136,6 @@ private:
     UInt16              m_usNumVtableSlots;
     UInt16              m_usNumInterfaces;
     UInt32              m_uHashCode;
-    TypeManagerHandle*  m_ppTypeManager;
 
     TgtPTR_Void         m_VTable[];  // make this explicit so the binder gets the right alignment
 
@@ -354,10 +354,7 @@ public:
 
     DynamicModule* get_DynamicModule();
 
-    TypeManagerHandle* GetTypeManagerPtr()
-    { 
-        return m_ppTypeManager;
-    }
+    TypeManagerHandle* GetTypeManagerPtr();
 
     // Used only by GC initialization, this initializes the EEType used to mark free entries in the GC heap.
     // It should be an array type with a component size of one (so the GC can easily size it as appropriate)

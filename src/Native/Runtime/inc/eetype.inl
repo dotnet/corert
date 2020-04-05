@@ -120,6 +120,12 @@ inline DynamicModule * EEType::get_DynamicModule()
     }
 }
 
+inline TypeManagerHandle* EEType::GetTypeManagerPtr()
+{
+    UInt32 cbOffset = GetFieldOffset(ETF_TypeManagerIndirection);
+    return *(TypeManagerHandle**)((UInt8*)this + cbOffset);
+}
+
 // Calculate the offset of a field of the EEType that has a variable offset.
 __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
 {
@@ -133,6 +139,13 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
         return cbOffset;
     }
     cbOffset += sizeof(EEInterfaceInfo) * GetNumInterfaces();
+
+    // Followed by the type manager indirection cell.
+    if (eField == ETF_TypeManagerIndirection)
+    {
+        return cbOffset;
+    }
+    cbOffset += sizeof(UIntTarget);
 
     // Followed by the pointer to the finalizer method.
     if (eField == ETF_Finalizer)

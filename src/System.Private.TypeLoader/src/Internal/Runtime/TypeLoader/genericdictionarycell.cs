@@ -479,7 +479,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 // Debug sanity check for the size of the EEType structure
                 // just to ensure nothing of it gets reduced
-                Debug.Assert(sizeof(EEType) == (IntPtr.Size == 8 ? 32 : 24));
+                Debug.Assert(sizeof(EEType) == (IntPtr.Size == 8 ? 24 : 20));
 
                 int result = (int)VTableSlot;
 
