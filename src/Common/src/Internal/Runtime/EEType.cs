@@ -1236,20 +1236,14 @@ namespace Internal.Runtime
             get
             {
                 uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
-                fixed (EEType* pThis = &this)
-                {
-                    // This is always a pointer to a pointer to a type manager
-                    return (IntPtr)(*(TypeManagerHandle**)((byte*)pThis + cbOffset));
-                }
+                // This is always a pointer to a pointer to a type manager
+                return (IntPtr)(*(TypeManagerHandle**)((byte*)Unsafe.AsPointer(ref this) + cbOffset));
             }
             set
             {
                 uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
-                fixed (EEType* pThis = &this)
-                {
-                    // This is always a pointer to a pointer to a type manager
-                    *(TypeManagerHandle**)((byte*)pThis + cbOffset) = (TypeManagerHandle*)value;
-                }
+                // This is always a pointer to a pointer to a type manager
+                *(TypeManagerHandle**)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = (TypeManagerHandle*)value;
             }
         }
 #endif
