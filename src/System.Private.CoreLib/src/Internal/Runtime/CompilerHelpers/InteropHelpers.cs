@@ -290,7 +290,7 @@ namespace Internal.Runtime.CompilerHelpers
                 // NativeLibrary callback didn't resolve the library. Use built-in rules.
                 NativeLibrary.LoadLibErrorTracker loadLibErrorTracker = default;
 
-                hModule = NativeLibrary.LoadLibraryModuleBySearch(
+                hModule = NativeLibrary.LoadBySearch(
                     callingAssembly,
                     searchAssemblyDirectory: false,
                     dllImportSearchPathFlags: 0,

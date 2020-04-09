@@ -90,7 +90,7 @@ namespace System.Runtime.InteropServices
             if (!assembly.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
-            return LoadLibraryByName(libraryName,
+            return LoadByName(libraryName,
                               assembly,
                               searchPath,
                               throwOnError: true);
@@ -115,7 +115,7 @@ namespace System.Runtime.InteropServices
             if (!assembly.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
-            handle = LoadLibraryByName(libraryName,
+            handle = LoadByName(libraryName,
                                 assembly,
                                 searchPath,
                                 throwOnError: false);

@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class NativeLibrary
     {
-        internal static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
+        internal static IntPtr LoadByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
         {
             // First checks if a default dllImportSearchPathFlags was passed in, if so, use that value.
             // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute. 
@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices
             }
 
             LoadLibErrorTracker errorTracker = default;
-            IntPtr ret = LoadLibraryModuleBySearch(assembly, searchAssemblyDirectory, searchPathFlags, ref errorTracker, libraryName);
+            IntPtr ret = LoadBySearch(assembly, searchAssemblyDirectory, searchPathFlags, ref errorTracker, libraryName);
             if (throwOnError && ret == IntPtr.Zero)
             {
                 errorTracker.Throw(libraryName);
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices
             searchAssemblyDirectory = (searchPath & DllImportSearchPath.AssemblyDirectory) != 0;
         }
 
-        internal static IntPtr LoadLibraryModuleBySearch(Assembly callingAssembly, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)
+        internal static IntPtr LoadBySearch(Assembly callingAssembly, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)
         {
             IntPtr ret = IntPtr.Zero;
 
