@@ -762,6 +762,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 MethodDesc declMethod = virtualSlots[i];
 
+                // Object.Finalize shouldn't get a virtual slot. Finalizer is stored in an optional field
+                // instead: most EEType don't have a finalizer, but all EETypes contain Object's vtable.
+                // This lets us save a pointer (+reloc) on most EETypes.
+                Debug.Assert(!declType.IsObject || declMethod.Name != "Finalize");
+
                 // No generic virtual methods can appear in the vtable!
                 Debug.Assert(!declMethod.HasInstantiation);
 
