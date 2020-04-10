@@ -303,6 +303,56 @@ namespace ILCompiler
             if (_isWasmCodegen)
                 _targetArchitecture = TargetArchitecture.Wasm32;
 
+            InstructionSetSupportBuilder instructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
+
+            // The runtime expects certain baselines that the codegen can assume as well.
+            if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
+            {
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
+            }
+            else if (_targetArchitecture == TargetArchitecture.ARM64)
+            {
+                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
+            }
+
+            // TODO: read instruction sets from the command line
+
+            instructionSetSupportBuilder.ComputeInstructionSetFlags(out var supportedInstructionSet, out var unsupportedInstructionSet,
+                (string specifiedInstructionSet, string impliedInstructionSet) =>
+                    throw new CommandLineException(String.Format("Unsupported combination of instruction sets: {0}/{1}", specifiedInstructionSet, impliedInstructionSet)));
+
+            InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
+
+            // Optimistically assume some instruction sets are present.
+            if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
+            {
+                // We set these hardware features as enabled always, as most
+                // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
+                // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
+                // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
+                // support AVX instructions. As the jit generates logic that depends on these features it will call
+                // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
+                // code.
+                // 
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("ssse3");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
+            }
+
+            optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _,
+                (string specifiedInstructionSet, string impliedInstructionSet) => throw new NotSupportedException());
+            optimisticInstructionSet.Remove(unsupportedInstructionSet);
+            optimisticInstructionSet.Add(supportedInstructionSet);
+
+            var instructionSetSupport = new InstructionSetSupport(supportedInstructionSet,
+                                                                  unsupportedInstructionSet,
+                                                                  optimisticInstructionSet,
+                                                                  InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(_targetArchitecture),
+                                                                  _targetArchitecture);
+
             bool supportsReflection = !_disableReflection && _systemModuleName == DefaultSystemModule;
 
             //
@@ -311,8 +361,7 @@ namespace ILCompiler
 
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
-            // TODO: compiler switch for SIMD support?
-            var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : SimdVectorLength.Vector128Bit;
+            var simdVectorLength = (_isCppCodegen || _isWasmCodegen) ? SimdVectorLength.None : instructionSetSupport.GetVectorTSimdVector();
             var targetAbi = _isCppCodegen ? TargetAbi.CppCodegen : TargetAbi.CoreRT;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext = 
@@ -572,6 +621,7 @@ namespace ILCompiler
             compilationRoots.Add(interopStubManager);
 
             builder
+                .UseInstructionSetSupport(instructionSetSupport)
                 .UseBackendOptions(_codegenOptions)
                 .UseMethodBodyFolding(enable: _methodBodyFolding)
                 .UseSingleThread(enable: _singleThreaded)

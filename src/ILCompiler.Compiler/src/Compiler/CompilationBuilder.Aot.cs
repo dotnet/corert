@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.JitInterface;
+
 namespace ILCompiler
 {
     partial class CompilationBuilder
@@ -16,10 +18,18 @@ namespace ILCompiler
         protected DevirtualizationManager _devirtualizationManager = new DevirtualizationManager();
         protected bool _methodBodyFolding;
         protected bool _singleThreaded;
+        protected InstructionSetSupport _instructionSetSupport;
 
         partial void InitializePartial()
         {
             _metadataManager = new AnalysisBasedMetadataManager(_context);
+            _instructionSetSupport = new InstructionSetSupport(default, default, _context.Target.Architecture);
+        }
+
+        public CompilationBuilder UseInstructionSetSupport(InstructionSetSupport support)
+        {
+            _instructionSetSupport = support;
+            return this;
         }
 
         public CompilationBuilder UseMetadataManager(MetadataManager metadataManager)
