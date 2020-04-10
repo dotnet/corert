@@ -217,6 +217,8 @@ MCSection *ObjectWriter::GetSection(const char *SectionName,
     Section = ObjFileInfo->getReadOnlySection();
   } else if (strcmp(SectionName, "xdata") == 0) {
     Section = ObjFileInfo->getXDataSection();
+  } else if (strcmp(SectionName, "bss") == 0) {
+      Section = ObjFileInfo->getBSSSection();
   } else {
     Section = GetSpecificSection(SectionName, attributes, ComdatName);
   }
