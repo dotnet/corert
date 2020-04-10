@@ -18,26 +18,7 @@ namespace ILCompiler
         /// </summary>
         public static bool IsHardwareIntrinsic(MethodDesc method)
         {
-            TypeDesc owningType = method.OwningType;
-
-            if (owningType.IsIntrinsic && owningType is MetadataType mdType)
-            {
-                mdType = (MetadataType)mdType.ContainingType ?? mdType;
-                TargetArchitecture targetArch = owningType.Context.Target.Architecture;
-
-                if (targetArch == TargetArchitecture.X64 || targetArch == TargetArchitecture.X86)
-                {
-                    if (mdType.Namespace == "System.Runtime.Intrinsics.X86")
-                        return true;
-                }
-                else if (targetArch == TargetArchitecture.ARM64)
-                {
-                    if (mdType.Namespace == "System.Runtime.Intrinsics.Arm")
-                        return true;
-                }
-            }
-
-            return false;
+            return !string.IsNullOrEmpty(InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType));
         }
 
 #if !READYTORUN
@@ -164,13 +145,13 @@ namespace ILCompiler
                 // Sse and Sse2 are baseline required intrinsics.
                 // RyuJIT also uses Sse41/Sse42 with the general purpose Vector APIs.
                 // RyuJIT only respects Popcnt if Sse41/Sse42 is also enabled.
-                // Avx/Avx2/Bmi1/Bmi2 require VEX encoding and RyuJIT currently can't enable them
+                // Avx/Avx2/Bmi1/Bmi2/Fma require VEX encoding and RyuJIT currently can't enable them
                 // without enabling VEX encoding everywhere. We don't support them.
                 // This list complements EmitIsSupportedIL above.
                 return owningType.Name == "Sse" || owningType.Name == "Sse2"
                     || owningType.Name == "Sse41" || owningType.Name == "Sse42"
                     || owningType.Name == "Popcnt"
-                    || owningType.Name == "Bmi1" || owningType.Name == "Bmi2"
+                    || owningType.Name == "Bmi1" || owningType.Name == "Bmi2" || owningType.Name == "Fma"
                     || owningType.Name == "Avx" || owningType.Name == "Avx2";
             }
 

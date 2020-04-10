@@ -1,6 +1,6 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <RyuJITVersion Condition="'$(RyuJITVersion)' == ''">5.0.0-preview.3.20177.3</RyuJITVersion>
+    <RyuJITVersion Condition="'$(RyuJITVersion)' == ''">5.0.0-preview.4.20205.13</RyuJITVersion>
     <ObjectWriterVersion Condition="'$(ObjectWriterVersion)' == ''">1.0.0-alpha-28204-03</ObjectWriterVersion>
     <RuntimeLibrariesVersion Condition="'$(RuntimeLibrariesVersion)' == ''">5.0.0-preview.2.20153.3</RuntimeLibrariesVersion>
     <CoreFxUapVersion Condition="'$(CoreFxUapVersion)' == ''">4.7.0-preview6.19265.2</CoreFxUapVersion>

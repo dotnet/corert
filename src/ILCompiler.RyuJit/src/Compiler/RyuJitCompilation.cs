@@ -24,6 +24,8 @@ namespace ILCompiler
         private readonly ExternSymbolMappedField _hardwareIntrinsicFlags;
         private CountdownEvent _compilationCountdown;
 
+        public InstructionSetSupport InstructionSetSupport { get; }
+
         internal RyuJitCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
             NodeFactory nodeFactory,
@@ -32,11 +34,13 @@ namespace ILCompiler
             DebugInformationProvider debugInformationProvider,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
+            InstructionSetSupport instructionSetSupport,
             RyuJitCompilationOptions options)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, logger)
         {
             _compilationOptions = options;
             _hardwareIntrinsicFlags = new ExternSymbolMappedField(nodeFactory.TypeSystemContext.GetWellKnownType(WellKnownType.Int32), "g_cpuFeatures");
+            InstructionSetSupport = instructionSetSupport;
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
