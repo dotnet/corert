@@ -123,8 +123,7 @@ fi
 
 if [ "$build_arch" = "wasm" ]; then
     emcmake $CMAKE \
-        "-DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1" \
-        "-DCMAKE_TOOLCHAIN_FILE=$EMSCRIPTEN/cmake/Modules/Platform/Emscripten.cmake" \
+        "-DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake" \
         "-DCLR_CMAKE_TARGET_ARCH=$build_arch" \
         "-DCMAKE_BUILD_TYPE=$build_type" \
         "$1/src/Native"

@@ -27,7 +27,7 @@ check_native_prereqs()
     # Check for additional prereqs for wasm build
     if [ $__BuildArch == "wasm" ]; then
         hash emcmake 2>/dev/null || { echo >&2 "Please install Emscripten before running this script. See https://github.com/dotnet/corert/blob/master/Documentation/how-to-build-WebAssembly.md for more information."; exit 1; }
-        if [ -z ${EMSCRIPTEN+x} ]; then echo "EMSCRIPTEN is not set. Ensure your have set up the Emscripten environment using \"source <emsdk_dir>/emsdk_env.sh\""; exit 1; fi
+        if [ -z ${EMSDK+x} ]; then echo "EMSDK is not set. Ensure your have set up the Emscripten environment using \"source <emsdk_dir>/emsdk_env.sh\""; exit 1; fi
     fi
 }
 
