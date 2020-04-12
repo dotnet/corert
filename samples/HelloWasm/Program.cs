@@ -19,7 +19,7 @@ internal static class Program
 
     private static unsafe int Main(string[] args)
     {
-        PrintLine("Starting " + 1);
+        PrintLine("Hello Wasm World");
 
         return 100;
     }
