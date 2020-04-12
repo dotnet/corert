@@ -44,4 +44,7 @@ internal static class Program
         PrintString("\n");
     }
 
+    [DllImport("*")]
+    private static unsafe extern int printf(byte* str, byte* unused);
+
 }
