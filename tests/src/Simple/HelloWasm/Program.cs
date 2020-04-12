@@ -44,12 +44,14 @@ internal static class Program
         (*targetAddr) = 1;
         EndTest(tempInt2 == 1 && tempInt == 9);
 
+#if TARGET_WINDOWS
         StartTest("Inline assign byte Test");
         EndTest(ILHelpers.ILHelpersTest.InlineAssignByte() == 100);
 
         StartTest("dup test");
         int dupTestInt = 9;
         EndTest(ILHelpers.ILHelpersTest.DupTest(ref dupTestInt) == 209 && dupTestInt == 209);
+#endif
 
         TestClass tempObj = new TestDerivedClass(1337);
         tempObj.TestMethod("Hello");
@@ -274,6 +276,7 @@ internal static class Program
 
         TestTryFinally();
 
+#if TARGET_WINDOWS
         StartTest("RVA static field test");
         int rvaFieldValue = ILHelpers.ILHelpersTest.StaticInitedInt;
         if (rvaFieldValue == 0x78563412)
@@ -284,6 +287,7 @@ internal static class Program
         {
             FailTest(rvaFieldValue.ToString());
         }
+#endif
 
         TestNativeCallback();
 
