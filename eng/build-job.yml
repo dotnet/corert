@@ -38,7 +38,7 @@ jobs:
 
     - name: buildScriptName
       value: 'build.cmd'
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'),ne(parameters.osGroup, 'WebAssembly')) }}:  # probably want to do this differently so we can build Wasm on other platforms
       - name: buildScriptName
         value: './build.sh'
 
@@ -70,14 +70,20 @@ jobs:
       - script: sh eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
 
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+    - ${{ if or(eq(parameters.osGroup, 'Windows_NT'),eq(parameters.osGroup, 'WebAssembly')) }}:
       # Necessary to install python
       - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-    # Build product
-    - script: $(buildScriptName) $(buildConfig) skiptests
-      displayName: Build product
+    - ${{ if contains(parameters.osGroup, 'WebAssembly') }}:
+      # Install Wasm dependencies: emscripten
+      - script: eng\install-emscripten.cmd $(Build.SourcesDirectory)\wasm-tools
+        displayName: Install/activate emscripten
+
+    # Build product, but not if Wasm as that builds and runs tests in one go
+    - ${{ if not(contains(parameters.osGroup, 'WebAssembly')) }}:
+      - script: $(buildScriptName) $(buildConfig) skiptests
+        displayName: Build product
 
     # Run the requested test scenarios
 
@@ -98,6 +104,12 @@ jobs:
       - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)corefx
         displayName: Run CoreFX tests
         enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
+
+    - ${{ if contains(parameters.osGroup, 'WebAssembly') }}:
+      - script: |
+          call $(Build.SourcesDirectory)\wasm-tools\emsdk\emsdk_env
+          call $(buildScriptName) wasm $(buildConfig)
+        displayName: Run Wasm tests
 
     - task: PublishTestResults@2
       condition: succeededOrFailed()

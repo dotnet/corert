@@ -71,7 +71,6 @@
     )
 
 class EEType;
-class Module;
 class BulkTypeEventLogger;
 
 namespace ETW
@@ -90,12 +89,6 @@ namespace ETW
         };
 
         static void LogTypeAndParametersIfNecessary(BulkTypeEventLogger * pLogger, UInt64 thAsAddr, TypeLogBehavior typeLogBehavior);
-    };
-
-    class LoaderLog
-    {
-    public:
-        static void SendModuleEvent(Module *pModule);
     };
 };
 

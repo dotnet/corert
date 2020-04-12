@@ -17,6 +17,7 @@ using Internal.Runtime.CompilerServices;
 using Internal.Reflection.Core.NonPortable;
 using Internal.IntrinsicSupport;
 using EEType = Internal.Runtime.EEType;
+using EETypeElementType = Internal.Runtime.EETypeElementType;
 
 #if TARGET_64BIT
 using nuint = System.UInt64;
@@ -574,8 +575,8 @@ namespace System
 
             Debug.Assert(sourceElementEEType.IsPrimitive && destinationElementEEType.IsPrimitive); // Caller has already validated this.
 
-            RuntimeImports.RhCorElementType sourceElementType = sourceElementEEType.CorElementType;
-            RuntimeImports.RhCorElementType destElementType = destinationElementEEType.CorElementType;
+            EETypeElementType sourceElementType = sourceElementEEType.ElementType;
+            EETypeElementType destElementType = destinationElementEEType.ElementType;
 
             nuint srcElementSize = sourceArray.ElementSize;
             nuint destElementSize = destinationArray.ElementSize;
@@ -618,31 +619,31 @@ namespace System
                     // converting w/ sign extension and floating point conversions.
                     switch (sourceElementType)
                     {
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                        case EETypeElementType.Byte:
                             {
                                 switch (destElementType)
                                 {
-                                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
+                                    case EETypeElementType.Single:
                                         *(float*)data = *(byte*)srcData;
                                         break;
 
-                                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
+                                    case EETypeElementType.Double:
                                         *(double*)data = *(byte*)srcData;
                                         break;
 
-                                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
-                                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
-                                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                                    case EETypeElementType.Char:
+                                    case EETypeElementType.Int16:
+                                    case EETypeElementType.UInt16:
                                         *(short*)data = *(byte*)srcData;
                                         break;
 
-                                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                                    case EETypeElementType.Int32:
+                                    case EETypeElementType.UInt32:
                                         *(int*)data = *(byte*)srcData;
                                         break;
 
-                                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                                    case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                                    case EETypeElementType.Int64:
+                                    case EETypeElementType.UInt64:
                                         *(long*)data = *(byte*)srcData;
                                         break;
 
@@ -652,26 +653,26 @@ namespace System
                                 break;
                             }
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                        case EETypeElementType.SByte:
                             switch (destElementType)
                             {
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                                case EETypeElementType.Int16:
                                     *(short*)data = *(sbyte*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                                case EETypeElementType.Int32:
                                     *(int*)data = *(sbyte*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                                case EETypeElementType.Int64:
                                     *(long*)data = *(sbyte*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
+                                case EETypeElementType.Single:
                                     *(float*)data = *(sbyte*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
+                                case EETypeElementType.Double:
                                     *(double*)data = *(sbyte*)srcData;
                                     break;
 
@@ -680,30 +681,30 @@ namespace System
                             }
                             break;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                        case EETypeElementType.UInt16:
+                        case EETypeElementType.Char:
                             switch (destElementType)
                             {
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
+                                case EETypeElementType.Single:
                                     *(float*)data = *(ushort*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
+                                case EETypeElementType.Double:
                                     *(double*)data = *(ushort*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                                case EETypeElementType.UInt16:
+                                case EETypeElementType.Char:
                                     *(ushort*)data = *(ushort*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                                case EETypeElementType.Int32:
+                                case EETypeElementType.UInt32:
                                     *(uint*)data = *(ushort*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                                case EETypeElementType.Int64:
+                                case EETypeElementType.UInt64:
                                     *(ulong*)data = *(ushort*)srcData;
                                     break;
 
@@ -712,22 +713,22 @@ namespace System
                             }
                             break;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                        case EETypeElementType.Int16:
                             switch (destElementType)
                             {
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                                case EETypeElementType.Int32:
                                     *(int*)data = *(short*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                                case EETypeElementType.Int64:
                                     *(long*)data = *(short*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
+                                case EETypeElementType.Single:
                                     *(float*)data = *(short*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
+                                case EETypeElementType.Double:
                                     *(double*)data = *(short*)srcData;
                                     break;
 
@@ -736,18 +737,18 @@ namespace System
                             }
                             break;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                        case EETypeElementType.Int32:
                             switch (destElementType)
                             {
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                                case EETypeElementType.Int64:
                                     *(long*)data = *(int*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
+                                case EETypeElementType.Single:
                                     *(float*)data = (float)*(int*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
+                                case EETypeElementType.Double:
                                     *(double*)data = *(int*)srcData;
                                     break;
 
@@ -756,19 +757,19 @@ namespace System
                             }
                             break;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                        case EETypeElementType.UInt32:
                             switch (destElementType)
                             {
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                                case EETypeElementType.Int64:
+                                case EETypeElementType.UInt64:
                                     *(long*)data = *(uint*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
+                                case EETypeElementType.Single:
                                     *(float*)data = (float)*(uint*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
+                                case EETypeElementType.Double:
                                     *(double*)data = *(uint*)srcData;
                                     break;
 
@@ -778,14 +779,14 @@ namespace System
                             break;
 
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                        case EETypeElementType.Int64:
                             switch (destElementType)
                             {
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
+                                case EETypeElementType.Single:
                                     *(float*)data = (float)*(long*)srcData;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
+                                case EETypeElementType.Double:
                                     *(double*)data = (double)*(long*)srcData;
                                     break;
 
@@ -794,10 +795,10 @@ namespace System
                             }
                             break;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                        case EETypeElementType.UInt64:
                             switch (destElementType)
                             {
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
+                                case EETypeElementType.Single:
 
                                     //*(float*) data = (float) *(Ulong*)srcData;
                                     long srcValToFloat = *(long*)srcData;
@@ -808,7 +809,7 @@ namespace System
                                     *(float*)data = f;
                                     break;
 
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
+                                case EETypeElementType.Double:
                                     //*(double*) data = (double) *(Ulong*)srcData;
                                     long srcValToDouble = *(long*)srcData;
                                     double d = (double)srcValToDouble;
@@ -823,10 +824,10 @@ namespace System
                             }
                             break;
 
-                        case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R4:
+                        case EETypeElementType.Single:
                             switch (destElementType)
                             {
-                                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8:
+                                case EETypeElementType.Double:
                                     *(double*)data = *(float*)srcData;
                                     break;
 
@@ -1213,7 +1214,7 @@ namespace System
 
         internal CorElementType GetCorElementTypeOfElementType()
         {
-            return (CorElementType)ElementEEType.CorElementType;
+            return ElementEEType.CorElementType;
         }
 
         internal bool IsValueOfElementType(object o)

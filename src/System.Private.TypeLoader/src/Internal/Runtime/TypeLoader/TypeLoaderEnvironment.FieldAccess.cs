@@ -313,18 +313,8 @@ namespace Internal.Runtime.TypeLoader
         /// </param>
         public static unsafe IntPtr RvaToNonGenericStaticFieldAddress(TypeManagerHandle moduleHandle, int staticFieldRVA)
         {
-            IntPtr staticFieldAddress;
-
-            if ((staticFieldRVA & FieldAccessFlags.RemoteStaticFieldRVA) != 0)
-            {
-                RemoteStaticFieldDescriptor* descriptor = (RemoteStaticFieldDescriptor*)(moduleHandle.ConvertRVAToPointer
-                   (staticFieldRVA & ~FieldAccessFlags.RemoteStaticFieldRVA));
-                staticFieldAddress = *descriptor->IndirectionCell + descriptor->Offset;
-            }
-            else
-                staticFieldAddress = (IntPtr)(moduleHandle.ConvertRVAToPointer(staticFieldRVA));
-
-            return staticFieldAddress;
+            // TODO: implement for CoreRT
+            throw new NotImplementedException();
         }
 
         /// <summary>

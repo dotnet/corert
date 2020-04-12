@@ -13,7 +13,7 @@ To specify a switch, add a new property to your project file with one or more of
 under the `<Project>` node of your project file.
 
 ## Options related to globalization
-* `<IlcInvariantGlobalization>true</IlcInvariantGlobalization>`: enables the [globalization invariant mode](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/globalization-invariant-mode.md) that removes code and data that supports non-english cultures. Removing code and data makes your app smaller.
+* `<IlcInvariantGlobalization>true</IlcInvariantGlobalization>`: enables the [globalization invariant mode](https://github.com/dotnet/runtime/blob/master/docs/design/features/globalization-invariant-mode.md) that removes code and data that supports non-english cultures. Removing code and data makes your app smaller.
 
 ## Options related to reflection
 

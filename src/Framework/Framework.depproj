@@ -16,15 +16,11 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>
-    <ProjectReference Include="Framework-native.depproj" Condition="$(TargetsUnix) and '$(Platform)' != 'wasm'">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
-    </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
-      <Version>$(CoreFxVersion)</Version>
+    <PackageReference Include="Microsoft.NETCore.App.Runtime.$(NuPkgRid)">
+      <Version>$(RuntimeLibrariesVersion)</Version>
     </PackageReference>
 
     <!-- Needed by UAP System.Text.Json we grab in Framework-uapaot.depproj -->
@@ -34,6 +30,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- CoreRT has own CoreLib -->
+    <FileToExclude Include="System.Private.CoreLib" />
+
     <!-- Pickup a few selected aot-specific files from uapaot instead -->
     <FileToExclude Include="System.Linq.Expressions" />
     <FileToExclude Include="System.Text.RegularExpressions" />
@@ -51,9 +50,35 @@
     <FileToExclude Include="System.Runtime.WindowsRuntime" />
     <FileToExclude Include="System.Runtime.WindowsRuntime.UI.Xaml" />
 
-    <!-- TODO: https://github.com/dotnet/corert/issues/5496 -->
-    <!-- <FileToExclude Include="clrcompression" /> -->
+    <!-- Unmanaged .dlls -->
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.x86" />
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.amd64" />
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.arm" />
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.arm64" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Override default FilterNugetPackages to perform additional filtering -->
+  <Target Name="FilterNugetPackages" AfterTargets="ResolveNuGetPackages">
+    <ItemGroup>
+      <_nuGetDeployByFileName Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
+        <OriginalItemSpec>%(Identity)</OriginalItemSpec>
+      </_nuGetDeployByFileName>
+
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="$([System.String]::new('%(Identity)').StartsWith('System'))" />
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="$([System.String]::new('%(Identity)').StartsWith('Microsoft'))" />
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="'%(Identity)' == 'netstandard'" />
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="'%(Identity)' == 'mscorlib'" />
+
+      <!-- TODO: https://github.com/dotnet/corert/issues/5496 -->
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="'%(Identity)' == 'clrcompression'" />
+
+      <_filteredNuGetDeployByFileName Remove="@(FileToExclude)" />
+
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+      <ReferenceCopyLocalPaths Include="@(_filteredNuGetDeployByFileName->'%(OriginalItemSpec)')" />
+    </ItemGroup>
+  </Target>
+
 </Project>

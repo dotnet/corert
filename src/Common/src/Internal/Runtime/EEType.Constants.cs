@@ -28,9 +28,9 @@ namespace Internal.Runtime
         RelatedTypeViaIATFlag = 0x0004,
 
         /// <summary>
-        /// This EEType represents a value type.
+        /// This type was dynamically allocated at runtime.
         /// </summary>
-        ValueTypeFlag = 0x0008,
+        IsDynamicTypeFlag = 0x0008,
 
         /// <summary>
         /// This EEType represents a type which requires finalization.
@@ -58,10 +58,7 @@ namespace Internal.Runtime
         /// </summary>
         OptionalFieldsFlag = 0x0100,
 
-        /// <summary>
-        /// This EEType represents an interface.
-        /// </summary>
-        IsInterfaceFlag = 0x0200,
+        // Unused = 0x0200,
 
         /// <summary>
         /// This type is generic.
@@ -69,10 +66,10 @@ namespace Internal.Runtime
         IsGenericFlag = 0x0400,
 
         /// <summary>
-        /// We are storing a CorElementType in the upper bits for unboxing enums.
+        /// We are storing a EETypeElementType in the upper bits for unboxing enums.
         /// </summary>
-        CorElementTypeMask = 0xf800,
-        CorElementTypeShift = 11,
+        ElementTypeMask = 0xf800,
+        ElementTypeShift = 11,
 
         /// <summary>
         /// Single mark to check TypeKind and two flags. When non-zero, casting is more complicated.
@@ -120,20 +117,11 @@ namespace Internal.Runtime
         /// </summary>
         UNUSED1 = 0x00000002,
 
-        /// <summary>
-        /// Type is an instantiation of Nullable<T>.
-        /// </summary>
-        IsNullableFlag = 0x00000004,
+        // UNUSED = 0x00000004,
 
-        /// <summary>
-        /// Nullable target type stashed in the EEType is indirected via the IAT.
-        /// </summary>
-        NullableTypeViaIATFlag = 0x00000008,
+        // UNUSED = 0x00000008,
 
-        /// <summary>
-        /// This EEType was created by generic instantiation loader
-        /// </summary>
-        IsDynamicTypeFlag = 0x00000010,
+        // UNUSED = 0x00000010,
 
         /// <summary>
         /// This EEType has a Class Constructor
@@ -195,9 +183,9 @@ namespace Internal.Runtime
     internal enum EETypeField
     {
         ETF_InterfaceMap,
+        ETF_TypeManagerIndirection,
         ETF_Finalizer,
         ETF_OptionalFieldsPtr,
-        ETF_NullableType,
         ETF_SealedVirtualSlots,
         ETF_DynamicTemplateType,
         ETF_DynamicDispatchMap,
@@ -209,37 +197,43 @@ namespace Internal.Runtime
         ETF_DynamicThreadStaticOffset,
     }
 
-    internal enum CorElementType
+    // Subset of the managed TypeFlags enum understood by Redhawk.
+    // This should match the values in the TypeFlags enum except for the special
+    // entry that marks System.Array specifically.
+    internal enum EETypeElementType
     {
-        ELEMENT_TYPE_END = 0x00,
+        // Primitive
+        Unknown = 0x00,
+        Void = 0x01,
+        Boolean = 0x02,
+        Char = 0x03,
+        SByte = 0x04,
+        Byte = 0x05,
+        Int16 = 0x06,
+        UInt16 = 0x07,
+        Int32 = 0x08,
+        UInt32 = 0x09,
+        Int64 = 0x0A,
+        UInt64 = 0x0B,
+        IntPtr = 0x0C,
+        UIntPtr = 0x0D,
+        Single = 0x0E,
+        Double = 0x0F,
 
-        ELEMENT_TYPE_VOID = 0x1,
-        ELEMENT_TYPE_BOOLEAN = 0x2,
-        ELEMENT_TYPE_CHAR = 0x3,
-        ELEMENT_TYPE_I1 = 0x4,
-        ELEMENT_TYPE_U1 = 0x5,
-        ELEMENT_TYPE_I2 = 0x6,
-        ELEMENT_TYPE_U2 = 0x7,
-        ELEMENT_TYPE_I4 = 0x8,
-        ELEMENT_TYPE_U4 = 0x9,
-        ELEMENT_TYPE_I8 = 0xa,
-        ELEMENT_TYPE_U8 = 0xb,
-        ELEMENT_TYPE_R4 = 0xc,
-        ELEMENT_TYPE_R8 = 0xd,
-        ELEMENT_TYPE_STRING = 0xe,
-        ELEMENT_TYPE_PTR = 0xf,
-        ELEMENT_TYPE_BYREF = 0x10,
-        ELEMENT_TYPE_VALUETYPE = 0x11,
-        ELEMENT_TYPE_CLASS = 0x12,
+        ValueType = 0x10,
+        // Enum = 0x11, // EETypes store enums as their underlying type
+        Nullable = 0x12,
+        // Unused 0x13,
 
-        ELEMENT_TYPE_ARRAY = 0x14,
+        Class = 0x14,
+        Interface = 0x15,
 
-        ELEMENT_TYPE_TYPEDBYREF = 0x16,
-        ELEMENT_TYPE_I = 0x18,
-        ELEMENT_TYPE_U = 0x19,
-        ELEMENT_TYPE_FNPTR = 0x1b,
-        ELEMENT_TYPE_OBJECT = 0x1c,
-        ELEMENT_TYPE_SZARRAY = 0x1d,
+        SystemArray = 0x16, // System.Array type
+
+        Array = 0x17,
+        SzArray = 0x18,
+        ByRef = 0x19,
+        Pointer = 0x1A,
     }
 
     internal enum EETypeOptionalFieldTag : byte

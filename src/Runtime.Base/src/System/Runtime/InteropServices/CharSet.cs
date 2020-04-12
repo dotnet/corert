@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices
     // Generally you probably want to use Auto, which does the
     // right thing 99% of the time.
 
-    internal enum CharSet
+    public enum CharSet
     {
         None = 1,       // User didn't specify how to marshal strings.
         Ansi = 2,       // Strings should be marshalled as ANSI 1 byte chars.

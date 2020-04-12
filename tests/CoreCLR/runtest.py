@@ -1102,8 +1102,8 @@ def run_tests(host_os,
     # Ideally, this code should be removed when we find a more robust way of running Xunit tests.
     #
     # References:
-    #  * https://github.com/dotnet/coreclr/issues/20392
-    #  * https://github.com/dotnet/coreclr/issues/20594
+    #  * https://github.com/dotnet/runtime/issues/11232
+    #  * https://github.com/dotnet/runtime/issues/11320
     #  * https://github.com/xunit/xunit/issues/1842
     #  * https://github.com/xunit/xunit/pull/1846
     #
@@ -1816,7 +1816,7 @@ if sys.version_info.major < 3:
         return unicode(s, "utf-8")
 else:
     def to_unicode(s):
-        return str(s, "utf-8")
+        return s
 
 def delete_existing_wrappers(test_location):
     """ Delete the existing xunit wrappers

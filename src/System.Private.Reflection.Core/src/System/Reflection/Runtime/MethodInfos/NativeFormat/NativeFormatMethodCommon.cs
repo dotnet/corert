@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.Runtime;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
@@ -13,6 +12,7 @@ using System.Reflection.Runtime.ParameterInfos.NativeFormat;
 using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Core.Execution;
+using Internal.Runtime;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 using Internal.Metadata.NativeFormat;

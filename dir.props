@@ -145,7 +145,7 @@
 
     <RestoreOutputPath Condition="'$(RestoreOutputPath)'==''">$(IntermediateOutputPath)</RestoreOutputPath>
 
-    <AotPackageReferencePath Condition="'$(AotPackageReferencePath)'==''">$(IntermediateOutputRootPath)\AotPackageReference</AotPackageReferencePath>
+    <FrameworkReferencePath Condition="'$(FrameworkReferencePath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/framework</FrameworkReferencePath>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
   </PropertyGroup>

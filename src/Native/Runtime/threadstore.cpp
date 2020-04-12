@@ -296,8 +296,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent, bool fireDebugEvent)
 
 void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
 {
-    m_pRuntimeInstance->UnsychronizedResetHijackedLoops();
-
     FOREACH_THREAD(pTargetThread)
     {
         pTargetThread->ResetCachedTransitionFrame();

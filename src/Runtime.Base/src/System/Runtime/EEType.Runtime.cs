@@ -12,15 +12,6 @@ namespace Internal.Runtime
     // Extensions to EEType that are specific to the use in Runtime.Base.
     internal unsafe partial struct EEType
     {
-        internal DispatchResolve.DispatchMap* DispatchMap
-        {
-            get
-            {
-                fixed (EEType* pThis = &this)
-                    return InternalCalls.RhpGetDispatchMap(pThis);
-            }
-        }
-
         internal EEType* GetArrayEEType()
         {
             fixed (EEType* pThis = &this)
@@ -157,7 +148,7 @@ namespace Internal.Runtime
         // The binder sets a special CorElementType for this well known type
         internal static unsafe bool IsSystemArray(EEType* pEEType)
         {
-            return (pEEType->CorElementType == CorElementType.ELEMENT_TYPE_ARRAY);
+            return (pEEType->ElementType == EETypeElementType.SystemArray);
         }
     }
 }

@@ -9,8 +9,7 @@
     <IsCoreAssembly>true</IsCoreAssembly>
     <!-- CoreLib has to be marked as CLSCompliant to allow building CLSCompliant assemblies against it -->
     <CLSCompliant>true</CLSCompliant>
-    <!-- Use MSFT assembly key for compatibility with uapaot targeting pack -->
-    <AssemblyKey>MSFT</AssemblyKey>
+    <AssemblyKey>SilverlightPlatform</AssemblyKey>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
     <!-- Disable nullability-related warnings -->
     <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8603;CS8604;CS8605;CS8606;CS8608;CS8609;CS8610;CS8611;CS8612;CS8614;CS8615;CS8617;CS8618;CS8620;CS8622;CS8625;CS8626;CS8631;CS8632;CS8634;CS8653</NoWarn>
@@ -29,7 +28,7 @@
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <TargetsCoreRT>true</TargetsCoreRT>
     <UseSyncTable>true</UseSyncTable>
-    <DefineConstants>SYSTEM_PRIVATE_CORELIB;NETCOREAPP;EETYPE_TYPE_MANAGER;ES_BUILD_PN;ES_SESSION_INFO;$(DefineConstants)</DefineConstants>
+    <DefineConstants>SYSTEM_PRIVATE_CORELIB;NETCOREAPP;ES_BUILD_PN;ES_SESSION_INFO;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(UseSyncTable)' == 'true'">FEATURE_SYNCTABLE;$(DefineConstants)</DefineConstants>
@@ -87,8 +86,8 @@
     <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs">
       <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.RVA.cs">
-      <Link>Internal\Runtime\TypeManagerHandle.RVA.cs</Link>
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.Equality.cs">
+      <Link>Internal\Runtime\TypeManagerHandle.Equality.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\CompilerHelpers\StartupDebug.cs">
       <Link>Internal\Runtime\CompilerHelpers\StartupCode\StartupDebug.cs</Link>

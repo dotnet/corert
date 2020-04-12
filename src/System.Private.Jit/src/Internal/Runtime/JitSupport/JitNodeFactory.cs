@@ -75,6 +75,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public BlobNode ReadOnlyDataBlob(string s, byte[] b, int align) { throw new NotImplementedException(); }
+        public SettableReadOnlyDataBlob SettableReadOnlyDataBlob(string s) { throw new NotImplementedException(); }
         public ISymbolNode ReadyToRunHelper(ReadyToRunHelperId id, Object target) { throw new NotImplementedException(); }
         public IMethodNode MethodEntrypoint(MethodDesc method, bool unboxingStub = false)
         {

@@ -5,7 +5,7 @@
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    internal sealed class FieldOffsetAttribute : Attribute
+    public sealed class FieldOffsetAttribute : Attribute
     {
         public FieldOffsetAttribute(int offset)
         {

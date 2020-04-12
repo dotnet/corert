@@ -43,7 +43,9 @@ namespace System.Runtime.Loader
 
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
-            throw new PlatformNotSupportedException();
+            // TODO: This is not passing down the AssemblyLoadContext,
+            // so it won't actually work properly when multiple assemblies with the same identity get loaded.
+            return ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyPath);
         }
 
         internal Assembly InternalLoad(byte[] arrAssembly, byte[] arrSymbols)

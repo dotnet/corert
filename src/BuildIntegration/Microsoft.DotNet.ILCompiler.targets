@@ -1,16 +1,26 @@
 <Project 
   xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+
     <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
     <!-- Define the name of the runtime specific compiler package to import -->
-    <RuntimeIlcPackageName Condition="'$(RuntimeIdentifier)' != ''">runtime.$(RuntimeIdentifier).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
+    <PortableRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('win'))">win</PortableRuntimeIdentifier>
+    <PortableRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('osx'))">osx</PortableRuntimeIdentifier>
+    <PortableRuntimeIdentifier Condition="$(RuntimeIdentifier.StartsWith('linux-musl')) OR $(RuntimeIdentifier.StartsWith('alpine'))">linux-musl</PortableRuntimeIdentifier>
+    <PortableRuntimeIdentifier Condition="'$(PortableRuntimeIdentifier)' == ''">linux</PortableRuntimeIdentifier>
+    <PortableRuntimeIdentifier>$(PortableRuntimeIdentifier)-$(PlatformTarget)</PortableRuntimeIdentifier>
+    <RuntimeIlcPackageName>runtime.$(PortableRuntimeIdentifier).Microsoft.DotNet.ILCompiler</RuntimeIlcPackageName>
     <IlcCalledViaPackage>true</IlcCalledViaPackage>
-   
+
+  </PropertyGroup>
+
+  <PropertyGroup>
+
     <!-- If CoreRT is being consumed via its package, runtime-specific properties must be set before compilation can proceed -->
     <ImportRuntimeIlcPackageTargetDependsOn>RunResolvePackageDependencies</ImportRuntimeIlcPackageTargetDependsOn>
     <IlcSetupPropertiesDependsOn>ImportRuntimeIlcPackageTarget</IlcSetupPropertiesDependsOn>
     <IlcDynamicBuildPropertyDependencies>SetupProperties</IlcDynamicBuildPropertyDependencies>
-    
+
   </PropertyGroup>
 
   <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->

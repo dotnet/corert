@@ -23,7 +23,6 @@
 #include "thread.inl"
 #include "RuntimeInstance.h"
 #include "shash.h"
-#include "module.h"
 #include "rhbinder.h"
 #include "stressLog.h"
 #include "RhConfig.h"
@@ -140,7 +139,9 @@ void Thread::ResetCachedTransitionFrame()
 void Thread::EnablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
+#if !defined(_WASM_)
     ASSERT(m_pHackPInvokeTunnel != NULL);
+#endif
 
     Unhijack();
 
@@ -293,10 +294,8 @@ void Thread::Construct()
     m_numDynamicTypesTlsCells = 0;
     m_pDynamicTypesTlsCells = NULL;
 
-#ifndef PROJECTN
     m_pThreadLocalModuleStatics = NULL;
     m_numThreadLocalModuleStatics = 0;
-#endif // PROJECTN
 
     // NOTE: We do not explicitly defer to the GC implementation to initialize the alloc_context.  The 
     // alloc_context will be initialized to 0 via the static initialization of tls_CurrentThread. If the
@@ -384,7 +383,6 @@ void Thread::Destroy()
         delete[] m_pDynamicTypesTlsCells;
     }
 
-#ifndef PROJECTN
     if (m_pThreadLocalModuleStatics != NULL)
     {
         for (UInt32 i = 0; i < m_numThreadLocalModuleStatics; i++)
@@ -396,7 +394,6 @@ void Thread::Destroy()
         }
         delete[] m_pThreadLocalModuleStatics;
     }
-#endif // !PROJECTN
 
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
 
@@ -406,10 +403,25 @@ void Thread::Destroy()
     SetDetached();
 }
 
+#ifdef _WASM_
+extern RtuObjectRef * t_pShadowStackTop;
+extern RtuObjectRef * t_pShadowStackBottom;
+
+void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
+{
+    // Wasm does not permit iteration of stack frames so is uses a shadow stack instead
+    RedhawkGCInterface::EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
+}
+#endif
+
 void Thread::GcScanRoots(void * pfnEnumCallback, void * pvCallbackData)
 {
+#ifdef _WASM_
+    GcScanWasmShadowStack(pfnEnumCallback, pvCallbackData);
+#else
     StackFrameIterator  frameIterator(this, GetTransitionFrame());
     GcScanRootsWorker(pfnEnumCallback, pvCallbackData, frameIterator);
+#endif
 }
 
 #endif // !DACCESS_COMPILE
@@ -1277,7 +1289,6 @@ COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
     return pCurThread->GetThreadAbortException();
 }
 
-#ifndef PROJECTN
 Object* Thread::GetThreadStaticStorageForModule(UInt32 moduleIndex)
 {
     // Return a pointer to the TLS storage if it has already been
@@ -1361,7 +1372,6 @@ COOP_PINVOKE_HELPER(UInt8*, RhCurrentNativeThreadId, ())
     return (UInt8*)ThreadStore::RawGetCurrentThread();
 #endif // PLATFORM_UNIX
 }
-#endif // !PROJECTN
 
 // This function is used to get the OS thread identifier for the current thread.
 COOP_PINVOKE_HELPER(UInt64, RhCurrentOSThreadId, ())

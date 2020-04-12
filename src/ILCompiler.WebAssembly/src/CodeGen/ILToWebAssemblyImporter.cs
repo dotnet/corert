@@ -2956,10 +2956,6 @@ namespace Internal.IL
 
         private ExpressionEntry ImportRawPInvoke(MethodDesc method, StackEntry[] arguments, LLVMBuilderRef builder, TypeDesc forcedReturnType = null)
         {
-            //emscripten dies if this is output because its expected to have i32, i32, i64. But the runtime has defined it as i8*, i8*, i64
-            if (method.Name == "memmove")
-                throw new NotImplementedException();
-
             string realMethodName = method.Name;
 
             if (method.IsPInvoke)
@@ -3075,7 +3071,7 @@ namespace Internal.IL
                 if (s_shadowStackTop.Handle.Equals(IntPtr.Zero))
                 {
                     s_shadowStackTop = Module.AddGlobal(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "t_pShadowStackTop");
-                    s_shadowStackTop.Linkage = LLVMLinkage.LLVMInternalLinkage;
+                    s_shadowStackTop.Linkage = LLVMLinkage.LLVMExternalLinkage;
                     s_shadowStackTop.Initializer = LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0));
                     s_shadowStackTop.ThreadLocalMode = LLVMThreadLocalMode.LLVMLocalDynamicTLSModel;
                 }

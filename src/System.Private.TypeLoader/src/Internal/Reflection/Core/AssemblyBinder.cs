@@ -28,11 +28,13 @@ namespace Internal.Reflection.Core
     //
     public abstract class AssemblyBinder
     {
-        public const String DefaultAssemblyNameForGetType = "System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
+        public const String DefaultAssemblyNameForGetType = "System.Private.CoreLib";
 
         public abstract bool Bind(RuntimeAssemblyName refName, bool cacheMissedLookups, out AssemblyBindResult result, out Exception exception);
 
         public abstract bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult result, out Exception exception);
+
+        public abstract bool Bind(string assemblyPath, out AssemblyBindResult bindResult, out Exception exception);
 
         public abstract IList<AssemblyBindResult> GetLoadedAssemblies();
     }

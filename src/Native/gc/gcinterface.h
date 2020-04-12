@@ -7,7 +7,7 @@
 
 // The major version of the GC/EE interface. Breaking changes to this interface
 // require bumps in the major version number.
-#define GC_INTERFACE_MAJOR_VERSION 3
+#define GC_INTERFACE_MAJOR_VERSION 4
 
 // The minor version of the GC/EE interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
@@ -98,7 +98,7 @@ struct WriteBarrierParameters
     // value. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
     uint8_t* highest_address;
 
-    // The new start of the ephemeral generation. 
+    // The new start of the ephemeral generation.
     // Used for WriteBarrierOp::StompEphemeral.
     uint8_t* ephemeral_low;
 
@@ -137,7 +137,7 @@ struct gc_alloc_context
     uint8_t*       alloc_ptr;
     uint8_t*       alloc_limit;
     int64_t        alloc_bytes; //Number of bytes allocated on SOH by this context
-    int64_t        alloc_bytes_loh; //Number of bytes allocated on LOH by this context
+    int64_t        alloc_bytes_uoh; //Number of bytes allocated not on SOH by this context
     // These two fields are deliberately not exposed past the EE-GC interface.
     void*          gc_reserved_1;
     void*          gc_reserved_2;
@@ -151,7 +151,7 @@ public:
         alloc_ptr = 0;
         alloc_limit = 0;
         alloc_bytes = 0;
-        alloc_bytes_loh = 0;
+        alloc_bytes_uoh = 0;
         gc_reserved_1 = 0;
         gc_reserved_2 = 0;
         alloc_count = 0;
@@ -229,7 +229,7 @@ enum GCEventKeyword
 {
     GCEventKeyword_None                          =       0x0,
     GCEventKeyword_GC                            =       0x1,
-    // Duplicate on purpose, GCPrivate is the same keyword as GC, 
+    // Duplicate on purpose, GCPrivate is the same keyword as GC,
     // with a different provider
     GCEventKeyword_GCPrivate                     =       0x1,
     GCEventKeyword_GCHandle                      =       0x2,
@@ -253,7 +253,7 @@ enum GCEventKeyword
 };
 
 // !!!!!!!!!!!!!!!!!!!!!!!
-// make sure you change the def in bcl\system\gc.cs 
+// make sure you change the def in bcl\system\gc.cs
 // if you change this!
 enum collection_mode
 {
@@ -267,7 +267,7 @@ enum collection_mode
 };
 
 // !!!!!!!!!!!!!!!!!!!!!!!
-// make sure you change the def in bcl\system\gc.cs 
+// make sure you change the def in bcl\system\gc.cs
 // if you change this!
 enum wait_full_gc_status
 {
@@ -279,7 +279,7 @@ enum wait_full_gc_status
 };
 
 // !!!!!!!!!!!!!!!!!!!!!!!
-// make sure you change the def in bcl\system\gc.cs 
+// make sure you change the def in bcl\system\gc.cs
 // if you change this!
 enum start_no_gc_region_status
 {
@@ -297,7 +297,7 @@ enum end_no_gc_region_status
     end_no_gc_alloc_exceeded = 3
 };
 
-typedef enum 
+typedef enum
 {
     /*
      * WEAK HANDLES
@@ -363,7 +363,7 @@ typedef enum
      * are larger than other types of handles, and are scanned a little more often,
      * but are useful when the handle owner needs an efficient way to change the
      * strength of a handle on the fly.
-     * 
+     *
      */
     HNDTYPE_VARIABLE     = 4,
 
@@ -382,8 +382,8 @@ typedef enum
     /*
      * DEPENDENT HANDLES
      *
-     * Dependent handles are two handles that need to have the same lifetime.  One handle refers to a secondary object 
-     * that needs to have the same lifetime as the primary object. The secondary object should not cause the primary 
+     * Dependent handles are two handles that need to have the same lifetime.  One handle refers to a secondary object
+     * that needs to have the same lifetime as the primary object. The secondary object should not cause the primary
      * object to be referenced, but as long as the primary object is alive, so must be the secondary
      *
      * They are currently used for EnC for adding new field members to existing instantiations under EnC modes where
@@ -598,7 +598,7 @@ public:
     */
 
     // Gets memory related information -
-    // highMemLoadThreshold - physical memory load (in percentage) when GC will start to 
+    // highMemLoadThreshold - physical memory load (in percentage) when GC will start to
     // react aggressively to reclaim memory.
     // totalPhysicalMem - the total amount of phyiscal memory available on the machine and the memory
     // limit set on the container if running in a container.
@@ -708,7 +708,7 @@ public:
     // Gets whether or not the home heap of this alloc context matches the heap
     // associated with this thread.
     virtual bool IsThreadUsingAllocationContextHeap(gc_alloc_context* acontext, int thread_number) = 0;
-    
+
     // Returns whether or not this object resides in an ephemeral generation.
     virtual bool IsEphemeral(Object* object) = 0;
 
@@ -733,6 +733,9 @@ public:
 
     // Tells the GC how many YieldProcessor calls are equal to one scaled yield processor call.
     virtual void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor) = 0;
+
+    // Flush the log and close the file if GCLog is turned on.
+    virtual void Shutdown() = 0;
 
     /*
     ============================================================================
@@ -767,19 +770,8 @@ public:
     // a lock to ensure that the calling thread has unique ownership over this alloc context;
     virtual Object* Alloc(gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
 
-    // Allocates an object on the large object heap with the given size and flags.
-    virtual Object* AllocLHeap(size_t size, uint32_t flags) = 0;
-
-    // Allocates an object on the given allocation context, aligned to 64 bits,
-    // with the given size and flags.
-    // It is the responsibility of the caller to ensure that the passed-in alloc context is
-    // owned by the thread that is calling this function. If using per-thread alloc contexts,
-    // no lock is needed; callers not using per-thread alloc contexts will need to acquire
-    // a lock to ensure that the calling thread has unique ownership over this alloc context.
-    virtual Object* AllocAlign8(gc_alloc_context* acontext, size_t size, uint32_t flags) = 0;
-
-    // This is for the allocator to indicate it's done allocating a large object during a 
-    // background GC as the BGC threads also need to walk LOH.
+    // This is for the allocator to indicate it's done allocating a large object during a
+    // background GC as the BGC threads also need to walk UOH.
     virtual void PublishObject(uint8_t* obj) = 0;
 
     // Signals the WaitForGCEvent event, indicating that a GC has completed.
@@ -793,8 +785,8 @@ public:
     Heap verification routines. These are used during heap verification only.
     ===========================================================================
     */
-    // Returns whether or not this object is in the fixed heap.
-    virtual bool IsObjectInFixedHeap(Object* pObj) = 0;
+    // Returns whether or not this object is too large for SOH.
+    virtual bool IsLargeObject(Object* pObj) = 0;
 
     // Walks an object and validates its members.
     virtual void ValidateObjectMember(Object* obj) = 0;
@@ -806,7 +798,7 @@ public:
 
     // Given an interior pointer, return a pointer to the object
     // containing that pointer. This is safe to call only when the EE is suspended.
-    // When fCollectedGenOnly is true, it only returns the object if it's found in 
+    // When fCollectedGenOnly is true, it only returns the object if it's found in
     // the generation(s) that are being collected.
     virtual Object* GetContainingObject(void* pInteriorPtr, bool fCollectedGenOnly) = 0;
 
@@ -825,7 +817,7 @@ public:
 
     // Walk the heap object by object.
     virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) = 0;
-    
+
     // Walks the survivors and get the relocation information if objects have moved.
     virtual void DiagWalkSurvivorsWithType(void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type) = 0;
 
@@ -859,7 +851,7 @@ public:
 
     /*
     ===========================================================================
-    Routines to register read only segments for frozen objects. 
+    Routines to register read only segments for frozen objects.
     Only valid if FEATURE_BASICFREEZE is defined.
     ===========================================================================
     */
@@ -898,7 +890,7 @@ void updateGCShadow(Object** ptr, Object* val);
 #define GC_CALL_INTERIOR            0x1
 #define GC_CALL_PINNED              0x2
 
-//flags for IGCHeapAlloc(...)
+// keep in sync with GC_ALLOC_FLAGS in GC.cs
 enum GC_ALLOC_FLAGS
 {
     GC_ALLOC_NO_FLAGS           = 0,
@@ -907,6 +899,9 @@ enum GC_ALLOC_FLAGS
     GC_ALLOC_ALIGN8_BIAS        = 4,
     GC_ALLOC_ALIGN8             = 8,
     GC_ALLOC_ZEROING_OPTIONAL   = 16,
+    GC_ALLOC_LARGE_OBJECT_HEAP  = 32,
+    GC_ALLOC_PINNED_OBJECT_HEAP = 64,
+    GC_ALLOC_USER_OLD_HEAP      = GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP,
 };
 
 inline GC_ALLOC_FLAGS operator|(GC_ALLOC_FLAGS a, GC_ALLOC_FLAGS b)
@@ -938,7 +933,7 @@ struct ScanContext
     int thread_number;
     uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
     bool promotion; //TRUE: Promotion, FALSE: Relocation.
-    bool concurrent; //TRUE: concurrent scanning 
+    bool concurrent; //TRUE: concurrent scanning
     void* _unused1;
     void* pMD;
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
@@ -946,7 +941,7 @@ struct ScanContext
 #else
     EtwGCRootKind _unused3;
 #endif // GC_PROFILING || FEATURE_EVENT_TRACE
-    
+
     ScanContext()
     {
         LIMITED_METHOD_CONTRACT;

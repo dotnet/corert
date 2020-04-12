@@ -28,6 +28,8 @@ internal static class Program
         TestSByteExtend(); 
         TestMetaData();
 
+        TestGC();
+
         Add(1, 2);
         PrintLine("Hello from C#!");
         int tempInt = 0;
@@ -333,12 +335,72 @@ internal static class Program
 
         TestReverseDelegateInvoke();
 
+        TestInterlockedExchange();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
 
         PrintLine("Done");
         return Success ? 100 : -1;
+    }
+
+    private static void TestGC()
+    {
+        StartTest("GC");
+
+        var genOfNewObject = GC.GetGeneration(new object());
+        PrintLine("Generation of new object " + genOfNewObject.ToString());
+        if(genOfNewObject != 0)
+        {
+            FailTest("Gen of new object was " + genOfNewObject);
+            return;
+        }
+        var weakReference = MethodWithObjectInShadowStack();
+        GC.Collect();
+        GC.Collect();
+        if (weakReference.IsAlive)
+        {
+            FailTest("object alive when has no references");
+            return;
+        }
+        // create enough arrays to go over 5GB which should force older arrays to get collected
+        // use array of size 1MB, then iterate 5*1024 times
+        for(var i = 0; i < 5 * 1024; i++)
+        {
+            var a = new int[256 * 1024]; // ints are 4 bytes so this is 1MB
+        }
+        for(var i = 0; i < 3; i++)
+        {
+            PrintString("GC Collection Count " + i.ToString() + " ");
+            PrintLine(GC.CollectionCount(i).ToString());
+        }
+        EndTest(true);
+    }
+
+    private static WeakReference MethodWithObjectInShadowStack()
+    {
+        var o = new object();
+        var wr = new WeakReference(o);
+        if (!wr.IsAlive)
+        {
+            FailTest("object not alive when still referenced and not collected");
+            return wr;
+        }
+        GC.Collect();
+        GC.Collect();
+        if (!wr.IsAlive)
+        {
+            FailTest("object not alive when still referenced");
+            return wr;
+        }
+        o = null;
+        if (!wr.IsAlive)
+        {
+            FailTest("object not alive when not collected");
+            return wr;
+        }
+        return wr;
     }
 
     private static void StartTest(string testDescription)
@@ -751,9 +813,9 @@ internal static class Program
 
         var genericType = typeof(List<object>);
         StartTest("type of generic");
-        if (genericType.FullName != "System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]]")
+        if (genericType.FullName.Substring(0, genericType.FullName.LastIndexOf(",")) != "System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral")
         {
-            FailTest("expected System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]] but was " + genericType.FullName);
+            FailTest("expected System.Collections.Generic.List`1[[System.Object, System.Private.CoreLib, Version=4.0.0.0, Culture=neutral... but was " + genericType.FullName);
         }
         else
         {
@@ -1555,6 +1617,17 @@ internal static class Program
         }
     }
 
+    static void TestInterlockedExchange()
+    {
+        StartTest("InterlockedExchange");
+        int exInt1 = 1;
+        Interlocked.Exchange(ref exInt1, 2);
+
+        long exLong1 = 1;
+        Interlocked.Exchange(ref exLong1, 3);
+        EndTest(exInt1 == 2 && exLong1 == 3);
+    }
+
     static ushort ReadUInt16()
     {
         // something with MSB set
@@ -1638,7 +1711,7 @@ public class TestClass
 
     public TestClass(int number)
     {
-        if(number != 1337)
+        if (number != 1337)
             throw new Exception();
     }
 
@@ -1652,8 +1725,8 @@ public class TestClass
     {
         Program.PrintLine("Virtual Slot Test: Ok If second");
     }
-	
-	public virtual void TestVirtualMethod2(string str)
+
+    public virtual void TestVirtualMethod2(string str)
     {
         Program.PrintLine("Virtual Slot Test 2: Ok");
     }
@@ -1680,7 +1753,7 @@ public class TestDerivedClass : TestClass
         Program.PrintLine("Virtual Slot Test: Ok");
         base.TestVirtualMethod(str);
     }
-    
+
     public override string ToString()
     {
         throw new Exception();

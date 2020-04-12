@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+#nullable enable
 
 using System;
 using System.Reflection;
@@ -18,6 +19,8 @@ using System.Reflection.PortableExecutable;
 using System.Reflection.Metadata;
 using System.Collections.Immutable;
 
+using System.IO.MemoryMappedFiles;
+
 namespace Internal.Reflection.Execution
 {
     //=============================================================================================================================
@@ -32,33 +35,49 @@ namespace Internal.Reflection.Execution
         /// Abstraction to hold PE data for an ECMA module
         private class PEInfo
         {
-            public PEInfo(RuntimeAssemblyName name, MetadataReader reader, PEReader pe)
+            public PEInfo(RuntimeAssemblyName name, MetadataReader? reader, PEReader? pe, MemoryMappedViewAccessor? memoryMappedView = null)
             {
                 Name = name;
                 Reader = reader;
                 PE = pe;
+                MemoryMappedView = memoryMappedView;
             }
 
             public readonly RuntimeAssemblyName Name;
-            public readonly MetadataReader Reader;
-            public readonly PEReader PE;
+            public readonly MetadataReader? Reader;
+            public readonly PEReader? PE;
+            public readonly MemoryMappedViewAccessor? MemoryMappedView;
         }
 
         private static LowLevelList<PEInfo> s_ecmaLoadedAssemblies = new LowLevelList<PEInfo>();
 
-        partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result)
+        partial void BindEcmaByteArray(byte[] rawAssembly, byte[]? rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception? exception, ref bool? result)
         {
-            // 1. Load byte[] into immutable array for use by PEReader/MetadataReader
+            // Load byte[] into immutable array for use by PEReader/MetadataReader
             ImmutableArray<byte> assemblyData = ImmutableArray.Create(rawAssembly);
             PEReader pe = new PEReader(assemblyData);
+
+            BindEcma(pe, null, out bindResult, out exception, out result);
+        }
+
+        partial void BindEcmaFilePath(string assemblyPath, ref AssemblyBindResult bindResult, ref Exception? exception, ref bool? result)
+        {
+            // Get a PEReader over a MemoryMappedView of the PE file
+            PEReader pe = OpenPEFile(assemblyPath, out var memoryMappedView);
+
+            BindEcma(pe, memoryMappedView, out bindResult, out exception, out result);
+        }
+
+        private void BindEcma(PEReader pe, MemoryMappedViewAccessor? memoryMappedView, out AssemblyBindResult bindResult, out Exception? exception, out bool? result)
+        {
             MetadataReader reader = pe.GetMetadataReader();
 
-            // 2. Create AssemblyName from MetadataReader
-            RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
+            // 1. Create AssemblyName from MetadataReader
+            RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader);
 
-            lock(s_ecmaLoadedAssemblies)
+            lock (s_ecmaLoadedAssemblies)
             {
-                // 3. Attempt to bind to already loaded assembly
+                // 2. Attempt to bind to already loaded assembly
                 if (Bind(runtimeAssemblyName, cacheMissedLookups: false, out bindResult, out exception))
                 {
                     result = true;
@@ -66,15 +85,15 @@ namespace Internal.Reflection.Execution
                 }
                 exception = null;
 
-                // 4. If that fails, then add newly created metareader to global cache of byte array loaded modules
-                PEInfo peinfo = new PEInfo(runtimeAssemblyName, reader, pe);
+                // 3. If that fails, then add newly created metareader to global cache of loaded modules
+                PEInfo peinfo = new PEInfo(runtimeAssemblyName, reader, pe, memoryMappedView);
 
                 s_ecmaLoadedAssemblies.Add(peinfo);
                 ModuleList moduleList = ModuleList.Instance;
                 ModuleInfo newModuleInfo = new EcmaModuleInfo(moduleList.SystemModule.Handle, pe, reader);
                 moduleList.RegisterModule(newModuleInfo);
 
-                // 5. Then try to load by name again. This load should always succeed
+                // 4. Then try to load by name again. This load should always succeed
                 if (Bind(runtimeAssemblyName, cacheMissedLookups: true, out bindResult, out exception))
                 {
                     result = true;
@@ -86,9 +105,47 @@ namespace Internal.Reflection.Execution
             }
         }
 
+        public static unsafe PEReader OpenPEFile(string filePath, out MemoryMappedViewAccessor mappedViewAccessor)
+        {
+            // System.Reflection.Metadata has heuristic that tries to save virtual address space. This heuristic does not work
+            // well for us since it can make IL access very slow (call to OS for each method IL query). We will map the file
+            // ourselves to get the desired performance characteristics reliably.
+
+            FileStream? fileStream = null;
+            MemoryMappedFile? mappedFile = null;
+            MemoryMappedViewAccessor? accessor = null;
+            try
+            {
+                // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
+                fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+                mappedFile = MemoryMappedFile.CreateFromFile(
+                    fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
+                accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+
+                var safeBuffer = accessor.SafeMemoryMappedViewHandle;
+                var peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
+
+                // MemoryMappedFile does not need to be kept around. MemoryMappedViewAccessor is enough.
+
+                mappedViewAccessor = accessor;
+                accessor = null;
+
+                return peReader;
+            }
+            finally
+            {
+                if (accessor != null)
+                    accessor.Dispose();
+                if (mappedFile != null)
+                    mappedFile.Dispose();
+                if (fileStream != null)
+                    fileStream.Dispose();
+            }
+        }
+
         partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, bool cacheMissedLookups, ref AssemblyBindResult result, ref Exception exception, ref Exception preferredException, ref bool foundMatch)
         {
-            lock(s_ecmaLoadedAssemblies)
+            lock (s_ecmaLoadedAssemblies)
             {
                 for (int i = 0; i < s_ecmaLoadedAssemblies.Count; i++)
                 {
@@ -117,8 +174,8 @@ namespace Internal.Reflection.Execution
                         // Not found in already loaded list, attempt to source assembly from disk
                         foreach (string filePath in FilePathsForAssembly(refName))
                         {
-                            FileStream ownedFileStream = null;
-                            PEReader ownedPEReader = null;
+                            PEReader? ownedPEReader = null;
+                            MemoryMappedViewAccessor? ownedMemoryMappedView = null;
                             try
                             {
                                 if (!RuntimeAugments.FileExists(filePath))
@@ -126,37 +183,34 @@ namespace Internal.Reflection.Execution
 
                                 try
                                 {
-                                    ownedFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                                    ownedPEReader = OpenPEFile(filePath, out ownedMemoryMappedView);
                                 }
-                                catch (System.IO.IOException)
+                                catch (IOException)
                                 {
                                     // Failure to open a file is not fundamentally an assembly load error, but it does indicate this file cannot be used
                                     continue;
                                 }
-
-                                ownedPEReader = new PEReader(ownedFileStream);
-                                // FileStream ownership transferred to ownedPEReader
-                                ownedFileStream = null;
 
                                 if (!ownedPEReader.HasMetadata)
                                     continue;
 
                                 MetadataReader reader = ownedPEReader.GetMetadataReader();
                                 // Create AssemblyName from MetadataReader
-                                RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
+                                RuntimeAssemblyName runtimeAssemblyName = reader.GetAssemblyDefinition().ToRuntimeAssemblyName(reader);
 
                                 // If assembly name doesn't match, it isn't the one we're looking for. Continue to look for more assemblies
                                 if (!AssemblyNameMatches(refName, runtimeAssemblyName, ref preferredException))
                                     continue;
 
                                 // This is the one we are looking for, add it to the list of loaded assemblies
-                                PEInfo peinfo = new PEInfo(runtimeAssemblyName, reader, ownedPEReader);
+                                PEInfo peinfo = new PEInfo(runtimeAssemblyName, reader, ownedPEReader, ownedMemoryMappedView);
 
                                 s_ecmaLoadedAssemblies.Add(peinfo);
 
                                 // At this point the PE reader is no longer owned by this code, but is owned by the s_ecmaLoadedAssemblies list
                                 PEReader pe = ownedPEReader;
                                 ownedPEReader = null;
+                                ownedMemoryMappedView = null;
 
                                 ModuleList moduleList = ModuleList.Instance;
                                 ModuleInfo newModuleInfo = new EcmaModuleInfo(moduleList.SystemModule.Handle, pe, reader);
@@ -168,19 +222,16 @@ namespace Internal.Reflection.Execution
                             }
                             finally
                             {
-                                if (ownedFileStream != null)
-                                    ownedFileStream.Dispose();
-
-                                if (ownedPEReader != null)
-                                    ownedPEReader.Dispose();
+                                ownedPEReader?.Dispose();
+                                ownedMemoryMappedView?.Dispose();
                             }
                         }
                     }
-                    catch (System.IO.IOException)
+                    catch (IOException)
                     { }
-                    catch (System.ArgumentException)
+                    catch (ArgumentException)
                     { }
-                    catch (System.BadImageFormatException badImageFormat)
+                    catch (BadImageFormatException badImageFormat)
                     {
                         exception = badImageFormat;
                     }

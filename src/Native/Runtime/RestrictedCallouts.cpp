@@ -19,7 +19,6 @@
 #include "gcrhinterface.h"
 #include "shash.h"
 #include "RWLock.h"
-#include "module.h"
 #include "rhbinder.h"
 #include "Crst.h"
 #include "RuntimeInstance.h"

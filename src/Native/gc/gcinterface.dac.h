@@ -17,6 +17,7 @@
 #define MAX_EXPAND_MECHANISMS_COUNT     6
 #define MAX_GC_MECHANISM_BITS_COUNT     2
 #define MAX_GLOBAL_GC_MECHANISMS_COUNT  6
+
 #define NUMBERGENERATIONS               4
 #define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10
 #define HANDLE_MAX_INTERNAL_TYPES       12
@@ -145,7 +146,7 @@ public:
     // The generation table must always be last, because the size of this array
     // (stored inline in the gc_heap class) can vary.
     //
-    // The size of the generation class is not part of the GC-DAC interface, 
+    // The size of the generation class is not part of the GC-DAC interface,
     // despite being embedded by-value into the gc_heap class. The DAC variable
     // "generation_size" stores the size of the generation class, so the DAC can
     // use it and pointer arithmetic to calculate correct offsets into the generation

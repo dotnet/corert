@@ -160,6 +160,7 @@
     <Compile Include="Compiler\FrameworkStringResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.cs" />
+    <Compile Include="Compiler\InstructionSetSupport.cs" />
     <Compile Include="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\NoManifestResourceBlockingPolicy.cs" />
@@ -285,6 +286,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Relocation.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\SettableReadOnlyDataBlob.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ThreadStaticsNode.cs" />
@@ -425,6 +427,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\VolatileIntrinsics.cs">
       <Link>IL\Stubs\VolatileIntrinsics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoInstructionSet.cs">
+      <Link>JitInterface\CorInfoInstructionSet.cs</Link>
     </Compile>
     <Compile Include="..\..\JitInterface\src\CorInfoTypes.VarInfo.cs">
       <Link>JitInterface\CorInfoTypes.VarInfo.cs</Link>

@@ -19,19 +19,13 @@
 
 using System;
 using System.Runtime;
-using System.Reflection;
 using System.Diagnostics;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-using Internal.Runtime;
-using Internal.Reflection.Core.NonPortable;
 using Internal.Runtime.CompilerServices;
-
-using Volatile = System.Threading.Volatile;
 
 #if TARGET_64BIT
 using nuint = System.UInt64;
@@ -41,6 +35,9 @@ using nuint = System.UInt32;
 
 namespace Internal.Runtime.Augments
 {
+    using BinderBundle = System.Reflection.BinderBundle;
+    using Pointer = System.Reflection.Pointer;
+
     [ReflectionBlocked]
     public static class RuntimeAugments
     {
@@ -196,7 +193,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetDispatchMapForType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetDispatchMapForType(CreateEETypePtr(typeHandle));
+            return CreateEETypePtr(typeHandle).DispatchMap;
         }
 
         public static IntPtr GetFallbackDefaultConstructor()
@@ -256,11 +253,6 @@ namespace Internal.Runtime.Augments
         public static RuntimeTypeHandle CreateRuntimeTypeHandle(IntPtr ldTokenResult)
         {
             return new RuntimeTypeHandle(new EETypePtr(ldTokenResult));
-        }
-
-        public static unsafe IntPtr GetThreadStaticFieldAddress(RuntimeTypeHandle typeHandle, int threadStaticsBlockOffset, int fieldOffset)
-        {
-            return new IntPtr(RuntimeImports.RhGetThreadStaticFieldAddress(typeHandle.ToEETypePtr(), threadStaticsBlockOffset, fieldOffset));
         }
 
         public static unsafe void StoreValueTypeField(IntPtr address, object fieldValue, RuntimeTypeHandle fieldType)
@@ -441,28 +433,28 @@ namespace Internal.Runtime.Augments
         {
             Debug.Assert(enumTypeHandle.ToEETypePtr().IsEnum);
 
-            RuntimeImports.RhCorElementType corElementType = enumTypeHandle.ToEETypePtr().CorElementType;
-            switch (corElementType)
+            EETypeElementType elementType = enumTypeHandle.ToEETypePtr().ElementType;
+            switch (elementType)
             {
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN:
+                case EETypeElementType.Boolean:
                     return CommonRuntimeTypes.Boolean;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_CHAR:
+                case EETypeElementType.Char:
                     return CommonRuntimeTypes.Char;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I1:
+                case EETypeElementType.SByte:
                     return CommonRuntimeTypes.SByte;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U1:
+                case EETypeElementType.Byte:
                     return CommonRuntimeTypes.Byte;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I2:
+                case EETypeElementType.Int16:
                     return CommonRuntimeTypes.Int16;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U2:
+                case EETypeElementType.UInt16:
                     return CommonRuntimeTypes.UInt16;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I4:
+                case EETypeElementType.Int32:
                     return CommonRuntimeTypes.Int32;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U4:
+                case EETypeElementType.UInt32:
                     return CommonRuntimeTypes.UInt32;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_I8:
+                case EETypeElementType.Int64:
                     return CommonRuntimeTypes.Int64;
-                case RuntimeImports.RhCorElementType.ELEMENT_TYPE_U8:
+                case EETypeElementType.UInt64:
                     return CommonRuntimeTypes.UInt64;
                 default:
                     throw new NotSupportedException();
@@ -594,17 +586,6 @@ namespace Internal.Runtime.Augments
         {
             EETypePtr eeType = CreateEETypePtr(typeHandle);
             return RuntimeImports.RhGetGCDescSize(eeType);
-        }
-
-        public static unsafe bool CreateGenericInstanceDescForType(RuntimeTypeHandle typeHandle, int arity, int nonGcStaticDataSize,
-            int nonGCStaticDataOffset, int gcStaticDataSize, int threadStaticsOffset, IntPtr gcStaticsDesc, IntPtr threadStaticsDesc, int[] genericVarianceFlags)
-        {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            fixed (int* pGenericVarianceFlags = genericVarianceFlags)
-            {
-                return RuntimeImports.RhCreateGenericInstanceDescForType2(eeType, arity, nonGcStaticDataSize, nonGCStaticDataOffset, gcStaticDataSize,
-                    threadStaticsOffset, gcStaticsDesc.ToPointer(), threadStaticsDesc.ToPointer(), pGenericVarianceFlags);
-            }
         }
 
         public static int GetInterfaceCount(RuntimeTypeHandle typeHandle)
@@ -938,11 +919,6 @@ namespace Internal.Runtime.Augments
         public static unsafe RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
         {
             return new RuntimeTypeHandle(obj.EETypePtr);
-        }
-
-        public static int GetCorElementType(RuntimeTypeHandle type)
-        {
-            return (int)type.ToEETypePtr().CorElementType;
         }
 
         // Move memory which may be on the heap which may have object references in it.

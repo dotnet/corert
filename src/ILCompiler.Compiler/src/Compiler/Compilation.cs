@@ -410,6 +410,17 @@ namespace ILCompiler
             return null;
         }
 
+        public bool IsFatPointerCandidate(MethodDesc containingMethod, MethodSignature signature)
+        {
+            // Unmanaged calls are never fat pointers
+            if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) != 0)
+                return false;
+
+            // Everything else except RawCalliHelpers could be a fat pointer
+            var owningType = containingMethod.OwningType as MetadataType;
+            return owningType?.Name != "RawCalliHelper";
+        }
+
         CompilationResults ICompilation.Compile(string outputFile, ObjectDumper dumper)
         {
             if (dumper != null)

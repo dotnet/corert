@@ -316,7 +316,7 @@ goto :eof
         if /i "%__Mode%"=="wasm" (
             REM Skip running if this is WASM build-only testing running in a different architecture's build
             if /i not "%CoreRT_BuildArch%"=="wasm" (goto :RecordTestResult)
-            set __Extension=html
+            set __Extension=js
         )
 
         if "!__SavedErrorLevel!"=="0" (
@@ -466,7 +466,7 @@ goto :eof
         )
         call %CoreRT_TestRoot%\CoreCLR\build-and-run-test.cmd !TestFolderName! !TestFileName!
     ) else (
-        set __RunTestCommand=python runtest.py -arch %CoreRT_BuildArch% -build_type %CoreRT_BuildType% -test_native_bin_location !CoreRT_TestExtRepo_CoreCLR! -test_location %CoreRT_TestRoot%\CoreCLR -core_root !CoreRT_TestExtRepo_CoreCLR!\Tests\Core_Root -coreclr_repo_location %CoreRT_TestRoot%.. %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile%
+        set __RunTestCommand=python3 runtest.py -arch %CoreRT_BuildArch% -build_type %CoreRT_BuildType% -test_native_bin_location !CoreRT_TestExtRepo_CoreCLR! -test_location %CoreRT_TestRoot%\CoreCLR -core_root !CoreRT_TestExtRepo_CoreCLR!\Tests\Core_Root -coreclr_repo_location %CoreRT_TestRoot%.. %CoreCLRExcludeText% %CoreRT_CoreCLRTargetsFile%
         if not "%CoreRT_GCStressLevel%" == "" ( set __RunTestCommand=!__RunTestCommand! gcstresslevel !CoreRT_GCStressLevel! )
         echo !__RunTestCommand!
         call !__RunTestCommand!

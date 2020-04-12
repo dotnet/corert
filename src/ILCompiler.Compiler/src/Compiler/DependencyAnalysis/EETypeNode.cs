@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
     ///                 | and 0 for all other types.
     ///                 |
     /// UInt16          | EETypeKind (Normal, Array, Pointer type). Flags for: IsValueType, IsCrossModule, HasPointers,
-    ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum CorElementType to
+    ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum EETypeElementType to
     ///                 | record whether it's back by an Int32, Int16 etc
     ///                 |
     /// Uint32          | Base size.
@@ -40,21 +40,19 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// UInt32          | Hash code
     ///                 |
-    /// [Pointer Size]  | Pointer to containing TypeManager indirection cell
-    ///                 |
     /// X * [Ptr Size]  | VTable entries (optional)
     ///                 |
     /// Y * [Ptr Size]  | Pointers to interface map data structures (optional)
     ///                 |
-    /// [Pointer Size]  | Pointer to finalizer method (optional)
+    /// [Relative ptr]  | Pointer to containing TypeManager indirection cell
     ///                 |
-    /// [Pointer Size]  | Pointer to optional fields (optional)
+    /// [Relative ptr]  | Pointer to finalizer method (optional)
     ///                 |
-    /// [Pointer Size]  | Pointer to the generic type argument of a Nullable&lt;T&gt; (optional)
+    /// [Relative ptr]  | Pointer to optional fields (optional)
     ///                 |
-    /// [Pointer Size]  | Pointer to the generic type definition EEType (optional)
+    /// [Relative ptr]  | Pointer to the generic type definition EEType (optional)
     ///                 |
-    /// [Pointer Size]  | Pointer to the generic argument and variance info (optional)
+    /// [Relative ptr]  | Pointer to the generic argument and variance info (optional)
     /// </summary>
     public partial class EETypeNode : ObjectNode, IExportableSymbolNode, IEETypeNode, ISymbolDefinitionNode, ISymbolNodeWithLinkage
     {
@@ -464,7 +462,6 @@ namespace ILCompiler.DependencyAnalysis
             var interfaceCountReservation = objData.ReserveShort();
 
             objData.EmitInt(_type.GetHashCode());
-            objData.EmitPointerReloc(factory.TypeManagerIndirection);
 
             if (EmitVirtualSlotsAndInterfaces)
             {
@@ -493,9 +490,9 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitShort(interfaceCountReservation, 0);
             }
 
+            OutputTypeManagerIndirection(factory, ref objData);
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
-            OutputNullableTypeParameter(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
             OutputGenericInstantiationDetails(factory, ref objData);
 
@@ -508,7 +505,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <param name="pointerSize">The size of a pointer in bytes in the target architecture</param>
         public static int GetVTableOffset(int pointerSize)
         {
-            return 16 + 2 * pointerSize;
+            return 16 + pointerSize;
         }
 
         protected virtual int GCDescSize => 0;
@@ -765,6 +762,11 @@ namespace ILCompiler.DependencyAnalysis
             {
                 MethodDesc declMethod = virtualSlots[i];
 
+                // Object.Finalize shouldn't get a virtual slot. Finalizer is stored in an optional field
+                // instead: most EEType don't have a finalizer, but all EETypes contain Object's vtable.
+                // This lets us save a pointer (+reloc) on most EETypes.
+                Debug.Assert(!declType.IsObject || declMethod.Name != "Finalize");
+
                 // No generic virtual methods can appear in the vtable!
                 Debug.Assert(!declMethod.HasInstantiation);
 
@@ -808,23 +810,29 @@ namespace ILCompiler.DependencyAnalysis
             {
                 MethodDesc finalizerMethod = _type.GetFinalizer();
                 MethodDesc canonFinalizerMethod = finalizerMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                objData.EmitPointerReloc(factory.MethodEntrypoint(canonFinalizerMethod));
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(factory.MethodEntrypoint(canonFinalizerMethod), RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(factory.MethodEntrypoint(canonFinalizerMethod));
             }
         }
 
-        private void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
+        protected void OutputTypeManagerIndirection(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (factory.Target.SupportsRelativePointers)
+                objData.EmitReloc(factory.TypeManagerIndirection, RelocType.IMAGE_REL_BASED_RELPTR32);
+            else
+                objData.EmitPointerReloc(factory.TypeManagerIndirection);
+        }
+
+        protected void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)
         {
             if (HasOptionalFields)
             {
-                objData.EmitPointerReloc(_optionalFieldsNode);
-            }
-        }
-
-        private void OutputNullableTypeParameter(NodeFactory factory, ref ObjectDataBuilder objData)
-        {
-            if (_type.IsNullable)
-            {
-                objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_type.Instantiation[0]));
+                if (factory.Target.SupportsRelativePointers)
+                    objData.EmitReloc(_optionalFieldsNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                else
+                    objData.EmitPointerReloc(_optionalFieldsNode);
             }
         }
 
@@ -901,17 +909,6 @@ namespace ILCompiler.DependencyAnalysis
             uint flags = 0;
 
             MetadataType metadataType = _type as MetadataType;
-
-            if (_type.IsNullable)
-            {
-                flags |= (uint)EETypeRareFlags.IsNullableFlag;
-
-                // If the nullable type is not part of this compilation group, and
-                // the output binaries will be multi-file (not multiple object files linked together), indicate to the runtime
-                // that it should indirect through the import address table
-                if (factory.NecessaryTypeSymbol(_type.Instantiation[0]).RepresentsIndirectionCell)
-                    flags |= (uint)EETypeRareFlags.NullableTypeViaIATFlag;
-            }
 
             if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
             {

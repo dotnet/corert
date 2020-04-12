@@ -30,7 +30,7 @@
 
 #include "shash.h"
 #include "RWLock.h"
-#include "module.h"
+#include "TypeManager.h"
 #include "RuntimeInstance.h"
 #include "objecthandle.h"
 #include "eetype.inl"
@@ -280,16 +280,13 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
         }
     }
 
+    if (cbSize > RH_LARGE_OBJECT_SIZE)
+        uFlags |= GC_ALLOC_LARGE_OBJECT_HEAP;
+
     // Save the EEType for instrumentation purposes.
     RedhawkGCInterface::SetLastAllocEEType(pEEType);
 
-    Object * pObject;
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (uFlags & GC_ALLOC_ALIGN8)
-        pObject = GCHeapUtilities::GetGCHeap()->AllocAlign8(pThread->GetAllocContext(), cbSize, uFlags);
-    else
-#endif // FEATURE_64BIT_ALIGNMENT
-        pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
+    Object * pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
 
     // NOTE: we cannot call PublishObject here because the object isn't initialized!
 
@@ -612,7 +609,6 @@ COOP_PINVOKE_HELPER(void, RhpInitializeGcStress, ())
 {
     g_fGcStressStarted = UInt32_TRUE;
     g_pConfig->SetGCStressLevel(EEConfig::GCSTRESS_INSTR_NGEN);   // this is the closest CLR equivalent to what we do.
-    GetRuntimeInstance()->EnableGcPollStress();
 }
 #endif // FEATURE_GC_STRESS
 
@@ -752,118 +748,6 @@ COOP_PINVOKE_HELPER(Boolean, RhCompareObjectContentsAndPadding, (Object* pObj1, 
     UInt8 * pbFields2 = (UInt8*)pObj2 + sizeof(EEType*);
 
     return (memcmp(pbFields1, pbFields2, cbFields) == 0) ? Boolean_true : Boolean_false;
-}
-
-COOP_PINVOKE_HELPER(void, RhpBox, (Object * pObj, void * pData))
-{
-    EEType * pEEType = pObj->get_EEType();
-
-    // Can box value types only (which also implies no finalizers).
-    ASSERT(pEEType->get_IsValueType() && !pEEType->HasFinalizer());
-
-    // cbObject includes ObjHeader (sync block index) and the EEType* field from Object and is rounded up to
-    // suit GC allocation alignment requirements. cbFields on the other hand is just the raw size of the field
-    // data.
-    size_t cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
-    size_t cbObject = pEEType->get_BaseSize();
-    size_t cbFields = cbObject - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
-    
-    UInt8 * pbFields = (UInt8*)pObj + sizeof(EEType*);
-
-    // Copy the unboxed value type data into the new object.
-    // Perform any write barriers necessary for embedded reference fields.
-    if (pEEType->HasReferenceFields())
-    {
-        GCSafeCopyMemoryWithWriteBarrier(pbFields, pData, cbFields);
-    }
-    else
-    {
-        memcpy(pbFields, pData, cbFields);
-    }
-}
-
-bool EETypesEquivalentEnoughForUnboxing(EEType *pObjectEEType, EEType *pUnboxToEEType)
-{
-    if (pObjectEEType->IsEquivalentTo(pUnboxToEEType))
-        return true;
-
-    if (pObjectEEType->GetCorElementType() == pUnboxToEEType->GetCorElementType())
-    {
-        // Enums and primitive types can unbox if their CorElementTypes exactly match
-        switch (pObjectEEType->GetCorElementType())
-        {
-        case ELEMENT_TYPE_I1:
-        case ELEMENT_TYPE_U1:
-        case ELEMENT_TYPE_I2:
-        case ELEMENT_TYPE_U2:
-        case ELEMENT_TYPE_I4:
-        case ELEMENT_TYPE_U4:
-        case ELEMENT_TYPE_I8:
-        case ELEMENT_TYPE_U8:
-        case ELEMENT_TYPE_I:
-        case ELEMENT_TYPE_U:
-            return true;
-        default:
-            break;
-        }
-    }
-
-    return false;
-}
-
-COOP_PINVOKE_HELPER(void, RhUnbox, (Object * pObj, void * pData, EEType * pUnboxToEEType))
-{
-    // When unboxing to a Nullable the input object may be null.
-    if (pObj == NULL)
-    {
-        ASSERT(pUnboxToEEType && pUnboxToEEType->IsNullable());
-
-        // The first field of the Nullable is a Boolean which we must set to false in this case to indicate no
-        // value is present.
-        *(Boolean*)pData = Boolean_false;
-
-        // Clear the value (in case there were GC references we wish to stop reporting).
-        EEType * pEEType = pUnboxToEEType->GetNullableType();
-        size_t cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
-        size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
-        GCSafeZeroMemory((UInt8*)pData + pUnboxToEEType->GetNullableValueOffset(), cbFields);
-
-        return;
-    }
-
-    EEType * pEEType = pObj->get_EEType();
-
-    // Can unbox value types only.
-    ASSERT(pEEType->get_IsValueType());
-
-    // A special case is that we can unbox a value type T into a Nullable<T>. It's the only case where
-    // pUnboxToEEType is useful.
-    ASSERT((pUnboxToEEType == NULL) || EETypesEquivalentEnoughForUnboxing(pEEType, pUnboxToEEType) || pUnboxToEEType->IsNullable());
-    if (pUnboxToEEType && pUnboxToEEType->IsNullable())
-    {
-        ASSERT(pUnboxToEEType->GetNullableType()->IsEquivalentTo(pEEType));
-
-        // Set the first field of the Nullable to true to indicate the value is present.
-        *(Boolean*)pData = Boolean_true;
-
-        // Adjust the data pointer so that it points at the value field in the Nullable.
-        pData = (UInt8*)pData + pUnboxToEEType->GetNullableValueOffset();
-    }
-
-    size_t cbFieldPadding = pEEType->get_ValueTypeFieldPadding();
-    size_t cbFields = pEEType->get_BaseSize() - (sizeof(ObjHeader) + sizeof(EEType*) + cbFieldPadding);
-    UInt8 * pbFields = (UInt8*)pObj + sizeof(EEType*);
-
-    if (pEEType->HasReferenceFields())
-    {
-        // Copy the boxed fields into the new location in a GC safe manner
-        GCSafeCopyMemoryWithWriteBarrier(pData, pbFields, cbFields);
-    }
-    else
-    {
-        // Copy the boxed fields into the new location.
-        memcpy(pData, pbFields, cbFields);
-    }
 }
 
 // Thread static representing the last allocation.
@@ -1565,7 +1449,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
 
     if (strcmp(key, "GCgen0size") == 0)
     {
-#ifdef USE_PORTABLE_HELPERS
+#if defined(USE_PORTABLE_HELPERS) && !defined(_WASM_)
         // CORERT-TODO: remove this
         //              https://github.com/dotnet/corert/issues/2033
         *value = 100 * 1024 * 1024;

@@ -48,8 +48,16 @@ namespace ILCompiler
 
             if (type.IsDefType)
             {
+                bool hasFinalizer = type.HasFinalizer || type.IsObject;
+
                 foreach (var method in type.GetMethods())
                 {
+                    // We don't root finalizers because they're not directly callable and they will get
+                    // generated if needed. We also need to prevent a VirtualMethodUse of Object::Finalize
+                    // from entering the system.
+                    if (hasFinalizer && method.IsFinalizer)
+                        continue;
+
                     if (method.HasInstantiation)
                     {
                         // Generic methods on generic types could end up as Foo<object>.Bar<__Canon>(),

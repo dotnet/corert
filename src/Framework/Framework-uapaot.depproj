@@ -34,8 +34,6 @@
     <!-- See: https://github.com/dotnet/corefx/pull/31025 -->
     <FileToInclude Include="System.Linq" />
 
-    <FileToInclude Include="System.Private.Reflection.Metadata.Ecma335" />
-
     <!-- Grab UAP System.Text.Json because it doesn't rely on Reflection.Emit -->
     <FileToInclude Include="System.Text.Json" />
   </ItemGroup>

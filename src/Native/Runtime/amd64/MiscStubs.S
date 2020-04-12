@@ -13,7 +13,7 @@
 // NOTE: On Linux we must advance the stack pointer as we probe - it is not allowed to access 65535 bytes below rsp.
 // Since this helper will modify a value of rsp - it must establish the frame pointer.
 //
-// See also https://github.com/dotnet/coreclr/issues/16827#issue-303331518 for more information.
+// See also https://github.com/dotnet/runtime/issues/9899 for more information.
 
 #define PAGE_SIZE 0x1000
 

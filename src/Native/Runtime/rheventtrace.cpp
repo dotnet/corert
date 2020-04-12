@@ -17,7 +17,6 @@
 #include "rwlock.h"
 #include "runtimeinstance.h"
 #include "shash.h"
-#include "module.h"
 #include "eventtracepriv.h"
 #include "shash.inl"
 #include "palredhawk.h"
@@ -137,6 +136,63 @@ public:
     }
 };
 
+enum class CorElementType : UInt8
+{
+    ELEMENT_TYPE_END = 0x0,
+
+    ELEMENT_TYPE_BOOLEAN = 0x2,
+    ELEMENT_TYPE_CHAR = 0x3,
+    ELEMENT_TYPE_I1 = 0x4,
+    ELEMENT_TYPE_U1 = 0x5,
+    ELEMENT_TYPE_I2 = 0x6,
+    ELEMENT_TYPE_U2 = 0x7,
+    ELEMENT_TYPE_I4 = 0x8,
+    ELEMENT_TYPE_U4 = 0x9,
+    ELEMENT_TYPE_I8 = 0xa,
+    ELEMENT_TYPE_U8 = 0xb,
+    ELEMENT_TYPE_R4 = 0xc,
+    ELEMENT_TYPE_R8 = 0xd,
+
+    ELEMENT_TYPE_I = 0x18,
+    ELEMENT_TYPE_U = 0x19,
+};
+
+static CorElementType ElementTypeToCorElementType(EETypeElementType elementType)
+{
+    switch (elementType)
+    {
+    case EETypeElementType::ElementType_Boolean:
+        return CorElementType::ELEMENT_TYPE_BOOLEAN;
+    case EETypeElementType::ElementType_Char:
+        return CorElementType::ELEMENT_TYPE_CHAR;
+    case EETypeElementType::ElementType_SByte:
+        return CorElementType::ELEMENT_TYPE_I1;
+    case EETypeElementType::ElementType_Byte:
+        return CorElementType::ELEMENT_TYPE_U1;
+    case EETypeElementType::ElementType_Int16:
+        return CorElementType::ELEMENT_TYPE_I2;
+    case EETypeElementType::ElementType_UInt16:
+        return CorElementType::ELEMENT_TYPE_U2;
+    case EETypeElementType::ElementType_Int32:
+        return CorElementType::ELEMENT_TYPE_I4;
+    case EETypeElementType::ElementType_UInt32:
+        return CorElementType::ELEMENT_TYPE_U4;
+    case EETypeElementType::ElementType_Int64:
+        return CorElementType::ELEMENT_TYPE_I8;
+    case EETypeElementType::ElementType_UInt64:
+        return CorElementType::ELEMENT_TYPE_U8;
+    case EETypeElementType::ElementType_Single:
+        return CorElementType::ELEMENT_TYPE_R4;
+    case EETypeElementType::ElementType_Double:
+        return CorElementType::ELEMENT_TYPE_R8;
+    case EETypeElementType::ElementType_IntPtr:
+        return CorElementType::ELEMENT_TYPE_I;
+    case EETypeElementType::ElementType_UIntPtr:
+        return CorElementType::ELEMENT_TYPE_U;
+    }
+    return CorElementType::ELEMENT_TYPE_END;
+}
+
 // Avoid reporting the same type twice by keeping a hash of logged types.
 SHash<LoggedTypesTraits>* s_loggedTypesHash = NULL;
 
@@ -188,7 +244,7 @@ int BulkTypeEventLogger::LogSingleType(EEType * pEEType)
 
     pVal->fixedSizedData.TypeID = (ULONGLONG) pEEType;
     pVal->fixedSizedData.Flags = kEtwTypeFlagsModuleBaseAddress;
-    pVal->fixedSizedData.CorElementType = pEEType->GetCorElementType();
+    pVal->fixedSizedData.CorElementType = (BYTE)ElementTypeToCorElementType(pEEType->GetElementType());
 
     ULONGLONG * rgTypeParamsForEvent = NULL;
     ULONGLONG typeParamForNonGenericType = 0;
@@ -302,45 +358,6 @@ void ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * p
 
     _ASSERTE(pLogger != NULL);
     pLogger->LogTypeAndParameters(thAsAddr, typeLogBehavior);
-
-#endif // defined(FEATURE_EVENT_TRACE)
-}
-
-
-void ETW::LoaderLog::SendModuleEvent(Module * pModule)
-{
-#if defined(FEATURE_EVENT_TRACE)
-    if (!(MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled) ||
-        !PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &ModuleLoad_V2))
-    {
-        return;
-    }
-
-    const WCHAR * wszModuleFileName = NULL;
-
-    PalGetModuleFileName(&wszModuleFileName, pModule->GetOsModuleHandle());
-
-    GUID signature;
-    DWORD dwAge;
-    WCHAR wszPath[1024];
-    PalGetPDBInfo(pModule->GetOsModuleHandle(), &signature, &dwAge, wszPath, COUNTOF(wszPath));
-
-    GUID zeroGuid = { 0 };
-    FireEtwModuleLoad_V2(
-        ULONGLONG(pModule),
-        0,                      // AssemblyID
-        0,                      // Module Flags
-        0,                      // Reserved1, 
-        NULL,                   // ModuleILPath, 
-        wszModuleFileName,      // ModuleNativePath, 
-        GetClrInstanceId(),
-        &zeroGuid,              // ManagedPdbSignature,
-        0,                      // ManagedPdbAge, 
-        NULL,                   // ManagedPdbBuildPath, 
-        &signature,             // NativePdbSignature,
-        dwAge,                  // NativePdbAge, 
-        wszPath                 // NativePdbBuildPath, 
-        );
 
 #endif // defined(FEATURE_EVENT_TRACE)
 }

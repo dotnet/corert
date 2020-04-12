@@ -120,11 +120,6 @@ COOP_PINVOKE_HELPER(void, RhBulkMoveWithWriteBarrier, (uint8_t* pDest, uint8_t* 
     InlinedBulkWriteBarrier(pDest, cbDest);
 }
 
-void GCSafeZeroMemory(void * dest, size_t len)
-{
-    InlineGCSafeFillMemory(dest, len, 0);
-}
-
 void GCSafeCopyMemoryWithWriteBarrier(void * dest, const void *src, size_t len)
 {
     InlineForwardGCSafeCopy(dest, src, len);

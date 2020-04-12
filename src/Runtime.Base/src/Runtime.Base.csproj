@@ -22,10 +22,6 @@
     <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <DefineConstants>EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="System\Nullable.cs" />
     <Compile Include="System\Object.cs" />
@@ -110,6 +106,9 @@
     </Compile>
     <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs" >
       <Link>Common\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs" >
+      <Link>Common\TypeManagerHandle.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

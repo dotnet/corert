@@ -350,31 +350,6 @@ void RuntimeThreadShutdown(void* thread)
     }
 }
 
-COOP_PINVOKE_HELPER(UInt32_BOOL, RhpRegisterModule, (ModuleHeader *pModuleHeader))
-{
-#ifdef PROFILE_STARTUP
-    if (g_registerModuleCount < NUM_REGISTER_MODULE_TRACES)
-    {
-        PalQueryPerformanceCounter(&g_registerModuleTraces[g_registerModuleCount].Begin);
-    }
-#endif // PROFILE_STARTUP
-
-    RuntimeInstance * pInstance = GetRuntimeInstance();
-
-    if (!pInstance->RegisterModule(pModuleHeader))
-        return UInt32_FALSE;
-
-#ifdef PROFILE_STARTUP
-    if (g_registerModuleCount < NUM_REGISTER_MODULE_TRACES)
-    {
-        PalQueryPerformanceCounter(&g_registerModuleTraces[g_registerModuleCount].End);
-        g_registerModuleCount++;
-    }
-#endif // PROFILE_STARTUP
-
-    return UInt32_TRUE;
-}
-
 extern "C" bool RhInitialize()
 {
     if (!PalInit())
@@ -401,9 +376,6 @@ COOP_PINVOKE_HELPER(void, RhpEnableConservativeStackReporting, ())
 //
 COOP_PINVOKE_HELPER(void, RhpShutdown, ())
 {
-#ifdef FEATURE_PROFILING
-    GetRuntimeInstance()->WriteProfileInfo();
-#endif // FEATURE_PROFILING
     // Indicate that runtime shutdown is complete and that the caller is about to start shutting down the entire process.
     g_processShutdownHasStarted = true;
 }

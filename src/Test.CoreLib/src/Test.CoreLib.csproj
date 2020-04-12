@@ -17,9 +17,6 @@
   <PropertyGroup Condition="'$(Platform)' == 'armel'">
     <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup>
-    <DefineConstants>EETYPE_TYPE_MANAGER;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
   <!-- For now, link Runtime.Base into Test.CoreLib until there is proper multifile build -->
   <PropertyGroup>
     <InPlaceRuntime>true</InPlaceRuntime>
@@ -236,6 +233,7 @@
     </Compile>
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
+    <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\Runtime\RuntimeHelpers.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />

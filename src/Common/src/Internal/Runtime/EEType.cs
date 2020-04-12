@@ -192,9 +192,6 @@ namespace Internal.Runtime
         private ushort _usNumInterfaces;
         private uint _uHashCode;
 
-#if EETYPE_TYPE_MANAGER
-        private IntPtr _ppTypeManager;
-#endif
         // vtable follows
 
         // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data.
@@ -346,7 +343,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (RareFlags & EETypeRareFlags.IsNullableFlag) != 0;
+                return ElementType == EETypeElementType.Nullable;
             }
         }
 
@@ -379,7 +376,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType && ParameterizedTypeShape >= SZARRAY_BASE_SIZE;
+                EETypeElementType elementType = ElementType;
+                return elementType == EETypeElementType.Array || elementType == EETypeElementType.SzArray;
             }
         }
 
@@ -405,7 +403,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsArray && ParameterizedTypeShape == SZARRAY_BASE_SIZE;
+                return ElementType == EETypeElementType.SzArray;
             }
         }
 
@@ -472,6 +470,25 @@ namespace Internal.Runtime
             }
         }
 
+#if TYPE_LOADER_IMPLEMENTATION
+        internal static int GetGenericCompositionSize(int numArguments, bool hasVariance)
+        {
+            return IntPtr.Size
+                + numArguments * IntPtr.Size
+                + (hasVariance ? numArguments * sizeof(GenericVariance) : 0);
+        }
+
+        internal void SetGenericComposition(IntPtr data)
+        {
+            Debug.Assert(IsGeneric && IsDynamicType);
+            UInt32 cbOffset = GetFieldOffset(EETypeField.ETF_GenericComposition);
+            fixed (EEType* pThis = &this)
+            {
+                *((IntPtr*)((byte*)pThis + cbOffset)) = data;
+            }
+        }
+#endif
+
         internal uint GenericArity
         {
             get
@@ -482,6 +499,15 @@ namespace Internal.Runtime
 
                 return GetField<RelativePointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value->Arity;
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsDynamicType);
+                // GenericComposition is a readonly struct, so we just blit the bytes over. Asserts guard changes to the layout.
+                *((ushort*)GetField<Pointer<GenericComposition>>(EETypeField.ETF_GenericComposition).Value) = checked((ushort)value);
+                Debug.Assert(GenericArity == (ushort)value);
+            }
+#endif
         }
 
         internal EETypeRef* GenericArguments
@@ -516,8 +542,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType &&
-                    ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer;
+                return ElementType == EETypeElementType.Pointer;
             }
         }
 
@@ -525,8 +550,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return IsParameterizedType &&
-                    ParameterizedTypeShape == ParameterizedTypeShapeConstants.ByRef;
+                return ElementType == EETypeElementType.ByRef;
             }
         }
 
@@ -534,7 +558,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.IsInterfaceFlag) != 0);
+                return ElementType == EETypeElementType.Interface;
             }
         }
 
@@ -558,7 +582,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (RareFlags & EETypeRareFlags.IsDynamicTypeFlag) != 0;
+                return (_usFlags & (ushort)EETypeFlags.IsDynamicTypeFlag) != 0;
             }
         }
 
@@ -567,14 +591,6 @@ namespace Internal.Runtime
             get
             {
                 return (RareFlags & EETypeRareFlags.HasDynamicallyAllocatedDispatchMapFlag) != 0;
-            }
-        }
-
-        internal bool IsNullableTypeViaIAT
-        {
-            get
-            {
-                return (RareFlags & EETypeRareFlags.NullableTypeViaIATFlag) != 0;
             }
         }
 
@@ -697,7 +713,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.ValueTypeFlag) != 0);
+                return ElementType < EETypeElementType.Class;
             }
         }
 
@@ -812,6 +828,31 @@ namespace Internal.Runtime
             }
         }
 
+        internal DispatchMap* DispatchMap
+        {
+            get
+            {
+                if (NumInterfaces == 0)
+                    return null;
+                byte* optionalFields = OptionalFieldsPtr;
+                if (optionalFields == null)
+                    return null;
+                uint idxDispatchMap = OptionalFieldsReader.GetInlineField(optionalFields, EETypeOptionalFieldTag.DispatchMap, 0xffffffff);
+                if (idxDispatchMap == 0xffffffff && IsDynamicType)
+                {
+                    if (HasDynamicallyAllocatedDispatchMap)
+                    {
+                        fixed (EEType* pThis = &this)
+                            return *(DispatchMap**)((byte*)pThis + GetFieldOffset(EETypeField.ETF_DynamicDispatchMap));
+                    }
+                    else
+                        return DynamicTemplateType->DispatchMap;
+                }
+
+                return ((DispatchMap**)TypeManager.DispatchMap)[idxDispatchMap];
+            }
+        }
+
         // Get the address of the finalizer method for finalizable types.
         internal IntPtr FinalizerCode
         {
@@ -819,9 +860,10 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsFinalizable);
 
-                // Finalizer code address is stored after the vtable and interface map.
-                fixed (EEType* pThis = &this)
-                    return *(IntPtr*)((byte*)pThis + sizeof(EEType) + (sizeof(void*) * _usNumVtableSlots) + (sizeof(EEInterfaceInfo) * NumInterfaces));
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer>(EETypeField.ETF_Finalizer).Value;
+
+                return GetField<RelativePointer>(EETypeField.ETF_Finalizer).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
@@ -829,7 +871,7 @@ namespace Internal.Runtime
                 Debug.Assert(IsDynamicType && IsFinalizable);
 
                 fixed (EEType* pThis = &this)
-                    *(IntPtr*)((byte*)pThis + sizeof(EEType) + (sizeof(void*) * _usNumVtableSlots) + (sizeof(EEInterfaceInfo) * NumInterfaces)) = value;
+                    *(IntPtr*)((byte*)pThis + GetFieldOffset(EETypeField.ETF_Finalizer)) = value;
             }
 #endif
         }
@@ -942,24 +984,9 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsNullable);
-                uint cbNullableTypeOffset = GetFieldOffset(EETypeField.ETF_NullableType);
-                fixed (EEType* pThis = &this)
-                {
-                    if (IsNullableTypeViaIAT)
-                        return **(EEType***)((byte*)pThis + cbNullableTypeOffset);
-                    else
-                        return *(EEType**)((byte*)pThis + cbNullableTypeOffset);
-                }
+                Debug.Assert(GenericArity == 1);
+                return GenericArguments[0].Value;
             }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                Debug.Assert(IsNullable && IsDynamicType && !IsNullableTypeViaIAT);
-                UInt32 cbNullableTypeOffset = GetFieldOffset(EETypeField.ETF_NullableType);
-                fixed (EEType* pThis = &this)
-                    *((EEType**)((byte*)pThis + cbNullableTypeOffset)) = value;
-            }
-#endif
         }
 
         /// <summary>
@@ -1026,7 +1053,6 @@ namespace Internal.Runtime
 
         internal IntPtr GetSealedVirtualSlot(ushort slotNumber)
         {
-            Debug.Assert(!IsNullable);
             Debug.Assert((RareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0);
 
             fixed (EEType* pThis = &this)
@@ -1068,15 +1094,16 @@ namespace Internal.Runtime
                 if (!HasOptionalFields)
                     return null;
 
-                uint cbOptionalFieldsOffset = GetFieldOffset(EETypeField.ETF_OptionalFieldsPtr);
-                fixed (EEType* pThis = &this)
-                {
-                    return *(byte**)((byte*)pThis + cbOptionalFieldsOffset);
-                }
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return GetField<Pointer<byte>>(EETypeField.ETF_OptionalFieldsPtr).Value;
+
+                return GetField<RelativePointer<byte>>(EETypeField.ETF_OptionalFieldsPtr).Value;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
+                Debug.Assert(IsDynamicType);
+
                 _usFlags |= (UInt16)EETypeFlags.OptionalFieldsFlag;
 
                 UInt32 cbOptionalFieldsOffset = GetFieldOffset(EETypeField.ETF_OptionalFieldsPtr);
@@ -1190,13 +1217,17 @@ namespace Internal.Runtime
 #endif
         }
 
-#if EETYPE_TYPE_MANAGER
-        internal IntPtr TypeManager
+        internal TypeManagerHandle TypeManager
         {
             get
             {
-                // This is always a pointer to a pointer to a type manager
-                return *(IntPtr*)_ppTypeManager;
+                IntPtr typeManagerIndirection;
+                if (IsDynamicType || !SupportsRelativePointers)
+                    typeManagerIndirection = GetField<Pointer>(EETypeField.ETF_TypeManagerIndirection).Value;
+                else
+                    typeManagerIndirection = GetField<RelativePointer>(EETypeField.ETF_TypeManagerIndirection).Value;
+
+                return *(TypeManagerHandle*)typeManagerIndirection;
             }
         }
 #if TYPE_LOADER_IMPLEMENTATION
@@ -1204,17 +1235,18 @@ namespace Internal.Runtime
         {
             get
             {
+                uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
                 // This is always a pointer to a pointer to a type manager
-                return _ppTypeManager;
+                return (IntPtr)(*(TypeManagerHandle**)((byte*)Unsafe.AsPointer(ref this) + cbOffset));
             }
-
             set
             {
-                _ppTypeManager = value;
+                uint cbOffset = GetFieldOffset(EETypeField.ETF_TypeManagerIndirection);
+                // This is always a pointer to a pointer to a type manager
+                *(TypeManagerHandle**)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = (TypeManagerHandle*)value;
             }
         }
 #endif
-#endif // EETYPE_TYPE_MANAGER
 
         internal unsafe EETypeRareFlags RareFlags
         {
@@ -1249,11 +1281,11 @@ namespace Internal.Runtime
             }
         }
 
-        internal CorElementType CorElementType
+        internal EETypeElementType ElementType
         {
             get
             {
-                return (CorElementType)((_usFlags & (ushort)EETypeFlags.CorElementTypeMask) >> (ushort)EETypeFlags.CorElementTypeShift);
+                return (EETypeElementType)((_usFlags & (ushort)EETypeFlags.ElementTypeMask) >> (ushort)EETypeFlags.ElementTypeShift);
             }
         }
 
@@ -1278,6 +1310,15 @@ namespace Internal.Runtime
             }
             cbOffset += (uint)(sizeof(EEInterfaceInfo) * NumInterfaces);
 
+            uint relativeOrFullPointerOffset = (IsDynamicType || !SupportsRelativePointers ? (uint)IntPtr.Size : 4);
+
+            // Followed by the type manager indirection cell.
+            if (eField == EETypeField.ETF_TypeManagerIndirection)
+            {
+                return cbOffset;
+            }
+            cbOffset += relativeOrFullPointerOffset;
+
             // Followed by the pointer to the finalizer method.
             if (eField == EETypeField.ETF_Finalizer)
             {
@@ -1285,7 +1326,7 @@ namespace Internal.Runtime
                 return cbOffset;
             }
             if (IsFinalizable)
-                cbOffset += (uint)IntPtr.Size;
+                cbOffset += relativeOrFullPointerOffset;
 
             // Followed by the pointer to the optional fields.
             if (eField == EETypeField.ETF_OptionalFieldsPtr)
@@ -1294,27 +1335,17 @@ namespace Internal.Runtime
                 return cbOffset;
             }
             if (HasOptionalFields)
-                cbOffset += (uint)IntPtr.Size;
+                cbOffset += relativeOrFullPointerOffset;
 
-            // Followed by the pointer to the type target of a Nullable<T>.
-            if (eField == EETypeField.ETF_NullableType)
-            {
-                Debug.Assert(IsNullable);
-                return cbOffset;
-            }
-
-            // OR, followed by the pointer to the sealed virtual slots
+            // Followed by the pointer to the sealed virtual slots
             if (eField == EETypeField.ETF_SealedVirtualSlots)
                 return cbOffset;
-
-            if (IsNullable)
-                cbOffset += (uint)IntPtr.Size;
 
             EETypeRareFlags rareFlags = RareFlags;
 
             // in the case of sealed vtable entries on static types, we have a UInt sized relative pointer
             if ((rareFlags & EETypeRareFlags.HasSealedVTableEntriesFlag) != 0)
-                cbOffset += (IsDynamicType || !SupportsRelativePointers ? (uint)IntPtr.Size : 4);
+                cbOffset += relativeOrFullPointerOffset;
 
             if (eField == EETypeField.ETF_DynamicDispatchMap)
             {
@@ -1331,10 +1362,7 @@ namespace Internal.Runtime
             }
             if (IsGeneric)
             {
-                if ((rareFlags & EETypeRareFlags.IsDynamicTypeFlag) != 0 || !SupportsRelativePointers)
-                    cbOffset += (uint)IntPtr.Size;
-                else
-                    cbOffset += 4;
+                cbOffset += relativeOrFullPointerOffset;
             }
 
             if (eField == EETypeField.ETF_GenericComposition)
@@ -1344,10 +1372,7 @@ namespace Internal.Runtime
             }
             if (IsGeneric)
             {
-                if ((rareFlags & EETypeRareFlags.IsDynamicTypeFlag) != 0 || !SupportsRelativePointers)
-                    cbOffset += (uint)IntPtr.Size;
-                else
-                    cbOffset += 4;
+                cbOffset += relativeOrFullPointerOffset;
             }
 
             if (eField == EETypeField.ETF_DynamicModule)
@@ -1406,29 +1431,18 @@ namespace Internal.Runtime
             UInt16 cInterfaces,
             bool fHasFinalizer,
             bool fRequiresOptionalFields,
-            bool fRequiresNullableType,
             bool fHasSealedVirtuals,
             bool fHasGenericInfo,
             bool fHasNonGcStatics,
             bool fHasGcStatics,
             bool fHasThreadStatics)
         {
-            // We don't support nullables with sealed virtuals at this time -
-            // the issue is that if both the nullable eetype and the sealed virtuals may be present,
-            // we need to detect the presence of at least one of them by looking at the EEType.
-            // In the case of nullable, we'd need to fetch the rare flags, which is annoying,
-            // an in the case of the sealed virtual slots, the information is implicit in the dispatch
-            // map, which is even more annoying. 
-            // So as long as nullables don't have sealed virtual slots, it's better to make that
-            // an invariant and *not* test for nullable at run time.
-            Debug.Assert(!(fRequiresNullableType && fHasSealedVirtuals), "nullables with sealed virtuals are not supported at this time");
-
             return (UInt32)(sizeof(EEType) +
                 (IntPtr.Size * cVirtuals) +
                 (sizeof(EEInterfaceInfo) * cInterfaces) +
+                sizeof(IntPtr) + // TypeManager
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
-                (fRequiresNullableType ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
                 (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
@@ -1463,6 +1477,21 @@ namespace Internal.Runtime
 
     // Wrapper around pointers
     [StructLayout(LayoutKind.Sequential)]
+    internal readonly struct Pointer
+    {
+        private readonly IntPtr _value;
+
+        public IntPtr Value
+        {
+            get
+            {
+                return _value;
+            }
+        }
+    }
+
+    // Wrapper around pointers
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe readonly struct Pointer<T> where T : unmanaged
     {
         private readonly T* _value;
@@ -1489,6 +1518,21 @@ namespace Internal.Runtime
                 if (((int)_value & IndirectionConstants.IndirectionCellPointer) == 0)
                     return _value;
                 return *(T**)((byte*)_value - IndirectionConstants.IndirectionCellPointer);
+            }
+        }
+    }
+
+    // Wrapper around relative pointers
+    [StructLayout(LayoutKind.Sequential)]
+    internal readonly struct RelativePointer
+    {
+        private readonly int _value;
+
+        public unsafe IntPtr Value
+        {
+            get
+            {
+                return (IntPtr)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
             }
         }
     }

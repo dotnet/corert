@@ -114,7 +114,7 @@ namespace System
             // so it can become a simple test
             if (d2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
                 return (d1 is null) ? true : false;
             }
 
@@ -131,7 +131,7 @@ namespace System
             // so it can become a simple test
             if (d2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
+                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
                 return (d1 is null) ? false : true;
             }
 

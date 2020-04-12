@@ -5,236 +5,12 @@
 //
 // This header contains binder-generated data structures that the runtime consumes.
 //
-#ifndef RHDUMP_TARGET_NEUTRAL
 #include "TargetPtrs.h"
-#endif
-#ifndef RHDUMP
-#include "WellKnownMethods.h"
-#endif
-#if !defined(RHDUMP) || defined(RHDUMP_TARGET_NEUTRAL)
-//
-// Region Relative Addresses (RRAs)
-//
-// Now that RH code can be emitted as a regular object file which can be linked with arbitrary native code,
-// the module header (or any RH code or data) no longer has access to the OS module handle for which it is a
-// part. As a result it's not a good idea to encode pointers as RVAs (relative virtual addresses) in the
-// header or other RH metadata since without the OS module handle we have no mechanism to derive a VA (virtual
-// address) from these RVAs.
-//
-// It's still desirable to utilize relative addresses since this saves space on 64-bit machines. So instead of
-// RVAs we introduce the concept of RRAs (Region Relative Addresses). These are 32-bit offsets from the start
-// of one of several "regions" defined by the Redhawk ModuleHeader. See the RegionTypes enum below for the
-// currently defined regions. These are all contiguous regions of memory emitted by the binder (e.g. the text
-// section which contains all RH method code).
-//
-// To recover a VA from an RRA you simply add the base VA of the correct region to the RRA. One weakness of
-// the current mechanism is that there's no strong type checking to ensure that you use the correct region to
-// interpret a given RRA. Possibly something could be done with templates here. For now we have a relatively
-// small set of RRAs and as much as possible I've tried to abstract access to these via macros and other
-// techniques to limit the places where mistakes can be made. If this turns out to be a bug farm we can
-// revisit the issue.
-//
-
-#ifdef RHDUMP
-// Always use RVAs
-typedef UInt32 RegionPtr;
-#else
-typedef TgtPTR_UInt8 RegionPtr; 
-#endif
-
-struct ModuleHeader
-{
-    // A subset of these flags match those that we need in the SectionMethodList at runtime. This set must be kept
-    // in sync with the definitions in SectionMethodList::SectionMethodListFlags
-    enum ModuleHeaderFlags
-    {
-        SmallPageListEntriesFlag    = 0x00000001,   // if set, 2-byte page list entries, 4-byte otherwise
-        SmallGCInfoListEntriesFlag  = 0x00000002,   // if set, 2-byte gc info list entries, 4-byte otherwise
-        SmallEHInfoListEntriesFlag  = 0x00000004,   // if set, 2-byte EH info list entries, 4-byte otherwise
-        FlagsMatchingSMLFlagsMask   = 0x00000007,   // Mask for flags that match those in SectionMethodList at runtime
-        UsesClrEHFlag               = 0x00000008,   // set if module expects CLR EH model, clear if module expects RH EH model.
-        StandaloneExe               = 0x00000010,   // this module represents the only (non-runtime) module in the process
-    };
-
-    enum ModuleHeaderConstants : UInt32
-    {
-        CURRENT_VERSION             = 3,            // Version of the module header protocol. Increment on
-                                                    // breaking changes
-        DELTA_SHORTCUT_TABLE_SIZE   = 16,
-        MAX_REGIONS                 = 8,            // Max number of regions described by the Regions array
-        MAX_WELL_KNOWN_METHODS      = 8,            // Max number of methods described by the WellKnownMethods array 
-        MAX_EXTRA_WELL_KNOWN_METHODS= 8,            // Max number of methods described by the ExtraWellKnownMethods array 
-        NULL_RRA                    = 0xffffffff,   // NULL value for region relative addresses (0 is often a
-                                                    // legal RRA)
-    };
-
-    // The region types defined so far. Each module has at most one of each of these regions.
-    enum RegionTypes
-    {
-        TEXT_REGION                 = 0,            // Code
-        DATA_REGION                 = 1,            // Read/write data
-        RDATA_REGION                = 2,            // Read-only data
-        IAT_REGION                  = 3,            // Import Address Table
-    };
-
-    UInt32  Version;
-    UInt32  Flags;                      // Various flags passed from the binder to the runtime (See ModuleHeaderFlags below).
-    UInt32  CountOfMethods;             // Count of method bodies in this module.  This count is used by the SectionMethodList as the size of its various arrays
-    UInt32  RraCodeMapInfo;             // RRA to SectionMethodList, includes ip-to-method map and method gc info
-    UInt32  RraStaticsGCDataSection;    // RRA to region containing GC statics
-    UInt32  RraStaticsGCInfo;           // RRA to GC info for module statics (an array of StaticGcDesc structs)
-    UInt32  RraThreadStaticsGCInfo;     // RRA to GC info for module thread statics (an array of StaticGcDesc structs)
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    UInt32  RraInterfaceDispatchCells;  // RRA to array of cache data structures used to dispatch interface calls
-    UInt32  CountInterfaceDispatchCells;// Number of elements in above array
-#endif
-    UInt32  RraFrozenObjects;           // RRA to the image's string literals (used for object ref verification of frozen strings)
-    UInt32  SizeFrozenObjects;          // size, in bytes, of string literals
-    UInt32  RraEHInfo;                  // RRA to the EH info, which is past the variable length GC info.
-    UInt32  SizeEHTypeTable;            // The EH info starts with a table of types used by the clauses, this is the size (in bytes) of that table.
-    UInt32  RraSystemObjectEEType;      // RRA to the IAT entry for the classlib's System.Object EEType. Zero if this is the classlib itself.
-    UInt32  RraUnwindInfoBlob;          // RRA to blob used for unwind infos that are referenced by the method GC info
-    UInt32  RraCallsiteInfoBlob;        // RRA to blob used for callsite GC root strings that are referenced by the method GC info
-    UInt32  SizeStubCode;               // size, in bytes, of stub code at the end of the TEXT_REGION. See ZapImage::SaveModuleHeader for details.
-    UInt32  RraReadOnlyBlobs;           // RRA to list of read-only opaque data blobs
-    UInt32  SizeReadOnlyBlobs;          // size, in bytes, of the read-only data blobs above
-    UInt32  RraNativeInitFunctions;     // RRA to table of function pointers for initialization functions from linked in native code
-    UInt32  CountNativeInitFunctions;   // count of the number of entries in the table above
-    // info for loop hijacking {
-    UInt32  RraLoopIndirCells;          // RRA to start of loop hijacking indirection cells
-    UInt32  RraLoopIndirCellChunkBitmap;// RRA to a bitmap which tracks redirected loop hijack indirection cell chunks
-    UInt32  RraLoopRedirTargets;        // RRA to start of code block which implements the redirected targets for hijacking loops
-    UInt32  RraLoopTargets;             // RRA to start of compressed info describing the original loop targets (prior to redirection)
-    UInt32  CountOfLoopIndirCells;      // count of loop hijacking indirection cells
-    // } // end info for loop hijacking
-    UInt32  RraDispatchMapLookupTable;  // RRA of table of pointers to DispatchMaps
-
-    UInt32  WellKnownMethods[MAX_WELL_KNOWN_METHODS];   // Array of methods with well known semantics defined
-                                                        // in this module
-
-    // These two arrays, RegionSize and RegionPtr are parallel arrays.  They are not simply an array of 
-    // structs because that would waste space on 64-bit due to the natural alignment requirement of the 
-    // pointers.
-    UInt32          RegionSize[MAX_REGIONS];    // sizes of each region in the module
-    RegionPtr       RegionPtr[MAX_REGIONS];     // Base addresses for the RRAs above
-
-    TgtPTR_UInt32   PointerToTlsIndex;  // Pointer to TLS index if this module uses thread statics (cannot be
-                                        // RRA because it's fixed up by the OS loader)
-    UInt32          TlsStartOffset;     // Offset into TLS section at which this module's thread statics begin
-
-#ifdef FEATURE_PROFILING
-    UInt32          RraProfilingEntries;        // RRA to start of profile info
-    UInt32          CountOfProfilingEntries;    // count of profile info records
-#endif // FEATURE_PROFILING
-
-    UInt32          RraArrayBaseEEType;       // RRA to the classlib's array base type EEType (usually System.Array), zero if this is not the classlib
-
-#ifdef FEATURE_CUSTOM_IMPORTS
-    UInt32          RraCustomImportDescriptors;      // RRA to an array of CustomImportDescriptors
-    UInt32          CountCustomImportDescriptors;    // count of entries in the above array
-#endif // FEATURE_CUSTOM_IMPORTS
-
-    UInt32          RraGenericUnificationDescs;
-    UInt32          CountOfGenericUnificationDescs;
-
-    UInt32          RraGenericUnificationIndirCells;
-    UInt32          CountOfGenericUnificationIndirCells;
-
-    UInt32          RraColdToHotMappingInfo;
-
-    UInt32  ExtraWellKnownMethods[MAX_EXTRA_WELL_KNOWN_METHODS];   // Array of methods with well known semantics defined
-                                                                   // in this module
-
-    // Macro to generate an inline accessor for RRA-based fields.
-#ifdef RHDUMP
-#define DEFINE_GET_ACCESSOR(_field, _region)\
-    inline UInt64 Get##_field() { return Rra##_field == NULL_RRA ? NULL : RegionPtr[_region] + Rra##_field; }
-#else
-#define DEFINE_GET_ACCESSOR(_field, _region)\
-    inline PTR_UInt8 Get##_field() { return Rra##_field == NULL_RRA ? NULL : RegionPtr[_region] + Rra##_field; }
-#endif
-
-    // Similar macro to DEFINE_GET_ACCESSOR that handles data that is read-write normally but read-only if the
-    // module is in standalone exe mode.
-#ifdef RHDUMP
-#define DEFINE_GET_ACCESSOR_RO_OR_RW_DATA(_field)\
-    inline UInt64 Get##_field() { return Rra##_field == NULL_RRA ? NULL : RegionPtr[(Flags & StandaloneExe) ? RDATA_REGION : DATA_REGION] + Rra##_field; }
-#else
-#define DEFINE_GET_ACCESSOR_RO_OR_RW_DATA(_field)\
-    inline PTR_UInt8 Get##_field() { return Rra##_field == NULL_RRA ? NULL : RegionPtr[(Flags & StandaloneExe) ? RDATA_REGION : DATA_REGION] + Rra##_field; }
-#endif
-
-    DEFINE_GET_ACCESSOR(SystemObjectEEType,         IAT_REGION);
-
-    DEFINE_GET_ACCESSOR(CodeMapInfo,                RDATA_REGION);
-    DEFINE_GET_ACCESSOR(StaticsGCInfo,              RDATA_REGION);
-    DEFINE_GET_ACCESSOR(ThreadStaticsGCInfo,        RDATA_REGION);
-    DEFINE_GET_ACCESSOR(EHInfo,                     RDATA_REGION);
-    DEFINE_GET_ACCESSOR(UnwindInfoBlob,             RDATA_REGION);
-    DEFINE_GET_ACCESSOR(CallsiteInfoBlob,           RDATA_REGION);
-
-    DEFINE_GET_ACCESSOR(StaticsGCDataSection,       DATA_REGION);
-#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
-    DEFINE_GET_ACCESSOR(InterfaceDispatchCells,     DATA_REGION);
-#endif
-    DEFINE_GET_ACCESSOR(FrozenObjects,             DATA_REGION);
-
-    DEFINE_GET_ACCESSOR(LoopIndirCells,             DATA_REGION);
-    DEFINE_GET_ACCESSOR(LoopIndirCellChunkBitmap,   DATA_REGION);
-    DEFINE_GET_ACCESSOR(LoopRedirTargets,           TEXT_REGION);
-    DEFINE_GET_ACCESSOR(LoopTargets,                RDATA_REGION);
-
-    DEFINE_GET_ACCESSOR(DispatchMapLookupTable,     RDATA_REGION);
-
-#ifdef FEATURE_PROFILING
-    DEFINE_GET_ACCESSOR(ProfilingEntries,           DATA_REGION);
-#endif // FEATURE_PROFILING
-
-    DEFINE_GET_ACCESSOR(ReadOnlyBlobs,              RDATA_REGION);
-
-    DEFINE_GET_ACCESSOR(NativeInitFunctions,        RDATA_REGION);
-
-#ifdef FEATURE_CUSTOM_IMPORTS
-    DEFINE_GET_ACCESSOR(CustomImportDescriptors,    RDATA_REGION);
-#endif // FEATURE_CUSTOM_IMPORTS
-
-    DEFINE_GET_ACCESSOR(GenericUnificationDescs,    RDATA_REGION);
-    DEFINE_GET_ACCESSOR(GenericUnificationIndirCells,DATA_REGION);
-
-    DEFINE_GET_ACCESSOR(ColdToHotMappingInfo,       RDATA_REGION);
-
-#ifndef RHDUMP
-    // Macro to generate an inline accessor for well known methods (these are all TEXT-based RRAs since they
-    // point to code).
-#define DEFINE_WELL_KNOWN_METHOD(_name)                                                                                     \
-    inline PTR_VOID Get_##_name()                                                                                           \
-    {                                                                                                                       \
-        unsigned int index = (unsigned int)WKM_##_name;                                                                     \
-        if (index >= MAX_WELL_KNOWN_METHODS)                                                                                \
-        {                                                                                                                   \
-            index = index - MAX_WELL_KNOWN_METHODS;                                                                         \
-            return ExtraWellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + ExtraWellKnownMethods[index]; \
-        }                                                                                                                   \
-        else                                                                                                                \
-        {                                                                                                                   \
-            return WellKnownMethods[index] == NULL_RRA ? NULL : RegionPtr[TEXT_REGION] + WellKnownMethods[index];           \
-        }                                                                                                                   \
-    }
-#include "WellKnownMethodList.h"
-#undef DEFINE_WELL_KNOWN_METHOD
-#endif // !RHDUMP
-};
-#ifndef RHDUMP
-typedef DPTR(ModuleHeader) PTR_ModuleHeader;
-#endif // !RHDUMP
 
 class GcPollInfo
 {
 public:
-
-#ifndef RHDUMP
     static const UInt32 indirCellsPerBitmapBit  = 64 / POINTER_SIZE;    // one cache line per bit
-#endif // !RHDUMP
 
     static const UInt32 cbChunkCommonCode_X64   = 17;
     static const UInt32 cbChunkCommonCode_X86   = 16;
@@ -263,7 +39,6 @@ public:
     static const UInt32 cbFullBundle            = cbBundleCommonCode + 
                                                   (entriesPerBundle * cbEntry);
 
-#ifndef RHDUMP
     static UInt32 EntryIndexToStubOffset(UInt32 entryIndex)
     {
 # if defined(_TARGET_ARM_)
@@ -274,7 +49,6 @@ public:
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_X86);
 # endif
     }
-#endif
 
     static UInt32 EntryIndexToStubOffset(UInt32 entryIndex, UInt32 cbChunkCommonCode)
     {
@@ -306,10 +80,6 @@ public:
 # endif
     }
 };
-#endif // !defined(RHDUMP) || defined(RHDUMP_TARGET_NEUTRAL)
-#if       !defined(RHDUMP) || !defined(RHDUMP_TARGET_NEUTRAL)
-
-
 
 struct StaticGcDesc
 {
@@ -332,13 +102,8 @@ struct StaticGcDesc
 #endif
 };
 
-#ifdef RHDUMP
-typedef StaticGcDesc * PTR_StaticGcDesc;
-typedef StaticGcDesc::GCSeries * PTR_StaticGcDescGCSeries;
-#else
 typedef SPTR(StaticGcDesc) PTR_StaticGcDesc;
 typedef DPTR(StaticGcDesc::GCSeries) PTR_StaticGcDescGCSeries;
-#endif
 
 class EEType;
 
@@ -469,7 +234,6 @@ struct InterfaceDispatchCell
         IDC_MaxVTableOffsetPlusOne = 0x1000,
     };
 
-#if !defined(RHDUMP) && !defined(BINDER)
     DispatchCellInfo GetDispatchCellInfo()
     {
         // Capture m_pCache into a local for safe access (this is a volatile read of a value that may be
@@ -566,7 +330,6 @@ struct InterfaceDispatchCell
             return 0;
         }
     }
-#endif // !RHDUMP && !BINDER
 };
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
@@ -783,13 +546,8 @@ struct PInvokeTransitionFrame
 // RBX, RSI, RDI, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 5
 #elif defined(_TARGET_ARM_)
-#ifdef PROJECTN
-// R4-R6,R8-R10, R0, SP
-#define PInvokeTransitionFrame_SaveRegs_count 8
-#else // PROJECTN
 // R4-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 9
-#endif // PROJECTN
 #endif
 #define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
@@ -803,13 +561,8 @@ struct PInvokeTransitionFrame
 #define OFFSETOF__Thread__m_pTransitionFrame 0x2c
 #endif
 
-#ifdef RHDUMP
-typedef EEType * PTR_EEType;
-typedef PTR_EEType * PTR_PTR_EEType;
-#else
 typedef DPTR(EEType) PTR_EEType;
 typedef DPTR(PTR_EEType) PTR_PTR_EEType;
-#endif
 
 struct EETypeRef
 {
@@ -830,16 +583,6 @@ struct EETypeRef
         else
             return dac_cast<PTR_EEType>(rawTargetPtr);
     }
-};
-
-// Generic type parameter variance type (these are allowed only on generic interfaces or delegates). The type
-// values must correspond to those defined in the CLR as CorGenericParamAttr (see corhdr.h).
-enum GenericVarianceType : UInt8
-{
-    GVT_NonVariant = 0,
-    GVT_Covariant = 1,
-    GVT_Contravariant = 2,
-    GVT_ArrayCovariant = 0x20,
 };
 
 // Blobs are opaque data passed from the compiler, through the binder and into the native image. At runtime we
@@ -871,8 +614,6 @@ struct StaticClassConstructionContext
     Int32       m_initialized;
 };
 
-#endif // !defined(RHDUMP) || !defined(RHDUMP_TARGET_NEUTRAL)
-
 #ifdef FEATURE_CUSTOM_IMPORTS
 struct CustomImportDescriptor
 {
@@ -891,138 +632,6 @@ enum RhEHClauseKind
 };
 
 #define RH_EH_CLAUSE_TYPED_INDIRECT RH_EH_CLAUSE_UNUSED 
-
-#ifndef RHDUMP
-// as System::__Canon is not exported by the SharedLibrary.dll, it is represented by a special "pointer" for generic unification
-#ifdef BINDER
-static const UIntTarget CANON_EETYPE = 42;
-#else
-static const EEType * CANON_EETYPE = (EEType *)42;
-#endif
-#endif
-
-#ifndef RHDUMP
-// flags describing what a generic unification descriptor (below) describes or contains
-enum GenericUnificationFlags
-{
-    GUF_IS_METHOD       = 0x01,         // GUD represents a method, not a type
-    GUF_EETYPE          = 0x02,         // GUD has an indirection cell for the eetype itself
-    GUF_DICT            = 0x04,         // GUD has an indirection cell for the dictionary
-    GUF_GC_STATICS      = 0x08,         // GUD has 2 indirection cells for the gc statics and their gc desc
-    GUF_NONGC_STATICS   = 0x10,         // GUD has an indirection cell for the non gc statics
-    GUF_THREAD_STATICS  = 0x20,         // GUD has 3 indirection cells for the tls index, the tls offset and the tls gc desc
-    GUF_METHOD_BODIES   = 0x40,         // GUD has indirection cells for method bodies
-    GUF_UNBOXING_STUBS  = 0x80,         // GUD has indirection cells for unboxing/instantiating stubs
-};
-
-class GenericComposition;
-
-// describes a generic type or method for the purpose of generic unification
-struct GenericUnificationDesc
-{
-    UInt32              m_hashCode;                     // hash code of the type or method
-    UInt32              m_flags : 8;                    // GenericUnificationFlags (above)
-    UInt32              m_indirCellCountOrOrdinal : 24; // # indir cells used or method ordinal
-#ifdef BINDER
-    UIntTarget          m_openType;                     // ref to open type
-    UIntTarget          m_genericComposition;           // ref to generic composition
-                                                        // (including type args of the enclosing type)
-#else
-    EETypeRef           m_openType;                     // ref to open type
-    GenericComposition *m_genericComposition;           // ref to generic composition
-                                                        // (including type args of the enclosing type)
-#endif // BINDER
-
-    inline UInt32 GetIndirCellIndex(GenericUnificationFlags flags)
-    {
-#ifdef BINDER
-        assert((m_flags & flags) != 0);
-#endif // BINDER
-        UInt32 indirCellIndex = 0;
-
-        if (flags == GUF_EETYPE)
-            return indirCellIndex;
-        if (m_flags & GUF_EETYPE)
-            indirCellIndex += 1;
-
-        if (flags == GUF_DICT)
-            return indirCellIndex;
-        if (m_flags & GUF_DICT)
-            indirCellIndex += 1;
-
-        if (flags == GUF_GC_STATICS)
-            return indirCellIndex;
-        if (m_flags & GUF_GC_STATICS)
-            indirCellIndex += 2;
-
-        if (flags == GUF_NONGC_STATICS)
-            return indirCellIndex;
-        if (m_flags & GUF_NONGC_STATICS)
-            indirCellIndex += 1;
-
-        if (flags == GUF_THREAD_STATICS)
-            return indirCellIndex;
-        if (m_flags & GUF_THREAD_STATICS)
-            indirCellIndex += 3;
-
-        if (flags == GUF_METHOD_BODIES)
-            return indirCellIndex;
-
-#ifdef BINDER
-        // not legal to have unboxing stubs without method bodies
-        assert((m_flags & (GUF_METHOD_BODIES| GUF_UNBOXING_STUBS)) == (GUF_METHOD_BODIES | GUF_UNBOXING_STUBS));
-#endif // BINDER
-        if (flags & GUF_UNBOXING_STUBS)
-        {
-            // the remainining indirection cells should be for method bodies and instantiating/unboxing stubs
-            // where each method has an associated instantiating/unboxing stub
-            UInt32 remainingIndirCellCount = m_indirCellCountOrOrdinal - indirCellIndex;
-            // thus the number of remaining indirection cells should be divisible by 2
-            assert(remainingIndirCellCount % 2 == 0);
-            // the method bodies come first, followed by the unboxing stubs
-            return indirCellIndex + remainingIndirCellCount/2;
-        }
-
-#ifdef BINDER
-        assert(!"bad GUF flag parameter");
-#endif // BINDER
-        return indirCellIndex;
-    }
-
-#ifdef BINDER
-    inline void SetIndirCellCount(UInt32 indirCellCount)
-    {
-        // generic unification descs for methods always have 1 indirection cell
-        assert(!(m_flags & GUF_IS_METHOD));
-        m_indirCellCountOrOrdinal = indirCellCount;
-        assert(m_indirCellCountOrOrdinal == indirCellCount);
-    }
-
-    inline void SetOrdinal(UInt32 ordinal)
-    {
-        assert(m_flags & GUF_IS_METHOD);
-        m_indirCellCountOrOrdinal = ordinal;
-        assert(m_indirCellCountOrOrdinal == ordinal);
-    }
-#endif // !BINDER
-
-    inline UInt32 GetIndirCellCount()
-    {
-        // generic unification descs for methods always have 1 indirection cell
-        return (m_flags & GUF_IS_METHOD) ? 1 : m_indirCellCountOrOrdinal;
-    }
-
-    inline UInt32 GetOrdinal()
-    {
-        // For methods, we need additional identification, for types, we don't
-        // However, we need to make sure no type can match a method, so for
-        // types we return a value that would be never legal for a method
-        return (m_flags & GUF_IS_METHOD) ? m_indirCellCountOrOrdinal : ~0;
-    }
-
-    bool Equals(GenericUnificationDesc *that);
-};
-
 
 // mapping of cold code blocks to the corresponding hot entry point RVA
 // format is a as follows:
@@ -1054,4 +663,3 @@ struct ColdToHotMapping
     SubSectionDesc  subSection[/*subSectionCount*/1];
     //  UINT32   hotRVAofColdMethod[/*coldMethodCount*/];
 };
-#endif

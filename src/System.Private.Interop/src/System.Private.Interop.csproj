@@ -12,10 +12,10 @@
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
+    <ReferencePath Include="$(FrameworkReferencePath)\System.Runtime.dll" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
+    <ProjectReference Include="..\..\Framework\Framework.depproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
     </ProjectReference>

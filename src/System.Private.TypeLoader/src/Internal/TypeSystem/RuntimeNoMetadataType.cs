@@ -141,59 +141,36 @@ namespace Internal.TypeSystem.NoMetadata
                 unsafe
                 {
                     EEType* eetype = _genericTypeDefinition.ToEETypePtr();
-                    if (eetype->IsValueType)
+                    EETypeElementType elementType = eetype->ElementType;
+                    if (elementType == EETypeElementType.SystemArray)
                     {
-                        if (eetype->CorElementType == 0)
-                        {
-                            flags |= TypeFlags.ValueType;
-                        }
-                        else
-                        {
-                            if (eetype->BaseType == typeof(System.Enum).TypeHandle.ToEETypePtr())
-                            {
-                                flags |= TypeFlags.Enum;
-                            }
-                            else
-                            {
-                                // Primitive type.
-                                if (eetype->CorElementType <= CorElementType.ELEMENT_TYPE_U8)
-                                {
-                                    flags |= (TypeFlags)eetype->CorElementType;
-                                }
-                                else
-                                {
-                                    switch (eetype->CorElementType)
-                                    {
-                                        case CorElementType.ELEMENT_TYPE_I:
-                                            flags |= TypeFlags.IntPtr;
-                                            break;
-
-                                        case CorElementType.ELEMENT_TYPE_U:
-                                            flags |= TypeFlags.UIntPtr;
-                                            break;
-
-                                        case CorElementType.ELEMENT_TYPE_R4:
-                                            flags |= TypeFlags.Single;
-                                            break;
-
-                                        case CorElementType.ELEMENT_TYPE_R8:
-                                            flags |= TypeFlags.Double;
-                                            break;
-
-                                        default:
-                                            throw new BadImageFormatException();
-                                    }
-                                }
-                            }
-                        }
+                        // System.Array is a regular class in the type system
+                        flags |= TypeFlags.Class;
                     }
-                    else if (eetype->IsInterface)
+                    else if (elementType <= EETypeElementType.Double &&
+                        (eetype->IsGenericTypeDefinition || eetype->BaseType == typeof(System.Enum).TypeHandle.ToEETypePtr()))
                     {
-                        flags |= TypeFlags.Interface;
+                        // Enums are represented as their underlying type in the runtime type system
+                        // Note: we check for IsGenericDefinition above to cover generic enums (base types are not set
+                        // on generic definition EEType)
+                        flags |= TypeFlags.Enum;
                     }
                     else
                     {
-                        flags |= TypeFlags.Class;
+                        // Paranoid check that we handled enums above
+                        Debug.Assert(eetype->IsGenericTypeDefinition ||
+                            eetype->BaseType != typeof(System.Enum).TypeHandle.ToEETypePtr());
+
+                        // The rest of values should be directly castable to TypeFlags
+                        Debug.Assert((int)EETypeElementType.Void == (int)TypeFlags.Void);
+                        Debug.Assert((int)EETypeElementType.Int32 == (int)TypeFlags.Int32);
+                        Debug.Assert((int)EETypeElementType.IntPtr == (int)TypeFlags.IntPtr);
+                        Debug.Assert((int)EETypeElementType.Double == (int)TypeFlags.Double);
+                        Debug.Assert((int)EETypeElementType.Pointer == (int)TypeFlags.Pointer);
+                        Debug.Assert((int)EETypeElementType.Class == (int)TypeFlags.Class);
+                        Debug.Assert((int)EETypeElementType.Nullable == (int)TypeFlags.Nullable);
+
+                        flags |= (TypeFlags)elementType;
                     }
                 }
             }
@@ -293,9 +270,13 @@ namespace Internal.TypeSystem.NoMetadata
 
                 unsafe
                 {
-                    CorElementType corElementType = RuntimeTypeHandle.ToEETypePtr()->CorElementType;
-
-                    return Context.GetTypeFromCorElementType(corElementType);
+                    EETypeElementType elementType = RuntimeTypeHandle.ToEETypePtr()->ElementType;
+                    Debug.Assert((int)EETypeElementType.Void == (int)WellKnownType.Void);
+                    Debug.Assert((int)EETypeElementType.Int32 == (int)WellKnownType.Int32);
+                    Debug.Assert((int)EETypeElementType.IntPtr == (int)WellKnownType.IntPtr);
+                    Debug.Assert((int)EETypeElementType.Double == (int)WellKnownType.Double);
+                    Debug.Assert(elementType <= EETypeElementType.Double);
+                    return Context.GetWellKnownType((WellKnownType)elementType);
                 }
             }
         }

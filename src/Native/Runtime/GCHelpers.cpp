@@ -211,7 +211,7 @@ COOP_PINVOKE_HELPER(Int64, RhGetAllocatedBytesForCurrentThread, ())
 {
     Thread *pThread = ThreadStore::GetCurrentThread();
     gc_alloc_context *ac = pThread->GetAllocContext();
-    Int64 currentAllocated = ac->alloc_bytes + ac->alloc_bytes_loh - (ac->alloc_limit - ac->alloc_ptr);
+    Int64 currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
     return currentAllocated;
 }
 
@@ -336,10 +336,14 @@ static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEETy
         }
     }
 
+    UInt32 uFlags = GC_ALLOC_ZEROING_OPTIONAL;
+    if (size > RH_LARGE_OBJECT_SIZE)
+        uFlags |= GC_ALLOC_LARGE_OBJECT_HEAP;
+
     // Save the EEType for instrumentation purposes.
     RedhawkGCInterface::SetLastAllocEEType(pArrayEEType);
 
-    Array* pArray = (Array*)GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), size, GC_ALLOC_ZEROING_OPTIONAL);
+    Array* pArray = (Array*)GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), size, uFlags);
     if (pArray == NULL)
     {
         return NULL;

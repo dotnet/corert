@@ -34,9 +34,25 @@ namespace Internal.Reflection.Execution
 
         public static AssemblyBinderImplementation Instance { get; } = new AssemblyBinderImplementation();
 
+        partial void BindEcmaFilePath(string assemblyPath, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
         partial void BindEcmaByteArray(byte[] rawAssembly, byte[] rawSymbolStore, ref AssemblyBindResult bindResult, ref Exception exception, ref bool? result);
         partial void BindEcmaAssemblyName(RuntimeAssemblyName refName, bool cacheMissedLookups, ref AssemblyBindResult result, ref Exception exception, ref Exception preferredException, ref bool resultBoolean);
         partial void InsertEcmaLoadedAssemblies(List<AssemblyBindResult> loadedAssemblies);
+
+        public sealed override bool Bind(string assemblyPath, out AssemblyBindResult bindResult, out Exception exception)
+        {
+            bool? result = null;
+            exception = null;
+            bindResult = default(AssemblyBindResult);
+
+            BindEcmaFilePath(assemblyPath, ref bindResult, ref exception, ref result);
+
+            // If the Ecma assembly binder isn't linked in, simply throw PlatformNotSupportedException
+            if (!result.HasValue)
+                throw new PlatformNotSupportedException();
+            else
+                return result.Value;
+        }
 
         public sealed override bool Bind(byte[] rawAssembly, byte[] rawSymbolStore, out AssemblyBindResult bindResult, out Exception exception)
         {
@@ -61,31 +77,9 @@ namespace Internal.Reflection.Execution
 
             Exception preferredException = null;
 
-            refName = refName.CanonicalizePublicKeyToken();
-
-            // At least one real-world app calls Type.GetType() for "char" using the assembly name "mscorlib". To accomodate this,
-            // we will adopt the desktop CLR rule that anything named "mscorlib" automatically binds to the core assembly.
-            bool useMscorlibNameCompareFunc = false;
-            RuntimeAssemblyName compareRefName = refName;
-            if (refName.Name == "mscorlib")
-            {
-                useMscorlibNameCompareFunc = true;
-                compareRefName = AssemblyNameParser.Parse(AssemblyBinder.DefaultAssemblyNameForGetType);
-            }
-
             foreach (KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup> group in ScopeGroups)
             {
-                bool nameMatches;
-                if (useMscorlibNameCompareFunc)
-                {
-                    nameMatches = MscorlibAssemblyNameMatches(compareRefName, group.Key);
-                }
-                else
-                {
-                    nameMatches = AssemblyNameMatches(refName, group.Key, ref preferredException);
-                }
-
-                if (nameMatches)
+                if (AssemblyNameMatches(refName, group.Key, ref preferredException))
                 {
                     if (foundMatch)
                     {
@@ -135,30 +129,6 @@ namespace Internal.Reflection.Execution
         }
 
         //
-        // Name match routine for mscorlib references
-        //
-        private bool MscorlibAssemblyNameMatches(RuntimeAssemblyName coreAssemblyName, RuntimeAssemblyName defName)
-        {
-            //
-            // The defName came from trusted metadata so it should be fully specified.
-            //
-            Debug.Assert(defName.Version != null);
-            Debug.Assert(defName.CultureName != null);
-
-            Debug.Assert((coreAssemblyName.Flags & AssemblyNameFlags.PublicKey) == 0);
-            Debug.Assert((defName.Flags & AssemblyNameFlags.PublicKey) == 0);
-
-            if (defName.Name != coreAssemblyName.Name)
-                return false;
-            byte[] defPkt = defName.PublicKeyOrToken;
-            if (defPkt == null)
-                return false;
-            if (!ArePktsEqual(defPkt, coreAssemblyName.PublicKeyOrToken))
-                return false;
-            return true;
-        }
-
-        //
         // Encapsulates the assembly ref->def matching policy.
         //
         private bool AssemblyNameMatches(RuntimeAssemblyName refName, RuntimeAssemblyName defName, ref Exception preferredException)
@@ -168,9 +138,6 @@ namespace Internal.Reflection.Execution
             //
             Debug.Assert(defName.Version != null);
             Debug.Assert(defName.CultureName != null);
-
-            Debug.Assert((defName.Flags & AssemblyNameFlags.PublicKey) == 0);
-            Debug.Assert((refName.Flags & AssemblyNameFlags.PublicKey) == 0);
 
             if (!(refName.Name.Equals(defName.Name, StringComparison.OrdinalIgnoreCase)))
                 return false;
@@ -190,22 +157,7 @@ namespace Internal.Reflection.Execution
                     return false;
             }
 
-            AssemblyNameFlags materialRefNameFlags = refName.Flags.ExtractAssemblyNameFlags();
-            AssemblyNameFlags materialDefNameFlags = defName.Flags.ExtractAssemblyNameFlags();
-            if (materialRefNameFlags != materialDefNameFlags)
-            {
-                return false;
-            }
-
-            byte[] refPublicKeyToken = refName.PublicKeyOrToken;
-            if (refPublicKeyToken != null)
-            {
-                byte[] defPublicKeyToken = defName.PublicKeyOrToken;
-                if (defPublicKeyToken == null)
-                    return false;
-                if (!ArePktsEqual(refPublicKeyToken, defPublicKeyToken))
-                    return false;
-            }
+            // Strong names are ignored in .NET Core
 
             return true;
         }
@@ -284,7 +236,7 @@ namespace Internal.Reflection.Execution
         {
             foreach (ScopeDefinitionHandle scopeDefinitionHandle in reader.ScopeDefinitions)
             {
-                RuntimeAssemblyName defName = scopeDefinitionHandle.ToRuntimeAssemblyName(reader).CanonicalizePublicKeyToken();
+                RuntimeAssemblyName defName = scopeDefinitionHandle.ToRuntimeAssemblyName(reader);
                 ScopeDefinitionGroup scopeDefinitionGroup;
                 if (groups.TryGetValue(defName, out scopeDefinitionGroup))
                 {
@@ -296,18 +248,6 @@ namespace Internal.Reflection.Execution
                     groups.Add(defName, scopeDefinitionGroup);
                 }
             }
-        }
-
-        private static bool ArePktsEqual(byte[] pkt1, byte[] pkt2)
-        {
-            if (pkt1.Length != pkt2.Length)
-                return false;
-            for (int i = 0; i < pkt1.Length; i++)
-            {
-                if (pkt1[i] != pkt2[i])
-                    return false;
-            }
-            return true;
         }
 
         private volatile KeyValuePair<RuntimeAssemblyName, ScopeDefinitionGroup>[] _scopeGroups;

@@ -33,10 +33,14 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
 {
     internal sealed partial class EcmaFormatRuntimeAssembly : RuntimeAssembly
     {
-        private EcmaFormatRuntimeAssembly(MetadataReader reader)
+        private readonly string _location;
+        public override string Location => _location ?? "";
+
+        private EcmaFormatRuntimeAssembly(MetadataReader reader, string assemblyPath)
         {
             AssemblyDefinition = reader.GetAssemblyDefinition();
             MetadataReader = reader;
+            _location = assemblyPath;
         }
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes
@@ -126,7 +130,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             public string FileName;
             public Assembly ReferencedAssembly;
             public byte* PointerToResource;
-            public uint SizeOfResource; 
+            public uint SizeOfResource;
             public ResourceLocation ResourceLocation;
         }
 
@@ -152,7 +156,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                             BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
                             uint length = reader.ReadUInt32();
                             result.PointerToResource = reader.CurrentPointer;
-                            
+
                             // Length check the size of the resource to ensure it fits in the PE file section, note, this is only safe as its in a checked region
                             if (length + sizeof(Int32) > reader.Length)
                                 throw new BadImageFormatException();
@@ -193,7 +197,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                 throw new ArgumentNullException(nameof(resourceName));
             if (resourceName.Equals(""))
                 throw new ArgumentException(nameof(resourceName));
-            
+
             InternalManifestResourceInfo internalManifestResourceInfo = GetInternalManifestResourceInfo(resourceName);
 
             if (internalManifestResourceInfo.ResourceLocation == ResourceLocation.ContainedInAnotherAssembly)
@@ -231,7 +235,7 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
                 throw new ArgumentNullException(nameof(name));
             if (name.Equals(""))
                 throw new ArgumentException(nameof(name));
-            
+
             InternalManifestResourceInfo internalManifestResourceInfo = GetInternalManifestResourceInfo(name);
 
             if ((internalManifestResourceInfo.ResourceLocation & ResourceLocation.Embedded) != 0)
@@ -299,25 +303,25 @@ namespace System.Reflection.Runtime.Assemblies.EcmaFormat
             return MetadataReader.GetHashCode();
         }
 
-        public sealed override MethodInfo EntryPoint 
+        public sealed override MethodInfo EntryPoint
         {
-            get 
+            get
             {
-                CorHeader corHeader = PEReader.PEHeaders.CorHeader; 
-                if ((corHeader.Flags & CorFlags.NativeEntryPoint) != 0) 
-                { 
+                CorHeader corHeader = PEReader.PEHeaders.CorHeader;
+                if ((corHeader.Flags & CorFlags.NativeEntryPoint) != 0)
+                {
                     // Entrypoint is an RVA to an unmanaged method 
-                    return null; 
-                } 
+                    return null;
+                }
 
-                int entryPointToken = corHeader.EntryPointTokenOrRelativeVirtualAddress; 
-                if (entryPointToken == 0) 
-                { 
+                int entryPointToken = corHeader.EntryPointTokenOrRelativeVirtualAddress;
+                if (entryPointToken == 0)
+                {
                     // No entrypoint 
-                    return null; 
-                } 
- 
-                Handle handle = MetadataTokens.Handle(entryPointToken); 
+                    return null;
+                }
+
+                Handle handle = MetadataTokens.Handle(entryPointToken);
 
                 if (handle.Kind != HandleKind.MethodDefinition)
                 {

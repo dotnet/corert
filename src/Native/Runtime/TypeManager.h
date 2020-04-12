@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 #pragma once
 #include "ModuleHeaders.h"
+#include "ICodeManager.h"
 
 struct StaticGcDesc;
 class DispatchMap;
@@ -10,6 +11,7 @@ typedef unsigned char       UInt8;
 
 class TypeManager
 {
+    // NOTE: Part of this layout is a contract with the managed side in TypeManagerHandle.cs
     HANDLE                      m_osModule;
     ReadyToRunHeader *          m_pHeader;
     DispatchMap**               m_pDispatchMapTable;
@@ -27,7 +29,6 @@ class TypeManager
 public:
     static TypeManager * Create(HANDLE osModule, void * pModuleHeader, void** pClasslibFunctions, UInt32 nClasslibFunctions);
     void * GetModuleSection(ReadyToRunSectionType sectionId, int * length);
-    DispatchMap ** GetDispatchMapLookupTable();
     void EnumStaticGCRefs(void * pfnCallback, void * pvCallbackData);
     HANDLE GetOsModuleHandle();
     void* GetClasslibFunction(ClasslibFunctionId functionId);
@@ -52,9 +53,7 @@ private:
 };
 
 // TypeManagerHandle represents an AOT module in MRT based runtimes.
-// These handles are either a pointer to an OS module, or a pointer to a TypeManager
-// When this is a pointer to a TypeManager, then the pointer will have its lowest bit
-// set to indicate that it is a TypeManager pointer instead of OS module.
+// These handles are a pointer to a TypeManager.
 struct TypeManagerHandle
 {
     static TypeManagerHandle Null()
@@ -65,13 +64,6 @@ struct TypeManagerHandle
     }
 
     static TypeManagerHandle Create(TypeManager * value)
-    {
-        TypeManagerHandle handle;
-        handle._value = ((uint8_t *)value) + 1;
-        return handle;
-    }
-
-    static TypeManagerHandle Create(HANDLE value)
     {
         TypeManagerHandle handle;
         handle._value = value;

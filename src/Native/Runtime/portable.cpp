@@ -16,7 +16,6 @@
 #include "gcrhinterface.h"
 #include "shash.h"
 #include "RWLock.h"
-#include "module.h"
 #include "varint.h"
 #include "holder.h"
 #include "rhbinder.h"
@@ -30,6 +29,8 @@
 #include "threadstore.inl"
 
 #include "eetype.h"
+#include "TypeManager.h"
+#include "eetype.inl"
 #include "ObjectLayout.h"
 
 #include "GCMemoryHelpers.h"

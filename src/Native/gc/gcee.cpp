@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-// 
+//
 
-// 
+//
 
 
 // sets up vars for GC
@@ -17,8 +17,8 @@ uint64_t g_TotalTimeSinceLastGCEnd = 0;
 
 uint32_t g_percentTimeInGCSinceLastGC = 0;
 
-size_t g_GenerationSizes[NUMBERGENERATIONS];
-size_t g_GenerationPromotedSizes[NUMBERGENERATIONS];
+size_t g_GenerationSizes[total_generation_count];
+size_t g_GenerationPromotedSizes[total_generation_count];
 
 void GCHeap::UpdatePreGCCounters()
 {
@@ -28,34 +28,8 @@ void GCHeap::UpdatePreGCCounters()
     gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
 
-    size_t allocation_0 = 0;
-    size_t allocation_3 = 0; 
-    
     // Publish perf stats
     g_TotalTimeInGC = GCToOSInterface::QueryPerformanceCounter();
-
-#ifdef MULTIPLE_HEAPS
-    int hn = 0;
-    for (hn = 0; hn < gc_heap::n_heaps; hn++)
-    {
-        hp = gc_heap::g_heaps [hn];
-            
-        allocation_0 += 
-            dd_desired_allocation (hp->dynamic_data_of (0))-
-            dd_new_allocation (hp->dynamic_data_of (0));
-        allocation_3 += 
-            dd_desired_allocation (hp->dynamic_data_of (max_generation+1))-
-            dd_new_allocation (hp->dynamic_data_of (max_generation+1));
-    }
-#else
-    allocation_0 = 
-        dd_desired_allocation (hp->dynamic_data_of (0))-
-        dd_new_allocation (hp->dynamic_data_of (0));
-    allocation_3 = 
-        dd_desired_allocation (hp->dynamic_data_of (max_generation+1))-
-        dd_new_allocation (hp->dynamic_data_of (max_generation+1));
-        
-#endif //MULTIPLE_HEAPS
 
 #ifdef MULTIPLE_HEAPS
         //take the first heap....
@@ -110,14 +84,14 @@ void GCHeap::UpdatePostGCCounters()
 
     memset (g_GenerationSizes, 0, sizeof (g_GenerationSizes));
     memset (g_GenerationPromotedSizes, 0, sizeof (g_GenerationPromotedSizes));
-    
+
     size_t total_num_gc_handles = g_dwHandles;
     uint32_t total_num_sync_blocks = GCToEEInterface::GetActiveSyncBlockCount();
 
-    // Note this is however for perf counter only, for legacy reasons. What we showed 
+    // Note this is however for perf counter only, for legacy reasons. What we showed
     // in perf counters for "gen0 size" was really the gen0 budget which made
     // sense (somewhat) at the time. For backward compatibility we are keeping
-    // this calculated the same way. For ETW we use the true gen0 size (and 
+    // this calculated the same way. For ETW we use the true gen0 size (and
     // gen0 budget is also reported in an event).
     size_t youngest_budget = 0;
 
@@ -125,14 +99,14 @@ void GCHeap::UpdatePostGCCounters()
     size_t total_num_pinned_objects = gc_heap::get_total_pinned_objects();
 
 #ifndef FEATURE_REDHAWK
-    // if a max gen garbage collection was performed, resync the GC Handle counter; 
+    // if a max gen garbage collection was performed, resync the GC Handle counter;
     // if threads are currently suspended, we do not need to obtain a lock on each handle table
     if (condemned_gen == max_generation)
         total_num_gc_handles = HndCountAllHandles(!IsGCInProgress());
 #endif //FEATURE_REDHAWK
 
     // per generation calculation.
-    for (int gen_index = 0; gen_index <= (max_generation+1); gen_index++)
+    for (int gen_index = 0; gen_index < total_generation_count; gen_index++)
     {
 #ifdef MULTIPLE_HEAPS
         int hn = 0;
@@ -157,7 +131,7 @@ void GCHeap::UpdatePostGCCounters()
                     g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
                 }
 
-                if ((gen_index == (max_generation+1)) && (condemned_gen == max_generation))
+                if ((gen_index == loh_generation) && (condemned_gen == max_generation))
                 {
                     g_GenerationPromotedSizes[gen_index] += dd_promoted_size (dd);
                 }
@@ -185,7 +159,7 @@ void GCHeap::UpdatePostGCCounters()
     FIRE_EVENT(GCEnd_V1, static_cast<uint32_t>(pSettings->gc_index), condemned_gen);
 
 #ifdef SIMPLE_DPRINTF
-    dprintf (2, ("GC#%d: 0: %Id(%Id); 1: %Id(%Id); 2: %Id(%Id); 3: %Id(%Id)", 
+    dprintf (2, ("GC#%d: 0: %Id(%Id); 1: %Id(%Id); 2: %Id(%Id); 3: %Id(%Id)",
         (size_t)pSettings->gc_index,
         g_GenerationSizes[0], g_GenerationPromotedSizes[0],
         g_GenerationSizes[1], g_GenerationPromotedSizes[1],
@@ -216,7 +190,7 @@ void GCHeap::UpdatePostGCCounters()
         g_TotalTimeInGC = 0;        // isn't likely except on some SMP machines-- perhaps make sure that
                                     //  _timeInGCBase >= g_TotalTimeInGC by setting affinity in GET_CYCLE_COUNT
 
-    while (_timeInGCBase > UINT32_MAX) 
+    while (_timeInGCBase > UINT32_MAX)
     {
         _timeInGCBase = _timeInGCBase >> 8;
         g_TotalTimeInGC = g_TotalTimeInGC >> 8;
@@ -292,7 +266,7 @@ uint32_t GCHeap::WaitUntilGCComplete(bool bConsiderGCStart)
 
     uint32_t dwWaitResult = NOERROR;
 
-    if (GcInProgress) 
+    if (GcInProgress)
     {
         ASSERT( WaitForGCEvent->IsValid() );
 
@@ -308,9 +282,9 @@ BlockAgain:
         }
 
 #else  //DETECT_DEADLOCK
-        
+
         dwWaitResult = WaitForGCEvent->Wait(INFINITE, FALSE );
-        
+
 #endif //DETECT_DEADLOCK
     }
 
@@ -367,7 +341,7 @@ uint32_t gc_heap::user_thread_wait (GCEvent *event, BOOL no_mode_change, int tim
     Thread* pCurThread = NULL;
     bool bToggleGC = false;
     uint32_t dwWaitResult = NOERROR;
-    
+
     if (!no_mode_change)
     {
         bToggleGC = GCToEEInterface::EnablePreemptiveGC();
@@ -397,23 +371,12 @@ uint32_t gc_heap::background_gc_wait (alloc_wait_reason awr, int time_out_ms)
     return dwRet;
 }
 
-// Wait for background gc to finish sweeping large objects
-void gc_heap::background_gc_wait_lh (alloc_wait_reason awr)
-{
-    dprintf(2, ("Waiting end of background large sweep"));
-    assert (gc_lh_block_event.IsValid());
-    fire_alloc_wait_event_begin (awr);
-    user_thread_wait (&gc_lh_block_event, FALSE);
-    fire_alloc_wait_event_end (awr);
-    dprintf(2, ("Waiting end of background large sweep is done"));
-}
-
 #endif //BACKGROUND_GC
 
 
 /******************************************************************************/
 IGCHeapInternal* CreateGCHeap() {
-    return new(nothrow) GCHeap();   // we return wks or svr 
+    return new(nothrow) GCHeap();   // we return wks or svr
 }
 
 void GCHeap::DiagTraceGCSegments()
@@ -439,7 +402,7 @@ void GCHeap::DiagTraceGCSegments()
         }
 
         // large obj segments
-        for (seg = generation_start_segment (h->generation_of (max_generation+1)); seg != 0; seg = heap_segment_next(seg))
+        for (seg = generation_start_segment (h->generation_of (loh_generation)); seg != 0; seg = heap_segment_next(seg))
         {
             uint8_t* address = heap_segment_mem (seg);
             size_t size = heap_segment_reserved (seg) - heap_segment_mem (seg);
@@ -516,7 +479,7 @@ bool GCHeap::IsInFrozenSegment(Object *object)
     //We create a frozen object for each frozen segment before the segment is inserted
     //to segment list; during ngen, we could also create frozen objects in segments which
     //don't belong to current GC heap.
-    //So we return true if hs is NULL. It might create a hole about detecting invalidate 
+    //So we return true if hs is NULL. It might create a hole about detecting invalidate
     //object. But given all other checks present, the hole should be very small
     return !hs || heap_segment_read_only_p (hs);
 #else // FEATURE_BASICFREEZE

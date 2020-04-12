@@ -613,9 +613,9 @@ namespace Internal.Runtime.TypeLoader
                     case BagElementKind.GenericVarianceInfo:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.GenericVarianceInfo");
                         NativeParser varianceInfoParser = typeInfoParser.GetParserFromRelativeOffset();
-                        state.GenericVarianceFlags = new int[varianceInfoParser.GetSequenceCount()];
+                        state.GenericVarianceFlags = new GenericVariance[varianceInfoParser.GetSequenceCount()];
                         for (int i = 0; i < state.GenericVarianceFlags.Length; i++)
-                            state.GenericVarianceFlags[i] = checked((int)varianceInfoParser.GetUnsigned());
+                            state.GenericVarianceFlags[i] = checked((GenericVariance)varianceInfoParser.GetUnsigned());
                         break;
 
                     case BagElementKind.FieldLayout:
@@ -1319,8 +1319,16 @@ namespace Internal.Runtime.TypeLoader
 
                     state.HalfBakedRuntimeTypeHandle.SetGenericDefinition(GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()));
                     Instantiation instantiation = typeAsDefType.Instantiation;
+                    state.HalfBakedRuntimeTypeHandle.SetGenericArity((uint)instantiation.Length);
                     for (int argIndex = 0; argIndex < instantiation.Length; argIndex++)
+                    {
                         state.HalfBakedRuntimeTypeHandle.SetGenericArgument(argIndex, GetRuntimeTypeHandle(instantiation[argIndex]));
+                        if (state.GenericVarianceFlags != null)
+                        {
+                            Debug.Assert(state.GenericVarianceFlags.Length == instantiation.Length);
+                            state.HalfBakedRuntimeTypeHandle.SetGenericVariance(argIndex, state.GenericVarianceFlags[argIndex]);
+                        }
+                    }
                 }
 
                 FinishBaseTypeAndDictionaries(type, state);
@@ -1335,12 +1343,6 @@ namespace Internal.Runtime.TypeLoader
                 // pointers to calling convention conversion thunks
                 if (state.TemplateType != null && state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
                     FinishVTableCallingConverterThunks(type, state);
-
-                if (RuntimeAugments.IsNullable(state.HalfBakedRuntimeTypeHandle))
-                {
-                    Debug.Assert(typeAsDefType.Instantiation.Length == 1);
-                    state.HalfBakedRuntimeTypeHandle.SetNullableType(GetRuntimeTypeHandle(typeAsDefType.Instantiation[0]));
-                }
             }
             else if (type is ParameterizedType)
             {
@@ -1375,8 +1377,14 @@ namespace Internal.Runtime.TypeLoader
                     state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(GetRuntimeTypeHandle(((ByRefType)type).ParameterType));
 
                     // We used a pointer type for the template because they're similar enough. Adjust this to be a ByRef.
-                    unsafe { Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer); }
-                    state.HalfBakedRuntimeTypeHandle.SetParameterizedTypeShape(ParameterizedTypeShapeConstants.ByRef);
+                    unsafe
+                    {
+                        Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ParameterizedTypeShape == ParameterizedTypeShapeConstants.Pointer);
+                        state.HalfBakedRuntimeTypeHandle.SetParameterizedTypeShape(ParameterizedTypeShapeConstants.ByRef);
+                        Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.Pointer);
+                        state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->Flags = EETypeBuilderHelpers.ComputeFlags(type);
+                        Debug.Assert(state.HalfBakedRuntimeTypeHandle.ToEETypePtr()->ElementType == EETypeElementType.ByRef);
+                    }
                 }
             }
             else

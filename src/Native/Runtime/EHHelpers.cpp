@@ -11,7 +11,7 @@
 #include "gcrhinterface.h"
 #include "shash.h"
 #include "RWLock.h"
-#include "module.h"
+#include "TypeManager.h"
 #include "varint.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
@@ -27,6 +27,7 @@
 #include "stressLog.h"
 #include "rhbinder.h"
 #include "eetype.h"
+#include "eetype.inl"
 
 COOP_PINVOKE_HELPER(Boolean, RhpEHEnumInitFromStackFrameIterator, (
     StackFrameIterator* pFrameIter, void ** pMethodStartAddressOut, EHEnum* pEHEnum))
@@ -309,19 +310,8 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
         (UIntNative)&RhpCheckedAssignRefAVLocation,
         (UIntNative)&RhpCheckedLockCmpXchgAVLocation,
         (UIntNative)&RhpCheckedXchgAVLocation,
-#ifdef PROJECTN
-        (UIntNative)&RhpCopyMultibyteDestAVLocation,
-        (UIntNative)&RhpCopyMultibyteSrcAVLocation,
-        (UIntNative)&RhpCopyMultibyteNoGCRefsDestAVLocation,
-        (UIntNative)&RhpCopyMultibyteNoGCRefsSrcAVLocation,
-        (UIntNative)&RhpCopyMultibyteWithWriteBarrierDestAVLocation,
-        (UIntNative)&RhpCopyMultibyteWithWriteBarrierSrcAVLocation,
-        (UIntNative)&RhpCopyAnyWithWriteBarrierDestAVLocation,
-        (UIntNative)&RhpCopyAnyWithWriteBarrierSrcAVLocation,
-#else
         (UIntNative)&RhpLockCmpXchg32AVLocation,
         (UIntNative)&RhpLockCmpXchg64AVLocation,
-#endif
     };
 
     // compare the IP against the list of known possible AV locations in the write barrier helpers

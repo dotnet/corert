@@ -30,6 +30,10 @@ This project follows the [.NET Core Contribution Guidelines](https://github.com/
 
 [![Join the chat at https://gitter.im/dotnet/corert](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/corert?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+### .NET Native for UWP Support
+
+Use https://developercommunity.visualstudio.com/ to report problems and suggestions related to [.NET Native for UWP](https://docs.microsoft.com/en-us/dotnet/framework/net-native/).
+
 ### Reporting security issues and security bugs
 
 Security issues and bugs should be reported privately, via email, to the
