@@ -85,7 +85,6 @@
     <IncludeList Include="$(XunitTestBinBase)\JIT\opt\LocAlloc\localloc\localloc.*" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\opt\perf\doublealign\Arrays\Arrays.*" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\opt\Types\Equality\Equality.*" />
-    <IncludeList Include="$(XunitTestBinBase)\JIT\opt\virtualstubdispatch\bigvtbl\bigvtbl_cs_ro\bigvtbl_cs_ro.*" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\AbsGeneric_r\AbsGeneric_r.*" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\AbsSqrt_r\AbsSqrt_r.*" />
     <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\AddingSequence_r\AddingSequence_r.*" />
