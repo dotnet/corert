@@ -56,7 +56,6 @@
     <Compile Include="System\Runtime\EEType.Runtime.cs" />
     <Compile Include="System\Runtime\EETypePtr.cs" />
     <Compile Include="System\Runtime\ExceptionHandling.cs" />
-    <Compile Include="System\Runtime\ExceptionHandling.wasm.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
     <Compile Include="System\Runtime\InternalCalls.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
@@ -114,6 +113,8 @@
   <ItemGroup>
     <Compile Condition="'$(Platform)'!='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
     <Compile Condition="'$(Platform)'=='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Portable\AsmOffsetsPortable.cs" />
+    <Compile Condition="'$(Platform)'=='wasm'" Include="System\Runtime\ExceptionHandling.wasm.cs" />
+    <Compile Condition="'$(Platform)'=='wasm'" Include="System\Runtime\StackFrameIterator.wasm.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

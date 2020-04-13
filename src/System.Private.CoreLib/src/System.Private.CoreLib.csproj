@@ -71,6 +71,9 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs">
       <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\StackFrameIterator.wasm.cs">
+      <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.wasm.cs</Link>
+    </Compile>
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
     <Compile Include="Internal\Diagnostics\StackTraceHelper.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\DelegateHelpers.cs" />
