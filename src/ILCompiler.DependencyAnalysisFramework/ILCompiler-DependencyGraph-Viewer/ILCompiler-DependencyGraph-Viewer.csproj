@@ -7,6 +7,8 @@
 
     <RootNamespace>DependencyLogViewer</RootNamespace>
     <AssemblyName>ILCompiler-DependencyGraph-Viewer</AssemblyName>
+
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>
