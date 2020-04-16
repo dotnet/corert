@@ -67,7 +67,20 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (MethodDesc method in _type.GetMethods())
                 {
                     if (!mdManager.IsReflectionBlocked(method))
+                    {
+                        try
+                        {
+                            // Make sure we're not adding a method to the dependency graph that is going to
+                            // cause trouble down the line. This entire type would not actually load on CoreCLR anyway.
+                            LibraryRootProvider.CheckCanGenerateMethod(method);
+                        }
+                        catch (TypeSystemException)
+                        {
+                            continue;
+                        }
+
                         dependencies.Add(factory.MethodMetadata(method), "Complete metadata for type");
+                    }
                 }
 
                 foreach (FieldDesc field in _type.GetFields())

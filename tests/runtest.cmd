@@ -176,7 +176,7 @@ for /f "delims=" %%a in ('dir /s /aD /b %CoreRT_TestRoot%\src\%CoreRT_TestName%'
                     set /a __CppTotalTests=!__CppTotalTests!+1
                 )
             )
-            if /i not "%CoreRT_TestCompileMode%" == "cpp" (
+            if /i "%CoreRT_TestCompileMode%" == "wasm" (
                 if exist "!__SourceFolder!\wasm" (
                     set __Mode=wasm
                     call :CompileFile !__SourceFolder! !__SourceFileName! !__SourceFileProj! %__LogDir%\!__RelativePath!
@@ -314,8 +314,6 @@ goto :eof
         set __Extension=exe
 
         if /i "%__Mode%"=="wasm" (
-            REM Skip running if this is WASM build-only testing running in a different architecture's build
-            if /i not "%CoreRT_BuildArch%"=="wasm" (goto :RecordTestResult)
             set __Extension=js
         )
 
