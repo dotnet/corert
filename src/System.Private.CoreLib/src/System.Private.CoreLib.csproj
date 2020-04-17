@@ -67,14 +67,6 @@
       <Link>ExceptionStringID.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(Platform)'=='wasm'">
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs">
-      <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\StackFrameIterator.wasm.cs">
-      <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.wasm.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Diagnostics\ExceptionExtensions.cs" />
     <Compile Include="Internal\Diagnostics\StackTraceHelper.cs" />
@@ -570,6 +562,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\TransitionBlock.cs">
       <Link>Common\TransitionBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs" Condition="'$(Platform)'=='wasm'">
+      <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\StackFrameIterator.wasm.cs" Condition="'$(Platform)'=='wasm'">
+      <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.wasm.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
