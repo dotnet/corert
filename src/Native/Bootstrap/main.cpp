@@ -236,26 +236,69 @@ Object * __load_string_literal(const char * string)
     return pString;
 }
 
+#if defined(_WASM_)
+// Exception wrapper type that allows us to differentiate managed and native exceptions
+class ManagedExceptionWrapper : exception
+{
+public:
+    ManagedExceptionWrapper(void* pManagedException)
+    {
+        m_pManagedException = pManagedException;
+    }
+
+public:
+    void* m_pManagedException;
+};
+#endif
+
 extern "C" void RhpThrowEx(void * pEx)
 {
+#if defined(_WASM_)
+    throw ManagedExceptionWrapper(pEx);
+#else 
     throw "RhpThrowEx";
+#endif
 }
+
 extern "C" void RhpThrowHwEx()
 {
     throw "RhpThrowHwEx";
 }
-extern "C" void* RhpCallCatchFunclet(void *, void*, void*, void*)
+
+#if defined(_WASM_)
+// returns the Leave target
+extern "C" uint32_t LlvmCatchFunclet(void * exceptionObj, void* pHandlerIP, void* pvRegDisplay); 
+extern "C" uint32_t LlvmCatchFuncletGeneric(void * exceptionObj, void* pHandlerIP, void* pvRegDisplay, void * genericContext); 
+extern "C" uint32_t RhpCallCatchFunclet(void * exceptionObj, void* pHandlerIP, void* pvRegDisplay, void *exInfo /* generic context, if any */)
+{
+    return exInfo 
+        ? LlvmCatchFuncletGeneric(exceptionObj, pHandlerIP, pvRegDisplay, exInfo)
+        : LlvmCatchFunclet(exceptionObj, pHandlerIP, pvRegDisplay);
+}
+#else 
+extern "C" uint32_t RhpCallCatchFunclet(void *, void*, void*, void*)
 {
     throw "RhpCallCatchFunclet";
 }
+#endif
 extern "C" void* RhpCallFilterFunclet(void*, void*, void*)
 {
     throw "RhpCallFilterFunclet";
 }
+
+#if defined(_WASM_)
+extern "C" void LlvmFinallyFunclet(void *finallyHandler, void *shadowStack);
+extern "C" void RhpCallFinallyFunclet(void *finallyHandler, void *shadowStack)
+{
+    LlvmFinallyFunclet(finallyHandler, shadowStack);
+}
+#else 
 extern "C" void RhpCallFinallyFunclet(void *, void*)
 {
     throw "RhpCallFinallyFunclet";
 }
+#endif
+
 extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";

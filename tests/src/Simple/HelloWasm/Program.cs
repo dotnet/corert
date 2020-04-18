@@ -302,6 +302,8 @@ internal static class Program
 
         TestInitObjDouble();
 
+        TestTryCatch();
+
         StartTest("Non/GCStatics field access test");
         if (new FieldStatics().TestGetSet())
         {
@@ -335,6 +337,8 @@ internal static class Program
         TestInitializeArray();
 
         TestImplicitUShortToUInt();
+
+        TestReverseDelegateInvoke();
 
         TestInterlockedExchange();
 
@@ -1207,6 +1211,208 @@ internal static class Program
         }
     }
 
+    private static void TestTryCatch()
+    {
+        // break out the individual tests to their own methods to make looking at the funclets easier
+        TestTryCatchNoException();
+
+        TestTryCatchThrowException(new Exception());
+
+        TestTryCatchExceptionFromCall();
+
+        TestCatchExceptionType();
+
+        TestTryFinallyThrowException();
+
+        TestTryCatchWithCallInIf();
+
+        TestThrowInCatch();
+
+        TestExceptionInGvmCall();
+    }
+
+    private static void TestTryCatchNoException()
+    {
+        bool caught = false;
+        StartTest("Catch not called when no exception test");
+        try
+        {
+            new Exception();
+        }
+        catch (Exception)
+        {
+            caught = true;
+        }
+        EndTest(!caught);
+    }
+
+    // pass the exception to avoid a call/invoke for that ctor in this function
+    private static void TestTryCatchThrowException(Exception e)
+    {
+        bool caught = false;
+        StartTest("Catch called when exception thrown test");
+        try
+        {
+            throw e;
+        }
+        catch (Exception)
+        {
+            PrintLine("caught");
+            caught = true;
+        }
+        EndTest(caught);
+    }
+
+    static bool finallyCalled;
+    private static void TestTryFinallyThrowException()
+    {
+        finallyCalled = false;
+        StartTest("Try/Finally calls finally when exception thrown test");
+        try
+        {
+            TryFinally();
+        }
+        catch (Exception)
+        {
+
+        }
+        EndTest(finallyCalled);
+    }
+
+    private static void TryFinally()
+    {
+        try
+        {
+            throw new Exception();
+        }
+        finally
+        {
+            finallyCalled = true;
+        }
+    }
+
+    private static void TestTryCatchExceptionFromCall()
+    {
+        bool caught = false;
+        StartTest("Catch called when exception thrown from call");
+        try
+        {
+            ThrowException(new Exception());
+        }
+        catch (Exception)
+        {
+            caught = true;
+        }
+        EndTest(caught);
+    }
+
+    private static void TestCatchExceptionType()
+    {
+        int i = 1;
+        StartTest("Catch called for exception type and order");
+        try
+        {
+            throw new NullReferenceException("test"); // the parameterless ctor is causing some unexplained memory corruption with the EHInfo pointers...
+        }
+        catch (ArgumentException)
+        {
+            i += 10;
+        }
+        catch (NullReferenceException e)
+        {
+            if (e.Message == "test")
+            {
+                i += 100;
+            }
+        }
+        catch (Exception)
+        {
+            i += 1000;
+        }
+        EndTest(i == 101);
+    }
+
+    private static void TestTryCatchWithCallInIf()
+    {
+        int i = 1;
+        bool caught = false;
+        StartTest("Test invoke when last instruction in if block");
+        try
+        {
+            if (i == 1)
+            {
+                PrintString("");
+            }
+        }
+        catch
+        {
+            caught = true;
+        }
+        EndTest(!caught);
+    }
+
+    private static void TestThrowInCatch()
+    {
+        int i = 0;
+        StartTest("Throw exception in catch");
+        Exception outer = new Exception();
+        Exception inner = new Exception();
+        try
+        {
+            ThrowException(outer);
+        }
+        catch
+        {
+            i += 1;
+            try
+            {
+                ThrowException(inner);
+            }
+            catch(Exception e)
+            {
+                if(object.ReferenceEquals(e, inner)) i += 10;
+            }
+        }
+        EndTest(i == 11);
+    }
+
+    private static void TestExceptionInGvmCall()
+    {
+        StartTest("TestExceptionInGvmCall");
+
+        var shouldBeFalse = CatchGvmThrownException(new GenBase<string>(), (string)null);
+        var shouldBeTrue = CatchGvmThrownException(new DerivedThrows<string>(), (string)null);
+
+        EndTest(shouldBeTrue && !shouldBeFalse);
+    }
+
+    class DerivedThrows<A> : GenBase<A>
+    {
+        public override string GMethod1<T>(T t1, T t2) { throw new Exception("ToStringThrows"); }
+    }
+    
+    private static bool CatchGvmThrownException<T>(GenBase<T> g, T p)
+    {
+        try
+        {
+            var i = 1;
+            if (i == 1)
+            {
+                g.GMethod1(p, p);
+            }
+        }
+        catch (Exception e)
+        {
+            return e.Message == "ToStringThrows"; // also testing here that we can return a value out of a catch
+        }
+        return false;
+    }
+
+    private static void ThrowException(Exception e)
+    {
+        throw e;
+    }
+
     private static void TestThreadStaticsForSingleThread()
     {
         var firstClass = new ClassWithFourThreadStatics();
@@ -1279,7 +1485,7 @@ internal static class Program
         using (disposable)
         {
         }
-        EndTest(disposable.Disposed);
+        EndTest(disposable.Count == 1);
     }
 
     private static void TestInitObjDouble()
@@ -1402,6 +1608,20 @@ internal static class Program
         EndTest(start == 0x0000828f);
     }
 
+    unsafe static void TestReverseDelegateInvoke()
+    {
+        // tests the try catch LLVM for reverse delegate invokes
+        DelegateToCallFromUnmanaged del = (char* charPtr) =>
+        {
+            return true;
+        };
+        int i = 1;
+        if (i == 0) // dont actually call it as it doesnt exist, just want the reverse delegate created & compiled
+        {
+            SomeExternalUmanagedFunction(del);
+        }
+    }
+
     static void TestInterlockedExchange()
     {
         StartTest("InterlockedExchange");
@@ -1418,6 +1638,12 @@ internal static class Program
         // something with MSB set
         return 0x828f;
     }
+
+    // there's no actual implementation for this we just want the reverse delegate created
+    [DllImport("*")]
+    internal static extern bool SomeExternalUmanagedFunction(DelegateToCallFromUnmanaged callback);
+
+    unsafe internal delegate bool DelegateToCallFromUnmanaged(char* charPtr);
 
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
@@ -1785,11 +2011,11 @@ class AnotherClassWithFourThreadStatics
 
 class DisposableTest : IDisposable
 {
-    public bool Disposed;
+    public int Count = 0;
 
     public void Dispose()
     {
-        Disposed = true;
+        Count++;
     }
 }
 

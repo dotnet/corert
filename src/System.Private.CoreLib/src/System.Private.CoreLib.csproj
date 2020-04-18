@@ -233,9 +233,9 @@
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal.CoreRT.cs"  />
+    <Compile Include="System\Runtime\InteropServices\Marshal.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(FeatureCominterop)' == 'true'" />
-    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.CoreRT.cs"  />
+    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeHandle.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="System\Runtime\Loader\AssemblyLoadContext.CoreRT.cs" />
@@ -562,6 +562,12 @@
     </Compile>
     <Compile Include="..\..\Common\src\Internal\Runtime\TransitionBlock.cs">
       <Link>Common\TransitionBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs" Condition="'$(Platform)'=='wasm'">
+      <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\StackFrameIterator.wasm.cs" Condition="'$(Platform)'=='wasm'">
+      <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.wasm.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">

@@ -92,7 +92,7 @@ namespace System.Runtime
         }
     }
 
-    internal static unsafe class EH
+    internal static unsafe partial class EH
     {
         internal static UIntPtr MaxSP
         {
