@@ -165,6 +165,15 @@ __forceinline UInt32 EEType::GetFieldOffset(EETypeField eField)
     }
     cbOffset += relativeOrFullPointerOffset;
 
+#if SUPPORTS_WRITABLE_DATA
+    // Followed by writable data.
+    if (eField == ETF_WritableData)
+    {
+        return cbOffset;
+    }
+    cbOffset += relativeOrFullPointerOffset;
+#endif
+
     // Followed by the pointer to the finalizer method.
     if (eField == ETF_Finalizer)
     {

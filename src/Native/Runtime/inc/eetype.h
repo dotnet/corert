@@ -16,6 +16,10 @@ struct TypeManagerHandle;
 class DynamicModule;
 struct EETypeRef;
 
+#if !defined(USE_PORTABLE_HELPERS)
+#define SUPPORTS_WRITABLE_DATA 1
+#endif
+
 //-------------------------------------------------------------------------------------------------
 // Array of these represents the interfaces implemented by a type
 
@@ -86,6 +90,7 @@ enum EETypeField
 {
     ETF_InterfaceMap,
     ETF_TypeManagerIndirection,
+    ETF_WritableData,
     ETF_Finalizer,
     ETF_OptionalFieldsPtr,
     ETF_SealedVirtualSlots,

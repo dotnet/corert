@@ -64,6 +64,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitShort(0);       // No interface map
             dataBuilder.EmitInt(_type.GetHashCode());
             OutputTypeManagerIndirection(factory, ref dataBuilder);
+            OutputWritableData(factory, ref dataBuilder);
             OutputOptionalFields(factory, ref dataBuilder);
 
             return dataBuilder.ToObjectData();

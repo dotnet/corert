@@ -301,7 +301,7 @@ namespace System.Runtime.CompilerServices
 
             if (eeTypePtr.IsNullable)
             {
-                return GetUninitializedObject(RuntimeTypeUnifier.GetRuntimeTypeForEEType(eeTypePtr.NullableType));
+                return GetUninitializedObject(Type.GetTypeFromEETypePtr(eeTypePtr.NullableType));
             }
 
             // Triggering the .cctor here is slightly different than desktop/CoreCLR, which 

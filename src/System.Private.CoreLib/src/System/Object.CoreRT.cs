@@ -43,7 +43,7 @@ namespace System
         [Intrinsic]
         public Type GetType()
         {
-            return RuntimeTypeUnifier.GetRuntimeTypeForEEType(EETypePtr);
+            return Type.GetTypeFromEETypePtr(EETypePtr);
         }
 
         internal EETypePtr EETypePtr
