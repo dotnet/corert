@@ -1692,7 +1692,6 @@ public class ClassForNre
     public int F;
 }
 
-
 public class ClassWithFloat
 {
     public static float F;
