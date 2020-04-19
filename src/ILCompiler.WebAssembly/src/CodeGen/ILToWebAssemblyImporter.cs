@@ -4210,20 +4210,30 @@ namespace Internal.IL
                 var resultAddress = builder.BuildIntCast(builder.BuildAlloca(LLVMTypeRef.Int32, "resultAddress"), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "castResultAddress");
                 HandleDirectCall(helperMethod, helperMethod.Signature, arguments, null, default(LLVMValueRef), 0, NullRefFunction.GetParam(0), builder, true, resultAddress, helperMethod);
 
-                var exceptionEntry = new ExpressionEntry(GetStackValueKind(nullRefType), "RhNewObject_return", resultAddress, nullRefType);
+                var exceptionEntry = new LoadExpressionEntry(GetStackValueKind(nullRefType), "RhNewObject_return", resultAddress, nullRefType);
 
                 var ctorDef = nullRefType.GetDefaultConstructor();
 
-                var constructedExceptionObject = HandleDirectCall(ctorDef, ctorDef.Signature, new StackEntry[] { exceptionEntry }, null, default(LLVMValueRef), 0, NullRefFunction.GetParam(0), builder, false, default(LLVMValueRef), ctorDef);
+                HandleDirectCall(ctorDef, ctorDef.Signature, new StackEntry[] { exceptionEntry }, null, default(LLVMValueRef), 0, NullRefFunction.GetParam(0), builder, false, default(LLVMValueRef), ctorDef);
 
-                EmitTrapCall(builder);
+                EnsureRhpThrowEx();
+                LLVMValueRef[] args = new LLVMValueRef[] { exceptionEntry.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), builder) };
+                builder.BuildCall(RhpThrowEx, args, "");
+                builder.BuildUnreachable();
                 builder.PositionAtEnd(retBlock);
                 builder.BuildRetVoid();
             }
 
-            LLVMValueRef shadowStack = _builder.BuildGEP(_currentFunclet.GetParam(0), new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)(GetTotalLocalOffset() + GetTotalParameterOffset()), false) }, String.Empty);
+            LLVMBasicBlockRef nextInstrBlock = default;
+            CallOrInvoke(false, _builder, GetCurrentTryRegion(), NullRefFunction, new List<LLVMValueRef> { GetShadowStack(), entry }, ref nextInstrBlock);
+        }
 
-            _builder.BuildCall(NullRefFunction, new LLVMValueRef[] { shadowStack, entry }, string.Empty);
+        void EnsureRhpThrowEx()
+        {
+            if (RhpThrowEx.Handle.Equals(IntPtr.Zero))
+            {
+                RhpThrowEx = Module.AddFunction("RhpThrowEx", LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }, false));
+            }
         }
 
         private LLVMValueRef GetInstanceFieldAddress(StackEntry objectEntry, FieldDesc field)
@@ -4248,7 +4258,7 @@ namespace Internal.IL
             {
                 untypedObjectValue = objectEntry.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder);
             }
-
+            ThrowIfNull(untypedObjectValue);
             if (field.Offset.AsInt == 0)
             {
                 return untypedObjectValue;
