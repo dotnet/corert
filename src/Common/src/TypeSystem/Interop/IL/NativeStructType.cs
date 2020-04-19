@@ -37,14 +37,6 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override Instantiation Instantiation
-        {
-            get
-            {
-                return ManagedStructType.Instantiation;
-            }
-        }
-
         public override PInvokeStringFormat PInvokeStringFormat
         {
             get
@@ -147,7 +139,6 @@ namespace Internal.TypeSystem.Interop
 
         public NativeStructType(ModuleDesc owningModule, MetadataType managedStructType, InteropStateManager interopStateManager)
         {
-            Debug.Assert(managedStructType.IsTypeDefinition);
             Debug.Assert(!managedStructType.IsGenericDefinition);
 
             Module = owningModule;

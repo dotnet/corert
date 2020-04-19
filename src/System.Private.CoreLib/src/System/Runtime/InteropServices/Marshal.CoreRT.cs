@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices
             if (String.IsNullOrEmpty(fieldName))
                 throw new ArgumentNullException(nameof(fieldName));
 
-            if (t.TypeHandle.IsGenericType() || t.TypeHandle.IsGenericTypeDefinition())
+            if (t.TypeHandle.IsGenericTypeDefinition())
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
             return new IntPtr(RuntimeAugments.InteropCallbacks.GetStructFieldOffset(t.TypeHandle, fieldName));
