@@ -342,6 +342,8 @@ internal static class Program
 
         TestInterlockedExchange();
 
+        TestThrowIfNull();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -1633,6 +1635,42 @@ internal static class Program
         EndTest(exInt1 == 2 && exLong1 == 3);
     }
 
+    static void TestThrowIfNull()
+    {
+        StartTest("TestThrowIfNull");
+        ClassForNre c = null;
+        var success = true;
+        try
+        {
+            var f = c.F; //field access
+            PrintLine("NRE Field access failed");
+            success = false;
+        }
+        catch(NullReferenceException)
+        {
+        }
+        catch(Exception)
+        {
+            success = false;
+        }
+
+        try
+        {
+            var f = c.ToString(); //method access
+            PrintLine("NRE method access failed");
+            success = false;
+        }
+        catch (NullReferenceException)
+        {
+        }
+        catch (Exception)
+        {
+            success = false;
+        }
+
+        EndTest(success);
+    }
+
     static ushort ReadUInt16()
     {
         // something with MSB set
@@ -1648,6 +1686,12 @@ internal static class Program
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
 }
+
+public class ClassForNre
+{
+    public int F;
+}
+
 
 public class ClassWithFloat
 {
