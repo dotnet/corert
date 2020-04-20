@@ -272,7 +272,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(closestDefType).HasFixedSlots)
+            if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(closestDefType).HasFixedSlots && factory.HasICastableInterface)
             {
                 foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
@@ -563,7 +563,7 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
             }
 
-            if (!(this is CanonicalDefinitionEETypeNode))
+            if (!(this is CanonicalDefinitionEETypeNode) && factory.HasICastableInterface)
             {
                 foreach (DefType itf in _type.RuntimeInterfaces)
                 {
@@ -999,7 +999,7 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected virtual void ComputeICastableVirtualMethodSlots(NodeFactory factory)
         {
-            if (_type.IsInterface || !EmitVirtualSlotsAndInterfaces)
+            if (_type.IsInterface || !EmitVirtualSlotsAndInterfaces || !factory.HasICastableInterface)
                 return;
 
             foreach (DefType itf in _type.RuntimeInterfaces)
