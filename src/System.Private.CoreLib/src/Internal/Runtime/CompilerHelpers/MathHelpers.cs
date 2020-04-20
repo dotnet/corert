@@ -387,5 +387,13 @@ namespace Internal.Runtime.CompilerHelpers
             throw new ArithmeticException();
         }
 #endif // TARGET_ARM
+
+#if TARGET_WASM
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static int ThrowCkFiniteExc()
+        {
+            throw new OverflowException();
+        }
+#endif // TARGET_WASM
     }
 }

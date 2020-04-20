@@ -4213,7 +4213,7 @@ namespace Internal.IL
                     throwBlock, retBlock);
                 builder.PositionAtEnd(throwBlock);
                 
-                CreateAndThrowException(builder, "NullReferenceException", NullRefFunction);
+                ThrowException(builder, "Internal.Runtime.CompilerHelpers", "ThrowHelpers", "ThrowNullReferenceException", NullRefFunction);
 
                 builder.PositionAtEnd(retBlock);
                 builder.BuildRetVoid();
@@ -4255,7 +4255,7 @@ namespace Internal.IL
 
                 builder.PositionAtEnd(throwBlock);
 
-                CreateAndThrowException(builder, "ArithmeticException", llvmCheckFunction);
+                ThrowException(builder, "Internal.Runtime.CompilerHelpers", "MathHelpers", "ThrowCkFiniteExc", llvmCheckFunction);
 
                 afterIf.MoveAfter(llvmCheckFunction.LastBasicBlock);
                 builder.PositionAtEnd(afterIf);
@@ -4266,32 +4266,12 @@ namespace Internal.IL
             CallOrInvoke(false, _builder, GetCurrentTryRegion(), llvmCheckFunction, new List<LLVMValueRef> { GetShadowStack(), value }, ref nextInstrBlock);
         }
 
-        void EnsureRhpThrowEx()
+        private void ThrowException(LLVMBuilderRef builder, string helperNamespace, string helperClass, string helperMethodName, LLVMValueRef throwingFunction)
         {
-            if (RhpThrowEx.Handle.Equals(IntPtr.Zero))
-            {
-                RhpThrowEx = Module.AddFunction("RhpThrowEx", LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }, false));
-            }
-        }
-
-        private void CreateAndThrowException(LLVMBuilderRef builder, string exceptionTypeName, LLVMValueRef throwingFunction)
-        {
-            MetadataType arithmeticType = _compilation.NodeFactory.TypeSystemContext.SystemModule.GetType("System", exceptionTypeName); // TODO: cache this and nullref types
-            var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(arithmeticType, true), GetEETypePtrTypeDesc()) };
-            MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime", RuntimeExport);
-            MethodDesc helperMethod = helperType.GetKnownMethod("RhNewObject", null);
-            var resultAddress = builder.BuildIntCast(builder.BuildAlloca(LLVMTypeRef.Int32, "resultAddress"), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "castResultAddress");
-            HandleDirectCall(helperMethod, helperMethod.Signature, arguments, null, default(LLVMValueRef), 0, throwingFunction.GetParam(0), builder, true, resultAddress, helperMethod);
-            var exceptionObject = new LoadExpressionEntry(GetStackValueKind(arithmeticType), "RhNewObject_return", resultAddress, arithmeticType);
-
-            var ctorDef = arithmeticType.GetDefaultConstructor();
-            HandleDirectCall(ctorDef, ctorDef.Signature, new StackEntry[] { exceptionObject }, null,
-                default(LLVMValueRef), 0,
-                throwingFunction.GetParam(0), builder, false, default(LLVMValueRef), ctorDef);
-
-            EnsureRhpThrowEx();
-            LLVMValueRef[] args = new LLVMValueRef[] { exceptionObject.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), builder) };
-            builder.BuildCall(RhpThrowEx, args, "");
+            MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType(helperNamespace, helperClass);
+            MethodDesc helperMethod = helperType.GetKnownMethod(helperMethodName, null);
+            LLVMValueRef fn = LLVMFunctionForMethod(helperMethod, helperMethod, null, false, null, null, out bool hasHiddenParam, out LLVMValueRef dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
+            builder.BuildCall(fn, new LLVMValueRef[] {throwingFunction.GetParam(0) }, string.Empty);
             builder.BuildUnreachable();
         }
 

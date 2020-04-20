@@ -29,7 +29,7 @@
     done:
       ldc.i4 0x00000000
       ret
-    .try try_start to try_end catch object handler handler_start to handler_end
+    .try try_start to try_end catch [mscorlib]System.OverflowException handler handler_start to handler_end
   }
 
   .method public static bool CkFinite64(float64) {
@@ -49,6 +49,6 @@
     done:
       ldc.i4 0x00000000
       ret
-    .try try_start to try_end catch [mscorlib]System.ArithmeticException handler handler_start to handler_end
+    .try try_start to try_end catch [mscorlib]System.OverflowException handler handler_start to handler_end
   }
 }
