@@ -46,6 +46,8 @@ namespace ILCompiler.DependencyAnalysis
     ///                 |
     /// [Relative ptr]  | Pointer to containing TypeManager indirection cell
     ///                 |
+    /// [Relative ptr]  | Pointer to writable data
+    ///                 |
     /// [Relative ptr]  | Pointer to finalizer method (optional)
     ///                 |
     /// [Relative ptr]  | Pointer to optional fields (optional)
@@ -491,6 +493,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             OutputTypeManagerIndirection(factory, ref objData);
+            OutputWritableData(factory, ref objData);
             OutputFinalizerMethod(factory, ref objData);
             OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
@@ -823,6 +826,21 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitReloc(factory.TypeManagerIndirection, RelocType.IMAGE_REL_BASED_RELPTR32);
             else
                 objData.EmitPointerReloc(factory.TypeManagerIndirection);
+        }
+
+        protected void OutputWritableData(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (factory.Target.SupportsRelativePointers)
+            {
+                Utf8StringBuilder writableDataBlobName = new Utf8StringBuilder();
+                writableDataBlobName.Append("__writableData");
+                writableDataBlobName.Append(factory.NameMangler.GetMangledTypeName(_type));
+
+                BlobNode blob = factory.UninitializedWritableDataBlob(writableDataBlobName.ToUtf8String(),
+                    WritableData.GetSize(factory.Target.PointerSize), WritableData.GetAlignment(factory.Target.PointerSize));
+
+                objData.EmitReloc(blob, RelocType.IMAGE_REL_BASED_RELPTR32);
+            }
         }
 
         protected void OutputOptionalFields(NodeFactory factory, ref ObjectDataBuilder objData)

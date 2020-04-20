@@ -43,11 +43,13 @@ namespace Internal.Reflection.Core.NonPortable
         //
         // Retrieves the unified Type object for given RuntimeTypeHandle (this is basically the Type.GetTypeFromHandle() api without the input validation.)
         //
-        public static Type GetTypeForRuntimeTypeHandle(RuntimeTypeHandle runtimeTypeHandle)
-            => RuntimeTypeHandleToTypeCache.Table.GetOrAdd(runtimeTypeHandle.RawValue);
-
         internal static Type GetRuntimeTypeForEEType(EETypePtr eeType)
-            => RuntimeTypeHandleToTypeCache.Table.GetOrAdd(eeType.RawValue);
+        {
+            // If writable data is supported, we shouldn't be using the hashtable - the runtime type
+            // is accessible through a couple indirections from the EETypePtr which is much faster.
+            Debug.Assert(!Internal.Runtime.EEType.SupportsWritableData);
+            return RuntimeTypeHandleToTypeCache.Table.GetOrAdd(eeType.RawValue);
+        }
 
         //
         // TypeTable mapping raw RuntimeTypeHandles (normalized or otherwise) to Types.
@@ -65,51 +67,54 @@ namespace Internal.Reflection.Core.NonPortable
             protected sealed override Type Factory(IntPtr rawRuntimeTypeHandleKey)
             {
                 EETypePtr eeType = new EETypePtr(rawRuntimeTypeHandleKey);
-                RuntimeTypeHandle runtimeTypeHandle = new RuntimeTypeHandle(eeType);
-
-                // Desktop compat: Allows Type.GetTypeFromHandle(default(RuntimeTypeHandle)) to map to null.
-                if (runtimeTypeHandle.IsNull)
-                    return null;
-
-                ReflectionExecutionDomainCallbacks callbacks = RuntimeAugments.Callbacks;
-
-                if (eeType.IsDefType)
-                {
-                    if (eeType.IsGenericTypeDefinition)
-                    {
-                        return callbacks.GetNamedTypeForHandle(runtimeTypeHandle, isGenericTypeDefinition: true);
-                    }
-                    else if (eeType.IsGeneric)
-                    {
-                        return callbacks.GetConstructedGenericTypeForHandle(runtimeTypeHandle);
-                    }
-                    else
-                    {
-                        return callbacks.GetNamedTypeForHandle(runtimeTypeHandle, isGenericTypeDefinition: false);
-                    }
-                }
-                else if (eeType.IsArray)
-                {
-                    if (!eeType.IsSzArray)
-                        return callbacks.GetMdArrayTypeForHandle(runtimeTypeHandle, eeType.ArrayRank);
-                    else
-                        return callbacks.GetArrayTypeForHandle(runtimeTypeHandle);
-                }
-                else if (eeType.IsPointer)
-                {
-                    return callbacks.GetPointerTypeForHandle(runtimeTypeHandle);
-                }
-                else if (eeType.IsByRef)
-                {
-                    return callbacks.GetByRefTypeForHandle(runtimeTypeHandle);
-                }
-                else
-                {
-                    throw new ArgumentException(SR.Arg_InvalidRuntimeTypeHandle);
-                }
+                return GetRuntimeTypeBypassCache(eeType);
             }
 
             public static readonly RuntimeTypeHandleToTypeCache Table = new RuntimeTypeHandleToTypeCache();
+        }
+
+        // This bypasses the CoreLib's unifier, but there's another unifier deeper within the reflection stack:
+        // this code is safe to call without locking. See comment above.
+        public static Type GetRuntimeTypeBypassCache(EETypePtr eeType)
+        {
+            RuntimeTypeHandle runtimeTypeHandle = new RuntimeTypeHandle(eeType);
+
+            ReflectionExecutionDomainCallbacks callbacks = RuntimeAugments.Callbacks;
+
+            if (eeType.IsDefType)
+            {
+                if (eeType.IsGenericTypeDefinition)
+                {
+                    return callbacks.GetNamedTypeForHandle(runtimeTypeHandle, isGenericTypeDefinition: true);
+                }
+                else if (eeType.IsGeneric)
+                {
+                    return callbacks.GetConstructedGenericTypeForHandle(runtimeTypeHandle);
+                }
+                else
+                {
+                    return callbacks.GetNamedTypeForHandle(runtimeTypeHandle, isGenericTypeDefinition: false);
+                }
+            }
+            else if (eeType.IsArray)
+            {
+                if (!eeType.IsSzArray)
+                    return callbacks.GetMdArrayTypeForHandle(runtimeTypeHandle, eeType.ArrayRank);
+                else
+                    return callbacks.GetArrayTypeForHandle(runtimeTypeHandle);
+            }
+            else if (eeType.IsPointer)
+            {
+                return callbacks.GetPointerTypeForHandle(runtimeTypeHandle);
+            }
+            else if (eeType.IsByRef)
+            {
+                return callbacks.GetByRefTypeForHandle(runtimeTypeHandle);
+            }
+            else
+            {
+                throw new ArgumentException(SR.Arg_InvalidRuntimeTypeHandle);
+            }
         }
     }
 }

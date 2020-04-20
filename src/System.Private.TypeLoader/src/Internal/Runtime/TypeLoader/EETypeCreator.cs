@@ -144,6 +144,7 @@ namespace Internal.Runtime.TypeLoader
             bool successful = false;
             IntPtr eeTypePtrPlusGCDesc = IntPtr.Zero;
             IntPtr dynamicDispatchMapPtr = IntPtr.Zero;
+            IntPtr writableDataPtr = IntPtr.Zero;
             DynamicModule* dynamicModulePtr = null;
             IntPtr gcStaticData = IntPtr.Zero;
             IntPtr gcStaticsIndirection = IntPtr.Zero;
@@ -566,6 +567,13 @@ namespace Internal.Runtime.TypeLoader
                     }
                 }
 
+                if (EEType.SupportsWritableData)
+                {
+                    writableDataPtr = MemoryHelpers.AllocateMemory(WritableData.GetSize(IntPtr.Size));
+                    MemoryHelpers.Memset(writableDataPtr, WritableData.GetSize(IntPtr.Size), 0);
+                    pEEType->WritableData = writableDataPtr;
+                }
+
                 // Create a new DispatchMap for the type
                 if (requiresDynamicDispatchMap)
                 {
@@ -711,6 +719,8 @@ namespace Internal.Runtime.TypeLoader
                         MemoryHelpers.FreeMemory(genericComposition);
                     if (nonGcStaticData != IntPtr.Zero)
                         MemoryHelpers.FreeMemory(nonGcStaticData);
+                    if (writableDataPtr != IntPtr.Zero)
+                        MemoryHelpers.FreeMemory(writableDataPtr);
                 }
             }
         }

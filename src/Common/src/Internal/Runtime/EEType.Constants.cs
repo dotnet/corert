@@ -184,6 +184,7 @@ namespace Internal.Runtime
     {
         ETF_InterfaceMap,
         ETF_TypeManagerIndirection,
+        ETF_WritableData,
         ETF_Finalizer,
         ETF_OptionalFieldsPtr,
         ETF_SealedVirtualSlots,
@@ -295,5 +296,11 @@ namespace Internal.Runtime
     internal static class StringComponentSize
     {
         public const int Value = sizeof(char);
+    }
+
+    internal static class WritableData
+    {
+        public static int GetSize(int pointerSize) => pointerSize;
+        public static int GetAlignment(int pointerSize) => pointerSize;
     }
 }

@@ -184,6 +184,18 @@ namespace Internal.Runtime
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether writable data is supported.
+        /// </summary>
+        internal static bool SupportsWritableData
+        {
+            get
+            {
+                // For now just key this off of SupportsRelativePointer to avoid this on both CppCodegen and WASM.
+                return SupportsRelativePointers;
+            }
+        }
+
         private ushort _usComponentSize;
         private ushort _usFlags;
         private uint _uBaseSize;
@@ -1248,6 +1260,35 @@ namespace Internal.Runtime
         }
 #endif
 
+        /// <summary>
+        /// Gets a pointer to a segment of writable memory associated with this EEType.
+        /// The purpose of the segment is controlled by the class library. The runtime doesn't
+        /// use this memory for any purpose.
+        /// </summary>
+        internal IntPtr WritableData
+        {
+            get
+            {
+                Debug.Assert(SupportsWritableData);
+
+                uint offset = GetFieldOffset(EETypeField.ETF_WritableData);
+
+                if (!IsDynamicType)
+                    return GetField<RelativePointer>(offset).Value;
+                else
+                    return GetField<Pointer>(offset).Value;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsDynamicType && SupportsWritableData);
+
+                uint cbOffset = GetFieldOffset(EETypeField.ETF_WritableData);
+                *(IntPtr*)((byte*)Unsafe.AsPointer(ref this) + cbOffset) = value;
+            }
+#endif
+        }
+
         internal unsafe EETypeRareFlags RareFlags
         {
             get
@@ -1318,6 +1359,16 @@ namespace Internal.Runtime
                 return cbOffset;
             }
             cbOffset += relativeOrFullPointerOffset;
+
+            // Followed by writable data.
+            if (SupportsWritableData)
+            {
+                if (eField == EETypeField.ETF_WritableData)
+                {
+                    return cbOffset;
+                }
+                cbOffset += relativeOrFullPointerOffset;
+            }
 
             // Followed by the pointer to the finalizer method.
             if (eField == EETypeField.ETF_Finalizer)
@@ -1421,8 +1472,12 @@ namespace Internal.Runtime
 
         public ref T GetField<T>(EETypeField eField)
         {
-            fixed (EEType* pThis = &this)
-                return ref Unsafe.AddByteOffset(ref Unsafe.As<EEType, T>(ref *pThis), (IntPtr)GetFieldOffset(eField));
+            return ref Unsafe.As<byte, T>(ref *((byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(eField)));
+        }
+
+        public ref T GetField<T>(uint offset)
+        {
+            return ref Unsafe.As<byte, T>(ref *((byte*)Unsafe.AsPointer(ref this) + offset));
         }
 
 #if TYPE_LOADER_IMPLEMENTATION
@@ -1441,6 +1496,7 @@ namespace Internal.Runtime
                 (IntPtr.Size * cVirtuals) +
                 (sizeof(EEInterfaceInfo) * cInterfaces) +
                 sizeof(IntPtr) + // TypeManager
+                (SupportsWritableData ? sizeof(IntPtr) : 0) + // WritableData
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +

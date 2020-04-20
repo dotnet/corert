@@ -16,6 +16,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
+using Internal.Runtime.CompilerServices;
+
 using EEType = Internal.Runtime.EEType;
 using EETypeElementType = Internal.Runtime.EETypeElementType;
 using EETypeRef = Internal.Runtime.EETypeRef;
@@ -434,6 +436,12 @@ namespace System
             {
                 return RuntimeImports.GetRhCorElementTypeInfo(CorElementType);
             }
+        }
+
+        internal ref T GetWritableData<T>() where T : unmanaged
+        {
+            Debug.Assert(Internal.Runtime.WritableData.GetSize(IntPtr.Size) == sizeof(T));
+            return ref Unsafe.AsRef<T>((void*)_value->WritableData);
         }
 
         [Intrinsic]
