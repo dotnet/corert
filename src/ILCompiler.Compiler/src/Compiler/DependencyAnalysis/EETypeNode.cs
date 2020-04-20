@@ -272,12 +272,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             DefType closestDefType = _type.GetClosestDefType();
 
-            if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(closestDefType).HasFixedSlots && factory.HasICastableInterface)
+            if (_type.RuntimeInterfaces.Length > 0 && !factory.VTable(closestDefType).HasFixedSlots)
             {
                 foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
                     // If the type implements ICastable, the methods are implicitly necessary
-                    if (implementedInterface == factory.ICastableInterface)
+                    if (factory.IsICastableInterface(implementedInterface))
                     {
                         MethodDesc isInstDecl = implementedInterface.GetKnownMethod("IsInstanceOfInterface", null);
                         MethodDesc getImplTypeDecl = implementedInterface.GetKnownMethod("GetImplType", null);
@@ -563,11 +563,11 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
             }
 
-            if (!(this is CanonicalDefinitionEETypeNode) && factory.HasICastableInterface)
+            if (!(this is CanonicalDefinitionEETypeNode))
             {
                 foreach (DefType itf in _type.RuntimeInterfaces)
                 {
-                    if (itf == factory.ICastableInterface)
+                    if (factory.IsICastableInterface(itf))
                     {
                         flags |= (UInt16)EETypeFlags.ICastableFlag;
                         break;
@@ -999,12 +999,12 @@ namespace ILCompiler.DependencyAnalysis
         /// </summary>
         protected virtual void ComputeICastableVirtualMethodSlots(NodeFactory factory)
         {
-            if (_type.IsInterface || !EmitVirtualSlotsAndInterfaces || !factory.HasICastableInterface)
+            if (_type.IsInterface || !EmitVirtualSlotsAndInterfaces)
                 return;
 
             foreach (DefType itf in _type.RuntimeInterfaces)
             {
-                if (itf == factory.ICastableInterface)
+                if (factory.IsICastableInterface(itf))
                 {
                     MethodDesc isInstDecl = itf.GetKnownMethod("IsInstanceOfInterface", null);
                     MethodDesc getImplTypeDecl = itf.GetKnownMethod("GetImplType", null);
