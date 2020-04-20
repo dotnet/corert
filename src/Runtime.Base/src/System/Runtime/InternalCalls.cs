@@ -296,18 +296,6 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe EEType* RhpGetNullableEEType(EEType* pEEType);
 
-        // For an ICastable type return a pointer to code that implements ICastable.IsInstanceOfInterface.
-        [RuntimeImport(Redhawk.BaseName, "RhpGetICastableIsInstanceOfInterfaceMethod")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe IntPtr RhpGetICastableIsInstanceOfInterfaceMethod(EEType* pEEType);
-
-        // For an ICastable type return a pointer to code that implements ICastable.GetImplType.
-        [RuntimeImport(Redhawk.BaseName, "RhpGetICastableGetImplTypeMethod")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe IntPtr RhpGetICastableGetImplTypeMethod(EEType* pEEType);
-
         [RuntimeImport(Redhawk.BaseName, "RhpCallCatchFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]

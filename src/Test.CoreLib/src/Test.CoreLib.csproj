@@ -170,9 +170,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
       <Link>System\Runtime\CompilerServices\IntrinsicAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\ICastable.cs">
-      <Link>System\Runtime\CompilerServices\ICastable.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IsVolatile.cs">
       <Link>System\Runtime\CompilerServices\IsVolatile.cs</Link>
     </Compile>

@@ -170,9 +170,6 @@ private:
         // This type contain gc pointers
         HasPointersFlag         = 0x0020,
 
-        // Type implements ICastable to allow dynamic resolution of interface casts.
-        ICastableTypeFlag       = 0x0040,
-
         // This type is generic and one or more of it's type parameters is co- or contra-variant. This only
         // applies to interface and delegate types.
         GenericVarianceFlag     = 0x0080,

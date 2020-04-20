@@ -56,7 +56,7 @@ namespace System
 
     public class Exception { }
 
-    public class __ComObject : Private.CompilerServices.ICastable { }
+    public class __ComObject { }
 
     public delegate void Action();
 
@@ -93,11 +93,6 @@ namespace System.Collections.Generic
 
     public interface IEnumerable<T>
     { }
-}
-
-namespace System.Private.CompilerServices
-{
-    internal interface ICastable { }
 }
 
 namespace System.Runtime.InteropServices

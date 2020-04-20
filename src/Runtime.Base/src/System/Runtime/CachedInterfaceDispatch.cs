@@ -116,29 +116,9 @@ namespace System.Runtime
                                                                               cellInfo.InterfaceType.ToPointer(),
                                                                               cellInfo.InterfaceSlot);
 
-                if (pTargetCode == IntPtr.Zero && pInstanceType->IsICastable)
+                if (pTargetCode == IntPtr.Zero)
                 {
-                    // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-                    // Dispatch not resolved through normal dispatch map, try using the ICastable
-                    // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
-                    // dispatch since we know the method address statically. We ignore any cast error exception
-                    // object passed back on failure (result == false) since IsInstanceOfInterface never throws.
-                    IntPtr pfnIsInstanceOfInterface = pInstanceType->ICastableIsInstanceOfInterfaceMethod;
-                    Exception castError = null;
-                    if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, pObject, cellInfo.InterfaceType.ToPointer(), out castError))
-                    {
-                        IntPtr pfnGetImplTypeMethod = pInstanceType->ICastableGetImplTypeMethod;
-                        pResolvingInstanceType = (EEType*)CalliIntrinsics.Call<IntPtr>(pfnGetImplTypeMethod, pObject, new IntPtr(cellInfo.InterfaceType.ToPointer()));
-                        pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType,
-                                                                                 cellInfo.InterfaceType.ToPointer(),
-                                                                                 cellInfo.InterfaceSlot);
-                    }
-                    else
-                    // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-                    {
-                        // Dispatch not resolved through normal dispatch map, using the CastableObject path
-                        pTargetCode = InternalCalls.RhpGetCastableObjectDispatchHelper();
-                    }
+                    pTargetCode = InternalCalls.RhpGetCastableObjectDispatchHelper();
                 }
 
                 return pTargetCode;

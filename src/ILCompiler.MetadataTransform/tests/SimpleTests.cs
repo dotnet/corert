@@ -40,29 +40,6 @@ namespace MetadataTransformTests
         }
 
         [Fact]
-        public void TestBlockedInterface()
-        {
-            // __ComObject implements ICastable, which is a metadata blocked type and should not show
-            // up in the __ComObject interface list.
-
-            var policy = new SingleFileMetadataPolicy();
-            var transformResult = MetadataTransform.Run(policy, new[] { _systemModule });
-
-            Cts.MetadataType icastable = _systemModule.GetType("System.Private.CompilerServices", "ICastable");
-            Cts.MetadataType comObject = _systemModule.GetType("System", "__ComObject");
-            Assert.Equal(1, comObject.ExplicitlyImplementedInterfaces.Length);
-            Assert.Equal(icastable, comObject.ExplicitlyImplementedInterfaces[0]);
-
-            Assert.Null(transformResult.GetTransformedTypeDefinition(icastable));
-            Assert.Null(transformResult.GetTransformedTypeReference(icastable));
-
-            TypeDefinition comObjectRecord = transformResult.GetTransformedTypeDefinition(comObject);
-            Assert.NotNull(comObjectRecord);
-            Assert.Equal(comObject.Name, comObjectRecord.Name.Value);
-            Assert.Equal(0, comObjectRecord.Interfaces.Count);
-        }
-
-        [Fact]
         public void TestStandaloneSignatureGeneration()
         {
             var transformResult = MetadataTransform.Run(new SingleFileMetadataPolicy(), new[] { _systemModule });

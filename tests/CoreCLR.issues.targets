@@ -261,7 +261,6 @@
     <ExcludeList Include="$(XunitTestBinBase)\Interop\RefInt\RefIntTest\RefIntTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\Interop\StringMarshalling\LPTSTR\LPTSTRTest\LPTSTRTest.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\IL\PInvokeTail\TailWinApi\TailWinApi.*" />
-    <ExcludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\instance01\instance01.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\instance02\instance02.*" />
     <ExcludeList Include="$(XunitTestBinBase)\JIT\Generics\pinvoke\instance03\instance03.*" />
