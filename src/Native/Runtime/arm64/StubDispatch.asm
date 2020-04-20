@@ -8,7 +8,6 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-    EXTERN RhpCastableObjectResolve
     EXTERN RhpCidResolve
     EXTERN RhpUniversalTransition_DebugStepTailCall
 
@@ -60,19 +59,6 @@ SECTIONREL_t_TLS_DispatchCell
     MEND
 
 
-    LEAF_ENTRY RhpCastableObjectDispatch_CommonStub
-        ;; Custom calling convention:
-        ;;      xip0 has pointer to the current thunk's data block
-
-        ;; store dispatch cell address in thread static
-        ldr     xip1, [xip0]
-        SET_TLS_DISPATCH_CELL
-
-        ;; Now load the target address and jump to it.
-        ldr     x9, [xip0, #8]
-        br      x9
-    LEAF_END RhpCastableObjectDispatch_CommonStub
-
     LEAF_ENTRY RhpTailCallTLSDispatchCell
         ;; Load the dispatch cell out of the TLS variable
         GET_TLS_DISPATCH_CELL
@@ -81,22 +67,6 @@ SECTIONREL_t_TLS_DispatchCell
         ldr     x9, [xip1]
         br      x9
     LEAF_END RhpTailCallTLSDispatchCell
-
-    LEAF_ENTRY RhpCastableObjectDispatchHelper_TailCalled
-        ;; Load the dispatch cell out of the TLS variable
-        GET_TLS_DISPATCH_CELL
-        b       RhpCastableObjectDispatchHelper
-    LEAF_END RhpCastableObjectDispatchHelper_TailCalled
-
-    LEAF_ENTRY  RhpCastableObjectDispatchHelper
-        ;; The address of the indirection cell is passed to this function in the xip1
-        ;; The calling convention of the universal thunk is that the parameter
-        ;; for the universal thunk target is to be placed in xip1
-        ;; and the universal thunk target address is to be placed in xip0
-        ldr     xip0, =RhpCastableObjectResolve
-
-        b       RhpUniversalTransition_DebugStepTailCall
-    LEAF_END RhpCastableObjectDispatchHelper
 
 
 ;;

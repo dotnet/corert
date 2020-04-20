@@ -19,15 +19,6 @@ namespace System.Runtime
             IntPtr locationOfThisPointer = callerTransitionBlockParam + TransitionBlock.GetThisOffset();
             object pObject = Unsafe.As<IntPtr, object>(ref *(IntPtr*)locationOfThisPointer);
             IntPtr dispatchResolveTarget = RhpCidResolve_Worker(pObject, pCell);
-
-            if (dispatchResolveTarget == InternalCalls.RhpGetCastableObjectDispatchHelper())
-            {
-                // Swap it out for the one which reads the TLS slot to put the cell in a consistent
-                // location
-                dispatchResolveTarget = InternalCalls.RhpGetCastableObjectDispatchHelper_TailCalled();
-                InternalCalls.RhpSetTLSDispatchCell(pCell);
-            }
-
             return dispatchResolveTarget;
         }
 
@@ -68,11 +59,6 @@ namespace System.Runtime
                 pTargetCode = RhpCidResolve_Worker(pObject, pCell);
             }
 
-            // Special case for CastableOjbects: we use a thunk for the call. The thunk deals with putting
-            // the correct cell address value in the TLS variable used by castable objects dispatch.
-            if (pTargetCode == InternalCalls.RhpGetCastableObjectDispatchHelper())
-                pTargetCode = CastableObjectSupport.GetCastableObjectDispatchCellThunk(pInstanceType, pCell);
-
             return pTargetCode;
         }
 
@@ -108,19 +94,12 @@ namespace System.Runtime
 
             if (cellInfo.CellType == DispatchCellType.InterfaceAndSlot)
             {
-                // Type whose DispatchMap is used. Usually the same as the above but for types which implement ICastable
-                // we may repeat this process with an alternate type.
+                // Type whose DispatchMap is used.
                 EEType* pResolvingInstanceType = pInstanceType;
 
                 IntPtr pTargetCode = DispatchResolve.FindInterfaceMethodImplementationTarget(pResolvingInstanceType,
                                                                               cellInfo.InterfaceType.ToPointer(),
                                                                               cellInfo.InterfaceSlot);
-
-                if (pTargetCode == IntPtr.Zero)
-                {
-                    pTargetCode = InternalCalls.RhpGetCastableObjectDispatchHelper();
-                }
-
                 return pTargetCode;
             }
             else if (cellInfo.CellType == DispatchCellType.VTableOffset)

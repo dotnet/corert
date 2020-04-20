@@ -554,22 +554,4 @@ COOP_PINVOKE_HELPER(void*, RhpGetTailCallTLSDispatchCell, ())
     return (void *)(&RhpTailCallTLSDispatchCell);
 }
 
-extern "C" void RhpCastableObjectDispatchHelper();
-COOP_PINVOKE_HELPER(void*, RhpGetCastableObjectDispatchHelper, ())
-{
-    return (void *)(&RhpCastableObjectDispatchHelper);
-}
-
-extern "C" void RhpCastableObjectDispatchHelper_TailCalled();
-COOP_PINVOKE_HELPER(void*, RhpGetCastableObjectDispatchHelper_TailCalled, ())
-{
-    return (void *)(&RhpCastableObjectDispatchHelper_TailCalled);
-}
-
-extern "C" void RhpCastableObjectDispatch_CommonStub();
-COOP_PINVOKE_HELPER(void*, RhpGetCastableObjectDispatch_CommonStub, ())
-{
-    return (void *)(&RhpCastableObjectDispatch_CommonStub);
-}
-
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

@@ -107,10 +107,7 @@ namespace Internal.Runtime
         /// </summary>
         RequiresAlign8Flag = 0x00000001,
 
-        /// <summary>
-        /// Type implements ICastable to allow dynamic resolution of interface casts.
-        /// </summary>
-        UNUSED1 = 0x00000002,
+        // UNUSED1 = 0x00000002,
 
         // UNUSED = 0x00000004,
 
@@ -123,10 +120,7 @@ namespace Internal.Runtime
         /// </summary>
         HasCctorFlag = 0x0000020,
 
-        /// <summary>
-        /// Old unused flag
-        /// </summary>
-        UNUSED2 = 0x00000040,
+        // UNUSED2 = 0x00000040,
 
         /// <summary>
         /// This EEType was constructed from a universal canonical template, and has

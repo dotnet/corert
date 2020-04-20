@@ -15,10 +15,7 @@
 .rodata
 AssertMsg:                                       .asciz "__FILE__:%s: %s is not implemented\n"
 FileName:                                        .asciz "StubDispatch.S"
-RhpCastableObjectDispatch_CommonStubName:        .asciz "RhpCastableObjectDispatch_CommonStub"
 RhpTailCallTLSDispatchCellName:                  .asciz "RhpTailCallTLSDispatchCell"
-RhpCastableObjectDispatchHelper_TailCalledName:  .asciz "RhpCastableObjectDispatchHelper_TailCalled"
-RhpCastableObjectDispatchHelperName:             .asciz "RhpCastableObjectDispatchHelper"
 RhpVTableOffsetDispatchName:                     .asciz "RhpVTableOffsetDispatch"
 .text
 .macro GEN_ASSERT_FUNC func
@@ -26,15 +23,6 @@ RhpVTableOffsetDispatchName:                     .asciz "RhpVTableOffsetDispatch
 .endm
 #endif
 
-
-LEAF_ENTRY RhpCastableObjectDispatch_CommonStub, _TEXT
-#ifdef _DEBUG
-        GEN_ASSERT_FUNC RhpCastableObjectDispatch_CommonStubName
-#else
-        // UNIXTODO: Implement this function
-        EMIT_BREAKPOINT
-#endif
-LEAF_END RhpCastableObjectDispatch_CommonStub, _TEXT
 
 LEAF_ENTRY RhpTailCallTLSDispatchCell, _TEXT
 #ifdef _DEBUG
@@ -44,24 +32,6 @@ LEAF_ENTRY RhpTailCallTLSDispatchCell, _TEXT
         EMIT_BREAKPOINT
 #endif
 LEAF_END RhpTailCallTLSDispatchCell, _TEXT
-
-LEAF_ENTRY RhpCastableObjectDispatchHelper_TailCalled, _TEXT
-#ifdef _DEBUG
-        GEN_ASSERT_FUNC RhpCastableObjectDispatchHelper_TailCalledName
-#else
-        // UNIXTODO: Implement this function
-        EMIT_BREAKPOINT
-#endif
-LEAF_END RhpCastableObjectDispatchHelper_TailCalled, _TEXT
-
-LEAF_ENTRY RhpCastableObjectDispatchHelper, _TEXT
-#ifdef _DEBUG
-        GEN_ASSERT_FUNC RhpCastableObjectDispatchHelperName
-#else
-        // UNIXTODO: Implement this function
-        EMIT_BREAKPOINT
-#endif
-LEAF_END RhpCastableObjectDispatchHelper, _TEXT
 
 // Macro that generates a stub consuming a cache with the given number of entries.
 .macro DEFINE_INTERFACE_DISPATCH_STUB entries
@@ -103,7 +73,7 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         // epilogs imposed by the unwind code macros.
 LOCAL_LABEL(99_\entries):
         // R2 contains address of the cache block. We store it in the red zone in case the target we jump
-        // to needs it. Currently the RhpCastableObjectDispatchHelper is the only such target.
+        // to needs it.
         // R12 contains the target address to jump to
         EPILOG_POP  {r1}
         // The red zone is only 8 bytes long, so we have to store r2 into it between the pops.
