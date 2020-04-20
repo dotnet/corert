@@ -4213,7 +4213,7 @@ namespace Internal.IL
                     throwBlock, retBlock);
                 builder.PositionAtEnd(throwBlock);
                 
-                ThrowException(builder, "Internal.Runtime.CompilerHelpers", "ThrowHelpers", "ThrowNullReferenceException", NullRefFunction);
+                ThrowException(builder, "ThrowHelpers", "ThrowNullReferenceException", NullRefFunction);
 
                 builder.PositionAtEnd(retBlock);
                 builder.BuildRetVoid();
@@ -4255,7 +4255,7 @@ namespace Internal.IL
 
                 builder.PositionAtEnd(throwBlock);
 
-                ThrowException(builder, "Internal.Runtime.CompilerHelpers", "MathHelpers", "ThrowCkFiniteExc", llvmCheckFunction);
+                ThrowException(builder, "ThrowHelpers", "ThrowOverflowException", llvmCheckFunction);
 
                 afterIf.MoveAfter(llvmCheckFunction.LastBasicBlock);
                 builder.PositionAtEnd(afterIf);
@@ -4266,9 +4266,9 @@ namespace Internal.IL
             CallOrInvoke(false, _builder, GetCurrentTryRegion(), llvmCheckFunction, new List<LLVMValueRef> { GetShadowStack(), value }, ref nextInstrBlock);
         }
 
-        private void ThrowException(LLVMBuilderRef builder, string helperNamespace, string helperClass, string helperMethodName, LLVMValueRef throwingFunction)
+        private void ThrowException(LLVMBuilderRef builder, string helperClass, string helperMethodName, LLVMValueRef throwingFunction)
         {
-            MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType(helperNamespace, helperClass);
+            MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", helperClass);
             MethodDesc helperMethod = helperType.GetKnownMethod(helperMethodName, null);
             LLVMValueRef fn = LLVMFunctionForMethod(helperMethod, helperMethod, null, false, null, null, out bool hasHiddenParam, out LLVMValueRef dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
             builder.BuildCall(fn, new LLVMValueRef[] {throwingFunction.GetParam(0) }, string.Empty);
