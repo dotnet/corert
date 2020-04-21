@@ -56,7 +56,7 @@ namespace System
 
     public class Exception { }
 
-    public class __ComObject { }
+    public class __ComObject : Private.CompilerServices.IBlockedInterface { }
 
     public delegate void Action();
 
@@ -93,6 +93,11 @@ namespace System.Collections.Generic
 
     public interface IEnumerable<T>
     { }
+}
+
+namespace System.Private.CompilerServices
+{
+    internal interface IBlockedInterface { }
 }
 
 namespace System.Runtime.InteropServices

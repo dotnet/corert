@@ -31,6 +31,9 @@ namespace MetadataTransformTests
 
         public bool IsBlocked(MetadataType typeDef)
         {
+            if (typeDef.Name == "IBlockedInterface")
+                return true;
+
             if (typeDef.HasCustomAttribute("System.Runtime.CompilerServices", "__BlockReflectionAttribute"))
                 return true;
 
