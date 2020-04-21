@@ -56,7 +56,7 @@ namespace System
 
     public class Exception { }
 
-    public class __ComObject : Private.CompilerServices.IBlockedInterface { }
+    public class BlockedObject : Private.CompilerServices.IBlockedInterface { }
 
     public delegate void Action();
 
