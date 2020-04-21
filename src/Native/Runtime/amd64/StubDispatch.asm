@@ -11,8 +11,6 @@ ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 EXTERN RhpCidResolve : PROC
 EXTERN RhpUniversalTransition_DebugStepTailCall : PROC
 
-EXTERN  _tls_index:DWORD
-
 ;; Macro that generates code to check a single cache entry.
 CHECK_CACHE_ENTRY macro entry
 NextLabel textequ @CatStr( Attempt, %entry+1 )

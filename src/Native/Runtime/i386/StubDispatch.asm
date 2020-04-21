@@ -16,8 +16,6 @@ ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 EXTERN RhpCidResolve : PROC
 EXTERN _RhpUniversalTransition_DebugStepTailCall@0 : PROC
 
-EXTERN  __tls_index:DWORD
-
 
 ;; Macro that generates code to check a single cache entry.
 CHECK_CACHE_ENTRY macro entry
