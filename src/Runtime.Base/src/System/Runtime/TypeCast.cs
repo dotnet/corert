@@ -255,65 +255,7 @@ namespace System.Runtime
             if (CastCache.AreTypesAssignableInternal_SourceNotTarget_BoxedSource(pObjType, pTargetType, null))
                 return obj;
 
-            // If object type implements ICastable then there's one more way to check whether it implements
-            // the interface.
-            if (pObjType->IsICastable && IsInstanceOfInterfaceViaCastableObject(obj, pTargetType))
-                return obj;
-
             return null;
-        }
-
-        private static unsafe bool IsInstanceOfInterfaceViaCastableObject(object obj, EEType* pTargetType)
-        {
-            // To avoid stack overflow, it is not possible to implement the ICastableObject interface
-            // itself via ICastableObject
-            if (pTargetType->IsICastable)
-                return false;
-
-            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-            // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
-            // dispatch since we know the method address statically. We ignore any cast error exception
-            // object passed back on failure (result == false) since IsInstanceOfInterface never throws.
-            IntPtr pfnIsInstanceOfInterface = obj.EEType->ICastableIsInstanceOfInterfaceMethod;
-            Exception castError = null;
-            if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, obj, pTargetType, out castError))
-                return true;
-
-            if (obj is CastableObjectSupport.ICastableObject)
-            {
-                // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-
-                // We ignore any cast error exception
-                // object passed back on failure (result == false) since IsInstanceOfInterface never throws.
-                CastableObjectSupport.ICastableObject castableObject = (CastableObjectSupport.ICastableObject)obj;
-                Exception castableObjectCastError = null;
-                if (CastableObjectSupport.GetCastableTargetIfPossible(castableObject, pTargetType, false, ref castableObjectCastError) != null)
-                    return true;
-
-                // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-            }
-            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-            return false;
-        }
-
-        private static unsafe bool IsInstanceOfInterfaceViaCastableObjectWithException(object obj, EEType* pTargetType, ref Exception castError)
-        {
-            // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-            // Call the ICastable.IsInstanceOfInterface method directly rather than via an interface
-            // dispatch since we know the method address statically.
-            IntPtr pfnIsInstanceOfInterface = obj.EEType->ICastableIsInstanceOfInterfaceMethod;
-            if (CalliIntrinsics.Call<bool>(pfnIsInstanceOfInterface, obj, pTargetType, out castError))
-                return true;
-            if (obj is CastableObjectSupport.ICastableObject)
-            {
-                // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-
-                CastableObjectSupport.ICastableObject castableObject = (CastableObjectSupport.ICastableObject)obj;
-                return CastableObjectSupport.GetCastableTargetIfPossible(castableObject, pTargetType, true, ref castError) != null;
-                // TODO!! BEGIN REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
-            }
-            return false;
-            // TODO!! END REMOVE THIS CODE WHEN WE REMOVE ICASTABLE
         }
 
         internal static unsafe bool ImplementsInterface(EEType* pObjType, EEType* pTargetType, EETypePairList* pVisited)
@@ -400,18 +342,6 @@ namespace System.Runtime
                                                         pVisited))
                             return true;
                     }
-                }
-            }
-
-            // Interface type equivalence check.
-            // Currently only implemented to allow ICastable to be defined in multiple type spaces
-            if (pTargetType->IsICastable)
-            {
-                for (int i = 0; i < numInterfaces; i++)
-                {
-                    EEType* pInterfaceType = interfaceMap[i].InterfaceType;
-                    if (pInterfaceType->IsICastable)
-                        return true;
                 }
             }
 
@@ -551,7 +481,6 @@ namespace System.Runtime
 
         //
         // Determines if a value of the source type can be assigned to a location of the target type.
-        // It does not handle ICastable, and cannot since we do not have an actual object instance here.
         // This routine assumes that the source type is boxed, i.e. a value type source is presumed to be
         // compatible with Object and ValueType and an enum source is additionally compatible with Enum.
         //
@@ -736,17 +665,8 @@ namespace System.Runtime
 
             Exception castError = null;
 
-            // If object type implements ICastable then there's one more way to check whether it implements
-            // the interface.
-            if (pObjType->IsICastable)
-            {
-                if (IsInstanceOfInterfaceViaCastableObjectWithException(obj, pTargetType, ref castError))
-                    return obj;
-            }
-
             // Throw the invalid cast exception defined by the classlib, using the input EEType* to find the
-            // correct classlib unless ICastable.IsInstanceOfInterface returned a more specific exception for
-            // us to use.
+            // correct classlib.
 
             if (castError == null)
                 castError = ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
@@ -766,11 +686,6 @@ namespace System.Runtime
 
             EEType* arrayElemType = array.EEType->RelatedParameterType;
             if (CastCache.AreTypesAssignableInternal(obj.EEType, arrayElemType, AssignmentVariation.BoxedSource, null))
-                return;
-
-            // If object type implements ICastable then there's one more way to check whether it implements
-            // the interface.
-            if (obj.EEType->IsICastable && IsInstanceOfInterfaceViaCastableObject(obj, arrayElemType))
                 return;
 
             // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
@@ -830,15 +745,10 @@ namespace System.Runtime
 
                 if (!CastCache.AreTypesAssignableInternal(obj.EEType, arrayElemType, AssignmentVariation.BoxedSource, null))
                 {
-                    // If object type implements ICastable then there's one more way to check whether it implements
-                    // the interface.
-                    if (!obj.EEType->IsICastable || !IsInstanceOfInterfaceViaCastableObject(obj, arrayElemType))
-                    {
-                        // Throw the array type mismatch exception defined by the classlib, using the input array's 
-                        // EEType* to find the correct classlib.
+                    // Throw the array type mismatch exception defined by the classlib, using the input array's 
+                    // EEType* to find the correct classlib.
 
-                        throw array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-                    }
+                    throw array.EEType->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
                 }
 
                 // Both bounds and type check are ok.
@@ -945,7 +855,7 @@ namespace System.Runtime
         [RuntimeExport("RhTypeCast_IsInstanceOf")]
         public static unsafe object IsInstanceOf(void* pvTargetType, object obj)
         {
-            // @TODO: consider using the cache directly, but beware of ICastable in the interface case
+            // @TODO: consider using the cache directly
             EEType* pTargetType = (EEType*)pvTargetType;
             if (pTargetType->IsArray)
                 return IsInstanceOfArray(pvTargetType, obj);
@@ -960,7 +870,7 @@ namespace System.Runtime
         [RuntimeExport("RhTypeCast_CheckCast")]
         public static unsafe object CheckCast(void* pvTargetType, object obj)
         {
-            // @TODO: consider using the cache directly, but beware of ICastable in the interface case
+            // @TODO: consider using the cache directly
             EEType* pTargetType = (EEType*)pvTargetType;
             if (pTargetType->IsArray)
                 return CheckCastArray(pvTargetType, obj);

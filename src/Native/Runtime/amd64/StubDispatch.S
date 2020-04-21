@@ -9,26 +9,6 @@
 // trick to avoid PLT relocation at runtime which corrupts registers
 #define REL_C_FUNC(name) C_FUNC(name)@gotpcrel
 
-LEAF_ENTRY RhpCastableObjectDispatch_CommonStub, _TEXT
-        // UNIXTODO: Implement this function
-        int 3
-LEAF_END RhpCastableObjectDispatch_CommonStub, _TEXT
-
-LEAF_ENTRY RhpTailCallTLSDispatchCell, _TEXT
-        // UNIXTODO: Implement this function
-        int 3
-LEAF_END RhpTailCallTLSDispatchCell, _TEXT
-
-LEAF_ENTRY RhpCastableObjectDispatchHelper_TailCalled, _TEXT
-        // UNIXTODO: Implement this function
-        int 3
-LEAF_END RhpCastableObjectDispatchHelper_TailCalled, _TEXT
-
-LEAF_ENTRY RhpCastableObjectDispatchHelper, _TEXT
-        // UNIXTODO: Implement this function
-        int 3
-LEAF_END RhpCastableObjectDispatchHelper, _TEXT
-
 
 // Macro that generates a stub consuming a cache with the given number of entries.
 .macro DEFINE_INTERFACE_DISPATCH_STUB entries

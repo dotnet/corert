@@ -208,7 +208,6 @@ namespace Internal.Reflection.Execution
 
         //
         // Determines if a value of the source type can be assigned to a location of the target type.
-        // It does not handle ICastable, and cannot since we do not have an actual object instance here.
         // This routine assumes that the source type is boxed, i.e. a value type source is presumed to be
         // compatible with Object and ValueType and an enum source is additionally compatible with Enum.
         //

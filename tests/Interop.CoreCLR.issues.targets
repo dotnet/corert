@@ -48,7 +48,6 @@
     <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Miscellaneous\AutoLayoutStructure\AutoLayoutStructure.*" />
     <IncludeList Include="$(XunitTestBinBase)\Interop\BestFitMapping\BestFitMapping\BestFitMapping.*" />
     <IncludeList Include="$(XunitTestBinBase)\Interop\PrimitiveMarshalling\Bool\BoolTest\BoolTest.*" />
-    <IncludeList Include="$(XunitTestBinBase)\Interop\ICastable\Castable\Castable.*" />
     <IncludeList Include="$(XunitTestBinBase)\Interop\MarshalAPI\Copy\CopyByteArray\CopyByteArray.*" />
   </ItemGroup>
 </Project>

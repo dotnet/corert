@@ -9,40 +9,8 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-    EXTERN RhpCastableObjectResolve
     EXTERN RhpCidResolve
     EXTERN RhpUniversalTransition_DebugStepTailCall
-
-    EXTERN t_TLS_DispatchCell
-
-    MACRO
-        GET_TLS_DISPATCH_CELL
-        EXTERN      _tls_index
-        push        {r0}
-        ldr         r12, =_tls_index
-        ldr         r12, [r12]
-        mrc         p15, 0, r0, c13, c0, 2
-        ldr         r0, [r0, #__tls_array]
-        ldr         r12, [r0, r12, lsl #2]
-        ldr         r0, SECTIONREL_t_TLS_DispatchCell
-        ldr         r12, [r0, r12]
-        pop         {r0}
-    MEND
-
-    MACRO
-        SET_TLS_DISPATCH_CELL
-        EXTERN      _tls_index
-        ;; r12 : Value to be assigned to the TLS variable
-        push        {r0-r1}
-        ldr         r0, =_tls_index
-        ldr         r0, [r0]
-        mrc         p15, 0, r1, c13, c0, 2
-        ldr         r1, [r1, #__tls_array]
-        ldr         r0, [r1, r0, lsl #2]    ;; r0 <- our TLS base
-        ldr         r1, SECTIONREL_t_TLS_DispatchCell
-        str         r12, [r1, r0]
-        pop         {r0-r1}
-    MEND
 
     ;; Macro that generates code to check a single cache entry.
     MACRO
@@ -59,55 +27,6 @@
         b       %fa99
 0
     MEND
-
-SECTIONREL_t_TLS_DispatchCell
-        DCD     t_TLS_DispatchCell
-        RELOC   15 ;; SECREL
-
-    LEAF_ENTRY RhpCastableObjectDispatch_CommonStub
-        ;; Custom calling convention:
-        ;;      Red zone (i.e. [sp, #-4]) has pointer to the current thunk's data block
-        
-        ;; store dispatch cell address in thread static
-        ldr         r12, [sp, #-4]
-        push        {r12}
-        ldr         r12, [r12]
-        SET_TLS_DISPATCH_CELL
-        
-        ;; Now load the target address and jump to it.
-        pop         {r12}
-        ldr         r12, [r12, #4]
-        bx          r12
-    LEAF_END RhpCastableObjectDispatch_CommonStub
-
-    LEAF_ENTRY RhpTailCallTLSDispatchCell
-        ;; Load the dispatch cell out of the TLS variable
-        GET_TLS_DISPATCH_CELL
-
-        ;; Tail call to the target of the dispatch cell, preserving the cell address in r12
-        ldr     pc, [r12]
-    LEAF_END RhpTailCallTLSDispatchCell
-
-    LEAF_ENTRY RhpCastableObjectDispatchHelper_TailCalled
-        ;; Load the dispatch cell out of the TLS variable
-        GET_TLS_DISPATCH_CELL
-        b       RhpCastableObjectDispatchHelper2
-    LEAF_END RhpCastableObjectDispatchHelper_TailCalled
-
-    LEAF_ENTRY  RhpCastableObjectDispatchHelper
-        ;; The address of the cache block is passed to this function in the red zone
-        ldr     r12, [sp, #-8] 
-        ldr     r12, [r12, #OFFSETOF__InterfaceDispatchCache__m_pCell]
-    ALTERNATE_ENTRY RhpCastableObjectDispatchHelper2
-        ;; The calling convention of the universal thunk is that the parameter
-        ;; for the universal thunk target is to be placed in sp-8
-        ;; and the universal thunk target address is to be placed in sp-4
-        str     r12, [sp, #-8]
-        ldr     r12, =RhpCastableObjectResolve
-        str     r12, [sp, #-4]
-
-        b       RhpUniversalTransition_DebugStepTailCall
-    LEAF_END RhpCastableObjectDispatchHelper
 
 
 ;; Macro that generates a stub consuming a cache with the given number of entries.
@@ -146,7 +65,7 @@ CurrentEntry SETA CurrentEntry + 1
         ;; epilogs imposed by the unwind code macros.
 99
         ;; R2 contains address of the cache block. We store it in the red zone in case the target we jump
-        ;; to needs it. Currently the RhpCastableObjectDispatchHelper is the only such target.
+        ;; to needs it.
         ;; R12 contains the target address to jump to
         EPILOG_POP r1
         ;; The red zone is only 8 bytes long, so we have to store r2 into it between the pops.

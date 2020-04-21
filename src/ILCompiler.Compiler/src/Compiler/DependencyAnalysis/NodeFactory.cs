@@ -892,20 +892,6 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        private TypeDesc _systemICastableType;
-
-        public TypeDesc ICastableInterface
-        {
-            get
-            {
-                if (_systemICastableType == null)
-                {
-                    _systemICastableType = _context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "ICastable");
-                }
-                return _systemICastableType;
-            }
-        }
-
         private NodeCache<MethodDesc, VirtualMethodUseNode> _virtMethods;
 
         public DependencyNodeCore<NodeFactory> VirtualMethodUse(MethodDesc decl)

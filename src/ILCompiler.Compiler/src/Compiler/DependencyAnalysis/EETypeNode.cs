@@ -276,21 +276,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var implementedInterface in _type.RuntimeInterfaces)
                 {
-                    // If the type implements ICastable, the methods are implicitly necessary
-                    if (implementedInterface == factory.ICastableInterface)
-                    {
-                        MethodDesc isInstDecl = implementedInterface.GetKnownMethod("IsInstanceOfInterface", null);
-                        MethodDesc getImplTypeDecl = implementedInterface.GetKnownMethod("GetImplType", null);
-
-                        MethodDesc isInstMethodImpl = _type.ResolveInterfaceMethodTarget(isInstDecl);
-                        MethodDesc getImplTypeMethodImpl = _type.ResolveInterfaceMethodTarget(getImplTypeDecl);
-
-                        if (isInstMethodImpl != null)
-                            dependencyList.Add(factory.VirtualMethodUse(isInstMethodImpl), "ICastable IsInst");
-                        if (getImplTypeMethodImpl != null)
-                            dependencyList.Add(factory.VirtualMethodUse(getImplTypeMethodImpl), "ICastable GetImplType");
-                    }
-
                     // If any of the implemented interfaces have variance, calls against compatible interface methods
                     // could result in interface methods of this type being used (e.g. IEnumberable<object>.GetEnumerator()
                     // can dispatch to an implementation of IEnumerable<string>.GetEnumerator()).
@@ -561,19 +546,7 @@ namespace ILCompiler.DependencyAnalysis
                 // to have the variant flag set (even if all the arguments are non-variant).
                 // This supports e.g. casting uint[] to ICollection<int>
                 flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
-            }
-
-            if (!(this is CanonicalDefinitionEETypeNode))
-            {
-                foreach (DefType itf in _type.RuntimeInterfaces)
-                {
-                    if (itf == factory.ICastableInterface)
-                    {
-                        flags |= (UInt16)EETypeFlags.ICastableFlag;
-                        break;
-                    }
-                }
-            }               
+            }              
 
             ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
 
@@ -917,8 +890,6 @@ namespace ILCompiler.DependencyAnalysis
             
             ComputeRareFlags(factory, relocsOnly);
             ComputeNullableValueOffset();
-            if (!relocsOnly)
-                ComputeICastableVirtualMethodSlots(factory);
             ComputeValueTypeFieldPadding();
         }
 
@@ -989,38 +960,6 @@ namespace ILCompiler.DependencyAnalysis
                 // The contract with the runtime states the Nullable value offset is stored with the boolean "hasValue" size subtracted
                 // to get a small encoding size win.
                 _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.NullableValueOffset, (uint)field.Offset.AsInt - 1);
-            }
-        }
-
-        /// <summary>
-        /// ICastable is a special interface whose two methods are not invoked using regular interface dispatch.
-        /// Instead, their VTable slots are recorded on the EEType of an object implementing ICastable and are
-        /// called directly.
-        /// </summary>
-        protected virtual void ComputeICastableVirtualMethodSlots(NodeFactory factory)
-        {
-            if (_type.IsInterface || !EmitVirtualSlotsAndInterfaces)
-                return;
-
-            foreach (DefType itf in _type.RuntimeInterfaces)
-            {
-                if (itf == factory.ICastableInterface)
-                {
-                    MethodDesc isInstDecl = itf.GetKnownMethod("IsInstanceOfInterface", null);
-                    MethodDesc getImplTypeDecl = itf.GetKnownMethod("GetImplType", null);
-
-                    MethodDesc isInstMethodImpl = _type.ResolveInterfaceMethodTarget(isInstDecl);
-                    MethodDesc getImplTypeMethodImpl = _type.ResolveInterfaceMethodTarget(getImplTypeDecl);
-
-                    int isInstMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, isInstMethodImpl, _type);
-                    int getImplTypeMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, getImplTypeMethodImpl, _type);
-
-                    // Slots are usually -1, since these methods are usually in the sealed vtable of the base type.
-                    if (isInstMethodSlot != -1)
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableIsInstSlot, (uint)isInstMethodSlot);
-                    if (getImplTypeMethodSlot != -1)
-                        _optionalFieldsBuilder.SetFieldValue(EETypeOptionalFieldTag.ICastableGetImplTypeSlot, (uint)getImplTypeMethodSlot);
-                }
             }
         }
 
