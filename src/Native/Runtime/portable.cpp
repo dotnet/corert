@@ -257,11 +257,6 @@ COOP_PINVOKE_HELPER(void, RhpVTableOffsetDispatch, ())
     ASSERT_UNCONDITIONALLY("NYI");
 }
 
-COOP_PINVOKE_HELPER(void, RhpTailCallTLSDispatchCell, ())
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;

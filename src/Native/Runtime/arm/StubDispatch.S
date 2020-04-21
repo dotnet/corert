@@ -15,7 +15,6 @@
 .rodata
 AssertMsg:                                       .asciz "__FILE__:%s: %s is not implemented\n"
 FileName:                                        .asciz "StubDispatch.S"
-RhpTailCallTLSDispatchCellName:                  .asciz "RhpTailCallTLSDispatchCell"
 RhpVTableOffsetDispatchName:                     .asciz "RhpVTableOffsetDispatch"
 .text
 .macro GEN_ASSERT_FUNC func
@@ -23,15 +22,6 @@ RhpVTableOffsetDispatchName:                     .asciz "RhpVTableOffsetDispatch
 .endm
 #endif
 
-
-LEAF_ENTRY RhpTailCallTLSDispatchCell, _TEXT
-#ifdef _DEBUG
-        GEN_ASSERT_FUNC RhpTailCallTLSDispatchCellName
-#else
-        // UNIXTODO: Implement this function
-        EMIT_BREAKPOINT
-#endif
-LEAF_END RhpTailCallTLSDispatchCell, _TEXT
 
 // Macro that generates a stub consuming a cache with the given number of entries.
 .macro DEFINE_INTERFACE_DISPATCH_STUB entries

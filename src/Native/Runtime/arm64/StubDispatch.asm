@@ -11,38 +11,6 @@
     EXTERN RhpCidResolve
     EXTERN RhpUniversalTransition_DebugStepTailCall
 
-    EXTERN t_TLS_DispatchCell
-
-    MACRO
-        GET_TLS_DISPATCH_CELL
-
-        ldr         x9, =_tls_index
-        ldr         w9, [x9]
-        ldr         xip1, [xpr, #__tls_array]
-        ldr         xip1, [xip1, x9 lsl #3]
-        ldr         x9, =SECTIONREL_t_TLS_DispatchCell
-        ldr         x9, [x9]
-        ldr         xip1, [xip1, x9]
-    MEND
-
-    MACRO
-        SET_TLS_DISPATCH_CELL
-        ;; xip1 : Value to be assigned to the TLS variable
-
-        ldr         x9, =_tls_index
-        ldr         w9, [x9]
-        ldr         x10, [xpr, #__tls_array]
-        ldr         x10, [x10, x9 lsl #3]
-        ldr         x9, =SECTIONREL_t_TLS_DispatchCell
-        ldr         x9, [x9]
-        str         xip1, [x10, x9]
-    MEND
-
-SECTIONREL_t_TLS_DispatchCell
-        DCD t_TLS_DispatchCell
-        RELOC 8, t_TLS_DispatchCell      ;; SECREL
-        DCD 0
-
     ;; Macro that generates code to check a single cache entry.
     MACRO
         CHECK_CACHE_ENTRY $entry
@@ -57,16 +25,6 @@ SECTIONREL_t_TLS_DispatchCell
         br      x9
 0   ;; Label '0'
     MEND
-
-
-    LEAF_ENTRY RhpTailCallTLSDispatchCell
-        ;; Load the dispatch cell out of the TLS variable
-        GET_TLS_DISPATCH_CELL
-
-        ;; Tail call to the target of the dispatch cell, preserving the cell address in xip1
-        ldr     x9, [xip1]
-        br      x9
-    LEAF_END RhpTailCallTLSDispatchCell
 
 
 ;;

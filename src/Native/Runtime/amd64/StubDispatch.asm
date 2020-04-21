@@ -11,22 +11,7 @@ ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 EXTERN RhpCidResolve : PROC
 EXTERN RhpUniversalTransition_DebugStepTailCall : PROC
 
-EXTERN  t_TLS_DispatchCell:QWORD
 EXTERN  _tls_index:DWORD
-
-LEAF_ENTRY RhpTailCallTLSDispatchCell, _TEXT
-        ;; Load the dispatch cell out of the TLS variable
-        mov rax, gs:[_tls_array]
-        mov r10d, _tls_index
-        mov r10, [rax + r10 * 8]
-        mov eax, SECTIONREL t_TLS_DispatchCell
-        mov r10, [r10+rax]
-
-        ;; Load the target of the dispatch cell into rax
-        mov rax, [r10]
-        ;; And tail call to it
-        TAILJMP_RAX
-LEAF_END RhpTailCallTLSDispatchCell, _TEXT
 
 ;; Macro that generates code to check a single cache entry.
 CHECK_CACHE_ENTRY macro entry
