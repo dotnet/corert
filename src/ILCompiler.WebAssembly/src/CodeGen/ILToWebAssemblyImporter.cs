@@ -3999,6 +3999,17 @@ namespace Internal.IL
 
         private void ImportCkFinite()
         {
+            StackEntry value = _stack.Pop();
+            if (value.Type == GetWellKnownType(WellKnownType.Single))
+            {
+                ThrowCkFinite(value.ValueForStackKind(value.Kind, _builder, false), 32, ref CkFinite32Function);
+            }
+            else
+            {
+                ThrowCkFinite(value.ValueForStackKind(value.Kind, _builder, false), 64, ref CkFinite64Function);
+            }
+
+            _stack.Push(value);
         }
 
         private void ImportMkRefAny(int token)
@@ -4201,25 +4212,9 @@ namespace Internal.IL
                 builder.BuildCondBr(builder.BuildICmp(LLVMIntPredicate.LLVMIntEQ, NullRefFunction.GetParam(1), LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)), "nullCheck"),
                     throwBlock, retBlock);
                 builder.PositionAtEnd(throwBlock);
-                MetadataType nullRefType = _compilation.NodeFactory.TypeSystemContext.SystemModule.GetType("System", "NullReferenceException");
+                
+                ThrowException(builder, "ThrowHelpers", "ThrowNullReferenceException", NullRefFunction);
 
-                var arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(nullRefType, true), GetEETypePtrTypeDesc()) };
-
-                MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime", RuntimeExport);
-                MethodDesc helperMethod = helperType.GetKnownMethod("RhNewObject", null);
-                var resultAddress = builder.BuildIntCast(builder.BuildAlloca(LLVMTypeRef.Int32, "resultAddress"), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "castResultAddress");
-                HandleDirectCall(helperMethod, helperMethod.Signature, arguments, null, default(LLVMValueRef), 0, NullRefFunction.GetParam(0), builder, true, resultAddress, helperMethod);
-
-                var exceptionEntry = new LoadExpressionEntry(GetStackValueKind(nullRefType), "RhNewObject_return", resultAddress, nullRefType);
-
-                var ctorDef = nullRefType.GetDefaultConstructor();
-
-                HandleDirectCall(ctorDef, ctorDef.Signature, new StackEntry[] { exceptionEntry }, null, default(LLVMValueRef), 0, NullRefFunction.GetParam(0), builder, false, default(LLVMValueRef), ctorDef);
-
-                EnsureRhpThrowEx();
-                LLVMValueRef[] args = new LLVMValueRef[] { exceptionEntry.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), builder) };
-                builder.BuildCall(RhpThrowEx, args, "");
-                builder.BuildUnreachable();
                 builder.PositionAtEnd(retBlock);
                 builder.BuildRetVoid();
             }
@@ -4228,12 +4223,56 @@ namespace Internal.IL
             CallOrInvoke(false, _builder, GetCurrentTryRegion(), NullRefFunction, new List<LLVMValueRef> { GetShadowStack(), entry }, ref nextInstrBlock);
         }
 
-        void EnsureRhpThrowEx()
+        private void ThrowCkFinite(LLVMValueRef value, int size, ref LLVMValueRef llvmCheckFunction)
         {
-            if (RhpThrowEx.Handle.Equals(IntPtr.Zero))
+            if (llvmCheckFunction.Handle == IntPtr.Zero)
             {
-                RhpThrowEx = Module.AddFunction("RhpThrowEx", LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }, false));
+                llvmCheckFunction = Module.AddFunction("corert.throwckfinite" + size, LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), size == 32 ? LLVMTypeRef.Float : LLVMTypeRef.Double }, false));
+                LLVMValueRef exponentMask;
+                LLVMTypeRef intTypeRef;
+                var builder = Context.CreateBuilder();
+                var block = llvmCheckFunction.AppendBasicBlock("Block");
+                builder.PositionAtEnd(block);
+
+                if (size == 32) 
+                {
+                    intTypeRef = LLVMTypeRef.Int32;
+                    exponentMask = LLVMValueRef.CreateConstInt(intTypeRef, 0x7F800000, false);
+                }
+                else
+                {
+                    intTypeRef = LLVMTypeRef.Int64;
+                    exponentMask = LLVMValueRef.CreateConstInt(intTypeRef, 0x7FF0000000000000, false);
+                }
+
+                var valRef = builder.BuildBitCast(llvmCheckFunction.GetParam(1), intTypeRef);
+                LLVMValueRef exponentBits = builder.BuildAnd(valRef, exponentMask, "and");
+                LLVMValueRef isFinite = builder.BuildICmp(LLVMIntPredicate.LLVMIntEQ, exponentBits, exponentMask, "isfinite");
+
+                LLVMBasicBlockRef throwBlock = llvmCheckFunction.AppendBasicBlock("Throw");
+                LLVMBasicBlockRef afterIf = llvmCheckFunction.AppendBasicBlock("AfterIf");
+                builder.BuildCondBr(isFinite, throwBlock, afterIf);
+
+                builder.PositionAtEnd(throwBlock);
+
+                ThrowException(builder, "ThrowHelpers", "ThrowOverflowException", llvmCheckFunction);
+
+                afterIf.MoveAfter(llvmCheckFunction.LastBasicBlock);
+                builder.PositionAtEnd(afterIf);
+                builder.BuildRetVoid();
             }
+
+            LLVMBasicBlockRef nextInstrBlock = default;
+            CallOrInvoke(false, _builder, GetCurrentTryRegion(), llvmCheckFunction, new List<LLVMValueRef> { GetShadowStack(), value }, ref nextInstrBlock);
+        }
+
+        private void ThrowException(LLVMBuilderRef builder, string helperClass, string helperMethodName, LLVMValueRef throwingFunction)
+        {
+            MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", helperClass);
+            MethodDesc helperMethod = helperType.GetKnownMethod(helperMethodName, null);
+            LLVMValueRef fn = LLVMFunctionForMethod(helperMethod, helperMethod, null, false, null, null, out bool hasHiddenParam, out LLVMValueRef dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
+            builder.BuildCall(fn, new LLVMValueRef[] {throwingFunction.GetParam(0) }, string.Empty);
+            builder.BuildUnreachable();
         }
 
         private LLVMValueRef GetInstanceFieldAddress(StackEntry objectEntry, FieldDesc field)

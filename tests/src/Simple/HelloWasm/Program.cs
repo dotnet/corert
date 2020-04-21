@@ -10,6 +10,7 @@ using System.Reflection;
 
 #if TARGET_WINDOWS
 using CpObj;
+using CkFinite;
 #endif
 internal static class Program
 {
@@ -276,7 +277,7 @@ internal static class Program
 
         TestTryFinally();
 
-	
+
 #if TARGET_WINDOWS
         StartTest("RVA static field test");
         int rvaFieldValue = ILHelpers.ILHelpersTest.StaticInitedInt;
@@ -343,6 +344,10 @@ internal static class Program
         TestInterlockedExchange();
 
         TestThrowIfNull();
+
+#if TARGET_WINDOWS
+        TestCkFinite();
+#endif
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -1671,6 +1676,43 @@ internal static class Program
         EndTest(success);
     }
 
+#if TARGET_WINDOWS
+    private static void TestCkFinite()
+    {
+        // includes tests from https://github.com/dotnet/coreclr/blob/9b0a9fd623/tests/src/JIT/IL_Conformance/Old/Base/ckfinite.il4
+        StartTest("CkFiniteTests");
+        if (!CkFiniteTest.CkFinite32(0) || !CkFiniteTest.CkFinite32(1) ||
+            !CkFiniteTest.CkFinite32(100) || !CkFiniteTest.CkFinite32(-100) ||
+            !CkFinite32(0x7F7FFFC0) || CkFinite32(0xFF800000) ||  // use converter function to get the float equivalent of this bits
+            CkFinite32(0x7FC00000) && !CkFinite32(0xFF7FFFFF) ||
+            CkFinite32(0x7F800000))
+        {
+            FailTest("one or more 32 bit tests failed");
+            return;
+        }
+
+        if (!CkFiniteTest.CkFinite64(0) || !CkFiniteTest.CkFinite64(1) ||
+            !CkFiniteTest.CkFinite64(100) || !CkFiniteTest.CkFinite64(-100) ||
+            CkFinite64(0x7FF0000000000000) || CkFinite64(0xFFF0000000000000) ||
+            CkFinite64(0x7FF8000000000000) || !CkFinite64(0xFFEFFFFFFFFFFFFF))
+        {
+            FailTest("one or more 64 bit tests failed.");
+            return;
+        }
+        PassTest();
+    }
+
+    private static unsafe bool CkFinite32(uint value)
+    {
+        return CkFiniteTest.CkFinite32 (* (float*)(&value));
+    }
+
+    private static unsafe bool CkFinite64(ulong value)
+    {
+        return CkFiniteTest.CkFinite64(*(double*)(&value));
+    }
+#endif
+
     static ushort ReadUInt16()
     {
         // something with MSB set
@@ -1691,6 +1733,7 @@ public class ClassForNre
 {
     public int F;
 }
+
 
 public class ClassWithFloat
 {

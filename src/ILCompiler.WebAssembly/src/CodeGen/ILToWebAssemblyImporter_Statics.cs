@@ -117,6 +117,8 @@ namespace Internal.IL
         static LLVMValueRef LlvmCatchFunclet = default(LLVMValueRef);
         static LLVMValueRef LlvmFinallyFunclet = default(LLVMValueRef);
         static LLVMValueRef NullRefFunction = default(LLVMValueRef);
+        static LLVMValueRef CkFinite32Function = default(LLVMValueRef);
+        static LLVMValueRef CkFinite64Function = default(LLVMValueRef);
         public static LLVMValueRef GxxPersonality = default(LLVMValueRef);
         public static LLVMTypeRef GxxPersonalityType = default(LLVMTypeRef);
 
