@@ -27,6 +27,10 @@
     <PackageReference Include="System.CommandLine">
       <Version>0.1.0-e160909-1</Version>
     </PackageReference>
+
+    <Reference Include="ILCompiler">
+      <HintPath>$(PublishDir)\ILCompiler.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

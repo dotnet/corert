@@ -1,9 +1,9 @@
 using System;
 
-class Program
+internal static class Program
 {
-    static void Main()
+    internal static int Main(string[] args)
     {
-        Console.WriteLine("Hello world!");
+        return ILCompiler.Program.Main(args);
     }
 }

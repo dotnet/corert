@@ -18,7 +18,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    internal class Program
+    public class Program
     {
         private const string DefaultSystemModule = "System.Private.CoreLib";
 
@@ -803,7 +803,7 @@ namespace ILCompiler
             return false;
         }
 
-        private static int Main(string[] args)
+        public static int Main(string[] args)
         {
 #if DEBUG
             try
