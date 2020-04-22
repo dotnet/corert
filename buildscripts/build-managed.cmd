@@ -39,13 +39,6 @@ dir /b "%__DotNetCliPath%\sdk"
 "%__DotNetCliPath%\dotnet.exe" msbuild "%__ProjectDir%\build.proj" /nologo /t:Restore /flp:v=normal;LogFile="%__BuildLog%" /p:NuPkgRid=%__NugetRuntimeId% /maxcpucount /p:OSGroup=%__BuildOS% /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__ExtraMsBuildParams%
 IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
 
-rem Buildtools tooling is not capable of publishing netcoreapp currently. Use helper projects to publish skeleton of
-rem the standalone app that the build injects actual binaries into later.
-"%__DotNetCliPath%\dotnet.exe" restore "%__SourceDir%\ILCompiler\netcoreapp\ilc.csproj" -r %__NugetRuntimeId%
-IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
-"%__DotNetCliPath%\dotnet.exe" publish "%__SourceDir%\ILCompiler\netcoreapp\ilc.csproj" -r %__NugetRuntimeId% -o "%__RootBinDir%\%__BuildOS%.%__BuildArch%.%__BuildType%\tools"
-IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
-
 "%__DotNetCliPath%\dotnet.exe" restore "%__SourceDir%\ILVerify\netcoreapp\ILVerify.csproj" -r %__NugetRuntimeId%
 IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
 "%__DotNetCliPath%\dotnet.exe" publish "%__SourceDir%\ILVerify\netcoreapp\ILVerify.csproj" -r %__NugetRuntimeId% -o "%__RootBinDir%\%__BuildOS%.%__BuildArch%.%__BuildType%\ILVerify"
@@ -64,6 +57,8 @@ echo ILCompiler build failed with exit code %ERRORLEVEL%. Refer !__BuildLog! for
 exit /b %ERRORLEVEL%
 
 :AfterILCompilerBuild
+"%__DotNetCliPath%\dotnet.exe" publish "%__SourceDir%\ILCompiler\netcoreapp\ilc.csproj" -r %__NugetRuntimeId% -o "%__RootBinDir%\%__BuildOS%.%__BuildArch%.%__BuildType%\tools"
+IF ERRORLEVEL 1 exit /b %ERRORLEVEL%
 
 :VsDevGenerateRespFiles
 if defined __SkipVsDev goto :AfterVsDevGenerateRespFiles

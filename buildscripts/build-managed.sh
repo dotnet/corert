@@ -42,22 +42,15 @@ build_managed_corert()
         exit $BUILDERRORLEVEL
     fi
 
-    # Buildtools tooling is not capable of publishing netcoreapp currently. Use helper projects to publish skeleton of
-    # the standalone app that the build injects actual binaries into later.
-    $__dotnetclipath/dotnet restore $__sourceroot/ILCompiler/netcoreapp/ilc.csproj -r $__NugetRuntimeId
+    $__ProjectRoot/Tools/msbuild.sh "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:NuPkgRid=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__buildarch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) $__UnprocessedBuildArgs $__ExtraMsBuildArgs
     export BUILDERRORLEVEL=$?
-    if [ $BUILDERRORLEVEL != 0 ]; then
-        exit $BUILDERRORLEVEL
-    fi
+
     $__dotnetclipath/dotnet publish $__sourceroot/ILCompiler/netcoreapp/ilc.csproj -r $__NugetRuntimeId -o $__ProductBinDir/tools
     export BUILDERRORLEVEL=$?
     if [ $BUILDERRORLEVEL != 0 ]; then
         exit $BUILDERRORLEVEL
     fi
     chmod +x $__ProductBinDir/tools/ilc
-
-    $__ProjectRoot/Tools/msbuild.sh "$__buildproj" /m /nologo /verbosity:minimal "/fileloggerparameters:Verbosity=normal;LogFile=$__buildlog" /t:Build /p:RepoPath=$__ProjectRoot /p:RepoLocalBuild="true" /p:NuPkgRid=$__NugetRuntimeId /p:OSGroup=$__BuildOS /p:Configuration=$__BuildType /p:Platform=$__buildarch /p:COMPUTERNAME=$(hostname) /p:USERNAME=$(id -un) $__UnprocessedBuildArgs $__ExtraMsBuildArgs
-    export BUILDERRORLEVEL=$?
 
     echo
 
