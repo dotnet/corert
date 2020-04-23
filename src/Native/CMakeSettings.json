@@ -1,0 +1,22 @@
+﻿{
+    // See https://go.microsoft.com//fwlink//?linkid=834763 for more information about this file.
+    "configurations": [
+        {
+            "name": "Windows_NT.x64.Debug",
+            "generator": "Visual Studio 16 2019 Win64",
+            "configurationType": "Debug",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "buildRoot": "${projectDir}\\..\\..\\bin\\obj\\Native\\${name}",
+            "installRoot": "${projectDir}\\..\\..\\bin\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "variables": [
+                {
+                    "name": "CLR_CMAKE_TARGET_ARCH",
+                    "value": "x64"
+                }
+            ]
+        }
+    ]
+}
