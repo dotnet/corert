@@ -13,7 +13,7 @@ If you would like to give CoreRT a try, we publish daily snapshots of CoreRT to 
 - Windows, MacOS and Linux x64 w/ RyuJIT codegen is able to compile many complex apps.
    - [ASP.NET Core](samples/WebApi/) sample
    - [MonoGame](samples/MonoGame/) sample
-   - [Avalonia](https://www.youtube.com/watch?v=iaC67CUmEXs) demo
+   - Avalonia [sample](https://github.com/teobugslayer/AvaloniaCoreRTDemo) and [demo video](https://www.youtube.com/watch?v=iaC67CUmEXs)
    - [ADO.NET](https://github.com/ifew/corert-db) sample
    - [EntityFrameworkCore.Sqlite](https://github.com/rubin55/dot-hello) sample 
    - Unsupported features: [Dynamic loading](https://github.com/dotnet/corert/issues/6949) (e.g. `Assembly.LoadFile`), [dynamic code generation](https://github.com/dotnet/corert/issues/5011) (e.g. `System.Reflection.Emit`), [Windows-specific interop](https://github.com/dotnet/corert/issues/4219) (e.g. COM, WinRT)
