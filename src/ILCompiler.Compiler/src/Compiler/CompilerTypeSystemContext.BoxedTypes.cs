@@ -548,7 +548,9 @@ namespace ILCompiler
 
                 // unbox to get a pointer to the value type
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(boxedValueField));
+                MetadataType helperType = Context.SystemModule.GetKnownType("System", "Object");
+                MethodDesc helperMethod = helperType.GetKnownMethod("GetRawData", null);
+                codeStream.Emit(ILOpcode.call, emit.NewToken(helperMethod));
 
                 // Load rest of the arguments
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)
