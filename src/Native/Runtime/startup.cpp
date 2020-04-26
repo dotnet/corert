@@ -41,7 +41,7 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 #endif
 
 static void CheckForPalFallback();
-static void DetectCPUFeatures();
+static bool DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
 
@@ -53,6 +53,8 @@ CrstStatic g_ThunkPoolLock;
 #if defined(_X86_) || defined(_AMD64_)
 // This field is inspected from the generated code to determine what intrinsics are available.
 EXTERN_C int g_cpuFeatures = 0;
+// This field is defined in the generated code and sets the ISA expectations.
+EXTERN_C int g_requiredCpuFeatures;
 #endif
 
 static bool InitDLL(HANDLE hPalInstance)
@@ -112,7 +114,8 @@ static bool InitDLL(HANDLE hPalInstance)
 #endif // STRESS_LOG
 
 #ifndef USE_PORTABLE_HELPERS
-    DetectCPUFeatures();
+    if (!DetectCPUFeatures())
+        return false;
 #endif
 
     if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
@@ -163,10 +166,15 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_Sse41 = 0x0010,
     XArchIntrinsicConstants_Sse42 = 0x0020,
     XArchIntrinsicConstants_Popcnt = 0x0040,
-    XArchIntrinsicConstants_Lzcnt = 0x0080,
+    XArchIntrinsicConstants_Avx = 0x0080,
+    XArchIntrinsicConstants_Fma = 0x0100,
+    XArchIntrinsicConstants_Avx2 = 0x0200,
+    XArchIntrinsicConstants_Bmi1 = 0x0400,
+    XArchIntrinsicConstants_Bmi2 = 0x0800,
+    XArchIntrinsicConstants_Lzcnt = 0x1000,
 };
 
-void DetectCPUFeatures()
+bool DetectCPUFeatures()
 {
 #if defined(_X86_) || defined(_AMD64_)
     
@@ -226,9 +234,47 @@ void DetectCPUFeatures()
                             {
                                 g_cpuFeatures |= XArchIntrinsicConstants_Popcnt;
                             }
+
+                            if ((buffer[11] & 0x18) == 0x18)                // AVX & OSXSAVE
+                            {
+                                if (PalIsAvxEnabled() && (xmmYmmStateSupport() == 1))
+                                {
+                                    g_cpuFeatures |= XArchIntrinsicConstants_Avx;
+
+                                    if ((buffer[9] & 0x10) != 0)            // FMA
+                                    {
+                                        g_cpuFeatures |= XArchIntrinsicConstants_Fma;
+                                    }
+
+                                    if (maxCpuId >= 0x07)
+                                    {
+                                        (void)getextcpuid(0, 0x07, buffer);
+
+                                        if ((buffer[4] & 0x20) != 0)        // AVX2
+                                        {
+                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx2;
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
+            }
+        }
+
+        if (maxCpuId >= 0x07)
+        {
+            (void)getextcpuid(0, 0x07, buffer);
+
+            if ((buffer[4] & 0x08) != 0)            // BMI1
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Bmi1;
+            }
+
+            if ((buffer[5] & 0x01) != 0)            // BMI2
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Bmi2;
             }
         }
     }
@@ -250,6 +296,14 @@ void DetectCPUFeatures()
     }
 
 #endif // _X86_ || _AMD64_
+
+
+    if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
+    {
+        return false;
+    }
+
+    return true;
 }
 #endif // !USE_PORTABLE_HELPERS
 

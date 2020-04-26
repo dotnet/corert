@@ -743,7 +743,7 @@ namespace Internal.JitInterface
                 // do a dynamic check instead.
                 if (
                     !HardwareIntrinsicHelpers.IsIsSupportedMethod(method)
-                    || HardwareIntrinsicHelpers.IsKnownSupportedIntrinsicAtCompileTime(method))
+                    || !_compilation.IsHardwareInstrinsicWithRuntimeDeterminedSupport(method))
 #endif
                 {
                     result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;

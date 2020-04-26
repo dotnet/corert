@@ -8,6 +8,7 @@ using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
 using System.Diagnostics;
+using Internal.JitInterface;
 
 namespace ILCompiler
 {
@@ -55,58 +56,18 @@ namespace ILCompiler
 
         /// <summary>
         /// Generates IL for the IsSupported property that reads this information from a field initialized by the runtime
-        /// at startup. Returns null for hardware intrinsics whose support level is known at compile time
-        /// (i.e. they're known to be always supported or always unsupported).
+        /// at startup. Only works for intrinsics that the code generator can generate detection code for.
         /// </summary>
         public static MethodIL EmitIsSupportedIL(MethodDesc method, FieldDesc isSupportedField)
         {
             Debug.Assert(IsIsSupportedMethod(method));
             Debug.Assert(isSupportedField.IsStatic && isSupportedField.FieldType.IsWellKnownType(WellKnownType.Int32));
 
-            TargetDetails target = method.Context.Target;
-            MetadataType owningType = (MetadataType)method.OwningType;
+            string id = InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType);
 
-            // Check for case of nested "X64" types
-            if (owningType.Name == "X64")
-            {
-                if (target.Architecture != TargetArchitecture.X64)
-                    return null;
-
-                // Un-nest the type so that we can do a name match
-                owningType = (MetadataType)owningType.ContainingType;
-            }
-
-            int flag;
-            if ((target.Architecture == TargetArchitecture.X64 || target.Architecture == TargetArchitecture.X86)
-                && owningType.Namespace == "System.Runtime.Intrinsics.X86")
-            {
-                switch (owningType.Name)
-                {
-                    case "Aes":
-                        flag = XArchIntrinsicConstants.Aes;
-                        break;
-                    case "Pclmulqdq":
-                        flag = XArchIntrinsicConstants.Pclmulqdq;
-                        break;
-                    case "Sse3":
-                        flag = XArchIntrinsicConstants.Sse3;
-                        break;
-                    case "Ssse3":
-                        flag = XArchIntrinsicConstants.Ssse3;
-                        break;
-                    case "Lzcnt":
-                        flag = XArchIntrinsicConstants.Lzcnt;
-                        break;
-                    // NOTE: this switch is complemented by IsKnownSupportedIntrinsicAtCompileTime
-                    // in the method below.
-                    default:
-                        return null;
-                }
-            }
-            else
-            {
-                return null;
-            }
+            Debug.Assert(method.Context.Target.Architecture == TargetArchitecture.X64
+                || method.Context.Target.Architecture == TargetArchitecture.X86);
+            int flag = XArchIntrinsicConstants.FromHardwareIntrinsicId(id);
 
             var emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
@@ -121,46 +82,17 @@ namespace ILCompiler
             return emit.Link(method);
         }
 
-        /// <summary>
-        /// Gets a value indicating whether the support for a given intrinsic is known at compile time.
-        /// </summary>
-        public static bool IsKnownSupportedIntrinsicAtCompileTime(MethodDesc method)
+        public static int GetRuntimeRequiredIsaFlags(InstructionSetSupport instructionSetSupport)
         {
-            TargetDetails target = method.Context.Target;
-
-            if (target.Architecture == TargetArchitecture.X64
-                || target.Architecture == TargetArchitecture.X86)
-            {
-                var owningType = (MetadataType)method.OwningType;
-                if (owningType.Name == "X64")
-                {
-                    if (target.Architecture != TargetArchitecture.X64)
-                        return true;
-                    owningType = (MetadataType)owningType.ContainingType;
-                }
-
-                if (owningType.Namespace != "System.Runtime.Intrinsics.X86")
-                    return true;
-
-                // Sse and Sse2 are baseline required intrinsics.
-                // RyuJIT also uses Sse41/Sse42 with the general purpose Vector APIs.
-                // RyuJIT only respects Popcnt if Sse41/Sse42 is also enabled.
-                // Avx/Avx2/Bmi1/Bmi2/Fma require VEX encoding and RyuJIT currently can't enable them
-                // without enabling VEX encoding everywhere. We don't support them.
-                // This list complements EmitIsSupportedIL above.
-                return owningType.Name == "Sse" || owningType.Name == "Sse2"
-                    || owningType.Name == "Sse41" || owningType.Name == "Sse42"
-                    || owningType.Name == "Popcnt"
-                    || owningType.Name == "Bmi1" || owningType.Name == "Bmi2" || owningType.Name == "Fma"
-                    || owningType.Name == "Avx" || owningType.Name == "Avx2";
-            }
-
-            return false;
+            Debug.Assert(instructionSetSupport.Architecture == TargetArchitecture.X64 ||
+                instructionSetSupport.Architecture == TargetArchitecture.X86);
+            return XArchIntrinsicConstants.FromInstructionSetFlags(instructionSetSupport.SupportedFlags);
         }
 
         // Keep this enumeration in sync with startup.cpp in the native runtime.
         private static class XArchIntrinsicConstants
         {
+            // SSE and SSE2 are baseline ISAs - they're always available
             public const int Aes = 0x0001;
             public const int Pclmulqdq = 0x0002;
             public const int Sse3 = 0x0004;
@@ -168,7 +100,78 @@ namespace ILCompiler
             public const int Sse41 = 0x0010;
             public const int Sse42 = 0x0020;
             public const int Popcnt = 0x0040;
-            public const int Lzcnt = 0x0080;
+            public const int Avx = 0x0080;
+            public const int Fma = 0x0100;
+            public const int Avx2 = 0x0200;
+            public const int Bmi1 = 0x0400;
+            public const int Bmi2 = 0x0800;
+            public const int Lzcnt = 0x1000;
+
+            public static int FromHardwareIntrinsicId(string id)
+            {
+                return id switch
+                {
+                    "Aes" => Aes,
+                    "Pclmulqdq" => Pclmulqdq,
+                    "Sse3" => Sse3,
+                    "Ssse3" => Ssse3,
+                    "Sse41" => Sse41,
+                    "Sse42" => Sse42,
+                    "Popcnt" => Popcnt,
+                    "Avx" => Avx,
+                    "Fma" => Fma,
+                    "Avx2" => Avx2,
+                    "Bmi1" => Bmi1,
+                    "Bmi2" => Bmi2,
+                    "Lzcnt" => Lzcnt,
+                    _ => throw new NotSupportedException(),
+                };
+            }
+
+            public static int FromInstructionSetFlags(InstructionSetFlags instructionSets)
+            {
+                int result = 0;
+
+                Debug.Assert(InstructionSet.X64_AES == InstructionSet.X86_AES);
+                Debug.Assert(InstructionSet.X64_SSE41 == InstructionSet.X86_SSE41);
+                Debug.Assert(InstructionSet.X64_LZCNT == InstructionSet.X86_LZCNT);
+
+                foreach (InstructionSet instructionSet in instructionSets)
+                {
+                    result |= instructionSet switch
+                    {
+                        InstructionSet.X64_AES => Aes,
+                        InstructionSet.X64_PCLMULQDQ => Pclmulqdq,
+                        InstructionSet.X64_SSE3 => Sse3,
+                        InstructionSet.X64_SSSE3 => Ssse3,
+                        InstructionSet.X64_SSE41 => Sse41,
+                        InstructionSet.X64_SSE41_X64 => Sse41,
+                        InstructionSet.X64_SSE42 => Sse42,
+                        InstructionSet.X64_SSE42_X64 => Sse42,
+                        InstructionSet.X64_POPCNT => Popcnt,
+                        InstructionSet.X64_POPCNT_X64 => Popcnt,
+                        InstructionSet.X64_AVX => Avx,
+                        InstructionSet.X64_FMA => Fma,
+                        InstructionSet.X64_AVX2 => Avx2,
+                        InstructionSet.X64_BMI1 => Bmi1,
+                        InstructionSet.X64_BMI1_X64 => Bmi1,
+                        InstructionSet.X64_BMI2 => Bmi2,
+                        InstructionSet.X64_BMI2_X64 => Bmi2,
+                        InstructionSet.X64_LZCNT => Lzcnt,
+                        InstructionSet.X64_LZCNT_X64 => Popcnt,
+
+                        // SSE and SSE2 are baseline ISAs - they're always available
+                        InstructionSet.X64_SSE => 0,
+                        InstructionSet.X64_SSE_X64 => 0,
+                        InstructionSet.X64_SSE2 => 0,
+                        InstructionSet.X64_SSE2_X64 => 0,
+
+                        _ => throw new NotSupportedException()
+                    };
+                }
+
+                return result;
+            }
         }
 #endif // !READYTORUN
     }

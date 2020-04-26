@@ -23,6 +23,7 @@ namespace ILCompiler
         internal readonly RyuJitCompilationOptions _compilationOptions;
         private readonly ExternSymbolMappedField _hardwareIntrinsicFlags;
         private CountdownEvent _compilationCountdown;
+        private readonly Dictionary<string, InstructionSet> _instructionSetMap;
 
         public InstructionSetSupport InstructionSetSupport { get; }
 
@@ -41,6 +42,15 @@ namespace ILCompiler
             _compilationOptions = options;
             _hardwareIntrinsicFlags = new ExternSymbolMappedField(nodeFactory.TypeSystemContext.GetWellKnownType(WellKnownType.Int32), "g_cpuFeatures");
             InstructionSetSupport = instructionSetSupport;
+
+            _instructionSetMap = new Dictionary<string, InstructionSet>();
+            foreach (var instructionSetInfo in InstructionSetFlags.ArchitectureToValidInstructionSets(TypeSystemContext.Target.Architecture))
+            {
+                if (!instructionSetInfo.Specifiable)
+                    continue;
+
+                _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
+            }
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
@@ -161,15 +171,37 @@ namespace ILCompiler
 
         public override MethodIL GetMethodIL(MethodDesc method)
         {
-            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method)
+            TypeDesc owningType = method.OwningType;
+            string intrinsicId = InstructionSetSupport.GetHardwareIntrinsicId(TypeSystemContext.Target.Architecture, owningType);
+            if (!string.IsNullOrEmpty(intrinsicId)
                 && HardwareIntrinsicHelpers.IsIsSupportedMethod(method))
             {
-                MethodIL methodIL = HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags);
-                if (methodIL != null)
-                    return methodIL;
+                InstructionSet instructionSet = _instructionSetMap[intrinsicId];
+
+                // If this is an instruction set that is optimistically supported, but is not one of the
+                // intrinsics that are known to be always available, emit IL that checks the support level
+                // at runtime.
+                if (!InstructionSetSupport.IsInstructionSetSupported(instructionSet)
+                    && InstructionSetSupport.OptimisticFlags.HasInstructionSet(instructionSet))
+                {
+                    return HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags);
+                }
             }
 
             return base.GetMethodIL(method);
+        }
+
+        public bool IsHardwareInstrinsicWithRuntimeDeterminedSupport(MethodDesc method)
+        {
+            string intrinsicId = InstructionSetSupport.GetHardwareIntrinsicId(TypeSystemContext.Target.Architecture, method.OwningType);
+            if (!string.IsNullOrEmpty(intrinsicId))
+            {
+                InstructionSet instructionSet = _instructionSetMap[intrinsicId];
+                return !InstructionSetSupport.IsInstructionSetSupported(instructionSet)
+                    && InstructionSetSupport.OptimisticFlags.HasInstructionSet(instructionSet);
+            }
+
+            return false;
         }
     }
 
