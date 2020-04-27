@@ -253,10 +253,6 @@ namespace ILCompiler
         /// </summary>
         private partial class BoxedValueType : MetadataType, INonEmittableType
         {
-            private const string BoxedValueFieldName = "BoxedValue";
-
-            public FieldDesc BoxedValue { get; }
-
             public MetadataType ValueTypeRepresented { get; }
 
             public override ModuleDesc Module { get; }
@@ -299,8 +295,6 @@ namespace ILCompiler
                 // mechanism they use for everything else at runtime.
                 // The main difference is that the "Boxed_ValueType" version has no fields. Reference types
                 // cannot have byref-like fields.
-                if (!valuetype.IsByRefLike)
-                    BoxedValue = new BoxedValueField(this);
             }
 
             public override ClassLayoutMetadata GetClassLayout() => default(ClassLayoutMetadata);
@@ -342,42 +336,12 @@ namespace ILCompiler
 
             public override FieldDesc GetField(string name)
             {
-                if (name == BoxedValueFieldName && BoxedValue != null)
-                    return BoxedValue;
-
                 return null;
             }
 
             public override IEnumerable<FieldDesc> GetFields()
             {
-                if (BoxedValue != null)
-                    return new FieldDesc[] { BoxedValue };
-
                 return Array.Empty<FieldDesc>();
-            }
-
-            /// <summary>
-            /// Synthetic field on <see cref="BoxedValueType"/>.
-            /// </summary>
-            private partial class BoxedValueField : FieldDesc
-            {
-                private BoxedValueType _owningType;
-
-                public override TypeSystemContext Context => _owningType.Context;
-                public override TypeDesc FieldType => _owningType.ValueTypeRepresented.InstantiateAsOpen();
-                public override bool HasRva => false;
-                public override bool IsInitOnly => false;
-                public override bool IsLiteral => false;
-                public override bool IsStatic => false;
-                public override bool IsThreadStatic => false;
-                public override DefType OwningType => _owningType;
-                public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
-                public override string Name => BoxedValueFieldName;
-
-                public BoxedValueField(BoxedValueType owningType)
-                {
-                    _owningType = owningType;
-                }
             }
         }
 
@@ -452,7 +416,7 @@ namespace ILCompiler
 
             public override MethodIL EmitIL()
             {
-                if (_owningType.BoxedValue == null)
+                if (_owningType.ValueTypeRepresented.IsByRefLike)
                 {
                     // If this is the fake unboxing thunk for ByRef-like types, just make a method that throws.
                     return new ILStubMethodIL(this,
@@ -468,11 +432,10 @@ namespace ILCompiler
                 ILCodeStream codeStream = emit.NewCodeStream();
 
                 FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType");
-                FieldDesc boxedValueField = _owningType.BoxedValue.InstantiateAsOpen();
 
                 // Load ByRef to the field with the value of the boxed valuetype
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(boxedValueField));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data")));
 
                 // Load the EEType of the boxed valuetype (this is the hidden generic context parameter expected
                 // by the (canonical) instance method, but normally not part of the signature in IL).
@@ -529,7 +492,7 @@ namespace ILCompiler
 
             public override MethodIL EmitIL()
             {
-                if (_owningType.BoxedValue == null)
+                if (_owningType.ValueTypeRepresented.IsByRefLike)
                 {
                     // If this is the fake unboxing thunk for ByRef-like types, just make a method that throws.
                     return new ILStubMethodIL(this,
@@ -544,13 +507,9 @@ namespace ILCompiler
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
-                FieldDesc boxedValueField = _owningType.BoxedValue.InstantiateAsOpen();
-
                 // unbox to get a pointer to the value type
                 codeStream.EmitLdArg(0);
-                MetadataType helperType = Context.SystemModule.GetKnownType("System", "Object");
-                MethodDesc helperMethod = helperType.GetKnownMethod("GetRawData", null);
-                codeStream.Emit(ILOpcode.call, emit.NewToken(helperMethod));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data")));
 
                 // Load rest of the arguments
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)
