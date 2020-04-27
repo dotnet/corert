@@ -877,23 +877,19 @@ namespace Internal.IL
 
         private LLVMValueRef LoadVarAddress(int index, LocalVarKind kind, out TypeDesc type, LLVMBuilderRef builder = default(LLVMBuilderRef))
         {
-            int varBase;
-            int varCountBase;
             int varOffset;
-            LLVMTypeRef valueType;
             if (builder.Handle == IntPtr.Zero)
                 builder = _builder;
 
             if (kind == LocalVarKind.Argument)
             {
-                varCountBase = 0;
-                varBase = 0;
+                int varCountBase = 0;
                 if (!_signature.IsStatic)
                 {
                     varCountBase = 1;
                 }
 
-                GetArgSizeAndOffsetAtIndex(index, out int argSize, out varOffset, out int realArgIndex);
+                varOffset = GetArgOffsetAtIndex(index, out int realArgIndex);
 
                 if (!_signature.IsStatic && index == 0)
                 {
@@ -907,7 +903,6 @@ namespace Internal.IL
                 {
                     type = _signature[index - varCountBase];
                 }
-                valueType = GetLLVMTypeForTypeDesc(type);
 
                 // If the argument can be passed as a real argument rather than on the shadow stack,
                 // get its address here
@@ -918,26 +913,23 @@ namespace Internal.IL
             }
             else if (kind == LocalVarKind.Local)
             {
-                varBase = GetTotalParameterOffset();
-                GetLocalSizeAndOffsetAtIndex(index, out int localSize, out varOffset);
-                valueType = GetLLVMTypeForTypeDesc(_locals[index].Type);
+                varOffset = GetLocalOffsetAtIndex(index);
                 type = _locals[index].Type;
                 if (varOffset == -1)
                 {
                     Debug.Assert(_localSlots[index].Handle != IntPtr.Zero);
                     return _localSlots[index];
                 }
+                varOffset = varOffset + GetTotalParameterOffset();
             }
             else
             {
-                varBase = GetTotalRealLocalOffset() + GetTotalParameterOffset();
-                GetSpillSizeAndOffsetAtIndex(index, out int localSize, out varOffset);
-                valueType = GetLLVMTypeForTypeDesc(_spilledExpressions[index].Type);
+                varOffset = GetSpillOffsetAtIndex(index, GetTotalRealLocalOffset()) + GetTotalParameterOffset();
                 type = _spilledExpressions[index].Type;
             }
 
             return builder.BuildGEP(_currentFunclet.GetParam(0),
-                new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)(varBase + varOffset), false) },
+                new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)(varOffset), false) },
                 $"{kind}{index}_");
 
         }
@@ -1459,19 +1451,17 @@ namespace Internal.IL
             return offset.AlignUp(_pointerSize);
         }
 
-        private void GetArgSizeAndOffsetAtIndex(int index, out int size, out int offset, out int realArgIndex)
+        private int GetArgOffsetAtIndex(int index, out int realArgIndex)
         {
             realArgIndex = -1;
-
+            int offset;
             int thisSize = 0;
             if (!_signature.IsStatic)
             {
                 thisSize = _thisType.IsValueType ? _thisType.Context.Target.PointerSize : _thisType.GetElementSize().AsInt.AlignUp(_pointerSize);
                 if (index == 0)
                 {
-                    size = thisSize;
-                    offset = 0;
-                    return;
+                    return 0;
                 }
                 else
                 {
@@ -1480,8 +1470,6 @@ namespace Internal.IL
             }
 
             var argType = _signature[index];
-            size = argType.GetElementSize().AsInt;
-
             int potentialRealArgIndex = 0;
 
             offset = thisSize;
@@ -1526,13 +1514,13 @@ namespace Internal.IL
             {
                 offset = PadOffset(argType, offset);
             }
+            return offset;
         }
 
-        private void GetLocalSizeAndOffsetAtIndex(int index, out int size, out int offset)
+        private int GetLocalOffsetAtIndex(int index)
         {
             LocalVariableDefinition local = _locals[index];
-            size = local.Type.GetElementSize().AsInt;
-
+            int offset;
             if (CanStoreVariableOnStack(local.Type))
             {
                 offset = -1;
@@ -1549,19 +1537,19 @@ namespace Internal.IL
                 }
                 offset = PadOffset(local.Type, offset);
             }
+            return offset;
         }
 
-        private void GetSpillSizeAndOffsetAtIndex(int index, out int size, out int offset)
+        private int GetSpillOffsetAtIndex(int index, int offset)
         {
             SpilledExpressionEntry spill = _spilledExpressions[index];
-            size = spill.Type.GetElementSize().AsInt;
 
-            offset = 0;
             for (int i = 0; i < index; i++)
             {
                 offset = PadNextOffset(_spilledExpressions[i].Type, offset);
             }
             offset = PadOffset(spill.Type, offset);
+            return offset;
         }
 
         public int PadNextOffset(TypeDesc type, int atOffset)
