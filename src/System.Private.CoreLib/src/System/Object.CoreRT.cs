@@ -59,12 +59,6 @@ namespace System
             return RuntimeImports.RhMemberwiseClone(this);
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private class RawData
-        {
-            public byte Data;
-        }
-
         internal ref byte GetRawData()
         {
             return ref Unsafe.As<RawData>(this).Data;

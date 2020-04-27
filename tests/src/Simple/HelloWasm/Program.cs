@@ -93,6 +93,8 @@ internal static class Program
             PrintLine(boxedInt.ToString());
         }
 
+        TestBoxUnboxDifferentSizes();
+
         var boxedStruct = (object)new BoxStubTest { Value = "Boxed Stub Test: Ok." };
         PrintLine(boxedStruct.ToString());
 
@@ -388,6 +390,73 @@ internal static class Program
             PrintLine(GC.CollectionCount(i).ToString());
         }
         EndTest(true);
+    }
+
+    private static unsafe void TestBoxUnboxDifferentSizes()
+    {
+        StartTest("Box/Unbox different sizes");
+        var pass = true;
+        long longValue = Convert.ToInt64((object)11111111L);
+        if(longValue != 11111111L)
+        {
+            FailTest("Int64");
+            pass = false;
+        }
+
+        int intValue = Convert.ToInt32((object)11111111);
+        if (intValue != 11111111)
+        {
+            FailTest("Int32");
+            pass = false;
+        }
+
+        float singleValue = Convert.ToSingle((object)1f);
+        if (singleValue != 1f)
+        {
+            FailTest("Single");
+            pass = false;
+        }
+
+        double doubleValue = Convert.ToDouble((object)1D);
+        if (doubleValue != 1D)
+        {
+            FailTest("Double");
+            pass = false;
+        }
+
+        short s1 = 1;
+        short shortValue = Convert.ToInt16((object)s1);
+        if (shortValue != 1)
+        {
+            FailTest("Int16");
+            pass = false;
+        }
+
+        byte b1 = 1;
+        byte byteValue = Convert.ToByte((object)b1);
+        if (byteValue != 1)
+        {
+            FailTest("Byte");
+            pass = false;
+        }
+
+        var s = new StructWintIntf();
+        s.IntField = 11111111;
+        s.LongField = 222222222L;
+        IHasTwoFields hasTwoFields = (IHasTwoFields)s;
+
+        if(hasTwoFields.GetIntField() != 11111111)
+        {
+            FailTest("GetIntField");
+            pass = false;
+        }
+        if (hasTwoFields.GetLongField() != 222222222L)
+        {
+            FailTest("GetLongField");
+            pass = false;
+        }
+
+        EndTest(pass);
     }
 
     private static WeakReference MethodWithObjectInShadowStack()
@@ -840,7 +909,9 @@ internal static class Program
         var i = x.IntField;
         var classForMetaTestsType = typeof(ClassForMetaTests);
         FieldInfo[] fields = classForMetaTestsType.GetFields();
-        EndTest(fields.Length == 3);
+        PrintLine("Fields Length");
+        PrintLine(fields.Length.ToString());
+        EndTest(fields.Length == 4);
 
         StartTest("Type get string field via reflection");
         var stringFieldInfo = classForMetaTestsType.GetField("StringField");
@@ -865,6 +936,11 @@ internal static class Program
         StartTest("Type set static int field via reflection");
         staticIntFieldInfo.SetValue(x, 987);
         EndTest(ClassForMetaTests.StaticIntField == 987);
+
+        StartTest("Type set static long field via reflection");
+        var staticLongFieldInfo = classForMetaTestsType.GetField("StaticLongField");
+        staticLongFieldInfo.SetValue(x, 0x11111111);
+        EndTest(ClassForMetaTests.StaticLongField == 0x11111111L);
 
         var st = new StructForMetaTests();
         st.StringField = "xyz";
@@ -914,12 +990,14 @@ internal static class Program
         public string StringField;
 #pragma warning restore 0169
         public static int StaticIntField;
+        public static long StaticLongField;
 
         public ClassForMetaTests()
         {
             StringField = "ab";
             IntField = 12;
             StaticIntField = 23;
+            StaticLongField = 0x22222222;
         }
 
         public bool ReturnTrueIf1(int i)
@@ -941,6 +1019,28 @@ internal static class Program
     public struct StructForMetaTests
     {
         public string StringField;
+    }
+
+    public interface IHasTwoFields
+    {
+        int GetIntField();
+        long GetLongField();
+    }
+
+    public struct StructWintIntf : IHasTwoFields
+    {
+        public int IntField;
+        public long LongField;
+
+        public int GetIntField()
+        {
+            return IntField;
+        }
+
+        public long GetLongField()
+        {
+            return LongField;
+        }
     }
 
 
@@ -1575,7 +1675,7 @@ internal static class Program
         fi.SetValue(null, 1.1f);
         EndTest(1.1f == ClassWithFloat.F);
     }
-    
+
     static void TestInitializeArray()
     {
         StartTest("Test InitializeArray");

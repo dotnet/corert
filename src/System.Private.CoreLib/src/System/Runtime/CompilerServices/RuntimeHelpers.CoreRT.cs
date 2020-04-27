@@ -330,4 +330,10 @@ namespace System.Runtime.CompilerServices
 #endif
         public byte Data;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal class RawData
+    {
+        public byte Data;
+    }
 }
