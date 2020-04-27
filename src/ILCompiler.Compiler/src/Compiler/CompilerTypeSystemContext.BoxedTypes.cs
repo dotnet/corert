@@ -293,8 +293,6 @@ namespace ILCompiler
                 // to the same __unreachable method body) so that the various places that store pointers to
                 // them because they want to be able to extract the target instance method can use the same
                 // mechanism they use for everything else at runtime.
-                // The main difference is that the "Boxed_ValueType" version has no fields. Reference types
-                // cannot have byref-like fields.
             }
 
             public override ClassLayoutMetadata GetClassLayout() => default(ClassLayoutMetadata);
