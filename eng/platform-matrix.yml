@@ -38,7 +38,7 @@ jobs:
 
 # WebAssembly
 
-- ${{ if and(ne(parameters.jobParameters.testScenarios, 'CoreFX'), ne(parameters.buildConfig, 'release')) }}: # Don't want the second job as it would be a duplicate.  Release is failing the generics test so leave out for now.
+- ${{ if ne(parameters.jobParameters.testScenarios, 'CoreFX') }}: # Don't want the second job as it would be a duplicate.
   - template: ${{ parameters.jobTemplate }}
     parameters:
       buildConfig: ${{ parameters.buildConfig }}
