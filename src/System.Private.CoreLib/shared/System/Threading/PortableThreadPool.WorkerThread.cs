@@ -57,7 +57,6 @@ namespace System.Threading
                     ThreadPoolInstance._hillClimbingThreadAdjustmentLock.Acquire();
                     try
                     {
-                        PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
                         // At this point, the thread's wait timed out. We are shutting down this thread.
                         // We are going to decrement the number of exisiting threads to no longer include this one
                         // and then change the max number of threads in the thread pool to reflect that we don't need as many

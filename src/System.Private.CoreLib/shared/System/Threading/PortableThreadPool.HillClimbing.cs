@@ -360,7 +360,6 @@ namespace System.Threading
                 // Record these numbers for posterity
                 //
 
-                PortableThreadPoolEventSource = PortableThreadPoolEventSource.Log;
                 if (log.IsEnabled())
                 {
                     log.WorkerThreadAdjustmentStats(sampleDurationSeconds, throughput, threadWaveComponent.Real, throughputWaveComponent.Real,
