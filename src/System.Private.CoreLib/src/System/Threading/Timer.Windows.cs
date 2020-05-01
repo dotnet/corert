@@ -21,7 +21,7 @@ namespace System.Threading
             _id = id;
         }
 
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
         private static void TimerCallback(IntPtr instance, IntPtr context, IntPtr timer)
         {
             int id = (int)context;

@@ -40,7 +40,7 @@ namespace System.Threading
             return true;
         }
 
-        [NativeCallable]
+        [UnmanagedCallersOnly]
         private static void OnThreadExit()
         {
             Thread currentThread = t_currentThread;
@@ -116,7 +116,7 @@ namespace System.Threading
         /// <summary>
         /// This is an entry point for managed threads created by application
         /// </summary>
-        [NativeCallable]
+        [UnmanagedCallersOnly]
         private static IntPtr ThreadEntryPoint(IntPtr parameter)
         {
             StartThread(parameter);

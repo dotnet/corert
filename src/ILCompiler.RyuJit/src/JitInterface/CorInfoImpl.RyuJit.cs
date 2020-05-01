@@ -42,11 +42,17 @@ namespace Internal.JitInterface
         private Dictionary<uint, ILLocalVariable> _localSlotToInfoMap;
         private Dictionary<uint, string> _parameterIndexToNameMap;
         private TypeDesc[] _variableToTypeDesc;
+        private readonly UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
 
         public CorInfoImpl(RyuJitCompilation compilation)
             : this()
         {
             _compilation = compilation;
+        }
+
+        private MethodDesc getUnboxingThunk(MethodDesc method)
+        {
+            return _unboxingThunkFactory.GetUnboxingMethod(method);
         }
 
         public void CompileMethod(MethodCodeNode methodCodeNodeNeedingCode, MethodIL methodIL = null)
@@ -1045,12 +1051,12 @@ namespace Internal.JitInterface
                 throw new BadImageFormatException();
             }
 
-            // This block enforces the rule that methods with [NativeCallable] attribute
+            // This block enforces the rule that methods with [UnmanagedCallersOnly] attribute
             // can only be called from unmanaged code. The call from managed code is replaced
             // with a stub that throws an InvalidProgramException
-            if (method.IsNativeCallable && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
+            if (method.IsUnmanagedCallersOnly && (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) == 0)
             {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNativeCallable, method);
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramUnmanagedCallersOnly, method);
             }
 
             TypeDesc exactType = HandleToObject(pResolvedToken.hClass);

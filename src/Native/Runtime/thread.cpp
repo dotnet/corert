@@ -1139,7 +1139,7 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
         return false; // thread is not attached
 
     // If the thread is already in cooperative mode, this is a bad transition that will be a fail fast unless we are in 
-    // a do not trigger mode.  The exception to the rule allows us to have [NativeCallable] methods that are called via 
+    // a do not trigger mode.  The exception to the rule allows us to have [UnmanagedCallersOnly] methods that are called via 
     // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable 
     // methods on interfaces passed to native.
     if (IsCurrentThreadInCooperativeMode())

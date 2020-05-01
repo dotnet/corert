@@ -69,7 +69,7 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override bool IsNativeCallable
+        public override bool IsUnmanagedCallersOnly
         {
             get
             {

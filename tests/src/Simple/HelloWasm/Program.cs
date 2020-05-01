@@ -825,7 +825,7 @@ internal static class Program
         EndTest(callbackResult);
     }
 
-    [System.Runtime.InteropServices.NativeCallable(EntryPoint = "CallMe")]
+    [System.Runtime.InteropServices.UnmanagedCallersOnly(EntryPoint = "CallMe")]
     private static void _CallMe(int x)
     {
         if (x == 123)
@@ -2228,14 +2228,14 @@ class FieldStatics
 namespace System.Runtime.InteropServices
 {
     /// <summary>
-    /// Any method marked with NativeCallableAttribute can be directly called from
+    /// Any method marked with UnmanagedCallersOnlyAttribute can be directly called from
     /// native code. The function token can be loaded to a local variable using LDFTN
     /// and passed as a callback to native method.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
-    public sealed class NativeCallableAttribute : Attribute
+    public sealed class UnmanagedCallersOnlyAttribute : Attribute
     {
-        public NativeCallableAttribute()
+        public NUnmanagedCallersOnlyAttribute()
         {
         }
 

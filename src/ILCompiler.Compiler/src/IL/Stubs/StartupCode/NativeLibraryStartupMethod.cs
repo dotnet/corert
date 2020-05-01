@@ -82,7 +82,7 @@ namespace Internal.IL.Stubs.StartupCode
             }
         }
 
-        public override bool IsNativeCallable
+        public override bool IsUnmanagedCallersOnly
         {
             get
             {

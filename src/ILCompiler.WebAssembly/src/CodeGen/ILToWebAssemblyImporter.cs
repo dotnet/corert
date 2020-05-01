@@ -215,10 +215,10 @@ namespace Internal.IL
             finally
             {
                 // Generate thunk for runtime exports
-                if ((_method.IsRuntimeExport || _method.IsNativeCallable) && _method is EcmaMethod)  // TODO: Reverse delegate invokes probably need something here, but what would be the export name?
+                if ((_method.IsRuntimeExport || _method.IsUnmanagedCallersOnly) && _method is EcmaMethod)  // TODO: Reverse delegate invokes probably need something here, but what would be the export name?
                 {
                     EcmaMethod ecmaMethod = ((EcmaMethod)_method);
-                    string exportName = ecmaMethod.IsRuntimeExport ? ecmaMethod.GetRuntimeExportName() : ecmaMethod.GetNativeCallableExportName();
+                    string exportName = ecmaMethod.IsRuntimeExport ? ecmaMethod.GetRuntimeExportName() : ecmaMethod.GetUnmanagedCallersOnlyExportName();
                     if (exportName == null)
                     {
                         exportName = ecmaMethod.Name;
@@ -3112,7 +3112,7 @@ namespace Internal.IL
             LLVMTypeRef reversePInvokeFrameType = LLVMTypeRef.CreateStruct(new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }, false);
             LLVMValueRef reversePInvokeFrame = default(LLVMValueRef);
             LLVMTypeRef reversePInvokeFunctionType = LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(reversePInvokeFrameType, 0) }, false);
-            if (method.IsNativeCallable)
+            if (method.IsUnmanagedCallersOnly)
             {
                 reversePInvokeFrame = builder.BuildAlloca(reversePInvokeFrameType, "ReversePInvokeFrame");
                 LLVMValueRef RhpReversePInvoke2 = GetOrCreateLLVMFunction("RhpReversePInvoke2", reversePInvokeFunctionType);
@@ -3154,7 +3154,7 @@ namespace Internal.IL
 
             LLVMValueRef llvmReturnValue = builder.BuildCall(managedFunction, llvmArgs.ToArray(), "");
 
-            if (method.IsNativeCallable)
+            if (method.IsUnmanagedCallersOnly)
             {
                 LLVMValueRef RhpReversePInvokeReturn2 = GetOrCreateLLVMFunction("RhpReversePInvokeReturn2", reversePInvokeFunctionType);
                 builder.BuildCall(RhpReversePInvokeReturn2, new LLVMValueRef[] { reversePInvokeFrame }, "");
@@ -3313,10 +3313,10 @@ namespace Internal.IL
 
             if (targetLLVMFunction.Handle.Equals(IntPtr.Zero))
             {
-                if (runtimeDeterminedMethod.IsNativeCallable)
+                if (runtimeDeterminedMethod.IsUnmanagedCallersOnly)
                 {
                     EcmaMethod ecmaMethod = ((EcmaMethod)runtimeDeterminedMethod);
-                    string mangledName = ecmaMethod.GetNativeCallableExportName();
+                    string mangledName = ecmaMethod.GetUnmanagedCallersOnlyExportName();
                     if (mangledName == null)
                     {
                         mangledName = ecmaMethod.Name;

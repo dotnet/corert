@@ -383,7 +383,7 @@ namespace System.Runtime
         public static void RhpReversePInvokeBadTransition(IntPtr returnAddress)
         {
             EH.FailFastViaClasslib(
-                RhFailFastReason.IllegalNativeCallableEntry,
+                RhFailFastReason.IllegalUnmanagedCallersOnlyEntry,
                 null,
                 returnAddress);
         }
@@ -411,7 +411,7 @@ namespace System.Runtime
         // NOTE: We don't want to allocate the array on behalf of the caller because we don't know which class
         // library's objects the caller understands (we support multiple class libraries with multiple root
         // System.Object types).
-        [NativeCallable(EntryPoint = "RhpCalculateStackTraceWorker", CallingConvention = CallingConvention.Cdecl)]
+        [UnmanagedCallersOnly(EntryPoint = "RhpCalculateStackTraceWorker", CallingConvention = CallingConvention.Cdecl)]
         private static unsafe int RhpCalculateStackTraceWorker(IntPtr* pOutputBuffer, uint outputBufferLength)
         {
             uint nFrames = 0;

@@ -40,7 +40,7 @@ namespace System.Runtime
 #endif // FEATURE_GC_STRESS
         }
 
-        [NativeCallable(EntryPoint = "RhGcStress_Initialize2", CallingConvention = CallingConvention.Cdecl)]
+        [UnmanagedCallersOnly(EntryPoint = "RhGcStress_Initialize2", CallingConvention = CallingConvention.Cdecl)]
         internal static void Initialize2()
         {
             Initialize();

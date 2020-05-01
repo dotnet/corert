@@ -36,19 +36,19 @@ namespace ILCompiler
                 {
                     streamWriter.WriteLine("EXPORTS");
                     foreach (var method in _methods)
-                        streamWriter.WriteLine($"   {method.GetNativeCallableExportName()}");
+                        streamWriter.WriteLine($"   {method.GetUnmanagedCallersOnlyExportName()}");
                 }
                 else if(_context.Target.IsOSX)
                 {
                     foreach (var method in _methods)
-                        streamWriter.WriteLine($"_{method.GetNativeCallableExportName()}");
+                        streamWriter.WriteLine($"_{method.GetUnmanagedCallersOnlyExportName()}");
                 }
                 else
                 {
                     streamWriter.WriteLine("V1.0 {");
                     streamWriter.WriteLine("    global: _init; _fini;");
                     foreach (var method in _methods)
-                        streamWriter.WriteLine($"        {method.GetNativeCallableExportName()};");
+                        streamWriter.WriteLine($"        {method.GetUnmanagedCallersOnlyExportName()};");
                     streamWriter.WriteLine("    local: *;");
                     streamWriter.WriteLine("};");
                 }

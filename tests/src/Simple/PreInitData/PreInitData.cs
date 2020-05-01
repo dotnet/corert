@@ -46,13 +46,13 @@ namespace System.Runtime.CompilerServices
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Method)]
-    public sealed class NativeCallableAttribute : Attribute
+    public sealed class UnmanagedCallersOnlyAttribute : Attribute
     {
         public string EntryPoint;
 
         public CallingConvention CallingConvention;
 
-        public NativeCallableAttribute()
+        public UnmanagedCallersOnlyAttribute()
         {
         }
     }
@@ -111,12 +111,12 @@ class Details
 
 static class NativeMethods
 {
-    [NativeCallable]
+    [UnmanagedCallersOnly]
     internal static void Func1(int a)
     {
     }
 
-    [NativeCallable]
+    [UnmanagedCallersOnly]
     internal static void Func2(float b)
     {
     }

@@ -141,6 +141,7 @@
     <Compile Include="$(ILCompilerBasePath)\Compiler\JitHelper.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\GenericDictionaryLookup.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\HardwareIntrinsicHelpers.cs" />
+    <Compile Include="$(ILCompilerBasePath)\Compiler\HardwareIntrinsicHelpers.Aot.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\MethodExtensions.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\TypeExtensions.cs" />
     <Compile Include="$(ILCompilerBasePath)\Compiler\NameMangler.cs" />
@@ -164,6 +165,7 @@
     <Compile Include="$(JitInterfaceBasePath)\MemoryHelper.cs" />
     <Compile Include="$(JitInterfaceBasePath)\TypeString.cs" />
     <Compile Include="$(JitInterfaceBasePath)\UnboxingMethodDesc.cs" />
+    <Compile Include="$(JitInterfaceBasePath)\UnboxingMethodDescFactory.cs" />
     <Compile Include="$(JitInterfaceBasePath)\SystemVStructClassificator.cs" />
     <Compile Include="$(TypeLoaderBasePath)\Internal\TypeSystem\PInvokeTargetNativeMethod.Runtime.cs" />
     <Compile Include="Internal\Runtime\JitSupport\RyuJitExecutionStrategy.cs" />
