@@ -1547,18 +1547,24 @@ namespace ILCompiler.CppCodeGen
             Out.Write(methodTables.ToString());
 
             // Emit pointers to dispatch map nodes, to be used in interface dispatch
-            Out.Write("void * dispatchMapModule[");
-            Out.Write(dispatchMapCount);
-            Out.Write("] = {");
-            Out.Write(dispatchPointers.ToString());
-            Out.Write("};");
+            if (dispatchMapCount > 0)
+            {
+                Out.Write("void * dispatchMapModule[");
+                Out.Write(dispatchMapCount);
+                Out.Write("] = {");
+                Out.Write(dispatchPointers.ToString());
+                Out.Write("};");
+            }
 
             // Emit pointers to eager cctor table nodes
-            Out.Write("void * eagerCctorTable[");
-            Out.Write(eagerCctorCount);
-            Out.Write("] = {");
-            Out.Write(eagerCctorPointers.ToString());
-            Out.Write("};");
+            if (eagerCctorCount > 0)
+            {
+                Out.Write("void * eagerCctorTable[");
+                Out.Write(eagerCctorCount);
+                Out.Write("] = {");
+                Out.Write(eagerCctorPointers.ToString());
+                Out.Write("};");
+            }
 
             Out.Write(rtrHeader);
         }
