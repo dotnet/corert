@@ -351,6 +351,8 @@ internal static class Program
         TestCkFinite();
 #endif
 
+        TestIntOverflows();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -1758,7 +1760,6 @@ internal static class Program
         {
             success = false;
         }
-
         try
         {
             var f = c.ToString(); //method access
@@ -1812,6 +1813,163 @@ internal static class Program
         return CkFiniteTest.CkFinite64(*(double*)(&value));
     }
 #endif
+
+    static void TestIntOverflows()
+    {
+        TestSignedIntAddOvf();
+
+        TestSignedLongAddOvf();
+
+        TestUnsignedIntAddOvf();
+
+        TestUnsignedLongAddOvf();
+    }
+
+    private static void TestSignedLongAddOvf()
+    {
+        StartTest("Test long add overflows");
+        bool thrown;
+        long op64l = 1;
+        long op64r = long.MaxValue;
+        thrown = false;
+        try
+        {
+            long res = checked(op64l + op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i64 addition of +ve number");
+            return;
+        }
+        thrown = false;
+        op64l = long.MinValue; // add negative to overflow below the MinValue
+        op64r = -1;
+        try
+        {
+            long res = checked(op64l + op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i64 addition of -ve number");
+            return;
+        }
+        EndTest(true);
+    }
+
+    private static void TestSignedIntAddOvf()
+    {
+        StartTest("Test int add overflows");
+        bool thrown;
+        int op32l = 1;
+        int op32r = 2;
+        if (checked(op32l + op32r) != 3)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op32l = 1;
+        op32r = int.MaxValue;
+        thrown = false;
+        try
+        {
+            int res = checked(op32l + op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i32 addition of +ve number");
+            return;
+        }
+
+        thrown = false;
+        op32l = int.MinValue; // add negative to overflow below the MinValue
+        op32r = -1;
+        try
+        {
+            int res = checked(op32l + op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i32 addition of -ve number");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestUnsignedIntAddOvf()
+    {
+        StartTest("Test uint add overflows");
+        bool thrown;
+        uint op32l = 1;
+        uint op32r = 2;
+        if (checked(op32l + op32r) != 3)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op32l = 1;
+        op32r = uint.MaxValue;
+        thrown = false;
+        try
+        {
+            uint res = checked(op32l + op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for unsigned i32 addition of +ve number");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestUnsignedLongAddOvf()
+    {
+        StartTest("Test ulong add overflows");
+        bool thrown;
+        ulong op64l = 1;
+        ulong op64r = 2;
+        if (checked(op64l + op64r) != 3)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op64l = 1;
+        op64r = ulong.MaxValue;
+        thrown = false;
+        try
+        {
+            ulong res = checked(op64l + op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for unsigned i64 addition of +ve number");
+            return;
+        }
+        PassTest();
+    }
 
     static ushort ReadUInt16()
     {
