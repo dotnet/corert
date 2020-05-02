@@ -115,6 +115,7 @@ namespace Internal.IL
         static LLVMValueRef RhpThrowEx = default(LLVMValueRef);
         static LLVMValueRef RhpCallCatchFunclet = default(LLVMValueRef);
         static LLVMValueRef LlvmCatchFunclet = default(LLVMValueRef);
+        static LLVMValueRef LlvmFilterFunclet = default(LLVMValueRef);
         static LLVMValueRef LlvmFinallyFunclet = default(LLVMValueRef);
         static LLVMValueRef NullRefFunction = default(LLVMValueRef);
         static LLVMValueRef CkFinite32Function = default(LLVMValueRef);
@@ -174,6 +175,26 @@ namespace Internal.IL
             }
             LLVMValueRef leaveToILOffset = funcletBuilder.BuildCall(LlvmCatchFunclet.GetParam(1), llvmArgs.ToArray(), string.Empty);
             funcletBuilder.BuildRet(leaveToILOffset);
+            funcletBuilder.Dispose();
+        }
+
+        static void BuildFilterFunclet(LLVMModuleRef module, string funcletName, LLVMTypeRef[] funcletArgTypes, bool passGenericContext = false)
+        {
+            LlvmFilterFunclet = module.AddFunction(funcletName, LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32,
+                funcletArgTypes, false));
+            var block = LlvmFilterFunclet.AppendBasicBlock("Filter");
+            LLVMBuilderRef funcletBuilder = Context.CreateBuilder();
+            funcletBuilder.PositionAtEnd(block);
+
+            List<LLVMValueRef> llvmArgs = new List<LLVMValueRef>();
+            llvmArgs.Add(LlvmFilterFunclet.GetParam(2)); //shadow stack
+            llvmArgs.Add(LlvmFilterFunclet.GetParam(0)); // exception object
+            if (passGenericContext)
+            {
+                llvmArgs.Add(LlvmFilterFunclet.GetParam(3));
+            }
+            LLVMValueRef filterResult = funcletBuilder.BuildCall(LlvmFilterFunclet.GetParam(1), llvmArgs.ToArray(), string.Empty);
+            funcletBuilder.BuildRet(filterResult);
             funcletBuilder.Dispose();
         }
 

@@ -1338,6 +1338,8 @@ internal static class Program
         TestThrowInCatch();
 
         TestExceptionInGvmCall();
+        
+        TestFilter();
     }
 
     private static void TestTryCatchNoException()
@@ -1493,6 +1495,27 @@ internal static class Program
         var shouldBeTrue = CatchGvmThrownException(new DerivedThrows<string>(), (string)null);
 
         EndTest(shouldBeTrue && !shouldBeFalse);
+    }
+
+    private static unsafe void TestFilter()
+    {
+        StartTest("TestFilter");
+
+        int counter = 0;
+        try
+        {
+            counter++;
+            throw new Exception("Testing filter");
+        }
+        catch (Exception e) when (e.Message == "Testing filter" && counter++ > 0)
+        {
+            if (e.Message == "Testing filter")
+            {
+                counter++;
+            }
+            counter++;
+        }
+        EndTest(counter == 4);
     }
 
     class DerivedThrows<A> : GenBase<A>
