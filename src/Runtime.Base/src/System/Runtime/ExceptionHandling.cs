@@ -21,7 +21,7 @@ namespace System.Runtime
         UnhandledException_ExceptionDispatchNotAllowed = 2,  // "Unhandled exception: no handler found before escaping a finally clause or other fail-fast scope."
         UnhandledException_CallerDidNotHandle = 3,           // "Unhandled exception: no handler found in calling method."
         ClassLibDidNotTranslateExceptionID = 4,              // "Unable to translate failure into a classlib-specific exception object."
-        IllegalNativeCallableEntry = 5,                      // "Invalid Program: attempted to call a NativeCallable method from runtime-typesafe code."
+        IllegalUnmanagedCallersOnlyEntry = 5,                      // "Invalid Program: attempted to call a UnmanagedCallersOnly method from runtime-typesafe code."
 
         PN_UnhandledException = 6,                           // ProjectN: "unhandled exception"
         PN_UnhandledExceptionFromPInvoke = 7,                // ProjectN: "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition."
@@ -974,7 +974,7 @@ namespace System.Runtime
             }
         }
 
-        [NativeCallable(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp", CallingConvention = CallingConvention.Cdecl)]
+        [UnmanagedCallersOnly(EntryPoint = "RhpFailFastForPInvokeExceptionPreemp", CallingConvention = CallingConvention.Cdecl)]
         public static void RhpFailFastForPInvokeExceptionPreemp(IntPtr PInvokeCallsiteReturnAddr, void* pExceptionRecord, void* pContextRecord)
         {
             FailFastViaClasslib(RhFailFastReason.PN_UnhandledExceptionFromPInvoke, null, PInvokeCallsiteReturnAddr);

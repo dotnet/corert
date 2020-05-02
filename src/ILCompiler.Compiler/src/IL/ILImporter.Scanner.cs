@@ -415,9 +415,9 @@ namespace Internal.IL
 
             TypeDesc exactType = method.OwningType;
 
-            if (method.IsNativeCallable && (opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn))
+            if (method.IsUnmanagedCallersOnly && (opcode != ILOpcode.ldftn && opcode != ILOpcode.ldvirtftn))
             {
-                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNativeCallable, method);
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramUnmanagedCallersOnly, method);
             }
 
             bool resolvedConstraint = false;

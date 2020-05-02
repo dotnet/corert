@@ -203,8 +203,8 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs">
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\NativeCallableAttribute.cs">
-      <Link>System\Runtime\InteropServices\NativeCallableAttribute.cs</Link>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs">
+      <Link>System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\OutAttribute.cs">
       <Link>System\Runtime\InteropServices\OutAttribute.cs</Link>

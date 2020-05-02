@@ -189,7 +189,7 @@ namespace ILCompiler
                 if (!closed)
                 {
                     // Open delegate to a static method
-                    if (targetMethod.IsNativeCallable)
+                    if (targetMethod.IsUnmanagedCallersOnly)
                     {
                         // If target method is native callable, create a reverse PInvoke delegate
                         initMethod = systemDelegate.GetKnownMethod("InitializeReversePInvokeThunk", null);
@@ -201,7 +201,7 @@ namespace ILCompiler
                         // the codegen to make this work without actually constructing the delegate. You can't construct
                         // the delegate if it's generic, even on Project N.
                         // TODO: Make this throw something like "TypeSystemException.InvalidProgramException"?
-                        Debug.Assert(invokeThunk != null, "Delegate with a non-native signature for a NativeCallable method");
+                        Debug.Assert(invokeThunk != null, "Delegate with a non-native signature for a UnmanagedCallersOnly method");
                     }
                     else
                     {

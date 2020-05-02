@@ -104,8 +104,8 @@ namespace ILCompiler.DependencyAnalysis
                 if (method.IsCanonicalMethod(CanonicalFormKind.Universal))
                     flags |= InvokeTableFlags.IsUniversalCanonicalEntry;
 
-                // TODO: native signature for P/Invokes and NativeCallable methods
-                if (method.IsRawPInvoke() || method.IsNativeCallable)
+                // TODO: native signature for P/Invokes and UnmanagedCallersOnly methods
+                if (method.IsRawPInvoke() || method.IsUnmanagedCallersOnly)
                     continue;
 
                 // Grammar of an entry in the hash table:

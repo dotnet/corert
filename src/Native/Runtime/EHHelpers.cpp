@@ -219,7 +219,7 @@ EXTERN_C Int32 __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExcep
     // We promote exceptions that were not converted to managed exceptions to a FailFast.  However, we have to
     // be careful because we got here via OS SEH infrastructure and, therefore, don't know what GC mode we're
     // currently in.  As a result, since we're calling back into managed code to handle the FailFast, we must
-    // correctly call either a NativeCallable or a RuntimeExport version of the same method.
+    // correctly call either a UnmanagedCallersOnly or a RuntimeExport version of the same method.
     if (pThread->IsCurrentThreadInCooperativeMode())
     {
         // Cooperative mode -- Typically, RhpVectoredExceptionHandler will handle this because the faulting IP will be

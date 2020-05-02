@@ -60,9 +60,9 @@ namespace ILCompiler
             return null;
         }
 
-        public static string GetNativeCallableExportName(this EcmaMethod This)
+        public static string GetUnmanagedCallersOnlyExportName(this EcmaMethod This)
         {
-            var decoded = This.GetDecodedCustomAttribute("System.Runtime.InteropServices", "NativeCallableAttribute");
+            var decoded = This.GetDecodedCustomAttribute("System.Runtime.InteropServices", "UnmanagedCallersOnlyAttribute");
             if (decoded == null)
                 return null;
 

@@ -17,7 +17,7 @@ namespace TypeSystemTests
 
         public ValueTypeShapeCharacteristicsTests()
         {
-            _context = new TestTypeSystemContext(TargetArchitecture.X64);
+            _context = new TestTypeSystemContext(TargetArchitecture.ARM);
             var systemModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(systemModule);
 

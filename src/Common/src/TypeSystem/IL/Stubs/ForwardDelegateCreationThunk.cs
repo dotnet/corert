@@ -36,14 +36,6 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override bool IsNativeCallable
-        {
-            get
-            {
-                return false;
-            }
-        }
-
         public override TypeDesc OwningType
         {
             get
