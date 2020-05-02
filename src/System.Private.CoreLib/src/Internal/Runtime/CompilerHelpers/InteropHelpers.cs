@@ -407,6 +407,26 @@ namespace Internal.Runtime.CompilerHelpers
             return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
         }
 
+        public static object ConvertManagedComInterfaceToNative(object pUnk)
+        {
+            if (pUnk == null)
+            {
+                return null;
+            }
+
+            throw new PlatformNotSupportedException("Marhalling of non null COM interfaces does not supported");
+        }
+
+        public static object ConvertNativeComInterfaceToManaged(object pUnk)
+        {
+            if (pUnk == null)
+            {
+                return null;
+            }
+
+            throw new PlatformNotSupportedException("Marhalling of non null COM interfaces does not supported");
+        }
+
         internal static int AsAnyGetNativeSize(object o)
         {
             // Array, string and StringBuilder are not implemented.

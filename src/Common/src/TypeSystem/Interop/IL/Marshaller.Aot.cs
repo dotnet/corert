@@ -853,4 +853,31 @@ namespace Internal.TypeSystem.Interop
             codeStream.EmitLabel(lNull);
         }
     }
+
+    class ComInterfaceMarshaller : Marshaller
+    {
+        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "ConvertManagedComInterfaceToNative");
+            LoadManagedValue(codeStream);
+
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+
+            StoreNativeValue(codeStream);
+        }
+
+        protected override void AllocAndTransformNativeToManaged(ILCodeStream codeStream)
+        {
+            ILEmitter emitter = _ilCodeStreams.Emitter;
+
+            var helper = Context.GetHelperEntryPoint("InteropHelpers", "ConvertNativeComInterfaceToManaged");
+            LoadManagedValue(codeStream);
+
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
+
+            StoreNativeValue(codeStream);
+        }
+    }
 }

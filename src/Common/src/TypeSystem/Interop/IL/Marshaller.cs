@@ -870,47 +870,6 @@ namespace Internal.TypeSystem.Interop
         }
     }
 
-    class ComInterfaceMarshaller : Marshaller
-    {
-        protected override void AllocAndTransformManagedToNative(ILCodeStream codeStream)
-        {
-
-            var context = this.Context;
-            ILEmitter emitter = _ilCodeStreams.Emitter;
-
-            // Check if we marshall null pointer
-            ILCodeLabel lNullInterface = emitter.NewCodeLabel();
-            LoadManagedValue(codeStream);
-            codeStream.Emit(ILOpcode.brfalse, lNullInterface);
-
-            MethodSignature ctorSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
-                new TypeDesc[] { context.GetWellKnownType(WellKnownType.String) });
-            MethodDesc exceptionCtor = context.GetWellKnownType(WellKnownType.Exception).GetKnownMethod(".ctor", ctorSignature);
-
-            codeStream.Emit(ILOpcode.ldstr, emitter.NewToken("Marhalling of non null interfaces does not supported."));
-            codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
-            codeStream.Emit(ILOpcode.throw_);
-
-            // Fall through. If interface is null then no conversion is needed.
-            codeStream.EmitLabel(lNullInterface);
-            LoadManagedValue(codeStream);
-            StoreNativeValue(codeStream);
-        }
-
-        protected override void AllocAndTransformNativeToManaged(ILCodeStream codeStream)
-        {
-            var context = this.Context;
-            ILEmitter emitter = _ilCodeStreams.Emitter;
-            MethodSignature ctorSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
-                new TypeDesc[] { context.GetWellKnownType(WellKnownType.String) });
-            MethodDesc exceptionCtor = context.GetWellKnownType(WellKnownType.Exception).GetKnownMethod(".ctor", ctorSignature);
-
-            codeStream.Emit(ILOpcode.ldstr, emitter.NewToken("Marhalling of non null interfaces does not supported"));
-            codeStream.Emit(ILOpcode.newobj, emitter.NewToken(exceptionCtor));
-            codeStream.Emit(ILOpcode.throw_);
-        }
-    }
-
     class VoidReturnMarshaller : Marshaller
     {
         protected override void EmitMarshalReturnValueManagedToNative()
