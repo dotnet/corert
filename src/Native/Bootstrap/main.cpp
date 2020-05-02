@@ -275,16 +275,25 @@ extern "C" uint32_t RhpCallCatchFunclet(void * exceptionObj, void* pHandlerIP, v
         ? LlvmCatchFuncletGeneric(exceptionObj, pHandlerIP, pvRegDisplay, exInfo)
         : LlvmCatchFunclet(exceptionObj, pHandlerIP, pvRegDisplay);
 }
+
+extern "C" uint32_t LlvmFilterFunclet(void* exceptionObj, unsigned int pHandlerIP, void* pvRegDisplay);
+extern "C" uint32_t LlvmFilterFuncletGeneric(void* exceptionObj, unsigned int pHandlerIP, void* pvRegDisplay, void* genericContext);
+extern "C" uint32_t RhpCallFilterFunclet(void* exceptionObj, unsigned int pHandlerIP, void* shadowStack)
+{
+    return 0 /* how to tell we need the generic context ? */
+        ? LlvmFilterFuncletGeneric(exceptionObj, pHandlerIP, shadowStack, NULL /* generic context do we pass this? */)
+        : LlvmFilterFunclet(exceptionObj, pHandlerIP, shadowStack);
+}
 #else 
 extern "C" uint32_t RhpCallCatchFunclet(void *, void*, void*, void*)
 {
     throw "RhpCallCatchFunclet";
 }
-#endif
 extern "C" void* RhpCallFilterFunclet(void*, void*, void*)
 {
     throw "RhpCallFilterFunclet";
 }
+#endif
 
 #if defined(_WASM_)
 extern "C" void LlvmFinallyFunclet(void *finallyHandler, void *shadowStack);

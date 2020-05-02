@@ -447,11 +447,17 @@ namespace Internal.IL
                     returnType = LLVMTypeRef.Void;
                 }
                 // Funclets accept a shadow stack pointer and a generic ctx hidden param if the owning method has one
-                var funcletArgs = new LLVMTypeRef[FuncletsRequireHiddenContext() ? 2 : 1];
-                funcletArgs[0] = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
+                var baseArgCount = kind == ILExceptionRegionKind.Filter ? 2 : 1; // filter funclets take the exception, maybe catch should also?
+                var funcletArgs = new LLVMTypeRef[FuncletsRequireHiddenContext() ? baseArgCount + 1 : baseArgCount];
+                int argIx = 0;
+                funcletArgs[argIx++] = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
                 if (FuncletsRequireHiddenContext())
                 {
-                    funcletArgs[1] = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
+                    funcletArgs[argIx++] = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
+                }
+                if (kind == ILExceptionRegionKind.Filter)
+                {
+                    funcletArgs[argIx++] = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
                 }
                 LLVMTypeRef universalFuncletSignature = LLVMTypeRef.CreateFunction(returnType, funcletArgs, false);
                 funclet = Module.AddFunction(funcletName, universalFuncletSignature);
@@ -567,7 +573,7 @@ namespace Internal.IL
                     funcletOffset = ehRegion.ILRegion.HandlerOffset;
                 }
 
-                blockFunclet = GetOrCreateFunclet(ehRegion.ILRegion.Kind, funcletOffset);
+                blockFunclet = GetOrCreateFunclet(kind, funcletOffset);
             }
             else
             {
@@ -632,6 +638,17 @@ namespace Internal.IL
             // Push an exception object for catch and filter
             if (basicBlock.HandlerStart || basicBlock.FilterStart)
             {
+                if (basicBlock.FilterStart)
+                {
+                    // need to pad out the spilled slots in case the filter tries to allocate some temp variables on the shadow stack.  As some spaces are used in the call to FindFirstPassHandlerWasm
+                    // and inside FindFirstPassHandlerWasm we need to leave space for them.
+                    // An alternative approach could be to calculate this space in FindFirstPassHandlerWasm and pass it through
+                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "infoIteratorEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32))); //3 ref and out params
+                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "tryRegionIdxEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
+                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "handlerFuncPtrEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
+                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32))); // 2 temps used in FindFirstPassHandlerWasm
+                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
+                }
                 foreach (ExceptionRegion ehRegion in _exceptionRegions)
                 {
                     if (ehRegion.ILRegion.HandlerOffset == basicBlock.StartOffset ||
@@ -656,13 +673,10 @@ namespace Internal.IL
                 {
                     if(ehRegion.ILRegion.TryOffset == basicBlock.StartOffset)
                     {
+                        MarkBasicBlock(_basicBlocks[ehRegion.ILRegion.HandlerOffset]);
                         if (ehRegion.ILRegion.Kind == ILExceptionRegionKind.Filter)
                         {
                             MarkBasicBlock(_basicBlocks[ehRegion.ILRegion.FilterOffset]);
-                        }
-                        else
-                        {
-                            MarkBasicBlock(_basicBlocks[ehRegion.ILRegion.HandlerOffset]);
                         }
                     }
                 }
@@ -2824,6 +2838,30 @@ namespace Internal.IL
                         }, false), 0), // pHandlerIP - catch funcletAddress
                         LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
                     });
+                BuildFilterFunclet(Module, "LlvmFilterFuncletGeneric",
+                    new LLVMTypeRef[]
+                    {
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // exception object
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, new LLVMTypeRef[]
+                        {
+                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack 
+                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // exception object
+                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) // generic context
+                        }, false), 0), // pHandlerIP - catch funcletAddress, generic context
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // generic context
+                    }, true /* add the generic context param */);
+                BuildFilterFunclet(Module, "LlvmFilterFunclet",
+                    new LLVMTypeRef[]
+                    {
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // exception object
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, new LLVMTypeRef[]
+                        {
+                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
+                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) // exception object
+                        }, false), 0), // pHandlerIP - catch funcletAddress
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
+                    });
                 BuildFinallyFunclet(Module);
             }
 
@@ -2852,14 +2890,21 @@ namespace Internal.IL
             var tryRegionIdx = landingPadBuilder.BuildAlloca(LLVMTypeRef.Int32, "tryRegionIdx");
             var handlerFuncPtr = landingPadBuilder.BuildAlloca(LLVMTypeRef.Int32, "handlerFuncPtr");
 
+            // put the exception in the spilled slot, exception slot is at 0
+            var addressValue = CastIfNecessary(landingPadBuilder, LoadVarAddress(_spilledExpressions[0].LocalIndex, LocalVarKind.Temp, out TypeDesc unused, landingPadBuilder), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0));
+            landingPadBuilder.BuildStore(managedPtr, addressValue);
+
             var arguments = new StackEntry[] { new ExpressionEntry(StackValueKind.ObjRef, "managedPtr", managedPtr),
                                                  new ExpressionEntry(StackValueKind.Int32, "idxStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0xFFFFFFFFu, false)), 
                                                  new ExpressionEntry(StackValueKind.Int32, "idxTryLandingStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)tryRegion.ILRegion.TryOffset, false)),
-                                                 new ExpressionEntry(StackValueKind.ByRef, "refFrameIter", ehInfoIterator), 
+                                                 new ExpressionEntry(StackValueKind.NativeInt, "shadowStack", _currentFunclet.GetParam(0)),
+                                                 new ExpressionEntry(StackValueKind.NativeInt, "exInfo", GetGenericContextParamForFunclet()),
+                                                 new ExpressionEntry(StackValueKind.ByRef, "refFrameIter", ehInfoIterator),
                                                  new ExpressionEntry(StackValueKind.ByRef, "tryRegionIdx", tryRegionIdx),
-                                                 new ExpressionEntry(StackValueKind.ByRef, "pHandler", handlerFuncPtr) 
+                                                 new ExpressionEntry(StackValueKind.ByRef, "pHandler", handlerFuncPtr)
                                                  };
             var handler = CallRuntime(_compilation.TypeSystemContext, "EH", "FindFirstPassHandlerWasm", arguments, null, fromLandingPad: true, builder: landingPadBuilder);
+            var handlerFunc = landingPadBuilder.BuildLoad(handlerFuncPtr, "handlerFunc");
 
             var leaveDestination = landingPadBuilder.BuildAlloca(LLVMTypeRef.Int32, "leaveDest"); // create a variable to store the operand of the leave as we can't use the result of the call directly due to domination/branches
             landingPadBuilder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0, false), leaveDestination); 
@@ -2872,11 +2917,6 @@ namespace Internal.IL
 
             landingPadBuilder.PositionAtEnd(foundCatchBlock);
 
-            // put the exception in the spilled slot, exception slot is at 0
-            var addressValue = CastIfNecessary(landingPadBuilder, LoadVarAddress(_spilledExpressions[0].LocalIndex, LocalVarKind.Temp, out TypeDesc unused, landingPadBuilder), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0));
-            landingPadBuilder.BuildStore(managedPtr, addressValue);
-
-            var handlerFunc = landingPadBuilder.BuildLoad(handlerFuncPtr, "handlerFunc");
             LLVMValueRef[] callCatchArgs = new LLVMValueRef[]
                                   {
                                       CastIfNecessary(landingPadBuilder, managedPtr, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)),
@@ -2898,7 +2938,7 @@ namespace Internal.IL
                                                       new ExpressionEntry(StackValueKind.Int32, "idxTryLandingStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)tryRegion.ILRegion.TryOffset, false)),
                                                       new ExpressionEntry(StackValueKind.ByRef, "refFrameIter", ehInfoIterator),
                                                       new ExpressionEntry(StackValueKind.Int32, "idxLimit", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0xFFFFFFFFu, false)),
-                                                      new ExpressionEntry(StackValueKind.ByRef, "shadowStack", _currentFunclet.GetParam(0))
+                                                      new ExpressionEntry(StackValueKind.NativeInt, "shadowStack", _currentFunclet.GetParam(0))
                                                   };
             CallRuntime(_compilation.TypeSystemContext, "EH", "InvokeSecondPassWasm", secondPassArgs, null, true, builder: landingPadBuilder);
 
@@ -5201,16 +5241,20 @@ namespace Internal.IL
                         AlignForSymbol(ref builder);
                         var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
                         builder.EmitReloc(typeSymbol, rel);
-                        string catchFuncletName = GetFuncletName(exceptionRegion);
+                        string catchFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.HandlerOffset, exceptionRegion.ILRegion.Kind);
                         builder.EmitReloc(new WebAssemblyBlockRefNode(catchFuncletName), rel);
                         break;
                     case RhEHClauseKind.RH_EH_CLAUSE_FAULT:
                         AlignForSymbol(ref builder);
-                        string finallyFuncletName = GetFuncletName(exceptionRegion);
+                        string finallyFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.HandlerOffset, exceptionRegion.ILRegion.Kind);
                         builder.EmitReloc(new WebAssemblyBlockRefNode(finallyFuncletName), rel);
                         break;
                     case RhEHClauseKind.RH_EH_CLAUSE_FILTER:
-                        builder.EmitCompressedUInt((uint)exceptionRegion.ILRegion.FilterOffset); 
+                        AlignForSymbol(ref builder);
+                        string clauseFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.HandlerOffset, ILExceptionRegionKind.Catch);
+                        builder.EmitReloc(new WebAssemblyBlockRefNode(clauseFuncletName), rel);
+                        string filterFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.FilterOffset, exceptionRegion.ILRegion.Kind);
+                        builder.EmitReloc(new WebAssemblyBlockRefNode(filterFuncletName), rel);
                         break;
                 }
             }
@@ -5218,9 +5262,9 @@ namespace Internal.IL
             return builder.ToObjectData();
         }
 
-        private string GetFuncletName(ExceptionRegion exceptionRegion)
+        private string GetFuncletName(ExceptionRegion exceptionRegion, int regionOffset, ILExceptionRegionKind ilExceptionRegionKind)
         {
-            return _mangledName + "$" + exceptionRegion.ILRegion.Kind.ToString() + exceptionRegion.ILRegion.HandlerOffset.ToString("X");
+            return _mangledName + "$" + ilExceptionRegionKind.ToString() + regionOffset.ToString("X");
         }
 
         void AlignForSymbol(ref ObjectDataBuilder builder)
