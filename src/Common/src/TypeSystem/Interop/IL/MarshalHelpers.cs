@@ -68,6 +68,7 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.BlittableStruct:
                 case MarshallerKind.Decimal:
                 case MarshallerKind.VoidReturn:
+                case MarshallerKind.ComInterface:
                     return type;
 
 #if !READYTORUN
@@ -562,6 +563,10 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.LayoutClass;
                 else
                     return MarshallerKind.Invalid;
+            }
+            else if (type.IsInterface)
+            {
+                return MarshallerKind.ComInterface;
             }
             else
                 return MarshallerKind.Invalid;

@@ -71,6 +71,8 @@ namespace Internal.TypeSystem.Interop
                     return new AsAnyMarshaller(isAnsi: true);
                 case MarshallerKind.AsAnyW:
                     return new AsAnyMarshaller(isAnsi: false);
+                case MarshallerKind.ComInterface:
+                    return new ComInterfaceMarshaller();
                 default:
                     // ensures we don't throw during create marshaller. We will throw NSE
                     // during EmitIL which will be handled and an Exception method body 
