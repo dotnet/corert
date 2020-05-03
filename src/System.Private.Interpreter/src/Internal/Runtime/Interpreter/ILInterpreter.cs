@@ -313,7 +313,8 @@ namespace Internal.Runtime.Interpreter
                         InterpretLoadConstant((string)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.newobj:
-                        throw new NotImplementedException();
+                        InterpretNewObj(reader.ReadILToken());
+                        break;
                     case ILOpcode.castclass:
                         throw new NotImplementedException();
                     case ILOpcode.isinst:
@@ -2644,6 +2645,27 @@ getvar:
 
             if (!signature.ReturnType.IsVoid)
                 _stack.Push(callInfo.ReturnValue);
+        }
+        
+        private void InterpretNewObj(int token)
+        {
+            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
+            MethodSignature signature = method.Signature;
+            TypeDesc owningType = method.OwningType;
+
+            if (owningType.IsArray)
+            {
+                int[] lengths = new int[signature.Length];
+
+                for (int i = 0; i < signature.Length; i++)
+                {
+                    lengths[i] = PopWithValidation().AsInt32();
+                }
+
+                Array array = RuntimeAugments.NewMultiDimArray(owningType.GetRuntimeTypeHandle(), lengths, null);
+                _stack.Push(StackItem.FromObjectRef(array));
+                return;
+            }
         }
     }
 }
