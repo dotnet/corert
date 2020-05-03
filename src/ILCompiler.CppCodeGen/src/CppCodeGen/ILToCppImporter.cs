@@ -2878,7 +2878,7 @@ namespace Internal.IL
             {
                 if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
                 {
-                    fieldType = owningType.GetField(field.Name).FieldType;
+                    fieldType = _typeSystemContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningType).FieldType;
                 }
 
                 Append("(");
@@ -3723,4 +3723,3 @@ namespace Internal.IL
         }
     }
 }
-
