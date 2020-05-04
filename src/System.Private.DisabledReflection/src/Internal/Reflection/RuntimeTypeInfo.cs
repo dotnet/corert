@@ -24,6 +24,8 @@ namespace Internal.Reflection
 
         private bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
 
+        private bool DoNotThrowForAssembly => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAssembly", out bool doNotThrow) && doNotThrow;
+
         public override RuntimeTypeHandle TypeHandle => _typeHandle;
 
         public override string Name => DoNotThrowForNames ? RuntimeAugments.GetLastResortString(_typeHandle) : throw new NotSupportedException(SR.Reflection_Disabled);
@@ -34,7 +36,7 @@ namespace Internal.Reflection
 
         public override string AssemblyQualifiedName => throw new NotSupportedException(SR.Reflection_Disabled);
 
-        public override Assembly Assembly => throw new NotSupportedException(SR.Reflection_Disabled);
+        public override Assembly Assembly => DoNotThrowForAssembly ? Assembly.GetExecutingAssembly() :  throw new NotSupportedException(SR.Reflection_Disabled);
 
         public override Module Module => throw new NotSupportedException(SR.Reflection_Disabled);
 
