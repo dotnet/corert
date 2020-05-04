@@ -294,8 +294,10 @@ namespace PInvokeTests
             TestLayoutClass();
             TestAsAny();
             TestMarshalStructAPIs();
+#if TARGET_WINDOWS
             TestComInteropNullPointers();
-#endif            
+#endif
+#endif
             return 100;
         }
 
