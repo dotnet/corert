@@ -294,6 +294,7 @@ namespace PInvokeTests
             TestLayoutClass();
             TestAsAny();
             TestMarshalStructAPIs();
+            TestComInteropNullPointers();
 #endif            
             return 100;
         }
@@ -993,6 +994,12 @@ namespace PInvokeTests
             int cftf_size = Marshal.SizeOf(typeof(ClassForTestingFlowAnalysis));
             ThrowIfNotEquals(4, cftf_size, "ClassForTestingFlowAnalysis marshalling Marshal API failed");
         }
+
+        public static void TestComInteropNullPointers()
+        {
+            Console.WriteLine("Testing Marshal APIs for structs");
+            IntPtr result = UiaCore.UiaReturnRawElementProvider(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, null);
+        }
     }
 
     public class SafeMemoryHandle : SafeHandle //SafeHandle subclass
@@ -1020,6 +1027,33 @@ namespace PInvokeTests
             return ReleaseMemory(handle);
         }
     } //end of SafeMemoryHandle class
+
+    internal static partial class UiaCore
+    {
+        [DllImport("UIAutomationCore.dll", CharSet = CharSet.Unicode)]
+        public static extern IntPtr UiaReturnRawElementProvider(IntPtr hwnd, IntPtr wParam, IntPtr lParam, IRawElementProviderSimple el);
+
+        [ComImport]
+        [ComVisible(true)]
+        [Guid("D6DD68D1-86FD-4332-8666-9ABEDEA2D24C")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        public interface IRawElementProviderSimple
+        {
+            ProviderOptions ProviderOptions { get; }
+
+            [return: MarshalAs(UnmanagedType.IUnknown)]
+            object GetPatternProvider(UIA patternId);
+
+            object GetPropertyValue(UIA propertyId);
+
+            IRawElementProviderSimple HostRawElementProvider { get; }
+        }
+
+        public enum UIA : int { }
+
+        [Flags]
+        public enum ProviderOptions { }
+    }
 
     public static class LowLevelExtensions
     {
