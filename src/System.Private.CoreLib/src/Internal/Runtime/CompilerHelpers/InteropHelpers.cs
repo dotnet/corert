@@ -414,7 +414,7 @@ namespace Internal.Runtime.CompilerHelpers
                 return IntPtr.Zero;
             }
 
-            throw new PlatformNotSupportedException("Marhalling of non null COM interfaces is not supported");
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         public static object ConvertNativeComInterfaceToManaged(IntPtr pUnk)
@@ -424,7 +424,7 @@ namespace Internal.Runtime.CompilerHelpers
                 return null;
             }
 
-            throw new PlatformNotSupportedException("Marhalling of non null COM interfaces is not supported");
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
         internal static int AsAnyGetNativeSize(object o)
