@@ -2817,7 +2817,7 @@ namespace Internal.IL
 
             TypeDesc owningType = _writer.ConvertToCanonFormIfNecessary(field.OwningType, CanonicalFormKind.Specific);
             TypeDesc fieldType = _writer.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
-            
+
             // TODO: Is this valid combination?
             if (!isStatic && !owningType.IsValueType && thisPtr.Kind != StackValueKind.ObjRef)
                 throw new InvalidProgramException();
