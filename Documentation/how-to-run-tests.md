@@ -24,6 +24,17 @@ cd {corert}
 tests\runtest.sh
 ```
 
+If you want to run just single test
+```
+tests\runtest.cmd /test Pinvoke
+```
+
+If you want to run tests only for specific codegen
+```
+tests\runtest.cmd /test Pinvoke /mode Jit
+```
+
+
 ### Verifying tests pass
 You should see the below message when you build CoreRT or run the local tests manually, otherwise something is broken.
 
