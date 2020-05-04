@@ -2876,6 +2876,11 @@ namespace Internal.IL
             Append(" = ");
             if (!fieldType.IsValueType)
             {
+                if (runtimeDeterminedOwningType.IsRuntimeDeterminedSubtype)
+                {
+                    fieldType = _typeSystemContext.GetFieldForInstantiatedType(field.GetTypicalFieldDefinition(), (InstantiatedType)owningType).FieldType;
+                }
+
                 Append("(");
                 Append(_writer.GetCppSignatureTypeName(fieldType));
                 Append(")");
@@ -3718,4 +3723,3 @@ namespace Internal.IL
         }
     }
 }
-
