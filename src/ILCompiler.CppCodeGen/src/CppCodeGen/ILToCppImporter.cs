@@ -795,7 +795,7 @@ namespace Internal.IL
             Indent();
 
 
-            if (_method.IsNativeCallable)
+            if (_method.IsUnmanagedCallersOnly)
             {
                 AppendLine();
                 Append("ReversePInvokeFrame __frame");
@@ -2355,7 +2355,7 @@ namespace Internal.IL
 
         private void ImportReturn()
         {
-            if (_method.IsNativeCallable)
+            if (_method.IsUnmanagedCallersOnly)
             {
                 AppendLine();
                 Append("__reverse_pinvoke_return(&__frame)");

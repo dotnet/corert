@@ -51,9 +51,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InternalCalls.cs">
       <Link>Runtime.Base\src\System\Runtime\InternalCalls.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CastableObjectSupport.cs">
-      <Link>Runtime.Base\src\System\Runtime\CastableObjectSupport.cs</Link>
-    </Compile>    
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\RuntimeExports.cs">
       <Link>Runtime.Base\src\System\Runtime\RuntimeExports.cs</Link>
     </Compile>
@@ -170,9 +167,6 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
       <Link>System\Runtime\CompilerServices\IntrinsicAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\ICastable.cs">
-      <Link>System\Runtime\CompilerServices\ICastable.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IsVolatile.cs">
       <Link>System\Runtime\CompilerServices\IsVolatile.cs</Link>
     </Compile>
@@ -209,8 +203,8 @@
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\McgIntrinsicsAttribute.cs">
       <Link>System\Runtime\InteropServices\McgIntrinsicsAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\NativeCallableAttribute.cs">
-      <Link>System\Runtime\InteropServices\NativeCallableAttribute.cs</Link>
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs">
+      <Link>System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime.Base\src\System\Runtime\InteropServices\OutAttribute.cs">
       <Link>System\Runtime\InteropServices\OutAttribute.cs</Link>

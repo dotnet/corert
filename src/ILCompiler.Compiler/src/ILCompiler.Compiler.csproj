@@ -161,6 +161,7 @@
     <Compile Include="Compiler\FrameworkStringResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\GeneratingMetadataManager.cs" />
     <Compile Include="Compiler\HardwareIntrinsicHelpers.cs" />
+    <Compile Include="Compiler\HardwareIntrinsicHelpers.Aot.cs" />
     <Compile Include="Compiler\InstructionSetSupport.cs" />
     <Compile Include="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />

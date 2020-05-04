@@ -22,8 +22,8 @@ namespace System.Runtime
             internal EHClauseIterator.RhEHClauseKindWasm _clauseKind;
             internal uint _tryEndOffset;
             internal uint _typeSymbol;
-            internal byte* _handlerAddress; // an alternative to this would be to create a switch (on _handlerOffset) in LLVM for all possible handlers 
-            internal uint _filterOffset; // TODO: not currently used, see comment for _handlerAddress
+            internal byte* _handlerAddress;
+            internal byte* _filterAddress;
 
             public bool TryStartsAt(uint idxTryLandingStart)
             {
@@ -32,7 +32,8 @@ namespace System.Runtime
         }
 
         // TODO: temporary to try things out, when working look to see how to refactor with FindFirstPassHandler
-        private static bool FindFirstPassHandlerWasm(object exception, uint idxStart, uint idxTryLandingStart /* the start IL idx of the try region for the landing pad, will use in place of PC */,
+        private static bool FindFirstPassHandlerWasm(object exception, uint idxStart, uint idxTryLandingStart /* the start IL idx of the try region for the landing pad, will use in place of PC */, 
+            void* shadowStack, void* exInfo,
             ref EHClauseIterator clauseIter, out uint tryRegionIdx, out byte* pHandler)
         {
             pHandler = (byte*)0;
@@ -85,20 +86,17 @@ namespace System.Runtime
                         return true;
                     }
                 }
-                // Filters not done yet, if the rest looks ok will put them in following established pattern
-                //                else
-                //                {
-                //                    byte* pFilterFunclet = ehClause._filterAddress;
-                //                    bool shouldInvokeHandler =
-                //                        InternalCalls.RhpCallFilterFunclet(exception, pFilterFunclet, clauseIter.RegisterSet);
-                //
-                //                    if (shouldInvokeHandler)
-                //                    {
-                //                        pHandler = ehClause._handlerAddress;
-                //                        tryRegionIdx = curIdx;
-                //                        return true;
-                //                    }
-                //                }
+                else
+                {
+                    tryRegionIdx = 0;
+                    bool shouldInvokeHandler = InternalCalls.RhpCallFilterFunclet(exception, ehClause._filterAddress, shadowStack);
+                    if (shouldInvokeHandler)
+                    {
+                        pHandler = ehClause._handlerAddress;
+                        tryRegionIdx = curIdx;
+                        return true;
+                    }
+                }
             }
 
             return false;

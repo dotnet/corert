@@ -296,18 +296,6 @@ namespace System.Runtime
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe EEType* RhpGetNullableEEType(EEType* pEEType);
 
-        // For an ICastable type return a pointer to code that implements ICastable.IsInstanceOfInterface.
-        [RuntimeImport(Redhawk.BaseName, "RhpGetICastableIsInstanceOfInterfaceMethod")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe IntPtr RhpGetICastableIsInstanceOfInterfaceMethod(EEType* pEEType);
-
-        // For an ICastable type return a pointer to code that implements ICastable.GetImplType.
-        [RuntimeImport(Redhawk.BaseName, "RhpGetICastableGetImplTypeMethod")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe IntPtr RhpGetICastableGetImplTypeMethod(EEType* pEEType);
-
         [RuntimeImport(Redhawk.BaseName, "RhpCallCatchFunclet")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
@@ -345,31 +333,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]
         internal extern static unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetCastableObjectDispatchHelper")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static IntPtr RhpGetCastableObjectDispatchHelper();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetCastableObjectDispatchHelper_TailCalled")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static IntPtr RhpGetCastableObjectDispatchHelper_TailCalled();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetCastableObjectDispatch_CommonStub")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static IntPtr RhpGetCastableObjectDispatch_CommonStub();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpGetTailCallTLSDispatchCell")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static IntPtr RhpGetTailCallTLSDispatchCell();
-
-        [RuntimeImport(Redhawk.BaseName, "RhpSetTLSDispatchCell")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [ManuallyManaged(GcPollPolicy.Never)]
-        internal extern static unsafe void RhpSetTLSDispatchCell(IntPtr pCell);
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetNumThunkBlocksPerMapping")]
         [MethodImpl(MethodImplOptions.InternalCall)]

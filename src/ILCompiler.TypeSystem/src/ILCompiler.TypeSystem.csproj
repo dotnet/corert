@@ -142,6 +142,9 @@
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\GCPointerMap.Algorithm.cs">
       <Link>Utilities\GCPointerMap.Algorithm.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\GCPointerMap.Aot.cs">
+      <Link>Utilities\GCPointerMap.Aot.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\src\TypeSystem\Common\Utilities\GCPointerMap.cs">
       <Link>Utilities\GCPointerMap.cs</Link>
     </Compile>

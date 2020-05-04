@@ -138,6 +138,10 @@ namespace ILCompiler
                 var importer = new ILImporter(this, method, throwingIL);
                 methodCodeNodeNeedingCode.InitializeDependencies(_nodeFactory, importer.Import());
             }
+            catch (Exception ex)
+            {
+                throw new CodeGenerationFailedException(method, ex);
+            }
             finally
             {
                 if (_compilationCountdown != null)

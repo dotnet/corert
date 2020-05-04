@@ -1322,7 +1322,7 @@ namespace Internal.Runtime.CallInterceptor
             s_managedToManagedCommonStubData = CallConverterThunk.s_commonStubData;
             s_managedToManagedCommonStubData.ManagedCallConverterThunk = Intrinsics.AddrOf<CallInterceptorThunkDelegate>(CallInterceptorThunk);
             s_nativeToManagedCommonStubData = CallConverterThunk.s_commonStubData;
-            s_nativeToManagedCommonStubData.ManagedCallConverterThunk = Intrinsics.AddrOf<CallInterceptorThunkDelegate>(CallInterceptorThunkNativeCallable);
+            s_nativeToManagedCommonStubData.ManagedCallConverterThunk = Intrinsics.AddrOf<CallInterceptorThunkDelegate>(CallInterceptorThunkUnmanagedCallersOnly);
         }
 
         /// <summary>
@@ -1709,11 +1709,11 @@ namespace Internal.Runtime.CallInterceptor
         }
 
 #if TARGET_X86
-        [NativeCallable(CallingConvention = System.Runtime.InteropServices.CallingConvention.FastCall)]
+        [UnmanagedCallersOnly(CallingConvention = System.Runtime.InteropServices.CallingConvention.FastCall)]
 #else
-        [NativeCallable]
+        [UnmanagedCallersOnly]
 #endif
-        private static IntPtr CallInterceptorThunkNativeCallable(IntPtr callerTransitionBlockParam, IntPtr thunkId)
+        private static IntPtr CallInterceptorThunkUnmanagedCallersOnly(IntPtr callerTransitionBlockParam, IntPtr thunkId)
         {
             return CallInterceptorThunk(callerTransitionBlockParam, thunkId);
         }

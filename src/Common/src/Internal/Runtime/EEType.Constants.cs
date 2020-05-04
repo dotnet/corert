@@ -42,10 +42,7 @@ namespace Internal.Runtime
         /// </summary>
         HasPointersFlag = 0x0020,
 
-        /// <summary>
-        /// Type implements ICastable to allow dynamic resolution of interface casts.
-        /// </summary>
-        ICastableFlag = 0x0040,
+        // Unused = 0x0040,
 
         /// <summary>
         /// This type is generic and one or more of its type parameters is co- or contra-variant. This
@@ -112,10 +109,7 @@ namespace Internal.Runtime
         /// </summary>
         RequiresAlign8Flag = 0x00000001,
 
-        /// <summary>
-        /// Type implements ICastable to allow dynamic resolution of interface casts.
-        /// </summary>
-        UNUSED1 = 0x00000002,
+        // UNUSED1 = 0x00000002,
 
         // UNUSED = 0x00000004,
 
@@ -128,10 +122,7 @@ namespace Internal.Runtime
         /// </summary>
         HasCctorFlag = 0x0000020,
 
-        /// <summary>
-        /// Old unused flag
-        /// </summary>
-        UNUSED2 = 0x00000040,
+        // UNUSED2 = 0x00000040,
 
         /// <summary>
         /// This EEType was constructed from a universal canonical template, and has
@@ -245,11 +236,6 @@ namespace Internal.Runtime
         RareFlags,
 
         /// <summary>
-        /// VTable slot of <see cref="ICastable.IsInstanceOfInterface"/> for direct invocation without interface dispatch overhead
-        /// </summary>
-        ICastableIsInstSlot,
-
-        /// <summary>
         /// Index of the dispatch map pointer in the DispathMap table
         /// </summary>
         DispatchMap,
@@ -258,11 +244,6 @@ namespace Internal.Runtime
         /// Padding added to a value type when allocated on the GC heap
         /// </summary>
         ValueTypeFieldPadding,
-
-        /// <summary>
-        /// VTable slot of <see cref="ICastable.GetImplType"/> for direct invocation without interface dispatch overhead
-        /// </summary>
-        ICastableGetImplTypeSlot,
 
         /// <summary>
         /// Offset in Nullable&lt;T&gt; of the value field

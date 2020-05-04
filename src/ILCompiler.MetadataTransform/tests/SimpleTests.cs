@@ -42,19 +42,19 @@ namespace MetadataTransformTests
         [Fact]
         public void TestBlockedInterface()
         {
-            // __ComObject implements ICastable, which is a metadata blocked type and should not show
-            // up in the __ComObject interface list.
+            // BlockedObject implements IBlockedInterface, which is a metadata blocked type and should not show
+            // up in the BlockedObject interface list.
 
             var policy = new SingleFileMetadataPolicy();
             var transformResult = MetadataTransform.Run(policy, new[] { _systemModule });
 
-            Cts.MetadataType icastable = _systemModule.GetType("System.Private.CompilerServices", "ICastable");
-            Cts.MetadataType comObject = _systemModule.GetType("System", "__ComObject");
+            Cts.MetadataType iblockedinterface = _systemModule.GetType("System.Private.CompilerServices", "IBlockedInterface");
+            Cts.MetadataType comObject = _systemModule.GetType("System", "BlockedObject");
             Assert.Equal(1, comObject.ExplicitlyImplementedInterfaces.Length);
-            Assert.Equal(icastable, comObject.ExplicitlyImplementedInterfaces[0]);
+            Assert.Equal(iblockedinterface, comObject.ExplicitlyImplementedInterfaces[0]);
 
-            Assert.Null(transformResult.GetTransformedTypeDefinition(icastable));
-            Assert.Null(transformResult.GetTransformedTypeReference(icastable));
+            Assert.Null(transformResult.GetTransformedTypeDefinition(iblockedinterface));
+            Assert.Null(transformResult.GetTransformedTypeReference(iblockedinterface));
 
             TypeDefinition comObjectRecord = transformResult.GetTransformedTypeDefinition(comObject);
             Assert.NotNull(comObjectRecord);

@@ -164,7 +164,7 @@
   .method assembly hidebysig static void 
           Func1(int32 a) cil managed
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.InteropServices.NativeCallableAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Private.CoreLib]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = ( 01 00 00 00 ) 
     // Code size       2 (0x2)
     .maxstack  8
     IL_0000:  nop
@@ -174,7 +174,7 @@
   .method assembly hidebysig static void 
           Func2(float32 b) cil managed
   {
-    .custom instance void [System.Private.CoreLib]System.Runtime.InteropServices.NativeCallableAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Private.CoreLib]System.Runtime.InteropServices.UnmanagedCallersOnlyAttribute::.ctor() = ( 01 00 00 00 ) 
     // Code size       2 (0x2)
     .maxstack  8
     IL_0000:  nop

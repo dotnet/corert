@@ -56,7 +56,7 @@ namespace System
 
     public class Exception { }
 
-    public class __ComObject : Private.CompilerServices.ICastable { }
+    public class BlockedObject : Private.CompilerServices.IBlockedInterface { }
 
     public delegate void Action();
 
@@ -97,7 +97,7 @@ namespace System.Collections.Generic
 
 namespace System.Private.CompilerServices
 {
-    internal interface ICastable { }
+    internal interface IBlockedInterface { }
 }
 
 namespace System.Runtime.InteropServices

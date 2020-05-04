@@ -28,7 +28,7 @@ namespace Internal.Runtime.CompilerHelpers
         /// </summary>
         private static int s_moduleCount;
 
-        [NativeCallable(EntryPoint = "InitializeModules", CallingConvention = CallingConvention.Cdecl)]
+        [UnmanagedCallersOnly(EntryPoint = "InitializeModules", CallingConvention = CallingConvention.Cdecl)]
         internal static unsafe void InitializeModules(IntPtr osModule, IntPtr* pModuleHeaders, int count, IntPtr* pClasslibFunctions, int nClasslibFunctions)
         {
             RuntimeImports.RhpRegisterOsModule(osModule);

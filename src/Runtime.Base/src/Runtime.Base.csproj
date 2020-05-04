@@ -52,7 +52,6 @@
     <Compile Include="System\Diagnostics\Eval.cs" />
     <Compile Include="System\Runtime\__Finalizer.cs" />
     <Compile Include="System\Runtime\CalliIntrinsics.cs" />
-    <Compile Include="System\Runtime\CastableObjectSupport.cs" />
     <Compile Include="System\Runtime\EEType.Runtime.cs" />
     <Compile Include="System\Runtime\EETypePtr.cs" />
     <Compile Include="System\Runtime\ExceptionHandling.cs" />
@@ -67,7 +66,6 @@
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ICastable.cs" />
     <Compile Include="System\Runtime\CompilerServices\IsVolatile.cs" />
     <Compile Include="System\Runtime\CompilerServices\ManuallyManagedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\MethodImplAttribute.cs" />
@@ -81,7 +79,7 @@
     <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="System\Runtime\InteropServices\LayoutKind.cs" />
     <Compile Include="System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\OutAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\StructLayoutAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />

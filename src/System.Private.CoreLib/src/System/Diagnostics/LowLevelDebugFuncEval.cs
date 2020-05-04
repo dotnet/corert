@@ -19,7 +19,7 @@ namespace System.Diagnostics
             s_highLevelDebugFuncEvalHelper();
         }
 
-        [NativeCallable(EntryPoint="DebugFuncEvalAbortHelper")]
+        [UnmanagedCallersOnly(EntryPoint="DebugFuncEvalAbortHelper")]
         public static void DebugFuncEvalAbortHelper(long pointerFromDebugger)
         {
             Debug.Assert(s_highLevelDebugFuncEvalHelper != null);

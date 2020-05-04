@@ -105,7 +105,9 @@ namespace System.Runtime
                     pEHClause._handlerAddress = (byte*)ReadUInt32(ref _currentPtr);
                     break;
                 case RhEHClauseKindWasm.RH_EH_CLAUSE_FILTER:
-                    pEHClause._filterOffset = GetUnsigned();
+                    AlignToSymbol();
+                    pEHClause._handlerAddress = (byte*)ReadUInt32(ref _currentPtr);
+                    pEHClause._filterAddress = (byte*)ReadUInt32(ref _currentPtr);
                     break;
             }
             return true;

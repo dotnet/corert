@@ -54,7 +54,7 @@ namespace System.Threading
             }
         }
 
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
         internal static void RegisteredWaitCallback(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult)
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();
@@ -328,7 +328,7 @@ namespace System.Threading
             return true;
         }
 
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
         private static void DispatchCallback(IntPtr instance, IntPtr context, IntPtr work)
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();

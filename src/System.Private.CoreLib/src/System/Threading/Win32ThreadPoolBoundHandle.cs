@@ -160,7 +160,7 @@ namespace System.Threading
             return data;
         }
 
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        [UnmanagedCallersOnly(CallingConvention = CallingConvention.StdCall)]
         private static unsafe void OnNativeIOCompleted(IntPtr instance, IntPtr context, IntPtr overlappedPtr, uint ioResult, UIntPtr numberOfBytesTransferred, IntPtr ioPtr)
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();

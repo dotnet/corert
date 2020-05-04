@@ -18,10 +18,8 @@
 
 //                               Field name                Field type
 DEFINE_INLINE_OPTIONAL_FIELD    (RareFlags,                UInt32)
-DEFINE_INLINE_OPTIONAL_FIELD    (ICastableIsInstSlot,      UInt16)
 DEFINE_INLINE_OPTIONAL_FIELD    (DispatchMap,              UInt32)
 DEFINE_INLINE_OPTIONAL_FIELD    (ValueTypeFieldPadding,    UInt32)
-DEFINE_INLINE_OPTIONAL_FIELD    (ICastableGetImplTypeSlot, UInt16)
 DEFINE_INLINE_OPTIONAL_FIELD    (NullableValueOffset,      UInt8)
 
 #undef DEFINE_INLINE_OPTIONAL_FIELD
