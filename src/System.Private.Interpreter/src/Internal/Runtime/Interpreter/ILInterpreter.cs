@@ -2450,10 +2450,10 @@ again:
         // Holds information about a method call
         private struct MethodCallInfo
         {
-            public int ArgCount;
+            public TypeDesc OwningType;
+            public bool IsStatic;
             public IntPtr MethodAddress;
             public IntPtr UnboxingStubAddress;
-            public CallConverter.CallingConvention CallingConvention;
             public TypeLoaderEnvironment.MethodAddressType MethodAddressType;
             public MethodSignature Signature;
             public LocalVariableType[] LocalVariableTypes;
@@ -2462,10 +2462,19 @@ again:
 
         private void InterpretCallDelegate(ref MethodCallInfo callInfo, ref LocalVariableSet localVariableSet)
         {
-            for (int i = callInfo.ArgCount; i > 0; i--)
+            for (int i = callInfo.LocalVariableTypes.Length - 1; i > 0; i--)
             {
                 StackItem stackItem = PopWithValidation();
-                TypeDesc argumentType = callInfo.Signature[i - 1];
+                TypeDesc argumentType = default;
+
+                if (i == 1 && !callInfo.IsStatic)
+                {
+                    argumentType = callInfo.OwningType;
+                }
+                else
+                {
+                    argumentType = callInfo.Signature[i - (callInfo.IsStatic ? 1 : 2)];
+                }
 
 setvar:
                 switch (argumentType.Category)
@@ -2522,7 +2531,8 @@ setvar:
 
             if (callInfo.MethodAddress != IntPtr.Zero && callInfo.MethodAddressType == TypeLoaderEnvironment.MethodAddressType.Exact)
             {
-                DynamicCallSignature dynamicCallSignature = new DynamicCallSignature(callInfo.CallingConvention, callInfo.LocalVariableTypes, callInfo.LocalVariableTypes.Length);
+                CallConverter.CallingConvention callingConvention = callInfo.IsStatic ? CallConverter.CallingConvention.ManagedStatic : CallConverter.CallingConvention.ManagedInstance;
+                DynamicCallSignature dynamicCallSignature = new DynamicCallSignature(callingConvention, callInfo.LocalVariableTypes, callInfo.LocalVariableTypes.Length);
                 CallInterceptor.CallInterceptor.MakeDynamicCall(callInfo.MethodAddress, dynamicCallSignature, localVariableSet);
             }
             else
@@ -2633,11 +2643,11 @@ getvar:
             TypeLoaderEnvironment.TryGetMethodAddressFromMethodDesc(method, out IntPtr methodAddress, out IntPtr unboxingStubAddress, out TypeLoaderEnvironment.MethodAddressType foundAddressType);
 
             var callInfo = new MethodCallInfo();
-            callInfo.ArgCount = signature.Length + (delta - 1);
+            callInfo.OwningType = !signature.IsStatic ? owningType : null;
+            callInfo.IsStatic = signature.IsStatic;
             callInfo.MethodAddress = methodAddress;
             callInfo.MethodAddressType = foundAddressType;
             callInfo.UnboxingStubAddress = unboxingStubAddress;
-            callInfo.CallingConvention = signature.IsStatic ? CallConverter.CallingConvention.ManagedStatic : CallConverter.CallingConvention.ManagedInstance;
             callInfo.Signature = signature;
             callInfo.LocalVariableTypes = localVariableTypes;
 
@@ -2666,6 +2676,51 @@ getvar:
                 _stack.Push(StackItem.FromObjectRef(array));
                 return;
             }
+
+            object @this = RuntimeAugments.RawNewObject(owningType.GetRuntimeTypeHandle());
+
+            LocalVariableType[] localVariableTypes = new LocalVariableType[signature.Length + 2];
+            localVariableTypes[0] = new LocalVariableType(_context.GetWellKnownType(WellKnownType.Void).GetRuntimeTypeHandle(), false, false);
+            localVariableTypes[1] = new LocalVariableType(owningType.GetRuntimeTypeHandle(), false, false);
+
+            for (int i = 0; i < signature.Length; i++)
+            {
+                TypeDesc argument = signature[i];
+                if (argument.IsByRef)
+                {
+                    // TODO: Unwrap ref types
+                    throw new NotImplementedException();
+                }
+
+                localVariableTypes[i + 2] = new LocalVariableType(argument.GetRuntimeTypeHandle(), false, argument.IsByRef);
+            }
+
+            StackItem[] arguments = new StackItem[signature.Length];
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                arguments[i] = PopWithValidation();
+            }
+
+            _stack.Push(StackItem.FromObjectRef(@this));
+
+            for (int i = arguments.Length - 1; i >= 0; i--)
+            {
+                _stack.Push(arguments[i]);
+            }
+
+            TypeLoaderEnvironment.TryGetMethodAddressFromMethodDesc(method, out IntPtr methodAddress, out IntPtr unboxingStubAddress, out TypeLoaderEnvironment.MethodAddressType foundAddressType);
+
+            var callInfo = new MethodCallInfo();
+            callInfo.OwningType = !signature.IsStatic ? owningType : null;
+            callInfo.IsStatic = signature.IsStatic;
+            callInfo.MethodAddress = methodAddress;
+            callInfo.MethodAddressType = foundAddressType;
+            callInfo.UnboxingStubAddress = unboxingStubAddress;
+            callInfo.Signature = signature;
+            callInfo.LocalVariableTypes = localVariableTypes;
+
+            LocalVariableSet.SetupArbitraryLocalVariableSet(InterpretCallDelegate, ref callInfo, localVariableTypes);
+            _stack.Push(StackItem.FromObjectRef(@this));
         }
     }
 }
