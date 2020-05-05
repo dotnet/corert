@@ -63,3 +63,21 @@ To enable this mode, add following item to an `ItemGroup` in your project file:
     <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForNames" />
   </ItemGroup>
 ```
+
+To achieve similar result for when querying for ``Assembly`` (will instead give the ExecutingAssembly):
+
+```xml
+  <ItemGroup>
+    <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForAssembly" />
+  </ItemGroup>
+```
+
+And here for CustomAttributes:
+
+
+```xml
+  <ItemGroup>
+    <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForAttributes" />
+  </ItemGroup>
+```
+
