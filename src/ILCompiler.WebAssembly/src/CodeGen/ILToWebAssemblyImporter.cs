@@ -5182,80 +5182,90 @@ namespace Internal.IL
 
             builder.EmitCompressedUInt((uint)totalClauses);
 
-            for (int i = 0; i < totalClauses; i++)
+            // Iterate backwards to emit the innermost first, but within a try region go forwards to get the first matching catch type
+            int i = _exceptionRegions.Length - 1;
+            while (i >= 0)
             {
-                ExceptionRegion exceptionRegion = _exceptionRegions[i];
-
-//                if (i > 0)
-//                {
-//                    ExceptionRegion previousClause = _exceptionRegions[i - 1];
+                int tryStart = _exceptionRegions[i].ILRegion.TryOffset;
+                for (var j = 0; j < _exceptionRegions.Length; j++)
+                {
+                    ExceptionRegion exceptionRegion = _exceptionRegions[j];
+                    if (exceptionRegion.ILRegion.TryOffset != tryStart) continue;
+                    //                if (i > 0)
+                    //                {
+                    //                    ExceptionRegion previousClause = _exceptionRegions[i - 1];
 
                     // If the previous clause has same try offset and length as the current clause,
                     // but belongs to a different try block (CORINFO_EH_CLAUSE_SAMETRY is not set),
                     // emit a special marker to allow runtime distinguish this case.
                     //WASMTODO: see above - do we need these
-//                    if ((previousClause.TryOffset == clause.TryOffset) &&
-//                        (previousClause.TryLength == clause.TryLength) &&
-//                        ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_SAMETRY) == 0))
-//                    {
-//                        builder.EmitCompressedUInt(0);
-//                        builder.EmitCompressedUInt((uint)RhEHClauseKind.RH_EH_CLAUSE_FAULT);
-//                        builder.EmitCompressedUInt(0);
-//                    }
-//                }
+                    //                    if ((previousClause.TryOffset == clause.TryOffset) &&
+                    //                        (previousClause.TryLength == clause.TryLength) &&
+                    //                        ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_SAMETRY) == 0))
+                    //                    {
+                    //                        builder.EmitCompressedUInt(0);
+                    //                        builder.EmitCompressedUInt((uint)RhEHClauseKind.RH_EH_CLAUSE_FAULT);
+                    //                        builder.EmitCompressedUInt(0);
+                    //                    }
+                    //                }
 
-                RhEHClauseKind clauseKind;
+                    RhEHClauseKind clauseKind;
 
-                if (exceptionRegion.ILRegion.Kind == ILExceptionRegionKind.Fault ||
-                    exceptionRegion.ILRegion.Kind  == ILExceptionRegionKind.Finally)
-                {
-                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FAULT;
-                }
-                else
-                if (exceptionRegion.ILRegion.Kind == ILExceptionRegionKind.Filter)
-                {
-                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FILTER;
-                }
-                else
-                {
-                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_TYPED;
-                }
+                    if (exceptionRegion.ILRegion.Kind == ILExceptionRegionKind.Fault ||
+                        exceptionRegion.ILRegion.Kind == ILExceptionRegionKind.Finally)
+                    {
+                        clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FAULT;
+                    }
+                    else if (exceptionRegion.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                    {
+                        clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FILTER;
+                    }
+                    else
+                    {
+                        clauseKind = RhEHClauseKind.RH_EH_CLAUSE_TYPED;
+                    }
 
-                builder.EmitCompressedUInt((uint)exceptionRegion.ILRegion.TryOffset);
+                    builder.EmitCompressedUInt((uint)exceptionRegion.ILRegion.TryOffset);
 
-                uint tryLength = (uint)exceptionRegion.ILRegion.TryLength;
-                builder.EmitCompressedUInt((tryLength << 2) | (uint)clauseKind);
+                    uint tryLength = (uint)exceptionRegion.ILRegion.TryLength;
+                    builder.EmitCompressedUInt((tryLength << 2) | (uint)clauseKind);
 
-                RelocType rel = (_compilation.NodeFactory.Target.IsWindows) ?
-                    RelocType.IMAGE_REL_BASED_ABSOLUTE :
-                    RelocType.IMAGE_REL_BASED_REL32;
+                    RelocType rel = (_compilation.NodeFactory.Target.IsWindows)
+                        ? RelocType.IMAGE_REL_BASED_ABSOLUTE
+                        : RelocType.IMAGE_REL_BASED_REL32;
 
-                if (_compilation.NodeFactory.Target.Abi == TargetAbi.Jit)
-                    rel = RelocType.IMAGE_REL_BASED_REL32;
+                    if (_compilation.NodeFactory.Target.Abi == TargetAbi.Jit)
+                        rel = RelocType.IMAGE_REL_BASED_REL32;
 
-                switch (clauseKind)
-                {
-                    case RhEHClauseKind.RH_EH_CLAUSE_TYPED:
-                        var type = (TypeDesc)_methodIL.GetObject((int)exceptionRegion.ILRegion.ClassToken);
-                        Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
-                        AlignForSymbol(ref builder);
-                        var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
-                        builder.EmitReloc(typeSymbol, rel);
-                        string catchFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.HandlerOffset, exceptionRegion.ILRegion.Kind);
-                        builder.EmitReloc(new WebAssemblyBlockRefNode(catchFuncletName), rel);
-                        break;
-                    case RhEHClauseKind.RH_EH_CLAUSE_FAULT:
-                        AlignForSymbol(ref builder);
-                        string finallyFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.HandlerOffset, exceptionRegion.ILRegion.Kind);
-                        builder.EmitReloc(new WebAssemblyBlockRefNode(finallyFuncletName), rel);
-                        break;
-                    case RhEHClauseKind.RH_EH_CLAUSE_FILTER:
-                        AlignForSymbol(ref builder);
-                        string clauseFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.HandlerOffset, ILExceptionRegionKind.Catch);
-                        builder.EmitReloc(new WebAssemblyBlockRefNode(clauseFuncletName), rel);
-                        string filterFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.FilterOffset, exceptionRegion.ILRegion.Kind);
-                        builder.EmitReloc(new WebAssemblyBlockRefNode(filterFuncletName), rel);
-                        break;
+                    switch (clauseKind)
+                    {
+                        case RhEHClauseKind.RH_EH_CLAUSE_TYPED:
+                            var type = (TypeDesc)_methodIL.GetObject((int)exceptionRegion.ILRegion.ClassToken);
+                            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+                            AlignForSymbol(ref builder);
+                            var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
+                            builder.EmitReloc(typeSymbol, rel);
+                            string catchFuncletName = GetFuncletName(exceptionRegion,
+                                exceptionRegion.ILRegion.HandlerOffset, exceptionRegion.ILRegion.Kind);
+                            builder.EmitReloc(new WebAssemblyBlockRefNode(catchFuncletName), rel);
+                            break;
+                        case RhEHClauseKind.RH_EH_CLAUSE_FAULT:
+                            AlignForSymbol(ref builder);
+                            string finallyFuncletName = GetFuncletName(exceptionRegion,
+                                exceptionRegion.ILRegion.HandlerOffset, exceptionRegion.ILRegion.Kind);
+                            builder.EmitReloc(new WebAssemblyBlockRefNode(finallyFuncletName), rel);
+                            break;
+                        case RhEHClauseKind.RH_EH_CLAUSE_FILTER:
+                            AlignForSymbol(ref builder);
+                            string clauseFuncletName = GetFuncletName(exceptionRegion,
+                                exceptionRegion.ILRegion.HandlerOffset, ILExceptionRegionKind.Catch);
+                            builder.EmitReloc(new WebAssemblyBlockRefNode(clauseFuncletName), rel);
+                            string filterFuncletName = GetFuncletName(exceptionRegion,
+                                exceptionRegion.ILRegion.FilterOffset, exceptionRegion.ILRegion.Kind);
+                            builder.EmitReloc(new WebAssemblyBlockRefNode(filterFuncletName), rel);
+                            break;
+                    }
+                    i--;
                 }
             }
 

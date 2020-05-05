@@ -1516,8 +1516,49 @@ internal static class Program
             counter++;
         }
         EndTest(counter == 4);
+        TestFilterNested();
     }
 
+    static string exceptionFlowSequence = "";
+    private static void TestFilterNested()
+    {
+        StartTest("TestFilterNested");
+        foreach (var exception in new Exception[]
+            {new ArgumentException(), new Exception(), new NullReferenceException()})
+        {
+            try
+            {
+                try
+                {
+                    try
+                    {
+                        throw exception;
+                    }
+                    catch (NullReferenceException) when (Print("inner"))
+                    {
+                        exceptionFlowSequence += "In inner catch";
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    exceptionFlowSequence += "In middle catch";
+                }
+            }
+            catch (Exception) when (Print("outer"))
+            {
+                exceptionFlowSequence += "In outer catch";
+            }
+        }
+        PrintLine(exceptionFlowSequence);
+        EndTest(exceptionFlowSequence == @"In middle catchRunning outer filterIn outer catchRunning inner filterIn inner catch");
+    }
+
+    static bool Print(string s)
+    {
+        exceptionFlowSequence += $"Running {s} filter";
+        return true;
+    }
+    
     class DerivedThrows<A> : GenBase<A>
     {
         public override string GMethod1<T>(T t1, T t2) { throw new Exception("ToStringThrows"); }
