@@ -10,6 +10,7 @@ using System.Reflection;
 using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.NonPortable;
+using System.Collections.Generic;
 
 namespace Internal.Reflection
 {
@@ -25,6 +26,8 @@ namespace Internal.Reflection
         private bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
 
         private bool DoNotThrowForAssembly => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAssembly", out bool doNotThrow) && doNotThrow;
+
+        private bool DoNotThrowForAttributes => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAttributes", out bool doNotThrow) && doNotThrow;
 
         public override RuntimeTypeHandle TypeHandle => _typeHandle;
 
@@ -81,9 +84,11 @@ namespace Internal.Reflection
 
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => throw new NotSupportedException(SR.Reflection_Disabled);
 
-        public override object[] GetCustomAttributes(bool inherit) => throw new NotSupportedException(SR.Reflection_Disabled);
+        public override object[] GetCustomAttributes(bool inherit) => DoNotThrowForAttributes ? new Attribute[0] :  throw new NotSupportedException(SR.Reflection_Disabled);
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException(SR.Reflection_Disabled);
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => DoNotThrowForAttributes ? new Attribute[0] : throw new NotSupportedException(SR.Reflection_Disabled);
+
+        public override IList<CustomAttributeData> GetCustomAttributesData() => DoNotThrowForAttributes ? new List<CustomAttributeData>().AsReadOnly() : throw new NotSupportedException(SR.Reflection_Disabled);
 
         public override Type GetElementType()
         {
