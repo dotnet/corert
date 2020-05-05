@@ -1340,6 +1340,8 @@ internal static class Program
         TestExceptionInGvmCall();
         
         TestFilter();
+
+        TestFilterNested();
     }
 
     private static void TestTryCatchNoException()
@@ -1516,7 +1518,6 @@ internal static class Program
             counter++;
         }
         EndTest(counter == 4);
-        TestFilterNested();
     }
 
     static string exceptionFlowSequence = "";
