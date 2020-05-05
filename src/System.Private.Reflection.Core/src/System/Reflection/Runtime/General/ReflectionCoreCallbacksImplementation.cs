@@ -21,6 +21,7 @@ using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Runtime.General
 {
@@ -397,5 +398,21 @@ namespace System.Reflection.Runtime.General
         public sealed override Assembly[] GetLoadedAssemblies() => RuntimeAssembly.GetLoadedAssemblies();
 
         public sealed override EnumInfo GetEnumInfo(Type type) => type.CastToRuntimeTypeInfo().EnumInfo;
+
+        public override void GetDllImportSearchPathFlags(Assembly callingAssembly, out int searchPathFlags, out bool searchAssemblyDirectory)
+        {
+            var searchPath = DllImportSearchPath.AssemblyDirectory;
+
+            foreach (CustomAttributeData cad in callingAssembly.CustomAttributes)
+            {
+                if (cad.AttributeType == typeof(DefaultDllImportSearchPathsAttribute))
+                {
+                    searchPath = (DllImportSearchPath)cad.ConstructorArguments[0].Value;
+                }
+            }
+
+            searchPathFlags = (int)(searchPath & ~DllImportSearchPath.AssemblyDirectory);
+            searchAssemblyDirectory = (searchPath & DllImportSearchPath.AssemblyDirectory) != 0;
+        }
     }
 }

@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
-
+using Internal.Reflection.Augments;
 using LibraryNameVariation = System.Runtime.Loader.LibraryNameVariation;
 
 namespace System.Runtime.InteropServices
@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                GetDllImportSearchPathFlags(assembly, out searchPathFlags, out searchAssemblyDirectory);
+                ReflectionAugments.ReflectionCoreCallbacks.GetDllImportSearchPathFlags(assembly, out searchPathFlags, out searchAssemblyDirectory);
             }
 
             LoadLibErrorTracker errorTracker = default;
