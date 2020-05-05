@@ -2663,16 +2663,53 @@ getvar:
             MethodSignature signature = method.Signature;
             TypeDesc owningType = method.OwningType;
 
+            StackItem[] arguments = new StackItem[signature.Length];
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                arguments[i] = PopWithValidation();
+            }
+
             if (owningType.IsArray)
             {
-                int[] lengths = new int[signature.Length];
+                LowLevelList<int> lengths = default;
+                LowLevelList<int> lowerBounds = default;
 
-                for (int i = 0; i < signature.Length; i++)
+                ArrayType arrayType = owningType as ArrayType;
+                Debug.Assert(arrayType != null);
+                
+                if (signature.Length == arrayType.Rank)
                 {
-                    lengths[i] = PopWithValidation().AsInt32();
+                    lengths = new LowLevelList<int>();
+                    for (int i = arguments.Length - 1; i >= 0; i--)
+                    {
+                        lengths.Add(arguments[i].AsInt32());
+                    }
+                }
+                else if (signature.Length > arrayType.Rank)
+                {
+                    Debug.Assert(arrayType.Rank * 2 == signature.Length);
+
+                    lengths = new LowLevelList<int>();
+                    lowerBounds = new LowLevelList<int>();
+
+                    for (int i = arguments.Length - 1; i >= 0; i--)
+                    {
+                        if (i % 2 == 1)
+                        {
+                            lowerBounds.Add(arguments[i].AsInt32());
+                        }
+                        else
+                        {
+                            lengths.Add(arguments[i].AsInt32());
+                        }
+                    }
+                }
+                else
+                {
+                    ThrowHelper.ThrowInvalidProgramException();
                 }
 
-                Array array = RuntimeAugments.NewMultiDimArray(owningType.GetRuntimeTypeHandle(), lengths, null);
+                Array array = RuntimeAugments.NewMultiDimArray(owningType.GetRuntimeTypeHandle(), lengths?.ToArray(), lowerBounds?.ToArray());
                 _stack.Push(StackItem.FromObjectRef(array));
                 return;
             }
@@ -2693,12 +2730,6 @@ getvar:
                 }
 
                 localVariableTypes[i + 2] = new LocalVariableType(argument.GetRuntimeTypeHandle(), false, argument.IsByRef);
-            }
-
-            StackItem[] arguments = new StackItem[signature.Length];
-            for (int i = 0; i < arguments.Length; i++)
-            {
-                arguments[i] = PopWithValidation();
             }
 
             _stack.Push(StackItem.FromObjectRef(@this));
