@@ -72,7 +72,7 @@ To achieve similar result for when querying for ``Assembly`` (will instead give 
   </ItemGroup>
 ```
 
-And here for CustomAttributes:
+And here for CustomAttributes (will return an empty array):
 
 
 ```xml
@@ -82,7 +82,7 @@ And here for CustomAttributes:
 ```
 
 
-And here for GetDllImportSearchPathFlags:
+And here for GetDllImportSearchPathFlags (will not check for DefaultDllImportSearchPathsAttribute):
 
 
 ```xml
@@ -94,7 +94,7 @@ And here for GetDllImportSearchPathFlags:
 
 Note:
 
-To make ``NativeLibrary`` API work, you'll need:
+To make ``NativeLibrary`` API, and on the same occasion``Socket``, to work, you'll need:
 
 ```xml
   <ItemGroup>
