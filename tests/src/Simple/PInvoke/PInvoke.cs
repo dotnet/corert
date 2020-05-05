@@ -210,6 +210,9 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool IsNULL(SequentialStruct[] foo);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool IsNULL(IComInterface foo);
+
         [StructLayout(LayoutKind.Sequential, CharSet= CharSet.Ansi, Pack = 4)]
         public unsafe struct InlineArrayStruct
         {
@@ -999,8 +1002,10 @@ namespace PInvokeTests
 
         public static void TestComInteropNullPointers()
         {
-            Console.WriteLine("Testing Marshal APIs for structs");
-            IntPtr result = UiaCore.UiaReturnRawElementProvider(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, null);
+            Console.WriteLine("Testing Marshal APIs for COM interfaces");
+            IComInterface comPointer = null;
+            var result = IsNULL(comPointer);
+            ThrowIfNotEquals(true, IsNULL(comPointer), "COM interface marshalling null check failed");
         }
     }
 
@@ -1030,31 +1035,12 @@ namespace PInvokeTests
         }
     } //end of SafeMemoryHandle class
 
-    internal static partial class UiaCore
+    [ComImport]
+    [ComVisible(true)]
+    [Guid("D6DD68D1-86FD-4332-8666-9ABEDEA2D24C")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IComInterface
     {
-        [DllImport("UIAutomationCore.dll", CharSet = CharSet.Unicode)]
-        public static extern IntPtr UiaReturnRawElementProvider(IntPtr hwnd, IntPtr wParam, IntPtr lParam, IRawElementProviderSimple el);
-
-        [ComImport]
-        [ComVisible(true)]
-        [Guid("D6DD68D1-86FD-4332-8666-9ABEDEA2D24C")]
-        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        public interface IRawElementProviderSimple
-        {
-            ProviderOptions ProviderOptions { get; }
-
-            [return: MarshalAs(UnmanagedType.IUnknown)]
-            object GetPatternProvider(UIA patternId);
-
-            object GetPropertyValue(UIA propertyId);
-
-            IRawElementProviderSimple HostRawElementProvider { get; }
-        }
-
-        public enum UIA : int { }
-
-        [Flags]
-        public enum ProviderOptions { }
     }
 
     public static class LowLevelExtensions
