@@ -166,6 +166,5 @@ namespace Internal.Reflection.Augments
         public abstract Assembly[] GetLoadedAssemblies();
 
         public abstract EnumInfo GetEnumInfo(Type type);
-
     }
 }

@@ -21,7 +21,6 @@ using Internal.Runtime.Augments;
 using Internal.Reflection.Augments;
 using Internal.Reflection.Core.Execution;
 using Internal.Metadata.NativeFormat;
-using System.Runtime.InteropServices;
 
 namespace System.Reflection.Runtime.General
 {
