@@ -30,8 +30,8 @@ _Note: The size of NuGet packages is approximately 2.75 GB, so download might ta
 
   - Set "ILCompiler" project in solution explorer as your startup project
 
-  - Set startup command line to:
-`@c:\corert\bin\obj\Windows_NT.x64.Debug\ryujit.rsp`
+  - Right Click on "ILCompiler" project => properties
+      - Debug -> Application arguments: `@c:\corert\bin\obj\Windows_NT.x64.Debug\ryujit.rsp`
 
   - Build & run using **F5**
     - This will run the compiler. The output is `c:\corert\bin\obj\Windows_NT.x64.Debug\repro\native\repro.obj` file.
