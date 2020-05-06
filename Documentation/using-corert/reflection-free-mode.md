@@ -63,3 +63,32 @@ To enable this mode, add following item to an `ItemGroup` in your project file:
     <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForNames" />
   </ItemGroup>
 ```
+
+To achieve similar result for when querying for ``Assembly`` (will instead give the ExecutingAssembly):
+
+```xml
+  <ItemGroup>
+    <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForAssembly" />
+  </ItemGroup>
+```
+
+And here for CustomAttributes (will return an empty array):
+
+
+```xml
+  <ItemGroup>
+    <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForAttributes" />
+  </ItemGroup>
+```
+
+Note:
+
+To make ``NativeLibrary`` API, and on the same occasion``Socket``, to work, you'll need:
+
+```xml
+  <ItemGroup>
+    <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForAssembly" />
+    <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForAttributes" />
+  </ItemGroup>
+```
+

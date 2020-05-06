@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
-
 using LibraryNameVariation = System.Runtime.Loader.LibraryNameVariation;
 
 namespace System.Runtime.InteropServices
@@ -42,12 +41,9 @@ namespace System.Runtime.InteropServices
             return ret;
         }
 
-        internal const DllImportSearchPath DefaultDllImportSearchPath = DllImportSearchPath.AssemblyDirectory;
-
-        // TODO: make this into a reflection callback so that we can make this work when reflection is disabled.
-        private static void GetDllImportSearchPathFlags(Assembly callingAssembly, out int searchPathFlags, out bool searchAssemblyDirectory)
+        internal static void GetDllImportSearchPathFlags(Assembly callingAssembly, out int searchPathFlags, out bool searchAssemblyDirectory)
         {
-            DllImportSearchPath searchPath = DefaultDllImportSearchPath;
+            var searchPath = DllImportSearchPath.AssemblyDirectory;
 
             foreach (CustomAttributeData cad in callingAssembly.CustomAttributes)
             {
