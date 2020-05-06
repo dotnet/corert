@@ -13,8 +13,6 @@ namespace Internal.Reflection
 {
     internal class ReflectionCoreCallbacksImplementation : ReflectionCoreCallbacks
     {
-        private bool DoNotThrowForGetDllImportSearchPathFlags => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForGetDllImportSearchPathFlags", out bool doNotThrow) && doNotThrow;
-
         public override EnumInfo GetEnumInfo(Type type)
         {
             return new EnumInfo(
@@ -45,17 +43,5 @@ namespace Internal.Reflection
         public override Assembly Load(string assemblyPath) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override void MakeTypedReference(object target, FieldInfo[] flds, out Type type, out int offset) => throw new NotSupportedException(SR.Reflection_Disabled);
         public override void RunModuleConstructor(Module module) => throw new NotSupportedException(SR.Reflection_Disabled);
-        public override void GetDllImportSearchPathFlags(Assembly callingAssembly, out int searchPathFlags, out bool searchAssemblyDirectory)
-        {
-            if (DoNotThrowForGetDllImportSearchPathFlags)
-            {
-                var searchPath = DllImportSearchPath.AssemblyDirectory;
-
-                searchPathFlags = (int)(searchPath & ~DllImportSearchPath.AssemblyDirectory);
-                searchAssemblyDirectory = (searchPath & DllImportSearchPath.AssemblyDirectory) != 0;
-            }
-            else
-                throw new NotSupportedException(SR.Reflection_Disabled);
-        }
     }
 }

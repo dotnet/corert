@@ -167,6 +167,5 @@ namespace Internal.Reflection.Augments
 
         public abstract EnumInfo GetEnumInfo(Type type);
 
-        public abstract void GetDllImportSearchPathFlags(Assembly callingAssembly, out int searchPathFlags, out bool searchAssemblyDirectory);
     }
 }

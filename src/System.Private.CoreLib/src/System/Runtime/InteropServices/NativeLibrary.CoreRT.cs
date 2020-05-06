@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                ReflectionAugments.ReflectionCoreCallbacks.GetDllImportSearchPathFlags(assembly, out searchPathFlags, out searchAssemblyDirectory);
+                GetDllImportSearchPathFlags(assembly, out searchPathFlags, out searchAssemblyDirectory);
             }
 
             LoadLibErrorTracker errorTracker = default;
@@ -40,6 +40,22 @@ namespace System.Runtime.InteropServices
             }
 
             return ret;
+        }
+
+        internal static void GetDllImportSearchPathFlags(Assembly callingAssembly, out int searchPathFlags, out bool searchAssemblyDirectory)
+        {
+            var searchPath = DllImportSearchPath.AssemblyDirectory;
+
+            foreach (CustomAttributeData cad in callingAssembly.CustomAttributes)
+            {
+                if (cad.AttributeType == typeof(DefaultDllImportSearchPathsAttribute))
+                {
+                    searchPath = (DllImportSearchPath)cad.ConstructorArguments[0].Value;
+                }
+            }
+
+            searchPathFlags = (int)(searchPath & ~DllImportSearchPath.AssemblyDirectory);
+            searchAssemblyDirectory = (searchPath & DllImportSearchPath.AssemblyDirectory) != 0;
         }
 
         internal static IntPtr LoadBySearch(Assembly callingAssembly, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)

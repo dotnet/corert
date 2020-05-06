@@ -81,17 +81,6 @@ And here for CustomAttributes (will return an empty array):
   </ItemGroup>
 ```
 
-
-And here for GetDllImportSearchPathFlags (will not check for DefaultDllImportSearchPathsAttribute):
-
-
-```xml
-  <ItemGroup>
-    <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForGetDllImportSearchPathFlags" />
-  </ItemGroup>
-```
-
-
 Note:
 
 To make ``NativeLibrary`` API, and on the same occasion``Socket``, to work, you'll need:
@@ -100,7 +89,6 @@ To make ``NativeLibrary`` API, and on the same occasion``Socket``, to work, you'
   <ItemGroup>
     <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForAssembly" />
     <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForAttributes" />
-    <AppContextSwitchOverrides Include="Switch.System.Reflection.Disabled.DoNotThrowForGetDllImportSearchPathFlags" />
   </ItemGroup>
 ```
 
