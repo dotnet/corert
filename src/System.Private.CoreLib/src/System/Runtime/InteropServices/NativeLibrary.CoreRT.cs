@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using Internal.Reflection.Augments;
 using LibraryNameVariation = System.Runtime.Loader.LibraryNameVariation;
 
 namespace System.Runtime.InteropServices
