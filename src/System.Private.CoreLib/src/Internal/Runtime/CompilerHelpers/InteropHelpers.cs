@@ -407,6 +407,26 @@ namespace Internal.Runtime.CompilerHelpers
             return PInvokeMarshal.GetCurrentCalleeDelegate<T>();
         }
 
+        public static IntPtr ConvertManagedComInterfaceToNative(object pUnk)
+        {
+            if (pUnk == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+        }
+
+        public static object ConvertNativeComInterfaceToManaged(IntPtr pUnk)
+        {
+            if (pUnk == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+        }
+
         internal static int AsAnyGetNativeSize(object o)
         {
             // Array, string and StringBuilder are not implemented.

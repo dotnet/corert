@@ -210,6 +210,9 @@ namespace PInvokeTests
         [DllImport("*", CallingConvention = CallingConvention.StdCall)]
         static extern bool IsNULL(SequentialStruct[] foo);
 
+        [DllImport("*", CallingConvention = CallingConvention.StdCall)]
+        static extern bool IsNULL(IComInterface foo);
+
         [StructLayout(LayoutKind.Sequential, CharSet= CharSet.Ansi, Pack = 4)]
         public unsafe struct InlineArrayStruct
         {
@@ -294,7 +297,10 @@ namespace PInvokeTests
             TestLayoutClass();
             TestAsAny();
             TestMarshalStructAPIs();
-#endif            
+#if TARGET_WINDOWS
+            TestComInteropNullPointers();
+#endif
+#endif
             return 100;
         }
 
@@ -993,6 +999,14 @@ namespace PInvokeTests
             int cftf_size = Marshal.SizeOf(typeof(ClassForTestingFlowAnalysis));
             ThrowIfNotEquals(4, cftf_size, "ClassForTestingFlowAnalysis marshalling Marshal API failed");
         }
+
+        public static void TestComInteropNullPointers()
+        {
+            Console.WriteLine("Testing Marshal APIs for COM interfaces");
+            IComInterface comPointer = null;
+            var result = IsNULL(comPointer);
+            ThrowIfNotEquals(true, IsNULL(comPointer), "COM interface marshalling null check failed");
+        }
     }
 
     public class SafeMemoryHandle : SafeHandle //SafeHandle subclass
@@ -1020,6 +1034,14 @@ namespace PInvokeTests
             return ReleaseMemory(handle);
         }
     } //end of SafeMemoryHandle class
+
+    [ComImport]
+    [ComVisible(true)]
+    [Guid("D6DD68D1-86FD-4332-8666-9ABEDEA2D24C")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IComInterface
+    {
+    }
 
     public static class LowLevelExtensions
     {
