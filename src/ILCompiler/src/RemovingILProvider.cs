@@ -218,6 +218,16 @@ namespace ILCompiler
                 }
             }
 
+            if ((_removedFeature & RemovedFeature.XmlDownloadNonFileStream) != 0)
+            {
+                if ((method.Name == "GetNonFileStream" || method.Name == "GetNonFileStreamAsync") &&
+                    owningType is Internal.TypeSystem.Ecma.EcmaType mdType &&
+                    mdType.Namespace == "System.Xml" && mdType.Name == "XmlDownloadManager")
+                {
+                    return RemoveAction.ConvertToThrow;
+                }
+            }
+
             return RemoveAction.Nothing;
         }
 
@@ -270,5 +280,6 @@ namespace ILCompiler
         Globalization = 0x4,
         Comparers = 0x8,
         SerializationGuard = 0x10,
+        XmlDownloadNonFileStream = 0x20,
     }
 }
