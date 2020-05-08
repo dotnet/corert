@@ -21,6 +21,7 @@ namespace ILCompiler
         {
             var sb = new StringBuilder();
 
+#if TARGET_WINDOWS
             // The coredistools library is not available in release builds because
             // we don't want to ship yet another huge LLVM-based DLL.
 #if DEBUG
@@ -61,6 +62,9 @@ namespace ILCompiler
             }
 #else
             sb.AppendLine("// CoreDisTools not available in release builds");
+#endif
+#else
+            sb.AppendLine("// CoreDisTools not available outside Windows");
 #endif
             return sb.ToString();
         }
