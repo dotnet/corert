@@ -522,6 +522,8 @@ namespace ILCompiler
                     removedFeatures |= RemovedFeature.Comparers;
                 else if (feature == "SerializationGuard")
                     removedFeatures |= RemovedFeature.SerializationGuard;
+                else if (feature == "XmlNonFileStream")
+                    removedFeatures |= RemovedFeature.XmlDownloadNonFileStream;
             }
 
             ILProvider ilProvider = new CoreRTILProvider();
