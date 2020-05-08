@@ -1079,6 +1079,11 @@ namespace ILCompiler.DependencyAnalysis
             return comparer.Compare(_type, ((EETypeNode)other)._type);
         }
 
+        public override string ToString()
+        {
+            return _type.ToString();
+        }
+
         private struct SlotCounter
         {
             private int _startBytes;
