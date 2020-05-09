@@ -43,7 +43,7 @@ GPTR_IMPL(StressLog, g_pStressLog /*, &StressLog::theLog*/);
 #ifndef DACCESS_COMPILE
 
 /*********************************************************************************/
-#if defined(_X86_)
+#if defined(HOST_X86)
 
 /* This is like QueryPerformanceCounter but a lot faster.  On machines with 
    variable-speed CPUs (for power management), this is not accurate, but may
@@ -57,7 +57,7 @@ inline __declspec(naked) unsigned __int64 getTimeStamp() {
     };
 }
 
-#else // _X86_
+#else // HOST_X86
 unsigned __int64 getTimeStamp() {
     
     LARGE_INTEGER ret;
@@ -68,7 +68,7 @@ unsigned __int64 getTimeStamp() {
     return ret.QuadPart;
 }
 
-#endif // _X86_ else
+#endif // HOST_X86 else
 
 /*********************************************************************************/
 /* Get the the frequency corresponding to 'getTimeStamp'.  For non-x86 

@@ -271,7 +271,7 @@ EXTERN_C REDHAWK_API Int64 __cdecl RhGetTotalAllocatedBytesPrecise()
 static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEEType, UInt32 numElements)
 {
     size_t size;
-#ifndef BIT64
+#ifndef HOST_64BIT
     // if the element count is <= 0x10000, no overflow is possible because the component size is
     // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
     if (numElements > 0x10000)
@@ -287,20 +287,20 @@ static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEETy
         }
     }
     else
-#endif // !BIT64
+#endif // !HOST_64BIT
     {
         size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
         size = ALIGN_UP(size, sizeof(UIntNative));
     }
 
     size_t max_object_size;
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (g_pConfig->GetGCAllowVeryLargeObjects())
     {
         max_object_size = (INT64_MAX - 7 - min_obj_size);
     }
     else
-#endif // BIT64
+#endif // HOST_64BIT
     {
         max_object_size = (INT32_MAX - 7 - min_obj_size);
     }

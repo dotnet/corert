@@ -430,7 +430,7 @@ volatile UInt32 * p_tls_index;
 volatile UInt32 SECTIONREL__tls_CurrentThread;
 
 EXTERN_C UInt32 _tls_index;
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 // ARM64TODO: Re-enable optimization
 #pragma optimize("", off)
 #endif
@@ -444,7 +444,7 @@ void ThreadStore::SaveCurrentThreadOffsetForDAC()
 
     SECTIONREL__tls_CurrentThread = (UInt32)((UInt8 *)&tls_CurrentThread - pOurTls);
 }
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 #pragma optimize("", on)
 #endif
 #else // DACCESS_COMPILE

@@ -35,7 +35,7 @@ struct InterfaceDispatchCache
     union
     {
         InterfaceDispatchCache *    m_pNextFree;    // next in free list
-#ifndef _AMD64_
+#ifndef HOST_AMD64
         InterfaceDispatchCell  *    m_pCell;        // pointer back to interface dispatch cell - not used for AMD64
 #endif
     };

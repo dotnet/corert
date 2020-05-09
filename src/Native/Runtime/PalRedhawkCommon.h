@@ -32,11 +32,11 @@ enum PalCapability
 #endif
 #endif // DECLSPEC_ALIGN
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
 #define AMD64_ALIGN_16 DECLSPEC_ALIGN(16)
-#else // _AMD64_
+#else // HOST_AMD64
 #define AMD64_ALIGN_16
-#endif // _AMD64_
+#endif // HOST_AMD64
 
 struct AMD64_ALIGN_16 Fp128 {
     UInt64 Low;
@@ -47,7 +47,7 @@ struct AMD64_ALIGN_16 Fp128 {
 struct PAL_LIMITED_CONTEXT
 {
     // Includes special registers, callee saved registers and general purpose registers used to return values from functions (not floating point return registers)
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     UIntNative  R0;
     UIntNative  R4;
     UIntNative  R5;
@@ -70,7 +70,7 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetLr() const { return LR; }
     void SetIp(UIntNative ip) { IP = ip; }
     void SetSp(UIntNative sp) { SP = sp; }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     UIntNative  FP;
     UIntNative  LR;
 
@@ -118,7 +118,7 @@ struct PAL_LIMITED_CONTEXT
     void SetIp(UIntNative ip) { IP = ip; }
     void SetSp(UIntNative sp) { Rsp = sp; }
     UIntNative GetFp() const { return Rbp; }
-#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
     UIntNative  IP;
     UIntNative  Rsp;
     UIntNative  Rbp;
@@ -126,7 +126,7 @@ struct PAL_LIMITED_CONTEXT
     UIntNative  Rsi;
     UIntNative  Rax;
     UIntNative  Rbx;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     UIntNative  R12;
     UIntNative  R13;
     UIntNative  R14;
@@ -142,14 +142,14 @@ struct PAL_LIMITED_CONTEXT
     Fp128       Xmm13;
     Fp128       Xmm14;
     Fp128       Xmm15;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     UIntNative GetIp() const { return IP; }
     UIntNative GetSp() const { return Rsp; }
     UIntNative GetFp() const { return Rbp; }
     void SetIp(UIntNative ip) { IP = ip; }
     void SetSp(UIntNative sp) { Rsp = sp; }
-#else // _TARGET_ARM_
+#else // TARGET_ARM
     UIntNative  IP;
 
     UIntNative GetIp() const { PORTABILITY_ASSERT("GetIp");  return 0; }
@@ -157,12 +157,12 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetFp() const { PORTABILITY_ASSERT("GetFp"); return 0; }
     void SetIp(UIntNative ip) { PORTABILITY_ASSERT("SetIp"); }
     void SetSp(UIntNative sp) { PORTABILITY_ASSERT("GetSp"); }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 };
 
 void RuntimeThreadShutdown(void* thread);
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 typedef void (__fastcall * ThreadExitCallback)();
 
 extern ThreadExitCallback g_threadExitCallback;

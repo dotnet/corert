@@ -173,7 +173,7 @@ COOP_PINVOKE_HELPER(void *, RhGetTargetOfUnboxingAndInstantiatingStub, (void * p
     return GetRuntimeInstance()->GetTargetOfUnboxingAndInstantiatingStub(pUnboxStub);
 }
 
-#if _TARGET_ARM_
+#if TARGET_ARM
 //*****************************************************************************
 //  Extract the 16-bit immediate from ARM Thumb2 Instruction (format T2_N)
 //*****************************************************************************
@@ -219,7 +219,7 @@ inline Int32 GetThumb2BlRel24(UInt16 * p)
     // Sign-extend and return
     return (ret << 7) >> 7;
 }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 // Given a pointer to code, find out if this points to an import stub
 // or unboxing stub, and if so, return the address that stub jumps to
@@ -234,7 +234,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
         return pCodeOrg;
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     UInt8 * pCode = pCodeOrg;
 
     // is this "add rcx/rdi,8"?
@@ -268,7 +268,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
         return target;
     }
 
-#elif _TARGET_X86_
+#elif TARGET_X86
     UInt8 * pCode = pCodeOrg;
 
     // is this "add ecx,4"?
@@ -295,7 +295,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
         return pTarget;
     }
 
-#elif _TARGET_ARM_
+#elif TARGET_ARM
     UInt16 * pCode = (UInt16 *)((size_t)pCodeOrg & ~THUMB_CODE);
     // is this "adds r0,4"?
     if (pCode[0] == 0x3004)
@@ -330,7 +330,7 @@ COOP_PINVOKE_HELPER(UInt8 *, RhGetCodeTarget, (UInt8 * pCodeOrg))
         return (UInt8 *)pTarget;
     }
 
-#elif _TARGET_ARM64_
+#elif TARGET_ARM64
     UInt32 * pCode = (UInt32 *)pCodeOrg;
     // is this "add x0,x0,#8"?
     if (pCode[0] == 0x91002000)
@@ -527,7 +527,7 @@ COOP_PINVOKE_HELPER(void, RhGetCurrentThreadStackBounds, (PTR_VOID * ppStackLow,
     ThreadStore::GetCurrentThread()->GetStackBounds(ppStackLow, ppStackHigh);
 }
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 
 // Function to call when a thread is detached from the runtime
 ThreadExitCallback g_threadExitCallback;
@@ -537,7 +537,7 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
     g_threadExitCallback = (ThreadExitCallback)pCallback;
 }
 
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
 COOP_PINVOKE_HELPER(Int32, RhGetProcessCpuCount, ())
 {

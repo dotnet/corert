@@ -97,7 +97,7 @@ void InitNumaNodeInfo()
     return;
 }
 
-#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
 // Calculate greatest common divisor
 DWORD GCD(DWORD u, DWORD v)
 {
@@ -156,7 +156,7 @@ bool InitLargePagesPrivilege()
 
 bool InitCPUGroupInfoArray()
 {
-#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     BYTE *bBuffer = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pSLPIEx = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pRecord = NULL;
@@ -229,7 +229,7 @@ bool InitCPUGroupInfoArray()
 
 bool InitCPUGroupInfoRange()
 {
-#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     WORD begin   = 0;
     WORD nr_proc = 0;
 
@@ -251,7 +251,7 @@ void InitCPUGroupInfo()
 {
     g_fEnableGCCPUGroups = false;
 
-#if (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     if (!GCConfig::GetGCCpuGroup())
         return;
 
@@ -263,7 +263,7 @@ void InitCPUGroupInfo()
 
     // only enable CPU groups if more than one group exists
     g_fEnableGCCPUGroups = g_nGroups > 1;
-#endif // _TARGET_AMD64_ || _TARGET_ARM64_
+#endif // TARGET_AMD64 || TARGET_ARM64
 
     // Determine if the process is affinitized to a single processor (or if the system has a single processor)
     DWORD_PTR processAffinityMask, systemAffinityMask;
@@ -518,7 +518,7 @@ void GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uin
 {
     assert(g_fEnableGCCPUGroups);
 
-#if !defined(FEATURE_REDHAWK) && (defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_))
+#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 
@@ -901,7 +901,7 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
 
-#if defined(_ARM64_)
+#if defined(HOST_ARM64)
     // Bigger gen0 size helps arm64 targets
     maxSize = maxTrueSize * 3;
 #endif

@@ -89,27 +89,27 @@ inline bool IS_ALIGNED(T* val, UIntNative alignment);
 //-------------------------------------------------------------------------------------------------
 // Platform-specific defines
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
 
 #define LOG2_PTRSIZE 3
 #define POINTER_SIZE 8
 
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
 #define LOG2_PTRSIZE 3
 #define POINTER_SIZE 8
 
-#elif defined (_WASM_)
+#elif defined (HOST_WASM)
 
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
@@ -119,33 +119,33 @@ inline bool IS_ALIGNED(T* val, UIntNative alignment);
 #endif
 
 #ifndef __GCENV_BASE_INCLUDED__
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
 
 #define DATA_ALIGNMENT  8
 #define OS_PAGE_SIZE    0x1000
 
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 
 #define DATA_ALIGNMENT  4
 #ifndef OS_PAGE_SIZE
 #define OS_PAGE_SIZE    0x1000
 #endif
 
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
 #define DATA_ALIGNMENT  4
 #ifndef OS_PAGE_SIZE
 #define OS_PAGE_SIZE    0x1000
 #endif
 
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
 #define DATA_ALIGNMENT  8
 #ifndef OS_PAGE_SIZE
 #define OS_PAGE_SIZE    0x1000
 #endif
 
-#elif defined(_WASM_)
+#elif defined(HOST_WASM)
 
 #define DATA_ALIGNMENT  4
 #ifndef OS_PAGE_SIZE
@@ -157,7 +157,7 @@ inline bool IS_ALIGNED(T* val, UIntNative alignment);
 #endif
 #endif // __GCENV_BASE_INCLUDED__
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 #define THUMB_CODE 1
 #endif
 
@@ -166,7 +166,7 @@ inline bool IS_ALIGNED(T* val, UIntNative alignment);
 // should be very few of these, most such functions will be simply p/invoked).
 //
 #define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C REDHAWK_API _rettype __fastcall _method _args
-#ifdef _X86_
+#ifdef HOST_X86
 // We have helpers that act like memcpy and memset from the CRT, so they need to be __cdecl.
 #define COOP_PINVOKE_CDECL_HELPER(_rettype, _method, _args) EXTERN_C REDHAWK_API _rettype __cdecl _method _args
 #else
