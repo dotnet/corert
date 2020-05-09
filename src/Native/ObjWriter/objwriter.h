@@ -34,11 +34,11 @@ using namespace llvm::codeview;
 // ***
 // Define default call conventions
 // ***
-#if defined(HOST_X86) && !defined(TARGET_UNIX)
+#if defined(HOST_X86) && !defined(HOST_UNIX)
 #define STDMETHODCALLTYPE  __stdcall
 #else
 #define STDMETHODCALLTYPE
-#endif //  defined(HOST_X86) && !defined(TARGET_UNIX)
+#endif //  defined(HOST_X86) && !defined(HOST_UNIX)
 
 enum CustomSectionAttributes : int32_t {
   CustomSectionAttributes_ReadOnly = 0x0000,

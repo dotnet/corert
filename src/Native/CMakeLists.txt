@@ -83,7 +83,8 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
 if (CLR_CMAKE_PLATFORM_UNIX)
     include_directories(inc/unix)
 
-    add_definitions(-DPLATFORM_UNIX=1)
+    add_definitions(-DHOST_UNIX=1)
+    add_definitions(-DTARGET_UNIX=1)
     add_definitions(-DPAL_STDCPP_COMPAT)
 
     # All warnings that are not explicitly disabled are reported as errors
