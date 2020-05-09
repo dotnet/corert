@@ -621,6 +621,12 @@ namespace Internal.IL
             return null;
         }
 
+        private bool IsFinallyBlock(BasicBlock block)
+        {
+            ExceptionRegion ehRegion = GetHandlerRegion(block.StartOffset);
+            return ehRegion != null && ehRegion.ILRegion.Kind == ILExceptionRegionKind.Finally;
+        }
+
         private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
             _stack.Clear();
@@ -635,20 +641,21 @@ namespace Internal.IL
                 }
             }
 
+            if (basicBlock.FilterStart || IsFinallyBlock(basicBlock))
+            {
+                // need to pad out the spilled slots in case the filter or finally tries to allocate some temp variables on the shadow stack.  As some spaces are used in the call to FindFirstPassHandlerWasm/InvokeSecondPassWasm
+                // and inside FindFirstPassHandlerWasm/InvokeSecondPassWasm we need to leave space for them.
+                // An alternative approach could be to calculate this space in RhpCallFilterFunclet/RhpCallFinallyFunclet and pass it through
+                NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "infoIteratorEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32))); //3 ref and out params
+                NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "tryRegionIdxEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
+                NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "handlerFuncPtrEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
+                NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32))); // 8 bytes enough to cover the temps used in FindFirstPassHandlerWasm or InvokeSecondPassWasm
+                NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
+            }
+
             // Push an exception object for catch and filter
             if (basicBlock.HandlerStart || basicBlock.FilterStart)
             {
-                if (basicBlock.FilterStart)
-                {
-                    // need to pad out the spilled slots in case the filter tries to allocate some temp variables on the shadow stack.  As some spaces are used in the call to FindFirstPassHandlerWasm
-                    // and inside FindFirstPassHandlerWasm we need to leave space for them.
-                    // An alternative approach could be to calculate this space in FindFirstPassHandlerWasm and pass it through
-                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "infoIteratorEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32))); //3 ref and out params
-                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "tryRegionIdxEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
-                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "handlerFuncPtrEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
-                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32))); // 2 temps used in FindFirstPassHandlerWasm
-                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
-                }
                 foreach (ExceptionRegion ehRegion in _exceptionRegions)
                 {
                     if (ehRegion.ILRegion.HandlerOffset == basicBlock.StartOffset ||
@@ -2876,7 +2883,7 @@ namespace Internal.IL
             // WASMTODO: should this really be a newobj call?
             LLVMTypeRef ehInfoIteratorType = LLVMTypeRef.CreateStruct(new LLVMTypeRef[] { LLVMTypeRef.Int32, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }, false);
             var ehInfoIterator = landingPadBuilder.BuildAlloca(ehInfoIteratorType, "ehInfoIterPtr");
-            
+
             var iteratorInitArgs = new StackEntry[] {
                                                         new ExpressionEntry(StackValueKind.ObjRef, "ehInfoIter", ehInfoIterator), 
                                                         new ExpressionEntry(StackValueKind.ByRef, "ehInfoStart", LoadAddressOfSymbolNode(_ehInfoNode, landingPadBuilder)),
@@ -2907,7 +2914,7 @@ namespace Internal.IL
             var handlerFunc = landingPadBuilder.BuildLoad(handlerFuncPtr, "handlerFunc");
 
             var leaveDestination = landingPadBuilder.BuildAlloca(LLVMTypeRef.Int32, "leaveDest"); // create a variable to store the operand of the leave as we can't use the result of the call directly due to domination/branches
-            landingPadBuilder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0, false), leaveDestination); 
+            landingPadBuilder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0, false), leaveDestination);
             var foundCatchBlock = _currentFunclet.AppendBasicBlock("LPFoundCatch");
             // If it didn't find a catch block, we can rethrow (resume in LLVM) the C++ exception to continue the stack walk.
             var noCatch = landingPadBuilder.BuildICmp(LLVMIntPredicate.LLVMIntEQ, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0, false),
