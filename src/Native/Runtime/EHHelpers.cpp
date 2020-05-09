@@ -106,7 +106,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, Int32 cb
     pContext->R13 = pPalContext->R13;
     pContext->R14 = pPalContext->R14;
     pContext->R15 = pPalContext->R15;
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
     pContext->Rip = pPalContext->IP;
     pContext->Rsp = pPalContext->Rsp;
     pContext->Rbp = pPalContext->Rbp;
@@ -118,7 +118,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, Int32 cb
     pContext->R13 = pPalContext->R13;
     pContext->R14 = pPalContext->R14;
     pContext->R15 = pPalContext->R15;
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     pContext->Eip = pPalContext->IP;
     pContext->Esp = pPalContext->Rsp;
     pContext->Ebp = pPalContext->Rbp;
@@ -126,7 +126,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, Int32 cb
     pContext->Esi = pPalContext->Rsi;
     pContext->Eax = pPalContext->Rax;
     pContext->Ebx = pPalContext->Rbx;
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     pContext->R0  = pPalContext->R0;
     pContext->R4  = pPalContext->R4;
     pContext->R5  = pPalContext->R5;
@@ -139,7 +139,7 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, Int32 cb
     pContext->Sp  = pPalContext->SP;
     pContext->Lr  = pPalContext->LR;
     pContext->Pc  = pPalContext->IP;
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     pContext->X0 = pPalContext->X0;
     pContext->X1 = pPalContext->X1;
     // TODO: Copy registers X2-X7 when we start supporting HVA's
@@ -157,27 +157,27 @@ COOP_PINVOKE_HELPER(void, RhpCopyContextFromExInfo, (void * pOSContext, Int32 cb
     pContext->Sp = pPalContext->SP;
     pContext->Lr = pPalContext->LR;
     pContext->Pc = pPalContext->IP;
-#elif defined(_WASM_)
+#elif defined(HOST_WASM)
     // No registers, no work to do yet
 #else
 #error Not Implemented for this architecture -- RhpCopyContextFromExInfo
 #endif
 }
 
-#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_) || defined(_ARM64_)
+#if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64)
 struct DISPATCHER_CONTEXT
 {
     UIntNative  ControlPc;
     // N.B. There is more here (so this struct isn't the right size), but we ignore everything else
 };
 
-#ifdef _X86_
+#ifdef HOST_X86
 struct EXCEPTION_REGISTRATION_RECORD
 {
     UIntNative Next;
     UIntNative Handler;
 };
-#endif // _X86_
+#endif // HOST_X86
 
 EXTERN_C void __cdecl RhpFailFastForPInvokeExceptionPreemp(IntNative PInvokeCallsiteReturnAddr, 
                                                            void* pExceptionRecord, void* pContextRecord);
@@ -225,7 +225,7 @@ EXTERN_C Int32 __stdcall RhpPInvokeExceptionGuard(PEXCEPTION_RECORD       pExcep
         // Cooperative mode -- Typically, RhpVectoredExceptionHandler will handle this because the faulting IP will be
         // in managed code.  But sometimes we AV on a bad call indirect or something similar.  In that situation, we can
         // use the dispatcher context or exception registration record to find the relevant classlib.
-#ifdef _X86_
+#ifdef HOST_X86
         IntNative classlibBreadcrumb = ((EXCEPTION_REGISTRATION_RECORD*)EstablisherFrame)->Handler;
 #else
         IntNative classlibBreadcrumb = pDispatcherContext->ControlPc;
@@ -250,7 +250,7 @@ EXTERN_C Int32 RhpPInvokeExceptionGuard()
 }
 #endif
 
-#if defined(_AMD64_) || defined(_ARM_) || defined(_X86_) || defined(_ARM64_) || defined(_WASM_)
+#if defined(HOST_AMD64) || defined(HOST_ARM) || defined(HOST_X86) || defined(HOST_ARM64) || defined(HOST_WASM)
 EXTERN_C REDHAWK_API void __fastcall RhpThrowHwEx();
 #else
 COOP_PINVOKE_HELPER(void, RhpThrowHwEx, ())
@@ -317,7 +317,7 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
     // compare the IP against the list of known possible AV locations in the write barrier helpers
     for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
     {
-#if defined(_AMD64_) || defined(_X86_)
+#if defined(HOST_AMD64) || defined(HOST_X86)
         // Verify that the runtime is not linked with incremental linking enabled. Incremental linking
         // wraps every method symbol with a jump stub that breaks the following check.
         ASSERT(*(UInt8*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
@@ -332,7 +332,7 @@ static bool InWriteBarrierHelper(UIntNative faultingIP)
 }
 
 static UIntNative UnwindWriteBarrierToCaller(
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
     PAL_LIMITED_CONTEXT * pContext
 #else
     _CONTEXT * pContext
@@ -343,12 +343,12 @@ static UIntNative UnwindWriteBarrierToCaller(
     UIntNative faultingIP = pContext->GetIp();
     ASSERT(InWriteBarrierHelper(faultingIP));
 #endif
-#if defined(_AMD64_) || defined(_X86_)
+#if defined(HOST_AMD64) || defined(HOST_X86)
     // simulate a ret instruction
     UIntNative sp = pContext->GetSp();
     UIntNative adjustedFaultingIP = *(UIntNative *)sp;
     pContext->SetSp(sp+sizeof(UIntNative)); // pop the stack
-#elif defined(_ARM_) || defined(_ARM64_)
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
     UIntNative adjustedFaultingIP = pContext->GetLr();
 #else
     UIntNative adjustedFaultingIP = 0; // initializing to make the compiler happy
@@ -357,7 +357,7 @@ static UIntNative UnwindWriteBarrierToCaller(
     return adjustedFaultingIP;
 }
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 
 Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative faultAddress,
     PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg)
@@ -401,7 +401,7 @@ Int32 __stdcall RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative fau
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#else // PLATFORM_UNIX
+#else // TARGET_UNIX
 
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 {
@@ -475,7 +475,7 @@ Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
 COOP_PINVOKE_HELPER(void, RhpFallbackFailFast, ())
 {

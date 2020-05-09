@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 struct REGDISPLAY 
 {
@@ -14,7 +14,7 @@ struct REGDISPLAY
     PTR_UIntNative pRbp;
     PTR_UIntNative pRsi;
     PTR_UIntNative pRdi;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     PTR_UIntNative pR8;
     PTR_UIntNative pR9;
     PTR_UIntNative pR10;
@@ -23,18 +23,18 @@ struct REGDISPLAY
     PTR_UIntNative pR13;
     PTR_UIntNative pR14;
     PTR_UIntNative pR15;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     UIntNative   SP;
     PTR_PCODE    pIP;
     PCODE        IP;
 
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
+#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     Fp128          Xmm[16-6]; // preserved xmm6..xmm15 regs for EH stackwalk
                               // these need to be unwound during a stack walk
                               // for EH, but not adjusted, so we only need
                               // their values, not their addresses
-#endif // _TARGET_AMD64_ && !UNIX_AMD64_ABI
+#endif // TARGET_AMD64 && !UNIX_AMD64_ABI
 
     inline PCODE GetIP() { return IP; }
     inline PTR_PCODE GetAddrOfIP() { return pIP; }
@@ -47,7 +47,7 @@ struct REGDISPLAY
     inline void SetSP(UIntNative SP) { this->SP = SP; }
 };
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
 struct REGDISPLAY
 {
@@ -84,7 +84,7 @@ struct REGDISPLAY
     inline void SetSP(UIntNative SP) { this->SP = SP; }
 };
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
 struct REGDISPLAY 
 {
@@ -139,7 +139,7 @@ struct REGDISPLAY
     inline void SetAddrOfIP(PTR_PCODE pIP) { this->pIP = pIP; }
     inline void SetSP(UIntNative SP) { this->SP = SP; }
 };
-#elif defined(_TARGET_WASM_)
+#elif defined(TARGET_WASM)
 
 struct REGDISPLAY
 {
@@ -158,6 +158,6 @@ struct REGDISPLAY
     inline void SetAddrOfIP(PTR_PCODE pIP) { }
     inline void SetSP(UIntNative SP) { }
 };
-#endif // _X86_ || _AMD64_ || _ARM_ || _ARM64_ || _WASM_
+#endif // HOST_X86 || HOST_AMD64 || HOST_ARM || HOST_ARM64 || HOST_WASM
 
 typedef REGDISPLAY * PREGDISPLAY;

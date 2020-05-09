@@ -237,13 +237,13 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
     ASSERT(!pThread->IsDoNotTriggerGcSet());
 
     size_t max_object_size;
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (g_pConfig->GetGCAllowVeryLargeObjects())
     {
         max_object_size = (INT64_MAX - 7 - min_obj_size);
     }
     else
-#endif // BIT64
+#endif // HOST_64BIT
     {
         max_object_size = (INT32_MAX - 7 - min_obj_size);
     }
@@ -372,7 +372,7 @@ bool IsOnReadablePortionOfThread(EnumGcRefScanContext * pSc, PTR_VOID pointer)
     return true;
 }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define CONSERVATIVE_REGION_MAGIC_NUMBER 0x87DF7A104F09E0A9ULL
 #else
 #define CONSERVATIVE_REGION_MAGIC_NUMBER 0x4F09E0A9
@@ -771,7 +771,7 @@ uint64_t RedhawkGCInterface::s_DeadThreadsNonAllocBytes = 0;
 
 uint64_t RedhawkGCInterface::GetDeadThreadsNonAllocBytes()
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     return s_DeadThreadsNonAllocBytes;
 #else
     // As it could be noticed we read 64bit values that may be concurrently updated.
@@ -1206,7 +1206,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //     On architectures with strong ordering, we only need to prevent compiler reordering.
         //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
 
-#if defined(_ARM64_) || defined(_ARM_)
+#if defined(HOST_ARM64) || defined(HOST_ARM)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
@@ -1218,7 +1218,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
 
-#if defined(_ARM64_) || defined(_ARM_)
+#if defined(HOST_ARM64) || defined(HOST_ARM)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
@@ -1449,7 +1449,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
 
     if (strcmp(key, "GCgen0size") == 0)
     {
-#if defined(USE_PORTABLE_HELPERS) && !defined(_WASM_)
+#if defined(USE_PORTABLE_HELPERS) && !defined(HOST_WASM)
         // CORERT-TODO: remove this
         //              https://github.com/dotnet/corert/issues/2033
         *value = 100 * 1024 * 1024;

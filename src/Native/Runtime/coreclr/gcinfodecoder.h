@@ -14,7 +14,7 @@
 #define _max(a, b) (((a) > (b)) ? (a) : (b)) 
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
 
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
 #define USE_GC_INFO_DECODER
 #endif
 
@@ -88,11 +88,11 @@ inline void SetIP(T_CONTEXT* context, PCODE rip)
 
 inline TADDR GetSP(T_CONTEXT* context)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return (TADDR)context->Rsp;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     return (TADDR)context->Sp;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return (TADDR)context->Sp;
 #else
     _ASSERTE(!"nyi for platform");
@@ -101,11 +101,11 @@ inline TADDR GetSP(T_CONTEXT* context)
 
 inline PCODE GetIP(T_CONTEXT* context) 
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return (PCODE) context->Rip;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     return (PCODE)context->Pc;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return (PCODE)context->Pc;
 #else
     _ASSERTE(!"nyi for platform");

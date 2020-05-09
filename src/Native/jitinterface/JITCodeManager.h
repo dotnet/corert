@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <mutex>
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 //
 // ToDo - this should eventually come from windows header file.
 //
@@ -96,7 +96,7 @@ public:
 typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 
 // TODO: Not compatible with Windows 7
-// #ifdef _TARGET_AMD64_
+// #ifdef TARGET_AMD64
 // #define USE_GROWABLE_FUNCTION_TABLE 1
 // #endif
 

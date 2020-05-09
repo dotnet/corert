@@ -222,7 +222,7 @@ BOOL IsRundownNgenKeywordEnabledAndNotSuppressed()
 /*******************************************************/
 /* Fast assembly function to get the topmost EBP frame */
 /*******************************************************/
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 extern "C"
 {
     CallStackFrame* GetEbp()
@@ -235,7 +235,7 @@ extern "C"
         return frame;
     }
 }
-#endif //_TARGET_X86_
+#endif //TARGET_X86
 
 #ifndef FEATURE_PAL
 
@@ -316,14 +316,14 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
         return ETW::SamplingLog::UnInitialized;
     }
 #ifndef DACCESS_COMPILE
-#if !defined(_TARGET_X86_) && !defined(_TARGET_ARM_)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM)
     if (RtlVirtualUnwind_Unsafe == NULL)
     {
         // We haven't even set up the RtlVirtualUnwind function pointer yet,
         // so it's too early to try stack walking.
         return ETW::SamplingLog::UnInitialized;
     }
-#endif // !_TARGET_X86_ && !_TARGET_ARM_
+#endif // !TARGET_X86 && !TARGET_ARM
     Thread *pThread = GetThread();
     if (pThread == NULL)
     {
@@ -341,7 +341,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
     pThread->MarkEtwStackWalkInProgress();
     EX_TRY
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         CallStackFrame *currentEBP = GetEbp();
         CallStackFrame *lastEBP = NULL;
         while(currentEBP)
@@ -404,7 +404,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
     
             PrevSP = CurrentSP;
         }
-#endif //_TARGET_X86_
+#endif //TARGET_X86
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
     pThread->MarkEtwStackWalkCompleted();
 #endif //!DACCESS_COMPILE

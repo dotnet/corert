@@ -31,7 +31,7 @@ enum GCRefKind : unsigned char
     GCRK_Scalar         = 0x00,
     GCRK_Object         = 0x01,
     GCRK_Byref          = 0x02,
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // Composite return kinds for value types returned in two registers (encoded with two bits per register)
     GCRK_Scalar_Obj     = (GCRK_Object << 2) | GCRK_Scalar,
     GCRK_Obj_Obj        = (GCRK_Object << 2) | GCRK_Object,
@@ -41,13 +41,13 @@ enum GCRefKind : unsigned char
     GCRK_Byref_Byref    = (GCRK_Byref  << 2) | GCRK_Byref,
 
     GCRK_LastValid      = GCRK_Byref_Byref,
-#else // _TARGET_ARM64_
+#else // TARGET_ARM64
     GCRK_LastValid      = GCRK_Byref,
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
     GCRK_Unknown        = 0xFF,
 };
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 // Extract individual GCRefKind components from a composite return kind
 inline GCRefKind ExtractReg0ReturnKind(GCRefKind returnKind)
 {
@@ -60,7 +60,7 @@ inline GCRefKind ExtractReg1ReturnKind(GCRefKind returnKind)
     ASSERT(returnKind <= GCRK_LastValid);
     return (GCRefKind)(returnKind >> 2);
 }
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
 //
 // MethodInfo is placeholder type used to allocate space for MethodInfo. Maximum size 

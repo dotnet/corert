@@ -145,7 +145,7 @@ private:
 
     struct PreservedRegPtrs
     {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         PTR_UIntNative pR4;
         PTR_UIntNative pR5;
         PTR_UIntNative pR6;
@@ -154,7 +154,7 @@ private:
         PTR_UIntNative pR9;
         PTR_UIntNative pR10;
         PTR_UIntNative pR11;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         PTR_UIntNative pX19;
         PTR_UIntNative pX20;
         PTR_UIntNative pX21;
@@ -173,18 +173,18 @@ private:
         PTR_UIntNative pR13;
         PTR_UIntNative pR14;
         PTR_UIntNative pR15;
-#else // _TARGET_ARM_
+#else // TARGET_ARM
         PTR_UIntNative pRbp;
         PTR_UIntNative pRdi;
         PTR_UIntNative pRsi;
         PTR_UIntNative pRbx;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         PTR_UIntNative pR12;
         PTR_UIntNative pR13;
         PTR_UIntNative pR14;
         PTR_UIntNative pR15;
-#endif // _TARGET_AMD64_
-#endif // _TARGET_ARM_
+#endif // TARGET_AMD64
+#endif // TARGET_ARM
     };
 
 protected:

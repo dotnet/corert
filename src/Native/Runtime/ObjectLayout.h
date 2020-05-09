@@ -17,9 +17,9 @@
 class ObjHeader
 {
 private:
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     UInt32   m_uAlignpad;
-#endif // BIT64
+#endif // HOST_64BIT
     UInt32   m_uSyncBlockValue;
 
 public:
@@ -91,9 +91,9 @@ class Array : public Object
     friend class AsmOffsets;
 
     UInt32       m_Length;
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     UInt32       m_uAlignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 public:  
     UInt32 GetArrayLength();
     void InitArrayLength(UInt32 length);

@@ -536,11 +536,11 @@
 
 #include "safemath.h"
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 typedef UInt64 UIntTarget;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 typedef UInt32 UIntTarget;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture
@@ -609,10 +609,10 @@ typedef struct _DacGlobals
     ULONG fn__ThreadpoolMgr__AsyncCallbackCompletion;
     ULONG fn__ThreadpoolMgr__AsyncTimerCallbackCompletion;
     ULONG fn__DACNotifyCompilationFinished;
-#ifdef _X86_ 
+#ifdef HOST_X86 
     ULONG fn__NativeDelayFixupAsmStub;
     ULONG fn__NativeDelayFixupAsmStubRet;
-#endif // _X86_
+#endif // HOST_X86
     ULONG fn__PInvokeCalliReturnFromCall;
     ULONG fn__NDirectGenericStubReturnFromCall;
     ULONG fn__DllImportForDelegateGenericStubReturnFromCall;
@@ -1038,17 +1038,17 @@ public:
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
     }
-#if (!defined (_X86_) && !defined(_SPARC_) && !defined(_ARM_)) || (defined(_X86_) && defined(__APPLE__)) 
+#if (!defined (HOST_X86) && !defined(_SPARC_) && !defined(HOST_ARM)) || (defined(HOST_X86) && defined(__APPLE__)) 
     DPtrType operator+(unsigned int val)
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
     }
-#endif // (!defined (_X86_) && !defined(_SPARC_) && !defined(_ARM_)) || (defined(_X86_) && defined(__APPLE__))
+#endif // (!defined (HOST_X86) && !defined(_SPARC_) && !defined(HOST_ARM)) || (defined(HOST_X86) && defined(__APPLE__))
     DPtrType operator+(int val)
     {
         return DPtrType(m_addr + val * sizeof(type));
     }
-#ifndef PLATFORM_UNIX // for now, everything else is 32 bit
+#ifndef TARGET_UNIX // for now, everything else is 32 bit
     DPtrType operator+(unsigned long val)
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
@@ -1057,8 +1057,8 @@ public:
     {
         return DPtrType(m_addr + val * sizeof(type));
     }
-#endif // !PLATFORM_UNIX // for now, everything else is 32 bit
-#if !defined(_ARM_) && !defined(_X86_)
+#endif // !TARGET_UNIX // for now, everything else is 32 bit
+#if !defined(HOST_ARM) && !defined(HOST_X86)
     DPtrType operator+(IntNative val)
     {
         return DPtrType(m_addr + val * sizeof(type));
@@ -1089,12 +1089,12 @@ public:
     {
         return DPtrType(m_addr - val * sizeof(type));
     }
-#if !defined (_X86_) && !defined(_SPARC_) && !defined(_ARM_)
+#if !defined (HOST_X86) && !defined(_SPARC_) && !defined(HOST_ARM)
     DPtrType operator-(unsigned int val)
     {
         return DPtrType(m_addr - val * sizeof(type));
     }
-#endif // !defined (_X86_) && !defined(_SPARC_) && !defined(_ARM_)
+#endif // !defined (HOST_X86) && !defined(_SPARC_) && !defined(HOST_ARM)
     DPtrType operator-(int val)
     {
         return DPtrType(m_addr - val * sizeof(type));

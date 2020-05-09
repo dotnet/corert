@@ -2,7 +2,7 @@
 #define JIT_DEBUG_INFO_H
 
 typedef unsigned int DWORD;
-#define _TARGET_AMD64_ 1
+#define TARGET_AMD64 1
 
 #include "cordebuginfo.h"
 #include "cvconst.h"

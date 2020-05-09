@@ -9,7 +9,7 @@
 
 // Keep definitions in this file in sync with Nutc\UTC\gcinfo.h
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
 #define NUM_PRESERVED_REGS 9
 
@@ -114,7 +114,7 @@ enum ScratchRegMask
     SR_MASK_LR   = 0x20,
 };
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
 enum RegMask
 {
@@ -300,9 +300,9 @@ enum ScratchRegMask
     SR_MASK_LR = 0x40000,
 };
 
-#else // _TARGET_ARM_
+#else // TARGET_ARM
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 #define NUM_PRESERVED_REGS 8
 #else
 #define NUM_PRESERVED_REGS 4
@@ -330,7 +330,7 @@ enum RegMask
 
     RBM_RETVAL = RBM_EAX,
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     RBM_CALLEE_SAVED_REGS = (RBM_EDI|RBM_ESI|RBM_EBX|RBM_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15),
     RBM_CALLEE_SAVED_REG_COUNT = 8,
     RBM_SCRATCH_REGS = (RBM_EAX|RBM_ECX|RBM_EDX|RBM_R8|RBM_R9|RBM_R10|RBM_R11),
@@ -340,7 +340,7 @@ enum RegMask
     RBM_CALLEE_SAVED_REG_COUNT = 4,
     RBM_SCRATCH_REGS = (RBM_EAX|RBM_ECX|RBM_EDX),
     RBM_SCRATCH_REG_COUNT = 3,
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 };
 
 enum RegNumber
@@ -371,12 +371,12 @@ enum CalleeSavedRegNum
     CSR_NUM_RSI = 0x01,
     CSR_NUM_RDI = 0x02,
     CSR_NUM_RBP = 0x03,
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     CSR_NUM_R12 = 0x04,
     CSR_NUM_R13 = 0x05,
     CSR_NUM_R14 = 0x06,
     CSR_NUM_R15 = 0x07,
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 };
 
 enum CalleeSavedRegMask
@@ -391,7 +391,7 @@ enum CalleeSavedRegMask
     CSR_MASK_R14 = 0x40,
     CSR_MASK_R15 = 0x80,
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     CSR_MASK_ALL = 0xFF,
     CSR_MASK_HIGHEST = 0x80,
 #else
@@ -405,12 +405,12 @@ enum ScratchRegNum
     SR_NUM_RAX = 0x00,
     SR_NUM_RCX = 0x01,
     SR_NUM_RDX = 0x02,
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     SR_NUM_R8  = 0x03,
     SR_NUM_R9  = 0x04,
     SR_NUM_R10 = 0x05,
     SR_NUM_R11 = 0x06,
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 };
 
 enum ScratchRegMask
@@ -425,7 +425,7 @@ enum ScratchRegMask
     SR_MASK_R11  = 0x40,
 };
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 struct GCInfoHeader
 {
@@ -436,14 +436,14 @@ private:
     UInt16  epilogCountSmall         : 2; // 1 [5:6] '3' encoding implies the number of epilogs is encoded separately
     UInt16  hasExtraData             : 1; // 1 [7]  1: more data follows (dynamic alignment, GS cookie, common vars, etc.)
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     UInt16  returnKind              : 2; // 2 [0:1] one of: MethodReturnKind enum
     UInt16  ebpFrame                : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on ARM R7
     UInt16  epilogAtEnd             : 1; // 2 [3]
     UInt16  hasFrameSize            : 1; // 2 [4]   1: frame size is encoded below, 0: frame size is 0
     UInt16 calleeSavedRegMask       : NUM_PRESERVED_REGS;   // 2 [5:7]    3 [0:5]
     UInt16 arm_areParmOrVfpRegsPushed:1; // 3 [6]   1: pushed param reg set (R0-R3) and pushed fp reg start and count are encoded below, 0: no pushed param or fp registers
-#elif defined (_TARGET_ARM64_)
+#elif defined (TARGET_ARM64)
     UInt16  returnKind              : 2; // 2 [0:1] one of: MethodReturnKind enum
     UInt16  ebpFrame                : 1; // 2 [2]   1: has frame pointer and it is FP
     UInt16  epilogAtEnd             : 1; // 2 [3]
@@ -455,7 +455,7 @@ private:
     UInt8  returnKind               : 2; // 2 [0:1] one of: MethodReturnKind enum
     UInt8  ebpFrame                 : 1; // 2 [2]   on x64, this means "has frame pointer and it is RBP", on ARM R7
     UInt8  epilogAtEnd              : 1; // 2 [3]
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     UInt8  hasFrameSize             : 1; // 2 [4]   1: frame size is encoded below, 0: frame size is 0
     UInt8  x64_framePtrOffsetSmall  : 2; // 2 [5:6] 00: framePtrOffset = 0x20
                                          //         01: framePtrOffset = 0x30
@@ -466,7 +466,7 @@ private:
                                                             // X86        X64
     UInt8  calleeSavedRegMask       : NUM_PRESERVED_REGS;   // 2 [4:7]    3 [0:7]
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     UInt8  x86_argCountLow          : 5; // 3 [0-4]  expressed in pointer-sized units    // @TODO: steal more bits here?
     UInt8  x86_argCountIsLarge      : 1; // 3 [5]    if this bit is set, then the high 8 bits are encoded in x86_argCountHigh
     UInt8  x86_hasStackChanges      : 1; // 3 [6]    x86-only, !ebpFrame-only, this method has pushes 
@@ -488,7 +488,7 @@ private:
     // OPTIONAL: only encoded if returnKind = MRK_ReturnsToNative
     UInt32  reversePinvokeFrameOffset;   // expressed in pointer-sized units away from the frame pointer
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // OPTIONAL: only encoded if x64_framePtrOffsetSmall = 11
     //
     // ENCODING NOTE: In the encoding, the variable-sized unsigned will be 7 less than the total number
@@ -509,18 +509,18 @@ private:
     // straightforward mapping where bit 0 corresponds to xmm0, bit 1 corresponds to xmm1 and so on.
     //
     UInt16  x64_savedXmmRegMask;      // which xmm regs were saved
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     // OPTIONAL: only encoded if x86_argCountIsLarge = 1
     // NOTE: because we are using pointer-sized units, only 14 bits are required to represent the entire range
     // that can be expressed by a 'ret NNNN' instruction.  Therefore, with 6 in the 'low' field and 8 in the
     // 'high' field, we are not losing any range here.  (Although the need for that full range is debatable.)
     UInt8   x86_argCountHigh; 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     // OPTIONAL: only encoded if arm_areParmOrVfpRegsPushed = 1
     UInt8   arm_parmRegsPushedSet;
     UInt8   arm_vfpRegFirstPushed;
     UInt8   arm_vfpRegPushedCount;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     // OPTIONAL: high bits of calleeSavedRegMask are encoded only if arm64_longCsrMask = 1; low bits equal to arm64_calleeSavedRegMaskLow
     UInt16  calleeSavedRegMask;
 
@@ -535,7 +535,7 @@ private:
     {
         struct
         {
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
             UInt8 FPLRAreOnTop      : 1;    // [0]      1: FP and LR are saved on top of locals, not at the bottom (see MdmSaveFPAndLRAtTopOfLocalsArea)
             UInt8 reg1ReturnKind    : 2;    // [1:2]    One of MRK_Returns{Scalar|Object|Byref} constants describing value returned in x1 if any
             UInt8 hasGSCookie       : 1;    // [3]      1: frame uses GS cookie
@@ -604,7 +604,7 @@ public:
         MRK_ReturnsByref    = 2,
         MRK_ReturnsToNative = 3,
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
         // Cases for structs returned in two registers.
         // Naming scheme: MRK_reg0Kind_reg1Kind.
         // Encoding scheme: <two bits for reg1Kind> <two bits for reg0Kind>.
@@ -652,7 +652,7 @@ public:
 
     void SetPrologSize(UInt32 sizeInBytes)
     {
-#if defined (_TARGET_ARM64_)
+#if defined (TARGET_ARM64)
         // For arm64 we encode multiples of 4, rather than raw bytes, since instructions are all same size.
         ASSERT((sizeInBytes & 3) == 0);
         prologSize = sizeInBytes >> 2;
@@ -670,7 +670,7 @@ public:
 
     void PokeFixedEpilogSize(UInt32 sizeInBytes)
     {
-#if defined (_TARGET_ARM64_)
+#if defined (TARGET_ARM64)
         // For arm64 we encode multiples of 4, rather than raw bytes, since instructions are all same size.
         ASSERT((sizeInBytes & 3) == 0);
         fixedEpilogSize = sizeInBytes >> 2;
@@ -688,7 +688,7 @@ public:
         else
         {
             ASSERT(sizeInBytes != 0);
-#if defined (_TARGET_ARM64_)
+#if defined (TARGET_ARM64)
             // For arm64 we encode multiples of 4, rather than raw bytes, since instructions are all same size.
             ASSERT((sizeInBytes & 3) == 0);
             fixedEpilogSize = sizeInBytes >> 2;
@@ -710,7 +710,7 @@ public:
         epilogCountSmall = count < EC_MaxEpilogCountSmall ? count : EC_MaxEpilogCountSmall;
     }
 
-#if !defined(_TARGET_ARM64_)
+#if !defined(TARGET_ARM64)
     void SetReturnKind(MethodReturnKind kind)
     {
         ASSERT(kind <= MRK_ReturnsToNative); // not enough bits to encode 'unknown'
@@ -719,7 +719,7 @@ public:
 
     void SetDynamicAlignment(UInt8 logByteAlignment)
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         ASSERT(logByteAlignment >= 3); // 4 byte aligned frames
 #else
         ASSERT(logByteAlignment >= 4); // 8 byte aligned frames
@@ -730,9 +730,9 @@ public:
         ASSERT(logStackAlignment == logByteAlignment);
         paramPointerReg = RN_NONE;
     }
-#endif // !defined(_TARGET_ARM64_)
+#endif // !defined(TARGET_ARM64)
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     void SetFPLROnTop(void)
     {
         hasExtraData = 1;
@@ -776,11 +776,11 @@ public:
         }
         else
         {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
             ASSERT(regNum == RN_R7);
-#elif defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#elif defined(TARGET_AMD64) || defined(TARGET_X86)
             ASSERT(regNum == RN_EBP);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
             ASSERT(regNum == RN_FP);
 #else
             ASSERT(!"NYI");
@@ -789,7 +789,7 @@ public:
         }
         ASSERT(offsetInBytes == 0 || isOffsetFromSP);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         if (isOffsetFromSP)
             offsetInBytes += SKEW_FOR_OFFSET_FROM_SP;
 
@@ -807,7 +807,7 @@ public:
         ASSERT(x64_framePtrOffset == offsetInSlots);
 #else
         ASSERT(offsetInBytes == 0 && !isOffsetFromSP);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
 
     void SetFrameSize(UInt32 frameSizeInBytes)
@@ -837,14 +837,14 @@ public:
         ASSERT((offsetInBytes % POINTER_SIZE) == 0);
         ASSERT(GetReturnKind() == MRK_ReturnsToNative);
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
         // The offset can be either positive or negative on ARM and x64.
         bool isNeg = (offsetInBytes < 0);
         UInt32 uOffsetInBytes = isNeg ? -offsetInBytes : offsetInBytes;
         UInt32 uEncodedVal = ((uOffsetInBytes / POINTER_SIZE) << 1) | (isNeg ? 1 : 0);
         reversePinvokeFrameOffset = uEncodedVal;
         ASSERT(reversePinvokeFrameOffset == uEncodedVal);
-#elif defined (_TARGET_X86_)
+#elif defined (TARGET_X86)
         // Use a positive number because it encodes better and 
         // the offset is always negative on x86.
         ASSERT(offsetInBytes < 0);
@@ -855,7 +855,7 @@ public:
 #endif
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     void SetReturnPopSize(UInt32 popSizeInBytes)
     {
         ASSERT(0 == (popSizeInBytes % POINTER_SIZE));
@@ -874,9 +874,9 @@ public:
     {
         x86_hasStackChanges = 1;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     void SetParmRegsPushed(ScratchRegMask pushedParmRegs)
     {
         // should be a subset of {RO-R3}
@@ -894,7 +894,7 @@ public:
         arm_vfpRegPushedCount = vfpRegPushedCount;
         arm_areParmOrVfpRegsPushed = arm_parmRegsPushedSet != 0 || vfpRegPushedCount != 0;
     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     void SetParmRegsPushedCount(UInt8 parmRegsPushedCount)
     {
         // pushed parameter registers are a subset of {R0-R7}
@@ -908,7 +908,7 @@ public:
         arm64_vfpRegsPushedMask = vfpRegsPushedMask;
         arm64_areParmOrVfpRegsPushed = (arm64_parmRegsPushedCount != 0) || (arm64_vfpRegsPushedMask != 0);
     }
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     void SetSavedXmmRegs(UInt32 savedXmmRegMask)
     {
         // any subset of xmm6-xmm15 may be saved, but no registers in xmm0-xmm5 should be present
@@ -928,7 +928,7 @@ public:
     //
     UInt32 GetPrologSize()
     {
-#if defined (_TARGET_ARM64_)
+#if defined (TARGET_ARM64)
         return prologSize << 2;
 #else
         return prologSize;
@@ -947,7 +947,7 @@ public:
 
     UInt32 PeekFixedEpilogSize()
     {
-#if defined (_TARGET_ARM64_)
+#if defined (TARGET_ARM64)
         return fixedEpilogSize << 2;
 #else
         return fixedEpilogSize;
@@ -957,7 +957,7 @@ public:
     UInt32 GetFixedEpilogSize()
     {
         ASSERT(!HasVaryingEpilogSizes());
-#if defined (_TARGET_ARM64_)
+#if defined (TARGET_ARM64)
         return fixedEpilogSize << 2;
 #else
         return fixedEpilogSize;
@@ -976,7 +976,7 @@ public:
 
     MethodReturnKind GetReturnKind()
     {
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
         return (MethodReturnKind)((reg1ReturnKind << 2) | returnKind);
 #else
         return (MethodReturnKind)returnKind;
@@ -1023,7 +1023,7 @@ public:
 
     bool HasDynamicAlignment()
     {
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
         return false;
 #else
         return !!logStackAlignment;
@@ -1032,7 +1032,7 @@ public:
 
     UInt32 GetDynamicAlignment()
     {
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
         ASSERT(!"Not supported");
         return 1;
 #else
@@ -1045,7 +1045,7 @@ public:
         return hasGSCookie;
     }
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     bool AreFPLROnTop() const
     {
         return FPLRAreOnTop;
@@ -1063,7 +1063,7 @@ public:
         return hasCommonVars;
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     static const UInt32 SKEW_FOR_OFFSET_FROM_SP = 0x10;
 
     int GetFramePointerOffset() const // returned in bytes
@@ -1117,7 +1117,7 @@ public:
         ASSERT(x64_hasSavedXmmRegs);
         return x64_savedXmmRegMask;
     }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     int GetReturnPopSize() // returned in bytes
     {
         if (!x86_argCountIsLarge)
@@ -1141,7 +1141,7 @@ public:
 
     int GetReversePinvokeFrameOffset()
     {
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
         // The offset can be either positive or negative on ARM.
         Int32 offsetInBytes;
         UInt32 uEncodedVal = reversePinvokeFrameOffset;
@@ -1149,7 +1149,7 @@ public:
         offsetInBytes = (uEncodedVal >> 1) * POINTER_SIZE;
         offsetInBytes = isNeg ? -offsetInBytes : offsetInBytes;
         return offsetInBytes;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
         // it's always at "EBP - something", so we encode it as a positive 
         // number and then apply the negative here.
         int unsignedOffset = reversePinvokeFrameOffset * POINTER_SIZE;
@@ -1169,7 +1169,7 @@ public:
         return (0 != (calleeSavedRegMask & reg));
     }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     bool AreParmRegsPushed()
     {
         return arm_parmRegsPushedSet != 0;
@@ -1196,7 +1196,7 @@ public:
     {
         return arm_vfpRegPushedCount;
     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     UInt8 ParmRegsPushedCount()
     {
         return arm64_parmRegsPushedCount;
@@ -1218,7 +1218,7 @@ public:
         UInt8 * pStart = pDest;
 #endif // _DEBUG
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
         UInt8 calleeSavedRegMaskHigh = calleeSavedRegMask >> NUM_PRESERVED_REGS_LOW;
         arm64_calleeSavedRegMaskLow = calleeSavedRegMask & MASK_PRESERVED_REGS_LOW;
         if (calleeSavedRegMaskHigh)
@@ -1240,7 +1240,7 @@ public:
         if (returnKind == MRK_ReturnsToNative)
             size += WriteUnsigned(pDest, reversePinvokeFrameOffset);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         if (x64_framePtrOffsetSmall == 0x3)
             size += WriteUnsigned(pDest, x64_framePtrOffset);
 
@@ -1250,7 +1250,7 @@ public:
             UInt32 encodedValue = x64_savedXmmRegMask >> 6;
             size += WriteUnsigned(pDest, encodedValue);
         }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
         if (x86_argCountIsLarge)
         {
             size += 1;
@@ -1258,7 +1258,7 @@ public:
                 *pDest++ = x86_argCountHigh;
         }
         ASSERT(!x86_hasStackChanges || !"NYI -- stack changes for ESP frames");
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         if (arm_areParmOrVfpRegsPushed)
         {
             // we encode a bit field where the low 4 bits represent the pushed parameter register
@@ -1272,7 +1272,7 @@ public:
 
             size += WriteUnsigned(pDest, encodedValue);
         }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         if (calleeSavedRegMaskHigh)
         {
             size += 1;
@@ -1364,7 +1364,7 @@ public:
             ? VarInt::ReadUnsigned(pbDecode)
             : 0;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         x64_framePtrOffset = (x64_framePtrOffsetSmall == 0x3)
             ? ToUInt8(VarInt::ReadUnsigned(pbDecode))
             : x64_framePtrOffsetSmall + 3;
@@ -1378,7 +1378,7 @@ public:
             x64_savedXmmRegMask = ToUInt16(encodedValue << 6);
         }
 
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
         if (x86_argCountIsLarge)
             x86_argCountHigh = *pbDecode++;
         else
@@ -1407,7 +1407,7 @@ public:
                 }
             }
         }
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         arm_parmRegsPushedSet = 0;
         arm_vfpRegPushedCount = 0;
         arm_vfpRegFirstPushed = 0;
@@ -1422,7 +1422,7 @@ public:
             else
                 arm_vfpRegFirstPushed = (UInt8)(vfpRegFirstPushed - 1);
         }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         calleeSavedRegMask = arm64_calleeSavedRegMaskLow;
         if (arm64_longCsrMask)
         {
@@ -1537,9 +1537,9 @@ public:
         if (HasDynamicAlignment()) { VarInt::SkipUnsigned(pbDecode); }
         if (hasGSCookie) { VarInt::SkipUnsigned(pbDecode); }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         if (x64_framePtrOffsetSmall == 0x3) { VarInt::SkipUnsigned(pbDecode); }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
         if (x86_argCountIsLarge)
             pbDecode++;
 
@@ -1564,9 +1564,9 @@ public:
                 }
             }
         }
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         if (arm_areParmOrVfpRegsPushed) { VarInt::SkipUnsigned(pbDecode); }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         if (arm64_longCsrMask) { pbDecode++; }
         if (arm64_areParmOrVfpRegsPushed) { VarInt::SkipUnsigned(pbDecode); }
 #endif

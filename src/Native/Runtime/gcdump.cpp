@@ -42,12 +42,12 @@ GCDump::GCDump()
 
 static const char * const calleeSaveRegMaskBitNumberToName[] = 
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     "EBX",
     "ESI",
     "EDI",
     "EBP",
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     "RBX",
     "RSI",
     "RDI",
@@ -56,7 +56,7 @@ static const char * const calleeSaveRegMaskBitNumberToName[] =
     "R13",
     "R14",
     "R15"
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     "R4",
     "R5",
     "R6",
@@ -66,7 +66,7 @@ static const char * const calleeSaveRegMaskBitNumberToName[] =
     "R10",
     "R11",
     "LR",
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     "LR",
     "X19",
     "X20",
@@ -92,27 +92,27 @@ char const * GetReturnKindString(GCInfoHeader::MethodReturnKind returnKind)
     case GCInfoHeader::MRK_ReturnsObject:   return "object";
     case GCInfoHeader::MRK_ReturnsByref:    return "byref";
     case GCInfoHeader::MRK_ReturnsToNative: return "native";
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     case GCInfoHeader::MRK_Scalar_Obj:      return "{scalar, object}";
     case GCInfoHeader::MRK_Obj_Obj:         return "{object, object}";
     case GCInfoHeader::MRK_Byref_Obj:       return "{byref, object}";
     case GCInfoHeader::MRK_Scalar_Byref:    return "{scalar, byref}";
     case GCInfoHeader::MRK_Obj_Byref:       return "{object, byref}";
     case GCInfoHeader::MRK_Byref_Byref:     return "{byref, byref}";
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
     default:                                return "???";
     }
 }
 
 char const * GetFramePointerRegister()
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     return "EBP";
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     return "RBP";
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     return "R7";
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return "FP";
 #else
 #error unknown architecture
@@ -121,11 +121,11 @@ char const * GetFramePointerRegister()
 
 char const * GetStackPointerRegister()
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     return "ESP";
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     return "RSP";
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     return "SP";
 #else
 #error unknown architecture
@@ -175,10 +175,10 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
     gcPrintf("   epilogCount:    %d %s\n", epilogCount, epilogAtEnd ? "[end]" : "");
     gcPrintf("   returnKind:     %s\n", GetReturnKindString(pHeader->GetReturnKind()));
     gcPrintf("   frameKind:      %s", pHeader->HasFramePointer() ? GetFramePointerRegister() : GetStackPointerRegister());
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (pHeader->HasFramePointer())
         gcPrintf(" offset: %d", pHeader->GetFramePointerOffset());
-#endif // _AMD64_
+#endif // HOST_AMD64
     gcPrintf("\n");
     gcPrintf("   frameSize:      %d\n", pHeader->GetFrameSize());
 
@@ -202,11 +202,11 @@ size_t FASTCALL   GCDump::DumpInfoHeader (PTR_UInt8      gcInfo,
     }
     gcPrintf("\n");
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     gcPrintf("   parmRegsPushedCount: %d\n", pHeader->ParmRegsPushedCount());
 #endif
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     gcPrintf("   returnPopSize:  %d\n", pHeader->GetReturnPopSize());
     if (pHeader->HasStackChanges())
     {
@@ -248,9 +248,9 @@ void GCDump::PrintLocalSlot(UInt32 slotNum, GCInfoHeader const * pHeader)
     if (pHeader->HasFramePointer())
     {
         baseReg = GetFramePointerRegister();
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         offset = pHeader->GetFrameSize() - ((slotNum + 1) * POINTER_SIZE);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         if (pHeader->AreFPLROnTop())
         {
             offset = -(Int32)((slotNum + 1) * POINTER_SIZE);
@@ -259,9 +259,9 @@ void GCDump::PrintLocalSlot(UInt32 slotNum, GCInfoHeader const * pHeader)
         {
             offset = (slotNum + 2) * POINTER_SIZE;
         }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
         offset = -pHeader->GetPreservedRegsSaveSize() - (slotNum * POINTER_SIZE);
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
         if (pHeader->GetFramePointerOffset() == 0)
         {
             offset = -pHeader->GetPreservedRegsSaveSize() - (slotNum * POINTER_SIZE);
@@ -303,7 +303,7 @@ size_t ReadRegisterMaskBy7Bit(PTR_UInt8 pCursor, UInt32* pMask)
         return 1;
     }
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     UInt32 byte1 = *(pCursor + 1);
     if (!(byte1 & 0x80))
     {
@@ -352,13 +352,13 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
             {
                 // case 2 -- "register set"
                 gcPrintf("%02x          | 2  ", b);
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
                 if (b & CSR_MASK_R4) { gcPrintf("R4 "); count++; }
                 if (b & CSR_MASK_R5) { gcPrintf("R5 "); count++; }
                 if (b & CSR_MASK_R6) { gcPrintf("R6 "); count++; }
                 if (b & CSR_MASK_R7) { gcPrintf("R7 "); count++; }
                 if (b & CSR_MASK_R8) { gcPrintf("R8 "); count++; }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
                 UInt16 regs = (b & 0xF);
                 if (b & 0x10) { regs |= (*pCursor++ << 4); }
 
@@ -374,13 +374,13 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 if (regs & CSR_MASK_X27) { gcPrintf("X27 "); count++; }
                 if (regs & CSR_MASK_X28) { gcPrintf("X28 "); count++; }
                 if (regs & CSR_MASK_FP ) { gcPrintf("FP " ); count++; }
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
                 if (b & CSR_MASK_RBX) { gcPrintf("RBX "); count++; }
                 if (b & CSR_MASK_RSI) { gcPrintf("RSI "); count++; }
                 if (b & CSR_MASK_RDI) { gcPrintf("RDI "); count++; }
                 if (b & CSR_MASK_RBP) { gcPrintf("RBP "); count++; }
                 if (b & CSR_MASK_R12) { gcPrintf("R12 "); count++; }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
                 if (b & CSR_MASK_RBX) { gcPrintf("EBX "); count++; }
                 if (b & CSR_MASK_RSI) { gcPrintf("ESI "); count++; }
                 if (b & CSR_MASK_RDI) { gcPrintf("EDI "); count++; }
@@ -401,7 +401,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
 
                 switch (b & 0x7)
                 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
                 case CSR_NUM_R4: regName = "R4"; break;
                 case CSR_NUM_R5: regName = "R5"; break;
                 case CSR_NUM_R6: regName = "R6"; break;
@@ -410,7 +410,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 case CSR_NUM_R9: regName = "R9"; break;
                 case CSR_NUM_R10: regName = "R10"; break;
                 case CSR_NUM_R11: regName = "R11"; break;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
                 case CSR_NUM_X19: regName = "X19"; break;
                 case CSR_NUM_X20: regName = "X20"; break;
                 case CSR_NUM_X21: regName = "X21"; break;
@@ -427,7 +427,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                     case CSR_NUM_FP : regName = "FP" ; break;
                     }
                     break;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
                 case CSR_NUM_RBX: regName = "RBX"; break;
                 case CSR_NUM_RSI: regName = "RSI"; break;
                 case CSR_NUM_RDI: regName = "RDI"; break;
@@ -436,7 +436,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                 case CSR_NUM_R13: regName = "R13"; break;
                 case CSR_NUM_R14: regName = "R14"; break;
                 case CSR_NUM_R15: regName = "R15"; break;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
                 case CSR_NUM_RBX: regName = "EBX"; break;
                 case CSR_NUM_RSI: regName = "ESI"; break;
                 case CSR_NUM_RDI: regName = "EDI"; break;
@@ -530,14 +530,14 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
 
                             switch (reg)
                             {
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
                             case SR_NUM_R0:   regStr = "R0";   break;
                             case SR_NUM_R1:   regStr = "R1";   break;
                             case SR_NUM_R2:   regStr = "R2";   break;
                             case SR_NUM_R3:   regStr = "R3";   break;
                             case SR_NUM_R12:  regStr = "R12";  break;
                             case SR_NUM_LR:   regStr = "LR";   break;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
                             case SR_NUM_X0:   regStr = "X0";   break;
                             case SR_NUM_X1:   regStr = "X1";   break;
                             case SR_NUM_X2:   regStr = "X2";   break;
@@ -557,7 +557,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                             case SR_NUM_XIP0: regStr = "XIP0"; break;
                             case SR_NUM_XIP1: regStr = "XIP1"; break;
                             case SR_NUM_LR:   regStr = "LR";   break;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
                             case SR_NUM_RAX:  regStr = "RAX";  break;
                             case SR_NUM_RCX:  regStr = "RCX";  break;
                             case SR_NUM_RDX:  regStr = "RDX";  break;
@@ -565,7 +565,7 @@ void GCDump::DumpCallsiteString(UInt32 callsiteOffset, PTR_UInt8 pbCallsiteStrin
                             case SR_NUM_R9:   regStr = "R9";   break;
                             case SR_NUM_R10:  regStr = "R10";  break;
                             case SR_NUM_R11:  regStr = "R11";  break;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
                             case SR_NUM_RAX:  regStr = "EAX";  break;
                             case SR_NUM_RCX:  regStr = "ECX";  break;
                             case SR_NUM_RDX:  regStr = "EDX";  break;

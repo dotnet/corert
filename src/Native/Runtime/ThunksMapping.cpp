@@ -15,11 +15,11 @@
 
 #ifdef FEATURE_RX_THUNKS
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 #define THUNK_SIZE  20
-#elif _TARGET_X86_
+#elif TARGET_X86
 #define THUNK_SIZE  12
-#elif _TARGET_ARM_
+#elif TARGET_ARM
 #define THUNK_SIZE  20
 #else
 #define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause RhpGetNumThunksPerBlock to return 0
@@ -29,7 +29,7 @@ static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. Th
 
 #define THUNKS_MAP_SIZE 0x8000     // 32 K
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 //*****************************************************************************
 //  Encode a 16-bit immediate mov/movt in ARM Thumb2 Instruction (format T2_N)
 //*****************************************************************************
@@ -133,7 +133,7 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
             UInt8* pCurrentThunkAddress = pThunkBlockAddress + THUNK_SIZE * i;
             UInt8* pCurrentDataAddress = pDataBlockAddress + i * POINTER_SIZE * 2;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
             // mov r10,<thunk data address>
             // jmp [r10 + <delta to get to last qword in data page]
@@ -153,7 +153,7 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
             *pCurrentThunkAddress++ = 0x90;
             *pCurrentThunkAddress++ = 0x90;
 
-#elif _TARGET_X86_
+#elif TARGET_X86
 
             // mov eax,<thunk data address>
             // jmp [eax + <delta to get to last dword in data page]
@@ -170,7 +170,7 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
             // nops for alignment
             *pCurrentThunkAddress++ = 0x90;
 
-#elif _TARGET_ARM_
+#elif TARGET_ARM
 
             // mov r12,<thunk data address>
             // str r12,[sp,#-4]

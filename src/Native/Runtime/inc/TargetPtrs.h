@@ -7,15 +7,15 @@
 typedef DPTR(class EEType) PTR_EEType;
 typedef SPTR(struct StaticGcDesc) PTR_StaticGcDesc;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 typedef UInt64 UIntTarget;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 typedef UInt32 UIntTarget;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 typedef UInt32 UIntTarget;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 typedef UInt64 UIntTarget;
-#elif defined(_TARGET_WASM_)
+#elif defined(TARGET_WASM)
 typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture

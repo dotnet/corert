@@ -162,7 +162,7 @@ EXTERN_C REDHAWK_API void __cdecl RhpSendExceptionEventToDebugger(ExceptionEvent
 {
     CORDB_ADDRESS cordbIP = (CORDB_ADDRESS)ip;
     CORDB_ADDRESS cordbSP = (CORDB_ADDRESS)sp;
-#if _ARM_
+#if HOST_ARM
     // clear the THUMB-bit from IP
     cordbIP &= ~1;
 #endif
