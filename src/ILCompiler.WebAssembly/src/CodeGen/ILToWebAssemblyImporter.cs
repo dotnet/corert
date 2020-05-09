@@ -621,6 +621,12 @@ namespace Internal.IL
             return null;
         }
 
+        private bool IsFinallyBlock(BasicBlock block)
+        {
+            ExceptionRegion ehRegion = GetHandlerRegion(block.StartOffset);
+            return ehRegion != null && ehRegion.ILRegion.Kind == ILExceptionRegionKind.Finally;
+        }
+
         private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
             _stack.Clear();
@@ -635,20 +641,21 @@ namespace Internal.IL
                 }
             }
 
+            if (basicBlock.FilterStart || IsFinallyBlock(basicBlock))
+            {
+                // need to pad out the spilled slots in case the filter or finally tries to allocate some temp variables on the shadow stack.  As some spaces are used in the call to FindFirstPassHandlerWasm/InvokeSecondPassWasm
+                // and inside FindFirstPassHandlerWasm/InvokeSecondPassWasm we need to leave space for them.
+                // An alternative approach could be to calculate this space in RhpCallFilterFunclet/RhpCallFinallyFunclet and pass it through
+                NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "infoIteratorEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32))); //3 ref and out params
+                NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "tryRegionIdxEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
+                NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "handlerFuncPtrEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
+                NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32))); // 8 bytes enough to cover the temps used in FindFirstPassHandlerWasm or InvokeSecondPassWasm
+                NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
+            }
+
             // Push an exception object for catch and filter
             if (basicBlock.HandlerStart || basicBlock.FilterStart)
             {
-                if (basicBlock.FilterStart)
-                {
-                    // need to pad out the spilled slots in case the filter tries to allocate some temp variables on the shadow stack.  As some spaces are used in the call to FindFirstPassHandlerWasm
-                    // and inside FindFirstPassHandlerWasm we need to leave space for them.
-                    // An alternative approach could be to calculate this space in FindFirstPassHandlerWasm and pass it through
-                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "infoIteratorEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32))); //3 ref and out params
-                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "tryRegionIdxEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
-                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "handlerFuncPtrEntry", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
-                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32))); // 2 temps used in FindFirstPassHandlerWasm
-                    NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
-                }
                 foreach (ExceptionRegion ehRegion in _exceptionRegions)
                 {
                     if (ehRegion.ILRegion.HandlerOffset == basicBlock.StartOffset ||
@@ -2876,7 +2883,7 @@ namespace Internal.IL
             // WASMTODO: should this really be a newobj call?
             LLVMTypeRef ehInfoIteratorType = LLVMTypeRef.CreateStruct(new LLVMTypeRef[] { LLVMTypeRef.Int32, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }, false);
             var ehInfoIterator = landingPadBuilder.BuildAlloca(ehInfoIteratorType, "ehInfoIterPtr");
-            
+
             var iteratorInitArgs = new StackEntry[] {
                                                         new ExpressionEntry(StackValueKind.ObjRef, "ehInfoIter", ehInfoIterator), 
                                                         new ExpressionEntry(StackValueKind.ByRef, "ehInfoStart", LoadAddressOfSymbolNode(_ehInfoNode, landingPadBuilder)),
@@ -2907,7 +2914,7 @@ namespace Internal.IL
             var handlerFunc = landingPadBuilder.BuildLoad(handlerFuncPtr, "handlerFunc");
 
             var leaveDestination = landingPadBuilder.BuildAlloca(LLVMTypeRef.Int32, "leaveDest"); // create a variable to store the operand of the leave as we can't use the result of the call directly due to domination/branches
-            landingPadBuilder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0, false), leaveDestination); 
+            landingPadBuilder.BuildStore(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0, false), leaveDestination);
             var foundCatchBlock = _currentFunclet.AppendBasicBlock("LPFoundCatch");
             // If it didn't find a catch block, we can rethrow (resume in LLVM) the C++ exception to continue the stack walk.
             var noCatch = landingPadBuilder.BuildICmp(LLVMIntPredicate.LLVMIntEQ, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0, false),
@@ -5182,80 +5189,90 @@ namespace Internal.IL
 
             builder.EmitCompressedUInt((uint)totalClauses);
 
-            for (int i = 0; i < totalClauses; i++)
+            // Iterate backwards to emit the innermost first, but within a try region go forwards to get the first matching catch type
+            int i = _exceptionRegions.Length - 1;
+            while (i >= 0)
             {
-                ExceptionRegion exceptionRegion = _exceptionRegions[i];
-
-//                if (i > 0)
-//                {
-//                    ExceptionRegion previousClause = _exceptionRegions[i - 1];
+                int tryStart = _exceptionRegions[i].ILRegion.TryOffset;
+                for (var j = 0; j < _exceptionRegions.Length; j++)
+                {
+                    ExceptionRegion exceptionRegion = _exceptionRegions[j];
+                    if (exceptionRegion.ILRegion.TryOffset != tryStart) continue;
+                    //                if (i > 0)
+                    //                {
+                    //                    ExceptionRegion previousClause = _exceptionRegions[i - 1];
 
                     // If the previous clause has same try offset and length as the current clause,
                     // but belongs to a different try block (CORINFO_EH_CLAUSE_SAMETRY is not set),
                     // emit a special marker to allow runtime distinguish this case.
                     //WASMTODO: see above - do we need these
-//                    if ((previousClause.TryOffset == clause.TryOffset) &&
-//                        (previousClause.TryLength == clause.TryLength) &&
-//                        ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_SAMETRY) == 0))
-//                    {
-//                        builder.EmitCompressedUInt(0);
-//                        builder.EmitCompressedUInt((uint)RhEHClauseKind.RH_EH_CLAUSE_FAULT);
-//                        builder.EmitCompressedUInt(0);
-//                    }
-//                }
+                    //                    if ((previousClause.TryOffset == clause.TryOffset) &&
+                    //                        (previousClause.TryLength == clause.TryLength) &&
+                    //                        ((clause.Flags & CORINFO_EH_CLAUSE_FLAGS.CORINFO_EH_CLAUSE_SAMETRY) == 0))
+                    //                    {
+                    //                        builder.EmitCompressedUInt(0);
+                    //                        builder.EmitCompressedUInt((uint)RhEHClauseKind.RH_EH_CLAUSE_FAULT);
+                    //                        builder.EmitCompressedUInt(0);
+                    //                    }
+                    //                }
 
-                RhEHClauseKind clauseKind;
+                    RhEHClauseKind clauseKind;
 
-                if (exceptionRegion.ILRegion.Kind == ILExceptionRegionKind.Fault ||
-                    exceptionRegion.ILRegion.Kind  == ILExceptionRegionKind.Finally)
-                {
-                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FAULT;
-                }
-                else
-                if (exceptionRegion.ILRegion.Kind == ILExceptionRegionKind.Filter)
-                {
-                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FILTER;
-                }
-                else
-                {
-                    clauseKind = RhEHClauseKind.RH_EH_CLAUSE_TYPED;
-                }
+                    if (exceptionRegion.ILRegion.Kind == ILExceptionRegionKind.Fault ||
+                        exceptionRegion.ILRegion.Kind == ILExceptionRegionKind.Finally)
+                    {
+                        clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FAULT;
+                    }
+                    else if (exceptionRegion.ILRegion.Kind == ILExceptionRegionKind.Filter)
+                    {
+                        clauseKind = RhEHClauseKind.RH_EH_CLAUSE_FILTER;
+                    }
+                    else
+                    {
+                        clauseKind = RhEHClauseKind.RH_EH_CLAUSE_TYPED;
+                    }
 
-                builder.EmitCompressedUInt((uint)exceptionRegion.ILRegion.TryOffset);
+                    builder.EmitCompressedUInt((uint)exceptionRegion.ILRegion.TryOffset);
 
-                uint tryLength = (uint)exceptionRegion.ILRegion.TryLength;
-                builder.EmitCompressedUInt((tryLength << 2) | (uint)clauseKind);
+                    uint tryLength = (uint)exceptionRegion.ILRegion.TryLength;
+                    builder.EmitCompressedUInt((tryLength << 2) | (uint)clauseKind);
 
-                RelocType rel = (_compilation.NodeFactory.Target.IsWindows) ?
-                    RelocType.IMAGE_REL_BASED_ABSOLUTE :
-                    RelocType.IMAGE_REL_BASED_REL32;
+                    RelocType rel = (_compilation.NodeFactory.Target.IsWindows)
+                        ? RelocType.IMAGE_REL_BASED_ABSOLUTE
+                        : RelocType.IMAGE_REL_BASED_REL32;
 
-                if (_compilation.NodeFactory.Target.Abi == TargetAbi.Jit)
-                    rel = RelocType.IMAGE_REL_BASED_REL32;
+                    if (_compilation.NodeFactory.Target.Abi == TargetAbi.Jit)
+                        rel = RelocType.IMAGE_REL_BASED_REL32;
 
-                switch (clauseKind)
-                {
-                    case RhEHClauseKind.RH_EH_CLAUSE_TYPED:
-                        var type = (TypeDesc)_methodIL.GetObject((int)exceptionRegion.ILRegion.ClassToken);
-                        Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
-                        AlignForSymbol(ref builder);
-                        var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
-                        builder.EmitReloc(typeSymbol, rel);
-                        string catchFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.HandlerOffset, exceptionRegion.ILRegion.Kind);
-                        builder.EmitReloc(new WebAssemblyBlockRefNode(catchFuncletName), rel);
-                        break;
-                    case RhEHClauseKind.RH_EH_CLAUSE_FAULT:
-                        AlignForSymbol(ref builder);
-                        string finallyFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.HandlerOffset, exceptionRegion.ILRegion.Kind);
-                        builder.EmitReloc(new WebAssemblyBlockRefNode(finallyFuncletName), rel);
-                        break;
-                    case RhEHClauseKind.RH_EH_CLAUSE_FILTER:
-                        AlignForSymbol(ref builder);
-                        string clauseFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.HandlerOffset, ILExceptionRegionKind.Catch);
-                        builder.EmitReloc(new WebAssemblyBlockRefNode(clauseFuncletName), rel);
-                        string filterFuncletName = GetFuncletName(exceptionRegion, exceptionRegion.ILRegion.FilterOffset, exceptionRegion.ILRegion.Kind);
-                        builder.EmitReloc(new WebAssemblyBlockRefNode(filterFuncletName), rel);
-                        break;
+                    switch (clauseKind)
+                    {
+                        case RhEHClauseKind.RH_EH_CLAUSE_TYPED:
+                            var type = (TypeDesc)_methodIL.GetObject((int)exceptionRegion.ILRegion.ClassToken);
+                            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
+                            AlignForSymbol(ref builder);
+                            var typeSymbol = _compilation.NodeFactory.NecessaryTypeSymbol(type);
+                            builder.EmitReloc(typeSymbol, rel);
+                            string catchFuncletName = GetFuncletName(exceptionRegion,
+                                exceptionRegion.ILRegion.HandlerOffset, exceptionRegion.ILRegion.Kind);
+                            builder.EmitReloc(new WebAssemblyBlockRefNode(catchFuncletName), rel);
+                            break;
+                        case RhEHClauseKind.RH_EH_CLAUSE_FAULT:
+                            AlignForSymbol(ref builder);
+                            string finallyFuncletName = GetFuncletName(exceptionRegion,
+                                exceptionRegion.ILRegion.HandlerOffset, exceptionRegion.ILRegion.Kind);
+                            builder.EmitReloc(new WebAssemblyBlockRefNode(finallyFuncletName), rel);
+                            break;
+                        case RhEHClauseKind.RH_EH_CLAUSE_FILTER:
+                            AlignForSymbol(ref builder);
+                            string clauseFuncletName = GetFuncletName(exceptionRegion,
+                                exceptionRegion.ILRegion.HandlerOffset, ILExceptionRegionKind.Catch);
+                            builder.EmitReloc(new WebAssemblyBlockRefNode(clauseFuncletName), rel);
+                            string filterFuncletName = GetFuncletName(exceptionRegion,
+                                exceptionRegion.ILRegion.FilterOffset, exceptionRegion.ILRegion.Kind);
+                            builder.EmitReloc(new WebAssemblyBlockRefNode(filterFuncletName), rel);
+                            break;
+                    }
+                    i--;
                 }
             }
 

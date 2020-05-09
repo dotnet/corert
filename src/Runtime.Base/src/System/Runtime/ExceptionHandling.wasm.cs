@@ -29,6 +29,12 @@ namespace System.Runtime
             {
                 return idxTryLandingStart == _tryStartOffset;
             }
+
+            public bool ContainsCodeOffset(uint idxTryLandingStart)
+            {
+                return ((idxTryLandingStart >= _tryStartOffset) &&
+                        (idxTryLandingStart < _tryEndOffset));
+            }
         }
 
         // TODO: temporary to try things out, when working look to see how to refactor with FindFirstPassHandler
@@ -70,7 +76,7 @@ namespace System.Runtime
                 EHClauseIterator.RhEHClauseKindWasm clauseKind = ehClause._clauseKind;
                 if (((clauseKind != EHClauseIterator.RhEHClauseKindWasm.RH_EH_CLAUSE_TYPED) &&
                      (clauseKind != EHClauseIterator.RhEHClauseKindWasm.RH_EH_CLAUSE_FILTER))
-                    || !ehClause.TryStartsAt(idxTryLandingStart))
+                    || !ehClause.ContainsCodeOffset(idxTryLandingStart))
                 {
                     continue;
                 }
