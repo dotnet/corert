@@ -3055,4 +3055,7 @@
   <data name="SwitchExpressionException_UnmatchedValue" xml:space="preserve">
     <value>Unmatched value was {0}.</value>
   </data>
+  <data name="InvalidOperation_ResetGlobalComWrappersInstance" xml:space="preserve">
+    <value>Attempt to update previously set global instance.</value>
+  </data>
 </root>
