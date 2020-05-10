@@ -92,7 +92,7 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
     if ((!GCHeapUtilities::IsServerHeap() || sc->thread_number == 0) ||(condemned == max_gen && sc->promotion))
     {
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
-        sc->dwEtwRootKind = kEtwGCRootStatic;
+        sc->dwEtwRootKind = kEtwGCRootKindHandle;
 #endif 
         EnumAllStaticGCRefs(fn, sc);
     }
