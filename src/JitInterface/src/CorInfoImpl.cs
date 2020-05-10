@@ -2204,7 +2204,7 @@ namespace Internal.JitInterface
             var type = (DefType)HandleToObject(hClass);
 
             // For 8-byte vectors return CORINFO_TYPE_DOUBLE, which is mapped by JIT to SIMD8.
-            // Otherwise, return CORINFO_TYPE_VALUECLASS, which is mapped by JIT to SIMD16.
+            // For 16-byte vectors return CORINFO_TYPE_VALUECLASS, which is mapped by JIT to SIMD16.
             // See MethodTable::GetHFAType and Compiler::GetHfaType.
             return (type.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask) switch
             {
@@ -2212,7 +2212,6 @@ namespace Internal.JitInterface
                 ValueTypeShapeCharacteristics.Float64Aggregate => CorInfoType.CORINFO_TYPE_DOUBLE,
                 ValueTypeShapeCharacteristics.Vector64Aggregate => CorInfoType.CORINFO_TYPE_DOUBLE,
                 ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoType.CORINFO_TYPE_VALUECLASS,
-                ValueTypeShapeCharacteristics.Vector256Aggregate => CorInfoType.CORINFO_TYPE_VALUECLASS,
                 _ => CorInfoType.CORINFO_TYPE_UNDEF
             };
         }
