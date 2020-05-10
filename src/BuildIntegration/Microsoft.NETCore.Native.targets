@@ -307,20 +307,26 @@ See the LICENSE file in the project root for more information.
     <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT' and '$(NativeLib)' != 'Static' and '$(NativeCodeGen)' != 'wasm'" />
     <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(OS)' != 'Windows_NT' and '$(NativeLib)' == 'Static' and '$(NativeCodeGen)' != 'wasm'" />
 
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' != 'Static'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' != 'Static' and '$(NativeCodeGen)' != 'wasm'" />
     <Exec Command="$(CppLinker)  @&quot;$(NativeIntermediateOutputPath)link.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' != 'Static' and '$(NativeCodeGen)' != 'wasm'" />
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)lib.rsp" Lines="@(CustomLibArg)" Overwrite="true" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static' and '$(NativeCodeGen)' != 'wasm'" />
     <Exec Command="$(CppLibCreator)  @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static' and '$(NativeCodeGen)' != 'wasm'" />
-    
+
+    <ItemGroup>
+      <EmccArgs Include="-o &quot;$(NativeBinary)&quot;" />
+      <EmccArgs Include="-s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s DISABLE_EXCEPTION_CATCHING=0 --emrun" />
+      <EmccArgs Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" Condition="'$(Platform)'=='wasm'" />
+      <EmccArgs Include="-O2 --llvm-lto 2" Condition="'$(Configuration)'=='Release'" />
+      <EmccArgs Include="-g3" Condition="'$(Configuration)'=='Debug'" />
+    </ItemGroup>
+
     <PropertyGroup>
-      <EmccArgs>&quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s DISABLE_EXCEPTION_CATCHING=0 --emrun </EmccArgs>
-      <EmccArgs Condition="'$(Platform)'=='wasm'">$(EmccArgs) &quot;$(IlcPath)/sdk/libPortableRuntime.a&quot; &quot;$(IlcPath)/sdk/libbootstrappercpp.a&quot; &quot;$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a&quot; </EmccArgs>
-      <EmccArgs Condition="'$(Configuration)'=='Release'">$(EmccArgs) -O2 --llvm-lto 2</EmccArgs>
-      <EmccArgs Condition="'$(Configuration)'=='Debug'">$(EmccArgs) -g3</EmccArgs>
+      <EmccCompiler Condition="'$(EMSDK)' != '' and '$(OS)' == 'Windows_NT'">$(EMSDK)/upstream/emscripten/emcc.bat</EmccCompiler>
+      <EmccCompiler Condition="'$(EMSDK)' != '' and '$(OS)' != 'Windows_NT'">$(EMSDK)/upstream/emscripten/emcc</EmccCompiler>
     </PropertyGroup>
     
-    <Exec Command="&quot;$(EMSDK)/upstream/emscripten/emcc.bat&quot; $(EmccArgs)" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSDK)' != '' and '$(OS)' == 'Windows_NT'" />
-    <Exec Command="&quot;$(EMSDK)/upstream/emscripten/emcc&quot; $(EmccArgs)" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSDK)' != '' and '$(OS)' != 'Windows_NT'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)emcc.rsp" Lines="@(EmccArgs)" Overwrite="true" Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSDK)' != ''" />
+    <Exec Command="&quot;$(EmccCompiler)&quot; @&quot;$(NativeIntermediateOutputPath)emcc.rsp&quot; &quot;$(NativeObject)&quot;" Condition="'$(NativeCodeGen)' == 'wasm'" />
     <Message Text="Emscripten not found, not linking WebAssembly. To enable WebAssembly linking, install Emscripten and ensure the EMSDK environment variable points to the directory containing upstream/emscripten/emcc.bat"
              Condition="'$(NativeCodeGen)' == 'wasm' and '$(EMSDK)' == ''" />
   </Target>
