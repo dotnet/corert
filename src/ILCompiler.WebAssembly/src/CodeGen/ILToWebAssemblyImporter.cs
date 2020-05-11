@@ -4800,7 +4800,7 @@ namespace Internal.IL
 
         bool FuncletsRequireHiddenContext()
         {
-            return _method.IsSharedByGenericInstantiations && !_method.AcquiresInstMethodTableFromThis();
+            return _method.RequiresInstArg();
         }
 
         LLVMValueRef GetGenericContextParamForFunclet()
