@@ -2679,7 +2679,7 @@ getvar:
                 
                 if (signature.Length == arrayType.Rank)
                 {
-                    lengths = new LowLevelList<int>();
+                    lengths = new LowLevelList<int>(signature.Length);
                     for (int i = arguments.Length - 1; i >= 0; i--)
                     {
                         lengths.Add(arguments[i].AsInt32());
@@ -2689,8 +2689,8 @@ getvar:
                 {
                     Debug.Assert(arrayType.Rank * 2 == signature.Length);
 
-                    lengths = new LowLevelList<int>();
-                    lowerBounds = new LowLevelList<int>();
+                    lengths = new LowLevelList<int>(arrayType.Rank);
+                    lowerBounds = new LowLevelList<int>(arrayType.Rank);
 
                     for (int i = arguments.Length - 1; i >= 0; i--)
                     {
