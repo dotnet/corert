@@ -237,11 +237,19 @@ namespace Internal.IL
             LLVMBasicBlockRef prologBlock = _llvmFunction.AppendBasicBlock("Prolog");
             _builder.PositionAtEnd(prologBlock);
 
-
-            // Allocate a slot to store exceptions being dispatched
+            // Allocate slots to store exception being dispatched and generic context if present
             if(_exceptionRegions.Length > 0)
             {
                 _spilledExpressions.Add(new SpilledExpressionEntry(StackValueKind.ObjRef, "ExceptionSlot", GetWellKnownType(WellKnownType.Object), 0, this));
+                // and a slot for the generic context if present
+                if (FuncletsRequireHiddenContext())
+                {
+                    var genCtx = new SpilledExpressionEntry(StackValueKind.ObjRef, "GenericCtxSlot", GetWellKnownType(WellKnownType.IntPtr), 1, this);
+                    _spilledExpressions.Add(genCtx);
+                    // put the generic context in the slot for reference by funclets
+                    var addressValue = CastIfNecessary(_builder, LoadVarAddress(genCtx.LocalIndex, LocalVarKind.Temp, out TypeDesc unused, _builder), LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0));
+                    _builder.BuildStore(_llvmFunction.GetParam(GetHiddenContextParamNo()), addressValue);
+                }
             }
 
             // Copy arguments onto the stack to allow
@@ -446,19 +454,7 @@ namespace Internal.IL
                 {
                     returnType = LLVMTypeRef.Void;
                 }
-                // Funclets accept a shadow stack pointer and a generic ctx hidden param if the owning method has one
-                var baseArgCount = kind == ILExceptionRegionKind.Filter ? 2 : 1; // filter funclets take the exception, maybe catch should also?
-                var funcletArgs = new LLVMTypeRef[FuncletsRequireHiddenContext() ? baseArgCount + 1 : baseArgCount];
-                int argIx = 0;
-                funcletArgs[argIx++] = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
-                if (FuncletsRequireHiddenContext())
-                {
-                    funcletArgs[argIx++] = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
-                }
-                if (kind == ILExceptionRegionKind.Filter)
-                {
-                    funcletArgs[argIx++] = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
-                }
+                var funcletArgs = new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }; 
                 LLVMTypeRef universalFuncletSignature = LLVMTypeRef.CreateFunction(returnType, funcletArgs, false);
                 funclet = Module.AddFunction(funcletName, universalFuncletSignature);
 
@@ -2823,49 +2819,21 @@ namespace Internal.IL
                                                                                                                                     LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
                                                                                                                                     LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
                                                                                                                                 }, false));
-                BuildCatchFunclet(Module, "LlvmCatchFuncletGeneric", 
+                BuildCatchFunclet(Module, 
                     new LLVMTypeRef[]
                     {
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, new LLVMTypeRef[]
-                        {
-                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 
-                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)
-                        }, false), 0), // pHandlerIP - catch funcletAddress, generic context
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // generic context
-                    }, true /* add the generic context param */);
-                BuildCatchFunclet(Module, "LlvmCatchFunclet", 
-                    new LLVMTypeRef[]
-                    {
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
                         LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, new LLVMTypeRef[]
                         {
                             LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)
                         }, false), 0), // pHandlerIP - catch funcletAddress
                         LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
                     });
-                BuildFilterFunclet(Module, "LlvmFilterFuncletGeneric",
+                BuildFilterFunclet(Module, 
                     new LLVMTypeRef[]
                     {
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // exception object
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, new LLVMTypeRef[]
-                        {
-                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack 
-                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // exception object
-                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) // generic context
-                        }, false), 0), // pHandlerIP - catch funcletAddress, generic context
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // generic context
-                    }, true /* add the generic context param */);
-                BuildFilterFunclet(Module, "LlvmFilterFunclet",
-                    new LLVMTypeRef[]
-                    {
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // exception object
                         LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateFunction(LLVMTypeRef.Int32, new LLVMTypeRef[]
                         {
                             LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
-                            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) // exception object
                         }, false), 0), // pHandlerIP - catch funcletAddress
                         LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), // shadow stack
                     });
@@ -2905,7 +2873,6 @@ namespace Internal.IL
                                                  new ExpressionEntry(StackValueKind.Int32, "idxStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0xFFFFFFFFu, false)), 
                                                  new ExpressionEntry(StackValueKind.Int32, "idxTryLandingStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)tryRegion.ILRegion.TryOffset, false)),
                                                  new ExpressionEntry(StackValueKind.NativeInt, "shadowStack", _currentFunclet.GetParam(0)),
-                                                 new ExpressionEntry(StackValueKind.NativeInt, "exInfo", GetGenericContextParamForFunclet()),
                                                  new ExpressionEntry(StackValueKind.ByRef, "refFrameIter", ehInfoIterator),
                                                  new ExpressionEntry(StackValueKind.ByRef, "tryRegionIdx", tryRegionIdx),
                                                  new ExpressionEntry(StackValueKind.ByRef, "pHandler", handlerFuncPtr)
@@ -2926,10 +2893,10 @@ namespace Internal.IL
 
             LLVMValueRef[] callCatchArgs = new LLVMValueRef[]
                                   {
-                                      CastIfNecessary(landingPadBuilder, managedPtr, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)),
+                                      LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)),
                                       CastIfNecessary(landingPadBuilder, handlerFunc, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)), /* catch funclet address */
                                       _currentFunclet.GetParam(0),
-                                      GetGenericContextParamForFunclet()
+                                      LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0))
                                   };
             LLVMValueRef leaveReturnValue = landingPadBuilder.BuildCall(RhpCallCatchFunclet, callCatchArgs, "");
 
@@ -4759,13 +4726,8 @@ namespace Internal.IL
                     // Work backwards through containing finally blocks to call them in the right order
                     BasicBlock finallyBlock = _basicBlocks[r.ILRegion.HandlerOffset];
                     MarkBasicBlock(finallyBlock);
-                    var funcletParams = new LLVMValueRef[FuncletsRequireHiddenContext() ? 2 : 1];
-                    funcletParams[0] = _currentFunclet.GetParam(0);
+                    var funcletParams = new LLVMValueRef[] {_currentFunclet.GetParam(0)};
 
-                    if (FuncletsRequireHiddenContext())
-                    {
-                        funcletParams[1] = _currentFunclet.GetParam(GetHiddenContextParamNo());
-                    }
                     // todo morganb: this should use invoke if the finally is inside of an outer try block
                     _builder.BuildCall(GetFuncletForBlock(finallyBlock), funcletParams, String.Empty);
                 }
@@ -4825,7 +4787,10 @@ namespace Internal.IL
 
                 return _builder.BuildLoad( thisPtr, "methodTablePtrRef");
             }
-            return CastIfNecessary(_builder, _currentFunclet.GetParam(GetHiddenContextParamNo() /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "HiddenArg");
+            // if the function has exception regions, the generic context is stored in a local, otherwise get it from the parameters
+            return _exceptionRegions.Length > 0
+                ? _builder.BuildLoad(CastIfNecessary(_builder, LoadVarAddress(1, LocalVarKind.Temp, out TypeDesc unused, _builder),  LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), "ctx"))
+                : CastIfNecessary(_builder, _currentFunclet.GetParam(GetHiddenContextParamNo() /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "HiddenArg");
         }
 
         uint GetHiddenContextParamNo()
@@ -4835,7 +4800,7 @@ namespace Internal.IL
 
         bool FuncletsRequireHiddenContext()
         {
-            return _method.IsSharedByGenericInstantiations && !_method.AcquiresInstMethodTableFromThis();
+            return _method.RequiresInstArg();
         }
 
         LLVMValueRef GetGenericContextParamForFunclet()
