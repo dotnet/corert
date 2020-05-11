@@ -1140,14 +1140,14 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 #endif // FEATURE_EVENT_TRACE
 }
 
-void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+void GCToEEInterface::DiagWalkUOHSurvivors(void* gcContext, int gen)
 {
 #ifdef FEATURE_EVENT_TRACE
     if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_loh);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_uoh, gen);
         ETW::GCLog::EndMovedReferences(context);
     }
 #else
@@ -1415,22 +1415,22 @@ MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
     return (MethodTable*)g_pFreeObjectEEType;
 }
 
-bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
+bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
 {
     // these configuration values are given to us via startup flags.
-    if (strcmp(key, "gcServer") == 0)
+    if (strcmp(privateKey, "gcServer") == 0)
     {
         *value = g_heap_type == GC_HEAP_SVR;
         return true;
     }
 
-    if (strcmp(key, "gcConcurrent") == 0)
+    if (strcmp(privateKey, "gcConcurrent") == 0)
     {
         *value = !g_pRhConfig->GetDisableBGC();
         return true;
     }
 
-    if (strcmp(key, "gcConservative") == 0)
+    if (strcmp(privateKey, "gcConservative") == 0)
     {
         *value = g_pConfig->GetGCConservative();
         return true;
@@ -1439,15 +1439,15 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
     return false;
 }
 
-bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
+bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
-    if (strcmp(key, "HeapVerify") == 0)
+    if (strcmp(privateKey, "HeapVerify") == 0)
     {
         *value = g_pRhConfig->GetHeapVerify();
         return true;
     }
 
-    if (strcmp(key, "GCgen0size") == 0)
+    if (strcmp(privateKey, "GCgen0size") == 0)
     {
 #if defined(USE_PORTABLE_HELPERS) && !defined(HOST_WASM)
         // CORERT-TODO: remove this
@@ -1462,9 +1462,10 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
     return false;
 }
 
-bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
+bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
-    UNREFERENCED_PARAMETER(key);
+    UNREFERENCED_PARAMETER(privateKey);
+    UNREFERENCED_PARAMETER(publicKey);
     UNREFERENCED_PARAMETER(value);
     return false;
 }
