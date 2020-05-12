@@ -18,7 +18,7 @@ namespace Internal.Runtime.CompilerHelpers
         /// Helper for array allocations via `newobj` IL instruction. Dimensions are passed in as block of integers.
         /// The content of the dimensions block may be modified by the helper.
         /// </summary>
-        private static unsafe Array NewObjArray(IntPtr pEEType, int nDimensions, int* pDimensions)
+        public static unsafe Array NewObjArray(IntPtr pEEType, int nDimensions, int* pDimensions)
         {
             EETypePtr eeType = new EETypePtr(pEEType);
             Debug.Assert(eeType.IsArray);

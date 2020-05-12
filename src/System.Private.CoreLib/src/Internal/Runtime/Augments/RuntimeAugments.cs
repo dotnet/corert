@@ -25,6 +25,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
+using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
 
 #if TARGET_64BIT
@@ -159,6 +160,25 @@ namespace Internal.Runtime.Augments
                 pLengths[i] = lengths[i];
 
             return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pLengths, lengths.Length);
+        }
+
+        // 
+        // Helper to create an array from a newobj instruction
+        // 
+        public static unsafe Array NewObjArray(RuntimeTypeHandle typeHandleForArrayType, int[] arguments)
+        {
+            EETypePtr eeTypePtr = typeHandleForArrayType.ToEETypePtr();
+            Debug.Assert(eeTypePtr.IsArray);
+
+            int nArguments = arguments.Length;
+            int* pArguments = stackalloc int[nArguments];
+
+            for (int i = 0; i < nArguments; i++)
+            {
+                pArguments[i] = arguments[i];
+            }
+
+            return ArrayHelpers.NewObjArray((IntPtr)eeTypePtr.ToPointer(), nArguments, pArguments);
         }
 
         public static ref byte GetSzArrayElementAddress(Array array, int index)

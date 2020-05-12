@@ -2657,7 +2657,7 @@ getvar:
                 _stack.Push(callInfo.ReturnValue);
         }
         
-        private void InterpretNewObj(int token)
+        private unsafe void InterpretNewObj(int token)
         {
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
             MethodSignature signature = method.Signature;
@@ -2671,45 +2671,13 @@ getvar:
 
             if (owningType.IsArray)
             {
-                LowLevelList<int> lengths = default;
-                LowLevelList<int> lowerBounds = default;
-
-                ArrayType arrayType = owningType as ArrayType;
-                Debug.Assert(arrayType != null);
-                
-                if (signature.Length == arrayType.Rank)
+                LowLevelList<int> lArguments = new LowLevelList<int>(arguments.Length);
+                for (int i = arguments.Length - 1; i >= 0; i--)
                 {
-                    lengths = new LowLevelList<int>(signature.Length);
-                    for (int i = arguments.Length - 1; i >= 0; i--)
-                    {
-                        lengths.Add(arguments[i].AsInt32());
-                    }
-                }
-                else if (signature.Length > arrayType.Rank)
-                {
-                    Debug.Assert(arrayType.Rank * 2 == signature.Length);
-
-                    lengths = new LowLevelList<int>(arrayType.Rank);
-                    lowerBounds = new LowLevelList<int>(arrayType.Rank);
-
-                    for (int i = arguments.Length - 1; i >= 0; i--)
-                    {
-                        if (i % 2 == 1)
-                        {
-                            lowerBounds.Add(arguments[i].AsInt32());
-                        }
-                        else
-                        {
-                            lengths.Add(arguments[i].AsInt32());
-                        }
-                    }
-                }
-                else
-                {
-                    ThrowHelper.ThrowInvalidProgramException();
+                    lArguments.Add(arguments[i].AsInt32());
                 }
 
-                Array array = RuntimeAugments.NewMultiDimArray(owningType.GetRuntimeTypeHandle(), lengths?.ToArray(), lowerBounds?.ToArray());
+                Array array = RuntimeAugments.NewObjArray(owningType.GetRuntimeTypeHandle(), lArguments.ToArray());
                 _stack.Push(StackItem.FromObjectRef(array));
                 return;
             }
