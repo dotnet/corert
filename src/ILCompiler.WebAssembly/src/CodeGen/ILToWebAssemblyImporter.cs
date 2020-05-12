@@ -4625,10 +4625,9 @@ namespace Internal.IL
             FieldDesc runtimeDeterminedField = (FieldDesc)_methodIL.GetObject(token);
             FieldDesc field = (FieldDesc)_canonMethodIL.GetObject(token);
             StackEntry valueEntry = _stack.Pop();
-            TypeDesc fieldType = _compilation.ConvertToCanonFormIfNecessary(field.FieldType, CanonicalFormKind.Specific);
 
             LLVMValueRef fieldAddress = GetFieldAddress(runtimeDeterminedField, field, isStatic);
-            CastingStore(fieldAddress, valueEntry, fieldType);
+            CastingStore(fieldAddress, valueEntry, field.FieldType);
         }
 
         // Loads symbol address. Address is represented as a i32*
