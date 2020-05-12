@@ -170,15 +170,10 @@ namespace Internal.Runtime.Augments
             EETypePtr eeTypePtr = typeHandleForArrayType.ToEETypePtr();
             Debug.Assert(eeTypePtr.IsArray);
 
-            int nArguments = arguments.Length;
-            int* pArguments = stackalloc int[nArguments];
-
-            for (int i = 0; i < nArguments; i++)
+            fixed (int* pArguments = arguments)
             {
-                pArguments[i] = arguments[i];
+                return ArrayHelpers.NewObjArray((IntPtr)eeTypePtr.ToPointer(), arguments.Length, pArguments);
             }
-
-            return ArrayHelpers.NewObjArray((IntPtr)eeTypePtr.ToPointer(), nArguments, pArguments);
         }
 
         public static ref byte GetSzArrayElementAddress(Array array, int index)
