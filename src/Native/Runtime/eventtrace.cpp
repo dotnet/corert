@@ -1675,6 +1675,7 @@ void ETW::GCLog::RootReference(
         break;
 
     case kEtwGCRootKindHandle:
+    case kEtwGCRootStatic:
         pvRootID = pvHandle;
         break;
 

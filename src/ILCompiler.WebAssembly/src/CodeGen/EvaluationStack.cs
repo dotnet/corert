@@ -428,6 +428,16 @@ namespace Internal.IL
 
         protected override LLVMValueRef ValueAsTypeInternal(LLVMTypeRef type, LLVMBuilderRef builder, bool signExtend)
         {
+            if (type.IsPackedStruct && type.Handle != RawLLVMValue.TypeOf.Handle)
+            {
+                var destStruct = type.Undef;
+                for (uint elemNo = 0; elemNo < RawLLVMValue.TypeOf.StructElementTypesCount; elemNo++)
+                {
+                    var elemValRef = builder.BuildExtractValue(RawLLVMValue, 0, "ex" + elemNo);
+                    destStruct = builder.BuildInsertValue(destStruct, elemValRef, elemNo, "st" + elemNo);
+                }
+                return destStruct;
+            }
             return ILImporter.CastIfNecessary(builder, RawLLVMValue, type, Name, !signExtend);
         }
     }

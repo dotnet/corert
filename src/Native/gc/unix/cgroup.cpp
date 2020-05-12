@@ -23,12 +23,6 @@ Abstract:
 #include <stdio.h>
 #include <string.h>
 #include <sys/resource.h>
-#if defined(__APPLE__) || defined(__FreeBSD__)
-#include <sys/param.h>
-#include <sys/mount.h>
-#else
-#include <sys/vfs.h>
-#endif
 #include <errno.h>
 #include <limits>
 
@@ -38,35 +32,23 @@ Abstract:
 #define SIZE_T_MAX (~(size_t)0)
 #endif
 
-#define CGROUP2_SUPER_MAGIC 0x63677270
-#define TMPFS_MAGIC 0x01021994
-
-#define BASE_TEN 10
-
 #define PROC_MOUNTINFO_FILENAME "/proc/self/mountinfo"
 #define PROC_CGROUP_FILENAME "/proc/self/cgroup"
 #define PROC_STATM_FILENAME "/proc/self/statm"
-#define CGROUP1_MEMORY_LIMIT_FILENAME "/memory.limit_in_bytes"
-#define CGROUP2_MEMORY_LIMIT_FILENAME "/memory.max"
-#define CGROUP1_MEMORY_USAGE_FILENAME "/memory.usage_in_bytes"
-#define CGROUP2_MEMORY_USAGE_FILENAME "/memory.current"
-#define CGROUP1_CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
-#define CGROUP1_CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
-#define CGROUP2_CPU_MAX_FILENAME "/cpu.max"
+#define MEM_LIMIT_FILENAME "/memory.limit_in_bytes"
+#define MEM_USAGE_FILENAME "/memory.usage_in_bytes"
+#define CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
+#define CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
 
 class CGroup
 {
-    // the cgroup version number or 0 to indicate cgroups are not found or not enabled
-    static int s_cgroup_version;
-
-    static char *s_memory_cgroup_path;
-    static char *s_cpu_cgroup_path;
+    static char* s_memory_cgroup_path;
+    static char* s_cpu_cgroup_path;
 public:
     static void Initialize()
     {
-        s_cgroup_version = FindCGroupVersion();
-        s_memory_cgroup_path = FindCGroupPath(&IsCGroup1MemorySubsystem);
-        s_cpu_cgroup_path = FindCGroupPath(&IsCGroup1CpuSubsystem);
+        s_memory_cgroup_path = FindCgroupPath(&IsMemorySubsystem);
+        s_cpu_cgroup_path = FindCgroupPath(&IsCpuSubsystem);
     }
 
     static void Cleanup()
@@ -77,90 +59,96 @@ public:
 
     static bool GetPhysicalMemoryLimit(uint64_t *val)
     {
-        if (s_cgroup_version == 0)
-            return false;
-        else if (s_cgroup_version == 1)
-            return GetCGroupMemoryLimit(val, CGROUP1_MEMORY_LIMIT_FILENAME);
-        else if (s_cgroup_version == 2)
-            return GetCGroupMemoryLimit(val, CGROUP2_MEMORY_LIMIT_FILENAME);
-        else
-        {
-            assert(!"Unknown cgroup version.");
-            return false;
-        }
+        char *mem_limit_filename = nullptr;
+        bool result = false;
+
+        if (s_memory_cgroup_path == nullptr)
+            return result;
+
+        size_t len = strlen(s_memory_cgroup_path);
+        len += strlen(MEM_LIMIT_FILENAME);
+        mem_limit_filename = (char*)malloc(len+1);
+        if (mem_limit_filename == nullptr)
+            return result;
+
+        strcpy(mem_limit_filename, s_memory_cgroup_path);
+        strcat(mem_limit_filename, MEM_LIMIT_FILENAME);
+        result = ReadMemoryValueFromFile(mem_limit_filename, val);
+        free(mem_limit_filename);
+        return result;
     }
 
     static bool GetPhysicalMemoryUsage(size_t *val)
     {
-        if (s_cgroup_version == 0)
-            return false;
-        else if (s_cgroup_version == 1)
-            return GetCGroupMemoryUsage(val, CGROUP1_MEMORY_USAGE_FILENAME);
-        else if (s_cgroup_version == 2)
-            return GetCGroupMemoryUsage(val, CGROUP2_MEMORY_USAGE_FILENAME);
-        else
+        char *mem_usage_filename = nullptr;
+        bool result = false;
+        uint64_t temp = 0;
+
+        if (s_memory_cgroup_path == nullptr)
+            return result;
+
+        size_t len = strlen(s_memory_cgroup_path);
+        len += strlen(MEM_USAGE_FILENAME);
+        mem_usage_filename = (char*)malloc(len+1);
+        if (mem_usage_filename == nullptr)
+            return result;
+
+        strcpy(mem_usage_filename, s_memory_cgroup_path);
+        strcat(mem_usage_filename, MEM_USAGE_FILENAME);
+        result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
+        if (result)
         {
-            assert(!"Unknown cgroup version.");
-            return false;
+            if (temp > std::numeric_limits<size_t>::max())
+            {
+                *val = std::numeric_limits<size_t>::max();
+            }
+            else
+            {
+                *val = (size_t)temp;
+            }
         }
+        free(mem_usage_filename);
+        return result;
     }
 
     static bool GetCpuLimit(uint32_t *val)
     {
-        if (s_cgroup_version == 0)
+        long long quota;
+        long long period;
+        double cpu_count;
+
+        quota = ReadCpuCGroupValue(CFS_QUOTA_FILENAME);
+        if (quota <= 0)
             return false;
-        else if (s_cgroup_version == 1)
-            return GetCGroup1CpuLimit(val);
-        else if (s_cgroup_version == 2)
-            return GetCGroup2CpuLimit(val);
-        else
+
+        period = ReadCpuCGroupValue(CFS_PERIOD_FILENAME);
+        if (period <= 0)
+            return false;
+
+        // Cannot have less than 1 CPU
+        if (quota <= period)
         {
-            assert(!"Unknown cgroup version.");
-            return false;
+            *val = 1;
+            return true;
         }
+
+        // Calculate cpu count based on quota and round it up
+        cpu_count = (double) quota / period  + 0.999999999;
+        *val = (cpu_count < UINT32_MAX) ? (uint32_t)cpu_count : UINT32_MAX;
+
+        return true;
     }
 
 private:
-    static int FindCGroupVersion()
-    {
-        // It is possible to have both cgroup v1 and v2 enabled on a system.
-        // Most non-bleeding-edge Linux distributions fall in this group. We
-        // look at the file system type of /sys/fs/cgroup to determine which
-        // one is the default. For more details, see:
-        // https://systemd.io/CGROUP_DELEGATION/#three-different-tree-setups-
-        // We dont care about the difference between the "legacy" and "hybrid"
-        // modes because both of those involve cgroup v1 controllers managing
-        // resources.
-
-#if !HAVE_NON_LEGACY_STATFS
-        return 0;
-#else
-
-        struct statfs stats;
-        int result = statfs("/sys/fs/cgroup", &stats);
-        if (result != 0)
-            return 0;
-
-        switch (stats.f_type)
-        {
-            case TMPFS_MAGIC: return 1;
-            case CGROUP2_SUPER_MAGIC: return 2;
-            default:
-                assert(!"Unexpected file system type for /sys/fs/cgroup");
-                return 0;
-        }
-#endif
-    }
-
-    static bool IsCGroup1MemorySubsystem(const char *strTok){
+    static bool IsMemorySubsystem(const char *strTok){
         return strcmp("memory", strTok) == 0;
     }
 
-    static bool IsCGroup1CpuSubsystem(const char *strTok){
+    static bool IsCpuSubsystem(const char *strTok){
         return strcmp("cpu", strTok) == 0;
     }
 
-    static char* FindCGroupPath(bool (*is_subsystem)(const char *)){
+    static char* FindCgroupPath(bool (*is_subsystem)(const char *)){
         char *cgroup_path = nullptr;
         char *hierarchy_mount = nullptr;
         char *hierarchy_root = nullptr;
@@ -260,7 +248,7 @@ private:
                 char* strTok = strtok_r(options, ",", &context);
                 while (strTok != nullptr)
                 {
-                    if ((s_cgroup_version == 2) || ((s_cgroup_version == 1) && is_subsystem(strTok)))
+                    if (is_subsystem(strTok))
                     {
                         mountpath = (char*)malloc(lineLen+1);
                         if (mountpath == nullptr)
@@ -324,47 +312,27 @@ private:
                 maxLineLen = lineLen;
             }
 
-            if (s_cgroup_version == 1)
+            // See man page of proc to get format for /proc/self/cgroup file
+            int sscanfRet = sscanf(line,
+                                   "%*[^:]:%[^:]:%s",
+                                   subsystem_list,
+                                   cgroup_path);
+            if (sscanfRet != 2)
             {
-                // See man page of proc to get format for /proc/self/cgroup file
-                int sscanfRet = sscanf(line,
-                                       "%*[^:]:%[^:]:%s",
-                                       subsystem_list,
-                                       cgroup_path);
-                if (sscanfRet != 2)
-                {
-                    assert(!"Failed to parse cgroup info file contents with sscanf.");
-                    goto done;
-                }
-
-                char* context = nullptr;
-                char* strTok = strtok_r(subsystem_list, ",", &context);
-                while (strTok != nullptr)
-                {
-                    if (is_subsystem(strTok))
-                    {
-                        result = true;
-                        break;
-                    }
-                    strTok = strtok_r(nullptr, ",", &context);
-                }
+                assert(!"Failed to parse cgroup info file contents with sscanf.");
+                goto done;
             }
-            else if (s_cgroup_version == 2)
+
+            char* context = nullptr;
+            char* strTok = strtok_r(subsystem_list, ",", &context);
+            while (strTok != nullptr)
             {
-                // See https://www.kernel.org/doc/Documentation/cgroup-v2.txt
-                // Look for a "0::/some/path"
-                int sscanfRet = sscanf(line,
-                                       "0::%s",
-                                       cgroup_path);
-                if (sscanfRet == 1)
+                if (is_subsystem(strTok))
                 {
                     result = true;
+                    break;
                 }
-            }
-            else
-            {
-                assert(!"Unknown cgroup version in mountinfo.");
-                goto done;
+                strTok = strtok_r(nullptr, ",", &context);
             }
         }
     done:
@@ -378,46 +346,6 @@ private:
         if (cgroupfile)
             fclose(cgroupfile);
         return cgroup_path;
-    }
-
-    static bool GetCGroupMemoryLimit(uint64_t *val, const char *filename)
-    {
-        if (s_memory_cgroup_path == nullptr)
-            return false;
-
-        char* mem_limit_filename = nullptr;
-        if (asprintf(&mem_limit_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
-            return false;
-
-        bool result = ReadMemoryValueFromFile(mem_limit_filename, val);
-        free(mem_limit_filename);
-        return result;
-    }
-
-    static bool GetCGroupMemoryUsage(size_t *val, const char *filename)
-    {
-        if (s_memory_cgroup_path == nullptr)
-            return false;
-
-        char* mem_usage_filename = nullptr;
-        if (asprintf(&mem_usage_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
-            return false;
-
-        uint64_t temp = 0;
-        bool result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
-        if (result)
-        {
-            if (temp > std::numeric_limits<size_t>::max())
-            {
-                *val = std::numeric_limits<size_t>::max();
-            }
-            else
-            {
-                *val = (size_t)temp;
-            }
-        }
-
-        return result;
     }
 
     static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
@@ -441,7 +369,7 @@ private:
 
         errno = 0;
         num = strtoull(line, &endptr, 0);
-        if (line == endptr || errno != 0)
+        if (errno != 0)
             goto done;
 
         multiplier = 1;
@@ -466,109 +394,6 @@ private:
         return result;
     }
 
-    static bool GetCGroup1CpuLimit(uint32_t *val)
-    {
-        long long quota;
-        long long period;
-
-        quota = ReadCpuCGroupValue(CGROUP1_CFS_QUOTA_FILENAME);
-        if (quota <= 0)
-            return false;
-
-        period = ReadCpuCGroupValue(CGROUP1_CFS_PERIOD_FILENAME);
-        if (period <= 0)
-            return false;
-
-        ComputeCpuLimit(period, quota, val);
-
-        return true;
-    }
-
-    static bool GetCGroup2CpuLimit(uint32_t *val)
-    {
-        char *filename = nullptr;
-        FILE *file = nullptr;
-        char *endptr = nullptr;
-        char *max_quota_string = nullptr;
-        char *period_string = nullptr;
-        char *context = nullptr;
-        char *line = nullptr;
-        size_t lineLen = 0;
-
-        long long quota = 0;
-        long long period = 0;
-
-        bool result = false;
-
-        if (s_cpu_cgroup_path == nullptr)
-            return false;
-
-        if (asprintf(&filename, "%s%s", s_cpu_cgroup_path, CGROUP2_CPU_MAX_FILENAME) < 0)
-            return false;
-
-        file = fopen(filename, "r");
-        if (file == nullptr)
-            goto done;
-
-        if (getline(&line, &lineLen, file) == -1)
-            goto done;
-
-        // The expected format is:
-        //     $MAX $PERIOD
-        // Where "$MAX" may be the string literal "max"
-
-        max_quota_string = strtok_r(line, " ", &context);
-        if (max_quota_string == nullptr)
-        {
-            assert(!"Unable to parse " CGROUP2_CPU_MAX_FILENAME " file contents.");
-            goto done;
-        }
-        period_string = strtok_r(nullptr, " ", &context);
-        if (period_string == nullptr)
-        {
-            assert(!"Unable to parse " CGROUP2_CPU_MAX_FILENAME " file contents.");
-            goto done;
-        }
-
-        // "max" means no cpu limit
-        if (strcmp("max", max_quota_string) == 0)
-            goto done;
-
-        errno = 0;
-        quota = strtoll(max_quota_string, &endptr, BASE_TEN);
-        if (max_quota_string == endptr || errno != 0)
-            goto done;
-
-        period = strtoll(period_string, &endptr, BASE_TEN);
-        if (period_string == endptr || errno != 0)
-            goto done;
-
-        ComputeCpuLimit(period, quota, val);
-        result = true;
-
-    done:
-        if (file)
-            fclose(file);
-        free(filename);
-        free(line);
-
-        return result;
-    }
-
-    static void ComputeCpuLimit(long long period, long long quota, uint32_t *val)
-    {
-        // Cannot have less than 1 CPU
-        if (quota <= period)
-        {
-            *val = 1;
-            return;
-        }
-
-        // Calculate cpu count based on quota and round it up
-        double cpu_count = (double) quota / period  + 0.999999999;
-        *val = (cpu_count < UINT32_MAX) ? (uint32_t)cpu_count : UINT32_MAX;
-    }
-
     static long long ReadCpuCGroupValue(const char* subsystemFilename){
         char *filename = nullptr;
         bool result = false;
@@ -577,9 +402,12 @@ private:
         if (s_cpu_cgroup_path == nullptr)
             return -1;
 
-        if (asprintf(&filename, "%s%s", s_cpu_cgroup_path, subsystemFilename) < 0)
+        filename = (char*)malloc(strlen(s_cpu_cgroup_path) + strlen(subsystemFilename) + 1);
+        if (filename == nullptr)
             return -1;
 
+        strcpy(filename, s_cpu_cgroup_path);
+        strcat(filename, subsystemFilename);
         result = ReadLongLongValueFromFile(filename, &val);
         free(filename);
         if (!result)
@@ -593,12 +421,13 @@ private:
         bool result = false;
         char *line = nullptr;
         size_t lineLen = 0;
-        char *endptr = nullptr;
+
+        FILE* file = nullptr;
 
         if (val == nullptr)
-            return false;
+            goto done;
 
-        FILE* file = fopen(filename, "r");
+        file = fopen(filename, "r");
         if (file == nullptr)
             goto done;
 
@@ -606,8 +435,8 @@ private:
             goto done;
 
         errno = 0;
-        *val = strtoll(line, &endptr, BASE_TEN);
-        if (line == endptr || errno != 0)
+        *val = atoll(line);
+        if (errno != 0)
             goto done;
 
         result = true;
@@ -619,7 +448,6 @@ private:
     }
 };
 
-int CGroup::s_cgroup_version = 0;
 char *CGroup::s_memory_cgroup_path = nullptr;
 char *CGroup::s_cpu_cgroup_path = nullptr;
 

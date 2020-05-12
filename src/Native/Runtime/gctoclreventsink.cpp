@@ -52,7 +52,7 @@ void GCToCLREventSink::FireGCEnd_V1(uint32_t count, uint32_t depth)
     FireEtwGCEnd_V1(count, depth, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireGCHeapStats_V2(
+void GCToCLREventSink::FireGCHeapStats_V1(
         uint64_t generationSize0,
         uint64_t totalPromotedSize0,
         uint64_t generationSize1,
@@ -61,8 +61,6 @@ void GCToCLREventSink::FireGCHeapStats_V2(
         uint64_t totalPromotedSize2,
         uint64_t generationSize3,
         uint64_t totalPromotedSize3,
-        uint64_t generationSize4,
-        uint64_t totalPromotedSize4,
         uint64_t finalizationPromotedSize,
         uint64_t finalizationPromotedCount,
         uint32_t pinnedObjectCount,
@@ -71,7 +69,6 @@ void GCToCLREventSink::FireGCHeapStats_V2(
 {
     LIMITED_METHOD_CONTRACT;
 
-    // TODO: FireEtwGCHeapStats_V2
     FireEtwGCHeapStats_V1(generationSize0, totalPromotedSize0, generationSize1, totalPromotedSize1,
                           generationSize2, totalPromotedSize2, generationSize3, totalPromotedSize3,
                           finalizationPromotedSize, finalizationPromotedCount, pinnedObjectCount,
@@ -127,20 +124,17 @@ void GCToCLREventSink::FireGCJoin_V2(uint32_t heap, uint32_t joinTime, uint32_t 
     FireEtwGCJoin_V2(heap, joinTime, joinType, GetClrInstanceId(), joinId);
 }
 
-void GCToCLREventSink::FireGCGlobalHeapHistory_V3(uint64_t finalYoungestDesired,
+void GCToCLREventSink::FireGCGlobalHeapHistory_V2(uint64_t finalYoungestDesired,
         int32_t numHeaps,
         uint32_t condemnedGeneration,
         uint32_t gen0reductionCount,
         uint32_t reason,
         uint32_t globalMechanisms,
         uint32_t pauseMode,
-        uint32_t memoryPressure,
-        uint32_t condemnReasons0,
-        uint32_t condemnReasons1)
+        uint32_t memoryPressure)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // TODO: FireEtwGCGlobalHeapHistory_V3
     FireEtwGCGlobalHeapHistory_V2(finalYoungestDesired, numHeaps, condemnedGeneration, gen0reductionCount, reason,
         globalMechanisms, GetClrInstanceId(), pauseMode, memoryPressure);
 }
@@ -271,9 +265,8 @@ void GCToCLREventSink::FireBGCRevisit(uint64_t pages, uint64_t objects, uint32_t
     FireEtwBGCRevisit(pages, objects, isLarge, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireBGCOverflow_V1(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge, uint32_t genNumber)
+void GCToCLREventSink::FireBGCOverflow(uint64_t min, uint64_t max, uint64_t objects, uint32_t isLarge)
 {
-    // TODO: FireBGCOverflow_V1
     FireEtwBGCOverflow(min, max, objects, isLarge, GetClrInstanceId());
 }
 

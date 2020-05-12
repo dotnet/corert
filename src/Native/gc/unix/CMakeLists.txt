@@ -1,4 +1,5 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+add_compile_options(-fPIC)
 include_directories("../env")
 
 include(configure.cmake)
