@@ -323,33 +323,47 @@ namespace Internal.Runtime.CompilerHelpers
         internal static unsafe void FixupMethodCell(IntPtr hModule, MethodFixupCell* pCell)
         {
             byte* methodName = (byte*)pCell->MethodName;
+            IntPtr pTarget;
 
 #if TARGET_WINDOWS
-            pCell->Target = GetProcAddress(hModule, methodName, pCell->CharSetMangling);
+            CharSet charSetMangling = pCell->CharSetMangling;
+            if (charSetMangling == 0)
+            {
+                // Look for the user-provided entry point name only
+                pTarget = Interop.mincore.GetProcAddress(hModule, methodName);
+            }
+            else
+            if (charSetMangling == CharSet.Ansi)
+            {
+                // For ANSI, look for the user-provided entry point name first.
+                // If that does not exist, try the charset suffix.
+                pTarget = Interop.mincore.GetProcAddress(hModule, methodName);
+                if (pTarget == IntPtr.Zero)
+                    pTarget = GetProcAddressWithSuffix(hModule, methodName, (byte)'A');
+            }
+            else
+            {
+                // For Unicode, look for the entry point name with the charset suffix first.
+                // The 'W' API takes precedence over the undecorated one.
+                pTarget = GetProcAddressWithSuffix(hModule, methodName, (byte)'W');
+                if (pTarget == IntPtr.Zero)
+                    pTarget = Interop.mincore.GetProcAddress(hModule, methodName);
+            }
 #else
-            pCell->Target = Interop.Sys.GetProcAddress(hModule, methodName);
+            pTarget = Interop.Sys.GetProcAddress(hModule, methodName);
 #endif
-            if (pCell->Target == IntPtr.Zero)
+            if (pTarget == IntPtr.Zero)
             {
                 string entryPointName = Encoding.UTF8.GetString(methodName, string.strlen(methodName));
                 throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterized, entryPointName, GetModuleName(pCell->Module)));
             }
+
+            pCell->Target = pTarget;
         }
 
 #if TARGET_WINDOWS
-        private static unsafe IntPtr GetProcAddress(IntPtr hModule, byte* methodName, CharSet charSetMangling)
+        private static unsafe IntPtr GetProcAddressWithSuffix(IntPtr hModule, byte* methodName, byte suffix)
         {
-            // First look for the unmangled name.  If it is unicode function, we are going
-            // to need to check for the 'W' API because it takes precedence over the
-            // unmangled one (on NT some APIs have unmangled ANSI exports).
-            
-            var exactMatch = Interop.mincore.GetProcAddress(hModule, methodName);
-
-            if ((charSetMangling == CharSet.Ansi && exactMatch != IntPtr.Zero) || charSetMangling == 0)
-            {
-                return exactMatch;
-            }
-
             int nameLength = string.strlen(methodName);
 
             // We need to add an extra byte for the suffix, and an extra byte for the null terminator
@@ -362,15 +376,9 @@ namespace Internal.Runtime.CompilerHelpers
 
             probedMethodName[nameLength + 1] = 0;
 
-            probedMethodName[nameLength] = (charSetMangling == CharSet.Ansi) ? (byte)'A' : (byte)'W';
+            probedMethodName[nameLength] = suffix;
 
-            IntPtr probedMethod = Interop.mincore.GetProcAddress(hModule, probedMethodName);
-            if (probedMethod != IntPtr.Zero)
-            {
-                return probedMethod;
-            }
-
-            return exactMatch;
+            return Interop.mincore.GetProcAddress(hModule, probedMethodName);
         }
 #endif
 
