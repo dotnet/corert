@@ -1173,6 +1173,7 @@ internal static class Program
         new GenClassUsingFieldOfInnerStruct<GenClassWithInnerStruct<string>.GenInterfaceOverGenStructStruct>(
             new GenClassWithInnerStruct<string>.GenInterfaceOverGenStructStruct(), null).Create();
 
+        // replicate compilation error with https://github.com/dotnet/runtime/blob/b57a099c1773eeb52d3c663211e275131b4b7938/src/libraries/System.Net.Primitives/src/System/Net/CredentialCache.cs#L328
         new GenClassWithInnerStruct<string>().SetField("");
 
         PassTest();
