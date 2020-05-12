@@ -2671,13 +2671,14 @@ getvar:
 
             if (owningType.IsArray)
             {
-                LowLevelList<int> lArguments = new LowLevelList<int>(arguments.Length);
+                int[] lArguments = new int[arguments.Length];
                 for (int i = arguments.Length - 1; i >= 0; i--)
                 {
-                    lArguments.Add(arguments[i].AsInt32());
+                    lArguments[i] = arguments[i].AsInt32();
                 }
 
-                Array array = RuntimeAugments.NewObjArray(owningType.GetRuntimeTypeHandle(), lArguments.ToArray());
+                Array.Reverse(lArguments);
+                Array array = RuntimeAugments.NewObjArray(owningType.GetRuntimeTypeHandle(), lArguments);
                 _stack.Push(StackItem.FromObjectRef(array));
                 return;
             }

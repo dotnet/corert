@@ -25,7 +25,6 @@
     <Compile Include="..\..\Common\src\TypeSystem\IL\ILReader.cs" />
     <Compile Include="..\..\Common\src\TypeSystem\IL\StackValueKind.cs" />
     <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelStack.cs" />
-    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelList.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
     <Compile Include="Internal\Runtime\Interpreter\StackItem.cs" />
   </ItemGroup>
