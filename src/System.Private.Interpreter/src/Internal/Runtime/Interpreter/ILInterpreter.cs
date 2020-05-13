@@ -2451,7 +2451,6 @@ again:
         private struct MethodCallInfo
         {
             public TypeDesc OwningType;
-            public bool IsStatic;
             public IntPtr MethodAddress;
             public IntPtr UnboxingStubAddress;
             public TypeLoaderEnvironment.MethodAddressType MethodAddressType;
@@ -2467,13 +2466,13 @@ again:
                 StackItem stackItem = PopWithValidation();
                 TypeDesc argumentType = default;
 
-                if (i == 1 && !callInfo.IsStatic)
+                if (i == 1 && !callInfo.Signature.IsStatic)
                 {
                     argumentType = callInfo.OwningType;
                 }
                 else
                 {
-                    argumentType = callInfo.Signature[i - (callInfo.IsStatic ? 1 : 2)];
+                    argumentType = callInfo.Signature[i - (callInfo.Signature.IsStatic ? 1 : 2)];
                 }
 
 setvar:
@@ -2531,7 +2530,7 @@ setvar:
 
             if (callInfo.MethodAddress != IntPtr.Zero && callInfo.MethodAddressType == TypeLoaderEnvironment.MethodAddressType.Exact)
             {
-                CallConverter.CallingConvention callingConvention = callInfo.IsStatic ? CallConverter.CallingConvention.ManagedStatic : CallConverter.CallingConvention.ManagedInstance;
+                CallConverter.CallingConvention callingConvention = callInfo.Signature.IsStatic ? CallConverter.CallingConvention.ManagedStatic : CallConverter.CallingConvention.ManagedInstance;
                 DynamicCallSignature dynamicCallSignature = new DynamicCallSignature(callingConvention, callInfo.LocalVariableTypes, callInfo.LocalVariableTypes.Length);
                 CallInterceptor.CallInterceptor.MakeDynamicCall(callInfo.MethodAddress, dynamicCallSignature, localVariableSet);
             }
@@ -2606,7 +2605,9 @@ getvar:
         private void InterpretCall(int token)
         {
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
+
             MethodSignature signature = method.Signature;
+            int nSignature = signature.Length;
 
             TypeDesc owningType = method.OwningType;
             TypeDesc returnType = signature.ReturnType;
@@ -2616,7 +2617,7 @@ getvar:
 
             int delta = (signature.IsStatic ? 1 : 2);
 
-            LocalVariableType[] localVariableTypes = new LocalVariableType[signature.Length + delta];
+            LocalVariableType[] localVariableTypes = new LocalVariableType[nSignature + delta];
             if (returnType.IsByRef)
             {
                 // TODO: Unwrap ref types
@@ -2626,9 +2627,17 @@ getvar:
             localVariableTypes[0] = new LocalVariableType(returnType.GetRuntimeTypeHandle(), false, returnType.IsByRef);
 
             if (!signature.IsStatic)
-                localVariableTypes[1] = new LocalVariableType(owningType.GetRuntimeTypeHandle(), false, owningType.IsByRef);
+            {
+                if (owningType.IsByRef)
+                {
+                    // TODO: Unwrap ref types
+                    throw new NotImplementedException();
+                }
 
-            for (int i = 0; i < signature.Length; i++)
+                localVariableTypes[1] = new LocalVariableType(owningType.GetRuntimeTypeHandle(), false, owningType.IsByRef);
+            }
+
+            for (int i = 0; i < nSignature; i++)
             {
                 var argument = signature[i];
                 if (argument.IsByRef)
@@ -2644,7 +2653,6 @@ getvar:
 
             var callInfo = new MethodCallInfo();
             callInfo.OwningType = !signature.IsStatic ? owningType : null;
-            callInfo.IsStatic = signature.IsStatic;
             callInfo.MethodAddress = methodAddress;
             callInfo.MethodAddressType = foundAddressType;
             callInfo.UnboxingStubAddress = unboxingStubAddress;
@@ -2660,10 +2668,13 @@ getvar:
         private unsafe void InterpretNewObj(int token)
         {
             MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
-            MethodSignature signature = method.Signature;
             TypeDesc owningType = method.OwningType;
 
-            StackItem[] arguments = new StackItem[signature.Length];
+            MethodSignature signature = method.Signature;
+            int nSignature = signature.Length;
+
+            StackItem[] arguments = new StackItem[nSignature];
+
             for (int i = 0; i < arguments.Length; i++)
             {
                 arguments[i] = PopWithValidation();
@@ -2671,13 +2682,13 @@ getvar:
 
             if (owningType.IsArray)
             {
-                int[] lArguments = new int[arguments.Length];
-                for (int i = arguments.Length - 1; i >= 0; i--)
+                int[] lArguments = new int[nSignature];
+
+                for (int i = nSignature - 1; i >= 0; i--)
                 {
-                    lArguments[i] = arguments[i].AsInt32();
+                    lArguments[(nSignature - 1) - i] = arguments[i].AsInt32();
                 }
 
-                Array.Reverse(lArguments);
                 Array array = RuntimeAugments.NewObjArray(owningType.GetRuntimeTypeHandle(), lArguments);
                 _stack.Push(StackItem.FromObjectRef(array));
                 return;
@@ -2685,11 +2696,11 @@ getvar:
 
             object @this = RuntimeAugments.RawNewObject(owningType.GetRuntimeTypeHandle());
 
-            LocalVariableType[] localVariableTypes = new LocalVariableType[signature.Length + 2];
+            LocalVariableType[] localVariableTypes = new LocalVariableType[nSignature + 2];
             localVariableTypes[0] = new LocalVariableType(_context.GetWellKnownType(WellKnownType.Void).GetRuntimeTypeHandle(), false, false);
             localVariableTypes[1] = new LocalVariableType(owningType.GetRuntimeTypeHandle(), false, false);
 
-            for (int i = 0; i < signature.Length; i++)
+            for (int i = 0; i < nSignature; i++)
             {
                 TypeDesc argument = signature[i];
                 if (argument.IsByRef)
@@ -2703,7 +2714,7 @@ getvar:
 
             _stack.Push(StackItem.FromObjectRef(@this));
 
-            for (int i = arguments.Length - 1; i >= 0; i--)
+            for (int i = nSignature - 1; i >= 0; i--)
             {
                 _stack.Push(arguments[i]);
             }
@@ -2712,7 +2723,6 @@ getvar:
 
             var callInfo = new MethodCallInfo();
             callInfo.OwningType = !signature.IsStatic ? owningType : null;
-            callInfo.IsStatic = signature.IsStatic;
             callInfo.MethodAddress = methodAddress;
             callInfo.MethodAddressType = foundAddressType;
             callInfo.UnboxingStubAddress = unboxingStubAddress;
