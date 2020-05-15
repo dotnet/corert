@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class NativeLibrary
     {
-        internal static IntPtr LoadByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
+        internal static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
         {
             // First checks if a default dllImportSearchPathFlags was passed in, if so, use that value.
             // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute. 

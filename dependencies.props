@@ -3,7 +3,7 @@
     <RyuJITVersion Condition="'$(RyuJITVersion)' == ''">5.0.0-preview.5.20230.9</RyuJITVersion>
     <ObjectWriterVersion Condition="'$(ObjectWriterVersion)' == ''">1.0.0-alpha-28820-01</ObjectWriterVersion>
     <CoreDisToolsVersion Condition="'$(CoreDisToolsVersion)' == ''">1.0.1-prerelease-00005</CoreDisToolsVersion>
-    <RuntimeLibrariesVersion Condition="'$(RuntimeLibrariesVersion)' == ''">5.0.0-preview.2.20153.3</RuntimeLibrariesVersion>
+    <RuntimeLibrariesVersion Condition="'$(RuntimeLibrariesVersion)' == ''">5.0.0-preview.5.20263.12</RuntimeLibrariesVersion>
     <CoreFxUapVersion Condition="'$(CoreFxUapVersion)' == ''">4.7.0-preview6.19265.2</CoreFxUapVersion>
     <MicrosoftNETCoreAppPackageVersion Condition="'$(MicrosoftNETCoreAppPackageVersion)' == ''">2.1.14</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftDotNetTestSdkVersion Condition="'$(MicrosoftDotNetTestSdkVersion)' == ''">15.8.0</MicrosoftDotNetTestSdkVersion>
