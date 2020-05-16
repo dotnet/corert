@@ -71,7 +71,7 @@ namespace ILCompiler
             else
             {
                 // Account for System.Private.CoreLib.Native / System.Globalization.Native / System.Native / etc
-                return importModule.StartsWith("System.");
+                return importModule.StartsWith("libSystem.");
             }
         }
     }

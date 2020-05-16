@@ -27,5 +27,7 @@ namespace System.Globalization
             }
             return invariantEnabled;
         }
+
+        internal static bool UseNls => false;
     }
 }
