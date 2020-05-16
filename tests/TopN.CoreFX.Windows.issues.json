@@ -2271,6 +2271,10 @@
                 {
                     "name": "System.Tests.StringTests.ToUpperNullCulture",
                     "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.StringTests.LastIndexOf_EmptyString",
+                    "reason": "outdated"
                 }
             ]
         }
