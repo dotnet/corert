@@ -589,6 +589,16 @@ namespace ILCompiler.CppCodeGen
             sb.AppendLine();
             AppendCppMethodDeclaration(sb, method, true);
             sb.AppendLine();
+
+            // TODO: workaround unreachable globalization methods
+            string moduleName = method.GetPInvokeMethodMetadata().Module;
+            if (moduleName == (_compilation.TypeSystemContext.Target.IsWindows ? "libSystem.Globalization.Native" : "kernel32.dll"))
+            {
+                sb.Append("{ throw 0; }");
+                methodCodeNodeNeedingCode.SetCode(sb.ToString(), Array.Empty<Object>());
+                return;
+            }
+
             sb.Append("{");
             sb.Indent();
 
