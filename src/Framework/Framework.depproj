@@ -71,6 +71,8 @@
       <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="'%(Identity)' == 'netstandard'" />
       <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="'%(Identity)' == 'mscorlib'" />
 
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="$([System.String]::new('%(Identity)').StartsWith('libSystem'))" />
+
       <!-- TODO: https://github.com/dotnet/corert/issues/5496 -->
       <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="'%(Identity)' == 'clrcompression'" />
 

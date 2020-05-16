@@ -57,12 +57,12 @@ See the LICENSE file in the project root for more information.
     <ItemGroup>
       <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native$(NativeLibraryExtension)" />
       <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libSystem.Private.TypeLoader.Native$(NativeLibraryExtension)" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Native$(NativeLibraryExtension)" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Globalization.Native$(NativeLibraryExtension)" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.IO.Compression.Native$(NativeLibraryExtension)" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Net.Security.Native$(NativeLibraryExtension)" />
-      <NativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.Apple$(NativeLibraryExtension)" Condition="'$(TargetOS)' == 'OSX'"/>
-      <NativeLibrary Include="$(IlcPath)/framework/System.Security.Cryptography.Native.OpenSsl$(NativeLibraryExtension)" Condition="'$(TargetOS)' != 'OSX'"/>
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.Globalization.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.IO.Compression.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.Net.Security.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.Security.Cryptography.Native.Apple$(NativeLibraryExtension)" Condition="'$(TargetOS)' == 'OSX'"/>
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.Security.Cryptography.Native.OpenSsl$(NativeLibraryExtension)" Condition="'$(TargetOS)' != 'OSX'"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
