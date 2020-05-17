@@ -51,7 +51,7 @@ namespace System.Collections.Generic
 
         // Constructs a List. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
-        // increased to 16, and then increased in multiples of two as required.
+        // increased to 4, and then increased in multiples of two as required.
         public LowLevelList()
         {
             _items = s_emptyArray;
