@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
         private NodeCache<MethodDesc, WebAssemblyVTableSlotNode> _vTableSlotNodes;
 
         public WebAssemblyCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
-            InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider)
+            InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider, PreinitializationManager preinitializationManager)
             : base(context, 
                   compilationModuleGroup, 
                   metadataManager, 
@@ -22,7 +22,8 @@ namespace ILCompiler.DependencyAnalysis
                   new LazyGenericsDisabledPolicy(), 
                   vtableSliceProvider, 
                   dictionaryLayoutProvider, 
-                  new ImportedNodeProviderThrowing())
+                  new ImportedNodeProviderThrowing(),
+                  preinitializationManager)
         {
             _vTableSlotNodes = new NodeCache<MethodDesc, WebAssemblyVTableSlotNode>(methodKey =>
             {

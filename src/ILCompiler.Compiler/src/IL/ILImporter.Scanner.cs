@@ -114,7 +114,7 @@ namespace Internal.IL
         public DependencyList Import()
         {
             TypeDesc owningType = _canonMethod.OwningType;
-            if (_factory.TypeSystemContext.HasLazyStaticConstructor(owningType))
+            if (_compilation.HasLazyStaticConstructor(owningType))
             {
                 // Don't trigger cctor if this is a fallback compilation (bad cctor could have been the reason for fallback).
                 // Otherwise follow the rules from ECMA-335 I.8.9.5.

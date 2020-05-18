@@ -355,7 +355,7 @@
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
     <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
     <Compile Include="Compiler\TypeExtensions.cs" />
-    <Compile Include="Compiler\CompilerTypeSystemContext.TypeInit.cs" />
+    <Compile Include="Compiler\PreinitializationManager.cs" />
     <Compile Include="Compiler\CoreRTNameMangler.cs" />
     <Compile Include="Compiler\UsageBasedInteropStubManager.cs" />
     <Compile Include="Compiler\UsageBasedMetadataManager.cs" />

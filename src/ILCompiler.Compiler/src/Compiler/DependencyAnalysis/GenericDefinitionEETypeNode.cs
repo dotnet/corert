@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
             EETypeRareFlags rareFlags = 0;
 
             ushort flags = EETypeBuilderHelpers.ComputeFlags(_type);
-            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
                 rareFlags = rareFlags | EETypeRareFlags.HasCctorFlag;
             if (_type.IsByRefLike)
                 rareFlags |= EETypeRareFlags.IsByRefLikeFlag;

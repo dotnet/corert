@@ -57,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis
 
             result.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic EEType"));
 
-            if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
+            if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
             {
                 result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
             }

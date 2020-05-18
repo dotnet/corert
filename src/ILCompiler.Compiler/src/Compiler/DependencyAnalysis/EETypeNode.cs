@@ -899,7 +899,7 @@ namespace ILCompiler.DependencyAnalysis
 
             MetadataType metadataType = _type as MetadataType;
 
-            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
             {
                 flags |= (uint)EETypeRareFlags.HasCctorFlag;
             }

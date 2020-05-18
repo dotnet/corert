@@ -291,7 +291,7 @@ namespace ILCompiler
                     dependencies.Add(factory.TypeGCStaticsSymbol(metadataType), reason);
                 }
 
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || _typeSystemContext.HasLazyStaticConstructor(metadataType))
+                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || factory.PreinitializationManager.HasLazyStaticConstructor(metadataType))
                 {
                     dependencies.Add(factory.TypeNonGCStaticsSymbol(metadataType), reason);
                 }

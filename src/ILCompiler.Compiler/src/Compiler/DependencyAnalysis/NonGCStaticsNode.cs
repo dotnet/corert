@@ -58,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 // Make sure the NonGCStatics symbol always points to the beginning of the data.
-                if (_factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+                if (_factory.PreinitializationManager.HasLazyStaticConstructor(_type))
                 {
                     return GetClassConstructorContextStorageSize(_factory.Target, _type);
                 }
@@ -68,6 +68,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
         }
+
+        public bool HasCCtorContext => _factory.PreinitializationManager.HasLazyStaticConstructor(_type);
 
         public IDebugInfo DebugInfo => NullTypeIndexDebugInfo.Instance;
 
@@ -106,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencyList = null;
 
-            if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
+            if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
             {
                 dependencyList = new DependencyList();
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
@@ -123,7 +125,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // If the type has a class constructor, its non-GC statics section is prefixed  
             // by System.Runtime.CompilerServices.StaticClassConstructionContext struct.
-            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
             {
                 int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment.AsInt, GetClassConstructorContextAlignment(_type.Context.Target));
                 int classConstructorContextStorageSize = GetClassConstructorContextStorageSize(factory.Target, _type);

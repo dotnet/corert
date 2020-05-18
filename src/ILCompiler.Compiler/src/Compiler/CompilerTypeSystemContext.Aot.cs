@@ -27,7 +27,6 @@ namespace ILCompiler
 
         private TypeDesc[] _arrayOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
-        private bool _supportsLazyCctors;
 
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures)
             : base(details)
@@ -40,12 +39,6 @@ namespace ILCompiler
             _delegateFeatures = delegateFeatures;
 
             GenericsConfig = new SharedGenericsConfiguration();
-        }
-
-        public override void SetSystemModule(ModuleDesc systemModule)
-        {
-            base.SetSystemModule(systemModule);
-            _supportsLazyCctors = systemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", false) != null;
         }
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)

@@ -949,7 +949,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (context.TypeSystemContext.HasLazyStaticConstructor(_type))
+            if (context.PreinitializationManager.HasLazyStaticConstructor(_type))
             {
                 yield return new DependencyListEntry(context.MethodEntrypoint(_type.GetStaticConstructor().GetCanonMethodTarget(CanonicalFormKind.Specific)), "cctor for template");
             }
@@ -1153,7 +1153,7 @@ namespace ILCompiler.DependencyAnalysis
 
             Internal.NativeFormat.TypeFlags typeFlags = default(Internal.NativeFormat.TypeFlags);
 
-            if (factory.TypeSystemContext.HasLazyStaticConstructor(_type))
+            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
             {
                 MethodDesc cctorMethod = _type.GetStaticConstructor();
                 MethodDesc canonCctorMethod = cctorMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);

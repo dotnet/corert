@@ -2,23 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-
+using Internal.IL;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    // Manages policies around static constructors (.cctors) and static data initialization.
-    partial class CompilerTypeSystemContext
+    /// <summary>
+    /// Manages policies around static constructors (.cctors) and static data initialization. 
+    /// </summary>
+    public class PreinitializationManager
     {
-        // Eventually, this will also manage preinitialization (interpreting cctors at compile
-        // time and converting them to blobs of preinitialized data), and the various
-        // System.Runtime.CompilerServices.PreInitializedAttribute/InitDataBlobAttribute/etc. placed on
-        // types and their members by toolchain components.
+        private readonly bool _supportsLazyCctors;
+        private readonly CompilationModuleGroup _compilationModuleGroup;
+        private readonly ILProvider _ilprovider;
+
+        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider)
+        {
+            _supportsLazyCctors = context.SystemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", false) != null;
+            _compilationModuleGroup = compilationGroup;
+            _ilprovider = ilprovider;
+        }
 
         /// <summary>
         /// Returns true if '<paramref name="type"/>' has a lazily executed static constructor.

@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             DependencyList dependencyList = new DependencyList();
 
-            if (factory.TypeSystemContext.HasEagerStaticConstructor(_type))
+            if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
             {
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }

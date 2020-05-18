@@ -955,7 +955,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         MetadataType target = (MetadataType)node.Target;
             
-                        if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
+                        if (compilation.HasLazyStaticConstructor(target))
                         {
                             importer.OutputCodeForTriggerCctor(target, resVar);
                         }
@@ -970,7 +970,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         resVar = builder.BuildLoad(builder.BuildLoad(ptrPtrPtr, "ind1"), "ind2");
             
-                        if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
+                        if (compilation.HasLazyStaticConstructor(target))
                         {
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
                             var nonGcStaticsBase = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "lazyGep");
@@ -983,7 +983,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         MetadataType target = (MetadataType)node.Target;
             
-                        if (compilation.TypeSystemContext.HasLazyStaticConstructor(target))
+                        if (compilation.HasLazyStaticConstructor(target))
                         {
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
                             var threadStaticBase = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "tsGep");

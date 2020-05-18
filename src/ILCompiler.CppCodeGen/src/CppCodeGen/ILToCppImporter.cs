@@ -3592,11 +3592,11 @@ namespace Internal.IL
 
             MethodDesc canonCctor = cctor.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-            if (_nodeFactory.TypeSystemContext.HasEagerStaticConstructor(type))
+            if (_nodeFactory.PreinitializationManager.HasEagerStaticConstructor(type))
             {
                 _dependencies.Add(_nodeFactory.EagerCctorIndirection(canonCctor));
             }
-            else if (_nodeFactory.TypeSystemContext.HasLazyStaticConstructor(type))
+            else if (_nodeFactory.PreinitializationManager.HasLazyStaticConstructor(type))
             {
                 IMethodNode helperNode = (IMethodNode)_nodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase);
 
