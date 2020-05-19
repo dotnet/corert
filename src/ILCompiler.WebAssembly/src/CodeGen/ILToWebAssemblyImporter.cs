@@ -5344,7 +5344,6 @@ namespace Internal.IL
             if(!_leaveTargets.Contains(target)) _leaveTargets.Add(target);
         }
 
-
         class AddressCacheContext
         {
             internal LLVMBuilderRef PrologBuilder;
