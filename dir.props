@@ -6,6 +6,7 @@
   -->
   <PropertyGroup>
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
+    <MajorVersion>5</MajorVersion>
   </PropertyGroup>
 
   <!-- Initialize the basic BuildOS, BuildType, BuildConfig from build script, if present -->
