@@ -71,7 +71,8 @@ namespace Internal.IL
         private readonly Dictionary<IntPtr, LLVMBasicBlockRef> _funcletUnreachableBlocks = new Dictionary<IntPtr, LLVMBasicBlockRef>();
         private readonly Dictionary<IntPtr, LLVMBasicBlockRef> _funcletResumeBlocks = new Dictionary<IntPtr, LLVMBasicBlockRef>();
         private readonly EHInfoNode _ehInfoNode;
-        
+        private AddressCacheContext _funcletAddrCacheCtx;
+
         /// <summary>
         /// Stack of values pushed onto the IL stack: locals, arguments, values, function pointer, ...
         /// </summary>
@@ -232,13 +233,28 @@ namespace Internal.IL
         private void GenerateProlog()
         {
             // Avoid appearing to be in any exception regions
-            _currentOffset = -1; 
+            _currentOffset = -1;
 
+            LLVMBuilderRef prologBuilder = Context.CreateBuilder();
             LLVMBasicBlockRef prologBlock = _llvmFunction.AppendBasicBlock("Prolog");
-            _builder.PositionAtEnd(prologBlock);
-
+            prologBuilder.PositionAtEnd(prologBlock);
+            // Copy arguments onto the stack to allow
+            // them to be referenced by address
+            int thisOffset = 0;
+            if (!_signature.IsStatic)
+            {
+                thisOffset = 1;
+            }
+            _funcletAddrCacheCtx = new AddressCacheContext
+            {
+                // sparsely populated, args on LLVM stack not in here
+                ArgAddresses = new LLVMValueRef[thisOffset + _signature.Length],
+                LocalAddresses = new LLVMValueRef[_locals.Length],
+                TempAddresses = new List<LLVMValueRef>(),
+                PrologBuilder = prologBuilder
+            };
             // Allocate slots to store exception being dispatched and generic context if present
-            if(_exceptionRegions.Length > 0)
+            if (_exceptionRegions.Length > 0)
             {
                 _spilledExpressions.Add(new SpilledExpressionEntry(StackValueKind.ObjRef, "ExceptionSlot", GetWellKnownType(WellKnownType.Object), 0, this));
                 // and a slot for the generic context if present
@@ -247,17 +263,10 @@ namespace Internal.IL
                     var genCtx = new SpilledExpressionEntry(StackValueKind.ObjRef, "GenericCtxSlot", GetWellKnownType(WellKnownType.IntPtr), 1, this);
                     _spilledExpressions.Add(genCtx);
                     // put the generic context in the slot for reference by funclets
-                    var addressValue = CastIfNecessary(_builder, LoadVarAddress(genCtx.LocalIndex, LocalVarKind.Temp, out TypeDesc unused, _builder), LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0));
-                    _builder.BuildStore(_llvmFunction.GetParam(GetHiddenContextParamNo()), addressValue);
+                    var addressValue = CastIfNecessary(prologBuilder, LoadVarAddress(genCtx.LocalIndex, LocalVarKind.Temp, _funcletAddrCacheCtx, out TypeDesc unused, prologBuilder), 
+                        LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0));
+                    prologBuilder.BuildStore(_llvmFunction.GetParam(GetHiddenContextParamNo()), addressValue);
                 }
-            }
-
-            // Copy arguments onto the stack to allow
-            // them to be referenced by address
-            int thisOffset = 0;
-            if (!_signature.IsStatic)
-            {
-                thisOffset = 1;
             }
 
             // Keep track of where we are in the llvm signature, starting after the
@@ -298,15 +307,15 @@ namespace Internal.IL
                         }
                         argName += $"arg{argOffset}_";
 
-                        storageAddr = _builder.BuildAlloca(GetLLVMTypeForTypeDesc(_signature[i]), argName);
+                        storageAddr = prologBuilder.BuildAlloca(GetLLVMTypeForTypeDesc(_signature[i]), argName);
                         _argSlots[i] = storageAddr;
                     }
                     else
                     {
-                        storageAddr = CastIfNecessary(LoadVarAddress(argOffset, LocalVarKind.Argument, out _), LLVMTypeRef.CreatePointer(argValue.TypeOf, 0));
+                        storageAddr = CastIfNecessary(prologBuilder, LoadVarAddress(argOffset, LocalVarKind.Argument, _funcletAddrCacheCtx, out _, prologBuilder), LLVMTypeRef.CreatePointer(argValue.TypeOf, 0));
                     }
 
-                    _builder.BuildStore(argValue, storageAddr);
+                    prologBuilder.BuildStore(argValue, storageAddr);
                     signatureIndex++;
                 }
             }
@@ -337,7 +346,7 @@ namespace Internal.IL
 
                     localName += $"local{i}_";
 
-                    LLVMValueRef localStackSlot = _builder.BuildAlloca(GetLLVMTypeForTypeDesc(_locals[i].Type), localName);
+                    LLVMValueRef localStackSlot = prologBuilder.BuildAlloca(GetLLVMTypeForTypeDesc(_locals[i].Type), localName);
                     _localSlots[i] = localStackSlot;
                 }
             }
@@ -346,7 +355,7 @@ namespace Internal.IL
             {
                 for (int i = 0; i < _locals.Length; i++)
                 {
-                    LLVMValueRef localAddr = LoadVarAddress(i, LocalVarKind.Local, out TypeDesc localType);
+                    LLVMValueRef localAddr = LoadVarAddress(i, LocalVarKind.Local, _funcletAddrCacheCtx, out TypeDesc localType, prologBuilder);
                     if (CanStoreVariableOnStack(localType))
                     {
                         LLVMTypeRef llvmType = GetLLVMTypeForTypeDesc(localType);
@@ -356,23 +365,23 @@ namespace Internal.IL
                             case LLVMTypeKind.LLVMIntegerTypeKind:
                                 if (llvmType.Equals(LLVMTypeRef.Int1))
                                 {
-                                    _builder.BuildStore(BuildConstInt1(0), localAddr);
+                                    prologBuilder.BuildStore(BuildConstInt1(0), localAddr);
                                 }
                                 else if (llvmType.Equals(LLVMTypeRef.Int8))
                                 {
-                                    _builder.BuildStore(BuildConstInt8(0), localAddr);
+                                    prologBuilder.BuildStore(BuildConstInt8(0), localAddr);
                                 }
                                 else if (llvmType.Equals(LLVMTypeRef.Int16))
                                 {
-                                    _builder.BuildStore(BuildConstInt16(0), localAddr);
+                                    prologBuilder.BuildStore(BuildConstInt16(0), localAddr);
                                 }
                                 else if (llvmType.Equals(LLVMTypeRef.Int32))
                                 {
-                                    _builder.BuildStore(BuildConstInt32(0), localAddr);
+                                    prologBuilder.BuildStore(BuildConstInt32(0), localAddr);
                                 }
                                 else if (llvmType.Equals(LLVMTypeRef.Int64))
                                 {
-                                    _builder.BuildStore(BuildConstInt64(0), localAddr);
+                                    prologBuilder.BuildStore(BuildConstInt64(0), localAddr);
                                 }
                                 else
                                 {
@@ -381,19 +390,19 @@ namespace Internal.IL
                                 break;
 
                             case LLVMTypeKind.LLVMPointerTypeKind:
-                                _builder.BuildStore(LLVMValueRef.CreateConstPointerNull(llvmType), localAddr);
+                                prologBuilder.BuildStore(LLVMValueRef.CreateConstPointerNull(llvmType), localAddr);
                                 break;
 
                             default:
-                                LLVMValueRef castAddr = _builder.BuildPointerCast(localAddr, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), $"cast_local{i}_");
-                                ImportCallMemset(castAddr, 0, localType.GetElementSize().AsInt);
+                                LLVMValueRef castAddr = prologBuilder.BuildPointerCast(localAddr, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), $"cast_local{i}_");
+                                ImportCallMemset(castAddr, 0, localType.GetElementSize().AsInt, prologBuilder);
                                 break;
                         }
                     }
                     else
                     {
-                        LLVMValueRef castAddr = _builder.BuildPointerCast(localAddr, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), $"cast_local{i}_");
-                        ImportCallMemset(castAddr, 0, localType.GetElementSize().AsInt);
+                        LLVMValueRef castAddr = prologBuilder.BuildPointerCast(localAddr, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), $"cast_local{i}_");
+                        ImportCallMemset(castAddr, 0, localType.GetElementSize().AsInt, prologBuilder);
                     }
                 }
             }
@@ -402,11 +411,12 @@ namespace Internal.IL
                 && (!_method.IsStaticConstructor && _method.Signature.IsStatic || _method.IsConstructor || (_thisType.IsValueType && !_method.Signature.IsStatic))
                 && _compilation.TypeSystemContext.HasLazyStaticConstructor(metadataType))
             {
-                TriggerCctor(metadataType);
+                TriggerCctor(metadataType, prologBuilder);
             }
 
             LLVMBasicBlockRef block0 = GetLLVMBasicBlockForBlock(_basicBlocks[0]);
-            _builder.BuildBr(block0);
+            prologBuilder.PositionBefore(prologBuilder.BuildBr(block0));
+            _builder.PositionAtEnd(block0);
         }
 
         private LLVMValueRef CreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParameter)
@@ -464,16 +474,17 @@ namespace Internal.IL
             return funclet;
         }
 
-        private void ImportCallMemset(LLVMValueRef targetPointer, byte value, int length)
+        private void ImportCallMemset(LLVMValueRef targetPointer, byte value, int length, LLVMBuilderRef builder)
         {
             LLVMValueRef objectSizeValue = BuildConstInt32(length);
-            ImportCallMemset(targetPointer, value, objectSizeValue);
+            ImportCallMemset(targetPointer, value, objectSizeValue, builder);
         }
 
-        private void ImportCallMemset(LLVMValueRef targetPointer, byte value, LLVMValueRef length)
+        private void ImportCallMemset(LLVMValueRef targetPointer, byte value, LLVMValueRef length, LLVMBuilderRef builder = default(LLVMBuilderRef))
         {
+            if (builder.Handle == IntPtr.Zero) builder = _builder;
             var memsetSignature = LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), LLVMTypeRef.Int8, LLVMTypeRef.Int32, LLVMTypeRef.Int1 }, false);
-            _builder.BuildCall(GetOrCreateLLVMFunction("llvm.memset.p0i8.i32", memsetSignature), new LLVMValueRef[] { targetPointer, BuildConstInt8(value), length, BuildConstInt1(0) }, String.Empty);
+            builder.BuildCall(GetOrCreateLLVMFunction("llvm.memset.p0i8.i32", memsetSignature), new LLVMValueRef[] { targetPointer, BuildConstInt8(value), length, BuildConstInt1(0) }, String.Empty);
         }
 
         private void PushLoadExpression(StackValueKind kind, string name, LLVMValueRef rawLLVMValue, TypeDesc type)
@@ -617,10 +628,10 @@ namespace Internal.IL
             return null;
         }
 
-        private bool IsFinallyBlock(BasicBlock block)
+        private ILExceptionRegionKind? GetHandlerRegionKind(BasicBlock block)
         {
             ExceptionRegion ehRegion = GetHandlerRegion(block.StartOffset);
-            return ehRegion != null && ehRegion.ILRegion.Kind == ILExceptionRegionKind.Finally;
+            return ehRegion?.ILRegion.Kind;
         }
 
         private void StartImportingBasicBlock(BasicBlock basicBlock)
@@ -636,8 +647,8 @@ namespace Internal.IL
                     _stack.Push(entryStack[i].Duplicate(_builder));
                 }
             }
-
-            if (basicBlock.FilterStart || IsFinallyBlock(basicBlock))
+            ILExceptionRegionKind? handlerKind = GetHandlerRegionKind(basicBlock);
+            if (basicBlock.FilterStart || handlerKind == ILExceptionRegionKind.Finally)
             {
                 // need to pad out the spilled slots in case the filter or finally tries to allocate some temp variables on the shadow stack.  As some spaces are used in the call to FindFirstPassHandlerWasm/InvokeSecondPassWasm
                 // and inside FindFirstPassHandlerWasm/InvokeSecondPassWasm we need to leave space for them.
@@ -649,9 +660,13 @@ namespace Internal.IL
                 NewSpillSlot(new ExpressionEntry(StackValueKind.Int32, "padding", LLVMValueRef.CreateConstNull(LLVMTypeRef.Int32)));
             }
 
+            _curBasicBlock = GetLLVMBasicBlockForBlock(basicBlock);
+            _currentFunclet = GetFuncletForBlock(basicBlock);
+
             // Push an exception object for catch and filter
             if (basicBlock.HandlerStart || basicBlock.FilterStart)
             {
+                _funcletAddrCacheCtx = null;
                 foreach (ExceptionRegion ehRegion in _exceptionRegions)
                 {
                     if (ehRegion.ILRegion.HandlerOffset == basicBlock.StartOffset ||
@@ -666,9 +681,6 @@ namespace Internal.IL
                     }
                 }
             }
-
-            _curBasicBlock = GetLLVMBasicBlockForBlock(basicBlock);
-            _currentFunclet = GetFuncletForBlock(basicBlock);
 
             if (basicBlock.TryStart)
             {
@@ -894,10 +906,14 @@ namespace Internal.IL
 
         private LLVMValueRef LoadVarAddress(int index, LocalVarKind kind, out TypeDesc type, LLVMBuilderRef builder = default(LLVMBuilderRef))
         {
-            int varOffset;
-            if (builder.Handle == IntPtr.Zero)
-                builder = _builder;
+            return LoadVarAddress(index, kind, _funcletAddrCacheCtx, out type, builder);
+        }
 
+        private LLVMValueRef LoadVarAddress(int index, LocalVarKind kind, AddressCacheContext addressCacheContext, out TypeDesc type, LLVMBuilderRef builder = default(LLVMBuilderRef))
+        {
+            if (builder.Handle == IntPtr.Zero) builder = _builder;
+
+            int varOffset;
             if (kind == LocalVarKind.Argument)
             {
                 int varCountBase = 0;
@@ -905,7 +921,22 @@ namespace Internal.IL
                 {
                     varCountBase = 1;
                 }
-
+                if (addressCacheContext != null && addressCacheContext.ArgAddresses[index] != null)
+                {
+                    if (!_signature.IsStatic && index == 0)
+                    {
+                        type = _thisType;
+                        if (type.IsValueType)
+                        {
+                            type = type.MakeByRefType();
+                        }
+                    }
+                    else
+                    {
+                        type = _signature[index - varCountBase];
+                    }
+                    return addressCacheContext.ArgAddresses[index];
+                }
                 varOffset = GetArgOffsetAtIndex(index, out int realArgIndex);
 
                 if (!_signature.IsStatic && index == 0)
@@ -930,8 +961,12 @@ namespace Internal.IL
             }
             else if (kind == LocalVarKind.Local)
             {
-                varOffset = GetLocalOffsetAtIndex(index);
                 type = _locals[index].Type;
+                if (addressCacheContext != null && addressCacheContext.LocalAddresses[index] != null)
+                {
+                    return addressCacheContext.LocalAddresses[index];
+                }
+                varOffset = GetLocalOffsetAtIndex(index);
                 if (varOffset == -1)
                 {
                     Debug.Assert(_localSlots[index].Handle != IntPtr.Zero);
@@ -941,14 +976,45 @@ namespace Internal.IL
             }
             else
             {
-                varOffset = GetSpillOffsetAtIndex(index, GetTotalRealLocalOffset()) + GetTotalParameterOffset();
                 type = _spilledExpressions[index].Type;
+                if (addressCacheContext != null && addressCacheContext.TempAddresses.Count > index && addressCacheContext.TempAddresses[index] != null)
+                {
+                    return addressCacheContext.TempAddresses[index];
+                }
+                varOffset = GetSpillOffsetAtIndex(index, GetTotalRealLocalOffset()) + GetTotalParameterOffset();
             }
 
-            return builder.BuildGEP(_currentFunclet.GetParam(0),
-                new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)(varOffset), false) },
-                $"{kind}{index}_");
-
+            LLVMValueRef addr;
+            if (addressCacheContext != null)
+            {
+                addr = addressCacheContext.PrologBuilder.BuildGEP(_currentFunclet.GetParam(0),
+                    new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)(varOffset), false) },
+                    $"{kind}{index}_");
+                if (kind == LocalVarKind.Argument)
+                {
+                    addressCacheContext.ArgAddresses[index] = addr;
+                }
+                else if (kind == LocalVarKind.Local)
+                {
+                    addressCacheContext.LocalAddresses[index] = addr;
+                }
+                else if (kind == LocalVarKind.Temp)
+                {
+                    if (addressCacheContext.TempAddresses.Count <= index)
+                    {
+                        var toAdd = index - addressCacheContext.TempAddresses.Count + 1;
+                        for (var i = 0; i < toAdd; i++) addressCacheContext.TempAddresses.Add(null);
+                    }
+                    addressCacheContext.TempAddresses[index] = addr;
+                }
+            }
+            else
+            {
+                addr = builder.BuildGEP(_currentFunclet.GetParam(0),
+                    new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)(varOffset), false) },
+                    $"{kind}{index}_");
+            }
+            return addr;
         }
 
         private StackValueKind GetStackValueKind(TypeDesc type)
@@ -2866,7 +2932,9 @@ namespace Internal.IL
             var handlerFuncPtr = landingPadBuilder.BuildAlloca(LLVMTypeRef.Int32, "handlerFuncPtr");
 
             // put the exception in the spilled slot, exception slot is at 0
-            var addressValue = CastIfNecessary(landingPadBuilder, LoadVarAddress(_spilledExpressions[0].LocalIndex, LocalVarKind.Temp, out TypeDesc unused, landingPadBuilder), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0));
+            var addressValue = CastIfNecessary(landingPadBuilder, LoadVarAddress(_spilledExpressions[0].LocalIndex,
+                    LocalVarKind.Temp, out TypeDesc unused, builder:landingPadBuilder),
+                LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0));
             landingPadBuilder.BuildStore(managedPtr, addressValue);
 
             var arguments = new StackEntry[] { new ExpressionEntry(StackValueKind.ObjRef, "managedPtr", managedPtr),
@@ -4529,18 +4597,19 @@ namespace Internal.IL
         /// <summary>
         /// Triggers a static constructor check and call for types that have them
         /// </summary>
-        private void TriggerCctor(MetadataType type)
+        private void TriggerCctor(MetadataType type, LLVMBuilderRef builder = default)
         {
+            if (builder.Handle == IntPtr.Zero) builder = _builder;
             if (type.IsCanonicalSubtype(CanonicalFormKind.Specific)) return; // TODO - what to do here?
             ISymbolNode classConstructionContextSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
             _dependencies.Add(classConstructionContextSymbol);
-            LLVMValueRef firstNonGcStatic = LoadAddressOfSymbolNode(classConstructionContextSymbol);
+            LLVMValueRef firstNonGcStatic = LoadAddressOfSymbolNode(classConstructionContextSymbol, builder);
 
             // TODO: Codegen could check whether it has already run rather than calling into EnsureClassConstructorRun
             // but we'd have to figure out how to manage the additional basic blocks
-            LLVMValueRef classConstructionContextPtr = _builder.BuildGEP(firstNonGcStatic, new LLVMValueRef[] { BuildConstInt32(-2) }, "classConstructionContext");
+            LLVMValueRef classConstructionContextPtr = builder.BuildGEP(firstNonGcStatic, new LLVMValueRef[] { BuildConstInt32(-2) }, "classConstructionContext");
             StackEntry classConstructionContext = new AddressExpressionEntry(StackValueKind.NativeInt, "classConstructionContext", classConstructionContextPtr, GetWellKnownType(WellKnownType.IntPtr));
-            CallRuntime("System.Runtime.CompilerServices", _compilation.TypeSystemContext, ClassConstructorRunner, "EnsureClassConstructorRun", new StackEntry[] { classConstructionContext });
+            CallRuntime("System.Runtime.CompilerServices", _compilation.TypeSystemContext, ClassConstructorRunner, "EnsureClassConstructorRun", new StackEntry[] { classConstructionContext }, builder: builder);
         }
 
         /// <summary>
@@ -4659,7 +4728,7 @@ namespace Internal.IL
             var llvmType = GetLLVMTypeForTypeDesc(type);
             if (llvmType.Kind == LLVMTypeKind.LLVMStructTypeKind)
             {
-                ImportCallMemset(valueEntry.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder), 0, type.GetElementSize().AsInt);
+                ImportCallMemset(valueEntry.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder), 0, type.GetElementSize().AsInt, _builder);
             }
             else if (llvmType.Kind == LLVMTypeKind.LLVMIntegerTypeKind)
                 _builder.BuildStore(LLVMValueRef.CreateConstInt(llvmType, 0, false), valueEntry.ValueAsType(LLVMTypeRef.CreatePointer(llvmType, 0), _builder));
@@ -4788,7 +4857,7 @@ namespace Internal.IL
             }
             // if the function has exception regions, the generic context is stored in a local, otherwise get it from the parameters
             return _exceptionRegions.Length > 0
-                ? _builder.BuildLoad(CastIfNecessary(_builder, LoadVarAddress(1, LocalVarKind.Temp, out TypeDesc unused, _builder),  LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), "ctx"))
+                ? _builder.BuildLoad(CastIfNecessary(_builder, LoadVarAddress(1, LocalVarKind.Temp, out TypeDesc unused),  LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), "ctx"))
                 : CastIfNecessary(_builder, _currentFunclet.GetParam(GetHiddenContextParamNo() /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "HiddenArg");
         }
 
@@ -5273,6 +5342,14 @@ namespace Internal.IL
                 _leaveTargets = new List<int>();
             }
             if(!_leaveTargets.Contains(target)) _leaveTargets.Add(target);
+        }
+
+        class AddressCacheContext
+        {
+            internal LLVMBuilderRef PrologBuilder;
+            internal LLVMValueRef[] ArgAddresses;
+            internal LLVMValueRef[] LocalAddresses;
+            internal List<LLVMValueRef> TempAddresses;
         }
     }
 }
