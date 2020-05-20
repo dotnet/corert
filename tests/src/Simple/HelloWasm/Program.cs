@@ -1899,13 +1899,26 @@ internal static class Program
         try
         {
             var f = c.F; //field access
-            PrintLine("NRE Field access failed");
+            PrintLine("NRE Field load access failed");
             success = false;
         }
         catch(NullReferenceException)
         {
         }
         catch(Exception)
+        {
+            success = false;
+        }
+        try
+        {
+            c.F = 1;
+            PrintLine("NRE Field store access failed");
+            success = false;
+        }
+        catch (NullReferenceException)
+        {
+        }
+        catch (Exception)
         {
             success = false;
         }
