@@ -3928,7 +3928,7 @@ namespace Internal.IL
                 if (signed)
                 {
                     builder.PositionAtEnd(elseBlock);
-                    // a - b overflows when b is -ve if  a > max + b
+                    // a - b overflows when b is negative if  a > max + b
                     BuildOverflowCheck(builder, rightOp, LLVMIntPredicate.LLVMIntSGT, maxValue, leftOp, ovfBlock, noOvfBlock, LLVMOpcode.LLVMAdd);
                 }
                 builder.PositionAtEnd(opBlock);
