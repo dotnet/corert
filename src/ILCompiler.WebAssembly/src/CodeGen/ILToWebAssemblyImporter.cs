@@ -1704,28 +1704,24 @@ namespace Internal.IL
             else
                 function = throwing ? "CheckCastClass" : "IsInstanceOfClass";
 
-            StackEntry[] arguments;
+            LLVMValueRef typeRef;
             if (type.IsRuntimeDeterminedSubtype)
             {
-                //TODO refactor argument creation with else below
-                arguments = new StackEntry[]
-                            {
-                                new ExpressionEntry(StackValueKind.ValueType, "eeType", CallGenericHelper(ReadyToRunHelperId.TypeHandle, type),
-                                    GetEETypePtrTypeDesc()),
-                                _stack.Pop()
-                            };
+                typeRef = CallGenericHelper(ReadyToRunHelperId.TypeHandleForCasting, type);
             }
             else
             {
-                arguments = new StackEntry[]
-                                {
-                                    new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(type, true),
-                                        GetEETypePtrTypeDesc()),
-                                    _stack.Pop()
-                                };
+                ISymbolNode lookup = _compilation.ComputeConstantLookup(ReadyToRunHelperId.TypeHandleForCasting, type);
+                _dependencies.Add(lookup);
+                typeRef = LoadAddressOfSymbolNode(lookup);
             }
 
-            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function, arguments, GetWellKnownType(WellKnownType.Object)));
+            _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function,
+                new StackEntry[]
+                {
+                    new ExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, GetEETypePtrTypeDesc()),
+                    _stack.Pop()
+                }, GetWellKnownType(WellKnownType.Object)));
         }
 
         LLVMValueRef CallGenericHelper(ReadyToRunHelperId helperId, object helperArg)
@@ -4631,6 +4627,8 @@ namespace Internal.IL
         ISymbolNode GetGenericLookupHelperAndAddReference(ReadyToRunHelperId helperId, object helperArg, out LLVMValueRef helper, IEnumerable<LLVMTypeRef> additionalArgs = null)
         {
             ISymbolNode node;
+            GenericDictionaryLookup lookup = _compilation.ComputeGenericLookup(_method, helperId, helperArg);
+
             var retType = helperId == ReadyToRunHelperId.DelegateCtor
                 ? LLVMTypeRef.Void
                 : LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
@@ -4642,14 +4640,14 @@ namespace Internal.IL
             if (additionalArgs != null) helperArgs.AddRange(additionalArgs);
             if (_method.RequiresInstMethodDescArg())
             {
-                node = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(helperId, helperArg, _method);
+                node = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(lookup.HelperId, lookup.HelperObject, _method);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
                     LLVMTypeRef.CreateFunction(retType, helperArgs.ToArray(), false));
             }
             else
             {
                 Debug.Assert(_method.RequiresInstMethodTableArg() || _method.AcquiresInstMethodTableFromThis());
-                node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(helperId, helperArg, _method.OwningType);
+                node = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(lookup.HelperId, lookup.HelperObject, _method.OwningType);
                 helper = GetOrCreateLLVMFunction(node.GetMangledName(_compilation.NameMangler),
                     LLVMTypeRef.CreateFunction(retType, helperArgs.ToArray(), false));
             }
