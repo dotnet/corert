@@ -38,9 +38,9 @@ class Program
         TestDevirtualization.Run();
         TestGenericInlining.Run();
 #if !CODEGEN_CPP 
-#if !CODEGEN_WASM
         TestNullableCasting.Run();
         TestVariantCasting.Run();
+#if !CODEGEN_WASM
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
 #endif
