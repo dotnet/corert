@@ -12,7 +12,7 @@ PowerShell also needs to be available from the PATH environment variable (it's t
 # Ubuntu (16.04+)
 
 ```sh
-sudo apt-get install cmake clang libicu-dev uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev libtinfo5
+sudo apt-get install llvm cmake clang libicu-dev uuid-dev libcurl4-openssl-dev zlib1g-dev libkrb5-dev libtinfo5
 ```
 
 # macOS (10.12+)
