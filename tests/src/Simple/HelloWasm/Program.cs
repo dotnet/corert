@@ -2013,7 +2013,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i64 addition of +ve number");
+            FailTest("exception not thrown for signed i64 addition of positive number");
             return;
         }
         thrown = false;
@@ -2029,7 +2029,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i64 addition of -ve number");
+            FailTest("exception not thrown for signed i64 addition of negative number");
             return;
         }
         EndTest(true);
@@ -2059,7 +2059,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i32 addition of +ve number");
+            FailTest("exception not thrown for signed i32 addition of positive number");
             return;
         }
 
@@ -2076,7 +2076,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i32 addition of -ve number");
+            FailTest("exception not thrown for signed i32 addition of negative number");
             return;
         }
         PassTest();
@@ -2106,7 +2106,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for unsigned i32 addition of +ve number");
+            FailTest("exception not thrown for unsigned i32 addition of positive number");
             return;
         }
         PassTest();
@@ -2136,7 +2136,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for unsigned i64 addition of +ve number");
+            FailTest("exception not thrown for unsigned i64 addition of positive number");
             return;
         }
         PassTest();
@@ -2159,7 +2159,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i64 substraction of +ve number");
+            FailTest("exception not thrown for signed i64 substraction of positive number");
             return;
         }
         thrown = false;
@@ -2175,7 +2175,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i64 addition of -ve number");
+            FailTest("exception not thrown for signed i64 addition of negative number");
             return;
         }
         EndTest(true);
@@ -2205,7 +2205,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i32 subtraction of +ve number");
+            FailTest("exception not thrown for signed i32 subtraction of positive number");
             return;
         }
 
@@ -2222,7 +2222,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i32 subtraction of -ve number");
+            FailTest("exception not thrown for signed i32 subtraction of negative number");
             return;
         }
         PassTest();
@@ -2252,7 +2252,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for unsigned i32 subtraction of +ve number");
+            FailTest("exception not thrown for unsigned i32 subtraction of positive number");
             return;
         }
         PassTest();
@@ -2282,7 +2282,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for unsigned i64 addition of +ve number");
+            FailTest("exception not thrown for unsigned i64 addition of positive number");
             return;
         }
         PassTest();
