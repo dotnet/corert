@@ -1985,6 +1985,15 @@ internal static class Program
         TestUnsignedIntAddOvf();
 
         TestUnsignedLongAddOvf();
+
+        TestSignedIntSubOvf();
+
+        TestSignedLongSubOvf();
+
+        TestUnsignedIntSubOvf();
+
+        TestUnsignedLongSubOvf();
+
     }
 
     private static void TestSignedLongAddOvf()
@@ -2004,7 +2013,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i64 addition of +ve number");
+            FailTest("exception not thrown for signed i64 addition of positive number");
             return;
         }
         thrown = false;
@@ -2020,7 +2029,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i64 addition of -ve number");
+            FailTest("exception not thrown for signed i64 addition of negative number");
             return;
         }
         EndTest(true);
@@ -2050,7 +2059,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i32 addition of +ve number");
+            FailTest("exception not thrown for signed i32 addition of positive number");
             return;
         }
 
@@ -2067,7 +2076,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i32 addition of -ve number");
+            FailTest("exception not thrown for signed i32 addition of negative number");
             return;
         }
         PassTest();
@@ -2097,7 +2106,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for unsigned i32 addition of +ve number");
+            FailTest("exception not thrown for unsigned i32 addition of positive number");
             return;
         }
         PassTest();
@@ -2127,7 +2136,153 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for unsigned i64 addition of +ve number");
+            FailTest("exception not thrown for unsigned i64 addition of positive number");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestSignedLongSubOvf()
+    {
+        StartTest("Test long sub overflows");
+        bool thrown;
+        long op64l = -2;
+        long op64r = long.MaxValue;
+        thrown = false;
+        try
+        {
+            long res = checked(op64l - op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i64 substraction of positive number");
+            return;
+        }
+        thrown = false;
+        op64l = long.MaxValue; // subtract negative to overflow above the MaxValue
+        op64r = -1;
+        try
+        {
+            long res = checked(op64l - op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i64 addition of negative number");
+            return;
+        }
+        EndTest(true);
+    }
+
+    private static void TestSignedIntSubOvf()
+    {
+        StartTest("Test int sub overflows");
+        bool thrown;
+        int op32l = 5;
+        int op32r = 2;
+        if (checked(op32l - op32r) != 3)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op32l = -2;
+        op32r = int.MaxValue;
+        thrown = false;
+        try
+        {
+            int res = checked(op32l - op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i32 subtraction of positive number");
+            return;
+        }
+
+        thrown = false;
+        op32l = int.MaxValue; // subtract negative to overflow above the MaxValue
+        op32r = -1;
+        try
+        {
+            int res = checked(op32l - op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i32 subtraction of negative number");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestUnsignedIntSubOvf()
+    {
+        StartTest("Test uint sub overflows");
+        bool thrown;
+        uint op32l = 5;
+        uint op32r = 2;
+        if (checked(op32l - op32r) != 3)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op32l = 0;
+        op32r = 1;
+        thrown = false;
+        try
+        {
+            uint res = checked(op32l - op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for unsigned i32 subtraction of positive number");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestUnsignedLongSubOvf()
+    {
+        StartTest("Test ulong sub overflows");
+        bool thrown;
+        ulong op64l = 5;
+        ulong op64r = 2;
+        if (checked(op64l - op64r) != 3)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op64l = 0;
+        op64r = 1;
+        thrown = false;
+        try
+        {
+            ulong res = checked(op64l - op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for unsigned i64 addition of positive number");
             return;
         }
         PassTest();

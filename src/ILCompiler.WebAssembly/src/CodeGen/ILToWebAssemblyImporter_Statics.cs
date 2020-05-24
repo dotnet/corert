@@ -120,10 +120,14 @@ namespace Internal.IL
         static LLVMValueRef NullRefFunction = default(LLVMValueRef);
         static LLVMValueRef CkFinite32Function = default(LLVMValueRef);
         static LLVMValueRef CkFinite64Function = default(LLVMValueRef);
-        static LLVMValueRef Ovf32Function = default(LLVMValueRef);
-        static LLVMValueRef OvfUn32Function = default(LLVMValueRef);
-        static LLVMValueRef Ovf64Function = default(LLVMValueRef);
-        static LLVMValueRef OvfUn64Function = default(LLVMValueRef);
+        static LLVMValueRef AddOvf32Function = default(LLVMValueRef);
+        static LLVMValueRef AddOvfUn32Function = default(LLVMValueRef);
+        static LLVMValueRef AddOvf64Function = default(LLVMValueRef);
+        static LLVMValueRef AddOvfUn64Function = default(LLVMValueRef);
+        static LLVMValueRef SubOvf32Function = default(LLVMValueRef);
+        static LLVMValueRef SubOvfUn32Function = default(LLVMValueRef);
+        static LLVMValueRef SubOvf64Function = default(LLVMValueRef);
+        static LLVMValueRef SubOvfUn64Function = default(LLVMValueRef);
         public static LLVMValueRef GxxPersonality = default(LLVMValueRef);
         public static LLVMTypeRef GxxPersonalityType = default(LLVMTypeRef);
 
