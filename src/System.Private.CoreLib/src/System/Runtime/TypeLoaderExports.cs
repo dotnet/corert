@@ -161,10 +161,10 @@ namespace System.Runtime
 
         public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
         {
-            Entry entry = LookupInCache(s_cache, delegateObj.m_pEEType, new IntPtr(whichThunk));
+            Entry entry = LookupInCache(s_cache, (IntPtr)delegateObj.EEType, new IntPtr(whichThunk));
             if (entry == null)
             {
-                entry = CacheMiss(delegateObj.m_pEEType, new IntPtr(whichThunk),
+                entry = CacheMiss((IntPtr)delegateObj.EEType, new IntPtr(whichThunk),
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => RuntimeAugments.TypeLoaderCallbacks.GetDelegateThunk((Delegate)contextObject, (int)signature),
                     delegateObj);
@@ -174,10 +174,10 @@ namespace System.Runtime
 
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
-            Entry entry = LookupInCache(s_cache, obj.m_pEEType, *(IntPtr*)&slot);
+            Entry entry = LookupInCache(s_cache, (IntPtr)obj.EEType, *(IntPtr*)&slot);
             if (entry == null)
             {
-                entry = CacheMiss(obj.m_pEEType, *(IntPtr*)&slot,
+                entry = CacheMiss((IntPtr)obj.EEType, *(IntPtr*)&slot,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
             }
@@ -185,12 +185,12 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static IntPtr OpenInstanceMethodLookup(IntPtr openResolver, object obj)
+        internal static unsafe IntPtr OpenInstanceMethodLookup(IntPtr openResolver, object obj)
         {
-            Entry entry = LookupInCache(s_cache, obj.m_pEEType, openResolver);
+            Entry entry = LookupInCache(s_cache, (IntPtr)obj.EEType, openResolver);
             if (entry == null)
             {
-                entry = CacheMiss(obj.m_pEEType, openResolver,
+                entry = CacheMiss((IntPtr)obj.EEType, openResolver,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => Internal.Runtime.CompilerServices.OpenMethodResolver.ResolveMethodWorker(signature, contextObject),
                     obj);
