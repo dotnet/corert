@@ -43,6 +43,7 @@ namespace Internal.IL
 
         public LLVMModuleRef Module { get; }
         public static LLVMContextRef Context { get; private set; }
+        private static LLVMTypeRef s_pEETypeTypeRef;
         private static Dictionary<TypeDesc, LLVMTypeRef> LlvmStructs { get; } = new Dictionary<TypeDesc, LLVMTypeRef>();
         private readonly MethodDesc _method;
         private readonly MethodIL _methodIL;
@@ -264,7 +265,7 @@ namespace Internal.IL
                     _spilledExpressions.Add(genCtx);
                     // put the generic context in the slot for reference by funclets
                     var addressValue = CastIfNecessary(prologBuilder, LoadVarAddress(genCtx.LocalIndex, LocalVarKind.Temp, _funcletAddrCacheCtx, out TypeDesc unused, prologBuilder), 
-                        LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0));
+                        LLVMTypeRef.CreatePointer(GetPtrEETypeTypeRef(), 0));
                     prologBuilder.BuildStore(_llvmFunction.GetParam(GetHiddenContextParamNo()), addressValue);
                 }
             }
@@ -417,6 +418,15 @@ namespace Internal.IL
             LLVMBasicBlockRef block0 = GetLLVMBasicBlockForBlock(_basicBlocks[0]);
             prologBuilder.PositionBefore(prologBuilder.BuildBr(block0));
             _builder.PositionAtEnd(block0);
+        }
+
+        private LLVMTypeRef GetPtrEETypeTypeRef()
+        {
+            if (s_pEETypeTypeRef.Handle == IntPtr.Zero)
+            {
+                s_pEETypeTypeRef = LLVMTypeRef.CreatePointer(GetLLVMTypeForTypeDesc(_method.Context.SystemModule.GetKnownType("Internal.Runtime", "EEType")), 0);
+            }
+            return s_pEETypeTypeRef;
         }
 
         private LLVMValueRef CreateLLVMFunction(string mangledName, MethodSignature signature, bool hasHiddenParameter)
@@ -2125,7 +2135,7 @@ namespace Internal.IL
             out LLVMValueRef slotRef)
         {
             // this will only have a non-zero pointer the the GVM ptr is fat.
-            dictPtrPtrStore = _builder.BuildAlloca(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0),
+            dictPtrPtrStore = _builder.BuildAlloca(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(GetPtrEETypeTypeRef(), 0), 0),
                 "dictPtrPtrStore");
 
             _dependencies.Add(_compilation.NodeFactory.GVMDependencies(canonMethod));
@@ -2178,8 +2188,7 @@ namespace Internal.IL
             var gep = RemoveFatOffset(_builder, slotRef);
             var loadFuncPtr = _builder.BuildLoad(CastIfNecessary(_builder, gep, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0)),
                 "loadFuncPtr");
-            var dictPtrPtr = _builder.BuildGEP(CastIfNecessary(_builder, gep,
-                    LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0), "castDictPtrPtr"),
+            var dictPtrPtr = _builder.BuildGEP(CastIfNecessary(_builder, gep, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(GetPtrEETypeTypeRef(), 0), 0), "castDictPtrPtr"),
                 new [] {BuildConstInt32(1)}, "dictPtrPtr");
             _builder.BuildStore(dictPtrPtr, dictPtrPtrStore);
             _builder.BuildBr(endifBlock);
@@ -2187,7 +2196,7 @@ namespace Internal.IL
             // not fat
             _builder.PositionAtEnd(notFatBranch);
             // store null to indicate the GVM call needs no hidden param at run time
-            _builder.BuildStore(LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0)), dictPtrPtrStore);
+            _builder.BuildStore(LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(GetPtrEETypeTypeRef(), 0), 0)), dictPtrPtrStore);
             _builder.BuildBr(endifBlock);
 
             // end if
@@ -2226,7 +2235,7 @@ namespace Internal.IL
 
             if (hasHiddenParam)
             {
-                signatureTypes.Add(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)); // *EEType
+                signatureTypes.Add(GetPtrEETypeTypeRef());
             }
 
             // Intentionally skipping the 'this' pointer since it could always be a GC reference
@@ -2626,7 +2635,7 @@ namespace Internal.IL
 
             if (hiddenParam.Handle != IntPtr.Zero) 
             {
-                llvmArgs.Add(CastIfNecessary(hiddenParam, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)));
+                llvmArgs.Add(CastIfNecessary(hiddenParam, GetPtrEETypeTypeRef()));
             }
 
             // argument offset on the shadow stack
@@ -4181,10 +4190,11 @@ namespace Internal.IL
                 if (typeDesc.IsRuntimeDeterminedSubtype)
                 {
                     var hiddenParam = CallGenericHelper(ReadyToRunHelperId.TypeHandle, typeDesc);
+                    var toIntPtr = _builder.BuildBitCast(hiddenParam, GetLLVMTypeForTypeDesc(GetWellKnownType(WellKnownType.IntPtr)));  // EEType* to IntPtr
                     var handleRef = _builder.BuildCall( fn, new LLVMValueRef[]
                     {
                         GetShadowStack(),
-                        hiddenParam
+                        toIntPtr
                     }, "getHelper");
                     _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, handleRef, runtimeTypeHandleTypeDesc));
                 }
@@ -4563,11 +4573,11 @@ namespace Internal.IL
 
             var retType = helperId == ReadyToRunHelperId.DelegateCtor
                 ? LLVMTypeRef.Void
-                : LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
+                : GetPtrEETypeTypeRef();
             var helperArgs = new List<LLVMTypeRef>
             {
                 LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
-                LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0),
+                GetPtrEETypeTypeRef(),
             };
             if (additionalArgs != null) helperArgs.AddRange(additionalArgs);
             if (_method.RequiresInstMethodDescArg())
@@ -4848,15 +4858,15 @@ namespace Internal.IL
                 LLVMValueRef thisPtr;
 
                 typedAddress = CastIfNecessary(_builder, _currentFunclet.GetParam(0),
-                    LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0));
+                    LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(GetPtrEETypeTypeRef(), 0), 0));
                 thisPtr = _builder.BuildLoad( typedAddress, "loadThis");
 
                 return _builder.BuildLoad( thisPtr, "methodTablePtrRef");
             }
             // if the function has exception regions, the generic context is stored in a local, otherwise get it from the parameters
             return _exceptionRegions.Length > 0
-                ? _builder.BuildLoad(CastIfNecessary(_builder, LoadVarAddress(1, LocalVarKind.Temp, out TypeDesc unused),  LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), "ctx"))
-                : CastIfNecessary(_builder, _currentFunclet.GetParam(GetHiddenContextParamNo() /* hidden param after shadow stack and return slot if present */), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "HiddenArg");
+                ? _builder.BuildLoad(CastIfNecessary(_builder, LoadVarAddress(1, LocalVarKind.Temp, out TypeDesc unused),  LLVMTypeRef.CreatePointer(GetPtrEETypeTypeRef(), 0), "ctx"))
+                : CastIfNecessary(_builder, _currentFunclet.GetParam(GetHiddenContextParamNo() /* hidden param after shadow stack and return slot if present */), GetPtrEETypeTypeRef(), "HiddenArg");
         }
 
         uint GetHiddenContextParamNo()

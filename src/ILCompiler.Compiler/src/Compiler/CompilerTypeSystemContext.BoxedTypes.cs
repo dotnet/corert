@@ -439,6 +439,10 @@ namespace ILCompiler
                 // by the (canonical) instance method, but normally not part of the signature in IL).
                 codeStream.EmitLdArg(0);
                 codeStream.Emit(ILOpcode.ldfld, emit.NewToken(eeTypeField));
+                codeStream.Emit(ILOpcode.call, emit.NewToken(Context.SystemModule.GetKnownType("System", "IntPtr").GetMethod(
+                    "op_Explicit", 
+                    new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetPointerType(Context.GetWellKnownType(WellKnownType.Void)),
+                        new TypeDesc[] {Context.GetWellKnownType(WellKnownType.IntPtr) }))));
 
                 // Load rest of the arguments
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)
@@ -586,7 +590,7 @@ namespace ILCompiler
 
                         // Shared instance methods on generic valuetypes have a hidden parameter with the generic context.
                         // We add it to the signature so that we can refer to it from IL.
-                        parameters[0] = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType").FieldType;
+                        parameters[0] = Context.GetPointerType(Context.SystemModule.GetKnownType("Internal.Runtime", "EEType"));
                         for (int i = 0; i < _methodRepresented.Signature.Length; i++)
                             parameters[i + 1] = _methodRepresented.Signature[i];
 

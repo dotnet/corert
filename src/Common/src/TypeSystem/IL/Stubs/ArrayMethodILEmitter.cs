@@ -103,11 +103,11 @@ namespace Internal.IL.Stubs
                 else if (_method.Kind == ArrayMethodKind.AddressWithHiddenArg)
                 {
                     TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
-                    TypeDesc eetypePtrType = context.SystemModule.GetKnownType("System", "EETypePtr");
+                    TypeDesc ptrEetypeType = context.GetPointerType(context.SystemModule.GetKnownType("Internal.Runtime", "EEType"));
 
                     typeMismatchExceptionLabel = _emitter.NewCodeLabel();
 
-                    ILLocalVariable thisEEType = _emitter.NewLocal(eetypePtrType);
+                    ILLocalVariable thisEEType = _emitter.NewLocal(ptrEetypeType);
 
                     ILCodeLabel typeCheckPassedLabel = _emitter.NewCodeLabel();
 
@@ -117,7 +117,7 @@ namespace Internal.IL.Stubs
                     //     goto TypeCheckPassed;
                     codeStream.EmitLdArga(1);
                     codeStream.Emit(ILOpcode.call,
-                        _emitter.NewToken(eetypePtrType.GetKnownMethod("get_IsNull", null)));
+                        _emitter.NewToken(ptrEetypeType.GetKnownMethod("get_IsNull", null)));
                     codeStream.Emit(ILOpcode.brtrue, typeCheckPassedLabel);
 
                     // EETypePtr actualElementType = this.EETypePtr.ArrayElementType;
@@ -126,16 +126,16 @@ namespace Internal.IL.Stubs
                     codeStream.EmitStLoc(thisEEType);
                     codeStream.EmitLdLoca(thisEEType);
                     codeStream.Emit(ILOpcode.call,
-                        _emitter.NewToken(eetypePtrType.GetKnownMethod("get_ArrayElementType", null)));
+                        _emitter.NewToken(ptrEetypeType.GetKnownMethod("get_ArrayElementType", null)));
 
                     // EETypePtr expectedElementType = hiddenArg.ArrayElementType;
                     codeStream.EmitLdArga(1);
                     codeStream.Emit(ILOpcode.call,
-                        _emitter.NewToken(eetypePtrType.GetKnownMethod("get_ArrayElementType", null)));
+                        _emitter.NewToken(ptrEetypeType.GetKnownMethod("get_ArrayElementType", null)));
 
                     // if (expectedElementType != actualElementType)
                     //     ThrowHelpers.ThrowArrayTypeMismatchException();
-                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrType.GetKnownMethod("op_Equality", null)));
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(ptrEetypeType.GetKnownMethod("op_Equality", null)));
                     codeStream.Emit(ILOpcode.brfalse, typeMismatchExceptionLabel);
 
                     codeStream.EmitLabel(typeCheckPassedLabel);

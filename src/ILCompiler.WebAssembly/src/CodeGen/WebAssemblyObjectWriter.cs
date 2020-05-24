@@ -935,7 +935,8 @@ namespace ILCompiler.DependencyAnalysis
                 int pointerSize = factory.Target.PointerSize;
                 // Load the dictionary pointer from the VTable
                 int slotOffset = EETypeNode.GetVTableOffset(pointerSize) + (vtableSlot * pointerSize);
-                var slotGep = builder.BuildGEP(helperFunc.GetParam(1), new[] {LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)slotOffset, false)}, "slotGep");
+                var ctxAsI8Ptr = builder.BuildBitCast(helperFunc.GetParam(1), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0));
+                var slotGep = builder.BuildGEP(ctxAsI8Ptr, new[] {LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)slotOffset, false)}, "slotGep");
                 var slotGepPtrPtr = builder.BuildPointerCast(slotGep,
                     LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), "slotGepPtrPtr");
                 ctx = builder.BuildLoad(slotGepPtrPtr, "dictGep");
@@ -966,7 +967,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         MetadataType target = (MetadataType)node.Target;
 
-                        var ptrPtrPtr = builder.BuildBitCast(resVar, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), 0), "ptrPtrPtr");
+                        var ptrPtrPtr = builder.BuildBitCast(resVar, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(GetPtrEETypeTypeRef(factory.TypeSystemContext), 0), 0), "ptrPtrPtr");
 
                         resVar = builder.BuildLoad(builder.BuildLoad(ptrPtrPtr, "ind1"), "ind2");
             
@@ -989,7 +990,7 @@ namespace ILCompiler.DependencyAnalysis
                             var threadStaticBase = OutputCodeForDictionaryLookup(builder, factory, node, nonGcRegionLookup, ctx, "tsGep");
                             importer.OutputCodeForTriggerCctor(target, threadStaticBase);
                         }
-                        resVar = importer.OutputCodeForGetThreadStaticBaseForType(resVar).ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), builder);
+                        resVar = importer.OutputCodeForGetThreadStaticBaseForType(resVar).ValueAsType(GetPtrEETypeTypeRef(factory.TypeSystemContext), builder);
                     }
                     break;
             
@@ -1032,16 +1033,21 @@ namespace ILCompiler.DependencyAnalysis
             // Find the generic dictionary slot
             int dictionarySlot = factory.GenericDictionaryLayout(node.DictionaryOwner).GetSlotForEntry(lookup);
             int offset = dictionarySlot * factory.Target.PointerSize;
+            LLVMValueRef ctxAsI8Ptr = ctx;
+            if(ctxAsI8Ptr.TypeOf.ReturnType != LLVMTypeRef.Int8)
+            {
+                ctxAsI8Ptr = builder.BuildBitCast(ctxAsI8Ptr, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0));
+            }
 
             // Load the generic dictionary cell
-            LLVMValueRef retGep = builder.BuildGEP(ctx, new[] {LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)offset, false)}, "retGep");
-            LLVMValueRef castGep = builder.BuildBitCast(retGep, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), "ptrPtr");
+            LLVMValueRef retGep = builder.BuildGEP(ctxAsI8Ptr, new[] {LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)offset, false)}, "retGep");
+            LLVMValueRef castGep = builder.BuildBitCast(retGep, LLVMTypeRef.CreatePointer(GetPtrEETypeTypeRef(factory.TypeSystemContext), 0), "ptrPtr");
             LLVMValueRef retRef = builder.BuildLoad(castGep, gepName);
 
             switch (lookup.LookupResultReferenceType(factory))
             {
                 case GenericLookupResultReferenceType.Indirect:
-                    var ptrPtr = builder.BuildBitCast(retRef, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0), "ptrPtr");
+                    var ptrPtr = builder.BuildBitCast(retRef, LLVMTypeRef.CreatePointer(GetPtrEETypeTypeRef(factory.TypeSystemContext), 0), "ptrPtr");
                     retRef = builder.BuildLoad(ptrPtr, "indLoad");
                     break;
 
@@ -1055,6 +1061,10 @@ namespace ILCompiler.DependencyAnalysis
             return retRef;
         }
 
+        private LLVMTypeRef GetPtrEETypeTypeRef(CompilerTypeSystemContext context)
+        {
+            return LLVMTypeRef.CreatePointer(ILImporter.GetLLVMTypeForTypeDesc(context.SystemModule.GetKnownType("Internal.Runtime", "EEType")), 0);
+        }
     }
 }
 
