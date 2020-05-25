@@ -218,7 +218,7 @@ namespace System.Runtime
                                                     out UIntPtr lastRecordedFragmentationBytes);
 
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
-        internal static unsafe extern void RhAllocateUninitializedArray(IntPtr pArrayEEType, uint numElements, void* pResult);
+        internal static unsafe extern void RhAllocateNewArray(IntPtr pArrayEEType, uint numElements, uint flags, void* pResult);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCompareObjectContentsAndPadding")]
