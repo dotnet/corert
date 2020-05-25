@@ -268,7 +268,7 @@ EXTERN_C REDHAWK_API Int64 __cdecl RhGetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
-static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEEType, UInt32 numElements, UInt32 flags)
+static Array* AllocateNewArrayImpl(Thread* pThread, EEType* pArrayEEType, UInt32 numElements, UInt32 flags)
 {
     size_t size;
 #ifndef HOST_64BIT
@@ -366,7 +366,7 @@ EXTERN_C REDHAWK_API void RhAllocateNewArray(EEType* pArrayEEType, UInt32 numEle
 
     ASSERT(!pThread->IsDoNotTriggerGcSet());
 
-    *pResult = AllocateUninitializedArrayImpl(pThread, pArrayEEType, numElements, flags);
+    *pResult = AllocateNewArrayImpl(pThread, pArrayEEType, numElements, flags);
 
     pThread->EnablePreemptiveMode();
 }
