@@ -44,14 +44,13 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOfClass")]
-        public static unsafe object IsInstanceOfClass(void* pvTargetType, object obj)
+        public static unsafe object IsInstanceOfClass(EEType* pTargetType, object obj)
         {
             if (obj == null)
             {
                 return null;
             }
 
-            EEType* pTargetType = (EEType*)pvTargetType;
             EEType* pObjType = obj.EEType;
 
             Debug.Assert(!pTargetType->IsParameterizedType, "IsInstanceOfClass called with parameterized EEType");
@@ -154,34 +153,33 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastClass")]
-        public static unsafe object CheckCastClass(void* pvTargetEEType, object obj)
+        public static unsafe object CheckCastClass(EEType* pTargetEEType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)
                 return null;
 
-            object result = IsInstanceOfClass(pvTargetEEType, obj);
+            object result = IsInstanceOfClass(pTargetEEType, obj);
 
             if (result == null)
             {
                 // Throw the invalid cast exception defined by the classlib, using the input EEType* 
                 // to find the correct classlib.
 
-                throw ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
+                throw pTargetEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
 
             return result;
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOfArray")]
-        public static unsafe object IsInstanceOfArray(void* pvTargetType, object obj)
+        public static unsafe object IsInstanceOfArray(EEType* pTargetType, object obj)
         {
             if (obj == null)
             {
                 return null;
             }
 
-            EEType* pTargetType = (EEType*)pvTargetType;
             EEType* pObjType = obj.EEType;
 
             Debug.Assert(pTargetType->IsArray, "IsInstanceOfArray called with non-array EEType");
@@ -222,34 +220,33 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastArray")]
-        public static unsafe object CheckCastArray(void* pvTargetEEType, object obj)
+        public static unsafe object CheckCastArray(EEType* pTargetEEType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)
                 return null;
 
-            object result = IsInstanceOfArray(pvTargetEEType, obj);
+            object result = IsInstanceOfArray(pTargetEEType, obj);
 
             if (result == null)
             {
                 // Throw the invalid cast exception defined by the classlib, using the input EEType* 
                 // to find the correct classlib.
 
-                throw ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
+                throw pTargetEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
 
             return result;
         }
 
         [RuntimeExport("RhTypeCast_IsInstanceOfInterface")]
-        public static unsafe object IsInstanceOfInterface(void* pvTargetType, object obj)
+        public static unsafe object IsInstanceOfInterface(EEType* pTargetType, object obj)
         {
             if (obj == null)
             {
                 return null;
             }
 
-            EEType* pTargetType = (EEType*)pvTargetType;
             EEType* pObjType = obj.EEType;
 
             if (CastCache.AreTypesAssignableInternal_SourceNotTarget_BoxedSource(pObjType, pTargetType, null))
@@ -420,7 +417,7 @@ namespace System.Runtime
                     case GenericVariance.NonVariant:
                         // Non-variant type params need to be identical.
 
-                        if (!AreTypesEquivalentInternal(pSourceArgType, pTargetArgType))
+                        if (!AreTypesEquivalent(pSourceArgType, pTargetArgType))
                             return false;
 
                         break;
@@ -485,11 +482,8 @@ namespace System.Runtime
         // compatible with Object and ValueType and an enum source is additionally compatible with Enum.
         //
         [RuntimeExport("RhTypeCast_AreTypesAssignable")]
-        public static unsafe bool AreTypesAssignable(void* pvSourceType, void* pvTargetType)
+        public static unsafe bool AreTypesAssignable(EEType* pSourceType, EEType* pTargetType)
         {
-            EEType* pSourceType = (EEType*)pvSourceType;
-            EEType* pTargetType = (EEType*)pvTargetType;
-
             // Special case: Generic Type definitions are not assignable in a mrt sense
             // in any way. Assignability of those types is handled by reflection logic.
             // Call this case out first and here so that these only somewhat filled in
@@ -506,7 +500,7 @@ namespace System.Runtime
             {
                 EEType* pNullableType = pTargetType->NullableType;
 
-                return AreTypesEquivalentInternal(pSourceType, pNullableType);
+                return AreTypesEquivalent(pSourceType, pNullableType);
             }
 
             return CastCache.AreTypesAssignableInternal(pSourceType, pTargetType, AssignmentVariation.BoxedSource, null);
@@ -525,7 +519,7 @@ namespace System.Runtime
             //
             // Are the types identical?
             //
-            if (AreTypesEquivalentInternal(pSourceType, pTargetType))
+            if (AreTypesEquivalent(pSourceType, pTargetType))
                 return true;
 
             //
@@ -649,7 +643,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckCastInterface")]
-        public static unsafe object CheckCastInterface(void* pvTargetEEType, object obj)
+        public static unsafe object CheckCastInterface(EEType* pTargetType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -657,7 +651,6 @@ namespace System.Runtime
                 return null;
             }
 
-            EEType* pTargetType = (EEType*)pvTargetEEType;
             EEType* pObjType = obj.EEType;
 
             if (CastCache.AreTypesAssignableInternal_SourceNotTarget_BoxedSource(pObjType, pTargetType, null))
@@ -669,7 +662,7 @@ namespace System.Runtime
             // correct classlib.
 
             if (castError == null)
-                castError = ((EEType*)pvTargetEEType)->GetClasslibException(ExceptionIDs.InvalidCast);
+                castError = pTargetType->GetClasslibException(ExceptionIDs.InvalidCast);
 
             throw castError;
         }
@@ -695,7 +688,7 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhTypeCast_CheckVectorElemAddr")]
-        public static unsafe void CheckVectorElemAddr(void* pvElemType, object array)
+        public static unsafe void CheckVectorElemAddr(EEType* elemType, object array)
         {
             if (array == null)
             {
@@ -704,10 +697,9 @@ namespace System.Runtime
 
             Debug.Assert(array.EEType->IsArray, "second argument must be an array");
 
-            EEType* elemType = (EEType*)pvElemType;
             EEType* arrayElemType = array.EEType->RelatedParameterType;
 
-            if (!AreTypesEquivalentInternal(elemType, arrayElemType)
+            if (!AreTypesEquivalent(elemType, arrayElemType)
             // In addition to the exactness check, add another check to allow non-exact matches through
             // if the element type is a ValueType. The issue here is Universal Generics. The Universal
             // Generic codegen will generate a call to this helper for all ldelema opcodes if the exact
@@ -773,7 +765,7 @@ namespace System.Runtime
             EEType* elemType = (EEType*)elementType;
             EEType* arrayElemType = array.EEType->RelatedParameterType;
 
-            if (!AreTypesEquivalentInternal(elemType, arrayElemType))
+            if (!AreTypesEquivalent(elemType, arrayElemType))
             {
                 // Throw the array type mismatch exception defined by the classlib, using the input array's EEType* 
                 // to find the correct classlib.
@@ -816,13 +808,6 @@ namespace System.Runtime
             return false;
         }
 
-
-        [RuntimeExport("RhTypeCast_AreTypesEquivalent")]
-        static unsafe public bool AreTypesEquivalent(EETypePtr pType1, EETypePtr pType2)
-        {
-            return (AreTypesEquivalentInternal(pType1.ToPointer(), pType2.ToPointer()));
-        }
-
         // Method to compare two types pointers for type equality
         // We cannot just compare the pointers as there can be duplicate type instances
         // for cloned and constructed types.
@@ -830,7 +815,8 @@ namespace System.Runtime
         //   1. The pointers are Equal => true
         //   2. Either one or both the types are CLONED, follow to the canonical EEType and check
         //   3. For Arrays/Pointers, we have to further check for rank and element type equality
-        internal static unsafe bool AreTypesEquivalentInternal(EEType* pType1, EEType* pType2)
+        [RuntimeExport("RhTypeCast_AreTypesEquivalent")]
+        public static unsafe bool AreTypesEquivalent(EEType* pType1, EEType* pType2)
         {
             if (pType1 == pType2)
                 return true;
@@ -845,7 +831,7 @@ namespace System.Runtime
                 return true;
 
             if (pType1->IsParameterizedType && pType2->IsParameterizedType)
-                return AreTypesEquivalentInternal(pType1->RelatedParameterType, pType2->RelatedParameterType) && pType1->ParameterizedTypeShape == pType2->ParameterizedTypeShape;
+                return AreTypesEquivalent(pType1->RelatedParameterType, pType2->RelatedParameterType) && pType1->ParameterizedTypeShape == pType2->ParameterizedTypeShape;
 
             return false;
         }
@@ -853,36 +839,34 @@ namespace System.Runtime
         // this is necessary for shared generic code - Foo<T> may be executing
         // for T being an interface, an array or a class
         [RuntimeExport("RhTypeCast_IsInstanceOf")]
-        public static unsafe object IsInstanceOf(void* pvTargetType, object obj)
+        public static unsafe object IsInstanceOf(EEType* pTargetType, object obj)
         {
             // @TODO: consider using the cache directly
-            EEType* pTargetType = (EEType*)pvTargetType;
             if (pTargetType->IsArray)
-                return IsInstanceOfArray(pvTargetType, obj);
+                return IsInstanceOfArray(pTargetType, obj);
             else if (pTargetType->IsInterface)
-                return IsInstanceOfInterface(pvTargetType, obj);
+                return IsInstanceOfInterface(pTargetType, obj);
             else if (pTargetType->IsParameterizedType)
                 return null; // We handled arrays above so this is for pointers and byrefs only.
             else
-                return IsInstanceOfClass(pvTargetType, obj);
+                return IsInstanceOfClass(pTargetType, obj);
         }
 
         [RuntimeExport("RhTypeCast_CheckCast")]
-        public static unsafe object CheckCast(void* pvTargetType, object obj)
+        public static unsafe object CheckCast(EEType* pTargetType, object obj)
         {
             // @TODO: consider using the cache directly
-            EEType* pTargetType = (EEType*)pvTargetType;
             if (pTargetType->IsArray)
-                return CheckCastArray(pvTargetType, obj);
+                return CheckCastArray(pTargetType, obj);
             else if (pTargetType->IsInterface)
-                return CheckCastInterface(pvTargetType, obj);
+                return CheckCastInterface(pTargetType, obj);
             else if (pTargetType->IsParameterizedType)
-                return CheckCastNonArrayParameterizedType(pvTargetType, obj);
+                return CheckCastNonArrayParameterizedType(pTargetType, obj);
             else
-                return CheckCastClass(pvTargetType, obj);
+                return CheckCastClass(pTargetType, obj);
         }
 
-        private static unsafe object CheckCastNonArrayParameterizedType(void* pvTargetType, object obj)
+        private static unsafe object CheckCastNonArrayParameterizedType(EEType* pTargetType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -891,7 +875,7 @@ namespace System.Runtime
             }
 
             // Parameterized types are not boxable, so nothing can be an instance of these.
-            throw ((EEType*)pvTargetType)->GetClasslibException(ExceptionIDs.InvalidCast);
+            throw pTargetType->GetClasslibException(ExceptionIDs.InvalidCast);
         }
 
         // Returns true of the two types are equivalent primitive types. Used by array casts.

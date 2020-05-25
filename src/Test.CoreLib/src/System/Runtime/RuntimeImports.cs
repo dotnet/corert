@@ -80,16 +80,17 @@ namespace System.Runtime
         //
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
-        internal static extern object RhNewObject(EETypePtr pEEType);
+        private static unsafe extern object RhNewObject(EEType* pEEType);
+
+        internal static unsafe object RhNewObject(EETypePtr pEEType)
+            => RhNewObject(pEEType.ToPointer());
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
-        internal static extern Array RhNewArray(EETypePtr pEEType, int length);
+        private static unsafe extern Array RhNewArray(EEType* pEEType, int length);
 
-        // @todo: Should we just have a proper export for this?
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhNewArray")]
-        internal static extern String RhNewArrayAsString(EETypePtr pEEType, int length);
+        internal static unsafe Array RhNewArray(EETypePtr pEEType, int length)
+            => RhNewArray(pEEType.ToPointer(), length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [ManuallyManaged(GcPollPolicy.Never)]

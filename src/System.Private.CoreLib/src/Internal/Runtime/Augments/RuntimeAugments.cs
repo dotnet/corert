@@ -1110,11 +1110,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhpRecordDebuggeeInitiatedHandle((void*)objectHandle);
         }
 
-        public static unsafe object RhBoxAny(IntPtr pData, IntPtr pEEType)
-        {
-            return RuntimeImports.RhBoxAny((void*)pData, new EETypePtr(pEEType));
-        }
-
         public static IntPtr RhHandleAlloc(object value, GCHandleType type)
         {
             return RuntimeImports.RhHandleAlloc(value, type);

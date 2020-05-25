@@ -27,73 +27,68 @@ namespace System.Runtime
         // internal calls for allocation
         //
         [RuntimeExport("RhNewObject")]
-        public static unsafe object RhNewObject(EETypePtr pEEType)
+        public static unsafe object RhNewObject(EEType* pEEType)
         {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-
             // This is structured in a funny way because at the present state of things in CoreRT, the Debug.Assert
             // below will call into the assert defined in the class library (and not the MRT version of it). The one
             // in the class library is not low level enough to be callable when GC statics are not initialized yet.
             // Feel free to restructure once that's not a problem.
 #if DEBUG
-            bool isValid = !ptrEEType->IsGenericTypeDefinition &&
-                !ptrEEType->IsInterface &&
-                !ptrEEType->IsArray &&
-                !ptrEEType->IsString &&
-                !ptrEEType->IsByRefLike;
+            bool isValid = !pEEType->IsGenericTypeDefinition &&
+                !pEEType->IsInterface &&
+                !pEEType->IsArray &&
+                !pEEType->IsString &&
+                !pEEType->IsByRefLike;
             if (!isValid)
                 Debug.Assert(false);
 #endif
 
 #if FEATURE_64BIT_ALIGNMENT
-            if (ptrEEType->RequiresAlign8)
+            if (pEEType->RequiresAlign8)
             {
-                if (ptrEEType->IsValueType)
-                    return InternalCalls.RhpNewFastMisalign(ptrEEType);
-                if (ptrEEType->IsFinalizable)
-                    return InternalCalls.RhpNewFinalizableAlign8(ptrEEType);
-                return InternalCalls.RhpNewFastAlign8(ptrEEType);
+                if (pEEType->IsValueType)
+                    return InternalCalls.RhpNewFastMisalign(pEEType);
+                if (pEEType->IsFinalizable)
+                    return InternalCalls.RhpNewFinalizableAlign8(pEEType);
+                return InternalCalls.RhpNewFastAlign8(pEEType);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                if (ptrEEType->IsFinalizable)
-                    return InternalCalls.RhpNewFinalizable(ptrEEType);
-                return InternalCalls.RhpNewFast(ptrEEType);
+                if (pEEType->IsFinalizable)
+                    return InternalCalls.RhpNewFinalizable(pEEType);
+                return InternalCalls.RhpNewFast(pEEType);
             }
         }
 
         [RuntimeExport("RhNewArray")]
-        public static unsafe object RhNewArray(EETypePtr pEEType, int length)
+        public static unsafe object RhNewArray(EEType* pEEType, int length)
         {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-
-            Debug.Assert(ptrEEType->IsArray || ptrEEType->IsString);
+            Debug.Assert(pEEType->IsArray || pEEType->IsString);
 
 #if FEATURE_64BIT_ALIGNMENT
-            if (ptrEEType->RequiresAlign8)
+            if (pEEType->RequiresAlign8)
             {
-                return InternalCalls.RhpNewArrayAlign8(ptrEEType, length);
+                return InternalCalls.RhpNewArrayAlign8(pEEType, length);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                return InternalCalls.RhpNewArray(ptrEEType, length);
+                return InternalCalls.RhpNewArray(pEEType, length);
             }
         }
 
         [RuntimeExport("RhBox")]
-        public static unsafe object RhBox(EETypePtr pEEType, ref byte data)
+        public static unsafe object RhBox(EEType* pEEType, ref byte data)
         {
-            EEType* ptrEEType = pEEType.ToPointer();
             ref byte dataAdjustedForNullable = ref data;
 
             // Can box value types only (which also implies no finalizers).
-            Debug.Assert(ptrEEType->IsValueType && !ptrEEType->IsFinalizable);
+            Debug.Assert(pEEType->IsValueType && !pEEType->IsFinalizable);
 
             // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
             // nullable's value is empty).
-            if (ptrEEType->IsNullable)
+            if (pEEType->IsNullable)
             {
                 // The boolean which indicates whether the value is null comes first in the Nullable struct.
                 if (data == 0)
@@ -101,43 +96,42 @@ namespace System.Runtime
 
                 // Switch type we're going to box to the Nullable<T> target type and advance the data pointer
                 // to the value embedded within the nullable.
-                dataAdjustedForNullable = ref Unsafe.Add(ref data, ptrEEType->NullableValueOffset);
-                ptrEEType = ptrEEType->NullableType;
+                dataAdjustedForNullable = ref Unsafe.Add(ref data, pEEType->NullableValueOffset);
+                pEEType = pEEType->NullableType;
             }
 
             object result;
 #if FEATURE_64BIT_ALIGNMENT
-            if (ptrEEType->RequiresAlign8)
+            if (pEEType->RequiresAlign8)
             {
-                result = InternalCalls.RhpNewFastMisalign(ptrEEType);
+                result = InternalCalls.RhpNewFastMisalign(pEEType);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                result = InternalCalls.RhpNewFast(ptrEEType);
+                result = InternalCalls.RhpNewFast(pEEType);
             }
 
             // Copy the unboxed value type data into the new object.
             // Perform any write barriers necessary for embedded reference fields.
-            if (ptrEEType->HasGCPointers)
+            if (pEEType->HasGCPointers)
             {
-                InternalCalls.RhBulkMoveWithWriteBarrier(ref result.GetRawData(), ref dataAdjustedForNullable, ptrEEType->ValueTypeSize);
+                InternalCalls.RhBulkMoveWithWriteBarrier(ref result.GetRawData(), ref dataAdjustedForNullable, pEEType->ValueTypeSize);
             }
             else
             {
                 fixed (byte* pFields = &result.GetRawData())
                 fixed (byte* pData = &dataAdjustedForNullable)
-                    InternalCalls.memmove(pFields, pData, ptrEEType->ValueTypeSize);
+                    InternalCalls.memmove(pFields, pData, pEEType->ValueTypeSize);
             }
 
             return result;
         }
 
         [RuntimeExport("RhBoxAny")]
-        public static unsafe object RhBoxAny(ref byte data, EETypePtr pEEType)
+        public static unsafe object RhBoxAny(ref byte data, EEType* pEEType)
         {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            if (ptrEEType->IsValueType)
+            if (pEEType->IsValueType)
             {
                 return RhBox(pEEType, ref data);
             }
@@ -149,7 +143,7 @@ namespace System.Runtime
 
         private static unsafe bool UnboxAnyTypeCompare(EEType* pEEType, EEType* ptrUnboxToEEType)
         {
-            if (TypeCast.AreTypesEquivalentInternal(pEEType, ptrUnboxToEEType))
+            if (TypeCast.AreTypesEquivalent(pEEType, ptrUnboxToEEType))
                 return true;
 
             if (pEEType->ElementType == ptrUnboxToEEType->ElementType)
@@ -185,7 +179,7 @@ namespace System.Runtime
 
                 if (ptrUnboxToEEType->IsNullable)
                 {
-                    isValid = (o == null) || TypeCast.AreTypesEquivalentInternal(o.EEType, ptrUnboxToEEType->NullableType);
+                    isValid = (o == null) || TypeCast.AreTypesEquivalent(o.EEType, ptrUnboxToEEType->NullableType);
                 }
                 else
                 {
@@ -219,26 +213,24 @@ namespace System.Runtime
         // Unbox helpers with RyuJIT conventions
         //
         [RuntimeExport("RhUnbox2")]
-        public static unsafe ref byte RhUnbox2(EETypePtr pUnboxToEEType, object obj)
+        public static unsafe ref byte RhUnbox2(EEType* pUnboxToEEType, object obj)
         {
-            EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
-            if ((obj == null) || !UnboxAnyTypeCompare(obj.EEType, ptrUnboxToEEType))
+            if ((obj == null) || !UnboxAnyTypeCompare(obj.EEType, pUnboxToEEType))
             {
                 ExceptionIDs exID = obj == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
-                throw ptrUnboxToEEType->GetClasslibException(exID);
+                throw pUnboxToEEType->GetClasslibException(exID);
             }
             return ref obj.GetRawData();
         }
 
         [RuntimeExport("RhUnboxNullable")]
-        public static unsafe void RhUnboxNullable(ref byte data, EETypePtr pUnboxToEEType, object obj)
+        public static unsafe void RhUnboxNullable(ref byte data, EEType* pUnboxToEEType, object obj)
         {
-            EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
-            if ((obj != null) && !TypeCast.AreTypesEquivalentInternal(obj.EEType, ptrUnboxToEEType->NullableType))
+            if ((obj != null) && !TypeCast.AreTypesEquivalent(obj.EEType, pUnboxToEEType->NullableType))
             {
-                throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
+                throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
-            RhUnbox(obj, ref data, ptrUnboxToEEType);
+            RhUnbox(obj, ref data, pUnboxToEEType);
         }
 
         [RuntimeExport("RhUnbox")]
@@ -293,86 +285,15 @@ namespace System.Runtime
             }
         }
 
-        [RuntimeExport("RhArrayStoreCheckAny")]
-        public static unsafe void RhArrayStoreCheckAny(object array, ref byte data)
-        {
-            if (array == null)
-            {
-                return;
-            }
-
-            Debug.Assert(array.EEType->IsArray, "first argument must be an array");
-
-            EEType* arrayElemType = array.EEType->RelatedParameterType;
-            if (arrayElemType->IsValueType)
-            {
-                return;
-            }
-
-            TypeCast.CheckArrayStore(array, Unsafe.As<byte, object>(ref data));
-        }
-
-        [RuntimeExport("RhBoxAndNullCheck")]
-        public static unsafe bool RhBoxAndNullCheck(ref byte data, EETypePtr pEEType)
-        {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            if (ptrEEType->IsValueType)
-                return true;
-            else
-                return Unsafe.As<byte, object>(ref data) != null;
-        }
-
-#pragma warning disable 169 // The field 'System.Runtime.RuntimeExports.Wrapper.o' is never used. 
-        private class Wrapper
-        {
-            private object _o;
-        }
-#pragma warning restore 169
-
-        [RuntimeExport("RhAllocLocal")]
-        public static unsafe object RhAllocLocal(EETypePtr pEEType)
-        {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            if (ptrEEType->IsValueType)
-            {
-#if FEATURE_64BIT_ALIGNMENT
-                if (ptrEEType->RequiresAlign8)
-                    return InternalCalls.RhpNewFastMisalign(ptrEEType);
-#endif
-                return InternalCalls.RhpNewFast(ptrEEType);
-            }
-            else
-                return new Wrapper();
-        }
-
-        // RhAllocLocal2 helper returns the pointer to the data region directly
-        // instead of relying on the code generator to offset the local by the 
-        // size of a pointer to get the data region.
-        [RuntimeExport("RhAllocLocal2")]
-        public static unsafe ref byte RhAllocLocal2(EETypePtr pEEType)
-        {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            if (ptrEEType->IsValueType)
-            {
-#if FEATURE_64BIT_ALIGNMENT
-                if (ptrEEType->RequiresAlign8)
-                    return ref InternalCalls.RhpNewFastMisalign(ptrEEType).GetRawData();
-#endif
-                return ref InternalCalls.RhpNewFast(ptrEEType).GetRawData();
-            }
-            else
-                return ref new Wrapper().GetRawData();
-        }
-
         [RuntimeExport("RhMemberwiseClone")]
         public static unsafe object RhMemberwiseClone(object src)
         {
             object objClone;
 
             if (src.EEType->IsArray)
-                objClone = RhNewArray(new EETypePtr((IntPtr)src.EEType), Unsafe.As<Array>(src).Length);
+                objClone = RhNewArray(src.EEType, Unsafe.As<Array>(src).Length);
             else
-                objClone = RhNewObject(new EETypePtr((IntPtr)src.EEType));
+                objClone = RhNewObject(src.EEType);
 
             InternalCalls.RhpCopyObjectContents(objClone, src);
 
