@@ -202,7 +202,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                parentReferenceRecord.ParentNamespaceOrType = HandleNamespaceReference(_policy.GetModuleOfType(containingType), containingType.Namespace);
+                parentReferenceRecord.ParentNamespaceOrType = HandleNamespaceReference(containingType.Module, containingType.Namespace);
             }
 
             return parentReferenceRecord;
@@ -218,7 +218,7 @@ namespace ILCompiler.Metadata
             }
             else
             {
-                record.ParentNamespaceOrType = HandleNamespaceReference(_policy.GetModuleOfType(entity), entity.Namespace);
+                record.ParentNamespaceOrType = HandleNamespaceReference(entity.Module, entity.Namespace);
             }
 
             record.TypeName = HandleString(entity.Name);
@@ -236,12 +236,12 @@ namespace ILCompiler.Metadata
                 enclosingType.NestedTypes.Add(record);
 
                 var namespaceDefinition =
-                    HandleNamespaceDefinition(_policy.GetModuleOfType(containingType), entity.ContainingType.Namespace);
+                    HandleNamespaceDefinition(containingType.Module, entity.ContainingType.Namespace);
                 record.NamespaceDefinition = namespaceDefinition;
             }
             else
             {
-                var namespaceDefinition = HandleNamespaceDefinition(_policy.GetModuleOfType(entity), entity.Namespace);
+                var namespaceDefinition = HandleNamespaceDefinition(entity.Module, entity.Namespace);
                 record.NamespaceDefinition = namespaceDefinition;
                 namespaceDefinition.TypeDefinitions.Add(record);
             }

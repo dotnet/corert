@@ -136,7 +136,6 @@
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInheritanceRules.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeInstantiator.cs" />
     <Compile Include="Internal\Reflection\Extensions\NonPortable\CustomAttributeSearcher.cs" />
-    <Compile Include="Internal\Reflection\ExplicitScopeAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\FeatureRemovedException.cs" />

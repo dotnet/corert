@@ -222,7 +222,6 @@ namespace ILCompiler
         private struct Policy : IMetadataPolicy
         {
             private readonly MetadataBlockingPolicy _blockingPolicy;
-            private readonly ExplicitScopeAssemblyPolicyMixin _explicitScopeMixin;
             private readonly AnalysisBasedMetadataManager _parent;
 
             public Policy(MetadataBlockingPolicy blockingPolicy, 
@@ -230,7 +229,6 @@ namespace ILCompiler
             {
                 _blockingPolicy = blockingPolicy;
                 _parent = parent;
-                _explicitScopeMixin = new ExplicitScopeAssemblyPolicyMixin();
             }
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
@@ -256,11 +254,6 @@ namespace ILCompiler
             public bool IsBlocked(MethodDesc methodDef)
             {
                 return _blockingPolicy.IsBlocked(methodDef);
-            }
-
-            public ModuleDesc GetModuleOfType(MetadataType typeDef)
-            {
-                return _explicitScopeMixin.GetModuleOfType(typeDef);
             }
         }
     }

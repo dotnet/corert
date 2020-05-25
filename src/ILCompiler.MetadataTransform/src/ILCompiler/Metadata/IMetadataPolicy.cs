@@ -45,11 +45,5 @@ namespace ILCompiler.Metadata
         bool IsBlocked(Cts.MetadataType typeDef);
 
         bool IsBlocked(Cts.MethodDesc methodDef);
-
-        /// <summary>
-        /// Return the Module that should be treated as defining the type. Typically implementations
-        /// will return typeDef.Module, but in some circumstances it may return a different value.
-        /// </summary>
-        Cts.ModuleDesc GetModuleOfType(Cts.MetadataType typeDef);
     }
 }
