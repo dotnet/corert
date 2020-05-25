@@ -186,7 +186,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_compilationModuleGroup.ContainsType(type) && !_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
                 {
-                    return new NonGCStaticsNode(type, this);
+                    return new NonGCStaticsNode(type, PreinitializationManager);
                 }
                 else
                 {
@@ -198,7 +198,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (_compilationModuleGroup.ContainsType(type) && !_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
                 {
-                    return new GCStaticsNode(type);
+                    return new GCStaticsNode(type, PreinitializationManager);
                 }
                 else
                 {
@@ -334,9 +334,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new FrozenStringNode(data, Target);
             });
 
-            _frozenArrayNodes = new NodeCache<PreInitFieldInfo, FrozenArrayNode>((PreInitFieldInfo fieldInfo) =>
+            _frozenObjectNodes = new NodeCache<SerializedFrozenObjectKey, FrozenObjectNode>(key =>
             {
-                return new FrozenArrayNode(fieldInfo);
+                return new FrozenObjectNode(key.Owner, key.SerializableObject);
             });
 
             _interfaceDispatchCells = new NodeCache<DispatchCellKey, InterfaceDispatchCellNode>(callSiteCell =>
@@ -988,11 +988,11 @@ namespace ILCompiler.DependencyAnalysis
             return _frozenStringNodes.GetOrAdd(data);
         }
 
-        private NodeCache<PreInitFieldInfo, FrozenArrayNode> _frozenArrayNodes;
+        private NodeCache<SerializedFrozenObjectKey, FrozenObjectNode> _frozenObjectNodes;
 
-        public FrozenArrayNode SerializedFrozenArray(PreInitFieldInfo preInitFieldInfo)
+        public FrozenObjectNode SerializedFrozenObject(FieldDesc owningField, TypePreinit.ISerializableReference data)
         {
-            return _frozenArrayNodes.GetOrAdd(preInitFieldInfo);
+            return _frozenObjectNodes.GetOrAdd(new SerializedFrozenObjectKey(owningField, data));
         }
 
         private NodeCache<MethodDesc, EmbeddedObjectNode> _eagerCctorIndirectionNodes;
@@ -1230,6 +1230,22 @@ namespace ILCompiler.DependencyAnalysis
             public bool Equals(UninitializedWritableDataBlobKey other) => Name.Equals(other.Name);
             public override bool Equals(object obj) => obj is UninitializedWritableDataBlobKey && Equals((UninitializedWritableDataBlobKey)obj);
             public override int GetHashCode() => Name.GetHashCode();
+        }
+
+        protected struct SerializedFrozenObjectKey : IEquatable<SerializedFrozenObjectKey>
+        {
+            public readonly FieldDesc Owner;
+            public readonly TypePreinit.ISerializableReference SerializableObject;
+
+            public SerializedFrozenObjectKey(FieldDesc owner, TypePreinit.ISerializableReference obj)
+            {
+                Owner = owner;
+                SerializableObject = obj;
+            }
+
+            public override bool Equals(object obj) => obj is SerializedFrozenObjectKey && Equals((SerializedFrozenObjectKey)obj);
+            public bool Equals(SerializedFrozenObjectKey other) => Owner == other.Owner;
+            public override int GetHashCode() => Owner.GetHashCode();
         }
     }
 }

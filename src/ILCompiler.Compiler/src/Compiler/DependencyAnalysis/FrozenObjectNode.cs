@@ -2,32 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 using Internal.Text;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a frozen array
+    /// Represents a frozen object that is statically preallocated within the data section
+    /// of the executable instead of on the GC heap.
     /// </summary>
-    public class FrozenArrayNode : EmbeddedObjectNode, ISymbolDefinitionNode
+    public class FrozenObjectNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
-        private PreInitFieldInfo _preInitFieldInfo;
+        private readonly FieldDesc _field;
+        private readonly TypePreinit.ISerializableReference _data;
         
-        public FrozenArrayNode(PreInitFieldInfo preInitFieldInfo)
+        public FrozenObjectNode(FieldDesc field, TypePreinit.ISerializableReference data)
         {
-            _preInitFieldInfo = preInitFieldInfo;
+            _field = field;
+            _data = data;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenArr_")
-                .Append(nameMangler.GetMangledFieldName(_preInitFieldInfo.Field));
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__FrozenObj_")
+                .Append(nameMangler.GetMangledFieldName(_field));
         }
 
         public override bool StaticDependenciesAreComputed => true;
@@ -38,17 +38,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                // The frozen array symbol points at the EEType portion of the object, skipping over the sync block
-                return OffsetFromBeginningOfArray + _preInitFieldInfo.Field.Context.Target.PointerSize;
+                // The frozen object symbol points at the EEType portion of the object, skipping over the sync block
+                return OffsetFromBeginningOfArray + _field.Context.Target.PointerSize;
             }
-        }
-
-        private IEETypeNode GetEETypeNode(NodeFactory factory)
-        {
-            var fieldType = _preInitFieldInfo.Type;
-            var node = factory.ConstructedTypeSymbol(fieldType);
-            Debug.Assert(!node.RepresentsIndirectionCell);  // Array are always local
-            return node;
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
@@ -56,23 +48,8 @@ namespace ILCompiler.DependencyAnalysis
             // Sync Block
             dataBuilder.EmitZeroPointer();
 
-            // EEType
-            dataBuilder.EmitPointerReloc(GetEETypeNode(factory));
-
-            // numComponents
-            dataBuilder.EmitInt(_preInitFieldInfo.Length);
-
-            int pointerSize = _preInitFieldInfo.Field.Context.Target.PointerSize;
-            Debug.Assert(pointerSize == 8 || pointerSize == 4);
-
-            if (pointerSize == 8)
-            {
-                // padding numComponents in 64-bit
-                dataBuilder.EmitInt(0);
-            }
-
             // byte contents
-            _preInitFieldInfo.WriteData(ref dataBuilder, factory, relocsOnly);
+            _data.WriteContent(ref dataBuilder, factory);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -105,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _preInitFieldInfo.CompareTo(((FrozenArrayNode)other)._preInitFieldInfo, comparer);
+            return comparer.Compare(((FrozenObjectNode)other)._field, _field);
         }
     }
 }

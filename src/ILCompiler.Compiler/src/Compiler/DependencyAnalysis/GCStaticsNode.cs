@@ -14,14 +14,16 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class GCStaticsNode : ObjectNode, IExportableSymbolNode, ISortableSymbolNode, ISymbolNodeWithDebugInfo
     {
-        private MetadataType _type;
-        private List<PreInitFieldInfo> _preInitFieldInfos;
+        private readonly MetadataType _type;
+        private readonly TypePreinit.PreinitializationInfo _preinitializationInfo;
 
-        public GCStaticsNode(MetadataType type)
+        public GCStaticsNode(MetadataType type, PreinitializationManager preinitManager)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
-            _preInitFieldInfos = PreInitFieldInfo.GetPreInitFieldInfos(_type, hasGCStaticBase: true);
+
+            if (preinitManager.IsPreinitialized(type))
+                _preinitializationInfo = preinitManager.GetPreinitializationInfo(_type);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -51,8 +53,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public GCStaticsPreInitDataNode NewPreInitDataNode()
         {
-            Debug.Assert(_preInitFieldInfos != null);
-            return new GCStaticsPreInitDataNode(_type, _preInitFieldInfos);
+            Debug.Assert(_preinitializationInfo != null && _preinitializationInfo.IsPreinitialized);
+            return new GCStaticsPreInitDataNode(_preinitializationInfo);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
@@ -65,9 +67,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
-            dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
-            if (_preInitFieldInfos != null)
-                dependencyList.Add(factory.GCStaticsPreInitDataNode(_type), "PreInitData node");
 
             dependencyList.Add(factory.GCStaticIndirection(_type), "GC statics indirection");
             EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);
@@ -82,47 +81,25 @@ namespace ILCompiler.DependencyAnalysis
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            if (factory.Target.Abi == TargetAbi.CoreRT || factory.Target.Abi == TargetAbi.CppCodegen)
-            {
-                ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
-                builder.RequireInitialPointerAlignment();
+            builder.RequireInitialPointerAlignment();
 
-                int delta = GCStaticRegionConstants.Uninitialized;
+            int delta = GCStaticRegionConstants.Uninitialized;
 
-                // Set the flag that indicates next pointer following EEType is the preinit data
-                if (_preInitFieldInfos != null)
-                    delta |= GCStaticRegionConstants.HasPreInitializedData;
+            // Set the flag that indicates next pointer following EEType is the preinit data
+            bool isPreinitialized = _preinitializationInfo != null && _preinitializationInfo.IsPreinitialized;
+            if (isPreinitialized)
+                delta |= GCStaticRegionConstants.HasPreInitializedData;
                 
-                builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
+            builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
 
-                if (_preInitFieldInfos != null)
-                    builder.EmitPointerReloc(factory.GCStaticsPreInitDataNode(_type));
+            if (isPreinitialized)
+                builder.EmitPointerReloc(factory.GCStaticsPreInitDataNode(_type));
 
-                builder.AddSymbol(this);
+            builder.AddSymbol(this);
 
-                return builder.ToObjectData();
-            }
-            else 
-            {
-                if (_preInitFieldInfos == null)
-                {
-                    ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
-
-                    builder.RequireInitialPointerAlignment();
-
-                    builder.EmitZeros(_type.GCStaticFieldSize.AsInt);
-
-                    builder.AddSymbol(this);
-
-                    return builder.ToObjectData();
-                }
-                else
-                {
-                    _preInitFieldInfos.Sort(PreInitFieldInfo.FieldDescCompare);
-                    return GCStaticsPreInitDataNode.GetDataForPreInitDataField(this, _type, _preInitFieldInfos, 0, factory, relocsOnly);
-                }
-            }
+            return builder.ToObjectData();
         }
 
         public override int ClassCode => -522346696;
