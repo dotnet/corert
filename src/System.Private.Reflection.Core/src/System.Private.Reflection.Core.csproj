@@ -265,9 +265,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\System.Private.Reflection.Core.rd.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
   </ItemGroup>
   <ItemGroup>
