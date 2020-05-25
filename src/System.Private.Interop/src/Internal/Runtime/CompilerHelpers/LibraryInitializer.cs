@@ -6,9 +6,7 @@ using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-#if !CORECLR 
 using Internal.Runtime.Augments;
-#endif
 
 namespace Internal.Runtime.CompilerHelpers
 {
@@ -20,7 +18,7 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public static void InitializeLibrary()
         {
-            RuntimeAugments.InitializeInteropLookups(RuntimeInteropData.Instance);
+            RuntimeAugments.InitializeInteropLookups(new RuntimeInteropData());
         }
     }
 }

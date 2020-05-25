@@ -15,8 +15,7 @@ namespace Internal.Runtime.CompilerHelpers
     {
         public override IntPtr GetForwardDelegateCreationStub(RuntimeTypeHandle delegateTypeHandle)
         {
-            IntPtr openStub, closedStub, delegateCreationStub;
-            GetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub, out delegateCreationStub);
+            GetMarshallersForDelegate(delegateTypeHandle, out _, out _, out IntPtr delegateCreationStub);
             if (delegateCreationStub == IntPtr.Zero)
                 throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(delegateTypeHandle));
             return delegateCreationStub;
@@ -24,8 +23,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         public override IntPtr GetDelegateMarshallingStub(RuntimeTypeHandle delegateTypeHandle, bool openStaticDelegate)
         {
-            IntPtr openStub, closedStub, delegateCreationStub;
-            GetMarshallersForDelegate(delegateTypeHandle, out openStub, out closedStub, out delegateCreationStub);
+            GetMarshallersForDelegate(delegateTypeHandle, out IntPtr openStub, out IntPtr closedStub, out _);
             IntPtr pStub = openStaticDelegate ? openStub : closedStub;
             if (pStub == IntPtr.Zero)
                 throw new MissingInteropDataException(SR.DelegateMarshalling_MissingInteropData, Type.GetTypeFromHandle(delegateTypeHandle));
@@ -34,39 +32,16 @@ namespace Internal.Runtime.CompilerHelpers
 
         #region "Struct Data"
         public override bool TryGetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr unmarshalStub)
-        {
-            IntPtr marshalStub;
-            IntPtr destroyStub;
-            bool hasInvalidLayout;
-            int size;
-            return TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout, out size);
-        }
+            => TryGetMarshallersForStruct(structureTypeHandle, out _, out unmarshalStub, out _, out _, out _);
 
         public override bool TryGetStructMarshalStub(RuntimeTypeHandle structureTypeHandle, out IntPtr marshalStub)
-        {
-            IntPtr unmarshalStub;
-            IntPtr destroyStub;
-            bool hasInvalidLayout;
-            int size;
-            return TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout, out size);
-        }
+            => TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out _, out _, out _, out _);
 
         public override bool TryGetDestroyStructureStub(RuntimeTypeHandle structureTypeHandle, out IntPtr destroyStub, out bool hasInvalidLayout)
-        {
-            IntPtr marshalStub;
-            IntPtr unmarshalStub;
-            int size;
-            return TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout, out size);
-        }
+            => TryGetMarshallersForStruct(structureTypeHandle, out _, out _, out destroyStub, out hasInvalidLayout, out _);
 
         public override bool TryGetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle, out int size)
-        {
-            IntPtr marshalStub;
-            IntPtr unmarshalStub;
-            IntPtr destroyStub;
-            bool hasInvalidLayout;
-            return TryGetMarshallersForStruct(structureTypeHandle, out marshalStub, out unmarshalStub, out destroyStub, out hasInvalidLayout, out size);
-        }
+            => TryGetMarshallersForStruct(structureTypeHandle, out _, out _, out _, out _, out size);
 
         public override bool TryGetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName, out bool structExists, out uint offset)
         {
