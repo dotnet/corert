@@ -53,9 +53,6 @@
     <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
     <FeatureThreadInt64PersistentCounter>true</FeatureThreadInt64PersistentCounter>
   </PropertyGroup>
-  <PropertyGroup>
-    <FeatureAsyncCausalityTracer Condition="'$(EnableWinRT)' == 'true'">true</FeatureAsyncCausalityTracer>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
       <Link>Internal\Runtime\RuntimeConstants.cs</Link>
@@ -142,8 +139,6 @@
     <Compile Include="Internal\Reflection\ExplicitScopeAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Condition="'$(EnableWinRT)'=='true'" Include="Internal\Runtime\Augments\WinRTInterop.cs" />
-    <Compile Include="Interop\Interop.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Runtime\CompilerServices\FeatureRemovedException.cs" />
     <Compile Include="System\Reflection\AssemblyNameHelpers.StrongName.cs" />
     <Compile Include="System\Reflection\AssemblyNameHelpers.cs" />
@@ -263,9 +258,7 @@
     <Compile Include="System\Threading\Monitor.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" Condition="'$(UseSyncTable)' == 'true'" />
     <Compile Include="System\Threading\Overlapped.cs" />
-    <Compile Include="System\Threading\SynchronizationContext.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\SyncTable.cs" Condition="'$(UseSyncTable)' == 'true'" />
-    <Compile Include="System\Threading\Tasks\AsyncCausalityTracer.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="System\Threading\Thread.CoreRT.cs" />
     <Compile Include="System\Threading\ThreadBooleanCounter.cs" />
     <Compile Include="System\Threading\ThreadPool.CoreRT.cs" />
@@ -273,9 +266,8 @@
     <Compile Include="System\Threading\WaitHandle.CoreRT.cs" />
     <Compile Include="System\Type.CoreRT.cs" />
     <Compile Include="System\Type.Internal.cs" />
-    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'=='true'" Include="System\Type.WinRt.cs" />
-    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="System\Type.Win32.cs" />
-    <Compile Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.CLSIDFromProgID.cs">
+    <Compile Condition="'$(TargetsWindows)'=='true'" Include="System\Type.Win32.cs" />
+    <Compile Condition="'$(TargetsWindows)'=='true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.CLSIDFromProgID.cs">
       <Link>Interop\Windows\Mincore\Interop.CLSIDFromProgID.cs</Link>
     </Compile>
     <Compile Condition="'$(TargetsUnix)'=='true'" Include="System\Type.Unix.cs" />
@@ -291,14 +283,13 @@
     <Compile Include="System\WeakReference.CoreRT.cs" />
     <Compile Include="System\WeakReference.T.CoreRT.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(EnableWinRT)'!='true'">
+  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.ExitProcess.cs">
       <Link>Interop\Windows\Mincore\Interop.ExitProcess.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="System\TimeZoneInfo.WinRT.cs" />
     <Compile Include="System\AppContext.Windows.CoreRT.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\Kernel32\Interop.CriticalSection.cs">
@@ -361,7 +352,7 @@
     <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.Timer.cs">
       <Link>Interop\Windows\Mincore\Interop.Timer.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.DynamicLoad.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\Mincore\Interop.DynamicLoad.cs</Link>
     </Compile>
     <Compile Include="System\Threading\LowLevelMonitor.Windows.cs" />
@@ -376,14 +367,11 @@
     <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.ThreadPoolIO.cs">
       <Link>Interop\Windows\Mincore\Interop.ThreadPoolIO.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' == 'true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.TimeZone.cs">
-      <Link>Interop\Windows\Mincore\Interop.TimeZone.cs</Link>
-    </Compile>
     <Compile Include="Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetLastError.cs">
       <Link>Interop\Windows\Mincore\Interop.GetLastError.cs</Link>
     </Compile>
-    <Compile Condition="'$(EnableWinRT)' != 'true'" Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetSystemDirectory.cs">
+    <Compile Include="..\..\Common\src\Interop\Windows\Mincore\Interop.GetSystemDirectory.cs">
       <Link>Interop\Windows\Mincore\Interop.GetSystemDirectory.cs</Link>
     </Compile>
   </ItemGroup>
