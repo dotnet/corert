@@ -103,39 +103,34 @@ namespace Internal.IL.Stubs
                 else if (_method.Kind == ArrayMethodKind.AddressWithHiddenArg)
                 {
                     TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
-                    TypeDesc eetypePtrType = context.SystemModule.GetKnownType("System", "EETypePtr");
+                    TypeDesc eetypeType = context.SystemModule.GetKnownType("Internal.Runtime", "EEType");
 
                     typeMismatchExceptionLabel = _emitter.NewCodeLabel();
-
-                    ILLocalVariable thisEEType = _emitter.NewLocal(eetypePtrType);
 
                     ILCodeLabel typeCheckPassedLabel = _emitter.NewCodeLabel();
 
                     // Codegen will pass a null hidden argument if this is a `constrained.` call to the Address method.
                     // As per ECMA-335 III.2.3, the prefix suppresses the type check.
-                    // if (hiddenArg.IsNull)
+                    // if (hiddenArg == IntPtr.Zero)
                     //     goto TypeCheckPassed;
-                    codeStream.EmitLdArga(1);
-                    codeStream.Emit(ILOpcode.call,
-                        _emitter.NewToken(eetypePtrType.GetKnownMethod("get_IsNull", null)));
-                    codeStream.Emit(ILOpcode.brtrue, typeCheckPassedLabel);
+                    codeStream.EmitLdArg(1);
+                    codeStream.Emit(ILOpcode.brfalse, typeCheckPassedLabel);
 
-                    // EETypePtr actualElementType = this.EETypePtr.ArrayElementType;
+                    // EEType* actualElementType = this.EEType.RelatedParameterType; // ArrayElementType
                     codeStream.EmitLdArg(0);
-                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_EETypePtr", null)));
-                    codeStream.EmitStLoc(thisEEType);
-                    codeStream.EmitLdLoca(thisEEType);
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_EEType", null)));
                     codeStream.Emit(ILOpcode.call,
-                        _emitter.NewToken(eetypePtrType.GetKnownMethod("get_ArrayElementType", null)));
+                        _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType", null)));
 
-                    // EETypePtr expectedElementType = hiddenArg.ArrayElementType;
-                    codeStream.EmitLdArga(1);
+                    // EEType* expectedElementType = hiddenArg->RelatedParameterType; // ArrayElementType
+                    codeStream.EmitLdArg(1);
                     codeStream.Emit(ILOpcode.call,
-                        _emitter.NewToken(eetypePtrType.GetKnownMethod("get_ArrayElementType", null)));
+                        _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType", null)));
 
-                    // if (expectedElementType != actualElementType)
+                    // if (TypeCast.AreTypesEquivalent(expectedElementType, actualElementType))
                     //     ThrowHelpers.ThrowArrayTypeMismatchException();
-                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrType.GetKnownMethod("op_Equality", null)));
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(
+                        context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("AreTypesEquivalent", null)));
                     codeStream.Emit(ILOpcode.brfalse, typeMismatchExceptionLabel);
 
                     codeStream.EmitLabel(typeCheckPassedLabel);
