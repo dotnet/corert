@@ -1,8 +1,0 @@
-######################################
-#                                    #
-# !!!!!!!  W A R N I N G   !!!!!!!!! #
-#                                    #
-######################################
-
-# SOS
-private object System.Runtime.InteropServices.ComCallableObject.m_target
