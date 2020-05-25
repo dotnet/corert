@@ -231,9 +231,6 @@
   <data name="Arg_AmbiguousMatchException" xml:space="preserve">
     <value>Ambiguous match found.</value>
   </data>
-  <data name="PlatformNotSupported_InterfaceMap" xml:space="preserve">
-    <value>GetRuntimeInterfaceMap() is not supported on this runtime.</value>
-  </data>
   <data name="NoMetadataTokenAvailable" xml:space="preserve">
     <value>There is no metadata token available for the given member.</value>
   </data>
@@ -261,7 +258,6 @@
   <data name="Acc_CreateVoid" xml:space="preserve">
     <value>Cannot dynamically create an instance of System.Void.</value>
   </data>
-
   <data name="Arg_GenericParameter" xml:space="preserve">
     <value>Method must be called on a Type for which Type.IsGenericParameter is false.</value>
   </data>
@@ -363,5 +359,8 @@
   </data>
   <data name="InvalidOperation_NoValue" xml:space="preserve">
     <value>Nullable object must have a value.</value>
+  </data>
+  <data name="Argument_ArrayGetInterfaceMap" xml:space="preserve">
+    <value>Interface maps for generic interfaces on arrays cannot be retrieved.</value>
   </data>
 </root>

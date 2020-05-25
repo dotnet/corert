@@ -50,11 +50,11 @@ typedef void *              LPOVERLAPPED;
 #define WINBASEAPI          __declspec(dllimport)
 #endif //!__GCENV_BASE_INCLUDED__
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 #define DIRECTORY_SEPARATOR_CHAR '/'
-#else // PLATFORM_UNIX
+#else // TARGET_UNIX
 #define DIRECTORY_SEPARATOR_CHAR '\\'
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
 typedef union _LARGE_INTEGER {
     struct {
@@ -160,7 +160,7 @@ struct SYSTEM_LOGICAL_PROCESSOR_INFORMATION
     };
 };
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
 
 typedef struct DECLSPEC_ALIGN(16) _XSAVE_FORMAT {
     UInt16  ControlWord;
@@ -177,7 +177,7 @@ typedef struct DECLSPEC_ALIGN(16) _XSAVE_FORMAT {
     UInt32  MxCsr;
     UInt32  MxCsr_Mask;
     Fp128   FloatRegisters[8];
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     Fp128   XmmRegisters[16];
     UInt8   Reserved4[96];
 #else
@@ -272,7 +272,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     UIntNative GetIp() { return Rip; }
     UIntNative GetSp() { return Rsp; }
 } CONTEXT, *PCONTEXT;
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
 #define ARM_MAX_BREAKPOINTS     8
 #define ARM_MAX_WATCHPOINTS     1
@@ -316,7 +316,7 @@ typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
     UIntNative GetLr() { return Lr; }
 } CONTEXT, *PCONTEXT;
 
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 #define SIZE_OF_80387_REGISTERS      80
 #define MAXIMUM_SUPPORTED_EXTENSION  512
 
@@ -369,7 +369,7 @@ typedef struct _CONTEXT {
 } CONTEXT, *PCONTEXT;
 #include "poppack.h"
 
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
 // Specify the number of breakpoints and watchpoints that the OS
 // will track. Architecturally, ARM64 supports up to 16. In practice,
@@ -457,7 +457,7 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     UIntNative GetLr() { return Lr; }
 } CONTEXT, *PCONTEXT;
 
-#elif defined(_WASM_)
+#elif defined(HOST_WASM)
 
 typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
     // TODO: Figure out if WebAssembly has a meaningful context available
@@ -504,7 +504,7 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define STATUS_REDHAWK_NULL_REFERENCE               ((UInt32   )0x00000000L)
 #define STATUS_REDHAWK_WRITE_BARRIER_NULL_REFERENCE ((UInt32   )0x00000042L)
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 #define NULL_AREA_SIZE                   (4*1024)
 #else
 #define NULL_AREA_SIZE                   (64*1024)
@@ -663,14 +663,14 @@ EventDataDescCreate(_Out_ EVENT_DATA_DESCRIPTOR * EventDataDescriptor, _In_opt_ 
 
 extern GCSystemInfo g_RhSystemInfo;
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 #define REDHAWK_PALIMPORT extern "C"
 #define REDHAWK_PALEXPORT extern "C"
 #define REDHAWK_PALAPI
 #else
 #define REDHAWK_PALIMPORT EXTERN_C
 #define REDHAWK_PALAPI __stdcall
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
 bool InitializeSystemInfo();
 
@@ -719,16 +719,16 @@ REDHAWK_PALIMPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut,
 #if _WIN32
 
 // Various intrinsic declarations needed for the PalGetCurrentTEB implementation below.
-#if defined(_X86_)
+#if defined(HOST_X86)
 EXTERN_C unsigned long __readfsdword(unsigned long Offset);
 #pragma intrinsic(__readfsdword)
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
 EXTERN_C unsigned __int64  __readgsqword(unsigned long Offset);
 #pragma intrinsic(__readgsqword)
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 EXTERN_C unsigned int _MoveFromCoprocessor(unsigned int, unsigned int, unsigned int, unsigned int, unsigned int);
 #pragma intrinsic(_MoveFromCoprocessor)
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 EXTERN_C unsigned __int64 __getReg(int);
 #pragma intrinsic(__getReg)
 #else
@@ -738,13 +738,13 @@ EXTERN_C unsigned __int64 __getReg(int);
 // Retrieves the OS TEB for the current thread.
 inline UInt8 * PalNtCurrentTeb()
 {
-#if defined(_X86_)
+#if defined(HOST_X86)
     return (UInt8*)__readfsdword(0x18); 
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
     return (UInt8*)__readgsqword(0x30);
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     return (UInt8*)_MoveFromCoprocessor(15, 0, 13,  0, 2);
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     return (UInt8*)__getReg(18);
 #else
 #error Unsupported architecture
@@ -752,7 +752,7 @@ inline UInt8 * PalNtCurrentTeb()
 }
 
 // Offsets of ThreadLocalStoragePointer in the TEB.
-#if defined(BIT64)
+#if defined(HOST_64BIT)
 #define OFFSETOF__TEB__ThreadLocalStoragePointer 0x58
 #else
 #define OFFSETOF__TEB__ThreadLocalStoragePointer 0x2c
@@ -795,7 +795,7 @@ REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
 
 #ifndef APP_LOCAL_RUNTIME
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #else
 REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(UInt32 firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler);
@@ -836,9 +836,9 @@ REDHAWK_PALIMPORT UInt64 PalGetCurrentThreadIdForLogging();
 
 REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 REDHAWK_PALIMPORT Int32 __cdecl _stricmp(const char *string1, const char *string2);
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
 #ifdef UNICODE
 #define _tcsicmp _wcsicmp
@@ -846,12 +846,12 @@ REDHAWK_PALIMPORT Int32 __cdecl _stricmp(const char *string1, const char *string
 #define _tcsicmp _stricmp
 #endif
 
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI getcpuid(uint32_t arg1, unsigned char result[16]);
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI getextcpuid(uint32_t arg1, uint32_t arg2, unsigned char result[16]);
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport();
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalIsAvxEnabled();
-#endif // defined(_X86_) || defined(_AMD64_)	
+#endif // defined(HOST_X86) || defined(HOST_AMD64)
 
 #include "PalRedhawkInline.h"
 

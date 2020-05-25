@@ -125,7 +125,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     }
 
     size_t size;
-#ifndef BIT64
+#ifndef HOST_64BIT
     // if the element count is <= 0x10000, no overflow is possible because the component size is
     // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
     if (numElements > 0x10000)
@@ -141,7 +141,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
         }
     }
     else
-#endif // !BIT64
+#endif // !HOST_64BIT
     {
         size = (size_t)pArrayEEType->get_BaseSize() + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
         size = ALIGN_UP(size, sizeof(UIntNative));
@@ -182,7 +182,7 @@ COOP_PINVOKE_HELPER(String *, RhNewString, (EEType * pArrayEEType, int numElemen
 #endif
 #if defined(USE_PORTABLE_HELPERS)
 
-#ifdef _ARM_
+#ifdef HOST_ARM
 COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (EEType* pEEType))
 {
     Object * pObject = nullptr;
@@ -273,8 +273,8 @@ EXTERN_C void * ReturnFromCallDescrThunk;
 void * ReturnFromCallDescrThunk;
 #endif
 
-#if defined(USE_PORTABLE_HELPERS) || defined(PLATFORM_UNIX)
-#if !defined (_ARM64_)
+#if defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
+#if !defined (HOST_ARM64)
 // 
 // Return address hijacking
 //
@@ -303,11 +303,11 @@ COOP_PINVOKE_HELPER(void, RhpGcStressHijackByref, ())
     ASSERT_UNCONDITIONALLY("NYI");
 }
 #endif
-#endif // defined(USE_PORTABLE_HELPERS) || defined(PLATFORM_UNIX)
+#endif // defined(USE_PORTABLE_HELPERS) || defined(TARGET_UNIX)
 
 #if defined(USE_PORTABLE_HELPERS)
 
-#if !defined (_ARM64_)
+#if !defined (HOST_ARM64)
 COOP_PINVOKE_HELPER(void, RhpAssignRef, (Object ** dst, Object * ref))
 {
     // @TODO: USE_PORTABLE_HELPERS - Null check
@@ -353,7 +353,7 @@ COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int
 
 #endif // USE_PORTABLE_HELPERS
 
-#if !defined(_ARM64_)
+#if !defined(HOST_ARM64)
 COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
 {
     PalMemoryBarrier();

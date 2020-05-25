@@ -345,6 +345,9 @@
   <data name="Arg_MustBeInt64" xml:space="preserve">
     <value>Object must be of type Int64.</value>
   </data>
+  <data name="Arg_MustBeIntPtr" xml:space="preserve">
+    <value>Object must be of type IntPtr.</value>
+  </data>
   <data name="Arg_MustBePrimArray" xml:space="preserve">
     <value>Object must be an array of primitives.</value>
   </data>
@@ -380,6 +383,9 @@
   </data>
   <data name="Arg_MustBeUInt64" xml:space="preserve">
     <value>Object must be of type UInt64.</value>
+  </data>
+  <data name="Arg_MustBeUIntPtr" xml:space="preserve">
+    <value>Object must be of type UIntPtr.</value>
   </data>
   <data name="Arg_MustBeVersion" xml:space="preserve">
     <value>Object must be of type Version.</value>
@@ -2278,8 +2284,8 @@
   <data name="BadImageFormat_ResourcesDataInvalidOffset" xml:space="preserve">
     <value>Corrupt .resources file. Invalid offset  into data section is </value>
   </data>
-  <data name="Format_Bad7BitInt32" xml:space="preserve">
-    <value>Too many bytes in what should have been a 7 bit encoded Int32.</value>
+  <data name="Format_Bad7BitInt" xml:space="preserve">
+    <value>Too many bytes in what should have been a 7-bit encoded integer.</value>
   </data>
   <data name="BadImageFormat_InvalidType" xml:space="preserve">
     <value>Corrupt .resources file.  The specified type doesn't exist.</value>

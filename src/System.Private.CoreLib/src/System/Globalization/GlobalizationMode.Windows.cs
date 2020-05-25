@@ -12,5 +12,8 @@ namespace System.Globalization
             // return CLRConfig.GetBoolValue(c_InvariantModeConfigSwitch);
             return false;
         }
+
+        // CORERT-TODO: Enable Icu on Windows
+        internal static bool UseNls => true;
     }
 }

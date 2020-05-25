@@ -4,12 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Runtime.General;
 
 using Internal.Runtime.Augments;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Reflection.Execution.FieldAccessors;
+using Internal.Reflection.Execution.MethodInvokers;
 
 namespace Internal.Reflection.Execution
 {
@@ -57,6 +59,62 @@ namespace Internal.Reflection.Execution
             return RuntimeAugments.TryGetImplementedInterfaces(typeHandle);
         }
 
+        public sealed override void VerifyInterfaceIsImplemented(RuntimeTypeHandle typeHandle, RuntimeTypeHandle ifaceHandle)
+        {
+            if (RuntimeAugments.IsInterface(typeHandle))
+            {
+                throw new ArgumentException(SR.Argument_InterfaceMap);
+            }
+
+            if (!RuntimeAugments.IsInterface(ifaceHandle))
+            {
+                throw new ArgumentException(SR.Arg_MustBeInterface);
+            }
+
+            if (RuntimeAugments.IsAssignableFrom(ifaceHandle, typeHandle))
+            {
+                return;
+            }
+
+            throw new ArgumentException(SR.Arg_NotFoundIFace);
+        }
+
+        public sealed override void GetInterfaceMap(Type instanceType, Type interfaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods)
+        {
+            MethodInfo[] ifaceMethods = interfaceType.GetMethods();
+            var tMethods = new MethodInfo[ifaceMethods.Length];
+            for (int i = 0; i < ifaceMethods.Length; i++)
+            {
+                var invoker = (VirtualMethodInvoker)GetMethodInvoker(ifaceMethods[i]);
+
+                IntPtr classRtMethodHandle = invoker.ResolveTarget(instanceType.TypeHandle);
+                if (classRtMethodHandle == IntPtr.Zero)
+                {
+                    goto notFound;
+                }
+
+                MethodBase methodBase = RuntimeAugments.Callbacks.GetMethodBaseFromStartAddressIfAvailable(classRtMethodHandle);
+                if (methodBase == null)
+                {
+                    goto notFound;
+                }
+
+                tMethods[i] = (MethodInfo)methodBase;
+                continue;
+
+notFound:
+                if (instanceType.IsAbstract)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.Arg_InterfaceMapMustNotBeAbstract, interfaceType.FullName, instanceType.FullName));
+                }
+
+                throw new NotSupportedException();
+            }
+
+            interfaceMethods = ifaceMethods;
+            targetMethods = tMethods;
+        }
+
         public sealed override string GetLastResortString(RuntimeTypeHandle typeHandle)
         {
             return RuntimeAugments.GetLastResortString(typeHandle);
@@ -67,7 +125,7 @@ namespace Internal.Reflection.Execution
         //==============================================================================================
         public sealed override FieldAccessor CreateLiteralFieldAccessor(object value, RuntimeTypeHandle fieldTypeHandle)
         {
-            return new LiteralFieldAccessor(value, fieldTypeHandle); 
+            return new LiteralFieldAccessor(value, fieldTypeHandle);
         }
 
         public sealed override EnumInfo GetEnumInfo(RuntimeTypeHandle typeHandle)

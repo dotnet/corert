@@ -1144,6 +1144,18 @@ internal static class Program
         }
     }
 
+    public struct GenStruct2<TKey, T2>
+    {
+        private TKey key;
+        T2 field2;
+
+        public GenStruct2(TKey key, T2 v)
+        {
+            this.key = key;
+            this.field2 = v;
+        }
+    }
+
     private static void TestGenericStructHandling()
     {
         StartTest("Casting of generic structs on return and in call params");
@@ -1154,15 +1166,38 @@ internal static class Program
         // test call param is cast
         GenStructCallParam(new GenStructWithImplicitOp<string>());
 
+        // replicate compilation error with https://github.com/dotnet/corert/blob/66fbcd492fbc08db4f472e7e8fa368cb523b38d4/src/System.Private.CoreLib/shared/System/Array.cs#L1482
+        GenStructCallParam(CreateGenStructWithImplicitOp<string>(new [] {""}));
+
         // replicate compilation error with https://github.com/dotnet/corefx/blob/e99ec129cfd594d53f4390bf97d1d736cff6f860/src/System.Collections.Immutable/src/System/Collections/Immutable/SortedInt32KeyNode.cs#L561
         new GenClassUsingFieldOfInnerStruct<GenClassWithInnerStruct<string>.GenInterfaceOverGenStructStruct>(
             new GenClassWithInnerStruct<string>.GenInterfaceOverGenStructStruct(), null).Create();
 
+        // replicate compilation error with https://github.com/dotnet/runtime/blob/b57a099c1773eeb52d3c663211e275131b4b7938/src/libraries/System.Net.Primitives/src/System/Net/CredentialCache.cs#L328
+        new GenClassWithInnerStruct<string>().SetField("");
+
         PassTest();
+    }
+
+    private static GenStructWithImplicitOp<T> CreateGenStructWithImplicitOp<T>(T[] v)
+    {
+        return new GenStructWithImplicitOp<T>(v);
+    }
+
+    private static GenStruct2<T, T2> CreateGenStruct2<T, T2>(T k, T2 v)
+    {
+        return new GenStruct2<T, T2>(k, v);
     }
 
     public class GenClassWithInnerStruct<TKey>
     {
+        private GenStruct2<TKey, string> structField;
+
+        public void SetField(TKey v)
+        {
+            structField = Program.CreateGenStruct2(v, "");
+        }
+
         internal readonly struct GenInterfaceOverGenStructStruct 
         {
             // 2 fields to avoid struct collapsing to an i32
@@ -1338,8 +1373,14 @@ internal static class Program
         TestThrowInCatch();
 
         TestExceptionInGvmCall();
-        
+
+        TestCatchHandlerNeedsGenericContext();
+
+        TestFilterHandlerNeedsGenericContext();
+
         TestFilter();
+
+        TestFilterNested();
     }
 
     private static void TestTryCatchNoException()
@@ -1518,6 +1559,46 @@ internal static class Program
         EndTest(counter == 4);
     }
 
+    static string exceptionFlowSequence = "";
+    private static void TestFilterNested()
+    {
+        StartTest("TestFilterNested");
+        foreach (var exception in new Exception[]
+            {new ArgumentException(), new Exception(), new NullReferenceException()})
+        {
+            try
+            {
+                try
+                {
+                    try
+                    {
+                        throw exception;
+                    }
+                    catch (NullReferenceException) when (Print("inner"))
+                    {
+                        exceptionFlowSequence += "In inner catch";
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    exceptionFlowSequence += "In middle catch";
+                }
+            }
+            catch (Exception) when (Print("outer"))
+            {
+                exceptionFlowSequence += "In outer catch";
+            }
+        }
+        PrintLine(exceptionFlowSequence);
+        EndTest(exceptionFlowSequence == @"In middle catchRunning outer filterIn outer catchRunning inner filterIn inner catch");
+    }
+
+    static bool Print(string s)
+    {
+        exceptionFlowSequence += $"Running {s} filter";
+        return true;
+    }
+    
     class DerivedThrows<A> : GenBase<A>
     {
         public override string GMethod1<T>(T t1, T t2) { throw new Exception("ToStringThrows"); }
@@ -1538,6 +1619,51 @@ internal static class Program
             return e.Message == "ToStringThrows"; // also testing here that we can return a value out of a catch
         }
         return false;
+    }
+
+    private static void TestCatchHandlerNeedsGenericContext()
+    {
+        StartTest("Catch handler can access generic context");
+        DerivedCatches<object> c = new DerivedCatches<object>();
+        EndTest(c.GvmInCatch<string>("a", "b") == "GenBase<System.Object>.GMethod1<System.String>(a,b)");  
+    }
+
+    private static void TestFilterHandlerNeedsGenericContext()
+    {
+        StartTest("Filter funclet can access generic context");
+        DerivedCatches<object> c = new DerivedCatches<object>();
+        EndTest(c.GvmInFilter<string>("a", "b"));
+    }
+
+    class DerivedCatches<A> : GenBase<A>
+    {
+        public string GvmInCatch<T>(T t1, T t2)
+        {
+            try
+            {
+                throw new Exception();
+            }
+            catch (Exception)
+            {
+                return GMethod1(t1, t2);
+            }
+        }
+
+        public bool GvmInFilter<T>(T t1, T t2)
+        {
+            try
+            {
+                throw new Exception();
+            }
+            catch when (GMethod1(t1, t2) == "GenBase<System.Object>.GMethod1<System.String>(a,b)")
+            {
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 
     private static void ThrowException(Exception e)
@@ -1773,13 +1899,26 @@ internal static class Program
         try
         {
             var f = c.F; //field access
-            PrintLine("NRE Field access failed");
+            PrintLine("NRE Field load access failed");
             success = false;
         }
         catch(NullReferenceException)
         {
         }
         catch(Exception)
+        {
+            success = false;
+        }
+        try
+        {
+            c.F = 1;
+            PrintLine("NRE Field store access failed");
+            success = false;
+        }
+        catch (NullReferenceException)
+        {
+        }
+        catch (Exception)
         {
             success = false;
         }
@@ -1846,6 +1985,15 @@ internal static class Program
         TestUnsignedIntAddOvf();
 
         TestUnsignedLongAddOvf();
+
+        TestSignedIntSubOvf();
+
+        TestSignedLongSubOvf();
+
+        TestUnsignedIntSubOvf();
+
+        TestUnsignedLongSubOvf();
+
     }
 
     private static void TestSignedLongAddOvf()
@@ -1865,7 +2013,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i64 addition of +ve number");
+            FailTest("exception not thrown for signed i64 addition of positive number");
             return;
         }
         thrown = false;
@@ -1881,7 +2029,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i64 addition of -ve number");
+            FailTest("exception not thrown for signed i64 addition of negative number");
             return;
         }
         EndTest(true);
@@ -1911,7 +2059,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i32 addition of +ve number");
+            FailTest("exception not thrown for signed i32 addition of positive number");
             return;
         }
 
@@ -1928,7 +2076,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for signed i32 addition of -ve number");
+            FailTest("exception not thrown for signed i32 addition of negative number");
             return;
         }
         PassTest();
@@ -1958,7 +2106,7 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for unsigned i32 addition of +ve number");
+            FailTest("exception not thrown for unsigned i32 addition of positive number");
             return;
         }
         PassTest();
@@ -1988,7 +2136,153 @@ internal static class Program
         }
         if (!thrown)
         {
-            FailTest("exception not thrown for unsigned i64 addition of +ve number");
+            FailTest("exception not thrown for unsigned i64 addition of positive number");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestSignedLongSubOvf()
+    {
+        StartTest("Test long sub overflows");
+        bool thrown;
+        long op64l = -2;
+        long op64r = long.MaxValue;
+        thrown = false;
+        try
+        {
+            long res = checked(op64l - op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i64 substraction of positive number");
+            return;
+        }
+        thrown = false;
+        op64l = long.MaxValue; // subtract negative to overflow above the MaxValue
+        op64r = -1;
+        try
+        {
+            long res = checked(op64l - op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i64 addition of negative number");
+            return;
+        }
+        EndTest(true);
+    }
+
+    private static void TestSignedIntSubOvf()
+    {
+        StartTest("Test int sub overflows");
+        bool thrown;
+        int op32l = 5;
+        int op32r = 2;
+        if (checked(op32l - op32r) != 3)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op32l = -2;
+        op32r = int.MaxValue;
+        thrown = false;
+        try
+        {
+            int res = checked(op32l - op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i32 subtraction of positive number");
+            return;
+        }
+
+        thrown = false;
+        op32l = int.MaxValue; // subtract negative to overflow above the MaxValue
+        op32r = -1;
+        try
+        {
+            int res = checked(op32l - op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i32 subtraction of negative number");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestUnsignedIntSubOvf()
+    {
+        StartTest("Test uint sub overflows");
+        bool thrown;
+        uint op32l = 5;
+        uint op32r = 2;
+        if (checked(op32l - op32r) != 3)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op32l = 0;
+        op32r = 1;
+        thrown = false;
+        try
+        {
+            uint res = checked(op32l - op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for unsigned i32 subtraction of positive number");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestUnsignedLongSubOvf()
+    {
+        StartTest("Test ulong sub overflows");
+        bool thrown;
+        ulong op64l = 5;
+        ulong op64r = 2;
+        if (checked(op64l - op64r) != 3)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op64l = 0;
+        op64r = 1;
+        thrown = false;
+        try
+        {
+            ulong res = checked(op64l - op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for unsigned i64 addition of positive number");
             return;
         }
         PassTest();

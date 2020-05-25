@@ -14,8 +14,6 @@ namespace Internal.Reflection.Execution.FieldAccessors
         {
         }
 
-        public sealed override int Offset => OffsetPlusHeader - RuntimeAugments.ObjectHeaderSize;
-
         protected sealed override Object UncheckedGetField(Object obj)
         {
             return RuntimeAugments.LoadPointerTypeField(obj, OffsetPlusHeader, this.FieldTypeHandle);

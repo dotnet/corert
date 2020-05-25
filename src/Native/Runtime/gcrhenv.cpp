@@ -237,13 +237,13 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (EEType *pEEType, UInt32 uFlags, UIntNati
     ASSERT(!pThread->IsDoNotTriggerGcSet());
 
     size_t max_object_size;
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (g_pConfig->GetGCAllowVeryLargeObjects())
     {
         max_object_size = (INT64_MAX - 7 - min_obj_size);
     }
     else
-#endif // BIT64
+#endif // HOST_64BIT
     {
         max_object_size = (INT32_MAX - 7 - min_obj_size);
     }
@@ -372,7 +372,7 @@ bool IsOnReadablePortionOfThread(EnumGcRefScanContext * pSc, PTR_VOID pointer)
     return true;
 }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define CONSERVATIVE_REGION_MAGIC_NUMBER 0x87DF7A104F09E0A9ULL
 #else
 #define CONSERVATIVE_REGION_MAGIC_NUMBER 0x4F09E0A9
@@ -771,7 +771,7 @@ uint64_t RedhawkGCInterface::s_DeadThreadsNonAllocBytes = 0;
 
 uint64_t RedhawkGCInterface::GetDeadThreadsNonAllocBytes()
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     return s_DeadThreadsNonAllocBytes;
 #else
     // As it could be noticed we read 64bit values that may be concurrently updated.
@@ -1140,14 +1140,14 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 #endif // FEATURE_EVENT_TRACE
 }
 
-void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
+void GCToEEInterface::DiagWalkUOHSurvivors(void* gcContext, int gen)
 {
 #ifdef FEATURE_EVENT_TRACE
     if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_loh);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_uoh, gen);
         ETW::GCLog::EndMovedReferences(context);
     }
 #else
@@ -1206,7 +1206,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //     On architectures with strong ordering, we only need to prevent compiler reordering.
         //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
 
-#if defined(_ARM64_) || defined(_ARM_)
+#if defined(HOST_ARM64) || defined(HOST_ARM)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
@@ -1218,7 +1218,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
 
-#if defined(_ARM64_) || defined(_ARM_)
+#if defined(HOST_ARM64) || defined(HOST_ARM)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
@@ -1415,22 +1415,22 @@ MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
     return (MethodTable*)g_pFreeObjectEEType;
 }
 
-bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
+bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
 {
     // these configuration values are given to us via startup flags.
-    if (strcmp(key, "gcServer") == 0)
+    if (strcmp(privateKey, "gcServer") == 0)
     {
         *value = g_heap_type == GC_HEAP_SVR;
         return true;
     }
 
-    if (strcmp(key, "gcConcurrent") == 0)
+    if (strcmp(privateKey, "gcConcurrent") == 0)
     {
         *value = !g_pRhConfig->GetDisableBGC();
         return true;
     }
 
-    if (strcmp(key, "gcConservative") == 0)
+    if (strcmp(privateKey, "gcConservative") == 0)
     {
         *value = g_pConfig->GetGCConservative();
         return true;
@@ -1439,17 +1439,17 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
     return false;
 }
 
-bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
+bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publicKey, int64_t* value)
 {
-    if (strcmp(key, "HeapVerify") == 0)
+    if (strcmp(privateKey, "HeapVerify") == 0)
     {
         *value = g_pRhConfig->GetHeapVerify();
         return true;
     }
 
-    if (strcmp(key, "GCgen0size") == 0)
+    if (strcmp(privateKey, "GCgen0size") == 0)
     {
-#if defined(USE_PORTABLE_HELPERS) && !defined(_WASM_)
+#if defined(USE_PORTABLE_HELPERS) && !defined(HOST_WASM)
         // CORERT-TODO: remove this
         //              https://github.com/dotnet/corert/issues/2033
         *value = 100 * 1024 * 1024;
@@ -1462,9 +1462,10 @@ bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
     return false;
 }
 
-bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
+bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* publicKey, const char** value)
 {
-    UNREFERENCED_PARAMETER(key);
+    UNREFERENCED_PARAMETER(privateKey);
+    UNREFERENCED_PARAMETER(publicKey);
     UNREFERENCED_PARAMETER(value);
     return false;
 }

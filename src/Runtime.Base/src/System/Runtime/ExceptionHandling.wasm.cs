@@ -29,12 +29,17 @@ namespace System.Runtime
             {
                 return idxTryLandingStart == _tryStartOffset;
             }
+
+            public bool ContainsCodeOffset(uint idxTryLandingStart)
+            {
+                return ((idxTryLandingStart >= _tryStartOffset) &&
+                        (idxTryLandingStart < _tryEndOffset));
+            }
         }
 
         // TODO: temporary to try things out, when working look to see how to refactor with FindFirstPassHandler
         private static bool FindFirstPassHandlerWasm(object exception, uint idxStart, uint idxTryLandingStart /* the start IL idx of the try region for the landing pad, will use in place of PC */, 
-            void* shadowStack, void* exInfo,
-            ref EHClauseIterator clauseIter, out uint tryRegionIdx, out byte* pHandler)
+            void* shadowStack, ref EHClauseIterator clauseIter, out uint tryRegionIdx, out byte* pHandler)
         {
             pHandler = (byte*)0;
             tryRegionIdx = MaxTryRegionIdx;
@@ -70,7 +75,7 @@ namespace System.Runtime
                 EHClauseIterator.RhEHClauseKindWasm clauseKind = ehClause._clauseKind;
                 if (((clauseKind != EHClauseIterator.RhEHClauseKindWasm.RH_EH_CLAUSE_TYPED) &&
                      (clauseKind != EHClauseIterator.RhEHClauseKindWasm.RH_EH_CLAUSE_FILTER))
-                    || !ehClause.TryStartsAt(idxTryLandingStart))
+                    || !ehClause.ContainsCodeOffset(idxTryLandingStart))
                 {
                     continue;
                 }

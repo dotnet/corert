@@ -436,7 +436,7 @@ DECLARE_INDIRECTION(Object *, RhTypeCast_CheckCastInterface, (EEType *, Object *
 
 DECLARE_INDIRECTION(void, RhTypeCast_CheckVectorElemAddr, (EEType *, Object *));
 
-#ifdef _ARM_
+#ifdef HOST_ARM
 DECLARE_INDIRECTION(Object *, RhpNewFinalizableAlign8, (EEType *));
 DECLARE_INDIRECTION(Object *, RhpNewFastMisalign, (EEType *));
 DECLARE_INDIRECTION(Object *, RhpNewFastAlign8, (EEType *));
@@ -452,7 +452,7 @@ COOP_PINVOKE_HELPER(PTR_VOID, RhGetRuntimeHelperForType, (EEType * pEEType, int 
     switch (helperKind)
     {
     case RuntimeHelperKind::AllocateObject:
-#ifdef _ARM_
+#ifdef HOST_ARM
         if ((pEEType->get_RareFlags() & EEType::RareFlags::RequiresAlign8Flag) == EEType::RareFlags::RequiresAlign8Flag)
         {
             if (pEEType->HasFinalizer())
@@ -489,7 +489,7 @@ COOP_PINVOKE_HELPER(PTR_VOID, RhGetRuntimeHelperForType, (EEType * pEEType, int 
             return INDIRECTION(RhTypeCast_CheckCastClass);
 
     case RuntimeHelperKind::AllocateArray:
-#ifdef _ARM_
+#ifdef HOST_ARM
         if (pEEType->RequiresAlign8())
             return INDIRECTION(RhpNewArrayAlign8);
 #endif

@@ -49,7 +49,7 @@ EXTERN_C PTR_VOID PointerToReturnFromCallDescrThunk;
 GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromCallDescrThunkAddr, PointerToReturnFromCallDescrThunk);
 #endif
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 EXTERN_C void * PointerToRhpCallFunclet2;
 GVAL_IMPL_INIT(PTR_VOID, g_RhpCallFunclet2Addr, PointerToRhpCallFunclet2);
 #endif
@@ -174,7 +174,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
 
     PTR_UIntNative pPreservedRegsCursor = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_PreservedRegs);
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     m_RegDisplay.pLR = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP);
     m_RegDisplay.pR11 = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_ChainPointer);
      
@@ -204,7 +204,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
         m_HijackedReturnValueKind = GCRK_Byref;
     }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     m_RegDisplay.pFP = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_FramePointer);
     m_RegDisplay.pLR = (PTR_UIntNative)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP);
 
@@ -253,18 +253,18 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
         m_HijackedReturnValueKind = retValueKind;
     }
 
-#else // _TARGET_ARM_
+#else // TARGET_ARM
     if (pFrame->m_Flags & PTFF_SAVE_RBX)  { m_RegDisplay.pRbx = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_RSI)  { m_RegDisplay.pRsi = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_RDI)  { m_RegDisplay.pRdi = pPreservedRegsCursor++; }
     ASSERT(!(pFrame->m_Flags & PTFF_SAVE_RBP)); // RBP should never contain a GC ref because we require
                                                 // a frame pointer for methods with pinvokes
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (pFrame->m_Flags & PTFF_SAVE_R12)  { m_RegDisplay.pR12 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R13)  { m_RegDisplay.pR13 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R14)  { m_RegDisplay.pR14 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R15)  { m_RegDisplay.pR15 = pPreservedRegsCursor++; }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     m_RegDisplay.pRbp = (PTR_UIntNative) PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_FramePointer);
 
@@ -273,12 +273,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     if (pFrame->m_Flags & PTFF_SAVE_RAX)  { m_RegDisplay.pRax = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_RCX)  { m_RegDisplay.pRcx = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_RDX)  { m_RegDisplay.pRdx = pPreservedRegsCursor++; }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (pFrame->m_Flags & PTFF_SAVE_R8 )  { m_RegDisplay.pR8  = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R9 )  { m_RegDisplay.pR9  = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R10)  { m_RegDisplay.pR10 = pPreservedRegsCursor++; }
     if (pFrame->m_Flags & PTFF_SAVE_R11)  { m_RegDisplay.pR11 = pPreservedRegsCursor++; }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     if (pFrame->m_Flags & PTFF_RAX_IS_GCREF)
     {
@@ -291,7 +291,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
         m_HijackedReturnValueKind = GCRK_Byref;
     }
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 #endif // defined(USE_PORTABLE_HELPERS)
 
@@ -388,7 +388,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.IP   = pCtx->GetIp();
     m_RegDisplay.pIP  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, IP);
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     //
     // preserved regs
     //
@@ -414,7 +414,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     //
     m_RegDisplay.pR0  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R0);
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     //
     // preserved regs
     //
@@ -469,7 +469,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
 
-#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
     //
     // preserved regs
     //
@@ -477,7 +477,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pRsi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rsi);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rdi);
     m_RegDisplay.pRbx = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rbx);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     m_RegDisplay.pR12 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R12);
     m_RegDisplay.pR13 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R13);
     m_RegDisplay.pR14 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, R14);
@@ -486,7 +486,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     // preserved xmm regs
     //
     memcpy(m_RegDisplay.Xmm, &pCtx->Xmm6, sizeof(m_RegDisplay.Xmm));
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     //
     // scratch regs
@@ -494,15 +494,15 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pRax = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pCtx, Rax);
     m_RegDisplay.pRcx = NULL;
     m_RegDisplay.pRdx = NULL;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     m_RegDisplay.pR8  = NULL;
     m_RegDisplay.pR9  = NULL;
     m_RegDisplay.pR10 = NULL;
     m_RegDisplay.pR11 = NULL;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 #else
     PORTABILITY_ASSERT("StackFrameIterator::InternalInit");
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 }
 
 PTR_VOID StackFrameIterator::HandleExCollide(PTR_ExInfo pExInfo)
@@ -595,7 +595,7 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     // Then, put back the pointers to the funclet's preserved registers (since those are the correct values
     // until the funclet completes, at which point the values will be copied back to the ExInfo's REGDISPLAY).
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     m_RegDisplay.pR4  = thisFuncletPtrs.pR4 ;
     m_RegDisplay.pR5  = thisFuncletPtrs.pR5 ;
     m_RegDisplay.pR6  = thisFuncletPtrs.pR6 ;
@@ -605,7 +605,7 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR10 = thisFuncletPtrs.pR10;
     m_RegDisplay.pR11 = thisFuncletPtrs.pR11;
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     m_RegDisplay.pX19 = thisFuncletPtrs.pX19;
     m_RegDisplay.pX20 = thisFuncletPtrs.pX20;
     m_RegDisplay.pX21 = thisFuncletPtrs.pX21;
@@ -627,24 +627,24 @@ void StackFrameIterator::UpdateFromExceptionDispatch(PTR_StackFrameIterator pSou
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
 
-#elif defined(_TARGET_X86_) || defined(_TARGET_AMD64_) 
+#elif defined(TARGET_X86) || defined(TARGET_AMD64) 
     // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
     m_RegDisplay.pRbp = thisFuncletPtrs.pRbp;
     m_RegDisplay.pRdi = thisFuncletPtrs.pRdi;
     m_RegDisplay.pRsi = thisFuncletPtrs.pRsi;
     m_RegDisplay.pRbx = thisFuncletPtrs.pRbx;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     m_RegDisplay.pR12 = thisFuncletPtrs.pR12;
     m_RegDisplay.pR13 = thisFuncletPtrs.pR13;
     m_RegDisplay.pR14 = thisFuncletPtrs.pR14;
     m_RegDisplay.pR15 = thisFuncletPtrs.pR15;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 #else
     PORTABILITY_ASSERT("StackFrameIterator::UpdateFromExceptionDispatch");
 #endif
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 typedef DPTR(Fp128) PTR_Fp128;
 #endif
 
@@ -662,7 +662,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 
     PTR_UIntNative SP;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // First, unwind RhpCallFunclet
     SP = (PTR_UIntNative)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
     m_RegDisplay.SetAddrOfIP(SP);
@@ -712,7 +712,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR13 = SP++;
     m_RegDisplay.pR14 = SP++;
     m_RegDisplay.pR15 = SP++;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     static const int ArgumentsScratchAreaSize = 4 * 8;
     
     PTR_Fp128 xmm = (PTR_Fp128)(m_RegDisplay.SP + ArgumentsScratchAreaSize);
@@ -759,7 +759,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR14 = SP++;
     m_RegDisplay.pR15 = SP++;
     
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     SP = (PTR_UIntNative)(m_RegDisplay.SP);
 
     if (!isFilterInvoke)
@@ -783,7 +783,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pRsi = SP++;
     m_RegDisplay.pRbx = SP++;
     m_RegDisplay.pRbp = SP++;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
     PTR_UInt64 d = (PTR_UInt64)(m_RegDisplay.SP);
 
@@ -820,7 +820,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR10 = SP++;
     m_RegDisplay.pR11 = SP++;
     
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     PTR_UInt64 d = (PTR_UInt64)(m_RegDisplay.SP);
 
     for (int i = 0; i < 8; i++)
@@ -871,7 +871,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     ASSERT_UNCONDITIONALLY("NYI for this arch");
 #endif
 
-#if !defined(_TARGET_ARM64_)
+#if !defined(TARGET_ARM64)
     m_RegDisplay.SetAddrOfIP((PTR_PCODE)SP);
     m_RegDisplay.SetIP(*SP++);
 #endif
@@ -918,7 +918,7 @@ public:
         UNREFERENCED_PARAMETER(pRegisterSet);
     }
 
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
@@ -942,7 +942,7 @@ public:
         UNREFERENCED_PARAMETER(pRegisterSet);
     }
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
@@ -964,7 +964,7 @@ public:
         pRegisterSet->pR11 = GET_POINTER_TO_FIELD(m_pushedR11);
     }
 
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 
     // Conservative GC reporting must be applied to everything between the base of the
     // IntArgRegs and the top of the StackPassedArgs.
@@ -985,7 +985,7 @@ public:
         pRegisterSet->pRbp = GET_POINTER_TO_FIELD(m_pushedEBP);
     }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
@@ -1007,7 +1007,7 @@ public:
     {
         pRegisterSet->pFP = GET_POINTER_TO_FIELD(m_pushedFP);
     }
-#elif defined(_TARGET_WASM_)
+#elif defined(TARGET_WASM)
 private:
     // WASMTODO: #error NYI for this arch
     UIntNative m_stackPassedArgs[1];        // Placeholder
@@ -1071,19 +1071,19 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 #endif // defined(USE_PORTABLE_HELPERS)
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 #define STACK_ALIGN_SIZE 16
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 #define STACK_ALIGN_SIZE 8
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 #define STACK_ALIGN_SIZE 16
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 #define STACK_ALIGN_SIZE 4
-#elif defined(_TARGET_WASM_)
+#elif defined(TARGET_WASM)
 #define STACK_ALIGN_SIZE 4
 #endif
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 struct CALL_DESCR_CONTEXT
 {
     UIntNative  Rbp;
@@ -1091,7 +1091,7 @@ struct CALL_DESCR_CONTEXT
     UIntNative  Rbx;
     UIntNative  IP;
 };
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 struct CALL_DESCR_CONTEXT
 {
     UIntNative  R4;
@@ -1099,7 +1099,7 @@ struct CALL_DESCR_CONTEXT
     UIntNative  R7;
     UIntNative  IP;
 };
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 struct CALL_DESCR_CONTEXT
 {
     UIntNative  FP;
@@ -1107,14 +1107,14 @@ struct CALL_DESCR_CONTEXT
     UIntNative  X19;
     UIntNative  X20;
 };
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 struct CALL_DESCR_CONTEXT
 {
     UIntNative  Rbx;
     UIntNative  Rbp;
     UIntNative  IP;
 };
-#elif defined (_TARGET_WASM_)
+#elif defined (TARGET_WASM)
 struct CALL_DESCR_CONTEXT
 {
     UIntNative  IP;
@@ -1135,7 +1135,7 @@ void StackFrameIterator::UnwindCallDescrThunk()
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InCallDescrThunk);
 
     UIntNative newSP;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // RBP points to the SP that we want to capture. (This arrangement allows for
     // the arguments from this function to be loaded into memory with an adjustment
     // to SP, like an alloca
@@ -1150,7 +1150,7 @@ void StackFrameIterator::UnwindCallDescrThunk()
     // And adjust SP to be the state that it should be in just after returning from
     // the CallDescrFunction
     newSP += sizeof(CALL_DESCR_CONTEXT);
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     // R7 points to the SP that we want to capture. (This arrangement allows for
     // the arguments from this function to be loaded into memory with an adjustment
     // to SP, like an alloca
@@ -1165,7 +1165,7 @@ void StackFrameIterator::UnwindCallDescrThunk()
     // the CallDescrFunction
     newSP += sizeof(CALL_DESCR_CONTEXT);
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     // pFP points to the SP that we want to capture. (This arrangement allows for
     // the arguments from this function to be loaded into memory with an adjustment
     // to SP, like an alloca
@@ -1179,7 +1179,7 @@ void StackFrameIterator::UnwindCallDescrThunk()
     // the CallDescrFunction
     newSP += sizeof(CALL_DESCR_CONTEXT);
 
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     // RBP points to the SP that we want to capture. (This arrangement allows for
     // the arguments from this function to be loaded into memory with an adjustment
     // to SP, like an alloca
@@ -1217,7 +1217,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InThrowSiteThunk);
 
     const UIntNative STACKSIZEOF_ExInfo = ((sizeof(ExInfo) + (STACK_ALIGN_SIZE-1)) & ~(STACK_ALIGN_SIZE-1));
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
+#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     const UIntNative SIZEOF_OutgoingScratch = 0x20;
 #else
     const UIntNative SIZEOF_OutgoingScratch = 0;
@@ -1233,7 +1233,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pR13 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R13);
     m_RegDisplay.pR14 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R14);
     m_RegDisplay.pR15 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R15);
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbp);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rdi);
     m_RegDisplay.pRsi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rsi);
@@ -1242,7 +1242,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pR13 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R13);
     m_RegDisplay.pR14 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R14);
     m_RegDisplay.pR15 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R15);
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     m_RegDisplay.pR4  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R4);
     m_RegDisplay.pR5  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R5);
     m_RegDisplay.pR6  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R6);
@@ -1251,7 +1251,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pR9  = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R9);
     m_RegDisplay.pR10 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R10);
     m_RegDisplay.pR11 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, R11);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     m_RegDisplay.pX19 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X19);
     m_RegDisplay.pX20 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X20);
     m_RegDisplay.pX21 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X21);
@@ -1263,7 +1263,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pX27 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X27);
     m_RegDisplay.pX28 = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, X28);
     m_RegDisplay.pFP = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, FP);
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     m_RegDisplay.pRbp = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rbp);
     m_RegDisplay.pRdi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rdi);
     m_RegDisplay.pRsi = PTR_TO_MEMBER(PAL_LIMITED_CONTEXT, pContext, Rsi);
@@ -1792,9 +1792,9 @@ void StackFrameIterator::GetStackRangeToReportConservatively(PTR_RtuObjectRef * 
 
 PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 2);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 4);
 #else
     return (PTR_VOID)(((PTR_UInt8)controlPC) - 1);
@@ -1834,7 +1834,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
     }
 
     if (
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         EQUALS_RETURN_ADDRESS(returnAddress, RhpCallFunclet2)
 #else
         EQUALS_RETURN_ADDRESS(returnAddress, RhpCallCatchFunclet2) ||

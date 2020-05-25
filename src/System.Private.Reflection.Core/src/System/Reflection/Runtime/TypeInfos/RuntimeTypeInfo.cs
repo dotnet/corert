@@ -114,7 +114,7 @@ namespace System.Reflection.Runtime.TypeInfos
         public abstract override bool ContainsGenericParameters { get; }
 
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
- 
+
         //
         // Left unsealed as generic parameter types must override.
         //
@@ -194,7 +194,41 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_InterfaceMap);
+            // restrictions and known limitations compared to CoreCLR:
+            // - only interface.GetMethods() reflection visible interface methods are returned
+            // - all visible members of the interface must be reflection invokeable
+            // - this type and interfaceType must not be an open generic type
+            // - if this type and the method implementing the interface method are abstract, an exception is thrown
+
+            if (IsGenericParameter)
+                throw new InvalidOperationException(SR.Arg_GenericParameter);
+
+            if (interfaceType is null)
+                throw new ArgumentNullException(nameof(interfaceType));
+
+            if (!(interfaceType is RuntimeTypeInfo))
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
+
+            RuntimeTypeHandle interfaceTypeHandle = interfaceType.TypeHandle;
+
+            ReflectionCoreExecution.ExecutionEnvironment.VerifyInterfaceIsImplemented(TypeHandle, interfaceTypeHandle);
+            Debug.Assert(interfaceType.IsInterface);
+            Debug.Assert(!IsInterface);
+
+            // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
+            // runtime magic. We don't have accurate interface maps for them.
+            if (IsSZArray && interfaceType.IsGenericType)
+                throw new ArgumentException(SR.Argument_ArrayGetInterfaceMap);
+
+            ReflectionCoreExecution.ExecutionEnvironment.GetInterfaceMap(this, interfaceType, out MethodInfo[] interfaceMethods, out MethodInfo[] targetMethods);
+
+            InterfaceMapping im;
+            im.InterfaceType = interfaceType;
+            im.TargetType = this;
+            im.InterfaceMethods = interfaceMethods;
+            im.TargetMethods = targetMethods;
+
+            return im;
         }
 
         //
@@ -210,7 +244,7 @@ namespace System.Reflection.Runtime.TypeInfos
         }
 
         public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
- 
+
         public sealed override IEnumerable<Type> ImplementedInterfaces
         {
             get

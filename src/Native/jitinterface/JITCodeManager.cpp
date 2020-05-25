@@ -329,7 +329,7 @@ static int LookupUnwindInfoForMethod(UInt32 RelativePc,
                                      int Low,
                                      int High)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     RelativePc |= THUMB_CODE;
 #endif 
 
@@ -453,7 +453,7 @@ PTR_VOID JITCodeManager::GetFramePointer(MethodInfo *   pMethodInfo,
 
 static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, RUNTIME_FUNCTION * pRuntimeFunction, /* out */ SIZE_T * pSize)
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     PTR_UNWIND_INFO pUnwindInfo(dac_cast<PTR_UNWIND_INFO>(moduleBase + pRuntimeFunction->UnwindData));
 
     SIZE_T size = offsetof(UNWIND_INFO, UnwindCode) + sizeof(UNWIND_CODE) * pUnwindInfo->CountOfUnwindCodes;
@@ -465,7 +465,7 @@ static PTR_VOID GetUnwindDataBlob(TADDR moduleBase, RUNTIME_FUNCTION * pRuntimeF
 
     return pUnwindInfo;
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
     // if this function uses packed unwind data then at least one of the two least significant bits
     // will be non-zero.  if this is the case then there will be no xdata record to enumerate.

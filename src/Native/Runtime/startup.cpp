@@ -34,7 +34,7 @@
 unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 #endif // PROFILE_STARTUP
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 Int32 RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
 #else
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
@@ -50,7 +50,7 @@ EXTERN_C bool g_fHasFastFxsave = false;
 CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 // This field is inspected from the generated code to determine what intrinsics are available.
 EXTERN_C int g_cpuFeatures = 0;
 // This field is defined in the generated code and sets the ISA expectations.
@@ -83,7 +83,7 @@ static bool InitDLL(HANDLE hPalInstance)
 
     // Note: The global exception handler uses RuntimeInstance
 #if !defined(APP_LOCAL_RUNTIME) && !defined(USE_PORTABLE_HELPERS)
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
     PalAddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
 #else
     PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
@@ -176,11 +176,11 @@ enum XArchIntrinsicConstants
 
 bool DetectCPUFeatures()
 {
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
     
     unsigned char buffer[16];
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
     // AMD has a "fast" mode for fxsave/fxrstor, which omits the saving of xmm registers.  The OS will enable this mode
     // if it is supported.  So if we continue to use fxsave/fxrstor, we must manually save/restore the xmm registers.
     // fxsr_opt is bit 25 of EDX
@@ -295,13 +295,11 @@ bool DetectCPUFeatures()
         }
     }
 
-#endif // _X86_ || _AMD64_
-
-
     if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
     {
         return false;
     }
+#endif // HOST_X86 || HOST_AMD64
 
     return true;
 }

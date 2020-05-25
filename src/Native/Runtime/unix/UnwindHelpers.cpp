@@ -21,19 +21,19 @@
 #include <src/config.h>
 #include <src/Registers.hpp>
 #include <src/AddressSpace.hpp>
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 #include <src/libunwind_ext.h>
 #endif
 #include <src/UnwindCursor.hpp>
 
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 using libunwind::Registers_x86_64;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 using libunwind::Registers_arm;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 using libunwind::Registers_arm64;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 using libunwind::Registers_x86;
 #else
 #error "Unwinding is not implemented for this architecture yet."
@@ -47,7 +47,7 @@ using libunwind::UnwindInfoSections;
 
 LocalAddressSpace _addressSpace;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
 // Shim that implements methods required by libunwind over REGDISPLAY
 struct Registers_REGDISPLAY : REGDISPLAY
@@ -215,8 +215,8 @@ struct Registers_REGDISPLAY : REGDISPLAY
     void      setR15(uint64_t value, uint64_t location) { pR15 = (PTR_UIntNative)location; }
 };
 
-#endif // _TARGET_AMD64_
-#if defined(_TARGET_X86_)
+#endif // TARGET_AMD64
+#if defined(TARGET_X86)
 struct Registers_REGDISPLAY : REGDISPLAY
 {
     static int  getArch() { return libunwind::REGISTERS_X86; }
@@ -333,8 +333,8 @@ struct Registers_REGDISPLAY : REGDISPLAY
     void      setEBX(uint64_t value, uint64_t location) { pRbx = (PTR_UIntNative)location; }
 };
 
-#endif // _TARGET_X86_
-#if defined(_TARGET_ARM_)
+#endif // TARGET_X86
+#if defined(TARGET_ARM)
 
 class Registers_arm_rt: public libunwind::Registers_arm {
 public:
@@ -472,9 +472,9 @@ void Registers_arm_rt::setRegister(int num, uint32_t value, uint32_t location)
     }
 }
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
 class Registers_arm64_rt: public libunwind::Registers_arm64 {
 public:
@@ -699,17 +699,17 @@ void Registers_arm64_rt::setRegister(int num, uint64_t value, uint64_t location)
     }
 }
 
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
 bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs)
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_x86_64> uc(_addressSpace);
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_arm_rt> uc(_addressSpace, regs);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_arm64_rt> uc(_addressSpace, regs);
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     libunwind::UnwindCursor<LocalAddressSpace, Registers_x86> uc(_addressSpace, regs);
 #else
     #error "Unwinding is not implemented for this architecture yet."
@@ -725,10 +725,10 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     unw_proc_info_t procInfo;
     uc.getInfo(&procInfo);
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     DwarfInstructions<LocalAddressSpace, Registers_arm64_rt> dwarfInst;
     int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm64_rt*)regs);
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     DwarfInstructions<LocalAddressSpace, Registers_arm_rt> dwarfInst;
     int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm_rt*)regs);
 #else

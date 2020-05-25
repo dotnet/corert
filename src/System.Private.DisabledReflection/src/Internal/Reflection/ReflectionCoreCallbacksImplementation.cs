@@ -5,7 +5,6 @@
 using System;
 using System.Globalization;
 using System.Reflection;
-
 using Internal.Reflection.Augments;
 using Internal.Runtime.Augments;
 

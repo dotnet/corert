@@ -49,5 +49,10 @@ namespace ILCompiler.DependencyAnalysis
             return _name.CompareTo(((ExternSymbolNode)other)._name);
         }
 #endif
+
+        public override string ToString()
+        {
+            return _name.ToString();
+        }
     }
 }

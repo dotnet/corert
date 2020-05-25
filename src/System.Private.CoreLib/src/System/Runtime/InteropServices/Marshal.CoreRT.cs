@@ -74,9 +74,6 @@ namespace System.Runtime.InteropServices
         {
             RuntimeTypeHandle structureTypeHandle = structure.GetType().TypeHandle;
 
-            // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
-            nuint offset = structureTypeHandle.IsValueType() ? (nuint)sizeof(IntPtr) : 0;
-
             IntPtr unmarshalStub;
             if (structureTypeHandle.IsBlittable())
             {
@@ -90,18 +87,27 @@ namespace System.Runtime.InteropServices
                 unmarshalStub = RuntimeAugments.InteropCallbacks.GetStructUnmarshalStub(structureTypeHandle);
             }
 
-            ref byte dest = ref Unsafe.AddByteOffset(ref Unsafe.As<IntPtr, byte>(ref structure.m_pEEType), offset);
             if (unmarshalStub != IntPtr.Zero)
             {
-                CalliIntrinsics.Call(
-                    unmarshalStub,
-                    ref Unsafe.AsRef<byte>((void*)ptr),
-                    ref dest);
+                if (structureTypeHandle.IsValueType())
+                {
+                    CalliIntrinsics.Call(
+                        unmarshalStub,
+                        ref *(byte*)ptr,
+                        ref structure.GetRawData());
+                }
+                else
+                {
+                    CalliIntrinsics.Call(
+                        unmarshalStub,
+                        ref *(byte*)ptr,
+                        structure);
+                }
             }
             else
             {
                 nuint size = (nuint)RuntimeAugments.InteropCallbacks.GetStructUnsafeStructSize(structureTypeHandle);
-                fixed (byte* pDest = &dest)
+                fixed (byte* pDest = &structure.GetRawData())
                 {
                     Buffer.Memmove(pDest, (byte*)ptr, size);
                 }
@@ -142,8 +148,7 @@ namespace System.Runtime.InteropServices
             {
                 CalliIntrinsics.Call(
                     destroyStructureStub,
-                    ref Unsafe.AsRef<byte>((void*)ptr)
-                );
+                    ref *(byte*)ptr);
             }
         }
 
@@ -167,9 +172,6 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(nameof(structure), SR.Argument_NeedNonGenericObject);
             }
 
-            // Boxed struct start at offset 1 (EEType* at offset 0) while class start at offset 0
-            nuint offset = structureTypeHandle.IsValueType() ? (nuint)sizeof(IntPtr) : 0;
-
             IntPtr marshalStub;
             if (structureTypeHandle.IsBlittable())
             {
@@ -183,17 +185,25 @@ namespace System.Runtime.InteropServices
                 marshalStub = RuntimeAugments.InteropCallbacks.GetStructMarshalStub(structureTypeHandle);
             }
 
-            ref byte src = ref Unsafe.AddByteOffset(ref Unsafe.As<IntPtr, byte>(ref structure.m_pEEType), offset);
             if (marshalStub != IntPtr.Zero)
             {
-                CalliIntrinsics.Call(marshalStub,
-                    ref src,
-                    ref Unsafe.AsRef<byte>((void*)ptr));
+                if (structureTypeHandle.IsValueType())
+                {
+                    CalliIntrinsics.Call(marshalStub,
+                        ref structure.GetRawData(),
+                        ref *(byte*)ptr);
+                }
+                else
+                {
+                    CalliIntrinsics.Call(marshalStub,
+                        structure,
+                        ref *(byte*)ptr);
+                }
             }
             else
             {
                 nuint size = (nuint)RuntimeAugments.InteropCallbacks.GetStructUnsafeStructSize(structureTypeHandle);
-                fixed (byte* pSrc = &src)
+                fixed (byte* pSrc = &structure.GetRawData())
                 {
                     Buffer.Memmove((byte*)ptr, pSrc, size);
                 }
@@ -463,6 +473,14 @@ namespace System.Runtime.InteropServices
         internal static unsafe partial class CalliIntrinsics
         {
             internal static void Call(IntPtr pfn, ref byte arg0, ref byte arg1)
+            {
+                throw new NotSupportedException();
+            }
+            internal static void Call(IntPtr pfn, object arg0, ref byte arg1)
+            {
+                throw new NotSupportedException();
+            }
+            internal static void Call(IntPtr pfn, ref byte arg0, object arg1)
             {
                 throw new NotSupportedException();
             }

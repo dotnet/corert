@@ -109,7 +109,7 @@ namespace Internal.Runtime.CompilerServices
         {
             get
             {
-                switch(_resolveType)
+                switch (_resolveType)
                 {
                     case OpenNonVirtualResolve:
                     case OpenNonVirtualResolveLookthruUnboxing:
@@ -148,7 +148,7 @@ namespace Internal.Runtime.CompilerServices
         {
             if (_resolveType == DispatchResolve)
             {
-                return RuntimeImports.RhResolveDispatch(thisObject, _declaringType, (ushort)_methodHandleOrSlotOrCodePointer.ToInt32());
+                return RuntimeImports.RhResolveDispatch(thisObject, _declaringType, (ushort)_methodHandleOrSlotOrCodePointer);
             }
             else if (_resolveType == GVMResolve)
             {
@@ -172,6 +172,16 @@ namespace Internal.Runtime.CompilerServices
                 return nonVirtualOpenInvokeCodePointer;
 
             return TypeLoaderExports.OpenInstanceMethodLookup(resolver, thisObject);
+        }
+
+        unsafe public static IntPtr ResolveMethod(IntPtr resolverPtr, RuntimeTypeHandle thisType)
+        {
+            OpenMethodResolver* resolver = ((OpenMethodResolver*)resolverPtr);
+            IntPtr nonVirtualOpenInvokeCodePointer = resolver->_nonVirtualOpenInvokeCodePointer;
+            if (nonVirtualOpenInvokeCodePointer != IntPtr.Zero)
+                return nonVirtualOpenInvokeCodePointer;
+
+            return RuntimeImports.RhResolveDispatchOnType(thisType.ToEETypePtr(), resolver->_declaringType, (ushort)resolver->_methodHandleOrSlotOrCodePointer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -401,14 +401,6 @@ namespace System.Runtime.InteropServices
             return new TypeInitializationException(message);
         }
 
-        public static unsafe IntPtr GetObjectID(object obj)
-        {
-            fixed (void* p = &obj.m_pEEType)
-            {
-                return (IntPtr)p;
-            }
-        }
-
         public static bool RhpETWShouldWalkCom()
         {
             return RuntimeImports.RhpETWShouldWalkCom();

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
-
 namespace System.Threading
 {
     internal partial class PortableThreadPool
@@ -16,7 +14,7 @@ namespace System.Threading
             /// <summary>
             /// Semaphore for controlling how many threads are currently working.
             /// </summary>
-            private static LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount, SemaphoreSpinCount);
+            private static readonly LowLevelLifoSemaphore s_semaphore = new LowLevelLifoSemaphore(0, MaxPossibleThreadCount, SemaphoreSpinCount);
 
             /// <summary>
             /// Maximum number of spins a thread pool worker thread performs before waiting for work
@@ -28,11 +26,7 @@ namespace System.Threading
 
             private static void WorkerThreadStart()
             {
-                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
-                if (log.IsEnabled())
-                {
-                    log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
-                }
+                PortableThreadPoolEventSource.Log.WorkerThreadStart(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
 
                 while (true)
                 {
@@ -77,11 +71,7 @@ namespace System.Threading
                             if (oldCounts == counts)
                             {
                                 HillClimbing.ThreadPoolHillClimber.ForceChange(newCounts.numThreadsGoal, HillClimbing.StateOrTransition.ThreadTimedOut);
-
-                                if (log.IsEnabled())
-                                {
-                                    log.WorkerThreadStop(newCounts.numExistingThreads);
-                                }
+                                PortableThreadPoolEventSource.Log.WorkerThreadStop(newCounts.numExistingThreads);
                                 return;
                             }
                         }
@@ -99,11 +89,7 @@ namespace System.Threading
             /// <returns>If this thread was woken up before it timed out.</returns>
             private static bool WaitForRequest()
             {
-                PortableThreadPoolEventSource log = PortableThreadPoolEventSource.Log;
-                if (log.IsEnabled())
-                {
-                    log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
-                }
+                PortableThreadPoolEventSource.Log.WorkerThreadWait(ThreadCounts.VolatileReadCounts(ref ThreadPoolInstance._separated.counts).numExistingThreads);
                 return s_semaphore.Wait(ThreadPoolThreadTimeoutMs);
             }
 
@@ -185,7 +171,7 @@ namespace System.Threading
                             newCounts.numExistingThreads -= (short)toCreate;
 
                             ThreadCounts oldCounts = ThreadCounts.CompareExchangeCounts(ref ThreadPoolInstance._separated.counts, newCounts, counts);
-                            if(oldCounts == counts)
+                            if (oldCounts == counts)
                             {
                                 break;
                             }

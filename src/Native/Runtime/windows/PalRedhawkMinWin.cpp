@@ -263,7 +263,7 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
         (win32ctx.ContextFlags & (CONTEXT_SERVICE_ACTIVE | CONTEXT_EXCEPTION_ACTIVE)))
         return false;
 
-#ifdef _X86_
+#ifdef HOST_X86
     pCtx->IP = win32ctx.Eip;
     pCtx->Rsp = win32ctx.Esp;
     pCtx->Rbp = win32ctx.Ebp;
@@ -271,7 +271,7 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
     pCtx->Rsi = win32ctx.Esi;
     pCtx->Rax = win32ctx.Eax;
     pCtx->Rbx = win32ctx.Ebx;
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
     pCtx->IP = win32ctx.Rip;
     pCtx->Rsp = win32ctx.Rsp;
     pCtx->Rbp = win32ctx.Rbp;
@@ -283,7 +283,7 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
     pCtx->R13 = win32ctx.R13;
     pCtx->R14 = win32ctx.R14;
     pCtx->R15 = win32ctx.R15;
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     pCtx->IP = win32ctx.Pc;
     pCtx->R0 = win32ctx.R0;
     pCtx->R4 = win32ctx.R4;
@@ -296,7 +296,7 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
     pCtx->R11 = win32ctx.R11;
     pCtx->SP = win32ctx.Sp;
     pCtx->LR = win32ctx.Lr;
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     pCtx->IP = win32ctx.Pc;
     pCtx->X0 = win32ctx.X0;
     pCtx->X1 = win32ctx.X1;

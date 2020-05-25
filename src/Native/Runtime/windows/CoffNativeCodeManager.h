@@ -4,18 +4,18 @@
 
 #pragma once
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 struct T_RUNTIME_FUNCTION {
     uint32_t BeginAddress;
     uint32_t EndAddress;
     uint32_t UnwindInfoAddress;
 };
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 struct T_RUNTIME_FUNCTION {
     uint32_t BeginAddress;
     uint32_t UnwindData;
 };
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 struct T_RUNTIME_FUNCTION {
     uint32_t BeginAddress;
     union {

@@ -32,7 +32,7 @@
 
 #include <new>
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 #include <pthread.h>
 #endif
 

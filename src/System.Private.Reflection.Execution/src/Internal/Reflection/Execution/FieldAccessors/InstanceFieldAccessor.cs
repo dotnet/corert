@@ -19,7 +19,7 @@ namespace Internal.Reflection.Execution.FieldAccessors
             this.OffsetPlusHeader = offsetPlusHeader;
         }
 
-        public abstract override int Offset { get; }
+        public sealed override int Offset => OffsetPlusHeader - RuntimeAugments.ObjectHeaderSize;
 
         public sealed override Object GetField(Object obj)
         {

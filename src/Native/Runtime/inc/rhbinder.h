@@ -15,7 +15,7 @@ public:
     static const UInt32 cbChunkCommonCode_X64   = 17;
     static const UInt32 cbChunkCommonCode_X86   = 16;
     static const UInt32 cbChunkCommonCode_ARM   = 32;
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     // on ARM, the index of the indirection cell can be computed
     // from the pointer to the indirection cell left in R12, 
     // thus we need only one entry point on ARM,
@@ -41,9 +41,9 @@ public:
 
     static UInt32 EntryIndexToStubOffset(UInt32 entryIndex)
     {
-# if defined(_TARGET_ARM_)
+# if defined(TARGET_ARM)
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_ARM);
-# elif defined(_TARGET_AMD64_)
+# elif defined(TARGET_AMD64)
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_X64);
 # else
         return EntryIndexToStubOffset(entryIndex, cbChunkCommonCode_X86);
@@ -52,7 +52,7 @@ public:
 
     static UInt32 EntryIndexToStubOffset(UInt32 entryIndex, UInt32 cbChunkCommonCode)
     {
-# if defined(_TARGET_ARM_)
+# if defined(TARGET_ARM)
         UNREFERENCED_PARAMETER(entryIndex);
         UNREFERENCED_PARAMETER(cbChunkCommonCode);
 
@@ -334,7 +334,7 @@ struct InterfaceDispatchCell
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 // Note for ARM: try and keep the flags in the low 16-bits, since they're not easy to load into a register in
 // a single instruction within our stubs.
 enum PInvokeTransitionFrameFlags
@@ -372,7 +372,7 @@ enum PInvokeTransitionFrameFlags
 
     PTFF_THREAD_ABORT   = 0x00010000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 enum PInvokeTransitionFrameFlags : UInt64
 {
     // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\arm64\AsmMacros.h
@@ -457,7 +457,7 @@ inline GCRefKind TransitionFrameFlagsToReturnKind(UInt64 transFrameFlags)
     return returnKind;
 }
 #endif // ICODEMANAGER_INCLUDED
-#else // _TARGET_ARM_
+#else // TARGET_ARM
 enum PInvokeTransitionFrameFlags
 {
     // NOTE: Keep in sync with ndp\FxCore\CoreRT\src\Native\Runtime\[amd64|i386]\AsmMacros.inc
@@ -497,7 +497,7 @@ enum PInvokeTransitionFrameFlags
 
     PTFF_THREAD_ABORT   = 0x00040000,   // indicates that ThreadAbortException should be thrown when returning from the transition
 };
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 #pragma warning(push)
 #pragma warning(disable:4200) // nonstandard extension used: zero-sized array in struct/union
@@ -516,10 +516,10 @@ struct PInvokeTransitionFrame
 #else // USE_PORTABLE_HELPERS
 struct PInvokeTransitionFrame
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     TgtPTR_Void     m_ChainPointer; // R11, used by OS to walk stack quickly
 #endif
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // On arm64, the FP and LR registers are pushed in that order when setting up frames
     TgtPTR_Void     m_FramePointer;
     TgtPTR_Void     m_RIP;
@@ -529,7 +529,7 @@ struct PInvokeTransitionFrame
 #endif
     TgtPTR_Thread   m_pThread;  // unused by stack crawler, this is so GetThread is only called once per method
                                 // can be an invalid pointer in universal transition cases (which never need to call GetThread)
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     UInt64          m_Flags;  // PInvokeTransitionFrameFlags
 #else   
     UInt32          m_Flags;  // PInvokeTransitionFrameFlags
@@ -539,25 +539,25 @@ struct PInvokeTransitionFrame
 #endif // USE_PORTABLE_HELPERS
 #pragma warning(pop)
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 // RBX, RSI, RDI, R12, R13, R14, R15, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 9
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 // RBX, RSI, RDI, RAX, RSP
 #define PInvokeTransitionFrame_SaveRegs_count 5
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 // R4-R10, R0, SP
 #define PInvokeTransitionFrame_SaveRegs_count 9
 #endif
 #define PInvokeTransitionFrame_MAX_SIZE (sizeof(PInvokeTransitionFrame) + (POINTER_SIZE * PInvokeTransitionFrame_SaveRegs_count))
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 #define OFFSETOF__Thread__m_pTransitionFrame 0x40
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x40
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x2c
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 #define OFFSETOF__Thread__m_pTransitionFrame 0x2c
 #endif
 

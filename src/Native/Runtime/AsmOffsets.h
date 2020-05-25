@@ -8,7 +8,7 @@
 
 // You must #define PLAT_ASM_OFFSET and PLAT_ASM_SIZEOF before you #include this file
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define ASM_OFFSET(offset32, offset64, cls, member) PLAT_ASM_OFFSET(offset64, cls, member)
 #define ASM_SIZEOF(sizeof32, sizeof64, cls        ) PLAT_ASM_SIZEOF(sizeof64, cls)
 #define ASM_CONST(const32, const64, expr)           PLAT_ASM_CONST(const64, expr)
@@ -47,7 +47,7 @@ ASM_OFFSET(   2c,    40, Thread, m_pTransitionFrame)
 ASM_OFFSET(   30,    48, Thread, m_pHackPInvokeTunnel)
 ASM_OFFSET(   40,    68, Thread, m_ppvHijackedReturnAddressLocation)
 ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
-#ifdef BIT64
+#ifdef HOST_64BIT
 ASM_OFFSET(    0,    78, Thread, m_uHijackedReturnValueFlags)
 #endif
 ASM_OFFSET(   48,    80, Thread, m_pExInfoStackHead)
@@ -60,7 +60,7 @@ ASM_OFFSET(    4,     8, gc_alloc_context, alloc_limit)
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
-#ifndef BIT64
+#ifndef HOST_64BIT
 ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
 #endif
 ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)

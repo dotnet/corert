@@ -105,9 +105,11 @@ jobs:
         displayName: Run CoreFX tests
         enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
 
+    # Unknown why emsdk_env is removing native-tools from the PATH, but that does appear to be happening, so prepend it back before attempting the build
     - ${{ if contains(parameters.osGroup, 'WebAssembly') }}:
       - script: |
           call $(Build.SourcesDirectory)\wasm-tools\emsdk\emsdk_env
+          set PATH=$(Build.SourcesDirectory)\native-tools\bin;%PATH%
           call $(buildScriptName) wasm $(buildConfig)
         displayName: Run Wasm tests
 

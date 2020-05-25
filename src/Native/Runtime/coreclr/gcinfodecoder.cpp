@@ -146,9 +146,9 @@ GcInfoDecoder::GcInfoDecoder(
     }
     else
     {
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
         m_ReturnKind = RT_Unset;
-#endif // ! _TARGET_X86_
+#endif // ! TARGET_X86
     }
 
     if (flags == DECODE_RETURN_KIND) {
@@ -372,7 +372,7 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
     if(m_NumSafePoints == 0)
         return false;
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
     // Safepoints are encoded with a -1 adjustment
     codeOffset--;
 #endif
@@ -392,7 +392,7 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
     const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
     UINT32 result = m_NumSafePoints;
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // Safepoints are encoded with a -1 adjustment
     // but normalizing them masks off the low order bit
     // Thus only bother looking if the address is odd
@@ -439,7 +439,7 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
         UINT32 normOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
         UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset) + 2;
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
         // Safepoints are encoded with a -1 adjustment
         offset--;
 #endif
@@ -1330,7 +1330,7 @@ const GcSlotDesc* GcSlotDecoder::GetSlotDesc(UINT32 slotIndex)
 // Platform-specific methods
 //-----------------------------------------------------------------------------
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 
 
 OBJECTREF* GcInfoDecoder::GetRegisterSlot(
@@ -1466,7 +1466,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
     pCallBack(hCallBack, pObjRef, gcFlags DAC_ARG(DacSlotLocation(regNum, 0, false)));
 }
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
 OBJECTREF* GcInfoDecoder::GetRegisterSlot(
                         int             regNum,
@@ -1583,7 +1583,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // ARM
     pCallBack(hCallBack, pObjRef, gcFlags DAC_ARG(DacSlotLocation(regNum, 0, false)));
 }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
 OBJECTREF* GcInfoDecoder::GetRegisterSlot(
                         int             regNum,
@@ -1775,11 +1775,11 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
 #ifdef DACCESS_COMPILE
 int GcInfoDecoder::GetStackReg(int spBase)
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     int esp = 4;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     int esp = 13;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     int esp = 31;
 #endif
 

@@ -85,7 +85,7 @@ using std::nullptr_t;
 #endif
 #endif // __APPLE__
 
-#if defined(_ARM_) || defined(_ARM64_)
+#if defined(HOST_ARM) || defined(HOST_ARM64)
 #define SYSCONF_GET_NUMPROCS       _SC_NPROCESSORS_CONF
 #define SYSCONF_GET_NUMPROCS_NAME "_SC_NPROCESSORS_CONF"
 #else
@@ -598,10 +598,10 @@ typedef UInt32(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
 {
-#ifdef _WASM_
+#ifdef HOST_WASM
     // No threads, so we can't start one
     ASSERT(false);
-#endif // _WASM_
+#endif // HOST_WASM
     pthread_attr_t attrs;
 
     int st = pthread_attr_init(&attrs);
@@ -642,12 +642,12 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ Background
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
-#ifdef _WASM_
+#ifdef HOST_WASM
     // WASMTODO: No threads so we can't start the finalizer thread
     return true;
-#else // _WASM_
+#else // HOST_WASM
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE);
-#endif // _WASM_
+#endif // HOST_WASM
 }
 
 // Returns a 64-bit tick count with a millisecond resolution. It tries its best
@@ -708,14 +708,14 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
 
     // Emscripten's implementation of dladdr corrupts memory,
     // but always returns 0 for the module handle, so just skip the call
-#if !defined(_WASM_)
+#if !defined(HOST_WASM)
     Dl_info info;
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
         moduleHandle = info.dli_fbase;
     }
-#endif //!defined(_WASM_)
+#endif //!defined(HOST_WASM)
 
     return moduleHandle;
 }
@@ -922,7 +922,7 @@ extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
 
 extern "C" UInt32_BOOL IsDebuggerPresent()
 {
-#ifdef _WASM_
+#ifdef HOST_WASM
     // For now always true since the browser will handle it in case of WASM.
     return UInt32_TRUE;
 #else
@@ -1018,7 +1018,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
 extern "C" void _mm_pause()
 // Defined for implementing PalYieldProcessor in PalRedhawk.h
 {
-#if defined(_AMD64_) || defined(_X86_)
+#if defined(HOST_AMD64) || defined(HOST_X86)
   __asm__ volatile ("pause");
 #endif
 }
@@ -1114,12 +1114,12 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
 //
 REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
-#if defined(_WASM_)
+#if defined(HOST_WASM)
     // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so make up a name instead
     const TCHAR* wasmModuleName = "WebAssemblyModule";
     *pModuleNameOut = wasmModuleName;
     return strlen(wasmModuleName);
-#else // _WASM_
+#else // HOST_WASM
     Dl_info dl;
     if (dladdr(moduleBase, &dl) == 0)
     {
@@ -1129,7 +1129,7 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut,
 
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
-#endif // defined(_WASM_)
+#endif // defined(HOST_WASM)
 }
 
 GCSystemInfo g_RhSystemInfo;
@@ -1271,11 +1271,11 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
 #endif
 }
 
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI getcpuid(uint32_t arg, unsigned char result[16])
 {
     DWORD eax;
-#if defined(_X86_)
+#if defined(HOST_X86)
     __asm("  xor %%ecx, %%ecx\n" \
           "  cpuid\n" \
           "  mov %%eax, 0(%[result])\n" \
@@ -1286,8 +1286,8 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI getcpuid(uint32_t arg, unsigned char r
           : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
           : "ebx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
         );
-#endif // defined(_X86_)
-#if defined(_AMD64_)
+#endif // defined(HOST_X86)
+#if defined(HOST_AMD64)
     __asm("  xor %%ecx, %%ecx\n" \
           "  cpuid\n" \
           "  mov %%eax, 0(%[result])\n" \
@@ -1298,14 +1298,14 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI getcpuid(uint32_t arg, unsigned char r
           : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
           : "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
         );
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
     return eax;
 }
 
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI getextcpuid(uint32_t arg1, uint32_t arg2, unsigned char result[16])
 {
     DWORD eax;
-#if defined(_X86_)
+#if defined(HOST_X86)
     DWORD ecx;
     __asm("  cpuid\n" \
           "  mov %%eax, 0(%[result])\n" \
@@ -1316,8 +1316,8 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI getextcpuid(uint32_t arg1, uint32_t ar
           : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
           : "ebx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
         );
-#endif // defined(_X86_)
-#if defined(_AMD64_)
+#endif // defined(HOST_X86)
+#if defined(HOST_AMD64)
     __asm("  cpuid\n" \
           "  mov %%eax, 0(%[result])\n" \
           "  mov %%ebx, 4(%[result])\n" \
@@ -1327,7 +1327,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI getextcpuid(uint32_t arg1, uint32_t ar
           : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
           : "rbx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
         );
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
     return eax;
 }
 
@@ -1342,5 +1342,4 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
     // check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
-
-#endif // defined(_X86_) || defined(_AMD64_)
+#endif // defined(HOST_X86) || defined(HOST_AMD64)
