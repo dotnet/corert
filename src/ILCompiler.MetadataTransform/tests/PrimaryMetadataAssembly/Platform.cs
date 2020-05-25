@@ -143,12 +143,3 @@ namespace System.Runtime.CompilerServices
         }
     }
 }
-
-namespace Internal.Reflection
-{
-    public sealed class ExplicitScopeAttribute : System.Attribute
-    {
-        public ExplicitScopeAttribute(string explicitScope)
-        { }
-    }
-}

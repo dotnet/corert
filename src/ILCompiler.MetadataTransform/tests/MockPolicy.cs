@@ -61,12 +61,5 @@ namespace MetadataTransformTests
         {
             return IsBlocked((MetadataType)method.OwningType);
         }
-
-        public ModuleDesc GetModuleOfType(MetadataType typeDef)
-        {
-            if (_moduleOfType != null)
-                return _moduleOfType(typeDef);
-            return typeDef.Module;
-        }
     }
 }

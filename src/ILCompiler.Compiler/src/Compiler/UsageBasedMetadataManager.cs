@@ -554,13 +554,11 @@ namespace ILCompiler
         {
             private readonly MetadataBlockingPolicy _blockingPolicy;
             private readonly NodeFactory _factory;
-            private readonly ExplicitScopeAssemblyPolicyMixin _explicitScopeMixin;
 
             public GeneratedTypesAndCodeMetadataPolicy(MetadataBlockingPolicy blockingPolicy, NodeFactory factory)
             {
                 _blockingPolicy = blockingPolicy;
                 _factory = factory;
-                _explicitScopeMixin = new ExplicitScopeAssemblyPolicyMixin();
             }
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
@@ -586,11 +584,6 @@ namespace ILCompiler
             public bool IsBlocked(MethodDesc methodDef)
             {
                 return _blockingPolicy.IsBlocked(methodDef);
-            }
-
-            public ModuleDesc GetModuleOfType(MetadataType typeDef)
-            {
-                return _explicitScopeMixin.GetModuleOfType(typeDef);
             }
         }
     }
