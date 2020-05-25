@@ -1719,7 +1719,7 @@ namespace Internal.IL
             _stack.Push(CallRuntime(_compilation.TypeSystemContext, TypeCast, function,
                 new StackEntry[]
                 {
-                    new ExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, GetEETypePtrTypeDesc()),
+                    new ExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, GetPEETypeTypeDesc()),
                     _stack.Pop()
                 }, GetWellKnownType(WellKnownType.Object)));
         }
@@ -1850,18 +1850,18 @@ namespace Internal.IL
                         TypeDesc typeToAlloc;
                         var runtimeDeterminedRetType = runtimeDeterminedMethod.OwningType;
 
-                        var eeTypePtrTypeDesc = GetEETypePtrTypeDesc();
+                        var pEETypeTypeDesc = GetPEETypeTypeDesc();
                         if (runtimeDeterminedRetType.IsRuntimeDeterminedSubtype)
                         {
                             typeToAlloc = _compilation.ConvertToCanonFormIfNecessary(runtimeDeterminedRetType, CanonicalFormKind.Specific);
                             var typeRef = CallGenericHelper(ReadyToRunHelperId.TypeHandle, typeToAlloc);
-                            newObjResult = AllocateObject(new ExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, eeTypePtrTypeDesc));
+                            newObjResult = AllocateObject(new ExpressionEntry(StackValueKind.ValueType, "eeType", typeRef, pEETypeTypeDesc));
                         }
                         else
                         {
                             typeToAlloc = callee.OwningType;
                             MetadataType metadataType = (MetadataType)typeToAlloc;
-                            newObjResult = AllocateObject(new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(metadataType, true), eeTypePtrTypeDesc), typeToAlloc);
+                            newObjResult = AllocateObject(new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(metadataType, true), pEETypeTypeDesc), typeToAlloc);
                         }
 
                         //one for the real result and one to be consumed by ctor
@@ -2094,17 +2094,17 @@ namespace Internal.IL
                 ExpressionEntry eeTypeExpression;
                 if (runtimeDeterminedMethod.OwningType.IsRuntimeDeterminedSubtype)
                 {
-                    var eeTypeDesc = GetEETypePtrTypeDesc();
+                    var pEETypeTypeDesc = GetPEETypeTypeDesc();
                     //TODO interfaceEEType can be refactored out
                     eeTypeExpression = CallRuntime("System", _compilation.TypeSystemContext, "Object", "get_EEType",
                         new[] { new ExpressionEntry(StackValueKind.ObjRef, "thisPointer", thisPointer) });
-                    interfaceEEType = new ExpressionEntry(StackValueKind.ValueType, "interfaceEEType", CallGenericHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType), eeTypeDesc);
+                    interfaceEEType = new ExpressionEntry(StackValueKind.ValueType, "interfaceEEType", CallGenericHelper(ReadyToRunHelperId.TypeHandle, runtimeDeterminedMethod.OwningType), pEETypeTypeDesc);
                 }
                 else
                 {
-                    var eeTypeDesc = GetEETypePtrTypeDesc();
-                    interfaceEEType = new LoadExpressionEntry(StackValueKind.ValueType, "interfaceEEType", GetEETypePointerForTypeDesc(runtimeDeterminedMethod.OwningType, true), eeTypeDesc);
-                    eeTypeExpression = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", thisPointer, eeTypeDesc);
+                    var pEETypeTypeDesc = GetPEETypeTypeDesc();
+                    interfaceEEType = new LoadExpressionEntry(StackValueKind.ValueType, "interfaceEEType", GetEETypePointerForTypeDesc(runtimeDeterminedMethod.OwningType, true), pEETypeTypeDesc);
+                    eeTypeExpression = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", thisPointer, pEETypeTypeDesc);
                 }
 
                 var targetEntry = CallRuntime(_compilation.TypeSystemContext, DispatchResolve, "FindInterfaceMethodImplementationTarget", new StackEntry[] { eeTypeExpression, interfaceEEType, new ExpressionEntry(StackValueKind.Int32, "slot", slot, GetWellKnownType(WellKnownType.UInt16)) });
@@ -2248,9 +2248,9 @@ namespace Internal.IL
             return CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhNewObject", new StackEntry[] { eeType }, forcedReturnType);
         }
 
-        MetadataType GetEETypePtrTypeDesc()
+        PointerType GetPEETypeTypeDesc()
         {
-            return _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "EETypePtr");
+            return _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime", "EEType").MakePointerType();
         }
 
         private static LLVMValueRef BuildConstInt1(int number)
@@ -2484,14 +2484,14 @@ namespace Internal.IL
                     if (directMethod == null)
                     {
                         StackEntry eeTypeEntry;
-                        var eeTypeDesc = GetEETypePtrTypeDesc();
+                        var pEETypeTypeDesc = GetPEETypeTypeDesc();
                         if (constrainedType.IsRuntimeDeterminedSubtype)
                         {
-                            eeTypeEntry = new ExpressionEntry(StackValueKind.ValueType, "eeType", CallGenericHelper(ReadyToRunHelperId.TypeHandle, constrainedType), eeTypeDesc.MakePointerType());
+                            eeTypeEntry = new ExpressionEntry(StackValueKind.ValueType, "eeType", CallGenericHelper(ReadyToRunHelperId.TypeHandle, constrainedType), pEETypeTypeDesc.MakePointerType());
                         }
                         else
                         {
-                            eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(constrainedType, true), eeTypeDesc);
+                            eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(constrainedType, true), pEETypeTypeDesc);
                         }
 
                         argumentValues[0] = CallRuntime(_compilation.TypeSystemContext, RuntimeExport, "RhBox",
@@ -4168,17 +4168,17 @@ namespace Internal.IL
             TypeDesc type = ResolveTypeToken(token);
             TypeDesc methodType = (TypeDesc)_methodIL.GetObject(token);
             LLVMValueRef eeType;
-            var eeTypeDesc = GetEETypePtrTypeDesc();
+            var pEETypeTypeDesc = GetPEETypeTypeDesc();
             ExpressionEntry eeTypeExp;
             if (methodType.IsRuntimeDeterminedSubtype)
             {
                 eeType = CallGenericHelper(ReadyToRunHelperId.TypeHandle, methodType);
-                eeTypeExp = new ExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc);
+                eeTypeExp = new ExpressionEntry(StackValueKind.ByRef, "eeType", eeType, pEETypeTypeDesc);
             }
             else
             {
                 eeType = GetEETypePointerForTypeDesc(methodType, true);
-                eeTypeExp = new LoadExpressionEntry(StackValueKind.ByRef, "eeType", eeType, eeTypeDesc);
+                eeTypeExp = new LoadExpressionEntry(StackValueKind.ByRef, "eeType", eeType, pEETypeTypeDesc);
             }
             StackEntry boxedObject = _stack.Pop();
             if (opCode == ILOpcode.unbox)
@@ -4258,7 +4258,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(typeDesc, true), GetEETypePtrTypeDesc());
+                    PushLoadExpression(StackValueKind.ByRef, "ldtoken", GetEETypePointerForTypeDesc(typeDesc, true), GetPEETypeTypeDesc());
                     HandleCall(helper, helper.Signature, helper);
                     var callExp = _stack.Pop();
                     _stack.Push(new LdTokenEntry<TypeDesc>(StackValueKind.ValueType, "ldtoken", typeDesc, callExp.ValueAsInt32(_builder, false), runtimeTypeHandleTypeDesc));
@@ -4812,18 +4812,18 @@ namespace Internal.IL
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
             StackEntry eeTypeEntry;
-            var eeTypeDesc = GetEETypePtrTypeDesc();
+            var pEETypeTypeDesc = GetPEETypeTypeDesc();
             bool truncDouble = type.Equals(GetWellKnownType(WellKnownType.Single));
             if (type.IsRuntimeDeterminedSubtype)
             {
                 eeType = CallGenericHelper(ReadyToRunHelperId.TypeHandle, type);
-                eeTypeEntry = new ExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
+                eeTypeEntry = new ExpressionEntry(StackValueKind.ValueType, "eeType", eeType, pEETypeTypeDesc.MakePointerType());
                 type = type.ConvertToCanonForm(CanonicalFormKind.Specific);
             }
             else
             {
                 eeType = GetEETypePointerForTypeDesc(type, true);
-                eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", eeType, eeTypeDesc.MakePointerType());
+                eeTypeEntry = new LoadExpressionEntry(StackValueKind.ValueType, "eeType", eeType, pEETypeTypeDesc.MakePointerType());
             }
             var toBoxValue = _stack.Pop();
             StackEntry valueAddress;
