@@ -63,10 +63,11 @@ namespace System.Threading
                 return 0;
             }
 
-            fixed (IntPtr* pEEType = &o.m_pEEType)
+            fixed (byte* pRawData = &o.GetRawData())
             {
                 // The header is 4 bytes before m_pEEType field on all architectures
-                int* pHeader = (int*)pEEType - 1;
+                int* pHeader = (int*)(pRawData - sizeof(IntPtr) - sizeof(int));
+
                 int bits = ReadVolatileMemory(pHeader);
                 int hashOrIndex = bits & MASK_HASHCODE_INDEX;
                 if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
@@ -158,12 +159,12 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Lock GetLockObject(object o)
         {
-            fixed (IntPtr* pEEType = &o.m_pEEType)
+            fixed (byte* pRawData = &o.GetRawData())
             {
-                int* pHeader = (int*)pEEType - 1;
-                int hashOrIndex;
+                // The header is 4 bytes before m_pEEType field on all architectures
+                int* pHeader = (int*)(pRawData - sizeof(IntPtr) - sizeof(int));
 
-                if (GetSyncEntryIndex(ReadVolatileMemory(pHeader), out hashOrIndex))
+                if (GetSyncEntryIndex(ReadVolatileMemory(pHeader), out int hashOrIndex))
                 {
                     // Already have a sync entry for this object, return the synchronization object
                     // stored in the entry.

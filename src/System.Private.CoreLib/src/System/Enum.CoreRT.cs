@@ -365,7 +365,7 @@ namespace System
 
             byte* pValue = (byte*)&value;
             AdjustForEndianness(ref pValue, enumEEType);
-            return RuntimeImports.RhBox(enumEEType, pValue);
+            return RuntimeImports.RhBox(enumEEType, ref *pValue);
         }
         #endregion
     }
