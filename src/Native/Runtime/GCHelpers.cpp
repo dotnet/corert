@@ -357,7 +357,7 @@ static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEETy
     return pArray;
 }
 
-EXTERN_C REDHAWK_API void RhAllocateUninitializedArray(EEType* pArrayEEType, UInt32 numElements, UInt32 flags, Array** pResult)
+EXTERN_C REDHAWK_API void RhAllocateNewArray(EEType* pArrayEEType, UInt32 numElements, UInt32 flags, Array** pResult)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
