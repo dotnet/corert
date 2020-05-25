@@ -15,6 +15,7 @@ using Internal.TypeSystem.Ecma;
 using Internal.CommandLine;
 
 using Debug = System.Diagnostics.Debug;
+using InstructionSet = Internal.JitInterface.InstructionSet;
 
 namespace ILCompiler
 {
@@ -57,6 +58,7 @@ namespace ILCompiler
         private bool _scanReflection;
         private bool _methodBodyFolding;
         private bool _singleThreaded;
+        private string _instructionSet;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -187,6 +189,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
                 syntax.DefineOptionList("removefeature", ref _removedFeatures, "Framework features to remove");
                 syntax.DefineOption("singlethreaded", ref _singleThreaded, "Run compilation on a single thread");
+                syntax.DefineOption("instructionset", ref _instructionSet, "Instruction set to allow or disallow");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -317,7 +320,45 @@ namespace ILCompiler
                 instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
             }
 
-            // TODO: read instruction sets from the command line
+            if (_instructionSet != null)
+            {
+                List<string> instructionSetParams = new List<string>();
+
+                // Normalize instruction set format to include implied +.
+                string[] instructionSetParamsInput = _instructionSet.Split(',');
+                for (int i = 0; i < instructionSetParamsInput.Length; i++)
+                {
+                    string instructionSet = instructionSetParamsInput[i];
+
+                    if (String.IsNullOrEmpty(instructionSet))
+                        throw new CommandLineException("Instruction set must not be empty");
+
+                    char firstChar = instructionSet[0];
+                    if ((firstChar != '+') && (firstChar != '-'))
+                    {
+                        instructionSet = "+" + instructionSet;
+                    }
+                    instructionSetParams.Add(instructionSet);
+                }
+
+                Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
+                foreach (string instructionSetSpecifier in instructionSetParams)
+                {
+                    string instructionSet = instructionSetSpecifier.Substring(1, instructionSetSpecifier.Length - 1);
+
+                    bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
+                    if (enabled)
+                    {
+                        if (!instructionSetSupportBuilder.AddSupportedInstructionSet(instructionSet))
+                            throw new CommandLineException($"Unrecognized instruction set '{instructionSet}'");
+                    }
+                    else
+                    {
+                        if (!instructionSetSupportBuilder.RemoveInstructionSetSupport(instructionSet))
+                            throw new CommandLineException($"Unrecognized instruction set '{instructionSet}'");
+                    }
+                }
+            }
 
             instructionSetSupportBuilder.ComputeInstructionSetFlags(out var supportedInstructionSet, out var unsupportedInstructionSet,
                 (string specifiedInstructionSet, string impliedInstructionSet) =>
@@ -332,14 +373,32 @@ namespace ILCompiler
                 // of hardware in the wild supports them. Note that we do not indicate support for AVX, or any other
                 // instruction set which uses the VEX encodings as the presence of those makes otherwise acceptable
                 // code be unusable on hardware which does not support VEX encodings, as well as emulators that do not
-                // support AVX instructions. As the jit generates logic that depends on these features it will call
-                // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
-                // code.
-                // 
+                // support AVX instructions.
+                //
+                // The compiler is able to generate runtime IsSupported checks for the following instruction sets.
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("ssse3");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
+
+                // NOTE: we don't optimistically enable SSE4.1/SSE4.2 because RyuJIT can opportunistically use
+                // these instructions in e.g. optimizing Math.Round or Vector<T> operations without IsSupported guards.
+
+                // If SSE4.2 was enabled, we can also opportunistically enable POPCNT
+                Debug.Assert(InstructionSet.X64_SSE42 == InstructionSet.X86_SSE42);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_SSE42))
+                {
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
+                }
+
+                // If AVX was enabled, we can opportunistically enable FMA/BMI
+                Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
+                {
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi1");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
+                }
             }
 
             optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _,
@@ -442,6 +501,7 @@ namespace ILCompiler
                 {
                     compilationRoots.Add(new MainMethodRootProvider(entrypointModule, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
+                    compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                 }
 
                 if (_multiFile)
@@ -478,6 +538,7 @@ namespace ILCompiler
                     // to ensure the startup method is included in the object file during multimodule mode build
                     compilationRoots.Add(new NativeLibraryInitializerRootProvider(typeSystemContext.GeneratedAssembly, CreateInitializerList(typeSystemContext)));
                     compilationRoots.Add(new RuntimeConfigurationRootProvider(_runtimeOptions));
+                    compilationRoots.Add(new ExpectedIsaFeaturesRootProvider(instructionSetSupport));
                 }
 
                 if (_rdXmlFilePaths.Count > 0)
@@ -685,7 +746,7 @@ namespace ILCompiler
                 // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
                 DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
-                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.Name == "ThrowPlatformNotSupportedException");
+                    "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.Name == "ThrowPlatformNotSupportedException" || method.Name == "ThrowArgumentOutOfRangeException");
                 DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scanResults.ConstructedEETypes,
                     "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
 
