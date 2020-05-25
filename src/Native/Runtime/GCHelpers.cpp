@@ -268,7 +268,7 @@ EXTERN_C REDHAWK_API Int64 __cdecl RhGetTotalAllocatedBytesPrecise()
     return allocated;
 }
 
-static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEEType, UInt32 numElements)
+static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEEType, UInt32 numElements, UInt32 flags)
 {
     size_t size;
 #ifndef HOST_64BIT
@@ -336,14 +336,13 @@ static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEETy
         }
     }
 
-    UInt32 uFlags = GC_ALLOC_ZEROING_OPTIONAL;
     if (size > RH_LARGE_OBJECT_SIZE)
-        uFlags |= GC_ALLOC_LARGE_OBJECT_HEAP;
+        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
     // Save the EEType for instrumentation purposes.
     RedhawkGCInterface::SetLastAllocEEType(pArrayEEType);
 
-    Array* pArray = (Array*)GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), size, uFlags);
+    Array* pArray = (Array*)GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), size, flags);
     if (pArray == NULL)
     {
         return NULL;
@@ -358,7 +357,7 @@ static Array* AllocateUninitializedArrayImpl(Thread* pThread, EEType* pArrayEETy
     return pArray;
 }
 
-EXTERN_C REDHAWK_API void RhAllocateUninitializedArray(EEType* pArrayEEType, UInt32 numElements, Array** pResult)
+EXTERN_C REDHAWK_API void RhAllocateUninitializedArray(EEType* pArrayEEType, UInt32 numElements, UInt32 flags, Array** pResult)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -367,7 +366,7 @@ EXTERN_C REDHAWK_API void RhAllocateUninitializedArray(EEType* pArrayEEType, UIn
 
     ASSERT(!pThread->IsDoNotTriggerGcSet());
 
-    *pResult = AllocateUninitializedArrayImpl(pThread, pArrayEEType, numElements);
+    *pResult = AllocateUninitializedArrayImpl(pThread, pArrayEEType, numElements, flags);
 
     pThread->EnablePreemptiveMode();
 }

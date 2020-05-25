@@ -676,37 +676,98 @@ namespace System
             return RuntimeImports.RhGetGCSegmentSize();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
-        internal static unsafe T[] AllocateUninitializedArray<T>(int length)
+        // keep in sync with GC_ALLOC_FLAGS in gcinterface.h
+        internal enum GC_ALLOC_FLAGS
         {
-            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                return new T[length];
-            }
+            GC_ALLOC_NO_FLAGS = 0,
+            GC_ALLOC_ZEROING_OPTIONAL = 16,
+            GC_ALLOC_PINNED_OBJECT_HEAP = 64,
+        }
 
-            // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
+        /// <summary>
+        /// Allocate an array while skipping zero-initialization if possible.
+        /// </summary>
+        /// <typeparam name="T">Specifies the type of the array element.</typeparam>
+        /// <param name="length">Specifies the length of the array.</param>
+        /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
+        /// <remarks>
+        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
+        public static unsafe T[] AllocateUninitializedArray<T>(int length, bool pinned = false)
+        {
+            if (!pinned)
+            {
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                {
+                    return new T[length];
+                }
+
+                // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
-            // small arrays are allocated using `new[]` as that is generally faster.
-            if (length < 2048 / Unsafe.SizeOf<T>())
-            {
-                return new T[length];
-            }
+                // small arrays are allocated using `new[]` as that is generally faster.
+                if (length < 2048 / Unsafe.SizeOf<T>())
+                {
+                    return new T[length];
+                }
 #endif
-            // kept outside of the small arrays hot path to have inlining without big size growth
-            return AllocateNewUninitializedArray(length);
-
-            T[] AllocateNewUninitializedArray(int length)
+            }
+            else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
+                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+            }
+
+            // kept outside of the small arrays hot path to have inlining without big size growth
+            return AllocateNewUninitializedArray(length, pinned);
+
+            static T[] AllocateNewUninitializedArray(int length, bool pinned)
+            {
+                GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
+                if (pinned)
+                    flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+
                 if (length < 0)
                     throw new OverflowException();
 
                 T[] array = null;
-                RuntimeImports.RhAllocateUninitializedArray(EETypePtr.EETypePtrOf<T[]>().RawValue, (uint)length, Unsafe.AsPointer(ref array));
+                RuntimeImports.RhAllocateUninitializedArray(EETypePtr.EETypePtrOf<T[]>().RawValue, (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
                 if (array == null)
                     throw new OutOfMemoryException();
 
                 return array;
             }
+        }
+
+        /// <summary>
+        /// Allocate an array.
+        /// </summary>
+        /// <typeparam name="T">Specifies the type of the array element.</typeparam>
+        /// <param name="length">Specifies the length of the array.</param>
+        /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
+        /// <remarks>
+        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
+        /// </remarks>
+        public static unsafe T[] AllocateArray<T>(int length, bool pinned = false)
+        {
+            GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
+
+            if (pinned)
+            {
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+
+                flags = GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+            }
+
+            if (length < 0)
+                throw new OverflowException();
+
+            T[] array = null;
+            RuntimeImports.RhAllocateUninitializedArray(EETypePtr.EETypePtrOf<T[]>().RawValue, (uint)length, (uint)flags, Unsafe.AsPointer(ref array));
+            if (array == null)
+                throw new OutOfMemoryException();
+
+            return array;
         }
     }
 }
