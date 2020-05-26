@@ -292,6 +292,7 @@ namespace Internal.IL
                 if (CanStoreTypeOnStack(_signature[i]))
                 {
                     LLVMValueRef storageAddr;
+                    Debug.Assert(signatureIndex < _llvmFunction.ParamsCount);
                     LLVMValueRef argValue = _llvmFunction.GetParam((uint)signatureIndex);
 
                     // The caller will always pass the argument on the stack. If this function doesn't have 
@@ -1991,7 +1992,9 @@ namespace Internal.IL
             {
                 if (!_compilation.NodeFactory.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(canonMethod))
                 {
-                    hasHiddenParam = canonMethod.RequiresInstArg();
+                    hasHiddenParam = canonMethod.RequiresInstArg() || (canonMethod.IsArrayAddressMethod() &&
+                                                                       (callee.IsSharedByGenericInstantiations ||
+                                                                        canonMethod.IsSharedByGenericInstantiations));
                 }
                 AddMethodReference(canonMethod);
                 return GetOrCreateLLVMFunction(canonMethodName, canonMethod.Signature, hasHiddenParam);

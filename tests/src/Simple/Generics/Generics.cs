@@ -40,8 +40,8 @@ class Program
 #if !CODEGEN_CPP 
         TestNullableCasting.Run();
         TestVariantCasting.Run();
-#if !CODEGEN_WASM
         TestMDArrayAddressMethod.Run();
+#if !CODEGEN_WASM
         TestNativeLayoutGeneration.Run();
 #endif
         TestByRefLikeVTables.Run();
