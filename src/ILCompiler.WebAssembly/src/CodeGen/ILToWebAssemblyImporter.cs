@@ -1992,9 +1992,7 @@ namespace Internal.IL
             {
                 if (!_compilation.NodeFactory.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(canonMethod))
                 {
-                    hasHiddenParam = canonMethod.RequiresInstArg() || (canonMethod.IsArrayAddressMethod() &&
-                                                                       (callee.IsSharedByGenericInstantiations ||
-                                                                        canonMethod.IsSharedByGenericInstantiations));
+                    hasHiddenParam = canonMethod.RequiresInstArg() || canonMethod.IsArrayAddressMethod();
                 }
                 AddMethodReference(canonMethod);
                 return GetOrCreateLLVMFunction(canonMethodName, canonMethod.Signature, hasHiddenParam);
