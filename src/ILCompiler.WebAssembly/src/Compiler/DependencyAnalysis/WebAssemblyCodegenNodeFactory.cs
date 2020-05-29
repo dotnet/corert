@@ -40,6 +40,10 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
                 }
+                if (method.IsArrayAddressMethod())
+                {
+                    return new WebAssemblyMethodBodyNode(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
+                }
             }
             if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
