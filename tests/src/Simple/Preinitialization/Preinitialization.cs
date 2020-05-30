@@ -418,7 +418,7 @@ class TestTryCatch
     {
         try
         {
-            if (new byte[0].Length > 0)
+            if (s_cookie > 0)
                 throw null;
         }
         catch (Exception)
