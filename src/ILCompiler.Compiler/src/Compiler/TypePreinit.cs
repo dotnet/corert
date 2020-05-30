@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection.Metadata;
+
 using ILCompiler.DependencyAnalysis;
 
 using Internal.IL;
@@ -93,6 +93,19 @@ namespace ILCompiler
             if (recursionProtect != null && recursionProtect.Contains(methodIL.OwningMethod))
                 return Fail("Recursion");
 
+            ILExceptionRegion[] ehRegions = methodIL.GetExceptionRegions();
+            if (ehRegions != null && ehRegions.Length > 0)
+            {
+                // We don't care about catch/filter/fault because those only run when an exception happens
+                // (exceptions will never happen here). But finally needs to run in non-exceptional paths
+                // and we don't model that yet.
+                foreach (ILExceptionRegion ehRegion in ehRegions)
+                {
+                    if (ehRegion.Kind == ILExceptionRegionKind.Finally)
+                        return Fail("Finally regions");
+                }
+            }
+
             var reader = new ILReader(methodIL.GetILBytes());
 
             TypeSystemContext context = methodIL.OwningMethod.Context;
@@ -161,6 +174,13 @@ namespace ILCompiler
                             opcode == ILOpcode.ldc_r4 ? reader.ReadILFloat() : reader.ReadILDouble()));
                         break;
 
+                    case ILOpcode.sizeof_:
+                        {
+                            TypeDesc type = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                            stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(type.GetElementSize().AsInt));
+                        }
+                        break;
+
                     case ILOpcode.ldnull:
                         stack.Push((ReferenceTypeValue)null);
                         break;
@@ -187,8 +207,6 @@ namespace ILCompiler
                             {
                                 return Fail(opcode, "Array out of bounds");
                             }
-
-                            // TODO: make sure this doesn't make an array that we can't make EEType for.
 
                             stack.Push(new ArrayInstance(elementType.MakeArrayType(), elementCount));
                         }
@@ -366,8 +384,6 @@ namespace ILCompiler
                                 return Fail(opcode);
                             }
 
-                            // TODO: make sure this doesn't make a type that we can't make constructed EEType for.
-
                             Value instance;
                             Value ctorArg0;
                             if (owningType.IsValueType)
@@ -405,7 +421,6 @@ namespace ILCompiler
                         {
                             FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
 
-                            // TODO: store non-valuetypes
                             if (field.FieldType.IsGCPointer
                                 || field.IsStatic)
                             {
@@ -429,7 +444,6 @@ namespace ILCompiler
                         {
                             FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
 
-                            // TODO: load non-valuetypes
                             if (field.FieldType.IsGCPointer
                                 || field.IsStatic)
                             {
@@ -530,7 +544,8 @@ namespace ILCompiler
                                         stack.Push(StackValueKind.NativeInt,
                                             context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(val) : ValueTypeValue.FromInt32((int)val));
                                         break;
-                            }                            }
+                                }
+                            }
                             else if (popped.ValueKind == StackValueKind.Float)
                             {
                                 double val = popped.Value.AsDouble();
@@ -691,18 +706,26 @@ namespace ILCompiler
                     case ILOpcode.blt:
                     case ILOpcode.blt_un:
                     case ILOpcode.bgt:
+                    case ILOpcode.bgt_un:
                     case ILOpcode.beq:
+                    case ILOpcode.bne_un:
                     case ILOpcode.bge:
+                    case ILOpcode.bge_un:
                     case ILOpcode.ble:
+                    case ILOpcode.ble_un:
                     case ILOpcode.br_s:
                     case ILOpcode.brfalse_s:
                     case ILOpcode.brtrue_s:
                     case ILOpcode.blt_s:
                     case ILOpcode.blt_un_s:
                     case ILOpcode.bgt_s:
+                    case ILOpcode.bgt_un_s:
                     case ILOpcode.beq_s:
+                    case ILOpcode.bne_un_s:
                     case ILOpcode.bge_s:
+                    case ILOpcode.bge_un_s:
                     case ILOpcode.ble_s:
+                    case ILOpcode.ble_un_s:
                         {
                             int delta = opcode >= ILOpcode.br ?
                                 (int)reader.ReadILUInt32() :
@@ -722,9 +745,12 @@ namespace ILCompiler
                             if (normalizedOpcode == ILOpcode.brtrue_s || normalizedOpcode == ILOpcode.brfalse_s)
                             {
                                 StackEntry condition = stack.Pop();
-                                if (condition.ValueKind == StackValueKind.Int32)
+                                if (condition.ValueKind == StackValueKind.Int32 || (condition.ValueKind == StackValueKind.NativeInt && context.Target.PointerSize == 4))
                                     branchTaken = normalizedOpcode == ILOpcode.brfalse_s
                                         ? condition.Value.AsInt32() == 0 : condition.Value.AsInt32() != 0;
+                                else if (condition.ValueKind == StackValueKind.Int64 || (condition.ValueKind == StackValueKind.NativeInt && context.Target.PointerSize == 8))
+                                    branchTaken = normalizedOpcode == ILOpcode.brfalse_s
+                                        ? condition.Value.AsInt64() == 0 : condition.Value.AsInt64() != 0;
                                 else if (condition.ValueKind == StackValueKind.ObjRef)
                                     branchTaken = normalizedOpcode == ILOpcode.brfalse_s
                                         ? condition.Value == null : condition.Value != null;
@@ -733,7 +759,9 @@ namespace ILCompiler
                             }
                             else if (normalizedOpcode == ILOpcode.blt_s || normalizedOpcode == ILOpcode.bgt_s
                                 || normalizedOpcode == ILOpcode.bge_s || normalizedOpcode == ILOpcode.beq_s
-                                || normalizedOpcode == ILOpcode.ble_s || normalizedOpcode == ILOpcode.blt_un_s)
+                                || normalizedOpcode == ILOpcode.ble_s || normalizedOpcode == ILOpcode.blt_un_s
+                                || normalizedOpcode == ILOpcode.ble_un_s || normalizedOpcode == ILOpcode.bge_un_s
+                                || normalizedOpcode == ILOpcode.bgt_un_s || normalizedOpcode == ILOpcode.bne_un_s)
                             {
                                 StackEntry value2 = stack.Pop();
                                 StackEntry value1 = stack.Pop();
@@ -745,9 +773,13 @@ namespace ILCompiler
                                         ILOpcode.blt_s => value1.Value.AsInt32() < value2.Value.AsInt32(),
                                         ILOpcode.blt_un_s => (uint)value1.Value.AsInt32() < (uint)value2.Value.AsInt32(),
                                         ILOpcode.bgt_s => value1.Value.AsInt32() > value2.Value.AsInt32(),
+                                        ILOpcode.bgt_un_s => (uint)value1.Value.AsInt32() > (uint)value2.Value.AsInt32(),
                                         ILOpcode.bge_s => value1.Value.AsInt32() >= value2.Value.AsInt32(),
+                                        ILOpcode.bge_un_s => (uint)value1.Value.AsInt32() >= (uint)value2.Value.AsInt32(),
                                         ILOpcode.beq_s => value1.Value.AsInt32() == value2.Value.AsInt32(),
+                                        ILOpcode.bne_un_s => value1.Value.AsInt32() != value2.Value.AsInt32(),
                                         ILOpcode.ble_s => value1.Value.AsInt32() <= value2.Value.AsInt32(),
+                                        ILOpcode.ble_un_s => (uint)value1.Value.AsInt32() <= (uint)value2.Value.AsInt32(),
                                         _ => throw new NotImplementedException() // unreachable
                                     };
                                 }
@@ -758,9 +790,13 @@ namespace ILCompiler
                                         ILOpcode.blt_s => value1.Value.AsInt64() < value2.Value.AsInt64(),
                                         ILOpcode.blt_un_s => (ulong)value1.Value.AsInt64() < (ulong)value2.Value.AsInt64(),
                                         ILOpcode.bgt_s => value1.Value.AsInt64() > value2.Value.AsInt64(),
+                                        ILOpcode.bgt_un_s => (ulong)value1.Value.AsInt64() > (ulong)value2.Value.AsInt64(),
                                         ILOpcode.bge_s => value1.Value.AsInt64() >= value2.Value.AsInt64(),
+                                        ILOpcode.bge_un_s => (ulong)value1.Value.AsInt64() >= (ulong)value2.Value.AsInt64(),
                                         ILOpcode.beq_s => value1.Value.AsInt64() == value2.Value.AsInt64(),
+                                        ILOpcode.bne_un_s => value1.Value.AsInt64() != value2.Value.AsInt64(),
                                         ILOpcode.ble_s => value1.Value.AsInt64() <= value2.Value.AsInt64(),
+                                        ILOpcode.ble_un_s => (ulong)value1.Value.AsInt64() <= (ulong)value2.Value.AsInt64(),
                                         _ => throw new NotImplementedException() // unreachable
                                     };
                                 }
@@ -771,9 +807,13 @@ namespace ILCompiler
                                         ILOpcode.blt_s => value1.Value.AsDouble() < value2.Value.AsDouble(),
                                         ILOpcode.blt_un_s => !(value1.Value.AsDouble() >= value2.Value.AsDouble()),
                                         ILOpcode.bgt_s => value1.Value.AsDouble() > value2.Value.AsDouble(),
+                                        ILOpcode.bgt_un_s => !(value1.Value.AsDouble() <= value2.Value.AsDouble()),
                                         ILOpcode.bge_s => value1.Value.AsDouble() >= value2.Value.AsDouble(),
+                                        ILOpcode.bge_un_s => !(value1.Value.AsDouble() < value2.Value.AsDouble()),
                                         ILOpcode.beq_s => value1.Value.AsDouble() == value2.Value.AsDouble(),
+                                        ILOpcode.bne_un_s => value1.Value.AsDouble() != value2.Value.AsDouble(),
                                         ILOpcode.ble_s => value1.Value.AsDouble() <= value2.Value.AsDouble(),
+                                        ILOpcode.ble_un_s => !(value1.Value.AsDouble() > value2.Value.AsDouble()),
                                         _ => throw new NotImplementedException() // unreachable
                                     };
                                 }
@@ -801,6 +841,32 @@ namespace ILCompiler
                         }
                         break;
 
+                    case ILOpcode.leave:
+                    case ILOpcode.leave_s:
+                        {
+                            stack.Clear();
+
+                            // We assume no finally regions (would have to run them here)
+                            // This is validated before, but we're being paranoid.
+                            foreach (ILExceptionRegion ehRegion in ehRegions)
+                            {
+                                Debug.Assert(ehRegion.Kind != ILExceptionRegionKind.Finally);
+                            }
+
+                            int delta = opcode == ILOpcode.leave ?
+                                (int)reader.ReadILUInt32() :
+                                (sbyte)reader.ReadILByte();
+                            int target = reader.Offset + delta;
+                            if (target < 0
+                                || target > reader.Size)
+                            {
+                                ThrowHelper.ThrowInvalidProgramException();
+                            }
+
+                            reader.Seek(target);
+                        }
+                        break;
+
                     case ILOpcode.clt:
                     case ILOpcode.clt_un:
                     case ILOpcode.cgt:
@@ -812,7 +878,6 @@ namespace ILCompiler
                             bool condition;
                             if (value1.ValueKind == StackValueKind.Int32 && value2.ValueKind == StackValueKind.Int32)
                             {
-                                // TODO: are we comparing right operands?
                                 if (opcode == ILOpcode.cgt)
                                     condition = value1.Value.AsInt32() < value2.Value.AsInt32();
                                 else if (opcode == ILOpcode.cgt_un)
@@ -826,7 +891,6 @@ namespace ILCompiler
                             }
                             else if (value1.ValueKind == StackValueKind.Int64 && value2.ValueKind == StackValueKind.Int64)
                             {
-                                // TODO: are we comparing right operands?
                                 if (opcode == ILOpcode.cgt)
                                     condition = value1.Value.AsInt64() < value2.Value.AsInt64();
                                 else if (opcode == ILOpcode.cgt_un)
@@ -840,7 +904,6 @@ namespace ILCompiler
                             }
                             else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
                             {
-                                // TODO: are we comparing right operands?
                                 if (opcode == ILOpcode.cgt)
                                     condition = value1.Value.AsDouble() < value2.Value.AsDouble();
                                 else if (opcode == ILOpcode.cgt_un)
@@ -1050,6 +1113,36 @@ namespace ILCompiler
                         }
                         break;
 
+                    case ILOpcode.box:
+                        {
+                            TypeDesc type = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                            if (type.IsValueType)
+                            {
+                                if (type.IsNullable)
+                                    return Fail(opcode);
+
+                                Value value = stack.PopIntoLocation(type);
+                                stack.Push(StackValueKind.ObjRef, ObjectInstance.Box((DefType)type, ((ValueTypeValue)value).InstanceBytes));
+                            }
+                        }
+                        break;
+
+                    case ILOpcode.unbox_any:
+                        {
+                            TypeDesc type = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                            StackEntry entry = stack.Pop();
+                            if (entry.Value is ObjectInstance objInst
+                                && objInst.TryUnboxAny(type, out Value unboxed))
+                            {
+                                stack.PushFromLocation(type, unboxed);
+                            }
+                            else
+                            {
+                                ThrowHelper.ThrowInvalidProgramException();
+                            }
+                        }
+                        break;
+
                     default:
                         return Fail(opcode);
                 }
@@ -1105,7 +1198,6 @@ namespace ILCompiler
             return false;
         }
 
-        // TODO: common helper extension method?
         private TypeDesc GetArgType(MethodDesc method, int index)
         {
             var sig = method.Signature;
@@ -1359,16 +1451,26 @@ namespace ILCompiler
             ValueType,
         }
 
+        /// <summary>
+        /// Represents a field value that can be serialized into a preinitialized blob.
+        /// </summary>
         public interface ISerializableValue
         {
             void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory);
         }
 
+        /// <summary>
+        /// Represents a frozen object whose contents can be serialized into the executable.
+        /// </summary>
         public interface ISerializableReference : ISerializableValue
         {
             void WriteContent(ref ObjectDataBuilder builder, NodeFactory factory);
         }
 
+        /// <summary>
+        /// Represents a value with instance fields. This is either a reference type, or a byref to
+        /// a valuetype.
+        /// </summary>
         private interface IHasInstanceFields
         {
             void SetField(FieldDesc field, Value value);
@@ -1376,6 +1478,9 @@ namespace ILCompiler
             ByRefValue GetFieldAddress(FieldDesc field);
         }
 
+        /// <summary>
+        /// Represents a value that can be assigned into.
+        /// </summary>
         private interface IAssignableValue
         {
             void Assign(Value value);
@@ -1689,7 +1794,33 @@ namespace ILCompiler
             public ObjectInstance(DefType type)
                 : base(type)
             {
-                _data = new byte[type.InstanceByteCount.AsInt];
+                int size = type.InstanceByteCount.AsInt;
+                if (type.IsValueType)
+                    size += type.Context.Target.PointerSize;
+                _data = new byte[size];
+            }
+
+            public static ObjectInstance Box(DefType type, byte[] data)
+            {
+                var inst = new ObjectInstance(type);
+                Array.Copy(data, 0, inst._data, type.Context.Target.PointerSize, data.Length);
+                return inst;
+            }
+
+            public bool TryUnboxAny(TypeDesc type, out Value value)
+            {
+                value = null;
+
+                if (!type.IsValueType || type.IsNullable)
+                    return false;
+
+                if (_type.UnderlyingType != type.UnderlyingType)
+                    return false;
+
+                var result = new ValueTypeValue(type);
+                Array.Copy(_data, type.Context.Target.PointerSize, result.InstanceBytes, 0, result.InstanceBytes.Length);
+                value = result;
+                return true;
             }
 
             Value IHasInstanceFields.GetField(FieldDesc field) => new FieldAccessor(_data).GetField(field);
