@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.InteropServices;
 
 using BindingFlags = System.Reflection.BindingFlags;
 
@@ -10,6 +11,7 @@ internal class Program
 {
     private static int Main()
     {
+#if !MULTIMODULE_BUILD
         TestLdstr.Run();
         TestException.Run();
         TestThreadStaticNotInitialized.Run();
@@ -25,6 +27,13 @@ internal class Program
         TestReferenceTypeAllocation.Run();
         TestReferenceTypeWithGCPointerAllocation.Run();
         TestRelationalOperators.Run();
+        TestTryFinally.Run();
+        TestTryCatch.Run();
+        TestBadClass.Run();
+        TestRefs.Run();
+#else
+        Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
+#endif
 
         return 100;
     }
@@ -367,13 +376,146 @@ static class TestRelationalOperators
                         s_finished = true;
                 }
             }
-        }        
+        }
     }
 
     public static void Run()
     {
         Assert.IsPreinitialized(typeof(TestRelationalOperators));
         Assert.AreEqual(true, s_finished);
+    }
+}
+
+class TestTryFinally
+{
+    static int s_cookie;
+
+    static TestTryFinally()
+    {
+        try
+        {
+            if (new byte[0].Length > 0)
+                throw new Exception();
+        }
+        finally
+        {
+            s_cookie = 1985;
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsLazyInitialized(typeof(TestTryFinally));
+        Assert.AreEqual(1985, s_cookie);
+    }
+}
+
+class TestTryCatch
+{
+    static int s_cookie;
+
+    static TestTryCatch()
+    {
+        try
+        {
+            if (new byte[0].Length > 0)
+                throw null;
+        }
+        catch (Exception)
+        {
+            s_cookie = 100;
+        }
+        s_cookie = 2020;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestTryCatch));
+        Assert.AreEqual(2020, s_cookie);
+    }
+}
+
+class TestBadClass
+{
+    [StructLayout(LayoutKind.Explicit)]
+    class BadLayoutClass<T>
+    {
+    }
+
+    static int s_cookie;
+    static object s_badClass;
+
+    static object MakeBadLayoutClass() => new BadLayoutClass<int>();
+
+    static TestBadClass()
+    {
+        try
+        {
+            s_badClass = MakeBadLayoutClass();
+            s_cookie = -1;
+        }
+        catch (Exception)
+        {
+            s_cookie = 1;
+        }
+    }
+
+    public static void Run()
+    {
+        Assert.IsLazyInitialized(typeof(TestBadClass));
+        Assert.AreEqual(1, s_cookie);
+        Assert.AreSame(null, s_badClass);
+    }
+}
+
+class TestRefs
+{
+    struct IntStruct { public int Value { get; set; } }
+    struct DoubleStruct { public double Value { get; set; } }
+
+    static IntStruct s_value1;
+    static IntStruct s_value2;
+    static DoubleStruct s_doubleValue;
+
+    static ref IntStruct PickOne(int which)
+    {
+        if (which == 1)
+            return ref s_value1;
+        return ref s_value2;
+    }
+
+    static void Set(ref IntStruct location, int value)
+    {
+        location.Value = value;
+    }
+
+    static TestRefs()
+    {
+        ref IntStruct loc1 = ref PickOne(1);
+        Set(ref loc1, 41);
+        s_value1.Value++;
+
+        s_value2.Value = 98;
+        ref IntStruct loc2 = ref PickOne(2);
+        if (loc2.Value == 98)
+        {
+            loc2.Value++;
+        }
+        if (s_value2.Value == 99)
+        {
+            s_value2.Value++;
+        }
+
+        ref DoubleStruct dblRef = ref s_doubleValue;
+        dblRef.Value = 3.14;
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestRefs));
+        Assert.AreEqual(42, s_value1.Value);
+        Assert.AreEqual(100, s_value2.Value);
+        Assert.AreEqual(3.14, s_doubleValue.Value);
     }
 }
 
