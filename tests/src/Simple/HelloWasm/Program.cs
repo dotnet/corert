@@ -1924,8 +1924,22 @@ internal static class Program
         }
         try
         {
-            var f = c.ToString(); //method access
-            PrintLine("NRE method access failed");
+            var f = c.ToString(); //virtual method access
+            PrintLine("NRE virtual method access failed");
+            success = false;
+        }
+        catch (NullReferenceException)
+        {
+        }
+        catch (Exception)
+        {
+            success = false;
+        }
+
+        try
+        {
+            c.NonVirtual(); //method access
+            PrintLine("NRE non virtual method access failed");
             success = false;
         }
         catch (NullReferenceException)
@@ -2307,6 +2321,7 @@ internal static class Program
 public class ClassForNre
 {
     public int F;
+    public void NonVirtual() { }
 }
 
 
