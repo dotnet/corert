@@ -41,9 +41,7 @@ class Program
         TestNullableCasting.Run();
         TestVariantCasting.Run();
         TestMDArrayAddressMethod.Run();
-#if !CODEGEN_WASM
         TestNativeLayoutGeneration.Run();
-#endif
         TestByRefLikeVTables.Run();
 #endif
         return 100;

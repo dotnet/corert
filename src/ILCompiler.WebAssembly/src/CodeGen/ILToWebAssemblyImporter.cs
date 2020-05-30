@@ -1998,6 +1998,13 @@ namespace Internal.IL
                 return GetOrCreateLLVMFunction(canonMethodName, canonMethod.Signature, hasHiddenParam);
             }
 
+            LLVMValueRef thisRef = default;
+            if (thisPointer != null)
+            {
+                thisRef = thisPointer.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder);
+                ThrowIfNull(thisRef);
+            }
+
             if (canonMethod.IsVirtual && isCallVirt)
             {
                 // TODO: Full resolution of virtual methods
@@ -2054,7 +2061,7 @@ namespace Internal.IL
                 {
                     return GetCallableGenericVirtualMethod(thisPointer, canonMethod, callee, runtimeDeterminedMethod, out dictPtrPtrStore, out fatFunctionPtr);
                 }
-                return GetCallableVirtualMethod(thisPointer, callee, runtimeDeterminedMethod);
+                return GetCallableVirtualMethod(thisRef, callee, runtimeDeterminedMethod);
             }
 
             hasHiddenParam = canonMethod.RequiresInstArg();
@@ -2078,7 +2085,7 @@ namespace Internal.IL
             return _builder.BuildLoad(slot, $"{callee.Name}_slot");
         }
 
-        private LLVMValueRef GetCallableVirtualMethod(StackEntry objectPtr, MethodDesc callee, MethodDesc runtimeDeterminedMethod)
+        private LLVMValueRef GetCallableVirtualMethod(LLVMValueRef thisPointer, MethodDesc callee, MethodDesc runtimeDeterminedMethod)
         {
             Debug.Assert(runtimeDeterminedMethod.IsVirtual);
 
@@ -2086,7 +2093,6 @@ namespace Internal.IL
 
             LLVMTypeRef llvmSignature = GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, false);
             LLVMValueRef functionPtr;
-            var thisPointer = objectPtr.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder);
             ThrowIfNull(thisPointer);
             if (runtimeDeterminedMethod.OwningType.IsInterface)
             {
@@ -2110,7 +2116,7 @@ namespace Internal.IL
             }
             else
             {
-                var rawObjectPtr = CastIfNecessary(thisPointer, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(llvmSignature, 0), 0), 0), objectPtr.Name());
+                var rawObjectPtr = CastIfNecessary(thisPointer, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(llvmSignature, 0), 0), 0), "this");
                 var eeType = _builder.BuildLoad(rawObjectPtr, "ldEEType");
                 var slotPtr = _builder.BuildGEP(eeType, new LLVMValueRef[] { slot }, "__getslot__");
                 functionPtr = _builder.BuildLoad(slotPtr, "ld__getslot__");
@@ -2765,76 +2771,6 @@ namespace Internal.IL
                 destStruct = _builder.BuildInsertValue(destStruct, elemValRef, elemNo, "st" + elemNo);
             }
             return new ExpressionEntry(stackValueKind, calleeName, destStruct, actualReturnType);
-        }
-
-        // simple calling cases, not virtual, not calli
-        private LLVMValueRef HandleDirectCall(MethodDesc callee, MethodSignature signature,
-            StackEntry[] argumentValues,
-            TypeDesc constrainedType, LLVMValueRef calliTarget, int offset, LLVMValueRef baseShadowStack,
-            LLVMBuilderRef builder, bool needsReturnSlot,
-            LLVMValueRef castReturnAddress, MethodDesc runtimeDeterminedMethod)
-        {
-            LLVMValueRef fn = LLVMFunctionForMethod(callee, callee, signature.IsStatic ? null : argumentValues[0], false, constrainedType, runtimeDeterminedMethod, out bool hasHiddenParam, out LLVMValueRef dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
-
-            LLVMValueRef shadowStack = builder.BuildGEP(baseShadowStack, new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)offset, false) }, String.Empty);
-            var castShadowStack = builder.BuildPointerCast(shadowStack, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), "castshadowstack");
-
-            List<LLVMValueRef> llvmArgs = new List<LLVMValueRef>();
-            llvmArgs.Add(castShadowStack);
-            if (needsReturnSlot)
-            {
-                llvmArgs.Add(castReturnAddress);
-            }
-
-            // argument offset on the shadow stack
-            int argOffset = 0;
-            var instanceAdjustment = signature.IsStatic ? 0 : 1;
-            for (int index = 0; index < argumentValues.Length; index++)
-            {
-                StackEntry toStore = argumentValues[index];
-
-                bool isThisParameter = false;
-                TypeDesc argType;
-                if (index == 0 && !signature.IsStatic)
-                {
-                    isThisParameter = true;
-                    if (callee.OwningType.IsValueType)
-                        argType = callee.OwningType.MakeByRefType();
-                    else
-                        argType = callee.OwningType;
-                }
-                else
-                {
-                    argType = signature[index - instanceAdjustment];
-                }
-
-                LLVMTypeRef valueType = GetLLVMTypeForTypeDesc(argType);
-                LLVMValueRef argValue = toStore.ValueAsType(valueType, builder);
-
-                // Pass arguments as parameters if possible
-                if (!isThisParameter && CanStoreTypeOnStack(argType))
-                {
-                    llvmArgs.Add(argValue);
-                }
-                // Otherwise store them on the shadow stack
-                else
-                {
-                    // The previous argument might have left this type unaligned, so pad if necessary
-                    argOffset = PadOffset(argType, argOffset);
-
-                    ImportStoreHelper(argValue, valueType, castShadowStack, (uint)argOffset, builder: builder);
-
-                    argOffset += argType.GetElementSize().AsInt;
-                }
-            }
-
-            LLVMValueRef llvmReturn = builder.BuildCall(fn, llvmArgs.ToArray(), string.Empty);
-            return llvmReturn;
-        }
-
-        private LLVMBasicBlockRef GetBasicBlockForExceptionRegionHandler(ExceptionRegion tryRegion)
-        {
-            return GetLLVMBasicBlockForBlock(_basicBlocks[tryRegion.ILRegion.HandlerOffset]);
         }
 
         private LLVMBasicBlockRef GetOrCreateLandingPad(ExceptionRegion tryRegion)
