@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
                 case ReadyToRunHelperId.GetNonGCStaticBase:
                     {
                         MetadataType target = (MetadataType)Target;
-                        bool hasLazyStaticConstructor = factory.TypeSystemContext.HasLazyStaticConstructor(target);
+                        bool hasLazyStaticConstructor = factory.PreinitializationManager.HasLazyStaticConstructor(target);
                         encoder.EmitLEAQ(encoder.TargetRegister.Result, factory.TypeNonGCStaticsSymbol(target));
 
                         if (!hasLazyStaticConstructor)
@@ -85,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis
                         AddrMode loadFromArg2AndDelta = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int64);
                         encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2AndDelta);
 
-                        if (!factory.TypeSystemContext.HasLazyStaticConstructor(target))
+                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
                         }
@@ -111,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis
                         encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
                         encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromRax);
 
-                        if (!factory.TypeSystemContext.HasLazyStaticConstructor(target))
+                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
                             encoder.EmitRET();
                         }

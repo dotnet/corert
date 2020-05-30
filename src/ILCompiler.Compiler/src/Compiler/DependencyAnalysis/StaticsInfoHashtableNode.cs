@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(factory.Indirection(factory.TypeGCStaticsSymbol(metadataType)), "GC statics indirection for StaticsInfoHashtable");
                 }
 
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || factory.TypeSystemContext.HasLazyStaticConstructor(type))
+                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || factory.PreinitializationManager.HasLazyStaticConstructor(type))
                 {
                     // The entry in the StaticsInfoHashtable points at the beginning of the static fields data, rather than the cctor 
                     // context offset.
@@ -102,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
                     ISymbolNode gcStaticIndirection = factory.Indirection(factory.TypeGCStaticsSymbol(metadataType));
                     bag.AppendUnsigned(BagElementKind.GcStaticData, _nativeStaticsReferences.GetIndex(gcStaticIndirection));
                 }
-                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || factory.TypeSystemContext.HasLazyStaticConstructor(type))
+                if (metadataType.NonGCStaticFieldSize.AsInt > 0 || factory.PreinitializationManager.HasLazyStaticConstructor(type))
                 {
                     ISymbolNode nonGCStaticIndirection = factory.Indirection(factory.TypeNonGCStaticsSymbol(metadataType));
                     bag.AppendUnsigned(BagElementKind.NonGcStaticData, _nativeStaticsReferences.GetIndex(nonGCStaticIndirection));

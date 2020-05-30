@@ -195,7 +195,7 @@ namespace ILCompiler
             }
 
             var nonGcStaticSectionNode = obj as NonGCStaticsNode;
-            if (nonGcStaticSectionNode != null && _typeSystemContext.HasLazyStaticConstructor(nonGcStaticSectionNode.Type))
+            if (nonGcStaticSectionNode != null && nonGcStaticSectionNode.HasCCtorContext)
             {
                 _cctorContextsGenerated.Add(nonGcStaticSectionNode);
             }

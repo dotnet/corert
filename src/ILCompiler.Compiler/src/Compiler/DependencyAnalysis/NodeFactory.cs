@@ -36,7 +36,8 @@ namespace ILCompiler.DependencyAnalysis
             LazyGenericsPolicy lazyGenericsPolicy,
             VTableSliceProvider vtableSliceProvider,
             DictionaryLayoutProvider dictionaryLayoutProvider,
-            ImportedNodeProvider importedNodeProvider)
+            ImportedNodeProvider importedNodeProvider,
+            PreinitializationManager preinitializationManager)
         {
             _target = context.Target;
             _context = context;
@@ -50,6 +51,7 @@ namespace ILCompiler.DependencyAnalysis
             LazyGenericsPolicy = lazyGenericsPolicy;
             _importedNodeProvider = importedNodeProvider;
             InterfaceDispatchCellSection = new InterfaceDispatchCellSectionNode(this);
+            PreinitializationManager = preinitializationManager;
         }
 
         public void SetMarkingComplete()
@@ -90,6 +92,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public NameMangler NameMangler
+        {
+            get;
+        }
+
+        public PreinitializationManager PreinitializationManager
         {
             get;
         }
@@ -370,7 +377,7 @@ namespace ILCompiler.DependencyAnalysis
             _eagerCctorIndirectionNodes = new NodeCache<MethodDesc, EmbeddedObjectNode>((MethodDesc method) =>
             {
                 Debug.Assert(method.IsStaticConstructor);
-                Debug.Assert(TypeSystemContext.HasEagerStaticConstructor((MetadataType)method.OwningType));
+                Debug.Assert(PreinitializationManager.HasEagerStaticConstructor((MetadataType)method.OwningType));
                 return EagerCctorTable.NewNode(MethodEntrypoint(method));
             });
 

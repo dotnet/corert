@@ -410,7 +410,7 @@ namespace Internal.IL
 
             if (_thisType is MetadataType metadataType && !metadataType.IsBeforeFieldInit
                 && (!_method.IsStaticConstructor && _method.Signature.IsStatic || _method.IsConstructor || (_thisType.IsValueType && !_method.Signature.IsStatic))
-                && _compilation.TypeSystemContext.HasLazyStaticConstructor(metadataType))
+                && _compilation.HasLazyStaticConstructor(metadataType))
             {
                 TriggerCctor(metadataType, prologBuilder);
             }
@@ -4534,7 +4534,7 @@ namespace Internal.IL
                 int fieldOffset;
                 // If the type is non-BeforeFieldInit, this is handled before calling any methods on it
                 //TODO : this seems to call into the cctor if the cctor itself accesses static fields. e.g. SR.  Try a test with an ++ in the cctor
-                bool needsCctorCheck = (owningType.IsBeforeFieldInit || (!owningType.IsBeforeFieldInit && owningType != _thisType)) && _compilation.TypeSystemContext.HasLazyStaticConstructor(owningType);
+                bool needsCctorCheck = (owningType.IsBeforeFieldInit || (!owningType.IsBeforeFieldInit && owningType != _thisType)) && _compilation.HasLazyStaticConstructor(owningType);
 
                 if (field.HasRva)
                 {

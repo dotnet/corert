@@ -106,7 +106,7 @@ namespace ILCompiler
             if (_singleThreaded)
                 options |= RyuJitCompilationOptions.SingleThreadedCompilation;
 
-            var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider);
+            var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider, GetPreinitializationManager());
 
             JitConfigProvider.Initialize(jitFlagBuilder.ToArray(), _ryujitOptions);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(new CompilerComparer()));

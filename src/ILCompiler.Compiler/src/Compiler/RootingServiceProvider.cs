@@ -51,7 +51,7 @@ namespace ILCompiler
                 _rootAdder(_factory.TypeThreadStaticIndex(metadataType), reason);
 
                 // Also explicitly root the non-gc base if we have a lazy cctor
-                if (_factory.TypeSystemContext.HasLazyStaticConstructor(type))
+                if (_factory.PreinitializationManager.HasLazyStaticConstructor(type))
                     _rootAdder(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
             }
         }
@@ -66,7 +66,7 @@ namespace ILCompiler
                 _rootAdder(_factory.TypeGCStaticsSymbol(metadataType), reason);
 
                 // Also explicitly root the non-gc base if we have a lazy cctor
-                if (_factory.TypeSystemContext.HasLazyStaticConstructor(type))
+                if (_factory.PreinitializationManager.HasLazyStaticConstructor(type))
                     _rootAdder(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
             }
         }
@@ -76,7 +76,7 @@ namespace ILCompiler
             Debug.Assert(!type.IsGenericDefinition);
 
             MetadataType metadataType = type as MetadataType;
-            if (metadataType != null && (metadataType.NonGCStaticFieldSize.AsInt > 0 || _factory.TypeSystemContext.HasLazyStaticConstructor(type)))
+            if (metadataType != null && (metadataType.NonGCStaticFieldSize.AsInt > 0 || _factory.PreinitializationManager.HasLazyStaticConstructor(type)))
             {
                 _rootAdder(_factory.TypeNonGCStaticsSymbol(metadataType), reason);
             }

@@ -54,7 +54,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 MetadataType type = node.Type;
 
-                Debug.Assert(factory.TypeSystemContext.HasLazyStaticConstructor(type));
+                Debug.Assert(factory.PreinitializationManager.HasLazyStaticConstructor(type));
 
                 // If this type doesn't generate an EEType in the current compilation, don't report it in the table.
                 // If nobody can get to the EEType, they can't ask to run the cctor. We don't need to force generate it.

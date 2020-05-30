@@ -151,7 +151,7 @@ namespace ILCompiler
 
         public bool HasLazyStaticConstructor(TypeDesc type)
         {
-            return TypeSystemContext.HasLazyStaticConstructor(type);
+            return NodeFactory.PreinitializationManager.HasLazyStaticConstructor(type);
         }
 
         public MethodDebugInformation GetDebugInfo(MethodIL methodIL)

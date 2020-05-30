@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     public sealed class CppCodegenNodeFactory : NodeFactory
     {
         public CppCodegenNodeFactory(CompilerTypeSystemContext context, CompilationModuleGroup compilationModuleGroup, MetadataManager metadataManager,
-            InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider)
+            InteropStubManager interopStubManager, NameMangler nameMangler, VTableSliceProvider vtableSliceProvider, DictionaryLayoutProvider dictionaryLayoutProvider, PreinitializationManager preinitializationManager)
             : base(context, 
                   compilationModuleGroup, 
                   metadataManager, 
@@ -20,7 +20,8 @@ namespace ILCompiler.DependencyAnalysis
                   new LazyGenericsDisabledPolicy(), 
                   vtableSliceProvider, 
                   dictionaryLayoutProvider, 
-                  new ImportedNodeProviderThrowing())
+                  new ImportedNodeProviderThrowing(),
+                  preinitializationManager)
         {
         }
 

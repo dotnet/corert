@@ -90,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
                 layout.EnsureEntry(_lookupSignature);
 
                 if ((_id == ReadyToRunHelperId.GetGCStaticBase || _id == ReadyToRunHelperId.GetThreadStaticBase) &&
-                    factory.TypeSystemContext.HasLazyStaticConstructor((TypeDesc)_target))
+                    factory.PreinitializationManager.HasLazyStaticConstructor((TypeDesc)_target))
                 {
                     // If the type has a lazy static constructor, we also need the non-GC static base
                     // because that's where the class constructor context is.
@@ -114,7 +114,7 @@ namespace ILCompiler.DependencyAnalysis
                         // because that's where the class constructor context is.
                         TypeDesc type = (TypeDesc)_target;
 
-                        if (factory.TypeSystemContext.HasLazyStaticConstructor(type))
+                        if (factory.PreinitializationManager.HasLazyStaticConstructor(type))
                         {
                             result.Add(
                                 new DependencyListEntry(
@@ -211,7 +211,7 @@ namespace ILCompiler.DependencyAnalysis
                 // a template dictionary node.
                 TypeDesc type = (TypeDesc)_target;
                 Debug.Assert(templateLayout != null);
-                if (factory.TypeSystemContext.HasLazyStaticConstructor(type))
+                if (factory.PreinitializationManager.HasLazyStaticConstructor(type))
                 {
                     GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(type);
                     conditionalDependencies.Add(new CombinedDependencyListEntry(nonGcRegionLookup.TemplateDictionaryNode(factory),

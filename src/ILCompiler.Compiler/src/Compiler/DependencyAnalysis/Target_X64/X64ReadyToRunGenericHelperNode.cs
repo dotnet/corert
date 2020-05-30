@@ -74,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         MetadataType target = (MetadataType)_target;
 
-                        if (!factory.TypeSystemContext.HasLazyStaticConstructor(target))
+                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
                             encoder.EmitRET();
@@ -110,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis
                         encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromResult);
                         encoder.EmitMOV(encoder.TargetRegister.Result, ref loadFromResult);
 
-                        if (!factory.TypeSystemContext.HasLazyStaticConstructor(target))
+                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
                             encoder.EmitRET();
                         }
@@ -144,7 +144,7 @@ namespace ILCompiler.DependencyAnalysis
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, _lookupSignature, relocsOnly);
 
                         ISymbolNode helperEntrypoint;
-                        if (factory.TypeSystemContext.HasLazyStaticConstructor(target))
+                        if (factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
                             // There is a lazy class constructor. We need the non-GC static base because that's where the
                             // class constructor context lives.
