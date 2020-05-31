@@ -657,9 +657,10 @@ namespace ILCompiler
                 (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_multiFile);
             preinitStatics &= !_noPreinitStatics;
 
+            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitStatics);
             builder
                 .UseILProvider(ilProvider)
-                .UsePreinitializationManager(new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitStatics));
+                .UsePreinitializationManager(preinitManager);
 
             ILScanResults scanResults = null;
             if (useScanner)
@@ -784,6 +785,8 @@ namespace ILCompiler
 
             if (debugInfoProvider is IDisposable)
                 ((IDisposable)debugInfoProvider).Dispose();
+
+            preinitManager.LogStatistics(logger);
 
             return 0;
         }

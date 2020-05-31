@@ -112,6 +112,34 @@ namespace ILCompiler
             return GetPreinitializationInfo(type).IsPreinitialized;
         }
 
+        public void LogStatistics(Logger logger)
+        {
+            if (!_enableInterpreter)
+                return;
+
+            int totalEligibleTypes = 0;
+            int totalPreinitializedTypes = 0;
+
+            if (logger.IsVerbose)
+            {
+                foreach (var item in LockFreeReaderHashtable<MetadataType, TypePreinit.PreinitializationInfo>.Enumerator.Get(_preinitHashTable))
+                {
+                    totalEligibleTypes++;
+                    if (item.IsPreinitialized)
+                    {
+                        logger.Writer.WriteLine($"Preinitialized type '{item.Type}'");
+                        totalPreinitializedTypes++;
+                    }
+                    else
+                    {
+                        logger.Writer.WriteLine($"Could not preinitialize '{item.Type}': {item.FailureReason}");
+                    }
+                }
+
+                logger.Writer.WriteLine($"Preinitialized {totalPreinitializedTypes} types out of {totalEligibleTypes}.");
+            }
+        }
+
         public TypePreinit.PreinitializationInfo GetPreinitializationInfo(MetadataType type)
         {
             return _preinitHashTable.GetOrCreateValue(type);

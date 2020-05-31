@@ -62,7 +62,7 @@ namespace ILCompiler
             Status status;
             try
             {
-                status = preinit.TryScanMethod(ilProvider.GetMethodIL(type.GetStaticConstructor()), null, null, out _);
+                status = preinit.TryScanMethod(type.GetStaticConstructor(), null, null, out _);
             }
             catch (TypeSystemException ex)
             {
@@ -80,13 +80,22 @@ namespace ILCompiler
 
             return new PreinitializationInfo(type, status.FailureReason);
         }
-        
+
+        private Status TryScanMethod(MethodDesc method, Value[] parameters, Stack<MethodDesc> recursionProtect, out Value returnValue)
+        {
+            MethodIL methodIL = _ilProvider.GetMethodIL(method);
+            if (methodIL == null)
+            {
+                returnValue = null;
+                return Status.Fail(method, "Extern method");
+            }
+
+            return TryScanMethod(methodIL, parameters, recursionProtect, out returnValue);
+        }
+
         private Status TryScanMethod(MethodIL methodIL, Value[] parameters, Stack<MethodDesc> recursionProtect, out Value returnValue)
         {
             returnValue = default;
-
-            if (methodIL == null)
-                return Status.Fail(methodIL.OwningMethod, "Extern method");
 
             if (recursionProtect != null && recursionProtect.Contains(methodIL.OwningMethod))
                 return Status.Fail(methodIL.OwningMethod, "Recursion");
@@ -347,7 +356,7 @@ namespace ILCompiler
                             {
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
-                                Status callResult = TryScanMethod(_ilProvider.GetMethodIL(method), methodParams, recursionProtect, out retVal);
+                                Status callResult = TryScanMethod(method, methodParams, recursionProtect, out retVal);
                                 if (!callResult.IsSuccessful)
                                 {
                                     recursionProtect.Pop();
@@ -400,7 +409,7 @@ namespace ILCompiler
                             }
                             recursionProtect ??= new Stack<MethodDesc>();
                             recursionProtect.Push(methodIL.OwningMethod);
-                            Status ctorCallResult = TryScanMethod(_ilProvider.GetMethodIL(ctor), ctorParameters, recursionProtect, out _);
+                            Status ctorCallResult = TryScanMethod(ctor, ctorParameters, recursionProtect, out _);
                             if (!ctorCallResult.IsSuccessful)
                             {
                                 recursionProtect.Pop();
