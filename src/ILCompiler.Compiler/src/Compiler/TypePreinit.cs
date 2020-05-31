@@ -59,39 +59,37 @@ namespace ILCompiler
 
             var preinit = new TypePreinit(type, compilationGroup, ilProvider);
 
-            bool success;
+            Status status;
             try
             {
-                success = preinit.TryScanMethod(ilProvider.GetMethodIL(type.GetStaticConstructor()), null, null, out _);
+                status = preinit.TryScanMethod(ilProvider.GetMethodIL(type.GetStaticConstructor()), null, null, out _);
             }
-            catch (TypeSystemException)
+            catch (TypeSystemException ex)
             {
-                success = false;
+                status = Status.Fail(type.GetStaticConstructor(), ex.Message);
             }
 
-            if (success)
+            if (status.IsSuccessful)
             {
                 var values = new List<KeyValuePair<FieldDesc, ISerializableValue>>();
                 foreach (var kvp in preinit._fieldValues)
                     values.Add(new KeyValuePair<FieldDesc, ISerializableValue>(kvp.Key, kvp.Value));
 
-                Console.WriteLine("SUCC");
-
                 return new PreinitializationInfo(type, values);
             }
 
-            return new PreinitializationInfo(type, null);
+            return new PreinitializationInfo(type, status.FailureReason);
         }
         
-        private bool TryScanMethod(MethodIL methodIL, Value[] parameters, Stack<MethodDesc> recursionProtect, out Value returnValue)
+        private Status TryScanMethod(MethodIL methodIL, Value[] parameters, Stack<MethodDesc> recursionProtect, out Value returnValue)
         {
             returnValue = default;
 
             if (methodIL == null)
-                return Fail("Extern method");
+                return Status.Fail(methodIL.OwningMethod, "Extern method");
 
             if (recursionProtect != null && recursionProtect.Contains(methodIL.OwningMethod))
-                return Fail("Recursion");
+                return Status.Fail(methodIL.OwningMethod, "Recursion");
 
             ILExceptionRegion[] ehRegions = methodIL.GetExceptionRegions();
             if (ehRegions != null && ehRegions.Length > 0)
@@ -102,7 +100,7 @@ namespace ILCompiler
                 foreach (ILExceptionRegion ehRegion in ehRegions)
                 {
                     if (ehRegion.Kind == ILExceptionRegionKind.Finally)
-                        return Fail("Finally regions");
+                        return Status.Fail(methodIL.OwningMethod, "Finally regions");
                 }
             }
 
@@ -122,11 +120,7 @@ namespace ILCompiler
             // Read IL opcodes and interpret their semantics.
             //
             // This is not a full interpreter and we're allowed to not interpret everything. If a semantic is
-            // not implemented by the interpreter, we simply return false. For better diagnosability, we use
-            // "return Fail(...)" instead of returning false as a compact way to capture the reason
-            // why preinitialization failed. This could later be used to generate end-user messages, akin
-            // to the messages e.g. the VC++ compiler generates when it fails to vectorize a loop.
-            // It's currently only used for compiler developers.
+            // not implemented by the interpreter, we simply fail.
             //
             // We also need to do basic sanity checking for invalid IL to protect us from crashing. These
             // all throw the TypeSystem's InvalidProgramException. The exception doesn't need to exactly match
@@ -199,13 +193,13 @@ namespace ILCompiler
                                 && (elementType.IsGCPointer
                                 || (elementType.IsValueType && ((DefType)elementType).ContainsGCPointers)))
                             {
-                                return Fail(opcode, "GC pointers");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
                             }
 
                             if (elementCount < 0
                                 || elementCount > MaximumInterpretedArraySize)
                             {
-                                return Fail(opcode, "Array out of bounds");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Array out of bounds");
                             }
 
                             stack.Push(new ArrayInstance(elementType.MakeArrayType(), elementCount));
@@ -245,7 +239,7 @@ namespace ILCompiler
                             {
                                 returnValue = stack.PopIntoLocation(methodIL.OwningMethod.Signature.ReturnType);
                             }
-                            return true;
+                            return Status.Success;
                         }
 
                     case ILOpcode.nop:
@@ -262,12 +256,12 @@ namespace ILCompiler
 
                             if (field.OwningType != _type)
                             {
-                                return Fail(opcode, "Store into other static");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Store into other static");
                             }
 
                             if (field.IsThreadStatic || field.HasRva)
                             {
-                                return Fail(opcode, "Unsupported static");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
                             if (_fieldValues[field] is IAssignableValue assignableField)
@@ -287,12 +281,12 @@ namespace ILCompiler
 
                             if (field.OwningType != _type)
                             {
-                                return Fail(opcode, "Load from other static" + (field.IsInitOnly ? " initonly " : ""));
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Load from other static" + (field.IsInitOnly ? " initonly " : ""));
                             }
 
                             if (field.IsThreadStatic || field.HasRva)
                             {
-                                return Fail(opcode, "Unsupported static");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
                             stack.PushFromLocation(field.FieldType, _fieldValues[field]);
@@ -309,17 +303,17 @@ namespace ILCompiler
 
                             if (field.OwningType != _type)
                             {
-                                return Fail(opcode, "Address of other static");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Address of other static");
                             }
 
                             if (field.IsThreadStatic || field.HasRva)
                             {
-                                return Fail(opcode, "Unsupported static");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
                             if (!(_fieldValues[field] is ValueTypeValue vtfield))
                             {
-                                return Fail(opcode, "Unsupported byref");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported byref");
                             }
 
                             stack.Push(vtfield.CreateByRef());
@@ -339,7 +333,7 @@ namespace ILCompiler
                                     && owningType != methodIL.OwningMethod.OwningType
                                     && !((MetadataType)owningType).IsBeforeFieldInit))
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             Value[] methodParams = new Value[numParams];
@@ -353,10 +347,11 @@ namespace ILCompiler
                             {
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
-                                if (!TryScanMethod(_ilProvider.GetMethodIL(method), methodParams, recursionProtect, out retVal))
+                                Status callResult = TryScanMethod(_ilProvider.GetMethodIL(method), methodParams, recursionProtect, out retVal);
+                                if (!callResult.IsSuccessful)
                                 {
                                     recursionProtect.Pop();
-                                    return false;
+                                    return callResult;
                                 }
                                 recursionProtect.Pop();
                             }
@@ -381,7 +376,7 @@ namespace ILCompiler
                                     && owningType != methodIL.OwningMethod.OwningType
                                     && !((MetadataType)owningType).IsBeforeFieldInit))
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             Value instance;
@@ -405,10 +400,11 @@ namespace ILCompiler
                             }
                             recursionProtect ??= new Stack<MethodDesc>();
                             recursionProtect.Push(methodIL.OwningMethod);
-                            if (!TryScanMethod(_ilProvider.GetMethodIL(ctor), ctorParameters, recursionProtect, out _))
+                            Status ctorCallResult = TryScanMethod(_ilProvider.GetMethodIL(ctor), ctorParameters, recursionProtect, out _);
+                            if (!ctorCallResult.IsSuccessful)
                             {
                                 recursionProtect.Pop();
-                                return false;
+                                return ctorCallResult;
                             }
                                     
                             recursionProtect.Pop();
@@ -424,7 +420,7 @@ namespace ILCompiler
                             if (field.FieldType.IsGCPointer
                                 || field.IsStatic)
                             {
-                                return Fail(opcode, "Reference field");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Reference field");
                             }
 
                             Value value = stack.PopIntoLocation(field.FieldType);
@@ -433,7 +429,7 @@ namespace ILCompiler
                             var settableInstance = instance.Value as IHasInstanceFields;
                             if (settableInstance == null)
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             settableInstance.SetField(field, value);
@@ -447,7 +443,7 @@ namespace ILCompiler
                             if (field.FieldType.IsGCPointer
                                 || field.IsStatic)
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             StackEntry instance = stack.Pop();
@@ -455,7 +451,7 @@ namespace ILCompiler
                             var loadableInstance = instance.Value as IHasInstanceFields;
                             if (loadableInstance == null)
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             Value fieldValue = loadableInstance.GetField(field);
@@ -470,7 +466,7 @@ namespace ILCompiler
                             if (field.FieldType.IsGCPointer
                                 || field.IsStatic)
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             StackEntry instance = stack.Pop();
@@ -478,7 +474,7 @@ namespace ILCompiler
                             var loadableInstance = instance.Value as IHasInstanceFields;
                             if (loadableInstance == null)
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             stack.Push(loadableInstance.GetFieldAddress(field));
@@ -520,7 +516,7 @@ namespace ILCompiler
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((uint)val));
                                         break;
                                     default:
-                                        return Fail(opcode);
+                                        return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
                             }
                             else if (popped.ValueKind == StackValueKind.NativeInt)
@@ -532,7 +528,7 @@ namespace ILCompiler
                                         stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
                                         break;
                                     default:
-                                        return Fail(opcode);
+                                        return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
                             }
                             else if (popped.ValueKind == StackValueKind.Int64)
@@ -555,12 +551,12 @@ namespace ILCompiler
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
                                         break;
                                     default:
-                                        return Fail(opcode);
+                                        return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
                             }
                             else
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                         }
                         break;
@@ -599,7 +595,7 @@ namespace ILCompiler
                             var token = methodIL.GetObject(reader.ReadILToken());
                             if (!(token is FieldDesc field))
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             stack.Push(new StackEntry(StackValueKind.ValueType, new RuntimeFieldHandleValue(field)));
@@ -678,7 +674,7 @@ namespace ILCompiler
                             }
                             else
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                         }
                         break;
@@ -694,7 +690,7 @@ namespace ILCompiler
                             TypeDesc token = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
                             if (token.IsGCPointer)
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                             ((ByRefValue)popped.Value).Initialize(token.GetElementSize().AsInt);
                         }
@@ -755,7 +751,7 @@ namespace ILCompiler
                                     branchTaken = normalizedOpcode == ILOpcode.brfalse_s
                                         ? condition.Value == null : condition.Value != null;
                                 else
-                                    return Fail(opcode);
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                             else if (normalizedOpcode == ILOpcode.blt_s || normalizedOpcode == ILOpcode.bgt_s
                                 || normalizedOpcode == ILOpcode.bge_s || normalizedOpcode == ILOpcode.beq_s
@@ -819,7 +815,7 @@ namespace ILCompiler
                                 }
                                 else
                                 {
-                                    return Fail(opcode);
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
                             }
                             else
@@ -833,7 +829,7 @@ namespace ILCompiler
                                 // Don't allow backwards branches so that we don't have to worry about infinite loops
                                 if (target < reader.Offset)
                                 {
-                                    return Fail(opcode, "Backwards branch");
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Backwards branch");
                                 }
 
                                 reader.Seek(target);
@@ -887,7 +883,7 @@ namespace ILCompiler
                                 else if (opcode == ILOpcode.clt_un)
                                     condition = (uint)value1.Value.AsInt32() > (uint)value2.Value.AsInt32();
                                 else
-                                    return Fail(opcode);
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                             else if (value1.ValueKind == StackValueKind.Int64 && value2.ValueKind == StackValueKind.Int64)
                             {
@@ -900,7 +896,7 @@ namespace ILCompiler
                                 else if (opcode == ILOpcode.clt_un)
                                     condition = (ulong)value1.Value.AsInt64() > (ulong)value2.Value.AsInt64();
                                 else
-                                    return Fail(opcode);
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                             else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
                             {
@@ -913,18 +909,18 @@ namespace ILCompiler
                                 else if (opcode == ILOpcode.clt_un)
                                     condition = !(value1.Value.AsDouble() <= value2.Value.AsDouble());
                                 else
-                                    return Fail(opcode);
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                             else if (value1.ValueKind == StackValueKind.ObjRef && value2.ValueKind == StackValueKind.ObjRef)
                             {
                                 if (opcode == ILOpcode.cgt_un)
                                     condition = value1.Value == null && value2.Value != null;
                                 else
-                                    return Fail(opcode);
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                             else
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             stack.Push(StackValueKind.Int32, condition
@@ -947,7 +943,7 @@ namespace ILCompiler
                             }
                             else
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                         }
                         break;
@@ -958,7 +954,7 @@ namespace ILCompiler
                             if (value.ValueKind == StackValueKind.Int32)
                                 stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(-value.Value.AsInt32()));
                             else
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                         }
                         break;
 
@@ -978,7 +974,7 @@ namespace ILCompiler
                             if (value1.ValueKind == StackValueKind.Int32 && value2.ValueKind == StackValueKind.Int32)
                             {
                                 if (isDivRem && value2.Value.AsInt32() == 0)
-                                    return Fail(opcode, "Division by zero");
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
 
                                 int result = opcode switch
                                 {
@@ -998,7 +994,7 @@ namespace ILCompiler
                             else if (value1.ValueKind == StackValueKind.Int64 && value2.ValueKind == StackValueKind.Int64)
                             {
                                 if (isDivRem && value2.Value.AsInt64() == 0)
-                                    return Fail(opcode, "Division by zero");
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
 
                                 long result = opcode switch
                                 {
@@ -1017,7 +1013,7 @@ namespace ILCompiler
                             else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
                             {
                                 if (isDivRem && value2.Value.AsDouble() == 0)
-                                    return Fail(opcode, "Division by zero");
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
 
                                 if (opcode == ILOpcode.or || opcode == ILOpcode.shl || opcode == ILOpcode.and)
                                     ThrowHelper.ThrowInvalidProgramException();
@@ -1042,7 +1038,7 @@ namespace ILCompiler
                             }
                             else
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                         }
                         break;
@@ -1056,7 +1052,7 @@ namespace ILCompiler
                             }
                             else if (popped.Value == null)
                             {
-                                return Fail(opcode, "Null array");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Null array");
                             }
                             else
                             {
@@ -1088,7 +1084,7 @@ namespace ILCompiler
 
                             if (elementType.IsGCPointer)
                             {
-                                return Fail(opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
                             Value value = stack.PopIntoLocation(elementType);
@@ -1100,11 +1096,11 @@ namespace ILCompiler
                             if (array.Value is ArrayInstance arrayInstance)
                             {
                                 if (!arrayInstance.TryStoreElement(index, value))
-                                    return Fail(opcode, "Out of range access");
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Out of range access");
                             }
                             else if (array.Value == null)
                             {
-                                return Fail(opcode, "Null array");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Null array");
                             }
                             else
                             {
@@ -1119,7 +1115,7 @@ namespace ILCompiler
                             if (type.IsValueType)
                             {
                                 if (type.IsNullable)
-                                    return Fail(opcode);
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
 
                                 Value value = stack.PopIntoLocation(type);
                                 stack.Push(StackValueKind.ObjRef, ObjectInstance.Box((DefType)type, ((ValueTypeValue)value).InstanceBytes));
@@ -1144,12 +1140,12 @@ namespace ILCompiler
                         break;
 
                     default:
-                        return Fail(opcode);
+                        return Status.Fail(methodIL.OwningMethod, opcode);
                 }
 
             }
 
-            return Fail("Control fell through");
+            return Status.Fail(methodIL.OwningMethod, "Control fell through");
         }
 
         private static Value NewUninitializedLocationValue(TypeDesc locationType)
@@ -1164,15 +1160,6 @@ namespace ILCompiler
                 return new ValueTypeValue(locationType);
             }
         }
-
-        private bool Fail(string message)
-        {
-            Console.WriteLine(message);
-            return false;
-        }
-
-        private bool Fail(ILOpcode opcode, string message) => Fail($"Opcode: {opcode}: {message}");
-        private bool Fail(ILOpcode opcode) => Fail($"Opcode: {opcode}");
 
         private bool TryHandleIntrinsicCall(MethodDesc method, Value[] parameters, out Value retVal)
         {
@@ -1908,25 +1895,52 @@ namespace ILCompiler
             }
         }
 
+        private struct Status
+        {
+            public string FailureReason { get; }
+
+            public static Status Success => default;
+
+            public bool IsSuccessful => FailureReason == null;
+
+            private Status(string message)
+            {
+                FailureReason = message;
+            }
+
+            public static Status Fail(MethodDesc method, ILOpcode opcode, string detail = null)
+            {
+                return new Status($"Method '{method}', opcode '{opcode}' {detail ?? ""}");
+            }
+
+            public static Status Fail(MethodDesc method, string detail)
+            {
+                return new Status($"Method '{method}': {detail}");
+            }
+        }
+
         public class PreinitializationInfo
         {
             private readonly Dictionary<FieldDesc, ISerializableValue> _fieldValues;
 
             public MetadataType Type { get; }
 
+            public string FailureReason { get; }
+
             public bool IsPreinitialized => _fieldValues != null;
 
             public PreinitializationInfo(MetadataType type, IEnumerable<KeyValuePair<FieldDesc, ISerializableValue>> fieldValues)
             {
                 Type = type;
+                _fieldValues = new Dictionary<FieldDesc, ISerializableValue>();
+                foreach (var field in fieldValues)
+                    _fieldValues.Add(field.Key, field.Value);
+            }
 
-                if (fieldValues != null)
-                {
-                    _fieldValues = new Dictionary<FieldDesc, ISerializableValue>();
-
-                    foreach (var field in fieldValues)
-                        _fieldValues.Add(field.Key, field.Value);
-                }
+            public PreinitializationInfo(MetadataType type, string failureReason)
+            {
+                Type = type;
+                FailureReason = failureReason;
             }
 
             public ISerializableValue GetFieldValue(FieldDesc field)
