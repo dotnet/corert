@@ -52,7 +52,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>CPPCODEGEN;WIN32;_DEBUG;_CONSOLE;_LIB;_AMD64_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CPPCODEGEN;WIN32;_DEBUG;_CONSOLE;_LIB;HOST_AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>common.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\..\Native\gc;..\..\Native\gc\env;..\..\Native\Bootstrap</AdditionalIncludeDirectories>
@@ -73,7 +73,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>CPPCODEGEN;WIN32;NDEBUG;_CONSOLE;_LIB;_AMD64_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>CPPCODEGEN;WIN32;NDEBUG;_CONSOLE;_LIB;HOST_AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <PrecompiledHeaderFile>common.h</PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>..\..\Native\gc;..\..\Native\gc\env</AdditionalIncludeDirectories>
