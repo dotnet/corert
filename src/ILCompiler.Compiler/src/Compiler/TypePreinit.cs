@@ -276,12 +276,7 @@ namespace ILCompiler
                             if (_fieldValues[field] is IAssignableValue assignableField)
                                 assignableField.Assign(stack.PopIntoLocation(field.FieldType));
                             else
-                            {
-                                Value value = stack.PopIntoLocation(field.FieldType);
-                                if (value is IInternalModelingOnlyValue)
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Value with no external representation");
-                                _fieldValues[field] = value;
-                            }
+                                _fieldValues[field] = stack.PopIntoLocation(field.FieldType);
                         }
                         break;
 
