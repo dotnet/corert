@@ -42,7 +42,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (Type.Context.Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
         public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_preinitializationInfo.Type);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
