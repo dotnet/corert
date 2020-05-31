@@ -62,15 +62,15 @@ namespace ILCompiler.DependencyAnalysis
 
             builder.RequireInitialAlignment(factory.Target.PointerSize);
 
+            // GC static fields don't begin at offset 0, need to subtract that.
+            int initialOffset = CompilerMetadataFieldLayoutAlgorithm.GetGCStaticFieldOffset(factory.TypeSystemContext).AsInt;
+
             foreach (FieldDesc field in type.GetFields())
             {
                 if (!field.IsStatic || field.HasRva || field.IsLiteral || field.IsThreadStatic || !field.HasGCStaticBase)
                     continue;
-
-                // We subtract pointer size because GC statics need an EEType field
-                // at the beginning of their region once allocated on the GC heap.
-                // TODO: share this fact with the layout algorithm
-                int padding = field.Offset.AsInt - factory.Target.PointerSize - builder.CountBytes;
+                
+                int padding = field.Offset.AsInt - initialOffset - builder.CountBytes;
                 Debug.Assert(padding >= 0);
                 builder.EmitZeros(padding);
 
@@ -83,8 +83,7 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(builder.CountBytes - currentOffset == field.FieldType.GetElementSize().AsInt);
             }
 
-            // TODO: same pointer size as above
-            int pad = _preinitializationInfo.Type.GCStaticFieldSize.AsInt - builder.CountBytes - factory.Target.PointerSize;
+            int pad = _preinitializationInfo.Type.GCStaticFieldSize.AsInt - builder.CountBytes - initialOffset;
             Debug.Assert(pad >= 0);
             builder.EmitZeros(pad);
 

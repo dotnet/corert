@@ -13,22 +13,27 @@ namespace ILCompiler
 {
     internal class CompilerMetadataFieldLayoutAlgorithm : MetadataFieldLayoutAlgorithm
     {
+        // GC statics start with a pointer to the "EEType" that signals the size and GCDesc to the GC
+        public static LayoutInt GetGCStaticFieldOffset(TypeSystemContext context) => context.Target.LayoutPointerSize;
+
         protected override void PrepareRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
         {
-            // GC statics start with a pointer to the "EEType" that signals the size and GCDesc to the GC
-            layout.GcStatics.Size = context.Target.LayoutPointerSize;
-            layout.ThreadGcStatics.Size = context.Target.LayoutPointerSize;
+            LayoutInt offset = GetGCStaticFieldOffset(context);
+            layout.GcStatics.Size = offset;
+            layout.ThreadGcStatics.Size = offset;
         }
 
         protected override void FinalizeRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
         {
+            LayoutInt offset = GetGCStaticFieldOffset(context);
+
             // If the size of GCStatics is equal to the size set in PrepareRuntimeSpecificStaticFieldLayout, we
             // don't have any GC statics
-            if (layout.GcStatics.Size == context.Target.LayoutPointerSize)
+            if (layout.GcStatics.Size == offset)
             {
                 layout.GcStatics.Size = LayoutInt.Zero;
             }
-            if (layout.ThreadGcStatics.Size == context.Target.LayoutPointerSize)
+            if (layout.ThreadGcStatics.Size == offset)
             {
                 layout.ThreadGcStatics.Size = LayoutInt.Zero;
             }
