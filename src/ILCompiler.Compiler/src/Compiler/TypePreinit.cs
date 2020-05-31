@@ -276,7 +276,12 @@ namespace ILCompiler
                             if (_fieldValues[field] is IAssignableValue assignableField)
                                 assignableField.Assign(stack.PopIntoLocation(field.FieldType));
                             else
-                                _fieldValues[field] = stack.PopIntoLocation(field.FieldType);
+                            {
+                                Value value = stack.PopIntoLocation(field.FieldType);
+                                if (value is IInternalModelingOnlyValue)
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Value with no external representation");
+                                _fieldValues[field] = value;
+                            }
                         }
                         break;
 
@@ -337,12 +342,16 @@ namespace ILCompiler
                             int numParams = methodSig.Length + paramOffset;
 
                             TypeDesc owningType = method.OwningType;
-                            if (!_compilationGroup.CanInline(methodIL.OwningMethod, method)
-                                || (owningType.HasStaticConstructor
-                                    && owningType != methodIL.OwningMethod.OwningType
-                                    && !((MetadataType)owningType).IsBeforeFieldInit))
+                            if (!_compilationGroup.CanInline(methodIL.OwningMethod, method))
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Cannot inline");
+                            }
+
+                            if (owningType.HasStaticConstructor
+                                    && owningType != methodIL.OwningMethod.OwningType
+                                    && !((MetadataType)owningType).IsBeforeFieldInit)
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
                             }
 
                             Value[] methodParams = new Value[numParams];
@@ -377,15 +386,34 @@ namespace ILCompiler
 
                             TypeDesc owningType = ctor.OwningType;
                             if (!_compilationGroup.CanInline(methodIL.OwningMethod, ctor)
-                                || !_compilationGroup.ContainsType(owningType)
-                                || !owningType.IsDefType
-                                || owningType.HasFinalizer
-                                || ((DefType)owningType).ContainsGCPointers
-                                || (owningType.HasStaticConstructor
-                                    && owningType != methodIL.OwningMethod.OwningType
-                                    && !((MetadataType)owningType).IsBeforeFieldInit))
+                                || !_compilationGroup.ContainsType(owningType))
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Cannot inline");
+                            }
+
+                            if (owningType.HasStaticConstructor
+                                    && owningType != methodIL.OwningMethod.OwningType
+                                    && !((MetadataType)owningType).IsBeforeFieldInit)
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
+                            }
+
+                            if (!owningType.IsDefType)
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Not a class or struct");
+                            }
+
+                            if (owningType.HasFinalizer)
+                            {
+                                // Finalizer might have observable side effects
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                            }
+
+                            if (((DefType)owningType).ContainsGCPointers)
+                            {
+                                // We don't want to end up with GC pointers in the frozen region
+                                // because write barriers can't handle that.
+                                return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
                             }
 
                             Value instance;
