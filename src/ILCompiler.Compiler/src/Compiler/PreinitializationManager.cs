@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using Internal.IL;
 using Internal.TypeSystem;
 
@@ -13,14 +14,13 @@ namespace ILCompiler
     public class PreinitializationManager
     {
         private readonly bool _supportsLazyCctors;
-        private readonly CompilationModuleGroup _compilationModuleGroup;
-        private readonly ILProvider _ilprovider;
+        private readonly bool _enableInterpreter;
 
-        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider)
+        public PreinitializationManager(TypeSystemContext context, CompilationModuleGroup compilationGroup, ILProvider ilprovider, bool enableInterpreter)
         {
             _supportsLazyCctors = context.SystemModule.GetType("System.Runtime.CompilerServices", "ClassConstructorRunner", false) != null;
-            _compilationModuleGroup = compilationGroup;
-            _ilprovider = ilprovider;
+            _preinitHashTable = new PreinitializationInfoHashtable(compilationGroup, ilprovider);
+            _enableInterpreter = enableInterpreter;
         }
 
         /// <summary>
@@ -29,8 +29,28 @@ namespace ILCompiler
         /// </summary>
         public bool HasLazyStaticConstructor(TypeDesc type)
         {
-            return type.HasStaticConstructor && !HasEagerConstructorAttribute(type) && _supportsLazyCctors &&
-                (!(type is MetadataType) || !((MetadataType)type).IsModuleType);
+            if (!type.HasStaticConstructor)
+                return false;
+
+            // If the cctor runs eagerly at startup, it's not lazy
+            if (HasEagerConstructorAttribute(type))
+                return false;
+
+            // If the class library doesn't support lazy cctors, everything is preinitialized before Main
+            // either by interpretting the cctor at compile time, or by running the cctor eagerly at startup.
+            if (!_supportsLazyCctors)
+                return false;
+
+            // Would be odd to see a type with a cctor that is not MetadataType
+            Debug.Assert(type is MetadataType);
+            var mdType = (MetadataType)type;
+
+            // The cctor on the Module type is the module constructor. That's special.
+            if (mdType.IsModuleType)
+                return false;
+
+            // If we can't interpret the cctor at compile time, the cctor is lazy.
+            return !IsPreinitialized(mdType);
         }
 
         /// <summary>
@@ -39,7 +59,19 @@ namespace ILCompiler
         /// </summary>
         public bool HasEagerStaticConstructor(TypeDesc type)
         {
-            return type.HasStaticConstructor && (HasEagerConstructorAttribute(type) || !_supportsLazyCctors);
+            if (!type.HasStaticConstructor)
+                return false;
+
+            // Would be odd to see a type with a cctor that is not MetadataType
+            Debug.Assert(type is MetadataType);
+            var mdType = (MetadataType)type;
+
+            // If the type is preinitialized at compile time, that's not eager.
+            if (IsPreinitialized(mdType))
+                return false;
+
+            // If the type is marked as eager or classlib doesn't have a cctor runner, it's eager.
+            return HasEagerConstructorAttribute(type) || !_supportsLazyCctors;
         }
 
         private static bool HasEagerConstructorAttribute(TypeDesc type)
@@ -48,5 +80,92 @@ namespace ILCompiler
             return mdType != null && 
                 mdType.HasCustomAttribute("System.Runtime.CompilerServices", "EagerStaticClassConstructionAttribute");
         }
+
+        public bool IsPreinitialized(MetadataType type)
+        {
+            // If the cctor interpreter is not enabled, no type is preinitialized.
+            if (!_enableInterpreter)
+                return false;
+
+            if (!type.HasStaticConstructor)
+                return false;
+            
+            // The cctor on the Module type is the module constructor. That's special.
+            if (type.IsModuleType)
+                return false;
+
+            if (type.HasInstantiation)
+            {
+                // Generic definitions cannot be preinitialized
+                if (type.IsGenericDefinition)
+                    return false;
+
+                // If the type has a canonical form the runtime type loader could create
+                // a new type sharing code with this one. They need to agree on how
+                // initialization happens. We can't preinitialize runtime-created
+                // generic types at compile time.
+                if (type.ConvertToCanonForm(CanonicalFormKind.Specific)
+                    .IsCanonicalSubtype(CanonicalFormKind.Any))
+                    return false;
+            }
+
+            return GetPreinitializationInfo(type).IsPreinitialized;
+        }
+
+        public void LogStatistics(Logger logger)
+        {
+            if (!_enableInterpreter)
+                return;
+
+            int totalEligibleTypes = 0;
+            int totalPreinitializedTypes = 0;
+
+            if (logger.IsVerbose)
+            {
+                foreach (var item in LockFreeReaderHashtable<MetadataType, TypePreinit.PreinitializationInfo>.Enumerator.Get(_preinitHashTable))
+                {
+                    totalEligibleTypes++;
+                    if (item.IsPreinitialized)
+                    {
+                        logger.Writer.WriteLine($"Preinitialized type '{item.Type}'");
+                        totalPreinitializedTypes++;
+                    }
+                    else
+                    {
+                        logger.Writer.WriteLine($"Could not preinitialize '{item.Type}': {item.FailureReason}");
+                    }
+                }
+
+                logger.Writer.WriteLine($"Preinitialized {totalPreinitializedTypes} types out of {totalEligibleTypes}.");
+            }
+        }
+
+        public TypePreinit.PreinitializationInfo GetPreinitializationInfo(MetadataType type)
+        {
+            return _preinitHashTable.GetOrCreateValue(type);
+        }
+
+        class PreinitializationInfoHashtable : LockFreeReaderHashtable<MetadataType, TypePreinit.PreinitializationInfo>
+        {
+            private readonly CompilationModuleGroup _compilationGroup;
+            private readonly ILProvider _ilProvider;
+
+            public PreinitializationInfoHashtable(CompilationModuleGroup compilationGroup, ILProvider ilProvider)
+            {
+                _compilationGroup = compilationGroup;
+                _ilProvider = ilProvider;
+            }
+
+            protected override bool CompareKeyToValue(MetadataType key, TypePreinit.PreinitializationInfo value) => key == value.Type;
+            protected override bool CompareValueToValue(TypePreinit.PreinitializationInfo value1, TypePreinit.PreinitializationInfo value2) => value1.Type == value2.Type;
+            protected override int GetKeyHashCode(MetadataType key) => key.GetHashCode();
+            protected override int GetValueHashCode(TypePreinit.PreinitializationInfo value) => value.Type.GetHashCode();
+
+            protected override TypePreinit.PreinitializationInfo CreateValueFromKey(MetadataType key)
+            {
+                return TypePreinit.ScanType(_compilationGroup, _ilProvider, key);
+            }
+        }
+        private PreinitializationInfoHashtable _preinitHashTable;
     }
 }

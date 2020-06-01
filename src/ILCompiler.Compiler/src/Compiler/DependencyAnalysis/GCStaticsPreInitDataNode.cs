@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -19,28 +17,23 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class GCStaticsPreInitDataNode : ObjectNode, ISymbolDefinitionNode
     {
-        private MetadataType _type;
-        private List<PreInitFieldInfo> _sortedPreInitFields;
+        private TypePreinit.PreinitializationInfo _preinitializationInfo;
 
-        public GCStaticsPreInitDataNode(MetadataType type, List<PreInitFieldInfo> preInitFields)
+        public GCStaticsPreInitDataNode(TypePreinit.PreinitializationInfo preinitializationInfo)
         {
-            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
-            _type = type;
-
-            // sort the PreInitFieldInfo to appear in increasing offset order for easier emitting
-            _sortedPreInitFields = new List<PreInitFieldInfo>(preInitFields);
-            _sortedPreInitFields.Sort(PreInitFieldInfo.FieldDescCompare);
+            Debug.Assert(!preinitializationInfo.Type.IsCanonicalSubtype(CanonicalFormKind.Specific));
+            _preinitializationInfo = preinitializationInfo;
         }
 
-        protected override string GetName(NodeFactory factory) => GetMangledName(_type, factory.NameMangler);
+        protected override string GetName(NodeFactory factory) => GetMangledName(_preinitializationInfo.Type, factory.NameMangler);
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetMangledName(_type, nameMangler));
+            sb.Append(GetMangledName(_preinitializationInfo.Type, nameMangler));
         }
 
         public int Offset => 0;
-        public MetadataType Type => _type;
+        public MetadataType Type => _preinitializationInfo.Type;
 
         public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
@@ -49,66 +42,52 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
-        public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (Type.Context.Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
+        public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_preinitializationInfo.Type);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            // We only need this for CoreRT (at least for now) as we emit static field value directly in GCStaticsNode for N
-            Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT);
-
-            return GetDataForPreInitDataField(
-                this, _type, _sortedPreInitFields, 
-                factory.Target.PointerSize,     // CoreRT static size calculation includes EEType - skip it
-                factory, relocsOnly);
-        }
-
-        public static ObjectData GetDataForPreInitDataField(
-            ISymbolDefinitionNode node, 
-            MetadataType _type, List<PreInitFieldInfo> sortedPreInitFields,
-            int startOffset,
-            NodeFactory factory, bool relocsOnly = false)
-        {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
-            builder.RequireInitialAlignment(_type.GCStaticFieldAlignment.AsInt);
+            MetadataType type = _preinitializationInfo.Type;
 
-            int staticOffset = startOffset;
-            int staticOffsetEnd = _type.GCStaticFieldSize.AsInt;
-            int idx = 0;
+            builder.RequireInitialAlignment(factory.Target.PointerSize);
 
-            while (staticOffset < staticOffsetEnd)
+            // GC static fields don't begin at offset 0, need to subtract that.
+            int initialOffset = CompilerMetadataFieldLayoutAlgorithm.GetGCStaticFieldOffset(factory.TypeSystemContext).AsInt;
+
+            foreach (FieldDesc field in type.GetFields())
             {
-                PreInitFieldInfo fieldInfo = idx < sortedPreInitFields.Count ? sortedPreInitFields[idx] : null;
-                int writeTo = staticOffsetEnd;
-                if (fieldInfo != null)
-                    writeTo = fieldInfo.Field.Offset.AsInt;
+                if (!field.IsStatic || field.HasRva || field.IsLiteral || field.IsThreadStatic || !field.HasGCStaticBase)
+                    continue;
+                
+                int padding = field.Offset.AsInt - initialOffset - builder.CountBytes;
+                Debug.Assert(padding >= 0);
+                builder.EmitZeros(padding);
 
-                // Emit the zero before the next preinitField
-                builder.EmitZeros(writeTo - staticOffset);
-                staticOffset = writeTo;
-
-                if (fieldInfo != null)
-                {
-                    int count = builder.CountBytes;
-
-                    if (fieldInfo.Field.FieldType.IsValueType)
-                    {
-                        // Emit inlined data for value types
-                        fieldInfo.WriteData(ref builder, factory);
-                    }
-                    else
-                    {
-                        // Emit a pointer reloc to the frozen data for reference types
-                        builder.EmitPointerReloc(factory.SerializedFrozenArray(fieldInfo));
-                    }
-
-                    staticOffset += builder.CountBytes - count;
-                    idx++;
-                }
+                TypePreinit.ISerializableValue val = _preinitializationInfo.GetFieldValue(field);
+                int currentOffset = builder.CountBytes;
+                if (val != null)
+                    val.WriteFieldData(ref builder, field, factory);
+                else
+                    builder.EmitZeroPointer();
+                Debug.Assert(builder.CountBytes - currentOffset == field.FieldType.GetElementSize().AsInt);
             }
 
-            builder.AddSymbol(node);
+            int pad = _preinitializationInfo.Type.GCStaticFieldSize.AsInt - builder.CountBytes - initialOffset;
+            Debug.Assert(pad >= 0);
+            builder.EmitZeros(pad);
+
+            builder.AddSymbol(this);
 
             return builder.ToObjectData();
         }
@@ -117,7 +96,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return comparer.Compare(_type, ((GCStaticsPreInitDataNode)other)._type);
+            return comparer.Compare(_preinitializationInfo.Type, ((GCStaticsPreInitDataNode)other)._preinitializationInfo.Type);
         }
     }
 }

@@ -49,6 +49,8 @@ namespace ILCompiler
         private string _exportsFile;
         private bool _useScanner;
         private bool _noScanner;
+        private bool _preinitStatics;
+        private bool _noPreinitStatics;
         private bool _emitStackTraceData;
         private string _mapFileName;
         private string _metadataLogFileName;
@@ -190,6 +192,8 @@ namespace ILCompiler
                 syntax.DefineOptionList("removefeature", ref _removedFeatures, "Framework features to remove");
                 syntax.DefineOption("singlethreaded", ref _singleThreaded, "Run compilation on a single thread");
                 syntax.DefineOption("instructionset", ref _instructionSet, "Instruction set to allow or disallow");
+                syntax.DefineOption("preinitstatics", ref _preinitStatics, "Interpret static constructors at compile time if possible (implied by -O)");
+                syntax.DefineOption("nopreinitstatics", ref _noPreinitStatics, "Do not interpret static constructors at compile time");
 
                 syntax.DefineOption("targetarch", ref _targetArchitectureStr, "Target architecture for cross compilation");
                 syntax.DefineOption("targetos", ref _targetOSStr, "Target OS for cross compilation");
@@ -648,7 +652,15 @@ namespace ILCompiler
 
             useScanner &= !_noScanner;
 
-            builder.UseILProvider(ilProvider);
+            // Enable static data preinitialization in optimized builds.
+            bool preinitStatics = _preinitStatics ||
+                (_optimizationMode != OptimizationMode.None && !_isCppCodegen && !_multiFile);
+            preinitStatics &= !_noPreinitStatics;
+
+            var preinitManager = new PreinitializationManager(typeSystemContext, compilationGroup, ilProvider, preinitStatics);
+            builder
+                .UseILProvider(ilProvider)
+                .UsePreinitializationManager(preinitManager);
 
             ILScanResults scanResults = null;
             if (useScanner)
@@ -773,6 +785,8 @@ namespace ILCompiler
 
             if (debugInfoProvider is IDisposable)
                 ((IDisposable)debugInfoProvider).Dispose();
+
+            preinitManager.LogStatistics(logger);
 
             return 0;
         }
