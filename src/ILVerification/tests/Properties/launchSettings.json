@@ -1,9 +1,0 @@
-{
-  "profiles": {
-    "ILVerification.Tests": {
-      "commandName": "Executable",
-      "executablePath": "$(DotnetCliPath)dotnet.exe",
-      "commandLineArgs": "$(XUnitExecutable) $(XunitArguments)"
-    }
-  }
-}

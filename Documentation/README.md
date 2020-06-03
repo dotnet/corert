@@ -15,6 +15,3 @@ This is the repo for CoreRT, the .NET Core runtime optimized for AOT (Ahead of T
 - [How to run tests](how-to-run-tests.md)
 - [Cross Compilation for ARM on Linux](cross-building.md)
 - [How to Build WebAssembly](how-to-build-WebAssembly.md)
-
-## Tools
-- [ILVerify](../src/ILVerify/README.md)
