@@ -1459,7 +1459,7 @@ bool UnwindCursor<A, R>::getInfoFromEHABISection(
   _info.unwind_info = exceptionTableAddr;
   _info.lsda = lsda;
   // flags is pr_cache.additional. See EHABI #7.2 for definition of bit 0.
-  _info.flags = isSingleWordEHT ? 1 : 0 | scope32 ? 0x2 : 0;  // Use enum?
+  _info.flags = (isSingleWordEHT ? 1 : 0) | (scope32 ? 0x2 : 0);  // Use enum?
 
   return true;
 }
