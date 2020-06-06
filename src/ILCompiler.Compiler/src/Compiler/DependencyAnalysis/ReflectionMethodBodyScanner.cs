@@ -46,6 +46,7 @@ namespace ILCompiler.DependencyAnalysis
             // * Enum.GetValues(typeof(Foo)) - this is very common and we need to make sure Foo[] is compiled.
             // * Type.GetType("Foo, Bar").GetMethod("Blah") - framework uses this to work around layering problems.
             // * typeof(Foo<>).MakeGenericType(arg).GetMethod("Blah") - used in e.g. LINQ expressions implementation
+            // * typeof(Foo<>).GetProperty("Blah") - used in e.g. LINQ expressions implementation
             // * Marshal.SizeOf(typeof(Foo)) - very common and we need to make sure interop data is generated
 
             while (reader.HasNext)
@@ -143,56 +144,28 @@ namespace ILCompiler.DependencyAnalysis
                         string name = tracker.GetLastString();
                         TypeDesc type = tracker.GetLastType();
                         if (name != null
-                            && type != null
-                            && !factory.MetadataManager.IsReflectionBlocked(type))
+                            && type != null)
                         {
-                            if (type.IsGenericDefinition)
-                            {
-                                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: false);
-                                if (inst.IsNull)
-                                    break;
-                                type = ((MetadataType)type).MakeInstantiatedType(inst);
-                                list = list ?? new DependencyList();
-                                list.Add(factory.MaximallyConstructableType(type), "Type.GetMethod");
-                            }
-                            else
-                            {
-                                // Type could be something weird like SomeType<object, __Canon> - normalize it
-                                type = type.NormalizeInstantiation();
-                            }
-
-                            MethodDesc reflectedMethod = type.GetMethod(name, null);
-                            if (reflectedMethod != null
-                                && !factory.MetadataManager.IsReflectionBlocked(reflectedMethod))
-                            {
-                                if (reflectedMethod.HasInstantiation)
-                                {
-                                    // Don't want to accidentally get Foo<__Canon>.Bar<object>()
-                                    if (reflectedMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                                        break;
-
-                                    Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(reflectedMethod.Instantiation, allowCanon: false);
-                                    if (inst.IsNull)
-                                        break;
-                                    reflectedMethod = reflectedMethod.MakeInstantiatedMethod(inst);
-                                }
-
-                                const string reason = "Type.GetMethod";
-                                list = list ?? new DependencyList();
-                                if (reflectedMethod.IsVirtual)
-                                    RootVirtualMethodForReflection(ref list, factory, reflectedMethod, reason);
-
-                                if (!reflectedMethod.IsAbstract)
-                                {
-                                    list.Add(factory.CanonicalEntrypoint(reflectedMethod), reason);
-                                    if (reflectedMethod.HasInstantiation
-                                        && reflectedMethod != reflectedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific))
-                                        list.Add(factory.MethodGenericDictionary(reflectedMethod), reason);
-                                }
-                            }
+                            HandleTypeGetMethod(ref list, factory, type, name, "Type.GetMethod");
                         }
                     }
                     break;
+
+                // Type.GetProperty(string...)
+                case "GetProperty" when scanningReflection && methodCalled.OwningType.IsSystemType():
+                    {
+                        string name = tracker.GetLastString();
+                        TypeDesc type = tracker.GetLastType();
+                        if (name != null
+                            && type != null)
+                        {
+                            // Just do the easy thing and assume C# naming conventions
+                            HandleTypeGetMethod(ref list, factory, type, "get_" + name, "Type.GetProperty");
+                            HandleTypeGetMethod(ref list, factory, type, "set_" + name, "Type.GetProperty");
+                        }
+                    }
+                    break;
+
                 case "SizeOf" when scanningInterop && IsMarshalSizeOf(methodCalled):
                     {
                         TypeDesc type = tracker.GetLastType();
@@ -204,6 +177,56 @@ namespace ILCompiler.DependencyAnalysis
                         }
                     }
                     break;
+            }
+        }
+
+        private static void HandleTypeGetMethod(ref DependencyList list, NodeFactory factory, TypeDesc type, string name, string reason)
+        {
+            if (factory.MetadataManager.IsReflectionBlocked(type))
+                return;
+
+            if (type.IsGenericDefinition)
+            {
+                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: false);
+                if (inst.IsNull)
+                    return;
+                type = ((MetadataType)type).MakeInstantiatedType(inst);
+                list = list ?? new DependencyList();
+                list.Add(factory.MaximallyConstructableType(type), reason);
+            }
+            else
+            {
+                // Type could be something weird like SomeType<object, __Canon> - normalize it
+                type = type.NormalizeInstantiation();
+            }
+
+            MethodDesc reflectedMethod = type.GetMethod(name, null);
+            if (reflectedMethod != null
+                && !factory.MetadataManager.IsReflectionBlocked(reflectedMethod))
+            {
+                if (reflectedMethod.HasInstantiation)
+                {
+                    // Don't want to accidentally get Foo<__Canon>.Bar<object>()
+                    if (reflectedMethod.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        return;
+
+                    Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(reflectedMethod.Instantiation, allowCanon: false);
+                    if (inst.IsNull)
+                        return;
+                    reflectedMethod = reflectedMethod.MakeInstantiatedMethod(inst);
+                }
+
+                list = list ?? new DependencyList();
+                if (reflectedMethod.IsVirtual)
+                    RootVirtualMethodForReflection(ref list, factory, reflectedMethod, reason);
+
+                if (!reflectedMethod.IsAbstract)
+                {
+                    list.Add(factory.CanonicalEntrypoint(reflectedMethod), reason);
+                    if (reflectedMethod.HasInstantiation
+                        && reflectedMethod != reflectedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific))
+                        list.Add(factory.MethodGenericDictionary(reflectedMethod), reason);
+                }
             }
         }
 
