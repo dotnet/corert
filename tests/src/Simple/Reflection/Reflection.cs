@@ -1008,6 +1008,11 @@ internal class ReflectionTest
             public static void Create() { }
         }
 
+        class OtherLinqTestCase<T>
+        {
+            public static int Update { get; }
+        }
+
         enum Mine { One }
 
         class PartialCanonTestType<T, U>
@@ -1120,6 +1125,18 @@ internal class ReflectionTest
                     throw new Exception("GetValues");
 
                 mi.Invoke(null, Array.Empty<object>());
+            }
+
+            Console.WriteLine("Other pattern in LINQ expressions");
+            {
+                Type objType = typeof(object);
+
+                PropertyInfo pi = typeof(OtherLinqTestCase<>).MakeGenericType(objType).GetProperty(nameof(OtherLinqTestCase<object>.Update));
+
+                if (pi == null)
+                    throw new Exception("GetProperty");
+
+                pi.GetValue(null, Array.Empty<object>());
             }
         }
     }
