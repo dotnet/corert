@@ -879,5 +879,15 @@ namespace Internal.TypeSystem.Interop
 
             StoreNativeValue(codeStream);
         }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
+        {
+            throw new NotSupportedException();
+        }
     }
 }
