@@ -4,7 +4,7 @@ This document will guide you through building native libraries that can be consu
 
 ## Create .NET Core Class Library project with CoreRT support
 
-Create a .NET Core class library project using `dotnet new console -o NativeLibrary` and follow the [Hello world](../HelloWorld/README.md) sample instruction to add CoreRT support to it.
+Create a .NET Core class library project using `dotnet new classlib -o NativeLibrary` and follow the [Hello world](../HelloWorld/README.md) sample instruction to add CoreRT support to it.
 
 ## Building static libraries
 

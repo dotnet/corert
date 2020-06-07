@@ -193,7 +193,7 @@ See the LICENSE file in the project root for more information.
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--dgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).codegen.dgml.xml" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--scandgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).scan.dgml.xml" />
       <IlcArg Include="@(RdXmlFile->'--rdxml:%(Identity)')" />
-      <IlcArg Condition="$(OutputType) == 'Library' and $(NativeLib) != ''" Include="--nativelib" />
+      <IlcArg Condition="$(NativeLib) != ''" Include="--nativelib" />
       <IlcArg Condition="$(ExportsFile) != ''" Include="--exportsfile:$(ExportsFile)" />
       <IlcArg Condition="'$(Platform)' == 'wasm'" Include="--wasm" />
       <IlcArg Condition="'$(ExperimentalDynamicCodeSupport)' == 'true'" Include="--nometadatablocking" />
