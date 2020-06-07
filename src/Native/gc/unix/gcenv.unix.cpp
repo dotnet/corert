@@ -772,6 +772,52 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
     return false;
 }
 
+bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
+{
+    bool result = false;
+    char* line = nullptr;
+    size_t lineLen = 0;
+    char* endptr = nullptr;
+    uint64_t num = 0, l, multiplier;
+    FILE* file = nullptr;
+
+    if (val == nullptr)
+        goto done;
+
+    file = fopen(filename, "r");
+    if (file == nullptr)
+        goto done;
+
+    if (getline(&line, &lineLen, file) == -1)
+        goto done;
+
+    errno = 0;
+    num = strtoull(line, &endptr, 0);
+    if (line == endptr || errno != 0)
+        goto done;
+
+    multiplier = 1;
+    switch (*endptr)
+    {
+    case 'g':
+    case 'G': multiplier = 1024;
+    case 'm':
+    case 'M': multiplier = multiplier * 1024;
+    case 'k':
+    case 'K': multiplier = multiplier * 1024;
+    }
+
+    *val = num * multiplier;
+    result = true;
+    if (*val / multiplier != num)
+        result = false;
+done:
+    if (file)
+        fclose(file);
+    free(line);
+    return result;
+}
+
 static size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cacheSize = 0;
@@ -828,7 +874,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         // Assume L3$/CPU grows linearly from 256K to 1.5M/CPU as logicalCPUs grows from 2 to 12 CPUs
         DWORD logicalCPUs = g_totalCpuCount;
 
-        cacheSize = logicalCPUs * std::min(1536, std::max(256, ( int) logicalCPUs * 128)) * 1024;
+        cacheSize = logicalCPUs * std::min(1536, std::max(256, (int)logicalCPUs * 128)) * 1024;
     }
 #endif
 
