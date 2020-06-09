@@ -22,11 +22,6 @@ namespace Internal.TypeSystem
             throw new NotSupportedException();
         }
 
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            return null;
-        }
-
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
         {
             return new ComputedInstanceFieldLayout()
