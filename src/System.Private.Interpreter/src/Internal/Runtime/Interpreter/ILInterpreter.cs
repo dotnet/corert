@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Internal.IL;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
+using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
@@ -326,11 +327,13 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.throw_:
                         throw new NotImplementedException();
                     case ILOpcode.ldfld:
-                        throw new NotImplementedException();
+                        InterpretLoadField(reader.ReadILToken());
+                        break;
                     case ILOpcode.ldflda:
                         throw new NotImplementedException();
                     case ILOpcode.stfld:
-                        throw new NotImplementedException();
+                        InterpretStoreField(reader.ReadILToken());
+                        break;
                     case ILOpcode.ldsfld:
                         throw new NotImplementedException();
                     case ILOpcode.ldsflda:
@@ -2730,6 +2733,125 @@ getvar:
 
             LocalVariableSet.SetupArbitraryLocalVariableSet(InterpretCallDelegate, ref callInfo, localVariableTypes);
             _stack.Push(StackItem.FromObjectRef(@this));
+        }
+
+        public void InterpretLoadField(int token)
+        {
+            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
+            TypeDesc fieldType = field.FieldType;
+
+            if (field.OwningType.IsValueType)
+            {
+                // TODO: Add support for value types
+                throw new NotImplementedException();
+            }
+
+            var instance = PopWithValidation().AsObjectRef();
+            object fieldValue = default;
+
+            if (fieldType.IsValueType)
+            {
+                fieldValue = RuntimeAugments.LoadValueTypeField(instance, field.Offset.AsInt, fieldType.GetRuntimeTypeHandle());
+            }
+            else if (fieldType.IsPointer)
+            {
+                // TODO: Add support for ByRef to StackItem
+                throw new NotImplementedException();
+            }
+            else
+            {
+                fieldValue = RuntimeAugments.LoadReferenceTypeField(instance, field.Offset.AsInt);
+            }
+
+setstackitem:
+            switch (fieldType.Category)
+            {
+                case TypeFlags.Boolean:
+                case TypeFlags.Char:
+                case TypeFlags.SByte:
+                case TypeFlags.Byte:
+                case TypeFlags.Int16:
+                case TypeFlags.UInt16:
+                case TypeFlags.Int32:
+                case TypeFlags.UInt32:
+                    Debug.Assert(fieldValue != null);
+                    _stack.Push(StackItem.FromInt32((int)fieldValue));
+                    break;
+                case TypeFlags.Int64:
+                case TypeFlags.UInt64:
+                    Debug.Assert(fieldValue != null);
+                    _stack.Push(StackItem.FromInt64((long)fieldValue));
+                    break;
+                case TypeFlags.IntPtr:
+                case TypeFlags.UIntPtr:
+                    Debug.Assert(fieldValue != null);
+                    _stack.Push(StackItem.FromNativeInt((IntPtr)fieldValue));
+                    break;
+                case TypeFlags.Single:
+                case TypeFlags.Double:
+                    Debug.Assert(fieldValue != null);
+                    _stack.Push(StackItem.FromDouble((double)fieldValue));
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    _stack.Push(StackItem.FromValueType((ValueType)fieldValue));
+                    break;
+                case TypeFlags.Enum:
+                    fieldType = fieldType.UnderlyingType;
+                    goto setstackitem;
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    _stack.Push(StackItem.FromObjectRef(fieldValue));
+                    break;
+                default:
+                    // TODO: Support more complex field types
+                    throw new NotImplementedException();
+            }
+        }
+
+        public void InterpretStoreField(int token)
+        {
+            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
+            TypeDesc fieldType = field.FieldType;
+
+            if (field.OwningType.IsValueType)
+            {
+                // TODO: Add support for value types
+                throw new NotImplementedException();
+            }
+
+            StackItem fieldValueItem = PopWithValidation();
+            var instance = PopWithValidation().AsObjectRef();
+            switch (fieldValueItem.Kind)
+            {
+                case StackValueKind.Int32:
+                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValueItem.AsInt32(), fieldType.GetRuntimeTypeHandle());
+                    break;
+                case StackValueKind.Int64:
+                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValueItem.AsInt64(), fieldType.GetRuntimeTypeHandle());
+                    break;
+                case StackValueKind.NativeInt:
+                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValueItem.AsNativeInt(), fieldType.GetRuntimeTypeHandle());
+                    break;
+                case StackValueKind.Float:
+                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, (float)fieldValueItem.AsDouble(), fieldType.GetRuntimeTypeHandle());
+                    break;
+                case StackValueKind.ValueType:
+                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValueItem.AsValueType(), fieldType.GetRuntimeTypeHandle());
+                    break;
+                case StackValueKind.ObjRef:
+                    RuntimeAugments.StoreReferenceTypeField(instance, field.Offset.AsInt, fieldValueItem.AsObjectRef());
+                    break;
+                case StackValueKind.ByRef:
+                    // TODO: Add support for ByRef to StackItem
+                    throw new NotImplementedException();
+                case StackValueKind.Unknown:
+                default:
+                    ThrowHelper.ThrowInvalidProgramException();
+                    break;
+            }
         }
     }
 }
