@@ -69,20 +69,20 @@ namespace TypeSystemTests
         [Fact]
         public void TestHfaNegative()
         {
-            var nonHfaEmptyStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaEmptyStruct");
-            Assert.False(nonHfaEmptyStruct.IsHomogeneousAggregate);
+            var nonHAEmptyStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAEmptyStruct");
+            Assert.False(nonHAEmptyStruct.IsHomogeneousAggregate);
 
-            var nonHfaStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaStruct");
-            Assert.False(nonHfaStruct.IsHomogeneousAggregate);
+            var nonHAStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAStruct");
+            Assert.False(nonHAStruct.IsHomogeneousAggregate);
 
-            var nonHfaMixedStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaMixedStruct");
-            Assert.False(nonHfaMixedStruct.IsHomogeneousAggregate);
+            var nonHAMixedStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAMixedStruct");
+            Assert.False(nonHAMixedStruct.IsHomogeneousAggregate);
 
-            var nonHfaCompositeStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaCompositeStruct");
-            Assert.False(nonHfaCompositeStruct.IsHomogeneousAggregate);
+            var nonHACompositeStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHACompositeStruct");
+            Assert.False(nonHACompositeStruct.IsHomogeneousAggregate);
 
-            var nonHfaStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaStructWithManyFields");
-            Assert.False(nonHfaStructWithManyFields.IsHomogeneousAggregate);
+            var nonHAStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAStructWithManyFields");
+            Assert.False(nonHAStructWithManyFields.IsHomogeneousAggregate);
 
             var objectType = _context.GetWellKnownType(WellKnownType.Object);
             Assert.False(objectType.IsHomogeneousAggregate);
