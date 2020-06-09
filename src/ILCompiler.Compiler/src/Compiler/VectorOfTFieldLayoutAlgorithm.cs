@@ -68,11 +68,6 @@ namespace ILCompiler
             return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
         }
 
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
-        }
-
         public static bool IsVectorOfTType(DefType type)
         {
             return type.IsIntrinsic && type.Namespace == "System.Numerics" && type.Name == "Vector`1";

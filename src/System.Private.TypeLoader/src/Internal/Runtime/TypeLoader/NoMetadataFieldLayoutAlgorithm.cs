@@ -89,35 +89,6 @@ namespace Internal.Runtime.TypeLoader
             return staticLayout;
         }
 
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            if (type.Context.Target.Architecture == TargetArchitecture.ARM)
-            {
-                unsafe
-                {
-                    // On ARM, the HFA type is encoded into the EEType directly
-                    type.RetrieveRuntimeTypeHandleIfPossible();
-                    Debug.Assert(!type.RuntimeTypeHandle.IsNull());
-                    EEType* eeType = type.RuntimeTypeHandle.ToEETypePtr();
-                    if (!eeType->IsHFA)
-                        return null;
-
-                    if (eeType->RequiresAlign8)
-                        return type.Context.GetWellKnownType(WellKnownType.Double);
-                    else
-                        return type.Context.GetWellKnownType(WellKnownType.Single);
-                }
-            }
-            else
-            {
-                Debug.Assert(
-                    type.Context.Target.Architecture == TargetArchitecture.X86 ||
-                    type.Context.Target.Architecture == TargetArchitecture.X64);
-
-                return null;
-            }
-        }
-
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             if (type.Context.Target.Architecture == TargetArchitecture.ARM)
@@ -128,10 +99,14 @@ namespace Internal.Runtime.TypeLoader
                     type.RetrieveRuntimeTypeHandleIfPossible();
                     Debug.Assert(!type.RuntimeTypeHandle.IsNull());
                     EEType* eeType = type.RuntimeTypeHandle.ToEETypePtr();
-                    if (eeType->IsHFA)
-                        return ValueTypeShapeCharacteristics.HomogenousFloatAggregate;
-                    else
+
+                    if (!eeType->IsHFA)
                         return ValueTypeShapeCharacteristics.None;
+
+                    if (eeType->RequiresAlign8)
+                        return ValueTypeShapeCharacteristics.Float64Aggregate;
+                    else
+                        return ValueTypeShapeCharacteristics.Float32Aggregate;
                 }
             }
             else

@@ -913,7 +913,7 @@ namespace ILCompiler.DependencyAnalysis
             if (metadataType != null &&
                 (targetArch == TargetArchitecture.ARM ||
                 targetArch == TargetArchitecture.ARM64) &&
-                metadataType.IsHfa)
+                metadataType.IsHomogeneousAggregate)
             {
                 flags |= (uint)EETypeRareFlags.IsHFAFlag;
             }
