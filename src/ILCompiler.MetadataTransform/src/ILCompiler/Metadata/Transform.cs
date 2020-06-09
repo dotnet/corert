@@ -40,14 +40,12 @@ namespace ILCompiler.Metadata
                 case Cts.TypeFlags.FunctionPointer:
                     {
                         Cts.MethodSignature pointerSignature = ((Cts.FunctionPointerType)type).Signature;
-                        if (IsBlocked(pointerSignature.ReturnType))
-                            return true;
 
                         for (int i = 0; i < pointerSignature.Length; i++)
                             if (IsBlocked(pointerSignature[i]))
                                 return true;
 
-                        return false;
+                        return IsBlocked(pointerSignature.ReturnType);
                     }
                 default:
                     Debug.Assert(type.IsDefType);
