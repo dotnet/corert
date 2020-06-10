@@ -7,6 +7,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Diagnostics;
 
 #if TARGET_WINDOWS
 using CpObj;
@@ -352,6 +353,8 @@ internal static class Program
 #endif
 
         TestIntOverflows();
+
+        TestStackTrace();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -2300,6 +2303,16 @@ internal static class Program
             return;
         }
         PassTest();
+    }
+
+    private static unsafe void TestStackTrace()
+    {
+        StartTest("Test StackTrace");
+#if DEBUG
+        EndTest(new StackTrace().ToString().Contains("TestStackTrace"));
+#else
+        EndTest(new StackTrace().ToString().Contains("wasm-function"));
+#endif
     }
 
     static ushort ReadUInt16()
