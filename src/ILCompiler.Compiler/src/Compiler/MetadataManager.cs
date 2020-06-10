@@ -103,7 +103,7 @@ namespace ILCompiler
 
             DynamicInvokeTemplateData = new DynamicInvokeTemplateDataNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.DynamicInvokeTemplateData), DynamicInvokeTemplateData, DynamicInvokeTemplateData, DynamicInvokeTemplateData.EndSymbol);
-            
+
             var invokeMapNode = new ReflectionInvokeMapNode(commonFixupsTableNode);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.InvokeMap), invokeMapNode, invokeMapNode, invokeMapNode.EndSymbol);
 
@@ -151,7 +151,7 @@ namespace ILCompiler
 
             var stackTraceMethodMappingNode = new StackTraceMethodMappingNode();
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.BlobIdStackTraceMethodRvaToTokenMapping), stackTraceMethodMappingNode, stackTraceMethodMappingNode, stackTraceMethodMappingNode.EndSymbol);
-            
+
             // The external references tables should go last
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeReferences), nativeReferencesTableNode, nativeReferencesTableNode, nativeReferencesTableNode.EndSymbol);
             header.Add(BlobIdToReadyToRunSection(ReflectionMapBlob.NativeStatics), nativeStaticsTableNode, nativeStaticsTableNode, nativeStaticsTableNode.EndSymbol);
@@ -499,7 +499,7 @@ namespace ILCompiler
         }
 
         protected abstract void ComputeMetadata(NodeFactory factory,
-                                                out byte[] metadataBlob, 
+                                                out byte[] metadataBlob,
                                                 out List<MetadataMapping<MetadataType>> typeMappings,
                                                 out List<MetadataMapping<MethodDesc>> methodMappings,
                                                 out List<MetadataMapping<FieldDesc>> fieldMappings,
@@ -660,7 +660,13 @@ namespace ILCompiler
                     return IsReflectionBlocked(((ParameterizedType)type).ParameterType);
 
                 case TypeFlags.FunctionPointer:
-                    throw new NotImplementedException();
+                    MethodSignature pointerSignature = ((FunctionPointerType)type).Signature;
+
+                    for (int i = 0; i < pointerSignature.Length; i++)
+                        if (IsReflectionBlocked(pointerSignature[i]))
+                            return true;
+
+                    return IsReflectionBlocked(pointerSignature.ReturnType);
 
                 default:
                     Debug.Assert(type.IsDefType);
