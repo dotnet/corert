@@ -257,6 +257,8 @@ namespace Internal.IL
             if (_exceptionRegions.Length > 0)
             {
                 _spilledExpressions.Add(new SpilledExpressionEntry(StackValueKind.ObjRef, "ExceptionSlot", GetWellKnownType(WellKnownType.Object), 0, this));
+                // clear any uncovered object references for GC.Collect
+                ImportCallMemset(LoadVarAddress(0, LocalVarKind.Temp, out TypeDesc _, prologBuilder), 0, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)_pointerSize), prologBuilder);
                 // and a slot for the generic context if present
                 if (FuncletsRequireHiddenContext())
                 {
@@ -3133,6 +3135,7 @@ namespace Internal.IL
             LLVMValueRef shadowStack = builder.BuildLoad(shadowStackPtr, "ShadowStack");
             int curOffset = 0;
             curOffset = PadNextOffset(method.Signature.ReturnType, curOffset);
+            ImportCallMemset(shadowStack, 0, curOffset, builder); // clear any uncovered object references for GC.Collect
             LLVMValueRef calleeFrame = builder.BuildGEP(shadowStack, new LLVMValueRef[] { BuildConstInt32(curOffset) }, "calleeFrame");
 
             List<LLVMValueRef> llvmArgs = new List<LLVMValueRef>();
