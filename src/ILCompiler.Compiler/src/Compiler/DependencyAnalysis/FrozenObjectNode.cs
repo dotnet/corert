@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.EmitZeroPointer();
 
             // byte contents
-            _data.WriteContent(ref dataBuilder, factory);
+            _data.WriteContent(ref dataBuilder, this, factory);
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
