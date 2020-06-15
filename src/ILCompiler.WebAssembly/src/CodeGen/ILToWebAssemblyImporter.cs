@@ -596,11 +596,16 @@ namespace Internal.IL
         /// </summary>
         private ExceptionRegion GetCurrentTryRegion()
         {
+            return GetTryRegion(_currentOffset);
+        }
+
+        private ExceptionRegion GetTryRegion(int offset)
+        {
             // Iterate backwards to find the most nested region
             for (int i = _exceptionRegions.Length - 1; i >= 0; i--)
             {
                 ILExceptionRegion region = _exceptionRegions[i].ILRegion;
-                if (IsOffsetContained(_currentOffset - 1, region.TryOffset, region.TryLength))
+                if (IsOffsetContained(offset - 1, region.TryOffset, region.TryLength))
                 {
                     return _exceptionRegions[i];
                 }
@@ -2917,6 +2922,7 @@ namespace Internal.IL
 
             if (_leaveTargets != null)
             {
+                LLVMBasicBlockRef switchReturnBlock = default;
                 foreach (var leaveTarget in _leaveTargets)
                 {
                     var targetBlock = _basicBlocks[leaveTarget];
@@ -2925,6 +2931,26 @@ namespace Internal.IL
                     {
                         @switch.AddCase(BuildConstInt32(targetBlock.StartOffset), GetLLVMBasicBlockForBlock(targetBlock));
                     }
+                    else
+                    {
+                        // leave destination is in a different funclet, this happens when an exception is thrown/rethrown from inside a catch handler and the throw is not directly in a try handler
+                        // In this case we need to return out of this funclet to get back to the containing funclet.  Logic checks we are actually in a catch funclet as opposed to a finally or the main function funclet
+                        ExceptionRegion currentRegion = GetTryRegion(_currentBasicBlock.StartOffset);
+                        if (currentRegion != null && _currentBasicBlock.StartOffset >= currentRegion.ILRegion.HandlerOffset && _currentBasicBlock.StartOffset < currentRegion.ILRegion.HandlerOffset + currentRegion.ILRegion.HandlerLength
+                            && currentRegion.ILRegion.Kind == ILExceptionRegionKind.Catch)
+                        {
+                            if (switchReturnBlock == default)
+                            {
+                                switchReturnBlock = _currentFunclet.AppendBasicBlock("SwitchReturn");
+                            }
+                            @switch.AddCase(BuildConstInt32(targetBlock.StartOffset), switchReturnBlock);
+                        }
+                    }
+                }
+                if (switchReturnBlock != default)
+                {
+                    landingPadBuilder.PositionAtEnd(switchReturnBlock);
+                    landingPadBuilder.BuildRet(landingPadBuilder.BuildLoad(leaveDestination, "loadLeaveDest"));
                 }
             }
 
@@ -4236,7 +4262,10 @@ namespace Internal.IL
 
         private void ImportRethrow()
         {
-            EmitTrapCall();
+            // rethrows can only occur from a catch handler in which case there should be an exception slot
+            Debug.Assert(_spilledExpressions.Count > 0 && _spilledExpressions[0].Name == "ExceptionSlot");
+
+            ThrowOrRethrow(_spilledExpressions[0]);
         }
 
         private void ImportSizeOf(int token)
@@ -4283,6 +4312,11 @@ namespace Internal.IL
         {
             var exceptionObject = _stack.Pop();
 
+            ThrowOrRethrow(exceptionObject);
+        }
+
+        void ThrowOrRethrow(StackEntry exceptionObject)
+        {
             if (RhpThrowEx.Handle.Equals(IntPtr.Zero))
             {
                 RhpThrowEx = Module.AddFunction("RhpThrowEx", LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }, false));
