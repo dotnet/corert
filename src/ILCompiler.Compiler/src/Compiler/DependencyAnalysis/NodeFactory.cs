@@ -242,11 +242,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new BlobNode(key.Name, ObjectNodeSection.BssSection, new byte[key.Size], key.Alignment);
             });
 
-            _settableReadOnlyDataBlobs = new NodeCache<Utf8String, SettableReadOnlyDataBlob>(key =>
-            {
-                return new SettableReadOnlyDataBlob(key, ObjectNodeSection.ReadOnlyDataSection);
-            });
-            
             _externSymbols = new NodeCache<string, ExternSymbolNode>((string name) =>
             {
                 return new ExternSymbolNode(name);
@@ -680,14 +675,6 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
         }
-
-        private NodeCache<Utf8String, SettableReadOnlyDataBlob> _settableReadOnlyDataBlobs;
-
-        public SettableReadOnlyDataBlob SettableReadOnlyDataBlob(Utf8String name)
-        {
-            return _settableReadOnlyDataBlobs.GetOrAdd(name);
-        }
-
         private NodeCache<TypeDesc, SealedVTableNode> _sealedVtableNodes;
 
         internal SealedVTableNode SealedVTable(TypeDesc type)
