@@ -1381,6 +1381,8 @@ internal static class Program
         TestFilter();
 
         TestFilterNested();
+
+        TestCatchAndThrow();
     }
 
     private static void TestTryCatchNoException()
@@ -1591,6 +1593,32 @@ internal static class Program
         }
         PrintLine(exceptionFlowSequence);
         EndTest(exceptionFlowSequence == @"In middle catchRunning outer filterIn outer catchRunning inner filterIn inner catch");
+    }
+
+    private static void TestCatchAndThrow()
+    {
+        StartTest("Test catch and throw different exception");
+        int caught = 0;
+        try
+        {
+            try
+            {
+                throw new Exception("first");
+            }
+            catch
+            {
+                caught += 1;
+                throw new Exception("second");
+            }
+        }
+        catch(Exception e)
+        {
+            if(e.Message == "second")
+            {
+                caught += 10;
+            }
+        }
+        EndTest(caught == 11);
     }
 
     static bool Print(string s)
