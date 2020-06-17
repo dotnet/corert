@@ -153,12 +153,8 @@ namespace Internal.IL
                 _ehInfoNode = new EHInfoNode(_mangledName);
             }
             int curRegion = 0;
-            if (_mangledName.Contains("TestCatchAndThrow"))
-            {
-
-            }
             foreach (ILExceptionRegion region in ilExceptionRegions.OrderBy(region => region.TryOffset)
-                .ThenByDescending(region => region.TryLength) 
+                .ThenByDescending(region => region.TryLength)  // outer regions with the same try offset as inner region first - they will have longer lengths, // WASMTODO, except maybe an inner of try {} catch {} which could still be a problem
                 .ThenBy(region => region.HandlerOffset))
             {
                 _exceptionRegions[curRegion++] = new ExceptionRegion
@@ -602,17 +598,7 @@ namespace Internal.IL
         /// </summary>
         private ExceptionRegion GetCurrentTryRegion()
         {
-            // Iterate backwards to find the most nested region
-            for (int i = _exceptionRegions.Length - 1; i >= 0; i--)
-            {
-                ILExceptionRegion region = _exceptionRegions[i].ILRegion;
-                if (IsOffsetContained(_currentOffset - 1, region.TryOffset, region.TryLength))
-                {
-                    return _exceptionRegions[i];
-                }
-            }
-
-            return null;
+            return GetTryRegion(_currentOffset);
         }
 
         private ExceptionRegion GetTryRegion(int offset)
@@ -623,16 +609,7 @@ namespace Internal.IL
                 ILExceptionRegion region = _exceptionRegions[i].ILRegion;
                 if (IsOffsetContained(offset - 1, region.TryOffset, region.TryLength))
                 {
-                    var mostNested = i;
-                    for (int j = i - 1; j >= 0; j--)
-                    {
-                        if (_exceptionRegions[j].ILRegion.TryOffset == _exceptionRegions[mostNested].ILRegion.TryOffset &&
-                            _exceptionRegions[j].ILRegion.HandlerOffset < _exceptionRegions[mostNested].ILRegion.HandlerOffset)
-                        {
-                            mostNested = j;
-                        }
-                    }
-                    return _exceptionRegions[mostNested];
+                    return _exceptionRegions[i];
                 }
             }
 
@@ -2890,13 +2867,10 @@ namespace Internal.IL
                     LocalVarKind.Temp, out TypeDesc unused, builder:landingPadBuilder),
                 LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0));
             landingPadBuilder.BuildStore(managedPtr, addressValue);
-            if (_method.Name.Contains("TestTryCatchThrowException"))
-            {
 
-            }
             var arguments = new StackEntry[] { new ExpressionEntry(StackValueKind.ObjRef, "managedPtr", managedPtr),
                                                  new ExpressionEntry(StackValueKind.Int32, "idxStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0xFFFFFFFFu, false)), 
-                                                 new ExpressionEntry(StackValueKind.Int32, "idxTryLandingStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)_currentBasicBlock.StartOffset/* tryRegion.ILRegion.TryOffset*/, false)),
+                                                 new ExpressionEntry(StackValueKind.Int32, "idxCurrentBlockStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)_currentBasicBlock.StartOffset, false)),
                                                  new ExpressionEntry(StackValueKind.NativeInt, "shadowStack", _currentFunclet.GetParam(0)),
                                                  new ExpressionEntry(StackValueKind.ByRef, "refFrameIter", ehInfoIterator),
                                                  new ExpressionEntry(StackValueKind.ByRef, "tryRegionIdx", tryRegionIdx),
@@ -5276,10 +5250,6 @@ namespace Internal.IL
 //            }
 
             builder.EmitCompressedUInt((uint)totalClauses);
-            if (_mangledName.Contains("TestCatchAndThrow"))
-            {
-
-            }
             // Iterate backwards to emit the innermost first, but within a try region go forwards to get the first matching catch type
             int i = _exceptionRegions.Length - 1;
             while (i >= 0)
