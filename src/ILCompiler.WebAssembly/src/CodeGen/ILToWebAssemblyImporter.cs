@@ -153,7 +153,13 @@ namespace Internal.IL
                 _ehInfoNode = new EHInfoNode(_mangledName);
             }
             int curRegion = 0;
-            foreach (ILExceptionRegion region in ilExceptionRegions.OrderBy(region => region.TryOffset))
+            if (_mangledName.Contains("TestCatchAndThrow"))
+            {
+
+            }
+            foreach (ILExceptionRegion region in ilExceptionRegions.OrderBy(region => region.TryOffset)
+                .ThenByDescending(region => region.TryLength) 
+                .ThenBy(region => region.HandlerOffset))
             {
                 _exceptionRegions[curRegion++] = new ExceptionRegion
                                                  {
@@ -596,7 +602,17 @@ namespace Internal.IL
         /// </summary>
         private ExceptionRegion GetCurrentTryRegion()
         {
-            return GetTryRegion(_currentOffset);
+            // Iterate backwards to find the most nested region
+            for (int i = _exceptionRegions.Length - 1; i >= 0; i--)
+            {
+                ILExceptionRegion region = _exceptionRegions[i].ILRegion;
+                if (IsOffsetContained(_currentOffset - 1, region.TryOffset, region.TryLength))
+                {
+                    return _exceptionRegions[i];
+                }
+            }
+
+            return null;
         }
 
         private ExceptionRegion GetTryRegion(int offset)
@@ -607,7 +623,16 @@ namespace Internal.IL
                 ILExceptionRegion region = _exceptionRegions[i].ILRegion;
                 if (IsOffsetContained(offset - 1, region.TryOffset, region.TryLength))
                 {
-                    return _exceptionRegions[i];
+                    var mostNested = i;
+                    for (int j = i - 1; j >= 0; j--)
+                    {
+                        if (_exceptionRegions[j].ILRegion.TryOffset == _exceptionRegions[mostNested].ILRegion.TryOffset &&
+                            _exceptionRegions[j].ILRegion.HandlerOffset < _exceptionRegions[mostNested].ILRegion.HandlerOffset)
+                        {
+                            mostNested = j;
+                        }
+                    }
+                    return _exceptionRegions[mostNested];
                 }
             }
 
@@ -2865,10 +2890,13 @@ namespace Internal.IL
                     LocalVarKind.Temp, out TypeDesc unused, builder:landingPadBuilder),
                 LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0));
             landingPadBuilder.BuildStore(managedPtr, addressValue);
+            if (_method.Name.Contains("TestTryCatchThrowException"))
+            {
 
+            }
             var arguments = new StackEntry[] { new ExpressionEntry(StackValueKind.ObjRef, "managedPtr", managedPtr),
                                                  new ExpressionEntry(StackValueKind.Int32, "idxStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0xFFFFFFFFu, false)), 
-                                                 new ExpressionEntry(StackValueKind.Int32, "idxTryLandingStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)tryRegion.ILRegion.TryOffset, false)),
+                                                 new ExpressionEntry(StackValueKind.Int32, "idxTryLandingStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)_currentBasicBlock.StartOffset/* tryRegion.ILRegion.TryOffset*/, false)),
                                                  new ExpressionEntry(StackValueKind.NativeInt, "shadowStack", _currentFunclet.GetParam(0)),
                                                  new ExpressionEntry(StackValueKind.ByRef, "refFrameIter", ehInfoIterator),
                                                  new ExpressionEntry(StackValueKind.ByRef, "tryRegionIdx", tryRegionIdx),
@@ -2933,6 +2961,7 @@ namespace Internal.IL
                     }
                     else
                     {
+
                         // leave destination is in a different funclet, this happens when an exception is thrown/rethrown from inside a catch handler and the throw is not directly in a try handler
                         // In this case we need to return out of this funclet to get back to the containing funclet.  Logic checks we are actually in a catch funclet as opposed to a finally or the main function funclet
                         ExceptionRegion currentRegion = GetTryRegion(_currentBasicBlock.StartOffset);
@@ -5247,16 +5276,20 @@ namespace Internal.IL
 //            }
 
             builder.EmitCompressedUInt((uint)totalClauses);
+            if (_mangledName.Contains("TestCatchAndThrow"))
+            {
 
+            }
             // Iterate backwards to emit the innermost first, but within a try region go forwards to get the first matching catch type
             int i = _exceptionRegions.Length - 1;
             while (i >= 0)
             {
                 int tryStart = _exceptionRegions[i].ILRegion.TryOffset;
+                int tryLength = _exceptionRegions[i].ILRegion.TryLength;
                 for (var j = 0; j < _exceptionRegions.Length; j++)
                 {
                     ExceptionRegion exceptionRegion = _exceptionRegions[j];
-                    if (exceptionRegion.ILRegion.TryOffset != tryStart) continue;
+                    if (exceptionRegion.ILRegion.TryOffset != tryStart || exceptionRegion.ILRegion.TryLength != tryLength) continue;
                     //                if (i > 0)
                     //                {
                     //                    ExceptionRegion previousClause = _exceptionRegions[i - 1];
@@ -5293,8 +5326,7 @@ namespace Internal.IL
 
                     builder.EmitCompressedUInt((uint)exceptionRegion.ILRegion.TryOffset);
 
-                    uint tryLength = (uint)exceptionRegion.ILRegion.TryLength;
-                    builder.EmitCompressedUInt((tryLength << 2) | (uint)clauseKind);
+                    builder.EmitCompressedUInt(((uint)tryLength << 2) | (uint)clauseKind);
 
                     RelocType rel = (_compilation.NodeFactory.Target.IsWindows)
                         ? RelocType.IMAGE_REL_BASED_ABSOLUTE

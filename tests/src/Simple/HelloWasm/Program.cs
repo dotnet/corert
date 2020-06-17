@@ -1641,12 +1641,14 @@ internal static class Program
         }
         catch(Exception e)
         {
+            PrintLine(e.Message);
             if(e.Message == "second")
             {
-                caught += 100;
+                caught += 10;
             }
         }
-        EndTest(caught == 101);
+        PrintLine(caught.ToString());
+        EndTest(caught == 11);
     }
 
     static bool Print(string s)
