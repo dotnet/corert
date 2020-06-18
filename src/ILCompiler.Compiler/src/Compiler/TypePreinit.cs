@@ -1080,7 +1080,7 @@ namespace ILCompiler
                             StackEntry popped = stack.Pop();
                             if (popped.Value is ArrayInstance arrayInstance)
                             {
-                                stack.Push(StackValueKind.NativeInt, ValueTypeValue.FromInt64(arrayInstance.Length));
+                                stack.Push(StackValueKind.NativeInt, context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(arrayInstance.Length) : ValueTypeValue.FromInt32(arrayInstance.Length));
                             }
                             else if (popped.Value == null)
                             {
