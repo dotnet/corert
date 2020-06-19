@@ -5,6 +5,7 @@
 using System;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -391,7 +392,36 @@ internal static class Program
             PrintString("GC Collection Count " + i.ToString() + " ");
             PrintLine(GC.CollectionCount(i).ToString());
         }
+        if(!TestObjectRefInUncoveredShadowStackSlot())
+        {
+            FailTest("struct Child1 alive unexpectedly");
+
+        }
         EndTest(true);
+    }
+
+    private static WeakReference childRef;
+    // This test is to catch where slots are allocated on the shadow stack uncovering object references that were there previously.
+    // If this happens in the call to GC.Collect, which at the time of writing allocate 12 bytes in the call, 3 slots, then any objects that were in those 
+    // 3 slots will not be collected as they will now be (back) in the range of bottom of stack -> top of stack.
+    private static unsafe bool TestObjectRefInUncoveredShadowStackSlot()
+    {
+        CreateObjectRefsInShadowStack();
+        GC.Collect();
+        return !childRef.IsAlive;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe void CreateObjectRefsInShadowStack()
+    {
+        var child = new Child();
+        Child c1, c2, c3;  // 3 more locals to cover give a bit more resiliency to the test, in case of slots being added or removed in the RhCollect calls
+        c1 = c2 = c3 = child;
+        childRef = new WeakReference(child);
+    }
+
+    public class Child
+    {
     }
 
     private static unsafe void TestBoxUnboxDifferentSizes()
