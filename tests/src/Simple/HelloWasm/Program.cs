@@ -354,6 +354,8 @@ internal static class Program
 
         TestIntOverflows();
 
+        TestJavascriptCall();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -2332,6 +2334,15 @@ internal static class Program
         PassTest();
     }
 
+    static void TestJavascriptCall()
+    {
+        StartTest("Test Javascript call");
+
+        IntPtr resultPtr = JSInterop.InternalCalls.InvokeJSUnmarshalled(out string exception, "Answer", IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+        EndTest(resultPtr.ToInt32() == 42);
+    }
+
     static ushort ReadUInt16()
     {
         // something with MSB set
@@ -2346,6 +2357,20 @@ internal static class Program
 
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
+}
+
+namespace JSInterop
+{
+    internal static class InternalCalls
+    {
+        [DllImport("*", EntryPoint = "corert_wasm_invoke_js_unmarshalled")]
+        private static extern IntPtr InvokeJSUnmarshalledInternal(string js, int length, IntPtr p1, IntPtr p2, IntPtr p3, out string exception);
+
+        public static IntPtr InvokeJSUnmarshalled(out string exception, string js, IntPtr p1, IntPtr p2, IntPtr p3)
+        {
+            return InvokeJSUnmarshalledInternal(js, js.Length, p1, p2, p3, out exception);
+        }
+    }
 }
 
 public class ClassForNre
