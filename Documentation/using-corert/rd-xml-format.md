@@ -1,8 +1,8 @@
 Rd.xml File Format
 ==================
 
-ILCompiler by default lookup for types to be compiled starting from the entry point of the application. If application using reflection, that's not enough to make application running.
-To help ILCompiler found types which should be analyzed rd.xml file can be supplemented. This is similar format as format used by .NET Native, but much more limiting.
+ILCompiler discovers types to compile by starting from the application's entry point. This may miss types if an application uses reflection.
+An rd.xml file can be supplemented to help ILCompiler find types that should be analyzed. This file is similar but more limited than the rd.xml file used by .NET Native.
 
 Minimal Rd.xml configuration
 
