@@ -33,7 +33,7 @@ Module metadata only just need simple `<Assembly>` tag with short name of the as
 </Directives>
 ```
 
-All types in the assembly require adding `Dynamic` attribute with value `Required All`. *NOTE*: This is only available options for this attribute.
+All types in the assembly require adding `Dynamic` attribute with value `Required All`. *NOTE*: This is the only available value for this attribute.
 ```
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Application>
