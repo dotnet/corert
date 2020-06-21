@@ -117,4 +117,4 @@ or if you want instantiate generic method you can pass `<GenericArgument>`.
 </Directives>
 ```
 
-Take not that methods distinguished by method name and parameters. Type of return value does not used in the method signature.
+Take note that methods are distinguished by their method name and parameters. The return value's type is not used in the method signature.
