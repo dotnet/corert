@@ -15,7 +15,7 @@ Minimal Rd.xml configuration
 ```
 
 ILCompiler supports 2 top level directives `Application` or `Library`. Right now both of them can be used interchangeably and just define area where actual assembly configuration happens.
-Developer can put multiple `<Assembly>` tags inside the `<Application>` directive  to configure each assembly individually.
+You can put multiple `<Assembly>` tags inside the `<Application>` directive to configure each assembly individually.
 
 ## Assembly directive
 
