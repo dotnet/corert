@@ -94,6 +94,19 @@ To select which methods should be rooted add nested `<Method>` tags.
   <Application>
     <Assembly Name="System.Private.CoreLib">
       <Type Name="System.Collections.Generic.Dictionary`2[[System.Int32,System.Private.CoreLib],[System.String,System.Private.CoreLib]]">
+        <Method Name="EnsureCapacity" />
+      </Type>
+    </Assembly>
+  </Application>
+</Directives>
+```
+
+Alternatively you can specify optional `<Parameter>` tag, if you want only specific overload. For example:
+```
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <Assembly Name="System.Private.CoreLib">
+      <Type Name="System.Collections.Generic.Dictionary`2[[System.Int32,System.Private.CoreLib],[System.String,System.Private.CoreLib]]">
         <Method Name="EnsureCapacity">
           <Parameter Name="System.Int32, System.Private.CoreLib" />
         </Method>
@@ -102,6 +115,7 @@ To select which methods should be rooted add nested `<Method>` tags.
   </Application>
 </Directives>
 ```
+
 or if you want instantiate generic method you can pass `<GenericArgument>`.
 ```
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
