@@ -56,7 +56,7 @@ Module metadata and selected types option based on module metadata only mode wit
 ```
 
 ## Types directives.
-Types directive provide a way to specify which parts of code related to classes are needed. Developer can have two options here: 
+Type directive provides a way to specify what types are needed. Developer has two options here: 
 - Take all type methods;
 - Select which methods should be rooted.
 
