@@ -1,7 +1,7 @@
 Rd.xml File Format
 ==================
 
-ILCompiler discovers types to compile by starting from the application's entry point. This may miss types if an application uses reflection.
+The CoreRT ahead of time compiler discovers methods to compile and types to generate by compiling the application entry point and its transitive dependencies. The compiler may miss types if an application uses reflection. For more information about the problem see [Reflection in AOT mode](reflection-in-aot-mode.md).
 An rd.xml file can be supplemented to help ILCompiler find types that should be analyzed. This file is similar but more limited than the rd.xml file used by .NET Native.
 
 Minimal Rd.xml configuration
