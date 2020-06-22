@@ -94,20 +94,9 @@ namespace ILCompiler
             if (type.IsModuleType)
                 return false;
 
-            if (type.HasInstantiation)
-            {
-                // Generic definitions cannot be preinitialized
-                if (type.IsGenericDefinition)
-                    return false;
-
-                // If the type has a canonical form the runtime type loader could create
-                // a new type sharing code with this one. They need to agree on how
-                // initialization happens. We can't preinitialize runtime-created
-                // generic types at compile time.
-                if (type.ConvertToCanonForm(CanonicalFormKind.Specific)
-                    .IsCanonicalSubtype(CanonicalFormKind.Any))
-                    return false;
-            }
+            // Generic definitions cannot be preinitialized
+            if (type.IsGenericDefinition)
+                return false;
 
             return GetPreinitializationInfo(type).IsPreinitialized;
         }

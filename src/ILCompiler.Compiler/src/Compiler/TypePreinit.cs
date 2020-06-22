@@ -51,10 +51,30 @@ namespace ILCompiler
             }
         }
 
+        // Could potentially expose this as a policy class. When type loader is not present or
+        // the given type can't be constructed by the type loader, preinitialization could still
+        // happen.
+        private static bool CanPreinitializeByPolicy(TypeDesc type)
+        {
+            // If the type has a canonical form the runtime type loader could create
+            // a new type sharing code with this one. They need to agree on how
+            // initialization happens. We can't preinitialize runtime-created
+            // generic types at compile time.
+            if (type.ConvertToCanonForm(CanonicalFormKind.Specific)
+                .IsCanonicalSubtype(CanonicalFormKind.Any))
+                return false;
+
+            return true;
+        }
+
         public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, MetadataType type)
         {
             Debug.Assert(type.HasStaticConstructor);
             Debug.Assert(!type.IsGenericDefinition);
+
+            if (!CanPreinitializeByPolicy(type))
+                return new PreinitializationInfo(type, "Disallowed by policy");
+
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
 
             var preinit = new TypePreinit(type, compilationGroup, ilProvider);
@@ -309,7 +329,7 @@ namespace ILCompiler
                             }
                             else if (field.IsInitOnly
                                 && field.OwningType.HasStaticConstructor
-                                && !field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific).IsCanonicalSubtype(CanonicalFormKind.Any))
+                                && CanPreinitializeByPolicy(field.OwningType))
                             {
                                 TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider);
                                 recursionProtect ??= new Stack<MethodDesc>();
@@ -1863,7 +1883,6 @@ namespace ILCompiler
             public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
                 Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
-                Debug.Assert(!_methodPointed.IsUnmanagedCallersOnly);
 
                 var creationInfo = DelegateCreationInfo.Create(Type.ConvertToCanonForm(CanonicalFormKind.Specific), _methodPointed, factory, followVirtualDispatch: false);
 
