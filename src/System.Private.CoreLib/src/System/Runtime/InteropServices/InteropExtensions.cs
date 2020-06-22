@@ -85,11 +85,6 @@ namespace System.Runtime.InteropServices
             return genericTypeDefinitionHandle.ToEETypePtr().ToPointer()->GenericArgumentCount;
         }
 
-        //TODO:Remove Delegate.GetNativeFunctionPointer
-        public static IntPtr GetNativeFunctionPointer(this Delegate del)
-        {
-            return del.GetNativeFunctionPointer();
-        }
         public static IntPtr GetFunctionPointer(this Delegate del, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate)
         {
             return del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);

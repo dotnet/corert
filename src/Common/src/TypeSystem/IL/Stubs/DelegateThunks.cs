@@ -471,35 +471,6 @@ namespace Internal.IL.Stubs
         }
     }
 
-    public sealed partial class DelegateReversePInvokeThunk : DelegateThunk
-    {
-        internal DelegateReversePInvokeThunk(DelegateInfo delegateInfo)
-            : base(delegateInfo)
-        {
-        }
-
-        public override MethodIL EmitIL()
-        {
-            var emitter = new ILEmitter();
-            ILCodeStream codeStream = emitter.NewCodeStream();
-
-            MetadataType throwHelpersType = Context.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", "ThrowHelpers");
-            MethodDesc throwHelper = throwHelpersType.GetKnownMethod("ThrowNotSupportedException", null);
-
-            codeStream.EmitCallThrowHelper(emitter, throwHelper);
-
-            return emitter.Link(this);
-        }
-
-        public override string Name
-        {
-            get
-            {
-                return "InvokeReversePInvokeThunk";
-            }
-        }
-    }
-
     /// <summary>
     /// Reverse invocation stub which goes from the strongly typed parameters the delegate
     /// accepts, converts them into an object array, and invokes a delegate with the
