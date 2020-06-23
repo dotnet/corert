@@ -51,10 +51,30 @@ namespace ILCompiler
             }
         }
 
+        // Could potentially expose this as a policy class. When type loader is not present or
+        // the given type can't be constructed by the type loader, preinitialization could still
+        // happen.
+        private static bool CanPreinitializeByPolicy(TypeDesc type)
+        {
+            // If the type has a canonical form the runtime type loader could create
+            // a new type sharing code with this one. They need to agree on how
+            // initialization happens. We can't preinitialize runtime-created
+            // generic types at compile time.
+            if (type.ConvertToCanonForm(CanonicalFormKind.Specific)
+                .IsCanonicalSubtype(CanonicalFormKind.Any))
+                return false;
+
+            return true;
+        }
+
         public static PreinitializationInfo ScanType(CompilationModuleGroup compilationGroup, ILProvider ilProvider, MetadataType type)
         {
             Debug.Assert(type.HasStaticConstructor);
             Debug.Assert(!type.IsGenericDefinition);
+
+            if (!CanPreinitializeByPolicy(type))
+                return new PreinitializationInfo(type, "Disallowed by policy");
+
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
 
             var preinit = new TypePreinit(type, compilationGroup, ilProvider);
@@ -274,9 +294,19 @@ namespace ILCompiler
                             }
 
                             if (_fieldValues[field] is IAssignableValue assignableField)
-                                assignableField.Assign(stack.PopIntoLocation(field.FieldType));
+                            {
+                                if (!assignableField.TryAssign(stack.PopIntoLocation(field.FieldType)))
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported store");
+                                }
+                            }
                             else
-                                _fieldValues[field] = stack.PopIntoLocation(field.FieldType);
+                            {
+                                Value value = stack.PopIntoLocation(field.FieldType);
+                                if (value is IInternalModelingOnlyValue)
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Value with no external representation");
+                                _fieldValues[field] = value;
+                            }
                         }
                         break;
 
@@ -288,17 +318,40 @@ namespace ILCompiler
                                 ThrowHelper.ThrowInvalidProgramException();
                             }
 
-                            if (field.OwningType != _type)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Load from other static" + (field.IsInitOnly ? " initonly " : ""));
-                            }
-
                             if (field.IsThreadStatic || field.HasRva)
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
-                            stack.PushFromLocation(field.FieldType, _fieldValues[field]);
+                            if (field.OwningType == _type)
+                            {
+                                stack.PushFromLocation(field.FieldType, _fieldValues[field]);
+                            }
+                            else if (field.IsInitOnly
+                                && field.OwningType.HasStaticConstructor
+                                && CanPreinitializeByPolicy(field.OwningType))
+                            {
+                                TypePreinit nestedPreinit = new TypePreinit((MetadataType)field.OwningType, _compilationGroup, _ilProvider);
+                                recursionProtect ??= new Stack<MethodDesc>();
+                                recursionProtect.Push(methodIL.OwningMethod);
+                                Status status = nestedPreinit.TryScanMethod(field.OwningType.GetStaticConstructor(), null, recursionProtect, out Value _);
+                                if (!status.IsSuccessful)
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Nested cctor failed to preinit");
+                                }
+                                recursionProtect.Pop();
+                                Value value = nestedPreinit._fieldValues[field];
+                                if (value is ValueTypeValue)
+                                    stack.PushFromLocation(field.FieldType, value);
+                                else if (value is ReferenceTypeValue referenceType)
+                                    stack.PushFromLocation(field.FieldType, new ForeignTypeInstance(referenceType.Type, field, referenceType));
+                                else
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
+                            }
+                            else
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Load from other non-initonly static");
+                            }   
                         }
                         break;
 
@@ -320,12 +373,13 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
                             }
 
-                            if (!(_fieldValues[field] is ValueTypeValue vtfield))
+                            Value fieldValue = _fieldValues[field];
+                            if (fieldValue == null || !fieldValue.TryCreateByRef(out Value byRefValue))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported byref");
                             }
 
-                            stack.Push(vtfield.CreateByRef());
+                            stack.Push(StackValueKind.ByRef, byRefValue);
                         }
                         break;
 
@@ -404,42 +458,78 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
                             }
 
-                            if (((DefType)owningType).ContainsGCPointers)
-                            {
-                                // We don't want to end up with GC pointers in the frozen region
-                                // because write barriers can't handle that.
-                                return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
-                            }
-
-                            Value instance;
-                            Value ctorArg0;
-                            if (owningType.IsValueType)
-                            {
-                                instance = new ValueTypeValue(owningType);
-                                ctorArg0 = ((ValueTypeValue)instance).CreateByRef();
-                            }
-                            else
-                            {
-                                instance = new ObjectInstance((DefType)owningType);
-                                ctorArg0 = instance;
-                            }
-
                             Value[] ctorParameters = new Value[ctorSig.Length + 1];
-                            ctorParameters[0] = ctorArg0;
                             for (int i = ctorSig.Length - 1; i >= 0; i--)
                             {
                                 ctorParameters[i + 1] = stack.PopIntoLocation(GetArgType(ctor, i + 1));
                             }
-                            recursionProtect ??= new Stack<MethodDesc>();
-                            recursionProtect.Push(methodIL.OwningMethod);
-                            Status ctorCallResult = TryScanMethod(ctor, ctorParameters, recursionProtect, out _);
-                            if (!ctorCallResult.IsSuccessful)
+
+                            Value instance;
+                            if (owningType.IsDelegate)
                             {
-                                recursionProtect.Pop();
-                                return ctorCallResult;
+                                if (!(ctorParameters[2] is MethodPointerValue methodPointer))
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unverifiable delegate creation");
+                                }
+
+                                ForeignTypeInstance firstParameter = null;
+                                if (ctorParameters[1] != null)
+                                {
+                                    // We only have a way to refer to an allocated object if it's referenced from a static
+                                    // field of a different type. This conveniently matches delegates that the C# compiler creates
+                                    // for lambdas: this is more common than it sounds.
+                                    firstParameter = ctorParameters[1] as ForeignTypeInstance;
+                                    if (firstParameter == null)
+                                    {
+                                        return Status.Fail(methodIL.OwningMethod, opcode, "Delegate with an unsupported first parameter");
+                                    }
+                                }
+
+                                MethodDesc pointedMethod = methodPointer.PointedToMethod;
+                                if ((firstParameter == null) != pointedMethod.Signature.IsStatic)
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Open/closed static/instance delegate mismatch");
+                                }
+
+                                if (firstParameter != null && pointedMethod.HasInstantiation)
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Delegate with fat pointer");
+                                }
+
+                                instance = new DelegateInstance(owningType, pointedMethod, firstParameter);
                             }
-                                    
-                            recursionProtect.Pop();
+                            else
+                            {
+                                if (owningType.IsValueType)
+                                {
+                                    instance = new ValueTypeValue(owningType);
+                                    bool byrefCreated = instance.TryCreateByRef(out ctorParameters[0]);
+                                    Debug.Assert(byrefCreated);
+                                }
+                                else
+                                {
+                                    instance = new ObjectInstance((DefType)owningType);
+                                    ctorParameters[0] = instance;
+                                }
+
+                                if (((DefType)owningType).ContainsGCPointers)
+                                {
+                                    // We don't want to end up with GC pointers in the frozen region
+                                    // because write barriers can't handle that.
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
+                                }
+
+                                recursionProtect ??= new Stack<MethodDesc>();
+                                recursionProtect.Push(methodIL.OwningMethod);
+                                Status ctorCallResult = TryScanMethod(ctor, ctorParameters, recursionProtect, out _);
+                                if (!ctorCallResult.IsSuccessful)
+                                {
+                                    recursionProtect.Pop();
+                                    return ctorCallResult;
+                                }
+
+                                recursionProtect.Pop();
+                            }
 
                             stack.PushFromLocation(owningType, instance);
                         }
@@ -509,7 +599,7 @@ namespace ILCompiler
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
-                            stack.Push(loadableInstance.GetFieldAddress(field));
+                            stack.Push(StackValueKind.ByRef, loadableInstance.GetFieldAddress(field));
                         }
                         break;
 
@@ -616,7 +706,12 @@ namespace ILCompiler
                             int index = opcode == ILOpcode.starg ? reader.ReadILUInt16() : reader.ReadILByte();
                             TypeDesc argType = GetArgType(methodIL.OwningMethod, index);
                             if (parameters[index] is IAssignableValue assignableParam)
-                                assignableParam.Assign(stack.PopIntoLocation(argType));
+                            {
+                                if (!assignableParam.TryAssign(stack.PopIntoLocation(argType)))
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsuported store");
+                                }
+                            }
                             else
                                 parameters[index] = stack.PopIntoLocation(argType);
                         }
@@ -629,8 +724,17 @@ namespace ILCompiler
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                             }
+                            stack.Push(new StackEntry(StackValueKind.ValueType, new RuntimeFieldHandleValue(field)));                                
+                        }
+                        break;
 
-                            stack.Push(new StackEntry(StackValueKind.ValueType, new RuntimeFieldHandleValue(field)));
+                    case ILOpcode.ldftn:
+                        {
+                            var method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
+                            if (method != null)
+                                stack.Push(StackValueKind.NativeInt, new MethodPointerValue(method));
+                            else
+                                ThrowHelper.ThrowInvalidProgramException();
                         }
                         break;
 
@@ -678,7 +782,12 @@ namespace ILCompiler
 
                             TypeDesc localType = localTypes[index].Type;
                             if (locals[index] is IAssignableValue assignableLocal)
-                                assignableLocal.Assign(stack.PopIntoLocation(localType));
+                            {
+                                if (!assignableLocal.TryAssign(stack.PopIntoLocation(localType)))
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported store");
+                                }
+                            }
                             else
                                 locals[index] = stack.PopIntoLocation(localType);
                                 
@@ -700,13 +809,14 @@ namespace ILCompiler
                                 ThrowHelper.ThrowInvalidProgramException();
                             }
 
-                            if (locals[index] is ValueTypeValue vtvalue)
+                            Value localValue = locals[index];
+                            if (localValue == null || !localValue.TryCreateByRef(out Value byrefValue))
                             {
-                                stack.Push(vtvalue.CreateByRef());
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                             else
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
+                                stack.Push(StackValueKind.ByRef, byrefValue);
                             }
                         }
                         break;
@@ -1150,7 +1260,13 @@ namespace ILCompiler
                                     return Status.Fail(methodIL.OwningMethod, opcode);
 
                                 Value value = stack.PopIntoLocation(type);
-                                stack.Push(StackValueKind.ObjRef, ObjectInstance.Box((DefType)type, ((ValueTypeValue)value).InstanceBytes));
+                                if (!ObjectInstance.TryBox((DefType)type, value, out ObjectInstance boxedResult))
+                                {
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
+                                }
+
+
+                                stack.Push(boxedResult);
                             }
                         }
                         break;
@@ -1297,11 +1413,6 @@ namespace ILCompiler
             public void Push(ReferenceTypeValue value)
             {
                 Push(StackValueKind.ObjRef, value);
-            }
-
-            public void Push(ByRefValue value)
-            {
-                Push(StackValueKind.ByRef, value);
             }
 
             public void PushFromLocation(TypeDesc locationType, Value value)
@@ -1483,7 +1594,8 @@ namespace ILCompiler
         /// </summary>
         public interface ISerializableReference : ISerializableValue
         {
-            void WriteContent(ref ObjectDataBuilder builder, NodeFactory factory);
+            TypeDesc Type { get; }
+            void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
         }
 
         /// <summary>
@@ -1498,11 +1610,19 @@ namespace ILCompiler
         }
 
         /// <summary>
+        /// Represents a special value that is used internally to model known constructs, but cannot
+        /// be represented externally and that's why we don't allow field stores with it.
+        /// </summary>
+        private interface IInternalModelingOnlyValue
+        {
+        }
+
+        /// <summary>
         /// Represents a value that can be assigned into.
         /// </summary>
         private interface IAssignableValue
         {
-            void Assign(Value value);
+            bool TryAssign(Value value);
         }
 
         private abstract class Value : ISerializableValue
@@ -1520,6 +1640,12 @@ namespace ILCompiler
                     return false;
                 }
                 return value1.Equals(value2);
+            }
+
+            public virtual bool TryCreateByRef(out Value value)
+            {
+                value = null;
+                return false;
             }
 
             public abstract void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory);
@@ -1561,21 +1687,27 @@ namespace ILCompiler
                 InstanceBytes = bytes;
             }
 
-            public ByRefValue CreateByRef()
+            public override bool TryCreateByRef(out Value value)
             {
-
-                return new ByRefValue(InstanceBytes, 0);
+                value = new ByRefValue(InstanceBytes, 0);
+                return true;
             }
 
-            void IAssignableValue.Assign(Value value)
+            bool IAssignableValue.TryAssign(Value value)
             {
-                if (!(value is ValueTypeValue other)
+                if (!(value is BaseValueTypeValue other)
                     || other.Size != Size)
                 {
                     ThrowHelper.ThrowInvalidProgramException();
                 }
 
-                Array.Copy(((ValueTypeValue)value).InstanceBytes, InstanceBytes, InstanceBytes.Length);
+                if (!(value is ValueTypeValue vtvalue))
+                {
+                    return false;
+                }
+
+                Array.Copy(vtvalue.InstanceBytes, InstanceBytes, InstanceBytes.Length);
+                return true;
             }
 
             public override bool Equals(Value value)
@@ -1624,7 +1756,7 @@ namespace ILCompiler
             public static ValueTypeValue FromDouble(double value) => new ValueTypeValue(BitConverter.GetBytes(value));
         }
 
-        private class RuntimeFieldHandleValue : BaseValueTypeValue
+        private class RuntimeFieldHandleValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             public FieldDesc Field { get; private set; }
 
@@ -1647,8 +1779,34 @@ namespace ILCompiler
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
             {
-                Debug.Assert(field.FieldType.IsWellKnownType(WellKnownType.RuntimeFieldHandle));
-                builder.EmitPointerReloc(factory.RuntimeFieldHandle(Field));
+                throw new NotSupportedException();
+            }
+        }
+
+        private class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        {
+            public MethodDesc PointedToMethod { get; }
+
+            public MethodPointerValue(MethodDesc pointedToMethod)
+            {
+                PointedToMethod = pointedToMethod;
+            }
+
+            public override int Size => PointedToMethod.Context.Target.PointerSize;
+
+            public override bool Equals(Value value)
+            {
+                if (!(value is MethodPointerValue))
+                {
+                    ThrowHelper.ThrowInvalidProgramException();
+                }
+
+                return PointedToMethod == ((MethodPointerValue)value).PointedToMethod;
+            }
+
+            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            {
+                throw new NotSupportedException();
             }
         }
 
@@ -1698,21 +1856,85 @@ namespace ILCompiler
             }
         }
 
-        private abstract class ReferenceTypeValue : Value, ISerializableReference
+        private abstract class ReferenceTypeValue : Value
         {
-            protected readonly TypeDesc _type;
+            public TypeDesc Type { get; }
 
-            protected ReferenceTypeValue(TypeDesc type) { _type = type; }
+            protected ReferenceTypeValue(TypeDesc type) { Type = type; }
 
             public override bool Equals(Value value)
             {
                 return this == value;
             }
-
-            public abstract void WriteContent(ref ObjectDataBuilder builder, NodeFactory factory);
         }
 
-        private class ArrayInstance : ReferenceTypeValue
+        private class DelegateInstance : ReferenceTypeValue, ISerializableReference
+        {
+            private readonly MethodDesc _methodPointed;
+            private readonly ForeignTypeInstance _firstParameter;
+
+            public DelegateInstance(TypeDesc delegateType, MethodDesc methodPointed, ForeignTypeInstance firstParameter)
+                : base(delegateType)
+            {
+                _methodPointed = methodPointed;
+                _firstParameter = firstParameter;
+            }
+
+            public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
+            {
+                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
+
+                var creationInfo = DelegateCreationInfo.Create(Type.ConvertToCanonForm(CanonicalFormKind.Specific), _methodPointed, factory, followVirtualDispatch: false);
+
+                Debug.Assert(!creationInfo.TargetNeedsVTableLookup);
+
+                // EEType
+                var node = factory.ConstructedTypeSymbol(Type);
+                Debug.Assert(!node.RepresentsIndirectionCell);  // Shouldn't have allowed this
+                builder.EmitPointerReloc(node);
+
+                if (_methodPointed.Signature.IsStatic)
+                {
+                    Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeOpenStaticThunk");
+
+                    // m_firstParameter
+                    builder.EmitPointerReloc(thisNode);
+
+                    // m_helperObject
+                    builder.EmitZeroPointer();
+
+                    // m_extraFunctionPointerOrData
+                    builder.EmitPointerReloc(creationInfo.GetTargetNode(factory));
+
+                    // m_functionPointer
+                    Debug.Assert(creationInfo.Thunk != null);
+                    builder.EmitPointerReloc(creationInfo.Thunk);
+                }
+                else
+                {
+                    Debug.Assert(creationInfo.Constructor.Method.Name == "InitializeClosedInstance");
+
+                    // m_firstParameter
+                    _firstParameter.WriteFieldData(ref builder, _firstParameter.ForeignField, factory);
+
+                    // m_helperObject
+                    builder.EmitZeroPointer();
+
+                    // m_extraFunctionPointerOrData
+                    builder.EmitZeroPointer();
+
+                    // m_functionPointer
+                    builder.EmitPointerReloc(factory.CanonicalEntrypoint(_methodPointed));
+                }
+            }
+
+            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            {
+                builder.EmitPointerReloc(factory.SerializedFrozenObject(field, this));
+            }
+        }
+
+        private class ArrayInstance : ReferenceTypeValue, ISerializableReference
         {
             private readonly int _elementCount;
             private readonly int _elementSize;
@@ -1745,12 +1967,12 @@ namespace ILCompiler
 
             public bool TryStoreElement(int index, Value value)
             {
-                Debug.Assert(value is ValueTypeValue);
+                if (!(value is ValueTypeValue valueToStore))
+                    return false;
 
                 if ((uint)index > (uint)Length)
                     return false;
 
-                var valueToStore = value as ValueTypeValue;
                 Debug.Assert(valueToStore.InstanceBytes.Length == _elementSize);
                 Array.Copy(valueToStore.InstanceBytes, 0, _data, index * _elementSize, valueToStore.InstanceBytes.Length);
                 return true;
@@ -1761,17 +1983,17 @@ namespace ILCompiler
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(field, this));
             }
 
-            public override void WriteContent(ref ObjectDataBuilder builder, NodeFactory factory)
+            public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
                 // EEType
-                var node = factory.ConstructedTypeSymbol(_type);
+                var node = factory.ConstructedTypeSymbol(Type);
                 Debug.Assert(!node.RepresentsIndirectionCell);  // Arrays are always local
                 builder.EmitPointerReloc(node);
 
                 // numComponents
                 builder.EmitInt(_elementCount);
 
-                int pointerSize = _type.Context.Target.PointerSize;
+                int pointerSize = Type.Context.Target.PointerSize;
                 Debug.Assert(pointerSize == 8 || pointerSize == 4);
 
                 if (pointerSize == 8)
@@ -1781,6 +2003,31 @@ namespace ILCompiler
                 }
 
                 builder.EmitBytes(_data);
+            }
+        }
+
+        private class ForeignTypeInstance : ReferenceTypeValue
+        {
+            public FieldDesc ForeignField { get; }
+            public ReferenceTypeValue Data { get; }
+
+            public ForeignTypeInstance(TypeDesc type, FieldDesc foreignField, ReferenceTypeValue data)
+                : base(type)
+            {
+                ForeignField = foreignField;
+                Data = data;
+            }
+
+            public override void WriteFieldData(ref ObjectDataBuilder builder, FieldDesc field, NodeFactory factory)
+            {
+                if (Data is ISerializableReference serializableReference)
+                {
+                    builder.EmitPointerReloc(factory.SerializedFrozenObject(ForeignField, serializableReference));
+                }
+                else
+                {
+                    Data.WriteFieldData(ref builder, field, factory);
+                }
             }
         }
 
@@ -1798,15 +2045,9 @@ namespace ILCompiler
             {
                 builder.EmitPointerReloc(factory.SerializedStringObject(_value));
             }
-
-            public override void WriteContent(ref ObjectDataBuilder builder, NodeFactory factory)
-            {
-                // Not actually used by SerializedStringObject.
-                throw new NotImplementedException();
-            }
         }
 
-        private class ObjectInstance : ReferenceTypeValue, IHasInstanceFields
+        private class ObjectInstance : ReferenceTypeValue, IHasInstanceFields, ISerializableReference
         {
             private readonly byte[] _data;
 
@@ -1819,11 +2060,20 @@ namespace ILCompiler
                 _data = new byte[size];
             }
 
-            public static ObjectInstance Box(DefType type, byte[] data)
+            public static bool TryBox(DefType type, Value value, out ObjectInstance result)
             {
-                var inst = new ObjectInstance(type);
-                Array.Copy(data, 0, inst._data, type.Context.Target.PointerSize, data.Length);
-                return inst;
+                if (!(value is BaseValueTypeValue))
+                    ThrowHelper.ThrowInvalidProgramException();
+
+                if (!(value is ValueTypeValue valuetype))
+                {
+                    result = null;
+                    return false;
+                }
+
+                result = new ObjectInstance(type);
+                Array.Copy(valuetype.InstanceBytes, 0, result._data, type.Context.Target.PointerSize, valuetype.InstanceBytes.Length);
+                return true;
             }
 
             public bool TryUnboxAny(TypeDesc type, out Value value)
@@ -1833,7 +2083,7 @@ namespace ILCompiler
                 if (!type.IsValueType || type.IsNullable)
                     return false;
 
-                if (_type.UnderlyingType != type.UnderlyingType)
+                if (Type.UnderlyingType != type.UnderlyingType)
                     return false;
 
                 var result = new ValueTypeValue(type);
@@ -1851,10 +2101,10 @@ namespace ILCompiler
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(field, this));
             }
 
-            public override void WriteContent(ref ObjectDataBuilder builder, NodeFactory factory)
+            public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
                 // EEType
-                var node = factory.ConstructedTypeSymbol(_type);
+                var node = factory.ConstructedTypeSymbol(Type);
                 Debug.Assert(!node.RepresentsIndirectionCell);  // Shouldn't have allowed preinitializing this
                 builder.EmitPointerReloc(node);
 
@@ -1873,7 +2123,7 @@ namespace ILCompiler
             public FieldAccessor(byte[] bytes, int offset = 0)
             {
                 _instanceBytes = bytes;
-                _offset = 0;
+                _offset = offset;
             }
 
             public Value GetField(FieldDesc field)
