@@ -41,11 +41,6 @@ namespace Internal.IL.Stubs
         protected internal override int ClassCode => -354480633;
     }
 
-    partial class DelegateReversePInvokeThunk
-    {
-        protected internal override int ClassCode => -1626386052;
-    }
-
     partial class DelegateInvokeObjectArrayThunk
     {
         protected internal override int ClassCode => 1993292344;
