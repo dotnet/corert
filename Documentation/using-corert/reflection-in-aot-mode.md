@@ -64,3 +64,15 @@ The compiler can build insights into how reflection is used by analyzing the use
 ### Assume nothing is accessed dynamically ###
 
 In CoreRT, reflection metadata (names of types, list of their methods, fields, signatures, etc.) is _optional_. The CoreRT runtime has its own minimal version of the metadata that represents the minimum required to execute managed code (think: base type and list of interfaces, offsets to GC pointers within an instance of the type, pointer to the finalizer, etc.). The metadata used by the reflection subsystem within the base class libraries is only used by the reflection stack and is not necessary to execute non-reflection code. For a .NET app that doesn't use reflection, the compiler can skip generating the reflection metadata completely. People who would like to totally minimize the size of their applications or obfuscate their code could be interested in this option, although not much existing real world code would be expected to work with this (including a lot of the framework code).
+
+## Providing hints to the compiler externally ##
+
+If compiler cannot detect types used by the aplication, an rd.xml file can be supplemented to help ILCompiler find types that should be analyzed.
+For that, file `rd.xml` should be created and following lines added to project file
+```
+<ItemGroup>
+  <RdXmlFile Include="rd.xml" />
+</ItemGroup>
+```
+
+Format of the file described [here](rd-xml-format.md)
