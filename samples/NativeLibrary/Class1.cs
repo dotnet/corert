@@ -37,20 +37,36 @@ namespace NativeLibrary
         }
 
         [UnmanagedCallersOnly(EntryPoint = "sumstring")]
-        public static IntPtr sumstring(IntPtr first, IntPtr second)
+        public static unsafe char* sumstring(char* first, char* second)
         {
             // Parse strings from the passed pointers 
-            string my1String = Marshal.PtrToStringAnsi(first);
-            string my2String = Marshal.PtrToStringAnsi(second);
+            string my1String = Marshal.PtrToStringAnsi((IntPtr)first);
+            string my2String = Marshal.PtrToStringAnsi((IntPtr)second);
 
             // Concatenate strings 
             string sum = my1String + my2String;
 
             // Assign pointer of the concatenated string to sumPointer
-            IntPtr sumPointer = Marshal.StringToHGlobalAnsi(sum);
+            char* sumPointer = (char*)Marshal.StringToHGlobalAnsi(sum);
 
             // Return pointer
             return sumPointer;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "populateStrArr")]
+        public static unsafe void populateStrArr(char** destination, char* first, char* second)
+        {
+            // Parse strings from the passed pointers 
+            string my1String = Marshal.PtrToStringAnsi((IntPtr)first);
+            string my2String = Marshal.PtrToStringAnsi((IntPtr)second);
+
+            //Copy sum string into an unmanaged memory location
+            char* firstElement = (char*)Marshal.StringToHGlobalAnsi(my1String + my2String);
+            char* secondElement = (char*)Marshal.StringToHGlobalAnsi(my2String + my1String);
+
+            // Assign the two strings to their respective positions
+            destination[0] = firstElement;
+            destination[1] = secondElement;
         }
     }
 }

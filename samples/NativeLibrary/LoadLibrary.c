@@ -21,6 +21,7 @@
 
 int callSumFunc(char *path, char *funcName, int a, int b);
 char *callSumStringFunc(char *path, char *funcName, char *a, char *b);
+char *callPopulateStringArrayFunc(char *path, char *funcName, char **destination, char* firstString, char* secondString);
 
 int main()
 {
@@ -38,6 +39,11 @@ int main()
     // Concatenate two strings
     char *sumstring = callSumStringFunc(PathToLibrary, "sumstring", "ok", "ko");
     printf("The concatenated string is %s \n", sumstring);
+
+    // Put two char* into an array
+    char* myStrings[2];
+    callPopulateStringArrayFunc(PathToLibrary, "populateStrArr", myStrings, "ok", "ko");
+    printf("First element: %s \n Second element: %s \n", myStrings[0],myStrings[1]);
 
     // Free string
     free(sumstring);
@@ -74,7 +80,7 @@ char *callSumStringFunc(char *path, char *funcName, char *firstString, char *sec
     // Declare a typedef
     typedef char *(*myFunc)();
 
-    // Import Symbol named funcName
+    // Import symbol named funcName
     myFunc MyImport = symLoad(handle, funcName);
 
     // The C# function will return a pointer
@@ -83,4 +89,26 @@ char *callSumStringFunc(char *path, char *funcName, char *firstString, char *sec
     // CoreRT libraries do not support unloading
     // See https://github.com/dotnet/corert/issues/7887
     return result;
+}
+
+char *callPopulateStringArrayFunc(char *path, char *funcName, char **destination, char* firstString, char* secondString)
+{
+    // Library loading
+    #ifdef _WIN32
+        HINSTANCE handle = LoadLibrary(path);
+    #else
+        void *handle = dlopen(path, RTLD_LAZY);
+    #endif
+
+    // Declare a typedef
+    typedef void (*myFunc)();
+
+    // Import Symbol named funcName
+    myFunc MyImport = symLoad(handle, funcName);
+
+    // The C# function will return a pointer
+    MyImport(destination, firstString, secondString);
+
+    // CoreRT libraries do not support unloading
+    // See https://github.com/dotnet/corert/issues/7887
 }
