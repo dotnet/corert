@@ -135,14 +135,9 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutIsInstGenericDictionarySlotNode(_factory, type);
                 });
 
-                _tlsIndex_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutTlsIndexGenericDictionarySlotNode>(type =>
+                _threadStaticIndex_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutThreadStaticBaseIndexDictionarySlotNode>(type =>
                 {
-                    return new NativeLayoutTlsIndexGenericDictionarySlotNode(_factory, type);
-                });
-
-                _tlsOffset_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutTlsOffsetGenericDictionarySlotNode>(type =>
-                {
-                    return new NativeLayoutTlsOffsetGenericDictionarySlotNode(_factory, type);
+                    return new NativeLayoutThreadStaticBaseIndexDictionarySlotNode(_factory, type);
                 });
 
                 _defaultConstructor_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutDefaultConstructorGenericDictionarySlotNode>(type =>
@@ -531,16 +526,10 @@ namespace ILCompiler.DependencyAnalysis
                 return _isInst_GenericDictionarySlots.GetOrAdd(type);
             }
 
-            private NodeCache<TypeDesc, NativeLayoutTlsIndexGenericDictionarySlotNode> _tlsIndex_GenericDictionarySlots;
-            public NativeLayoutTlsIndexGenericDictionarySlotNode TlsIndexDictionarySlot(TypeDesc type)
+            private NodeCache<TypeDesc, NativeLayoutThreadStaticBaseIndexDictionarySlotNode> _threadStaticIndex_GenericDictionarySlots;
+            public NativeLayoutThreadStaticBaseIndexDictionarySlotNode ThreadStaticBaseIndexDictionarySlotNode(TypeDesc type)
             {
-                return _tlsIndex_GenericDictionarySlots.GetOrAdd(type);
-            }
-
-            private NodeCache<TypeDesc, NativeLayoutTlsOffsetGenericDictionarySlotNode> _tlsOffset_GenericDictionarySlots;
-            public NativeLayoutTlsOffsetGenericDictionarySlotNode TlsOffsetDictionarySlot(TypeDesc type)
-            {
-                return _tlsOffset_GenericDictionarySlots.GetOrAdd(type);
+                return _threadStaticIndex_GenericDictionarySlots.GetOrAdd(type);
             }
 
             private NodeCache<TypeDesc, NativeLayoutDefaultConstructorGenericDictionarySlotNode> _defaultConstructor_GenericDictionarySlots;

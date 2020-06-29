@@ -1581,26 +1581,15 @@ namespace ILCompiler.DependencyAnalysis
         protected override FixupSignatureKind SignatureKind => FixupSignatureKind.IsInst;
     }
 
-    public sealed class NativeLayoutTlsIndexGenericDictionarySlotNode : NativeLayoutTypeSignatureBasedGenericDictionarySlotNode
+    public sealed class NativeLayoutThreadStaticBaseIndexDictionarySlotNode : NativeLayoutTypeSignatureBasedGenericDictionarySlotNode
     {
-        public NativeLayoutTlsIndexGenericDictionarySlotNode(NodeFactory factory, TypeDesc type) : base(factory, type)
+        public NativeLayoutThreadStaticBaseIndexDictionarySlotNode(NodeFactory factory, TypeDesc type) : base(factory, type)
         {
         }
 
-        protected override string NodeTypeName => "NativeLayoutTlsIndexGenericDictionarySlotNode_";
+        protected override string NodeTypeName => "NativeLayoutThreadStaticBaseIndexDictionarySlotNode_";
 
-        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.TlsIndex;
-    }
-
-    public sealed class NativeLayoutTlsOffsetGenericDictionarySlotNode : NativeLayoutTypeSignatureBasedGenericDictionarySlotNode
-    {
-        public NativeLayoutTlsOffsetGenericDictionarySlotNode(NodeFactory factory, TypeDesc type) : base(factory, type)
-        {
-        }
-
-        protected override string NodeTypeName => "NativeLayoutTlsOffsetGenericDictionarySlotNode_";
-
-        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.TlsOffset;
+        protected override FixupSignatureKind SignatureKind => FixupSignatureKind.ThreadStaticIndex;
     }
 
     public sealed class NativeLayoutDefaultConstructorGenericDictionarySlotNode : NativeLayoutTypeSignatureBasedGenericDictionarySlotNode

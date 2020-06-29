@@ -622,7 +622,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<MetadataType, TypeThreadStaticIndexNode> _typeThreadStaticIndices;
 
-        public ISymbolNode TypeThreadStaticIndex(MetadataType type)
+        public ISortableSymbolNode TypeThreadStaticIndex(MetadataType type)
         {
             if (_compilationModuleGroup.ContainsType(type))
             {

@@ -93,16 +93,6 @@ namespace ILCompiler.DependencyAnalysis
                     return new CastClassGenericLookupResult(type);
                 });
 
-                _tlsIndices = new NodeCache<TypeDesc, GenericLookupResult>(type =>
-                {
-                    return new ThreadStaticIndexLookupResult(type);
-                });
-
-                _tlsOffsets = new NodeCache<TypeDesc, GenericLookupResult>(type =>
-                {
-                    return new ThreadStaticOffsetLookupResult(type);
-                });
-
                 _defaultCtors = new NodeCache<TypeDesc, GenericLookupResult>(type =>
                 {
                     return new DefaultConstructorLookupResult(type);
@@ -244,20 +234,6 @@ namespace ILCompiler.DependencyAnalysis
             public GenericLookupResult CastClassHelper(TypeDesc type)
             {
                 return _castClassHelpers.GetOrAdd(type);
-            }
-
-            private NodeCache<TypeDesc, GenericLookupResult> _tlsIndices;
-
-            public GenericLookupResult TlsIndexLookupResult(TypeDesc type)
-            {
-                return _tlsIndices.GetOrAdd(type);
-            }
-
-            private NodeCache<TypeDesc, GenericLookupResult> _tlsOffsets;
-
-            public GenericLookupResult TlsOffsetLookupResult(TypeDesc type)
-            {
-                return _tlsOffsets.GetOrAdd(type);
             }
 
             private NodeCache<TypeDesc, GenericLookupResult> _defaultCtors;
