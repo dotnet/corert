@@ -100,6 +100,11 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+        protected sealed internal override bool IsIDynamicInterfaceCastableInterface(DefType type)
+        {
+            throw new NotImplementedException();
+        }
+
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
             // At runtime, we're instantiating an Array<T> instantiation as the template, so we know we'll always have
