@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
+using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.IO;
 
@@ -44,7 +45,9 @@ namespace TypeSystemTests
 
         public ModuleDesc CreateModuleForSimpleName(string simpleName)
         {
-            ModuleDesc module = Internal.TypeSystem.Ecma.EcmaModule.Create(this, new PEReader(File.OpenRead(simpleName + ".dll")), containingAssembly: null);
+            string bindingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string filePath = Path.Combine(bindingDirectory, simpleName + ".dll");
+            ModuleDesc module = Internal.TypeSystem.Ecma.EcmaModule.Create(this, new PEReader(File.OpenRead(filePath)), containingAssembly: null);
             _modules.Add(simpleName, module);
             return module;
         }

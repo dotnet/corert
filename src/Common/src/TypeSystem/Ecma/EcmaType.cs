@@ -310,7 +310,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MethodDesc GetMethod(string name, MethodSignature signature)
+        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -320,7 +320,7 @@ namespace Internal.TypeSystem.Ecma
                 if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
                 {
                     MethodDesc method = (MethodDesc)_module.GetObject(handle);
-                    if (signature == null || signature.Equals(method.Signature))
+                    if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
                 }
             }

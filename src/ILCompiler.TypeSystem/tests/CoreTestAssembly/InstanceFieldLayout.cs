@@ -78,7 +78,7 @@ namespace Explicit
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 40)]
-    class ExplicitSize : Class1
+    class ExplicitSize
     {
         [FieldOffset(0)]
         int Lol;
@@ -88,6 +88,11 @@ namespace Explicit
 
     [StructLayout(LayoutKind.Explicit)]
     public class ExplicitEmptyClass
+    {
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 0)]
+    public class ExplicitEmptyClassSize0
     {
     }
 
