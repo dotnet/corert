@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // The algoritm to choose the default comparer is duplicated in the IL compiler. The compiler will replace the code within
 // Comparer<T>.Create method with more specific implementation based on what sort of type is being compared where possible.
