@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // -----------------------------------------------------------------------------------------------------------
 // Support for emitting debug events with particular payloads that a managed-aware debugger can listen for.
 // The events are generated using 1st chance SEH exceptions that the debugger should immediately continue
