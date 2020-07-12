@@ -378,7 +378,7 @@ namespace Internal.TypeSystem.NativeFormat
             }
         }
 
-        public override MethodDesc GetMethod(string name, MethodSignature signature)
+        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
 
@@ -387,7 +387,7 @@ namespace Internal.TypeSystem.NativeFormat
                 if (metadataReader.GetMethod(handle).Name.StringEquals(name, metadataReader))
                 {
                     MethodDesc method = (MethodDesc)_metadataUnit.GetMethod(handle, this);
-                    if (signature == null || signature.Equals(method.Signature))
+                    if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
                 }
             }
