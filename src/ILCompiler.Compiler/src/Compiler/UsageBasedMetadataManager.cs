@@ -295,7 +295,12 @@ namespace ILCompiler
                     dependencies.Add(factory.TypeNonGCStaticsSymbol(metadataType), reason);
                 }
 
-                // TODO: tread static fields
+                if (metadataType.ThreadGcStaticFieldSize.AsInt > 0)
+                {
+                    dependencies.Add(factory.TypeThreadStaticIndex(metadataType), reason);
+                }
+
+                Debug.Assert(metadataType.ThreadNonGcStaticFieldSize.AsInt == 0);
             }
         }
 
