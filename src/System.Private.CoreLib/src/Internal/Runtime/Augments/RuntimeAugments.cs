@@ -377,6 +377,11 @@ namespace Internal.Runtime.Augments
             return Pointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
         }
 
+        public static unsafe object GetThreadStaticBase(IntPtr cookie)
+        {
+            return ThreadStatics.GetThreadStaticBaseForType(*(TypeManagerSlot**)cookie, (int)*((IntPtr*)(cookie) + 1));
+        }
+
         public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
 
         [DebuggerGuidedStepThroughAttribute]

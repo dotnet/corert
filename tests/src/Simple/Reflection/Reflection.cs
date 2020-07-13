@@ -52,6 +52,7 @@ internal class ReflectionTest
         TestInstanceFields.Run();
         TestReflectionInvoke.Run();
 #if !CODEGEN_CPP
+        TestThreadStaticFields.Run();
         TestByRefReturnInvoke.Run();
         TestAssemblyLoad.Run();
 #endif
@@ -322,6 +323,119 @@ internal class ReflectionTest
 
             TestGenerics(new object());
             TestGenerics("Hi");
+        }
+    }
+
+    unsafe class TestThreadStaticFields
+    {
+        class Generic<T>
+        {
+            [ThreadStatic]
+            public static int ThreadStaticValueType;
+
+            [ThreadStatic]
+            public static object ThreadStaticReferenceType;
+
+            [ThreadStatic]
+            public static int* ThreadStaticPointerType;
+        }
+
+        class NonGeneric
+        {
+            [ThreadStatic]
+            public static int ThreadStaticValueType;
+
+            [ThreadStatic]
+            public static object ThreadStaticReferenceType;
+
+            [ThreadStatic]
+            public static int* ThreadStaticPointerType;
+        }
+
+        static void TestGeneric<T>()
+        {
+            var refType = new object();
+
+            Generic<T>.ThreadStaticValueType = 123;
+            Generic<T>.ThreadStaticReferenceType = refType;
+            Generic<T>.ThreadStaticPointerType = (int*)456;
+
+            {
+                var fd = typeof(Generic<T>).GetField(nameof(Generic<T>.ThreadStaticValueType));
+                var val = (int)fd.GetValue(null);
+                if (val != 123)
+                    throw new Exception();
+                fd.SetValue(null, 234);
+                if (Generic<T>.ThreadStaticValueType != 234)
+                    throw new Exception();
+            }
+
+            {
+                var fd = typeof(Generic<T>).GetField(nameof(Generic<T>.ThreadStaticReferenceType));
+                var val = fd.GetValue(null);
+                if (val != refType)
+                    throw new Exception();
+                val = new object();
+                fd.SetValue(null, val);
+                if (Generic<T>.ThreadStaticReferenceType != val)
+                    throw new Exception();
+            }
+
+            {
+                var fd = typeof(Generic<T>).GetField(nameof(Generic<T>.ThreadStaticPointerType));
+                var val = Pointer.Unbox(fd.GetValue(null));
+                if (val != (int*)456)
+                    throw new Exception();
+                fd.SetValue(null, Pointer.Box((void*)678, typeof(int*)));
+                if (Generic<T>.ThreadStaticPointerType != (void*)678)
+                    throw new Exception();
+            }
+        }
+
+        public static void Run()
+        {
+            Console.WriteLine(nameof(TestThreadStaticFields));
+
+            var refType = new object();
+
+            NonGeneric.ThreadStaticValueType = 123;
+            NonGeneric.ThreadStaticReferenceType = refType;
+            NonGeneric.ThreadStaticPointerType = (int*)456;
+
+            {
+                var fd = typeof(NonGeneric).GetField(nameof(NonGeneric.ThreadStaticValueType));
+                var val = (int)fd.GetValue(null);
+                if (val != 123)
+                    throw new Exception();
+                fd.SetValue(null, 234);
+                if (NonGeneric.ThreadStaticValueType != 234)
+                    throw new Exception();
+            }
+
+            {
+                var fd = typeof(NonGeneric).GetField(nameof(NonGeneric.ThreadStaticReferenceType));
+                var val = fd.GetValue(null);
+                if (val != refType)
+                    throw new Exception();
+                val = new object();
+                fd.SetValue(null, val);
+                if (NonGeneric.ThreadStaticReferenceType != val)
+                    throw new Exception();
+            }
+
+            {
+                var fd = typeof(NonGeneric).GetField(nameof(NonGeneric.ThreadStaticPointerType));
+                var val = Pointer.Unbox(fd.GetValue(null));
+                if (val != (int*)456)
+                    throw new Exception();
+                fd.SetValue(null, Pointer.Box((void*)678, typeof(int*)));
+                if (NonGeneric.ThreadStaticPointerType != (void*)678)
+                    throw new Exception();
+            }
+
+            TestGeneric<string>();
+
+            TestGeneric<int>();
         }
     }
 

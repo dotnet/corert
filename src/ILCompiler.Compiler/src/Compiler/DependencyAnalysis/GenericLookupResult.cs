@@ -35,8 +35,6 @@ namespace ILCompiler.DependencyAnalysis
         UnboxingStub,       // the unboxing stub for a method
         ArrayType,          // an array of type
         DefaultCtor,        // default ctor of a type
-        TlsIndex,           // tls index of a type
-        TlsOffset,          // tls offset of a type
         AllocObject,        // the allocator of a type
         GvmVtableOffset,    // vtable offset of a generic virtual method
         ProfileCounter,     // profiling counter cell
@@ -910,7 +908,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            return factory.NativeLayout.NotSupportedDictionarySlot;
+            return factory.NativeLayout.ThreadStaticBaseIndexDictionarySlotNode(_type);
         }
 
         public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
@@ -1235,119 +1233,6 @@ namespace ILCompiler.DependencyAnalysis
         protected override bool EqualsImpl(GenericLookupResult obj)
         {
             return ((IsInstGenericLookupResult)obj)._type == _type;
-        }
-    }
-
-    internal sealed class ThreadStaticIndexLookupResult : GenericLookupResult
-    {
-        private TypeDesc _type;
-
-        protected override int ClassCode => -25938157;
-
-        public ThreadStaticIndexLookupResult(TypeDesc type)
-        {
-            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
-            _type = type;
-        }
-
-        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append("TlsIndex_");
-            sb.Append(nameMangler.GetMangledTypeName(_type));
-        }
-
-        public override string ToString() => $"ThreadStaticIndex: {_type}";
-
-        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
-        {
-            return factory.NativeLayout.TlsIndexDictionarySlot(_type);
-        }
-
-        public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
-        {
-            return GenericLookupResultReferenceType.ConditionalIndirect;
-        }
-
-        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
-        {
-            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.TlsIndex, _type);
-        }
-
-        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
-        {
-            return comparer.Compare(_type, ((ThreadStaticIndexLookupResult)other)._type);
-        }
-
-        protected override int GetHashCodeImpl()
-        {
-            return _type.GetHashCode();
-        }
-
-        protected override bool EqualsImpl(GenericLookupResult obj)
-        {
-            return ((ThreadStaticIndexLookupResult)obj)._type == _type;
-        }
-    }
-
-    public sealed class ThreadStaticOffsetLookupResult : GenericLookupResult
-    {
-        private TypeDesc _type;
-
-        protected override int ClassCode => -1678275787;
-
-        public ThreadStaticOffsetLookupResult(TypeDesc type)
-        {
-            Debug.Assert(type.IsRuntimeDeterminedSubtype, "Concrete type in a generic dictionary?");
-            _type = type;
-        }
-
-        public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append("TlsOffset_");
-            sb.Append(nameMangler.GetMangledTypeName(_type));
-        }
-
-        public TypeDesc Type => _type;
-        public override string ToString() => $"ThreadStaticOffset: {_type}";
-
-        public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
-        {
-            return factory.NativeLayout.TlsOffsetDictionarySlot(_type);
-        }
-
-        public override GenericLookupResultReferenceType LookupResultReferenceType(NodeFactory factory)
-        {
-            return GenericLookupResultReferenceType.ConditionalIndirect;
-        }
-
-        public override void WriteDictionaryTocData(NodeFactory factory, IGenericLookupResultTocWriter writer)
-        {
-            writer.WriteData(LookupResultReferenceType(factory), LookupResultType.TlsOffset, _type);
-        }
-
-        protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
-        {
-            return comparer.Compare(_type, ((ThreadStaticOffsetLookupResult)other)._type);
-        }
-
-        protected override int GetHashCodeImpl()
-        {
-            return _type.GetHashCode();
-        }
-
-        protected override bool EqualsImpl(GenericLookupResult obj)
-        {
-            return ((ThreadStaticOffsetLookupResult)obj)._type == _type;
         }
     }
 

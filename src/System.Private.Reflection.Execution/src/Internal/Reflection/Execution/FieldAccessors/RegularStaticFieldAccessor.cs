@@ -2,21 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Internal.Runtime;
 
 namespace Internal.Reflection.Execution.FieldAccessors
 {
     internal abstract class RegularStaticFieldAccessor : WritableStaticFieldAccessor
     {
-        protected RegularStaticFieldAccessor(IntPtr cctorContext, IntPtr staticsBase, int fieldOffset, bool isGcStatic, RuntimeTypeHandle fieldTypeHandle)
+        protected RegularStaticFieldAccessor(IntPtr cctorContext, IntPtr staticsBase, int fieldOffset, FieldTableFlags fieldBase, RuntimeTypeHandle fieldTypeHandle)
             : base(cctorContext, fieldTypeHandle)
         {
             StaticsBase = staticsBase;
-            IsGcStatic = isGcStatic;
+            FieldBase = fieldBase;
             FieldOffset = fieldOffset;
         }
 
         protected IntPtr StaticsBase { get; }
-        protected bool IsGcStatic { get; }
+        protected FieldTableFlags FieldBase { get; }
         protected int FieldOffset { get; }
     }
 }

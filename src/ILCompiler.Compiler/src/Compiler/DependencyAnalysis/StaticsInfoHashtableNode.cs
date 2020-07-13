@@ -68,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (metadataType.ThreadGcStaticFieldSize.AsInt > 0)
                 {
-                    // TODO: TLS for CoreRT
+                    dependencies.Add(factory.Indirection(factory.TypeThreadStaticIndex(metadataType)), "Threadstatics indirection for StaticsInfoHashtable");
                 }
             }
         }
@@ -108,7 +108,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 if (metadataType.ThreadGcStaticFieldSize.AsInt > 0)
                 {
-                    // TODO: TLS for CoreRT
+                    ISymbolNode threadStaticsIndirection = factory.Indirection(factory.TypeThreadStaticIndex(metadataType));
+                    bag.AppendUnsigned(BagElementKind.ThreadStaticIndex, _nativeStaticsReferences.GetIndex(threadStaticsIndirection));
                 }
 
                 if (bag.ElementsCount > 0)

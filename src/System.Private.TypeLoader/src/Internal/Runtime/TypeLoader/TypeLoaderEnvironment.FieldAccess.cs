@@ -192,7 +192,6 @@ namespace Internal.Runtime.TypeLoader
                     }
 
                     int fieldOffset = -1;
-                    int threadStaticsStartOffset = -1;
                     IntPtr fieldAddressCookie = IntPtr.Zero;
 
                     if (canonFormKind == CanonicalFormKind.Universal)
@@ -205,60 +204,19 @@ namespace Internal.Runtime.TypeLoader
                     }
                     else
                     {
-                        if ((entryFlags & FieldTableFlags.StorageClass) == FieldTableFlags.ThreadStatic)
+                        if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
                         {
-                            if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
-                            {
-                                if ((entryFlags & FieldTableFlags.IsAnyCanonicalEntry) == 0)
-                                {
-                                    int rvaToThreadStaticFieldOffsets = (int)externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
-                                    fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule.Handle, rvaToThreadStaticFieldOffsets);
-                                    threadStaticsStartOffset = *(int*)fieldAddressCookie.ToPointer();
-                                }
-                                fieldOffset = (int)entryParser.GetUnsigned();
-                            }
-                            else
-                            {
-                                int rvaToThreadStaticFieldOffsets = (int)externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
-                                fieldAddressCookie = RvaToNonGenericStaticFieldAddress(mappingTableModule.Handle, rvaToThreadStaticFieldOffsets);
-                                ThreadStaticFieldOffsets* pThreadStaticFieldOffsets = (ThreadStaticFieldOffsets*)fieldAddressCookie.ToPointer();
-
-                                threadStaticsStartOffset = (int)pThreadStaticFieldOffsets->StartingOffsetInTlsBlock;
-                                fieldOffset = (int)pThreadStaticFieldOffsets->FieldOffset;
-                            }
+                            fieldOffset = (int)entryParser.GetUnsigned();
                         }
                         else
                         {
-                            if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) != 0)
-                            {
+                            fieldOffset = 0;
+                            fieldAddressCookie = externalReferences.GetAddressFromIndex(entryParser.GetUnsigned());
+
+                            FieldTableFlags storageClass = entryFlags & FieldTableFlags.StorageClass;
+                            if (storageClass == FieldTableFlags.GCStatic || storageClass == FieldTableFlags.ThreadStatic)
                                 fieldOffset = (int)entryParser.GetUnsigned();
-                            }
-                            else
-                            {
-#if PROJECTN
-                                fieldOffset = (int)externalReferences.GetRvaFromIndex(entryParser.GetUnsigned());
-#else
-                                fieldOffset = 0;
-                                fieldAddressCookie = externalReferences.GetAddressFromIndex(entryParser.GetUnsigned());
-
-                                if((entryFlags & FieldTableFlags.IsGcSection) != 0)
-                                    fieldOffset = (int)entryParser.GetUnsigned();
-#endif
-                            }
                         }
-                    }
-
-                    if ((entryFlags & FieldTableFlags.StorageClass) == FieldTableFlags.ThreadStatic)
-                    {
-                        // TODO: CoreRT support
-
-                        if (!entryDeclaringTypeHandle.Equals(declaringTypeHandle))
-                        {
-                            if (!TypeLoaderEnvironment.Instance.TryGetThreadStaticStartOffset(declaringTypeHandle, out threadStaticsStartOffset))
-                                return false;
-                        }
-
-                        fieldAddressCookie = new IntPtr(threadStaticsStartOffset);
                     }
 
                     fieldAccessMetadata.MappingTableModule = mappingTableModule.Handle;
@@ -361,24 +319,21 @@ namespace Internal.Runtime.TypeLoader
                     // Flags + DeclaringType + MdHandle or Name + Cookie or Ordinal or Offset
 
                     FieldTableFlags entryFlags = (FieldTableFlags)entryParser.GetUnsigned();
+                    FieldTableFlags storageClass = entryFlags & FieldTableFlags.StorageClass;
 
                     Debug.Assert((entryFlags & FieldTableFlags.IsUniversalCanonicalEntry) == 0);
 
-                    if ((entryFlags & FieldTableFlags.Static) == 0)
+                    if (storageClass == FieldTableFlags.Instance)
                         continue;
 
                     switch (fieldAccessKind)
                     {
                         case FieldAccessStaticDataKind.NonGC:
-                            if ((entryFlags & FieldTableFlags.IsGcSection) != 0)
-                                continue;
-                            if ((entryFlags & FieldTableFlags.ThreadStatic) != 0)
+                            if (storageClass != FieldTableFlags.NonGCStatic)
                                 continue;
                             break;
                         case FieldAccessStaticDataKind.GC:
-                            if ((entryFlags & FieldTableFlags.IsGcSection) != 0)
-                                continue;
-                            if ((entryFlags & FieldTableFlags.ThreadStatic) != 0)
+                            if (storageClass != FieldTableFlags.GCStatic)
                                 continue;
                             break;
 
@@ -533,7 +488,7 @@ namespace Internal.Runtime.TypeLoader
                             type.ToString());
                     }
                     fieldAccessMetadata.Offset += (int)gcStaticsRVA;
-                    fieldAccessMetadata.Flags |= FieldTableFlags.IsGcSection;
+                    fieldAccessMetadata.Flags |= FieldTableFlags.GCStatic;
                 }
                 else
                 {
@@ -546,8 +501,8 @@ namespace Internal.Runtime.TypeLoader
                             type.ToString());
                     }
                     fieldAccessMetadata.Offset += (int)nonGcStaticsRVA;
+                    fieldAccessMetadata.Flags |= FieldTableFlags.NonGCStatic;
                 }
-                fieldAccessMetadata.Flags |= FieldTableFlags.Static;
                 return true;
             }
             else
