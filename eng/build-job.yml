@@ -110,7 +110,7 @@ jobs:
       - script: |
           call $(Build.SourcesDirectory)\wasm-tools\emsdk\emsdk_env
           echo EMSDK
-          echo $EMSDK
+          echo %EMSDK%
           set PATH=$(Build.SourcesDirectory)\native-tools\bin;%PATH%
           call $(buildScriptName) wasm $(buildConfig)
         displayName: Run Wasm tests
