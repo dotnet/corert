@@ -110,7 +110,10 @@ jobs:
       - script: |
           echo EMSDK
           echo %EMSDK%
-          call $(Build.SourcesDirectory)\wasm-tools\emsdk\emsdk_env
+          set EMSDK=
+          echo cleared
+          echo %EMSDK%
+          call $(Build.SourcesDirectory)\wasm-tools\emsdk\emsdk_env.bat
           echo EMSDK
           echo %EMSDK%
           set ABC=123
