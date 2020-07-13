@@ -38,7 +38,7 @@ jobs:
 
 # WebAssembly
 
-- ${{ if ne(parameters.jobParameters.testScenarios, 'CoreFX') }}: # Don't want the second job as it would be a duplicate.
+- ${{ if and(false,ne(parameters.jobParameters.testScenarios, 'CoreFX')) }}: # Don't want the second job as it would be a duplicate.
   - template: ${{ parameters.jobTemplate }}
     parameters:
       buildConfig: ${{ parameters.buildConfig }}
