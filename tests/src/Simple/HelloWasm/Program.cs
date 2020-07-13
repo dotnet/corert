@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -1413,6 +1412,8 @@ internal static class Program
         TestFilter();
 
         TestFilterNested();
+
+        TestCatchAndThrow();
     }
 
     private static void TestTryCatchNoException()
@@ -1623,6 +1624,32 @@ internal static class Program
         }
         PrintLine(exceptionFlowSequence);
         EndTest(exceptionFlowSequence == @"In middle catchRunning outer filterIn outer catchRunning inner filterIn inner catch");
+    }
+
+    private static void TestCatchAndThrow()
+    {
+        StartTest("Test catch and throw different exception");
+        int caught = 0;
+        try
+        {
+            try
+            {
+                throw new Exception("first");
+            }
+            catch
+            {
+                caught += 1;
+                throw new Exception("second");
+            }
+        }
+        catch(Exception e)
+        {
+            if(e.Message == "second")
+            {
+                caught += 10;
+            }
+        }
+        EndTest(caught == 11);
     }
 
     static bool Print(string s)

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 MSVC_SAVE_WARNING_STATE()
 MSVC_DISABLE_WARNING(4127)  // conditional expression is constant --
                             // while (true) loops and compile time template constants cause this.
