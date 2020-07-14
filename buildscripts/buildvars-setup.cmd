@@ -94,6 +94,7 @@ if "%__BuildArch%"=="wasm" (
 )
 
 :CheckPrereqsEmscripten
+endlocal
 call %__ProjectDir%\wasm-tools\emsdk\emsdk_env.bat
 echo %EMSDK%
 set EMSDK=F:/workspace/_work/1/s/wasm-tools/emsdk
