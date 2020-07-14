@@ -96,6 +96,8 @@ if "%__BuildArch%"=="wasm" (
 :CheckPrereqsEmscripten
 call %__ProjectDir%\wasm-tools\emsdk\emsdk_env.bat
 echo %EMSDK%
+set EMSDK=F:/workspace/_work/1/s/wasm-tools/emsdk
+echo %EMSDK%
 if not defined EMSDK (
     echo Emscripten is a prerequisite to build for WebAssembly.
     echo See: https://github.com/dotnet/corert/blob/master/Documentation/how-to-build-WebAssembly.md
