@@ -34,9 +34,10 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj">
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj">
       <Aliases>writer</Aliases>
     </ProjectReference>
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Metadata\NativeFormat\MetadataTypeHashingAlgorithms.cs">
@@ -44,9 +45,6 @@
     </Compile>
     <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
       <Link>FormattingHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\src\TypeSystem\Common\TypeHashingAlgorithms.cs">
-      <Link>TypeHashingAlgorithms.cs</Link>
     </Compile>
     <Compile Include="CollectionExtensions.cs" />
     <Compile Include="HashCodeTests.cs" />
