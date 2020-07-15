@@ -4,6 +4,8 @@ cd "%1"
 git clone https://github.com/emscripten-core/emsdk.git
 
 cd emsdk
+rem checkout a known good version to avoid a random break when emscripten changes the top of tree.
+git checkout 92d512f 
 
 powershell -NoProfile -NoLogo -ExecutionPolicy ByPass -command "& """%~dp0update-machine-certs.ps1""" %*"
 
