@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
 ;;
 ;; Define the helpers used to implement the write barrier required when writing an object reference into a
@@ -104,7 +103,8 @@ FASTCALL_FUNC RhpAssignRef&REFREG&, 0
 
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <EDX>
-    ALTERNATE_ENTRY @RhpAssignRef@0
+    @RhpAssignRef@0 label proc
+    PUBLIC @RhpAssignRef@0
     ALTERNATE_ENTRY RhpAssignRefAVLocation
     endif
 
@@ -200,7 +200,8 @@ FASTCALL_FUNC RhpCheckedAssignRef&REFREG&, 0
 
     ;; Export the canonical write barrier under unqualified name as well
     ifidni <REFREG>, <EDX>
-    ALTERNATE_ENTRY @RhpCheckedAssignRef@0
+    @RhpCheckedAssignRef@0 label proc
+    PUBLIC @RhpCheckedAssignRef@0
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
     endif
 

@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
 using global::System.Text;
 using global::System.Collections.Generic;
 
@@ -12,12 +9,11 @@ using global::Internal.Metadata.NativeFormat;
 
 using global::Internal.Runtime.Augments;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
+using System.Reflection.Runtime.General;
 
 namespace Internal.Reflection.Execution.PayForPlayExperience
 {
-    internal static class DiagnosticMappingTables
+    internal static partial class DiagnosticMappingTables
     {
         // Get the diagnostic name string for a type. This attempts to reformat the string into something that is essentially human readable.
         //  Returns true if the function is successful.
@@ -45,15 +41,24 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                 return true;
             }
 
-            TypeDefinitionHandle typeDefinitionHandle;
-            if (executionEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out reader, out typeDefinitionHandle))
+            QTypeDefinition qTypeDefinition;
+            if (executionEnvironment.TryGetMetadataForNamedType(runtimeTypeHandle, out qTypeDefinition))
             {
-                diagnosticName = GetTypeFullNameFromTypeDef(typeDefinitionHandle, reader, genericParameterOffsets);
-                return true;
+                TryGetFullNameFromTypeDefEcma(qTypeDefinition, genericParameterOffsets, ref diagnosticName);
+                if (diagnosticName != null)
+                    return true;
+                
+                if (qTypeDefinition.IsNativeFormatMetadataBased)
+                {
+                    TypeDefinitionHandle typeDefinitionHandle = qTypeDefinition.NativeFormatHandle;
+                    diagnosticName = GetTypeFullNameFromTypeDef(typeDefinitionHandle, qTypeDefinition.NativeFormatReader, genericParameterOffsets);
+                    return true;
+                }
             }
             return false;
         }
 
+        static partial void TryGetFullNameFromTypeDefEcma(QTypeDefinition qTypeDefinition, List<int> genericParameterOffsets, ref string result);
 
         private static String GetTypeFullNameFromTypeRef(TypeReferenceHandle typeReferenceHandle, MetadataReader reader, List<int> genericParameterOffsets)
         {
@@ -71,7 +76,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             else if (parentHandleType == HandleType.NamespaceReference)
             {
                 NamespaceReferenceHandle namespaceReferenceHandle = parentHandle.ToNamespaceReferenceHandle(reader);
-                for (; ;)
+                for (;;)
                 {
                     NamespaceReference namespaceReference = namespaceReferenceHandle.GetNamespaceReference(reader);
                     String namespacePart = namespaceReference.Name.GetStringOrNull(reader);
@@ -144,7 +149,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             else
             {
                 NamespaceDefinitionHandle namespaceHandle = typeDefinition.NamespaceDefinition;
-                for (; ;)
+                for (;;)
                 {
                     NamespaceDefinition namespaceDefinition = namespaceHandle.GetNamespaceDefinition(reader);
                     String namespacePart = namespaceDefinition.Name.GetStringOrNull(reader);
@@ -166,44 +171,10 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             return true;
         }
 
-        public static bool TryGetMultiDimArrayTypeElementType(RuntimeTypeHandle arrayTypeHandle, int rank, out RuntimeTypeHandle elementTypeHandle)
-        {
-            elementTypeHandle = default(RuntimeTypeHandle);
-            if (rank != 2)
-                return false;
-
-            // Rank 2 arrays are really generic type of type MDArrayRank2<T>.
-            RuntimeTypeHandle genericTypeDefinitionHandle;
-            RuntimeTypeHandle[] genericTypeArgumentHandles;
-            if (!DiagnosticMappingTables.TryGetConstructedGenericTypeComponents(arrayTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
-                return false;
-            // This should really be an assert but this is used for generating diagnostic info so it's better to persevere and hope something useful gets printed out.
-            if (genericTypeArgumentHandles.Length != 1)
-                return false;
-            elementTypeHandle = genericTypeArgumentHandles[0];
-            return true;
-        }
-
         public static bool TryGetPointerTypeTargetType(RuntimeTypeHandle pointerTypeHandle, out RuntimeTypeHandle targetTypeHandle)
         {
             targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(pointerTypeHandle);
             return true;
-        }
-
-        public static bool TryGetConstructedGenericTypeComponents(RuntimeTypeHandle runtimeTypeHandle, out RuntimeTypeHandle genericTypeDefinitionHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
-        {
-            genericTypeDefinitionHandle = default(RuntimeTypeHandle);
-            genericTypeArgumentHandles = null;
-
-            // Check the regular tables first.
-            if (ReflectionExecution.ExecutionEnvironment.TryGetConstructedGenericTypeComponents(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
-                return true;
-
-            // Now check the diagnostic tables.
-            if (ReflectionExecution.ExecutionEnvironment.TryGetConstructedGenericTypeComponentsDiag(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
-                return true;
-
-            return false;
         }
     }
 }

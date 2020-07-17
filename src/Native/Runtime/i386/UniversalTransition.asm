@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
         .586
         .model  flat
@@ -55,13 +54,15 @@ ifdef FEATURE_DYNAMIC_CODE
 ; everything between the base of the IntArgRegs and the top of the StackPassedArgs.
 ;
 
-FASTCALL_FUNC RhpUniversalTransition_FAKE_ENTRY, 0        
+UNIVERSAL_TRANSITION macro FunctionName
+
+FASTCALL_FUNC Rhp&FunctionName&_FAKE_ENTRY, 0        
         ; Set up an ebp frame
         push        ebp
         mov         ebp, esp
         push eax
         push eax
-ALTERNATE_ENTRY RhpUniversalTransition@0
+ALTERNATE_ENTRY Rhp&FunctionName&@0
         push ecx
         push edx
 
@@ -72,7 +73,12 @@ ALTERNATE_ENTRY RhpUniversalTransition@0
         mov  edx, [ebp-4]    ; Get the extra argument to pass to the callee
         lea  ecx, [ebp-10h]  ; Get pointer to edx value pushed above
         call eax
-LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
+
+        EXPORT_POINTER_TO_ADDRESS _PointerToReturnFrom&FunctionName
+
+        ; We cannot make the label public as that tricks DIA stackwalker into thinking
+        ; it's the beginning of a method. For this reason we export an auxiliary variable
+        ; holding the address instead.
 
         pop edx
         pop ecx
@@ -81,6 +87,14 @@ LABELED_RETURN_ADDRESS ReturnFromUniversalTransition
         jmp eax
 
 FASTCALL_ENDFUNC
+
+        endm
+        
+        ; To enable proper step-in behavior in the debugger, we need to have two instances
+        ; of the thunk. For the first one, the debugger steps into the call in the function, 
+        ; for the other, it steps over it.
+        UNIVERSAL_TRANSITION UniversalTransition
+        UNIVERSAL_TRANSITION UniversalTransition_DebugStepTailCall
 
 endif
 

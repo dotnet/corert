@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -63,6 +62,17 @@ namespace Internal.TypeSystem
     public abstract partial class GenericParameterDesc : TypeDesc
     {
         /// <summary>
+        /// Gets the name of the generic parameter as defined in the metadata.
+        /// </summary>
+        public virtual string Name
+        {
+            get
+            {
+                return String.Concat("T", Index.ToStringInvariant());
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this is a type or method generic parameter.
         /// </summary>
         public abstract GenericParameterKind Kind { get; }
@@ -75,16 +85,94 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets a value indicating the variance of this generic parameter.
         /// </summary>
-        public abstract GenericVariance Variance { get; }
+        public virtual GenericVariance Variance
+        {
+            get
+            {
+                return GenericVariance.None;
+            }
+        }
 
         /// <summary>
         /// Gets a value indicating generic constraints of this generic parameter.
         /// </summary>
-        public abstract GenericConstraints Constraints { get; }
+        public virtual GenericConstraints Constraints
+        {
+            get
+            {
+                return GenericConstraints.None;
+            }
+        }
         
         /// <summary>
         /// Gets type constraints imposed on substitutions.
         /// </summary>
-        public abstract IEnumerable<TypeDesc> TypeConstraints { get; }
+        public virtual IEnumerable<TypeDesc> TypeConstraints
+        {
+            get
+            {
+                return TypeDesc.EmptyTypes;
+            }
+        }
+
+        public bool HasNotNullableValueTypeConstraint
+        {
+            get
+            {
+                return (Constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0;
+            }
+        }
+
+        public bool HasReferenceTypeConstraint
+        {
+            get
+            {
+                return (Constraints & GenericConstraints.ReferenceTypeConstraint) != 0;
+            }
+        }
+
+        public bool HasDefaultConstructorConstraint
+        {
+            get
+            {
+                return (Constraints & GenericConstraints.DefaultConstructorConstraint) != 0;
+            }
+        }
+
+        public bool IsCovariant
+        {
+            get
+            {
+                return (Variance & GenericVariance.Covariant) != 0;
+            }
+        }
+
+        public bool IsContravariant
+        {
+            get
+            {
+                return (Variance & GenericVariance.Contravariant) != 0;
+            }
+        }
+
+        protected sealed override TypeFlags ComputeTypeFlags(TypeFlags mask)
+        {
+            TypeFlags flags = 0;
+
+            flags |= TypeFlags.GenericParameter;
+
+            flags |= TypeFlags.HasGenericVarianceComputed;
+
+            flags |= TypeFlags.AttributeCacheComputed;
+
+            return flags;
+        }
+
+        public sealed override int GetHashCode()
+        {
+            // TODO: Determine what a the right hash function should be. Use stable hashcode based on the type name?
+            // For now, use the same hash as a SignatureVariable type.
+            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeSignatureVariableHashCode(Index, Kind == GenericParameterKind.Method);
+        }
     }
 }

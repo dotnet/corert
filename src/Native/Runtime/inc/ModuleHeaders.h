@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Please keep the data structures in this file in sync with the managed version at
@@ -11,8 +10,8 @@ struct ReadyToRunHeaderConstants
 {
     static const uint32_t Signature = 0x00525452; // 'RTR'
 
-    static const uint32_t CurrentMajorVersion = 2;
-    static const uint32_t CurrentMinorVersion = 1;
+    static const uint32_t CurrentMajorVersion = 4;
+    static const uint32_t CurrentMinorVersion = 0;
 };
 
 struct ReadyToRunHeader
@@ -44,8 +43,15 @@ enum class ReadyToRunSectionType
     GCStaticRegion              = 201,
     ThreadStaticRegion          = 202,
     InterfaceDispatchTable      = 203,
-    ModuleManagerIndirection    = 204,
+    TypeManagerIndirection      = 204,
     EagerCctor                  = 205,
+    FrozenObjectRegion          = 206,
+    GCStaticDesc                = 207,
+    ThreadStaticOffsetRegion    = 208,
+    ThreadStaticGCDescRegion    = 209,
+    ThreadStaticIndex           = 210,
+    LoopHijackFlag              = 211,
+    ImportAddressTables         = 212,
 
     // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
     ReadonlyBlobRegionStart     = 300,

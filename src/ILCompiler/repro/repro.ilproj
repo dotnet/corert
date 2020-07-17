@@ -1,0 +1,14 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>repro</AssemblyName>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <SkipSigning>true</SkipSigning>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="repro.il" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)\..\..\BuildIntegration\Microsoft.NETCore.Native.targets" />
+</Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -16,7 +15,7 @@ using System;
 //
 // - Naturally compressed: Integers are stored using variable length encoding. Offsets are stored as relative offsets.
 //
-// - Random accesss: Random access to selected information should be fast. It is achieved by using tokens as offsets.
+// - Random access: Random access to selected information should be fast. It is achieved by using tokens as offsets.
 //
 // - Locality: Access to related information should be accessing data that are close to each other.
 //
@@ -29,7 +28,12 @@ namespace Internal.NativeFormat
     // Bag is the key record type for extensibility. It is a list <id, data> pairs. Data is integer that 
     // is interpretted according to the id. It is typically relative offset of another record.
     //
-    internal enum BagElementKind : uint
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    enum BagElementKind : uint
     {
         End                         = 0x00,
         BaseType                    = 0x01,
@@ -53,6 +57,7 @@ namespace Internal.NativeFormat
         BaseTypeSize                = 0x4f,
         GenericVarianceInfo         = 0x50,
         DelegateInvokeSignature     = 0x51,
+        GcStaticEEType              = 0x52,
 
         // Add new custom bag elements that don't match to something you'd find in the ECMA metadata here.
     }
@@ -61,6 +66,11 @@ namespace Internal.NativeFormat
     // FixupSignature signature describes indirection. It starts with integer describing the kind of data stored in the indirection,
     // followed by kind-specific signature.
     //
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     enum FixupSignatureKind : uint
     {
         Null                        = 0x00,
@@ -74,8 +84,8 @@ namespace Internal.NativeFormat
         MethodLdToken               = 0x08,
         AllocateObject              = 0x09,
         DefaultConstructor          = 0x0a,
-        TlsIndex                    = 0x0b,
-        TlsOffset                   = 0x0c,
+        ThreadStaticIndex           = 0x0b,
+        // unused                   = 0x0c
         Method                      = 0x0d,
         IsInst                      = 0x0e,
         CastClass                   = 0x0f,
@@ -88,6 +98,8 @@ namespace Internal.NativeFormat
         NonGenericConstrainedMethod = 0x16,
         GenericConstrainedMethod    = 0x17,
         NonGenericDirectConstrainedMethod = 0x18,
+        PointerToOtherSlot          = 0x19,
+        IntValue                    = 0x20,
 
         NotYetSupported             = 0xee,
     }
@@ -96,6 +108,11 @@ namespace Internal.NativeFormat
     // TypeSignature describes type. The low 4 bits of the integer that is starts with describe the kind. Upper 28 bits are kind 
     // specific data. The argument signatures immediately follow for nested types.
     //
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     enum TypeSignatureKind : uint
     {
         Null                        = 0x0,
@@ -110,6 +127,11 @@ namespace Internal.NativeFormat
         FunctionPointer             = 0xB, // Function pointer (data - calling convention, arg count, args)
     };
 
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     enum TypeModifierKind : uint
     {
         Array                       = 0x1,
@@ -117,12 +139,22 @@ namespace Internal.NativeFormat
         Pointer                     = 0x3,
     };
 
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     enum StaticDataKind : uint
     {
         Gc                          = 0x1,
         NonGc                       = 0x2,
     };
 
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     enum GenericContextKind : uint
     {
         FromThis                    = 0x00,
@@ -134,6 +166,11 @@ namespace Internal.NativeFormat
         NeedsUSGContext             = 0x08,
     };
 
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     enum CallingConventionConverterKind : uint
     {
         NoInstantiatingParam        = 0x00,   // The calling convention interpreter can assume that the calling convention of the target method has no instantiating parameter
@@ -142,6 +179,11 @@ namespace Internal.NativeFormat
     }
 
     [Flags]
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     enum TypeFlags : uint
     {
         HasClassConstructor             = 0x1,
@@ -149,6 +191,11 @@ namespace Internal.NativeFormat
     };
 
     [Flags]
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     enum MethodFlags : uint
     {
         HasInstantiation            = 0x1,
@@ -158,12 +205,22 @@ namespace Internal.NativeFormat
     };
 
     [Flags]
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     enum MethodCallingConvention : uint
     {
         Generic                     = 0x1,
         Static                      = 0x2,
     };
 
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
     enum FieldStorage : uint
     {
         Instance                    = 0x0,

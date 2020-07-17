@@ -1,15 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace Internal.TypeSystem
 {
     /// <summary>
-    /// Pluggable virtual method computation algorithm.
+    /// Pluggable virtual method computation algorithm. Provides an abstraction to resolve
+    /// virtual and interface methods on types.
     /// </summary>
+    /// <remarks>
+    /// The algorithms are expected to be directly used by <see cref="TypeSystemContext"/> derivatives
+    /// only. The most obvious implementation of this algorithm that uses type's metadata to
+    /// compute the answers is in <see cref="MetadataVirtualMethodAlgorithm"/>.
+    /// </remarks>
     public abstract class VirtualMethodAlgorithm
     {
         /// <summary>
@@ -17,6 +21,8 @@ namespace Internal.TypeSystem
         /// that implements the the method.
         /// </summary>
         public abstract MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);
+
+        public abstract MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);
 
         /// <summary>
         /// Resolves a virtual method call.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -20,7 +19,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections.Generic
 {
@@ -45,7 +43,6 @@ namespace System.Collections.Generic
         private const int _defaultCapacity = 4;
 
         protected T[] _items;
-        [ContractPublicPropertyName("Count")]
         protected int _size;
         protected int _version;
 
@@ -53,7 +50,7 @@ namespace System.Collections.Generic
 
         // Constructs a List. The list is initially empty and has a capacity
         // of zero. Upon adding the first element to the list the capacity is
-        // increased to 16, and then increased in multiples of two as required.
+        // increased to 4, and then increased in multiples of two as required.
         public LowLevelList()
         {
             _items = s_emptyArray;
@@ -65,8 +62,7 @@ namespace System.Collections.Generic
         // 
         public LowLevelList(int capacity)
         {
-            if (capacity < 0) throw new ArgumentOutOfRangeException("capacity");
-            Contract.EndContractBlock();
+            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
 
             if (capacity == 0)
                 _items = s_emptyArray;
@@ -81,8 +77,7 @@ namespace System.Collections.Generic
         public LowLevelList(IEnumerable<T> collection)
         {
             if (collection == null)
-                throw new ArgumentNullException("collection");
-            Contract.EndContractBlock();
+                throw new ArgumentNullException(nameof(collection));
 
             ICollection<T> c = collection as ICollection<T>;
             if (c != null)
@@ -124,16 +119,14 @@ namespace System.Collections.Generic
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
                 return _items.Length;
             }
             set
             {
                 if (value < _size)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
-                Contract.EndContractBlock();
 
                 if (value != _items.Length)
                 {
@@ -156,7 +149,6 @@ namespace System.Collections.Generic
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
                 return _size;
             }
         }
@@ -172,7 +164,6 @@ namespace System.Collections.Generic
                 {
                     throw new ArgumentOutOfRangeException();
                 }
-                Contract.EndContractBlock();
                 return _items[index];
             }
 
@@ -182,7 +173,6 @@ namespace System.Collections.Generic
                 {
                     throw new ArgumentOutOfRangeException();
                 }
-                Contract.EndContractBlock();
                 _items[index] = value;
                 _version++;
             }
@@ -224,7 +214,6 @@ namespace System.Collections.Generic
         //
         public void AddRange(IEnumerable<T> collection)
         {
-            Contract.Ensures(Count >= Contract.OldValue(Count));
 
             InsertRange(_size, collection);
         }
@@ -273,7 +262,6 @@ namespace System.Collections.Generic
             {
                 throw new ArgumentException();
             }
-            Contract.EndContractBlock();
 
             // Delegate rest of error checking to Array.Copy.
             Array.Copy(_items, index, array, arrayIndex, count);
@@ -295,8 +283,6 @@ namespace System.Collections.Generic
         // 
         public int IndexOf(T item)
         {
-            Contract.Ensures(Contract.Result<int>() >= -1);
-            Contract.Ensures(Contract.Result<int>() < Count);
             return Array.IndexOf(_items, item, 0, _size);
         }
 
@@ -313,10 +299,7 @@ namespace System.Collections.Generic
         public int IndexOf(T item, int index)
         {
             if (index > _size)
-                throw new ArgumentOutOfRangeException("index");
-            Contract.Ensures(Contract.Result<int>() >= -1);
-            Contract.Ensures(Contract.Result<int>() < Count);
-            Contract.EndContractBlock();
+                throw new ArgumentOutOfRangeException(nameof(index));
             return Array.IndexOf(_items, item, index, _size - index);
         }
 
@@ -329,9 +312,8 @@ namespace System.Collections.Generic
             // Note that insertions at the end are legal.
             if ((uint)index > (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             if (index < _size)
             {
@@ -351,14 +333,13 @@ namespace System.Collections.Generic
         {
             if (collection == null)
             {
-                throw new ArgumentNullException("collection");
+                throw new ArgumentNullException(nameof(collection));
             }
 
             if ((uint)index > (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
 
             ICollection<T> c = collection as ICollection<T>;
             if (c != null)
@@ -423,11 +404,8 @@ namespace System.Collections.Generic
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
-            Contract.Ensures(Contract.Result<int>() >= 0);
-            Contract.Ensures(Contract.Result<int>() <= Contract.OldValue(Count));
-            Contract.EndContractBlock();
 
             int freeIndex = 0;   // the first free slot in items array
 
@@ -462,9 +440,8 @@ namespace System.Collections.Generic
         {
             if ((uint)index >= (uint)_size)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
-            Contract.EndContractBlock();
             _size--;
             if (index < _size)
             {
@@ -478,9 +455,6 @@ namespace System.Collections.Generic
         // This requires copying the List, which is an O(n) operation.
         public T[] ToArray()
         {
-            Contract.Ensures(Contract.Result<T[]>() != null);
-            Contract.Ensures(Contract.Result<T[]>().Length == Count);
-
             T[] array = new T[_size];
             Array.Copy(_items, 0, array, 0, _size);
             return array;
@@ -500,6 +474,11 @@ namespace System.Collections.Generic
 
         public LowLevelListWithIList(int capacity)
             : base(capacity)
+        {
+        }
+
+        public LowLevelListWithIList(IEnumerable<T> collection)
+            : base(collection)
         {
         }
 

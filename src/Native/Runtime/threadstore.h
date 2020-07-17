@@ -1,11 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 class Thread;
 class CLREventStatic;
 class RuntimeInstance;
 class Array;
 typedef DPTR(RuntimeInstance) PTR_RuntimeInstance;
+
+enum class TrapThreadsFlags
+{
+    None = 0,
+    AbortInProgress = 1,
+    TrapThreads = 2
+};
 
 class ThreadStore
 {
@@ -16,9 +22,10 @@ class ThreadStore
 
 private:
     ThreadStore();
-    static void *           CreateCurrentThreadBuffer();
+
     void                    LockThreadStore();
     void                    UnlockThreadStore();
+    void                    SuspendAllThreads(bool waitForGCEvent, bool fireDebugEvent);
 
 public:
     class Iterator
@@ -40,14 +47,18 @@ public:
     static void             AttachCurrentThread();
     static void             AttachCurrentThread(bool fAcquireThreadStoreLock);
     static void             DetachCurrentThread();
-#ifdef DACCESS_COMPILE
+#ifndef DACCESS_COMPILE
+    static void             SaveCurrentThreadOffsetForDAC();
+    void                    InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort);
+    void                    CancelThreadAbort(Thread* targetThread);
+#else
     static PTR_Thread       GetThreadFromTEB(TADDR pvTEB);
-#endif // DACCESS_COMPILE
+#endif
     Boolean                 GetExceptionsForCurrentThread(Array* pOutputArray, Int32* pWrittenCountOut);
 
     void        Destroy();
-    void        SuspendAllThreads(CLREventStatic* pCompletionEvent);
-    void        ResumeAllThreads(CLREventStatic* pCompletionEvent);
+    void        SuspendAllThreads(bool waitForGCEvent);
+    void        ResumeAllThreads(bool waitForGCEvent);
 
     static bool IsTrapThreadsRequested();
     void        WaitForSuspendComplete();
@@ -55,7 +66,6 @@ public:
 typedef DPTR(ThreadStore) PTR_ThreadStore;
 
 ThreadStore * GetThreadStore();
-
 
 #define FOREACH_THREAD(p_thread_name)                       \
 {                                                           \

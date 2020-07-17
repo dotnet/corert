@@ -1,6 +1,5 @@
 ;; Licensed to the.NET Foundation under one or more agreements.
 ;; The.NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
 ;; OS provided macros
 #include <ksarm.h>
@@ -38,34 +37,31 @@ PTFF_SAVE_R0            equ 0x00000200  ;; R0 is saved if it contains a GC ref a
 PTFF_SAVE_ALL_SCRATCH   equ 0x00003e00  ;; R0-R3,LR (R12 is trashed by the helpers anyway, but LR is relevant for loop hijacking
 PTFF_R0_IS_GCREF        equ 0x00004000  ;; iff PTFF_SAVE_R0: set -> r0 is Object, clear -> r0 is scalar
 PTFF_R0_IS_BYREF        equ 0x00008000  ;; iff PTFF_SAVE_R0: set -> r0 is ByRef, clear -> r0 is Object or scalar
+PTFF_THREAD_ABORT       equ 0x00010000  ;; indicates that ThreadAbortException should be thrown when returning from the transition
 
+;; These must match the TrapThreadsFlags enum
+TrapThreadsFlags_None            equ 0
+TrapThreadsFlags_AbortInProgress equ 1
+TrapThreadsFlags_TrapThreads     equ 2
 
-#ifndef CORERT  // Hardcoded TLS offsets are not compatible with static linking
-;;
-;; This constant, unfortunately, cannot be validated at build time.
-;;
-OFFSETOF__TLS__tls_CurrentThread                    equ  0x10
-#endif
+;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
+STATUS_REDHAWK_THREAD_ABORT      equ 0x43
 
 ;;
 ;; Rename fields of nested structs
 ;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__alloc_context__alloc_ptr
-OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__alloc_context__alloc_limit
+OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_limit
 
 
 __tls_array     equ 0x2C    ;; offsetof(TEB, ThreadLocalStoragePointer)
 
-
-;;
-;; Offset from FP (r7) where the managed callout thunk (ManagedCallout2 and possibly others in the future)
-;; store a pointer to a transition frame.
-;;
-MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -4
-
 ;;
 ;; MACROS
 ;;
+
+        GBLS __SECTIONREL_tls_CurrentThread
+__SECTIONREL_tls_CurrentThread SETS "SECTIONREL_tls_CurrentThread"
 
     MACRO
         INLINE_GETTHREAD $destReg, $trashReg
@@ -74,9 +70,25 @@ MANAGED_CALLOUT_THUNK_TRANSITION_FRAME_POINTER_OFFSET equ -4
         ldr         $destReg, =_tls_index
         ldr         $destReg, [$destReg]
         mrc         p15, 0, $trashReg, c13, c0, 2
-        ldr         $trashReg,[$trashReg, #__tls_array]
+        ldr         $trashReg, [$trashReg, #__tls_array]
         ldr         $destReg, [$trashReg, $destReg, lsl #2]
-        add         $destReg, #OFFSETOF__TLS__tls_CurrentThread
+        ldr         $trashReg, $__SECTIONREL_tls_CurrentThread
+        add         $destReg, $trashReg
+    MEND
+
+        ;; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
+        ;; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
+        ;; to improve density, or to reduce distance betweeen the constant pool and its use.
+    MACRO
+        INLINE_GETTHREAD_CONSTANT_POOL
+        EXTERN tls_CurrentThread
+
+$__SECTIONREL_tls_CurrentThread
+        DCD tls_CurrentThread
+        RELOC 15 ;; SECREL
+
+__SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
+
     MEND
 
     MACRO
@@ -107,17 +119,16 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 ;; interesting GC references. In all our helper cases this corresponds to the most recent managed frame (e.g.
 ;; the helper's caller).
 ;;
-;; This macro builds a frame describing the current state of managed code and stashes a pointer to this frame
-;; on the current thread, ready to be used if and when the helper needs to transition to pre-emptive mode.
+;; This macro builds a frame describing the current state of managed code.
 ;;
 ;; INVARIANTS
 ;; - The macro assumes it defines the method prolog, it should typically be the first code in a method and
 ;;   certainly appear before any attempt to alter the stack pointer.
-;; - This macro uses r4 and r5 (after their initial values have been saved in the frame) and upon exit r4
-;;   will contain the current Thread*.
+;; - This macro uses trashReg (after its initial value has been saved in the frame) and upon exit trashReg
+;;   will contain the address of transition frame.
 ;;
     MACRO
-        COOP_PINVOKE_FRAME_PROLOG
+        PUSH_COOP_PINVOKE_FRAME $trashReg
 
         PROLOG_STACK_ALLOC 4        ; Save space for caller's SP
         PROLOG_PUSH {r4-r6,r8-r10}  ; Save preserved registers
@@ -126,45 +137,24 @@ DEFAULT_FRAME_SAVE_FLAGS equ PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
         PROLOG_PUSH {r11,lr}        ; Save caller's frame-chain pointer and PC
 
         ; Compute SP value at entry to this method and save it in the last slot of the frame (slot #11).
-        add         r4, sp, #(12 * 4)
-        str         r4, [sp, #(11 * 4)]
+        add         $trashReg, sp, #(12 * 4)
+        str         $trashReg, [sp, #(11 * 4)]
 
         ; Record the bitmask of saved registers in the frame (slot #4).
-        mov         r4, #DEFAULT_FRAME_SAVE_FLAGS
-        str         r4, [sp, #(4 * 4)]
+        mov         $trashReg, #DEFAULT_FRAME_SAVE_FLAGS
+        str         $trashReg, [sp, #(4 * 4)]
 
-        ; Save the current Thread * in the frame (slot #3).
-        INLINE_GETTHREAD r4, r5
-        str         r4, [sp, #(3 * 4)]
-
-        ; Store the frame in the thread
-        str         sp, [r4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        mov         $trashReg, sp
     MEND
 
-;; Pop the frame and restore register state preserved by COOP_PINVOKE_FRAME_PROLOG but don't return to the
-;; caller (typically used when we want to tail call instead).
+;; Pop the frame and restore register state preserved by PUSH_COOP_PINVOKE_FRAME
     MACRO
-        COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
-
-        ;; We do not need to clear m_pHackPInvokeTunnel here because it is 'on the side' information.
-        ;; The actual transition to/from preemptive mode is done elsewhere (EnablePreemptiveMode,
-        ;; DisablePreemptiveMode) and m_pHackPInvokeTunnel need only be valid when that happens,
-        ;; so as long as we always set it on the way into a "cooperative pinvoke" method, we're fine
-        ;; because it is only looked at inside these "cooperative pinvoke" methods.
-
+        POP_COOP_PINVOKE_FRAME
         EPILOG_POP  {r11,lr}        ; Restore caller's frame-chain pointer and PC (return address)
         EPILOG_POP  {r7}            ; Restore caller's FP
         EPILOG_STACK_FREE 8         ; Discard flags and Thread*
         EPILOG_POP  {r4-r6,r8-r10}  ; Restore preserved registers
         EPILOG_STACK_FREE 4         ; Discard caller's SP
-    MEND
-
-;; The same as COOP_PINVOKE_FRAME_EPILOG_NO_RETURN but return to the location specified by the restored LR.
-    MACRO
-        COOP_PINVOKE_FRAME_EPILOG
-
-        COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
-        EPILOG_RETURN
     MEND
 
 
@@ -206,6 +196,25 @@ $Name
 
         MEND
 
+        MACRO
+        EXPORT_POINTER_TO_ADDRESS $Name
+
+1
+
+        AREA        |.rdata|, ALIGN=4, DATA, READONLY
+
+$Name
+
+        DCD         %BT1
+
+        EXPORT      $Name
+
+        TEXTAREA
+
+        ROUT
+
+        MEND
+
 ;-----------------------------------------------------------------------------
 ; Macro used to check (in debug builds only) whether the stack is 64-bit aligned (a requirement before calling
 ; out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
@@ -226,20 +235,24 @@ $Name
 #endif
     MEND
 
+;; Loads a 32bit constant into destination register
+    MACRO
+        MOV32   $destReg, $constant
+
+        movw    $destReg, #(($constant) & 0xFFFF)
+        movt    $destReg, #(($constant) >> 16)
+    MEND
 
 ;;
 ;; CONSTANTS -- SYMBOLS
 ;;
 
-        SETALIAS PALDEBUGBREAK, ?PalDebugBreak@@YAXXZ
-        SETALIAS REDHAWKGCINTERFACE__ALLOC, ?Alloc@RedhawkGCInterface@@SAPAXPAVThread@@IIPAVEEType@@@Z
         SETALIAS G_LOWEST_ADDRESS, g_lowest_address
         SETALIAS G_HIGHEST_ADDRESS, g_highest_address
         SETALIAS G_EPHEMERAL_LOW, g_ephemeral_low
         SETALIAS G_EPHEMERAL_HIGH, g_ephemeral_high
         SETALIAS G_CARD_TABLE, g_card_table
-        SETALIAS THREADSTORE__ATTACHCURRENTTHREAD, ?AttachCurrentThread@ThreadStore@@SAXXZ
-        SETALIAS G_FREE_OBJECT_EETYPE, ?g_pFreeObjectMethodTable@@3PAVMethodTable@@A
+        SETALIAS G_FREE_OBJECT_EETYPE, ?g_pFreeObjectEEType@@3PAVEEType@@A
 #ifdef FEATURE_GC_STRESS
         SETALIAS THREAD__HIJACKFORGCSTRESS, ?HijackForGcStress@Thread@@SAXPAUPAL_LIMITED_CONTEXT@@@Z
         SETALIAS REDHAWKGCINTERFACE__STRESSGC, ?StressGc@RedhawkGCInterface@@SAXXZ
@@ -247,11 +260,11 @@ $Name
 ;;
 ;; IMPORTS
 ;;
-        EXTERN $REDHAWKGCINTERFACE__ALLOC
-        EXTERN $THREADSTORE__ATTACHCURRENTTHREAD
-        EXTERN $PALDEBUGBREAK
-        EXTERN RhpPInvokeWaitEx
-        EXTERN RhpPInvokeReturnWaitEx
+        EXTERN RhpGcAlloc
+        EXTERN RhDebugBreak
+        EXTERN RhpWaitForSuspend2
+        EXTERN RhpWaitForGC2
+        EXTERN RhpReversePInvokeAttachOrTrapThread2
         EXTERN RhExceptionHandling_FailedAllocation
         EXTERN RhpPublishObject
         EXTERN RhpCalculateStackTraceWorker

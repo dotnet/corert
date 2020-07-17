@@ -1,0 +1,99 @@
+<!--
+***********************************************************************************************
+Microsoft.NETCore.Native.Unix.props
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file defines the steps in the build process specific for native AOT compilation.
+
+Licensed to the .NET Foundation under one or more agreements.
+The .NET Foundation licenses this file to you under the MIT license.
+***********************************************************************************************
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+    <CppCompiler>$(CppCompilerAndLinker)</CppCompiler>
+    <CppLinker>$(CppCompilerAndLinker)</CppLinker>
+    <CppLibCreator>ar</CppLibCreator>
+  </PropertyGroup>
+  
+  <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+
+    <PropertyGroup>
+      <NativeLibraryExtension Condition="'$(NativeCodeGen)' != 'wasm'">.a</NativeLibraryExtension>
+      <NativeLibraryExtension Condition="'$(NativeCodeGen)' == 'wasm'">.bc</NativeLibraryExtension>
+      <FullRuntimeName>libRuntime</FullRuntimeName>
+      <FullRuntimeName Condition="'$(ServerGarbageCollection)' != ''">libRuntime.ServerGC</FullRuntimeName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <CppCompilerAndLinkerArg Include="-I $(IlcPath)/inc" />
+      <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="-g -O0" />
+      <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="-O2" />
+      <CppCompilerAndLinkerArg Include="-c -Wno-invalid-offsetof" />
+      <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)/sdk/libbootstrapper.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)/sdk/libbootstrapperdll.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/$(FullRuntimeName).a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libbootstrappercpp.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)/sdk/libPortableRuntime.a" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libbootstrappercpp.bc" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)/sdk/libPortableRuntime.bc" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- libicu loader in System.Globalization.Native is not compatible with static linking -->
+      <IlcArg Include="--removefeature:Globalization" Condition="'$(StaticallyLinked)' == 'true'" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeLibrary Include="$(IlcPath)/sdk/libSystem.Private.CoreLib.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)/sdk/libSystem.Private.TypeLoader.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.Globalization.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.IO.Compression.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.Net.Security.Native$(NativeLibraryExtension)" />
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.Security.Cryptography.Native.Apple$(NativeLibraryExtension)" Condition="'$(TargetOS)' == 'OSX'"/>
+      <NativeLibrary Include="$(IlcPath)/framework/libSystem.Security.Cryptography.Native.OpenSsl$(NativeLibraryExtension)" Condition="'$(TargetOS)' != 'OSX'"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetOS)' == 'OSX'">
+      <NativeFramework Include="CoreFoundation" />
+      <NativeFramework Include="Security" />
+      <NativeFramework Include="GSS" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <LinkerArg Include="@(NativeLibrary)" />
+      <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
+      <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(TargetOS)' != 'OSX'" />
+      <LinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
+      <LinkerArg Include="-Wl,--as-needed" Condition="'$(TargetOS)' != 'OSX'" />
+      <LinkerArg Include="-pthread" Condition="'$(TargetOS)' != 'OSX'" />
+      <LinkerArg Include="-lstdc++" />
+      <LinkerArg Include="-ldl" />
+      <LinkerArg Include="-lm" />
+      <LinkerArg Include="-lz" />
+      <LinkerArg Include="-static" Condition="'$(StaticallyLinked)' == 'true'" />
+      <LinkerArg Include="-lgssapi_krb5" Condition="'$(TargetOS)' != 'OSX' and '$(StaticallyLinked)' != 'true'" />
+      <LinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
+      <LinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
+      <LinkerArg Include="-dynamiclib" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-shared" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
+    </ItemGroup>
+
+    <Exec Command="command -v $(CppLinker)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereLinker"/>
+    </Exec>
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' == 'OSX'" Text="Platform linker ('$(CppLinker)') not found. Try installing Xcode to resolve the problem." />
+    <Error Condition="'$(_WhereLinker)' != '0' and '$(TargetOS)' != 'OSX'" Text="Platform linker ('$(CppLinker)') not found. Try installing $(CppLinker) or the appropriate package for your platform to resolve the problem." />
+  </Target>
+</Project>

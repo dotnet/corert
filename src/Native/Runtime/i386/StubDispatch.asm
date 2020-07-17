@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
         .586
         .model  flat
@@ -13,7 +12,8 @@ include AsmMacros.inc
 
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
-EXTERN @RhpResolveInterfaceMethodCacheMiss@12 : PROC
+EXTERN RhpCidResolve : PROC
+EXTERN _RhpUniversalTransition_DebugStepTailCall@0 : PROC
 
 
 ;; Macro that generates code to check a single cache entry.
@@ -62,7 +62,8 @@ CurrentEntry = CurrentEntry + 1
         ;; eax currently contains the cache block. We need to point it back to the 
         ;; indirection cell using the back pointer in the cache block
         mov     eax, [eax + OFFSETOF__InterfaceDispatchCache__m_pCell]
-        jmp     InterfaceDispatchCacheMiss
+        pop     ebx
+        jmp     RhpInterfaceDispatchSlow
 
     StubName endp
 
@@ -79,83 +80,19 @@ DEFINE_INTERFACE_DISPATCH_STUB 32
 DEFINE_INTERFACE_DISPATCH_STUB 64
 
 ;; Shared out of line helper used on cache misses.
-    InterfaceDispatchCacheMiss proc
+RhpInterfaceDispatchSlow proc
+;; eax points at InterfaceDispatchCell
 
-        ;; Push an ebp frame since it makes some of our later calculations easier.
-        push    ebp
-        mov     ebp, esp
+        ;; Setup call to Universal Transition thunk
+        push        ebp
+        mov         ebp, esp
+        push        eax   ; First argument (Interface Dispatch Cell)
+        lea         eax, [RhpCidResolve]
+        push        eax ; Second argument (RhpCidResolve)
 
-        ;; Save argument registers while we call out to the C++ helper. Note that we depend on these registers
-        ;; (which may contain GC references) being spilled before we build the PInvokeTransitionFrame below
-        ;; due to the way we build a stack range to report to the GC conservatively during a collection.
-        push    ecx
-        push    edx
-
-        ;; Build PInvokeTransitionFrame. This is only required if we end up resolving the interface method via
-        ;; a callout to a managed ICastable method. In that instance we need to be able to cope with garbage
-        ;; collections which in turn need to be able to walk the stack from the ICastable method, skip the
-        ;; unmanaged runtime portions and resume walking at our caller. This frame provides both the means to
-        ;; unwind to that caller and a place to spill callee saved registers in case they contain GC
-        ;; references from the caller.
-
-        ;; Calculate caller's esp: relative to ebp's current value we've pushed the old ebp, ebx and a return
-        ;; address.
-        lea     edx, [ebp + (3 * 4)]
-        push    edx
-
-        ;; Push callee saved registers. Note we've already pushed ebx but we need to do it here again so that
-        ;; it is reported to the GC correctly if necessary. As such it's necessary to pushed the saved version
-        ;; of ebx and make sure when we restore it we use this copy and discard the version that was initially
-        ;; pushed (since its value may now be stale).
-        push    edi
-        push    esi
-        mov     edx, [ebp + 04h]    ; Old RBX value
-        push    edx
-
-        ;; Push flags.
-        push    PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_RSP
-
-        ;; Leave space for the Thread* (stackwalker does not use this).
-        push    0
-
-        ;; The caller's ebp.
-        push    [ebp]
-
-        ;; The caller's eip.
-        push    [ebp + 08h]
-
-        ;; First argument is the instance we're dispatching on which is already in ecx.
-
-        ;; Second argument is the dispatch data cell. 
-        ;; We still have this in eax
-        mov     edx, eax
-
-        ;; The third argument is the address of the transition frame we build above. Currently it's at the top
-        ;; of the stack so esp points to it.
-        push    esp
-
-        call    @RhpResolveInterfaceMethodCacheMiss@12
-
-        ;; Recover callee-saved values from the transition frame in case a GC updated them.
-        mov     ebx, [esp + 010h]
-        mov     esi, [esp + 014h]
-        mov     edi, [esp + 018h]
-
-        ;; Restore real argument registers.
-        mov     edx, [ebp - 08h]
-        mov     ecx, [ebp - 04h]
-
-        ;; Remove the transition and ebp frames from the stack.
-        mov     esp, ebp
-        pop     ebp
-
-        ;; Discard the space where ebx was pushed on entry, its value is now potentially stale.
-        add     esp, 4
-
-        ;; Final target address is in eax.
-        jmp     eax
-
-    InterfaceDispatchCacheMiss endp
+        ;; Jump to Universal Transition
+        jmp         _RhpUniversalTransition_DebugStepTailCall@0
+RhpInterfaceDispatchSlow endp
 
 ;; Out of line helper used when we try to interface dispatch on a null pointer. Sets up the stack so the
 ;; debugger gives a reasonable stack trace.
@@ -166,18 +103,29 @@ RhpInterfaceDispatchNullReference proc public
         int     3
 RhpInterfaceDispatchNullReference endp
 
+;; Stub dispatch routine for dispatch to a vtable slot
+_RhpVTableOffsetDispatch proc public
+        ;; eax currently contains the indirection cell address. We need to update it to point to the vtable offset (which is in the m_pCache field)
+        mov     eax, [eax + OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        ;; add the vtable offset to the EEType pointer 
+        add     eax, [ecx]
+
+        ;; Load the target address of the vtable into eax
+        mov     eax, [eax]
+
+        ;; tail-jump to the target
+        jmp     eax
+_RhpVTableOffsetDispatch endp
+
 
 ;; Initial dispatch on an interface when we don't have a cache yet.
-    RhpInitialInterfaceDispatch proc public
+_RhpInitialInterfaceDispatch proc public
     ALTERNATE_ENTRY RhpInitialDynamicInterfaceDispatch
 
-        ;; Mainly we just tail call to the cache miss helper. But this helper expects that ebx has been pushed
-        ;; on the stack.
-        push    ebx
+        jmp RhpInterfaceDispatchSlow
 
-        jmp InterfaceDispatchCacheMiss
-
-    RhpInitialInterfaceDispatch endp
+_RhpInitialInterfaceDispatch endp
 
 
 endif ;; FEATURE_CACHED_INTERFACE_DISPATCH

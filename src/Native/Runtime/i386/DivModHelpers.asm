@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
 
         .586
@@ -73,16 +72,18 @@ FASTCALL_ENDFUNC
         ;; make it look like the managed code called this directly
         ;; by popping the parameters and putting the return address in the proper place
 ThrowClasslibOverflowException proc
-        pop     eax
+        pop     ecx
         add     esp,16
-        push    eax
+        push    ecx
+        ;; passing return address in ecx
         jmp     RhExceptionHandling_ThrowClasslibOverflowException
 ThrowClasslibOverflowException endp
 
 ThrowClasslibDivideByZeroException proc
-        pop     eax
+        pop     ecx
         add     esp,16
-        push    eax
+        push    ecx
+        ;; passing return address in ecx
         jmp     RhExceptionHandling_ThrowClasslibDivideByZeroException
 ThrowClasslibDivideByZeroException endp
 

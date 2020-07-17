@@ -1,0 +1,49 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ILCompiler</RootNamespace>
+    <AssemblyName>ILCompiler.CppCodeGen</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>netstandard1.6</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILImporter.cs">
+      <Link>IL\ILImporter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\StackValueKind.cs">
+      <Link>IL\StackValueKind.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
+      <Link>Common\FormattingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>Runtime\RuntimeConstants.cs</Link>
+    </Compile>
+    <Compile Include="Compiler\DependencyAnalysis\CppCodegenNodeFactory.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CppMethodCodeNode.cs" />
+    <Compile Include="Compiler\CppNodeMangler.cs" />
+    <Compile Include="Compiler\CppCodegenCompilation.cs" />
+    <Compile Include="Compiler\CppCodegenCompilationBuilder.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\CppUnboxingStubNode.cs" />
+    <Compile Include="CppCodeGen\DependencyNodeIterator.cs" />
+    <Compile Include="CppCodeGen\EvaluationStack.cs" />
+    <Compile Include="CppCodeGen\CppGenerationBuffer.cs" />
+    <Compile Include="CppCodeGen\CppWriter.cs" />
+    <Compile Include="CppCodeGen\NodeDataSection.cs" />
+    <Compile Include="CppCodeGen\ILToCppImporter.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

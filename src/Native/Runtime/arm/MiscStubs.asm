@@ -1,10 +1,8 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
 #include "AsmMacros.h"
 
-    EXTERN RhpShutdownHelper
     EXTERN GetClasslibCCtorCheck
     EXTERN memcpy
     EXTERN memcpyGCRefs
@@ -12,24 +10,6 @@
     EXTERN memcpyAnyWithWriteBarrier
 
     TEXTAREA
-
-;;
-;; Currently called only from a managed executable once Main returns, this routine does whatever is needed to
-;; cleanup managed state before exiting.
-;;
-;;  Input:
-;;      r0 : Process exit code
-;;
-    NESTED_ENTRY RhpShutdown
-
-        COOP_PINVOKE_FRAME_PROLOG
-
-        ;; Call the bulk of the helper implemented in C++. Takes the exit code already in r0.
-        bl      RhpShutdownHelper
-
-        COOP_PINVOKE_FRAME_EPILOG
-
-    NESTED_END RhpShutdown
 
 ;;
 ;; Checks whether the static class constructor for the type indicated by the context structure has been
@@ -116,46 +96,6 @@ RhpCheckCctor__SlowPath
 
     NESTED_END RhpCheckCctor__SlowPath2
 
-;;
-;; Input:
-;;      r0: address of location on stack containing return address.
-;;      
-;; Outpt:
-;;      r0: proper (unhijacked) return address
-;;
-;; Trashes: r1, r2
-;;
-    LEAF_ENTRY RhpLoadReturnAddress
-
-        INLINE_GETTHREAD   r1, r2
-        ldr     r2, [r1, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        cmp     r0, r2
-        beq     GetHijackedReturnAddress
-        ldr     r0, [r0]
-        bx      lr
-
-GetHijackedReturnAddress
-        ldr     r0, [r1, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        bx      lr
-
-    LEAF_END RhpLoadReturnAddress
-
-
-    ;;
-    ;; r0 = output buffer (an IntPtr[] managed object)
-    ;;
-    NESTED_ENTRY RhGetCurrentThreadStackTrace
-
-        COOP_PINVOKE_FRAME_PROLOG
-
-        ;; pass-through argument registers
-        bl          RhpCalculateStackTraceWorker
-
-        nop     ; debugger bug workaround, this fixes the stack trace
-
-        COOP_PINVOKE_FRAME_EPILOG
-
-    NESTED_END RhGetCurrentThreadStackTrace
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;

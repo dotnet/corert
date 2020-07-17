@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Helper functions that are p/invoked from redhawkm in order to expose handle table functionality to managed
@@ -13,21 +12,22 @@
 #include "gcenv.h"
 #include "objecthandle.h"
 #include "RestrictedCallouts.h"
+#include "gchandleutilities.h"
 
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAlloc, (Object *pObject, int type))
 {
-    return CreateTypedHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pObject, type);
+    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType(pObject, (HandleType)type);
 }
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAllocDependent, (Object *pPrimary, Object *pSecondary))
 {
-    return CreateDependentHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pPrimary, pSecondary);
+    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateDependentHandle(pPrimary, pSecondary);
 }
 
 COOP_PINVOKE_HELPER(void, RhHandleFree, (OBJECTHANDLE handle))
 {
-    DestroyTypedHandle(handle);
+    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
 }
 
 COOP_PINVOKE_HELPER(Object *, RhHandleGet, (OBJECTHANDLE handle))
@@ -37,8 +37,9 @@ COOP_PINVOKE_HELPER(Object *, RhHandleGet, (OBJECTHANDLE handle))
 
 COOP_PINVOKE_HELPER(Object *, RhHandleGetDependent, (OBJECTHANDLE handle, Object **ppSecondary))
 {
-    *ppSecondary = GetDependentHandleSecondary(handle);
-    return ObjectFromHandle(handle);
+    Object *pPrimary = ObjectFromHandle(handle);
+    *ppSecondary = (pPrimary != NULL) ? GetDependentHandleSecondary(handle) : NULL;
+    return pPrimary;
 }
 
 COOP_PINVOKE_HELPER(void, RhHandleSetDependentSecondary, (OBJECTHANDLE handle, Object *pSecondary))
@@ -48,7 +49,7 @@ COOP_PINVOKE_HELPER(void, RhHandleSetDependentSecondary, (OBJECTHANDLE handle, O
 
 COOP_PINVOKE_HELPER(void, RhHandleSet, (OBJECTHANDLE handle, Object *pObject))
 {
-    StoreObjectInHandle(handle, pObject);
+    GCHandleUtilities::GetGCHandleManager()->StoreObjectInHandle(handle, pObject);
 }
 
 COOP_PINVOKE_HELPER(Boolean, RhRegisterRefCountedHandleCallback, (void * pCallout, EEType * pTypeFilter))
@@ -63,7 +64,7 @@ COOP_PINVOKE_HELPER(void, RhUnregisterRefCountedHandleCallback, (void * pCallout
 
 COOP_PINVOKE_HELPER(OBJECTHANDLE, RhpHandleAllocVariable, (Object * pObject, UInt32 type)) 
 {
-    return CreateVariableHandle(g_HandleTableMap.pBuckets[0]->pTable[GetCurrentThreadHomeHeapNumber()], pObject, type);
+    return GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleWithExtraInfo(pObject, HNDTYPE_VARIABLE, (void*)((uintptr_t)type));
 }
 
 COOP_PINVOKE_HELPER(UInt32, RhHandleGetVariableType, (OBJECTHANDLE handle))

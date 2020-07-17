@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -10,9 +10,9 @@ using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
 {
-    public abstract partial class TypeSystemContext
+    public abstract partial class TypeSystemContext : IModuleResolver
     {
-        public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown))
+        public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown, TargetAbi.Unknown))
         {
         }
 
@@ -28,6 +28,8 @@ namespace Internal.TypeSystem
 
             _pointerTypes = new PointerHashtable();
 
+            _functionPointerTypes = new FunctionPointerHashtable();
+
             _instantiatedMethods = new InstantiatedMethodKey.InstantiatedMethodKeyHashtable();
 
             _methodForInstantiatedTypes = new MethodForInstantiatedTypeKey.MethodForInstantiatedTypeKeyHashtable();
@@ -39,7 +41,7 @@ namespace Internal.TypeSystem
 
         public TargetDetails Target
         {
-            get; private set;
+            get;
         }
 
         public ModuleDesc SystemModule
@@ -54,7 +56,7 @@ namespace Internal.TypeSystem
             SystemModule = systemModule;
         }
 
-        public abstract DefType GetWellKnownType(WellKnownType wellKnownType);
+        public abstract DefType GetWellKnownType(WellKnownType wellKnownType, bool throwIfNotFound = true);
 
         public virtual ModuleDesc ResolveAssembly(AssemblyName name, bool throwIfNotFound = true)
         {
@@ -63,9 +65,16 @@ namespace Internal.TypeSystem
             return null;
         }
 
-        public virtual bool IsWellKnownType(TypeDesc type, WellKnownType wellKnownType)
+        internal virtual ModuleDesc ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound = true)
         {
-            return type == GetWellKnownType(wellKnownType);
+            if (throwIfNotFound)
+                throw new NotSupportedException();
+            return null;
+        }
+
+        ModuleDesc IModuleResolver.ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound)
+        {
+            return ResolveModule(referencingModule, fileName, throwIfNotFound);
         }
 
         //
@@ -125,8 +134,8 @@ namespace Internal.TypeSystem
                     if (key._elementType != value.ElementType)
                         return false;
 
-                    if ((key._rank == -1) && value.IsSzArray)
-                        return true;
+                    if (value.IsSzArray)
+                        return key._rank == -1;
 
                     return key._rank == value.Rank;
                 }
@@ -224,6 +233,44 @@ namespace Internal.TypeSystem
         public PointerType GetPointerType(TypeDesc parameterType)
         {
             return _pointerTypes.GetOrCreateValue(parameterType);
+        }
+
+        //
+        // Function pointer types
+        //
+        public class FunctionPointerHashtable : LockFreeReaderHashtable<MethodSignature, FunctionPointerType>
+        {
+            protected override int GetKeyHashCode(MethodSignature key)
+            {
+                return key.GetHashCode();
+            }
+
+            protected override int GetValueHashCode(FunctionPointerType value)
+            {
+                return value.Signature.GetHashCode();
+            }
+
+            protected override bool CompareKeyToValue(MethodSignature key, FunctionPointerType value)
+            {
+                return key.Equals(value.Signature);
+            }
+
+            protected override bool CompareValueToValue(FunctionPointerType value1, FunctionPointerType value2)
+            {
+                return value1.Signature.Equals(value2.Signature);
+            }
+
+            protected override FunctionPointerType CreateValueFromKey(MethodSignature key)
+            {
+                return new FunctionPointerType(key);
+            }
+        }
+
+        private FunctionPointerHashtable _functionPointerTypes;
+
+        public FunctionPointerType GetFunctionPointerType(MethodSignature signature)
+        {
+            return _functionPointerTypes.GetOrCreateValue(signature);
         }
 
         //
@@ -409,9 +456,7 @@ namespace Internal.TypeSystem
 
                 protected override InstantiatedMethod CreateValueFromKey(InstantiatedMethodKey key)
                 {
-                    InstantiatedMethod returnValue = new InstantiatedMethod(key.MethodDef, key.Instantiation);
-                    returnValue.SetHashCode(key._hashcode);
-                    return returnValue;
+                    return new InstantiatedMethod(key.MethodDef, key.Instantiation, key._hashcode);
                 }
             }
         }
@@ -484,9 +529,7 @@ namespace Internal.TypeSystem
 
                 protected override MethodForInstantiatedType CreateValueFromKey(MethodForInstantiatedTypeKey key)
                 {
-                    MethodForInstantiatedType returnValue = new MethodForInstantiatedType(key.TypicalMethodDef, key.InstantiatedType);
-                    returnValue.SetHashCode(key._hashcode);
-                    return returnValue;
+                    return new MethodForInstantiatedType(key.TypicalMethodDef, key.InstantiatedType, key._hashcode);
                 }
             }
         }
@@ -629,6 +672,11 @@ namespace Internal.TypeSystem
             return _signatureVariables.GetOrCreateValue(combinedIndex);
         }
 
+        protected internal virtual IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
+        {
+            return type.GetMethods();
+        }
+
         /// <summary>
         /// Abstraction to allow the type system context to affect the field layout
         /// algorithm used by types to lay themselves out.
@@ -645,14 +693,15 @@ namespace Internal.TypeSystem
         /// </summary>
         public RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForType(TypeDesc type)
         {
-            if (type is DefType)
+            if (type.IsDefType)
             {
                 return GetRuntimeInterfacesAlgorithmForDefType((DefType)type);
             }
-            else if (type is ArrayType)
+            else if (type.IsArray)
             {
                 ArrayType arrType = (ArrayType)type;
-                if (arrType.IsSzArray && !arrType.ElementType.IsPointer)
+                TypeDesc elementType = arrType.ElementType;
+                if (arrType.IsSzArray && !elementType.IsPointer && !elementType.IsFunctionPointer)
                 {
                     return GetRuntimeInterfacesAlgorithmForNonPointerArrayType((ArrayType)type);
                 }
@@ -691,10 +740,73 @@ namespace Internal.TypeSystem
             throw new NotSupportedException();
         }
 
-        public virtual VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
+        // Abstraction to allow different runtimes to have different policy about which fields are 
+        // in the GC static region, and which are not
+        protected internal virtual bool ComputeHasGCStaticBase(FieldDesc field)
         {
             // Type system contexts that support this need to override this.
             throw new NotSupportedException();
         }
+
+        /// <summary>
+        /// TypeSystemContext controlled type flags computation. This allows computation of flags which depend
+        /// on the particular TypeSystemContext in use
+        /// </summary>
+        internal TypeFlags ComputeTypeFlags(TypeDesc type, TypeFlags flags, TypeFlags mask)
+        {
+            // If we are looking to compute HasStaticConstructor, and we haven't yet assigned a value
+            if ((mask & TypeFlags.HasStaticConstructorComputed) == TypeFlags.HasStaticConstructorComputed)
+            {
+                TypeDesc typeDefinition = type.GetTypeDefinition();
+                
+                if (typeDefinition != type)
+                {
+                    // If the type definition is different, the code was working with an instantiated generic or some such.
+                    // In that case, just query the HasStaticConstructor property, as it can cache the answer
+                    if (typeDefinition.HasStaticConstructor)
+                        flags |= TypeFlags.HasStaticConstructor;
+                }
+                else
+                {
+                    if (ComputeHasStaticConstructor(typeDefinition))
+                    {
+                        flags |= TypeFlags.HasStaticConstructor;
+                    }
+                }
+
+                flags |= TypeFlags.HasStaticConstructorComputed;
+            }
+
+            // We are looking to compute IsIDynamicInterfaceCastable and we haven't yet assigned a value
+            if ((mask & TypeFlags.IsIDynamicInterfaceCastableComputed) == TypeFlags.IsIDynamicInterfaceCastableComputed)
+            {
+                TypeDesc typeDefinition = type.GetTypeDefinition();
+                if (!typeDefinition.IsValueType)
+                {
+                    foreach (DefType interfaceType in typeDefinition.RuntimeInterfaces)
+                    {
+                        if (IsIDynamicInterfaceCastableInterface(interfaceType))
+                        {
+                            flags |= TypeFlags.IsIDynamicInterfaceCastable;
+                            break;
+                        }
+                    }
+                }
+
+                flags |= TypeFlags.IsIDynamicInterfaceCastableComputed;
+            }
+
+            return flags;
+        }
+
+        /// <summary>
+        /// Algorithm to control which types are considered to have static constructors
+        /// </summary>
+        protected internal abstract bool ComputeHasStaticConstructor(TypeDesc type);
+
+        /// <summary>
+        /// Determine if the type implements <code>IDynamicInterfaceCastable</code>
+        /// </summary>
+        protected internal abstract bool IsIDynamicInterfaceCastableInterface(DefType type);
     }
 }

@@ -1,0 +1,53 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <NativeLib>Static</NativeLib>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
+
+  <Target Name="NativeRunnerCompile" AfterTargets="LinkNative">
+    <PropertyGroup>
+      <NativeRunnerBinary>$(NativeOutputPath)StaticLibraryTest</NativeRunnerBinary>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <CppCompile Include="StaticLibrary.cpp" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeRunnerCompilerArg Include="@(CppCompile)" />
+      <NativeRunnerCompilerArg Include="-o $(NativeRunnerBinary)" Condition="'$(OS)' != 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="/Fo$(NativeRunnerBinary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="/Fe$(NativeRunnerBinary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="$(NativeBinary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="@(NativeLibrary)" Condition="'$(OS)' == 'Windows_NT'" />
+      <NativeRunnerCompilerArg Include="/MTd" Condition="'$(OS)' == 'Windows_NT' and '$(Configuration)' == 'Debug'" />
+      <NativeRunnerCompilerArg Include="/MT" Condition="'$(OS)' == 'Windows_NT' and '$(Configuration)' != 'Debug'" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeRunnerLinkerArg Include="@(NativeLibrary)" />
+      <NativeRunnerLinkerArg Include="-g" />
+      <NativeRunnerLinkerArg Include="-Wl,-rpath,'$ORIGIN'" />
+      <NativeRunnerLinkerArg Include="-pthread" />
+      <NativeRunnerLinkerArg Include="-lstdc++" />
+      <NativeRunnerLinkerArg Include="-ldl" />
+      <NativeRunnerLinkerArg Include="-lm" />
+      <NativeRunnerLinkerArg Include="-lcurl" />
+      <NativeRunnerLinkerArg Include="-lz" />
+      <NativeRunnerLinkerArg Include="-lrt" Condition="'$(TargetOS)' != 'OSX'" />
+      <NativeRunnerLinkerArg Include="-licucore" Condition="'$(TargetOS)' == 'OSX'" />
+    </ItemGroup>
+
+    <Exec Command="$(CppCompiler) @(NativeRunnerCompilerArg, ' ') $(NativeBinary) @(NativeRunnerLinkerArg, ' ')" Condition="'$(OS)' != 'Windows_NT'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)StaticLibrary.cl.rsp" Lines="@(NativeRunnerCompilerArg)" Overwrite="true"  Condition="'$(OS)' == 'Windows_NT'"/>
+    <Exec Command="$(CppCompiler) @&quot;$(NativeIntermediateOutputPath)StaticLibrary.cl.rsp&quot;" Condition="'$(OS)' == 'Windows_NT'" />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
+
+</Project>

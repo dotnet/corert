@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __COMMON_TYPES_H__
 #define __COMMON_TYPES_H__
@@ -18,14 +17,14 @@ using std::intptr_t;
 //
 // These type names are chosen to match the C# types
 //
-typedef signed char         Int8;
-typedef signed short        Int16;
-typedef signed int          Int32;
-typedef signed __int64      Int64;
-typedef unsigned char       UInt8;
-typedef unsigned short      UInt16;
-typedef unsigned int        UInt32;
-typedef unsigned __int64    UInt64;
+typedef int8_t              Int8;
+typedef int16_t             Int16;
+typedef int32_t             Int32;
+typedef int64_t             Int64;
+typedef uint8_t             UInt8;
+typedef uint16_t            UInt16;
+typedef uint32_t            UInt32;
+typedef uint64_t            UInt64;
 typedef intptr_t            IntNative;  // intentional deviation from C# IntPtr
 typedef uintptr_t           UIntNative; // intentional deviation from C# UIntPtr
 typedef wchar_t             WCHAR;

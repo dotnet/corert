@@ -1,0 +1,37 @@
+﻿<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Private.Interpreter</AssemblyName>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Framework\Framework.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+    </ProjectReference>
+    <ReferencePath Include="$(FrameworkReferencePath)\System.Runtime.dll" />
+    <ReferencePath Include="$(FrameworkReferencePath)\System.Runtime.Extensions.dll" />
+    <ReferencePath Include="$(FrameworkReferencePath)\System.Collections.Immutable.dll" />
+    <ReferencePath Include="$(FrameworkReferencePath)\System.Reflection.Metadata.dll" />
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
+    <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\EcmaMethodIL.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\ILReader.cs" />
+    <Compile Include="..\..\Common\src\TypeSystem\IL\StackValueKind.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\LowLevelStack.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+    <Compile Include="Internal\Runtime\Interpreter\StackItem.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Runtime\Interpreter\ILInterpreter.cs" />
+    <Compile Include="Internal\Runtime\Interpreter\InterpreterCallInterceptor.cs" />
+    <Compile Include="Internal\Runtime\Interpreter\InterpreterExecutionStrategy.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

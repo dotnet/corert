@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+
 using Internal.NativeFormat;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -61,17 +63,19 @@ namespace Internal.TypeSystem
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
-            throw new NotImplementedException();
+            TypeFlags flags = 0;
+
+            if ((mask & TypeFlags.CategoryMask) != 0)
+            {
+                flags |= TypeFlags.SignatureTypeVariable;
+            }
+
+            return flags;
         }
 
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             return typeInstantiation.IsNull ? this : typeInstantiation[Index];
-        }
-
-        public override string ToString()
-        {
-            return "!" + Index.ToString();
         }
     }
 
@@ -96,17 +100,19 @@ namespace Internal.TypeSystem
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
-            throw new NotImplementedException();
+            TypeFlags flags = 0;
+
+            if ((mask & TypeFlags.CategoryMask) != 0)
+            {
+                flags |= TypeFlags.SignatureMethodVariable;
+            }
+
+            return flags;
         }
 
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
             return methodInstantiation.IsNull ? this : methodInstantiation[Index];
-        }
-
-        public override string ToString()
-        {
-            return "!!" + Index.ToString();
         }
     }
 }

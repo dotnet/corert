@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 
@@ -56,7 +55,7 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public class String
     {
-#if BIT64
+#if TARGET_64BIT
         private const int POINTER_SIZE = 8;
 #else
         private const int POINTER_SIZE = 4;
@@ -72,7 +71,7 @@ namespace System
 
 #pragma warning restore
 
-        internal int Length
+        public int Length
         {
             get
             {

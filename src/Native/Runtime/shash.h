@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // SHash is a templated closed chaining hash table of pointers.  It provides
 // for multiple entries under the same key, and also for deleting elements.
@@ -70,6 +69,8 @@
 //                                              in that there may be more copies of the template instantiated through 
 //                                              the system as different variants are used.
 
+#ifndef __shash_h__
+#define __shash_h__
 
 // disable the "Conditional expression is constant" warning
 #pragma warning(push)
@@ -630,3 +631,4 @@ public:
 // restore "Conditional expression is constant" warning to previous value
 #pragma warning(pop)
 
+#endif // __shash_h__

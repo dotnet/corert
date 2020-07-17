@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -30,19 +29,26 @@ namespace ILCompiler.Metadata
 
                 // TODO-NICE: We can intern the attributes based on the CA constructor and blob bytes
 
-                Cts.MethodDesc constructor = module.GetMethod(attribute.Constructor);
-                var decodedValue = attribute.DecodeValue(attributeTypeProvider);
+                try
+                {
+                    Cts.MethodDesc constructor = module.GetMethod(attribute.Constructor);
+                    var decodedValue = attribute.DecodeValue(attributeTypeProvider);
 
-                if (IsBlockedCustomAttribute(constructor, decodedValue))
-                    continue;
+                    if (IsBlockedCustomAttribute(constructor, decodedValue))
+                        continue;
 
-                customAttributes.Add(HandleCustomAttribute(constructor, decodedValue));
+                    customAttributes.Add(HandleCustomAttribute(constructor, decodedValue));
+                }
+                catch (Cts.TypeSystemException)
+                {
+                    // TODO: We should emit unresolvable custom attributes instead of skipping these
+                }
             }
 
             return customAttributes;
         }
 
-        private CustomAttribute HandleCustomAttribute(Cts.MethodDesc constructor, Ecma.Decoding.CustomAttributeValue<Cts.TypeDesc> decodedValue)
+        private CustomAttribute HandleCustomAttribute(Cts.MethodDesc constructor, Ecma.CustomAttributeValue<Cts.TypeDesc> decodedValue)
         {
             CustomAttribute result = new CustomAttribute
             {
@@ -110,6 +116,11 @@ namespace ILCompiler.Metadata
                     return new ConstantUInt64Value { Value = (ulong)value };
             }
 
+            if (value == null)
+            {
+                return new ConstantReferenceValue();
+            }
+
             if (type.IsString)
             {
                 return HandleString((string)value);
@@ -119,12 +130,7 @@ namespace ILCompiler.Metadata
             {
                 return HandleCustomAttributeConstantArray(
                     (Cts.ArrayType)type,
-                    (ImmutableArray<Ecma.Decoding.CustomAttributeTypedArgument<Cts.TypeDesc>>)value);
-            }
-
-            if (value == null)
-            {
-                return new ConstantReferenceValue();
+                    (ImmutableArray<Ecma.CustomAttributeTypedArgument<Cts.TypeDesc>>)value);
             }
 
             Debug.Assert(value is Cts.TypeDesc);
@@ -136,11 +142,21 @@ namespace ILCompiler.Metadata
         }
 
         private MetadataRecord HandleCustomAttributeConstantArray(
-            Cts.ArrayType type, ImmutableArray<Ecma.Decoding.CustomAttributeTypedArgument<Cts.TypeDesc>> value)
+            Cts.ArrayType type, ImmutableArray<Ecma.CustomAttributeTypedArgument<Cts.TypeDesc>> value)
         {
             Cts.TypeDesc elementType = type.ElementType;
 
-            switch (elementType.UnderlyingType.Category)
+            if (elementType.IsEnum)
+            {
+                Cts.TypeSystemContext context = type.Context;
+                return new ConstantEnumArray
+                {
+                    ElementType = HandleType(elementType),
+                    Value = HandleCustomAttributeConstantArray(context.GetArrayType(elementType.UnderlyingType), value),
+                };
+            }
+
+            switch (elementType.Category)
             {
                 case Cts.TypeFlags.Boolean:
                     return new ConstantBooleanArray { Value = GetCustomAttributeConstantArrayElements<bool>(value) };
@@ -170,7 +186,15 @@ namespace ILCompiler.Metadata
 
             if (elementType.IsString)
             {
-                return new ConstantStringArray { Value = GetCustomAttributeConstantArrayElements<string>(value) };
+                var record = new ConstantStringArray();
+                record.Value.Capacity = value.Length;
+                foreach (var element in value)
+                {
+                    MetadataRecord elementRecord = element.Value == null ?
+                        (MetadataRecord)new ConstantReferenceValue() : HandleString((string)element.Value);
+                    record.Value.Add(elementRecord);
+                }
+                return record;
             }
 
             var result = new ConstantHandleArray();
@@ -192,7 +216,7 @@ namespace ILCompiler.Metadata
             return result;
         }
 
-        private bool IsBlockedCustomAttribute(Cts.MethodDesc constructor, Ecma.Decoding.CustomAttributeValue<Cts.TypeDesc> decodedValue)
+        private bool IsBlockedCustomAttribute(Cts.MethodDesc constructor, Ecma.CustomAttributeValue<Cts.TypeDesc> decodedValue)
         {
             if (IsBlocked(constructor.OwningType))
                 return true;
@@ -217,10 +241,15 @@ namespace ILCompiler.Metadata
 
         private bool IsBlockedCustomAttributeConstantValue(Cts.TypeDesc type, object value)
         {
+            if (value == null)
+            {
+                return false;
+            }
+
             if (type.IsSzArray)
             {
                 var arrayType = (Cts.ArrayType)type;
-                var arrayValue = (ImmutableArray<Ecma.Decoding.CustomAttributeTypedArgument<Cts.TypeDesc>>)value;
+                var arrayValue = (ImmutableArray<Ecma.CustomAttributeTypedArgument<Cts.TypeDesc>>)value;
 
                 if (arrayType.ElementType.UnderlyingType.IsPrimitive || arrayType.ElementType.IsString)
                     return false;
@@ -244,7 +273,7 @@ namespace ILCompiler.Metadata
             return false;
         }
 
-        private static TValue[] GetCustomAttributeConstantArrayElements<TValue>(ImmutableArray<Ecma.Decoding.CustomAttributeTypedArgument<Cts.TypeDesc>> value)
+        private static TValue[] GetCustomAttributeConstantArrayElements<TValue>(ImmutableArray<Ecma.CustomAttributeTypedArgument<Cts.TypeDesc>> value)
         {
             TValue[] result = new TValue[value.Length];
             for (int i = 0; i < value.Length; i++)

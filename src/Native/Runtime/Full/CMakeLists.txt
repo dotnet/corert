@@ -7,7 +7,14 @@ include_directories(..)
 include_directories(../../gc)
 include_directories(../../gc/env)
 
+add_definitions(-DFEATURE_RX_THUNKS)
+
 add_library(Runtime STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM})
+
+add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES})
+
+target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
+
 
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
@@ -27,14 +34,22 @@ endif()
 add_custom_command(
     # The AsmOffsets.cs is consumed later by the managed build
     TARGET Runtime
-	COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
+    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
     DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
 )
 
-add_custom_target(AsmOffsets
-	COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${RUNTIME_DIR}" -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
+add_custom_command(
+    COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${RUNTIME_DIR}" -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
     DEPENDS "${ASM_OFFSETS_CPP}" "${RUNTIME_DIR}/AsmOffsets.h"
     COMMENT "Generating AsmOffsets.inc"
+)
+
+set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc" PROPERTIES GENERATED TRUE)
+
+add_custom_target(
+  AsmOffsets
+  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
 )
 
 # The AsmOffsets.inc will be built as a dependency of the Runtime
@@ -62,7 +77,8 @@ foreach(CONFIG IN LISTS CMAKE_CONFIGURATION_TYPES)
 endforeach()
 
 # Install the static Runtime library
-install (TARGETS Runtime DESTINATION lib)
+install (TARGETS Runtime Runtime.ServerGC DESTINATION sdk)
 if(WIN32)
-    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Runtime.dir/$<CONFIG>/Runtime.pdb DESTINATION lib)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Runtime.dir/$<CONFIG>/Runtime.pdb DESTINATION sdk)
+    install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Runtime.ServerGC.dir/$<CONFIG>/Runtime.ServerGC.pdb DESTINATION sdk)
 endif()

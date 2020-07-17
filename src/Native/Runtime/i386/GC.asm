@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
 ;;
 ;; Unmanaged helpers used by the managed System.GC class.
@@ -21,6 +20,7 @@ FASTCALL_FUNC getcpuid, 8
         push    esi
         mov     esi, edx
         mov     eax, ecx
+        xor     ecx, ecx
         cpuid
         mov     [esi+ 0], eax
         mov     [esi+ 4], ebx

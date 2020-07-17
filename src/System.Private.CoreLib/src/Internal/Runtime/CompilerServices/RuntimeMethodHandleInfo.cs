@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -10,13 +9,12 @@ using System.Diagnostics;
 
 namespace Internal.Runtime.CompilerServices
 {
-    [System.Runtime.CompilerServices.DependencyReductionRoot]
     public class MethodNameAndSignature
     {
         public string Name { get; private set; }
-        public IntPtr Signature { get; private set; }
+        public RuntimeSignature Signature { get; private set; }
 
-        public MethodNameAndSignature(string name, IntPtr signature)
+        public MethodNameAndSignature(string name, RuntimeSignature signature)
         {
             Name = name;
             Signature = signature;
@@ -34,12 +32,7 @@ namespace Internal.Runtime.CompilerServices
             if (Name != other.Name)
                 return false;
 
-            // Optimistically compare signatures by pointer first
-            if (Signature == other.Signature)
-                return true;
-
-            // Walk both signatures to check for equality the slow way
-            return RuntimeAugments.TypeLoaderCallbacks.CompareMethodSignatures(Signature, other.Signature);
+            return Signature.Equals(other.Signature);
         }
 
         public override int GetHashCode()
@@ -54,7 +47,7 @@ namespace Internal.Runtime.CompilerServices
     [CLSCompliant(false)]
     public unsafe struct RuntimeMethodHandleInfo
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]                    
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2111:PointersShouldNotBeVisible")]
         public IntPtr NativeLayoutInfoSignature;
 
         public static unsafe RuntimeMethodHandle InfoToHandle(RuntimeMethodHandleInfo* info)

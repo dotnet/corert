@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #pragma warning disable 169
@@ -64,7 +63,7 @@ namespace Internal.Metadata.NativeFormat
         MaxValue = 0xFFFF,
     }
 
-    public partial struct Handle : IHandle
+    public partial struct Handle
     {
         public override bool Equals(Object obj)
         {
@@ -132,12 +131,24 @@ namespace Internal.Metadata.NativeFormat
             return reader.IsNull(this);
         }
 
+        public int ToIntToken()
+        {
+            return _value;
+        }
+
+        public static Handle FromIntToken(int value)
+        {
+            return new Handle(value);
+        }
+
         internal int _value;
 
+#if DEBUG
         public override string ToString()
         {
             return String.Format("{1} : {0,8:X8}", _value, Enum.GetName(typeof(HandleType), this.HandleType));
         }
+#endif
     }
 
     public static class NativeFormatReaderExtensions
@@ -167,7 +178,7 @@ namespace Internal.Metadata.NativeFormat
         }
     }
 
-    public sealed partial class MetadataReader : IMetadataReader
+    public sealed partial class MetadataReader
     {
         private MetadataHeader _header;
 
@@ -186,7 +197,7 @@ namespace Internal.Metadata.NativeFormat
         /// Used as the root entrypoint for metadata, this is where all top-down
         /// structural walks of metadata must start.
         /// </summary>
-        public IEnumerable<ScopeDefinitionHandle> ScopeDefinitions
+        public ScopeDefinitionHandleCollection ScopeDefinitions
         {
             get
             {
@@ -240,7 +251,7 @@ namespace Internal.Metadata.NativeFormat
         /// <summary>
         /// The set of ScopeDefinitions contained within this metadata resource.
         /// </summary>
-        public ScopeDefinitionHandle[] ScopeDefinitions;
+        public ScopeDefinitionHandleCollection ScopeDefinitions;
 
         public void Decode(NativeReader reader)
         {

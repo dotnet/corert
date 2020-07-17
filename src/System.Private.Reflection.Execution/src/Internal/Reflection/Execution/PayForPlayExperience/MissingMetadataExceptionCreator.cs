@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using global::System;
 using global::System.Text;
@@ -8,11 +7,8 @@ using global::System.Reflection;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
 
-using global::Internal.Metadata.NativeFormat;
-
 using global::Internal.Runtime.Augments;
 
-using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
 
 namespace Internal.Reflection.Execution.PayForPlayExperience
@@ -65,7 +61,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
         internal static MissingMetadataException CreateMissingArrayTypeException(Type elementType, bool isMultiDim, int rank)
         {
             Debug.Assert(rank == 1 || isMultiDim);
-            String s = CreateArrayTypeStringIfAvailable(elementType, isMultiDim, rank);
+            String s = CreateArrayTypeStringIfAvailable(elementType, rank);
             return CreateFromString(s);
         }
 
@@ -116,7 +112,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     bool first = true;
 
                     // write out generic parameters
-                    if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
+                    if (method.IsConstructedGenericMethod)
                     {
                         first = true;
                         friendlyName.Append('<');
@@ -134,7 +130,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     // write out actual parameters
                     friendlyName.Append('(');
                     first = true;
-                    foreach (ParameterInfo parameter in method.GetParameters())
+                    foreach (ParameterInfo parameter in method.GetParametersNoCopy())
                     {
                         if (!first)
                             friendlyName.Append(',');
@@ -168,33 +164,20 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
 
         internal static String ToDisplayStringIfAvailable(this Type type, List<int> genericParameterOffsets)
         {
-            RuntimeTypeHandle runtimeTypeHandle = RuntimeAugments.GetTypeHandleIfAvailable(type);
+            RuntimeTypeHandle runtimeTypeHandle = ReflectionCoreExecution.ExecutionDomain.GetTypeHandleIfAvailable(type);
             bool hasRuntimeTypeHandle = !runtimeTypeHandle.Equals(default(RuntimeTypeHandle));
 
             if (type.HasElementType)
             {
                 if (type.IsArray)
                 {
-                    int rank = type.GetArrayRank();
-                    if (rank == 1)
-                    {
-                        // Multidims of rank 1 are not supported on Project N so we can safely assume this is not the multidim case.
-                        // Unfortunately, I can't assert it here because Reflection doesn't have any api to distinguish these cases.
-                        return CreateArrayTypeStringIfAvailable(type.GetElementType(), false, 1);
-                    }
-                    else
-                    {
-                        // Multidim arrays. This is the one case where GetElementType() isn't pay-for-play safe so 
-                        // talk to the diagnostic mapping tables directly if possible or give up.
-                        if (!hasRuntimeTypeHandle)
-                            return null;
+                    // Multidim arrays. This is the one case where GetElementType() isn't pay-for-play safe so 
+                    // talk to the diagnostic mapping tables directly if possible or give up.
+                    if (!hasRuntimeTypeHandle)
+                        return null;
 
-                        RuntimeTypeHandle elementTypeHandle;
-                        if (!DiagnosticMappingTables.TryGetMultiDimArrayTypeElementType(runtimeTypeHandle, rank, out elementTypeHandle))
-                            return null;
-                        Type elementType = Type.GetTypeFromHandle(elementTypeHandle);
-                        return CreateArrayTypeStringIfAvailable(elementType, true, rank);
-                    }
+                    int rank = type.GetArrayRank();
+                    return CreateArrayTypeStringIfAvailable(type.GetElementType(), rank);
                 }
                 else
                 {
@@ -213,8 +196,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                     RuntimeTypeHandle genericTypeDefinitionHandle;
                     RuntimeTypeHandle[] genericTypeArgumentHandles;
 
-                    if (!DiagnosticMappingTables.TryGetConstructedGenericTypeComponents(runtimeTypeHandle, out genericTypeDefinitionHandle, out genericTypeArgumentHandles))
-                        return null;
+                    genericTypeDefinitionHandle = RuntimeAugments.GetGenericInstantiation(runtimeTypeHandle, out genericTypeArgumentHandles);
                     genericTypeDefinition = Type.GetTypeFromHandle(genericTypeDefinitionHandle);
                     genericTypeArguments = new Type[genericTypeArgumentHandles.Length];
                     for (int i = 0; i < genericTypeArguments.Length; i++)
@@ -246,15 +228,11 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
             }
         }
 
-        private static String CreateArrayTypeStringIfAvailable(Type elementType, bool isMultiDim, int rank)
+        private static String CreateArrayTypeStringIfAvailable(Type elementType, int rank)
         {
-            Debug.Assert(rank == 1 || isMultiDim);
             String s = elementType.ToDisplayStringIfAvailable(null);
             if (s == null)
                 return null;
-
-            if (isMultiDim && rank != 2)
-                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_NoMultiDims, rank));
 
             return s + "[" + new String(',', rank - 1) + "]";  // This does not bother to display multidims of rank 1 correctly since we bail on that case in the prior statement.
         }

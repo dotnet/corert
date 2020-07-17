@@ -1,19 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
+using Internal.Text;
+using Internal.TypeSystem;
+
 namespace ILCompiler.DependencyAnalysis
 {
-    public class BlobNode : ObjectNode, ISymbolNode
+    public class BlobNode : ObjectNode, ISymbolDefinitionNode
     {
-        private string _name;
+        private Utf8String _name;
         private ObjectNodeSection _section;
         private byte[] _data;
         private int _alignment;
 
-        public BlobNode(string name, ObjectNodeSection section, byte[] data, int alignment)
+        public BlobNode(Utf8String name, ObjectNodeSection section, byte[] data, int alignment)
         {
             _name = name;
             _section = section;
@@ -21,46 +23,30 @@ namespace ILCompiler.DependencyAnalysis
             _alignment = alignment;
         }
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return _section;
-            }
-        }
+        public override ObjectNodeSection Section => _section;
+        public override bool StaticDependenciesAreComputed => true;
 
-        public override bool StaticDependenciesAreComputed
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return true;
-            }
+            sb.Append(_name);
         }
-
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                return _name;
-            }
-        }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public int Offset => 0;
+        public override bool IsShareable => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            return new ObjectData(_data, Array.Empty<Relocation>(), _alignment, new ISymbolNode[] { this });
+            return new ObjectData(_data, Array.Empty<Relocation>(), _alignment, new ISymbolDefinitionNode[] { this });
         }
 
-        public override string GetName()
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+#if !SUPPORT_JIT
+        public override int ClassCode => -470351029;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return ((ISymbolNode)this).MangledName;
+            return _name.CompareTo(((BlobNode)other)._name);
         }
+#endif
     }
 }

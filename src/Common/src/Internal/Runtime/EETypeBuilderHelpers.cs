@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -11,63 +10,53 @@ namespace Internal.Runtime
 {
     internal static class EETypeBuilderHelpers
     {
-        private static int ComputeRhCorElementType(TypeDesc type)
+        private static EETypeElementType ComputeEETypeElementType(TypeDesc type)
         {
-            Debug.Assert(type.IsPrimitive);
-            Debug.Assert(type.Category != TypeFlags.Unknown);
+            // Enums are represented as their underlying type
+            type = type.UnderlyingType;
 
-            switch (type.Category)
+            if (type.IsWellKnownType(WellKnownType.Array))
             {
-                case TypeFlags.Void:
-                    return 0x00;
-                case TypeFlags.Boolean:
-                    return 0x02;
-                case TypeFlags.Char:
-                    return 0x03;
-                case TypeFlags.SByte:
-                    return 0x04;
-                case TypeFlags.Byte:
-                    return 0x05;
-                case TypeFlags.Int16:
-                    return 0x06;
-                case TypeFlags.UInt16:
-                    return 0x07;
-                case TypeFlags.Int32:
-                    return 0x08;
-                case TypeFlags.UInt32:
-                    return 0x09;
-                case TypeFlags.Int64:
-                    return 0x0A;
-                case TypeFlags.UInt64:
-                    return 0x0B;
-                case TypeFlags.IntPtr:
-                    return 0x18;
-                case TypeFlags.UIntPtr:
-                    return 0x19;
-                case TypeFlags.Single:
-                    return 0x0C;
-                case TypeFlags.Double:
-                    return 0x0D;
-                default:
-                    break;
+                // SystemArray is a special EETypeElementType that doesn't exist in TypeFlags
+                return EETypeElementType.SystemArray;
             }
+            else
+            {
+                // The rest of TypeFlags should be directly castable to EETypeElementType.
+                // Spot check the enums match.
+                Debug.Assert((int)TypeFlags.Void == (int)EETypeElementType.Void);
+                Debug.Assert((int)TypeFlags.IntPtr == (int)EETypeElementType.IntPtr);
+                Debug.Assert((int)TypeFlags.Single == (int)EETypeElementType.Single);
+                Debug.Assert((int)TypeFlags.UInt32 == (int)EETypeElementType.UInt32);
+                Debug.Assert((int)TypeFlags.Pointer == (int)EETypeElementType.Pointer);
+                Debug.Assert((int)TypeFlags.Array == (int)EETypeElementType.Array);
 
-            Debug.Assert(false, "Primitive type value expected.");
-            return 0;
+                EETypeElementType elementType = (EETypeElementType)type.Category;
+
+                // Would be surprising to get these here though.
+                Debug.Assert(elementType != EETypeElementType.SystemArray);
+                Debug.Assert(elementType <= EETypeElementType.Pointer);
+
+                return elementType;
+
+            }            
         }
 
         public static UInt16 ComputeFlags(TypeDesc type)
         {
-            UInt16 flags = (UInt16)EETypeKind.CanonicalEEType;
+            UInt16 flags = type.IsParameterizedType ?
+                (UInt16)EETypeKind.ParameterizedEEType : (UInt16)EETypeKind.CanonicalEEType;
 
-            if (type.IsArray || type.IsPointer)
-            {
-                flags = (UInt16)EETypeKind.ParameterizedEEType;
-            }
+            // The top 5 bits of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
+            EETypeElementType elementType = ComputeEETypeElementType(type);
+            flags |= (UInt16)((UInt16)elementType << (UInt16)EETypeFlags.ElementTypeShift);
 
-            if (type.IsValueType)
+            if (type.IsGenericDefinition)
             {
-                flags |= (UInt16)EETypeFlags.ValueTypeFlag;
+                flags |= (UInt16)EETypeKind.GenericTypeDefEEType;
+
+                // Generic type definition EETypes don't set the other flags.
+                return flags;
             }
 
             if (type.HasFinalizer)
@@ -75,77 +64,32 @@ namespace Internal.Runtime
                 flags |= (UInt16)EETypeFlags.HasFinalizerFlag;
             }
 
-            if (type is MetadataType && ((MetadataType)type).ContainsPointers)
+            if (type.IsDefType
+                && !type.IsCanonicalSubtype(CanonicalFormKind.Universal)
+                && ((DefType)type).ContainsGCPointers)
             {
                 flags |= (UInt16)EETypeFlags.HasPointersFlag;
             }
-            else if (type.IsArray)
+            else if (type.IsArray && !type.IsCanonicalSubtype(CanonicalFormKind.Universal))
             {
-                ArrayType arrayType = type as ArrayType;
-                if ((arrayType.ElementType.IsValueType && ((DefType)arrayType.ElementType).ContainsPointers) ||
-                    !arrayType.ElementType.IsValueType)
+                var arrayElementType = ((ArrayType)type).ElementType;
+                if ((arrayElementType.IsValueType && ((DefType)arrayElementType).ContainsGCPointers) || arrayElementType.IsGCPointer)
                 {
                     flags |= (UInt16)EETypeFlags.HasPointersFlag;
                 }
             }
 
-            if (type.IsInterface)
-            {
-                flags |= (UInt16)EETypeFlags.IsInterfaceFlag;
-            }
-
             if (type.HasInstantiation)
             {
                 flags |= (UInt16)EETypeFlags.IsGenericFlag;
-            }
 
-            int corElementType = 0;
-
-            // The top 5 bits of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
-            if (type.IsEnum)
-            {
-                TypeDesc underlyingType = type.UnderlyingType;
-                Debug.Assert(TypeFlags.SByte <= underlyingType.Category && underlyingType.Category <= TypeFlags.UInt64);
-                corElementType = ComputeRhCorElementType(underlyingType);
-            }
-            else if (type.IsPrimitive)
-            {
-                corElementType = ComputeRhCorElementType(type);
-            }
-            else if (type.IsArray)
-            {
-                corElementType = 0x14; // ELEMENT_TYPE_ARRAY
-            }
-
-            if (corElementType > 0)
-            {
-                flags |= (UInt16)(corElementType << (UInt16)EETypeFlags.CorElementTypeShift);
+                if (type.HasVariance)
+                {
+                    flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+                }
             }
 
             return flags;
-        }
-
-        public static bool ComputeRequiresAlign8(TypeDesc type)
-        {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
-            {
-                return false;
-            }
-
-            if (type.IsArray)
-            {
-                var elementType = ((ArrayType)type).ElementType;
-                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment > 4)
-                {
-                    return true;
-                }
-            }
-            else if (type is DefType && ((DefType)type).InstanceByteAlignment > 4)
-            {
-                return true;
-            }
-
-            return false;
         }
 
         // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data
@@ -165,10 +109,10 @@ namespace Internal.Runtime
         /// of objects on the GCHeap. The amount of padding is recorded to allow unboxing to locals /
         /// arrays of value types which don't need it.
         /// </summary>
-        internal static UInt32 ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment)
+        internal static UInt32 ComputeValueTypeFieldPaddingFieldValue(UInt32 padding, UInt32 alignment, int targetPointerSize)
         {
             // For the default case, return 0
-            if ((padding == 0) && (alignment == IntPtr.Size))
+            if ((padding == 0) && (alignment == targetPointerSize))
                 return 0;
 
             UInt32 alignmentLog2 = 0;

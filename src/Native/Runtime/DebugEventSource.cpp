@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -16,7 +15,6 @@
 #include "RuntimeInstance.h"
 #include "gcrhinterface.h"
 #include "shash.h"
-#include "module.h"
 #include "DebugEventSource.h"
 
 #include "slist.inl"
@@ -33,23 +31,13 @@ bool EventEnabled(DebugEventType eventType)
            ((g_DebuggerEventsFilter & (1 << ((int)eventType-1))) != 0);
 }
 
-void DebugEventSource::SendModuleLoadEvent(Module* pModule)
+void DebugEventSource::SendModuleLoadEvent(void* pAddressInModule)
 {
     if(!EventEnabled(DEBUG_EVENT_TYPE_LOAD_MODULE))
         return;
     DebugEventPayload payload;
     payload.type = DEBUG_EVENT_TYPE_LOAD_MODULE;
-    payload.ModuleLoadUnload.pModuleHeader = (CORDB_ADDRESS)pModule->GetModuleHeader();
-    SendRawEvent(&payload);
-}
-
-void DebugEventSource::SendModuleUnloadEvent(Module* pModule)
-{
-    if(!EventEnabled(DEBUG_EVENT_TYPE_UNLOAD_MODULE))
-        return;
-    DebugEventPayload payload;
-    payload.type = DEBUG_EVENT_TYPE_UNLOAD_MODULE;
-    payload.ModuleLoadUnload.pModuleHeader = (CORDB_ADDRESS)pModule->GetModuleHeader();
+    payload.ModuleLoadUnload.pModuleHeader = (CORDB_ADDRESS)pAddressInModule;
     SendRawEvent(&payload);
 }
 
@@ -95,6 +83,17 @@ void DebugEventSource::SendExceptionFirstPassFrameEnteredEvent(CORDB_ADDRESS ipI
     payload.Exception.ip = ipInFrame;
     payload.Exception.sp = frameSP;
     SendRawEvent(&payload);
+}
+
+void DebugEventSource::SendCustomEvent(void* payload, int length)
+{
+    if (!EventEnabled(DEBUG_EVENT_TYPE_CUSTOM))
+        return;
+    DebugEventPayload rawPayload;
+    rawPayload.type = DEBUG_EVENT_TYPE_CUSTOM;
+    rawPayload.Custom.payload = (CORDB_ADDRESS)payload;
+    rawPayload.Custom.length = length;
+    SendRawEvent(&rawPayload);
 }
 
 //---------------------------------------------------------------------------------------
@@ -162,7 +161,7 @@ EXTERN_C REDHAWK_API void __cdecl RhpSendExceptionEventToDebugger(ExceptionEvent
 {
     CORDB_ADDRESS cordbIP = (CORDB_ADDRESS)ip;
     CORDB_ADDRESS cordbSP = (CORDB_ADDRESS)sp;
-#if _ARM_
+#if HOST_ARM
     // clear the THUMB-bit from IP
     cordbIP &= ~1;
 #endif
@@ -199,6 +198,12 @@ COOP_PINVOKE_HELPER(ExceptionEventKind, RhpGetRequestedExceptionEvents, ())
     if(EventEnabled(DEBUG_EVENT_TYPE_EXCEPTION_FIRST_PASS_FRAME_ENTER))
         mask |= EEK_FirstPassFrameEntered;
     return (ExceptionEventKind)mask;
+}
+
+//Called by the C# func eval code to hand shake with the debugger
+COOP_PINVOKE_HELPER(void, RhpSendCustomEventToDebugger, (void* payload, int length))
+{
+    DebugEventSource::SendCustomEvent(payload, length);
 }
 
 #endif //!DACCESS_COMPILE

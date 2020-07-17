@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //Internal.Runtime.Augments
 //-------------------------------------------------
@@ -23,27 +22,29 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
-using Internal.Reflection.Core.NonPortable;
+using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
 
-using Interlocked = System.Threading.Interlocked;
+#if TARGET_64BIT
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
 
 namespace Internal.Runtime.Augments
 {
-    public enum CanonTypeKind
-    {
-        NormalCanon,
-        UniversalCanon
-    }
+    using BinderBundle = System.Reflection.BinderBundle;
+    using Pointer = System.Reflection.Pointer;
 
+    [ReflectionBlocked]
     public static class RuntimeAugments
     {
         /// <summary>
-        /// Callbacks used for desktop emulation in console lab tests. Initialized by
-        /// InitializeDesktopSupport; currently the only provided method is OpenFileIfExists.
+        /// Callbacks used for metadata-based stack trace resolution.
         /// </summary>
-        private static DesktopSupportCallbacks s_desktopSupportCallbacks;
+        private static StackTraceMetadataCallbacks s_stackTraceMetadataCallbacks;
 
         //==============================================================================================
         // One-time initialization.
@@ -61,9 +62,15 @@ namespace Internal.Runtime.Augments
         }
 
         [CLSCompliant(false)]
-        public static void InitializeDesktopSupport(DesktopSupportCallbacks callbacks)
+        public static void InitializeInteropLookups(InteropCallbacks callbacks)
         {
-            s_desktopSupportCallbacks = callbacks;
+            s_interopCallbacks = callbacks;
+        }
+
+        [CLSCompliant(false)]
+        public static void InitializeStackTraceMetadataSupport(StackTraceMetadataCallbacks callbacks)
+        {
+            s_stackTraceMetadataCallbacks = callbacks;
         }
 
         //==============================================================================================
@@ -78,21 +85,16 @@ namespace Internal.Runtime.Augments
         //    Strings: The .ctor performs both the construction and initialization
         //      and compiler special cases these.
         //
-        //    IntPtr/UIntPtr: These have intrinsic constructors and it happens, special-casing these in the class library
-        //      is the lesser evil compared to special-casing them in the toolchain.
-        //
         //    Nullable<T>: the boxed result is the underlying type rather than Nullable so the constructor
         //      cannot truly initialize it.
         //
         //    In these cases, this helper returns "null" and ConstructorInfo.Invoke() must deal with these specially.
         //
-        public static Object NewObject(RuntimeTypeHandle typeHandle)
+        public static object NewObject(RuntimeTypeHandle typeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            if (RuntimeImports.RhIsNullable(eeType)
-                || eeType == typeof(String).TypeHandle.ToEETypePtr()
-                || eeType == typeof(IntPtr).TypeHandle.ToEETypePtr()
-                || eeType == typeof(UIntPtr).TypeHandle.ToEETypePtr()
+            if (eeType.IsNullable
+                || eeType == EETypePtr.EETypePtrOf<string>()
                )
                 return null;
             return RuntimeImports.RhNewObject(eeType);
@@ -103,7 +105,7 @@ namespace Internal.Runtime.Augments
         // Unlike the NewObject API, this is the raw version that does not special case any EEType, and should be used with
         // caution for very specific scenarios.
         //
-        public static Object RawNewObject(RuntimeTypeHandle typeHandle)
+        public static object RawNewObject(RuntimeTypeHandle typeHandle)
         {
             return RuntimeImports.RhNewObject(typeHandle.ToEETypePtr());
         }
@@ -114,7 +116,7 @@ namespace Internal.Runtime.Augments
         public static Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
         {
             // Don't make the easy mistake of passing in the element EEType rather than the "array of element" EEType.
-            Debug.Assert(typeHandleForArrayType.ToEETypePtr().IsArray);
+            Debug.Assert(typeHandleForArrayType.ToEETypePtr().IsSzArray);
             return RuntimeImports.RhNewArray(typeHandleForArrayType.ToEETypePtr(), count);
         }
 
@@ -126,7 +128,7 @@ namespace Internal.Runtime.Augments
         // As a concession to the fact that we don't actually support non-zero lower bounds, "lowerBounds" accepts "null"
         // to avoid unnecessary array allocations by the caller.
         //
-        public static Array NewMultiDimArray(RuntimeTypeHandle typeHandleForArrayType, int[] lengths, int[] lowerBounds)
+        public static unsafe Array NewMultiDimArray(RuntimeTypeHandle typeHandleForArrayType, int[] lengths, int[] lowerBounds)
         {
             Debug.Assert(lengths != null);
             Debug.Assert(lowerBounds == null || lowerBounds.Length == lengths.Length);
@@ -140,9 +142,46 @@ namespace Internal.Runtime.Augments
                 }
             }
 
-            MDArray mdArray = (MDArray)(NewObject(typeHandleForArrayType));
-            mdArray.MDInitialize(lengths);
-            return mdArray;
+            if (lengths.Length == 1)
+            {
+                // We just checked above that all lower bounds are zero. In that case, we should actually allocate
+                // a new SzArray instead.
+                RuntimeTypeHandle elementTypeHandle = new RuntimeTypeHandle(typeHandleForArrayType.ToEETypePtr().ArrayElementType);
+                int length = lengths[0];
+                if (length < 0)
+                    throw new OverflowException(); // For compat: we need to throw OverflowException(): Array.CreateInstance throws ArgumentOutOfRangeException()
+                return Array.CreateInstance(Type.GetTypeFromHandle(elementTypeHandle), length);
+            }
+
+            // Create a local copy of the lenghts that cannot be motified by the caller
+            int* pLengths = stackalloc int[lengths.Length];
+            for (int i = 0; i < lengths.Length; i++)
+                pLengths[i] = lengths[i];
+
+            return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pLengths, lengths.Length);
+        }
+
+        // 
+        // Helper to create an array from a newobj instruction
+        // 
+        public static unsafe Array NewObjArray(RuntimeTypeHandle typeHandleForArrayType, int[] arguments)
+        {
+            EETypePtr eeTypePtr = typeHandleForArrayType.ToEETypePtr();
+            Debug.Assert(eeTypePtr.IsArray);
+
+            fixed (int* pArguments = arguments)
+            {
+                return ArrayHelpers.NewObjArray((IntPtr)eeTypePtr.ToPointer(), arguments.Length, pArguments);
+            }
+        }
+
+        public static ref byte GetSzArrayElementAddress(Array array, int index)
+        {
+            if ((uint)index >= (uint)array.Length)
+                throw new IndexOutOfRangeException();
+
+            ref byte start = ref Unsafe.As<RawArrayData>(array).Data;
+            return ref Unsafe.Add(ref start, (IntPtr)((nuint)index * array.ElementSize));
         }
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
@@ -168,18 +207,18 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetDispatchMapForType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetDispatchMapForType(CreateEETypePtr(typeHandle));
+            return CreateEETypePtr(typeHandle).DispatchMap;
         }
 
         public static IntPtr GetFallbackDefaultConstructor()
         {
-            return System.Runtime.InteropServices.AddrofIntrinsics.AddrOf<Action>(System.Activator.ClassWithMissingConstructor.MissingDefaultConstructorStaticEntryPoint);
+            return Activator.GetFallbackDefaultConstructor();
         }
 
         //
         // Helper to create a delegate on a runtime-supplied type.
         //
-        public static Delegate CreateDelegate(RuntimeTypeHandle typeHandleForDelegate, IntPtr ldftnResult, Object thisObject, bool isStatic, bool isOpen)
+        public static Delegate CreateDelegate(RuntimeTypeHandle typeHandleForDelegate, IntPtr ldftnResult, object thisObject, bool isStatic, bool isOpen)
         {
             return Delegate.CreateDelegate(typeHandleForDelegate.ToEETypePtr(), ldftnResult, thisObject, isStatic: isStatic, isOpen: isOpen);
         }
@@ -187,9 +226,9 @@ namespace Internal.Runtime.Augments
         //
         // Helper to extract the artifact that uniquely identifies a method in the runtime mapping tables.
         //
-        public static IntPtr GetDelegateLdFtnResult(Delegate d, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver)
+        public static IntPtr GetDelegateLdFtnResult(Delegate d, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver, out bool isInterpreterEntrypoint)
         {
-            return d.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver);
+            return d.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver, out isInterpreterEntrypoint);
         }
 
         public static void GetDelegateData(Delegate delegateObj, out object firstParameter, out object helperObject, out IntPtr extraFunctionPointerOrData, out IntPtr functionPointer)
@@ -200,19 +239,19 @@ namespace Internal.Runtime.Augments
             functionPointer = delegateObj.m_functionPointer;
         }
 
-        public static int GetLoadedModules(IntPtr[] resultArray)
+        public static int GetLoadedModules(TypeManagerHandle[] resultArray)
         {
-            return (int)RuntimeImports.RhGetLoadedModules(resultArray);
+            return Internal.Runtime.CompilerHelpers.StartupCodeHelpers.GetLoadedModules(resultArray);
         }
 
-        public static IntPtr GetModuleFromPointer(IntPtr pointerVal)
+        public static IntPtr GetOSModuleFromPointer(IntPtr pointerVal)
         {
-            return RuntimeImports.RhGetModuleFromPointer(pointerVal);
+            return RuntimeImports.RhGetOSModuleFromPointer(pointerVal);
         }
 
-        public static unsafe bool FindBlob(IntPtr hOsModule, int blobId, IntPtr ppbBlob, IntPtr pcbBlob)
+        public static unsafe bool FindBlob(TypeManagerHandle typeManager, int blobId, IntPtr ppbBlob, IntPtr pcbBlob)
         {
-            return RuntimeImports.RhFindBlob(hOsModule, (uint)blobId, (byte**)ppbBlob, (uint*)pcbBlob);
+            return RuntimeImports.RhFindBlob(typeManager, (uint)blobId, (byte**)ppbBlob, (uint*)pcbBlob);
         }
 
         public static IntPtr GetPointerFromTypeHandle(RuntimeTypeHandle typeHandle)
@@ -220,150 +259,223 @@ namespace Internal.Runtime.Augments
             return typeHandle.ToEETypePtr().RawValue;
         }
 
-        public static IntPtr GetModuleFromTypeHandle(RuntimeTypeHandle typeHandle)
+        public static TypeManagerHandle GetModuleFromTypeHandle(RuntimeTypeHandle typeHandle)
         {
             return RuntimeImports.RhGetModuleFromEEType(GetPointerFromTypeHandle(typeHandle));
         }
 
         public static RuntimeTypeHandle CreateRuntimeTypeHandle(IntPtr ldTokenResult)
         {
-#if CLR_RUNTIMETYPEHANDLE // CORERT-TODO: RuntimeTypeHandle
-            throw new NotImplementedException();
-#else
             return new RuntimeTypeHandle(new EETypePtr(ldTokenResult));
-#endif
         }
 
-        public unsafe static IntPtr GetThreadStaticFieldAddress(RuntimeTypeHandle typeHandle, IntPtr fieldCookie)
+        public static unsafe void StoreValueTypeField(IntPtr address, object fieldValue, RuntimeTypeHandle fieldType)
         {
-            return new IntPtr(RuntimeImports.RhGetThreadStaticFieldAddress(typeHandle.ToEETypePtr(), fieldCookie));
+            RuntimeImports.RhUnbox(fieldValue, ref *(byte*)address, fieldType.ToEETypePtr());
         }
 
-        public unsafe static void StoreValueTypeField(IntPtr address, Object fieldValue, RuntimeTypeHandle fieldType)
+        public static unsafe ref byte GetRawData(object obj)
         {
-            RuntimeImports.RhUnbox(fieldValue, *(void**)&address, fieldType.ToEETypePtr());
+            return ref obj.GetRawData();
         }
 
-        public unsafe static Object LoadValueTypeField(IntPtr address, RuntimeTypeHandle fieldType)
+        public static unsafe object LoadValueTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            return RuntimeImports.RhBox(fieldType.ToEETypePtr(), *(void**)&address);
+            return RuntimeImports.RhBox(fieldType.ToEETypePtr(), ref *(byte*)address);
         }
 
-        public unsafe static void StoreValueTypeField(Object obj, int fieldOffset, Object fieldValue, RuntimeTypeHandle fieldType)
+        public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            fixed (IntPtr* pObj = &obj.m_pEEType)
-            {
-                IntPtr pData = (IntPtr)pObj;
-                IntPtr pField = pData + fieldOffset;
-                StoreValueTypeField(pField, fieldValue, fieldType);
-            }
+            return Pointer.Box(*(void**)address, Type.GetTypeFromHandle(fieldType));
         }
 
-        public unsafe static Object LoadValueTypeField(Object obj, int fieldOffset, RuntimeTypeHandle fieldType)
+        public static unsafe void StoreValueTypeField(ref byte address, object fieldValue, RuntimeTypeHandle fieldType)
         {
-            fixed (IntPtr* pObj = &obj.m_pEEType)
-            {
-                IntPtr pData = (IntPtr)pObj;
-                IntPtr pField = pData + fieldOffset;
-                return LoadValueTypeField(pField, fieldType);
-            }
+            RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToEETypePtr());
         }
 
-        public static void StoreReferenceTypeField(IntPtr address, Object fieldValue)
+        public static unsafe void StoreValueTypeField(object obj, int fieldOffset, object fieldValue, RuntimeTypeHandle fieldType)
         {
-            // Doing an interlocked exchange makes sure there is a proper memory barrier
-            Interlocked.Exchange<Object>(address, fieldValue);
+            ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
+            RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToEETypePtr());
         }
 
-        public static Object LoadReferenceTypeField(IntPtr address)
+        public static unsafe object LoadValueTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
-            return Interlocked.CompareExchange<Object>(address, null, null);
+            ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
+            return RuntimeImports.RhBox(fieldType.ToEETypePtr(), ref address);
         }
 
-        public unsafe static void StoreReferenceTypeField(Object obj, int fieldOffset, Object fieldValue)
+        public static unsafe object LoadPointerTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
-            fixed (IntPtr* pObj = &obj.m_pEEType)
-            {
-                IntPtr pData = (IntPtr)pObj;
-                IntPtr pField = pData + fieldOffset;
-                StoreReferenceTypeField(pField, fieldValue);
-            }
+            ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
+            return Pointer.Box((void*)Unsafe.As<byte,IntPtr>(ref address), Type.GetTypeFromHandle(fieldType));
         }
 
-        public unsafe static Object LoadReferenceTypeField(Object obj, int fieldOffset)
+        public static unsafe void StoreReferenceTypeField(IntPtr address, object fieldValue)
         {
-            fixed (IntPtr* pObj = &obj.m_pEEType)
-            {
-                IntPtr pData = (IntPtr)pObj;
-                IntPtr pField = pData + fieldOffset;
-                return LoadReferenceTypeField(pField);
-            }
+            Volatile.Write<Object>(ref Unsafe.As<IntPtr, object>(ref *(IntPtr*)address), fieldValue);
         }
+
+        public static unsafe object LoadReferenceTypeField(IntPtr address)
+        {
+            return Volatile.Read<Object>(ref Unsafe.As<IntPtr, object>(ref *(IntPtr*)address));
+        }
+
+        public static void StoreReferenceTypeField(object obj, int fieldOffset, object fieldValue)
+        {
+            ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
+            Volatile.Write<Object>(ref Unsafe.As<byte, object>(ref address), fieldValue);
+        }
+
+        public static object LoadReferenceTypeField(object obj, int fieldOffset)
+        {
+            ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
+            return Unsafe.As<byte, object>(ref address);
+        }
+
+        [CLSCompliant(false)]
+        public static void StoreValueTypeFieldValueIntoValueType(TypedReference typedReference, int fieldOffset, object fieldValue, RuntimeTypeHandle fieldTypeHandle)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+
+            RuntimeImports.RhUnbox(fieldValue, ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset), fieldTypeHandle.ToEETypePtr());
+        }
+
+        [CLSCompliant(false)]
+        public static object LoadValueTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+            Debug.Assert(fieldTypeHandle.ToEETypePtr().IsValueType);
+
+            return RuntimeImports.RhBox(fieldTypeHandle.ToEETypePtr(), ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+        }
+
+        [CLSCompliant(false)]
+        public static void StoreReferenceTypeFieldValueIntoValueType(TypedReference typedReference, int fieldOffset, object fieldValue)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+
+            Unsafe.As<byte, object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset)) = fieldValue;
+        }
+
+        [CLSCompliant(false)]
+        public static object LoadReferenceTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+
+            return Unsafe.As<byte, object>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+        }
+
+        [CLSCompliant(false)]
+        public static unsafe object LoadPointerTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
+        {
+            Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToEETypePtr().IsValueType);
+            Debug.Assert(fieldTypeHandle.ToEETypePtr().IsPointer);
+
+            IntPtr ptrValue = Unsafe.As<byte, IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            return Pointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
+        }
+
+        public static unsafe object GetThreadStaticBase(IntPtr cookie)
+        {
+            return ThreadStatics.GetThreadStaticBaseForType(*(TypeManagerSlot**)cookie, (int)*((IntPtr*)(cookie) + 1));
+        }
+
+        public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
 
         [DebuggerGuidedStepThroughAttribute]
-        public static object CallDynamicInvokeMethod(object thisPtr, IntPtr methodToCall, object thisPtrDynamicInvokeMethod, IntPtr dynamicInvokeHelperMethod, IntPtr dynamicInvokeHelperGenericDictionary, string defaultValueString, object[] parameters, bool invokeMethodHelperIsThisCall, bool methodToCallIsThisCall)
+        public static object CallDynamicInvokeMethod(
+            object thisPtr,
+            IntPtr methodToCall,
+            object thisPtrDynamicInvokeMethod,
+            IntPtr dynamicInvokeHelperMethod,
+            IntPtr dynamicInvokeHelperGenericDictionary,
+            object defaultParametersContext,
+            object[] parameters,
+            BinderBundle binderBundle,
+            bool wrapInTargetInvocationException,
+            bool invokeMethodHelperIsThisCall,
+            bool methodToCallIsThisCall)
         {
-            object result = InvokeUtils.CallDynamicInvokeMethod(thisPtr, methodToCall, thisPtrDynamicInvokeMethod, dynamicInvokeHelperMethod, dynamicInvokeHelperGenericDictionary, defaultValueString, parameters, invokeMethodHelperIsThisCall, methodToCallIsThisCall);
+            object result = InvokeUtils.CallDynamicInvokeMethod(
+                thisPtr,
+                methodToCall,
+                thisPtrDynamicInvokeMethod,
+                dynamicInvokeHelperMethod,
+                dynamicInvokeHelperGenericDictionary,
+                defaultParametersContext,
+                parameters,
+                binderBundle,
+                wrapInTargetInvocationException,
+                invokeMethodHelperIsThisCall,
+                methodToCallIsThisCall);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
 
-        public unsafe static void EnsureClassConstructorRun(IntPtr staticClassConstructionContext)
+        public static unsafe void EnsureClassConstructorRun(IntPtr staticClassConstructionContext)
         {
             StaticClassConstructionContext* context = (StaticClassConstructionContext*)staticClassConstructionContext;
             ClassConstructorRunner.EnsureClassConstructorRun(context);
         }
 
-        public static bool GetMdArrayRankTypeHandleIfSupported(int rank, out RuntimeTypeHandle mdArrayTypeHandle)
+        public static object GetEnumValue(Enum e)
         {
-            switch (rank)
+            return e.GetValue();
+        }
+
+        public static Type GetEnumUnderlyingType(RuntimeTypeHandle enumTypeHandle)
+        {
+            Debug.Assert(enumTypeHandle.ToEETypePtr().IsEnum);
+
+            EETypeElementType elementType = enumTypeHandle.ToEETypePtr().ElementType;
+            switch (elementType)
             {
-                case 2:
-                    mdArrayTypeHandle = typeof(MDArrayRank2<>).TypeHandle;
-                    return true;
-                case 3:
-                    mdArrayTypeHandle = typeof(MDArrayRank3<>).TypeHandle;
-                    return true;
-                case 4:
-                    mdArrayTypeHandle = typeof(MDArrayRank4<>).TypeHandle;
-                    return true;
+                case EETypeElementType.Boolean:
+                    return CommonRuntimeTypes.Boolean;
+                case EETypeElementType.Char:
+                    return CommonRuntimeTypes.Char;
+                case EETypeElementType.SByte:
+                    return CommonRuntimeTypes.SByte;
+                case EETypeElementType.Byte:
+                    return CommonRuntimeTypes.Byte;
+                case EETypeElementType.Int16:
+                    return CommonRuntimeTypes.Int16;
+                case EETypeElementType.UInt16:
+                    return CommonRuntimeTypes.UInt16;
+                case EETypeElementType.Int32:
+                    return CommonRuntimeTypes.Int32;
+                case EETypeElementType.UInt32:
+                    return CommonRuntimeTypes.UInt32;
+                case EETypeElementType.Int64:
+                    return CommonRuntimeTypes.Int64;
+                case EETypeElementType.UInt64:
+                    return CommonRuntimeTypes.UInt64;
                 default:
-                    mdArrayTypeHandle = default(RuntimeTypeHandle);
-                    return false;
+                    throw new NotSupportedException();
             }
         }
 
-        public static RuntimeTypeHandle GetTypeHandleIfAvailable(Type type)
-        {
-            RuntimeType runtimeType = type as RuntimeType;
-            if (runtimeType == null)
-                return default(RuntimeTypeHandle);
-            RuntimeTypeHandle runtimeTypeHandle;
-            if (!runtimeType.InternalTryGetTypeHandle(out runtimeTypeHandle))
-                return default(RuntimeTypeHandle);
-            return runtimeTypeHandle;
-        }
-
-
         public static RuntimeTypeHandle GetRelatedParameterTypeHandle(RuntimeTypeHandle parameterTypeHandle)
         {
-            EETypePtr elementType = RuntimeImports.RhGetRelatedParameterType(parameterTypeHandle.ToEETypePtr());
+            EETypePtr elementType = parameterTypeHandle.ToEETypePtr().ArrayElementType;
             return new RuntimeTypeHandle(elementType);
         }
 
         public static bool IsValueType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhIsValueType(CreateEETypePtr(type));
+            return type.ToEETypePtr().IsValueType;
         }
 
         public static bool IsInterface(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhIsInterface(CreateEETypePtr(type));
+            return type.ToEETypePtr().IsInterface;
         }
 
         public static unsafe object Box(RuntimeTypeHandle type, IntPtr address)
         {
-            return RuntimeImports.RhBox(type.ToEETypePtr(), address.ToPointer());
+            return RuntimeImports.RhBox(type.ToEETypePtr(), ref *(byte*)address);
         }
 
         // Used to mutate the first parameter in a closed static delegate.  Note that this does no synchronization of any kind;
@@ -396,7 +508,7 @@ namespace Internal.Runtime.Augments
         // Note that this is not versionable as it is exposed as a const (and needs to be a const so we can used as a custom attribute argument - which
         // is the other reason this string is not versionable.)
         //
-        public const String HiddenScopeAssemblyName = "HiddenScope, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
+        public const string HiddenScopeAssemblyName = "HiddenScope, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
 
         //
         // This implements the "IsAssignableFrom()" api for runtime-created types. By policy, we let the underlying runtime decide assignability.
@@ -409,6 +521,11 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.AreTypesAssignable(srcEEType, dstEEType);
         }
 
+        public static bool IsInstanceOfInterface(object obj, RuntimeTypeHandle interfaceTypeHandle)
+        {
+            return (null != RuntimeImports.IsInstanceOfInterface(interfaceTypeHandle.ToEETypePtr(), obj));
+        }
+
         //
         // Return a type's base type using the runtime type system. If the underlying runtime type system does not support
         // this operation, return false and TypeInfo.BaseType will fall back to metadata.
@@ -418,9 +535,7 @@ namespace Internal.Runtime.Augments
         public static bool TryGetBaseType(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle baseTypeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            RuntimeImports.RhEETypeClassification eeTypeClassification = RuntimeImports.RhGetEETypeClassification(eeType);
-            if (eeTypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
-                eeTypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef)
             {
                 baseTypeHandle = default(RuntimeTypeHandle);
                 return false;
@@ -437,16 +552,13 @@ namespace Internal.Runtime.Augments
         public static IEnumerable<RuntimeTypeHandle> TryGetImplementedInterfaces(RuntimeTypeHandle typeHandle)
         {
             EETypePtr eeType = typeHandle.ToEETypePtr();
-            RuntimeImports.RhEETypeClassification eeTypeClassification = RuntimeImports.RhGetEETypeClassification(eeType);
-            if (eeTypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
-                eeTypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
+            if (eeType.IsGenericTypeDefinition || eeType.IsPointer || eeType.IsByRef)
                 return null;
 
-            uint numInterfaces = RuntimeImports.RhGetNumInterfaces(eeType);
             LowLevelList<RuntimeTypeHandle> implementedInterfaces = new LowLevelList<RuntimeTypeHandle>();
-            for (uint i = 0; i < numInterfaces; i++)
+            for (int i = 0; i < eeType.Interfaces.Count; i++)
             {
-                EETypePtr ifcEEType = RuntimeImports.RhGetInterface(eeType, i);
+                EETypePtr ifcEEType = eeType.Interfaces[i];
                 RuntimeTypeHandle ifcrth = new RuntimeTypeHandle(ifcEEType);
                 if (Callbacks.IsReflectionBlocked(ifcrth))
                     continue;
@@ -472,35 +584,15 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetGCDescSize(eeType);
         }
 
-        public unsafe static bool CreateGenericInstanceDescForType(RuntimeTypeHandle typeHandle, int arity, int nonGcStaticDataSize,
-            int nonGCStaticDataOffset, int gcStaticDataSize, int threadStaticsOffset, IntPtr gcStaticsDesc, IntPtr threadStaticsDesc, int[] genericVarianceFlags)
-        {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            fixed (int* pGenericVarianceFlags = genericVarianceFlags)
-            {
-                return RuntimeImports.RhCreateGenericInstanceDescForType2(eeType, arity, nonGcStaticDataSize, nonGCStaticDataOffset, gcStaticDataSize,
-                    threadStaticsOffset, gcStaticsDesc.ToPointer(), threadStaticsDesc.ToPointer(), pGenericVarianceFlags);
-            }
-        }
-
         public static int GetInterfaceCount(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            return (int)RuntimeImports.RhGetNumInterfaces(eeType);
+            return typeHandle.ToEETypePtr().Interfaces.Count;
         }
 
         public static RuntimeTypeHandle GetInterface(RuntimeTypeHandle typeHandle, int index)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            EETypePtr eeInterface = RuntimeImports.RhGetInterface(eeType, (uint)index);
+            EETypePtr eeInterface = typeHandle.ToEETypePtr().Interfaces[index];
             return CreateRuntimeTypeHandle(eeInterface);
-        }
-
-        public static void SetInterface(RuntimeTypeHandle typeHandle, int index, RuntimeTypeHandle interfaceTypeHandle)
-        {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            EETypePtr eeInterface = CreateEETypePtr(interfaceTypeHandle);
-            RuntimeImports.RhSetInterface(eeType, index, eeInterface);
         }
 
         public static IntPtr NewInterfaceDispatchCell(RuntimeTypeHandle interfaceTypeHandle, int slotNumber)
@@ -512,75 +604,73 @@ namespace Internal.Runtime.Augments
             return cell;
         }
 
-        public static IntPtr GetNonGcStaticFieldData(RuntimeTypeHandle typeHandle)
-        {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            return RuntimeImports.RhGetNonGcStaticFieldData(eeType);
-        }
-
-        public static IntPtr GetGcStaticFieldData(RuntimeTypeHandle typeHandle)
-        {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            return RuntimeImports.RhGetGcStaticFieldData(eeType);
-        }
-
         public static int GetValueTypeSize(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
-            Debug.Assert(eeType.IsValueType);
-            return (int)RuntimeImports.RhGetValueTypeSize(eeType);
+            return (int)typeHandle.ToEETypePtr().ValueTypeSize;
         }
 
+        [Intrinsic]
         public static RuntimeTypeHandle GetCanonType(CanonTypeKind kind)
         {
-            switch (kind)
-            {
-                case CanonTypeKind.NormalCanon:
-                    return typeof(System.__Canon).TypeHandle;
-                case CanonTypeKind.UniversalCanon:
-                    return typeof(System.__UniversalCanon).TypeHandle;
-                default:
-                    Debug.Assert(false);
-                    return default(RuntimeTypeHandle);
-            }
+            // Compiler needs to expand this. This is not expressible in IL.
+            throw new NotSupportedException();
         }
 
-        public unsafe static void SetInstantiation(RuntimeTypeHandle typeHandle, RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles)
+        public static RuntimeTypeHandle GetGenericDefinition(RuntimeTypeHandle typeHandle)
         {
-            EETypePtr eeTypeDefinition = CreateEETypePtr(genericTypeDefinitionHandle);
-            EETypePtr eeType = CreateEETypePtr(typeHandle);
+            EETypePtr eeType = typeHandle.ToEETypePtr();
+            Debug.Assert(eeType.IsGeneric);
+            return new RuntimeTypeHandle(eeType.GenericDefinition);
+        }
 
-            int arity = genericTypeArgumentHandles.Length;
-            EETypePtr* eeTypeArguments = stackalloc EETypePtr[genericTypeArgumentHandles.Length];
-            for (int i = 0; i < arity; i++)
+        public static RuntimeTypeHandle GetGenericArgument(RuntimeTypeHandle typeHandle, int argumentIndex)
+        {
+            EETypePtr eeType = typeHandle.ToEETypePtr();
+            Debug.Assert(eeType.IsGeneric);
+            return new RuntimeTypeHandle(eeType.Instantiation[argumentIndex]);
+        }
+
+        public static RuntimeTypeHandle GetGenericInstantiation(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] genericTypeArgumentHandles)
+        {
+            EETypePtr eeType = typeHandle.ToEETypePtr();
+
+            Debug.Assert(eeType.IsGeneric);
+
+            var instantiation = eeType.Instantiation;
+            genericTypeArgumentHandles = new RuntimeTypeHandle[instantiation.Length];
+            for (int i = 0; i < instantiation.Length; i++)
             {
-                eeTypeArguments[i] = CreateEETypePtr(genericTypeArgumentHandles[i]);
+                genericTypeArgumentHandles[i] = new RuntimeTypeHandle(instantiation[i]);
             }
 
-            if (!RuntimeImports.RhSetGenericInstantiation(eeType, eeTypeDefinition, arity, eeTypeArguments))
-            {
-                throw new OutOfMemoryException();
-            }
+            return new RuntimeTypeHandle(eeType.GenericDefinition);
         }
 
         public static bool IsGenericType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.Generic;
+            return typeHandle.ToEETypePtr().IsGeneric;
         }
 
         public static bool IsArrayType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.Array;
+            return typeHandle.ToEETypePtr().IsArray;
         }
+
+        public static bool IsByRefLike(RuntimeTypeHandle typeHandle) => typeHandle.ToEETypePtr().IsByRefLike;
 
         public static bool IsDynamicType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhIsDynamicType(CreateEETypePtr(typeHandle));
+            return typeHandle.ToEETypePtr().IsDynamicType;
         }
 
         public static bool HasCctor(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhHasCctor(CreateEETypePtr(typeHandle));
+            return typeHandle.ToEETypePtr().HasCctor;
+        }
+
+        public static RuntimeTypeHandle RuntimeTypeHandleOf<T>()
+        {
+            return new RuntimeTypeHandle(EETypePtr.EETypePtrOf<T>());
         }
 
         public static IntPtr ResolveDispatchOnType(RuntimeTypeHandle instanceType, RuntimeTypeHandle interfaceType, int slot)
@@ -600,12 +690,17 @@ namespace Internal.Runtime.Augments
 
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.UnmanagedPointer;
+            return typeHandle.ToEETypePtr().IsPointer;
+        }
+
+        public static bool IsByRefType(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle.ToEETypePtr().IsByRef;
         }
 
         public static bool IsGenericTypeDefinition(RuntimeTypeHandle typeHandle)
         {
-            return RuntimeImports.RhGetEETypeClassification(CreateEETypePtr(typeHandle)) == RuntimeImports.RhEETypeClassification.GenericTypeDefinition;
+            return typeHandle.ToEETypePtr().IsGenericTypeDefinition;
         }
 
         //
@@ -613,18 +708,16 @@ namespace Internal.Runtime.Augments
         //
         public static bool CanPrimitiveWiden(RuntimeTypeHandle srcType, RuntimeTypeHandle dstType)
         {
-            RuntimeImports.RhEETypeClassification srcEETypeClassification = srcType.Classification;
-            RuntimeImports.RhEETypeClassification dstEETypeClassification = dstType.Classification;
-            if (srcEETypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition ||
-                dstEETypeClassification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition)
-                return false;
-            if (srcEETypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer ||
-                dstEETypeClassification == RuntimeImports.RhEETypeClassification.UnmanagedPointer)
-                return false;
-
-
             EETypePtr srcEEType = srcType.ToEETypePtr();
             EETypePtr dstEEType = dstType.ToEETypePtr();
+
+            if (srcEEType.IsGenericTypeDefinition || dstEEType.IsGenericTypeDefinition)
+                return false;
+            if (srcEEType.IsPointer || dstEEType.IsPointer)
+                return false;
+            if (srcEEType.IsByRef || dstEEType.IsByRef)
+                return false;
+
             if (!srcEEType.IsPrimitive)
                 return false;
             if (!dstEEType.IsPrimitive)
@@ -634,12 +727,19 @@ namespace Internal.Runtime.Augments
             return true;
         }
 
-        public static Object CheckArgument(Object srcObject, RuntimeTypeHandle dstType)
+        public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
         {
-            return InvokeUtils.CheckArgument(srcObject, dstType);
+            return InvokeUtils.CheckArgument(srcObject, dstType, binderBundle);
         }
 
-        public static bool IsAssignable(Object srcObject, RuntimeTypeHandle dstType)
+        // FieldInfo.SetValueDirect() has a completely different set of rules on how to coerce the argument from
+        // the other Reflection api.
+        public static object CheckArgumentForDirectFieldAccess(object srcObject, RuntimeTypeHandle dstType)
+        {
+            return InvokeUtils.CheckArgument(srcObject, dstType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.SetFieldDirect, binderBundle: null);
+        }
+
+        public static bool IsAssignable(object srcObject, RuntimeTypeHandle dstType)
         {
             EETypePtr srcEEType = srcObject.EETypePtr;
             return RuntimeImports.AreTypesAssignable(srcEEType, dstType.ToEETypePtr());
@@ -650,25 +750,23 @@ namespace Internal.Runtime.Augments
         //==============================================================================================
         public static bool IsNullable(RuntimeTypeHandle declaringTypeHandle)
         {
-            return RuntimeImports.RhIsNullable(declaringTypeHandle.ToEETypePtr());
+            return declaringTypeHandle.ToEETypePtr().IsNullable;
         }
 
         public static RuntimeTypeHandle GetNullableType(RuntimeTypeHandle nullableType)
         {
-            EETypePtr theT = RuntimeImports.RhGetNullableType(nullableType.ToEETypePtr());
+            EETypePtr theT = nullableType.ToEETypePtr().NullableType;
             return new RuntimeTypeHandle(theT);
         }
 
         //
         // Useful helper for finding .pdb's. (This design is admittedly tied to the single-module design of Project N.)
         //
-        public static String TryGetFullPathToMainApplication()
+        public static string TryGetFullPathToMainApplication()
         {
-            Func<String> delegateToAnythingInsideMergedApp = TryGetFullPathToMainApplication;
-            RuntimeTypeHandle thDummy;
-            bool boolDummy;
-            IntPtr ipToAnywhereInsideMergedApp = delegateToAnythingInsideMergedApp.GetFunctionPointer(out thDummy, out boolDummy);
-            IntPtr moduleBase = RuntimeImports.RhGetModuleFromPointer(ipToAnywhereInsideMergedApp);
+            Func<string> delegateToAnythingInsideMergedApp = TryGetFullPathToMainApplication;
+            IntPtr ipToAnywhereInsideMergedApp = delegateToAnythingInsideMergedApp.GetFunctionPointer(out RuntimeTypeHandle _, out bool _, out bool _);
+            IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ipToAnywhereInsideMergedApp);
             return TryGetFullPathToApplicationModule(moduleBase);
         }
 
@@ -676,17 +774,17 @@ namespace Internal.Runtime.Augments
         /// Locate the file path for a given native application module.
         /// </summary>
         /// <param name="moduleBase">Module base address</param>
-        public static unsafe String TryGetFullPathToApplicationModule(IntPtr moduleBase)
+        public static unsafe string TryGetFullPathToApplicationModule(IntPtr moduleBase)
         {
-#if PLATFORM_UNIX
+#if TARGET_UNIX
             byte* pModuleNameUtf8;
             int numUtf8Chars = RuntimeImports.RhGetModuleFileName(moduleBase, out pModuleNameUtf8);
             String modulePath = System.Text.Encoding.UTF8.GetString(pModuleNameUtf8, numUtf8Chars);
-#else // PLATFORM_UNIX
+#else // TARGET_UNIX
             char* pModuleName;
             int numChars = RuntimeImports.RhGetModuleFileName(moduleBase, out pModuleName);
-            String modulePath = new String(pModuleName, 0, numChars);
-#endif // PLATFORM_UNIX
+            string modulePath = new string(pModuleName, 0, numChars);
+#endif // TARGET_UNIX
             return modulePath;
         }
 
@@ -697,7 +795,7 @@ namespace Internal.Runtime.Augments
         {
             unsafe
             {
-                IntPtr moduleBase = RuntimeImports.RhGetModuleFromPointer(ip);
+                IntPtr moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ip);
                 return (int)(ip.ToInt64() - moduleBase.ToInt64());
             }
         }
@@ -714,15 +812,15 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetCodeTarget(functionPointer);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, int registeredResolutionFunction, object contextObject, out IntPtr auxResult)
+        public static IntPtr GetTargetOfUnboxingAndInstantiatingStub(IntPtr functionPointer)
         {
-            return TypeLoaderExports.RuntimeCacheLookupInCache(context, signature, registeredResolutionFunction, contextObject, out auxResult);
+            return RuntimeImports.RhGetTargetOfUnboxingAndInstantiatingStub(functionPointer);
         }
 
-        public static int RegisterResolutionFunctionWithRuntimeCache(IntPtr functionPointer)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IntPtr RuntimeCacheLookup(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
         {
-            return TypeLoaderExports.RegisterResolutionFunction(functionPointer);
+            return TypeLoaderExports.RuntimeCacheLookupInCache(context, signature, factory, contextObject, out auxResult);
         }
 
         //==============================================================================================
@@ -768,29 +866,41 @@ namespace Internal.Runtime.Augments
             }
         }
 
-        internal static RuntimeTypeHandle[] ToTypeHandleArray(this RuntimeType[] runtimeTypes)
+        internal static InteropCallbacks InteropCallbacks
         {
-            RuntimeTypeHandle[] runtimeTypeHandles = new RuntimeTypeHandle[runtimeTypes.Length];
-            for (int i = 0; i < runtimeTypes.Length; i++)
-                runtimeTypeHandles[i] = runtimeTypes[i].TypeHandle;
-            return runtimeTypeHandles;
+            get
+            {
+                InteropCallbacks callbacks = s_interopCallbacks;
+                if (callbacks != null)
+                    return callbacks;
+                throw new InvalidOperationException(SR.InvalidOperation_TooEarly);
+            }
         }
 
-        internal static RuntimeType ToRuntimeType(this RuntimeTypeHandle runtimeTypeHandle)
+        internal static StackTraceMetadataCallbacks StackTraceCallbacksIfAvailable
         {
-            return ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(runtimeTypeHandle);
+            get
+            {
+                return s_stackTraceMetadataCallbacks;
+            }
         }
 
-        internal static RuntimeType[] ToRuntimeTypeArray(this RuntimeTypeHandle[] runtimeTypeHandles)
+        public static string TryGetMethodDisplayStringFromIp(IntPtr ip)
         {
-            RuntimeType[] runtimeTypes = new RuntimeType[runtimeTypeHandles.Length];
-            for (int i = 0; i < runtimeTypes.Length; i++)
-                runtimeTypes[i] = runtimeTypeHandles[i].ToRuntimeType();
-            return runtimeTypes;
+            StackTraceMetadataCallbacks callbacks = StackTraceCallbacksIfAvailable;
+            if (callbacks == null)
+                return null;
+
+            ip = RuntimeImports.RhFindMethodStartAddress(ip);
+            if (ip == IntPtr.Zero)
+                return null;
+
+            return callbacks.TryGetMethodNameFromStartAddress(ip);
         }
 
         private static volatile ReflectionExecutionDomainCallbacks s_reflectionExecutionDomainCallbacks;
         private static TypeLoaderCallbacks s_typeLoaderCallbacks;
+        private static InteropCallbacks s_interopCallbacks;
 
         public static void ReportUnhandledException(Exception exception)
         {
@@ -802,28 +912,17 @@ namespace Internal.Runtime.Augments
             RuntimeExceptionHelpers.GenerateExceptionInformationForDump(currentException, exceptionCCWPtr);
         }
 
-        [Intrinsic]
-        public static object ConvertIntPtrToObjectReference(IntPtr pointerToObject)
-        {
-            return ConvertIntPtrToObjectReference(pointerToObject);
-        }
-
-        public unsafe static RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
+        public static unsafe RuntimeTypeHandle GetRuntimeTypeHandleFromObjectReference(object obj)
         {
             return new RuntimeTypeHandle(obj.EETypePtr);
-        }
-
-        public static int GetCorElementType(RuntimeTypeHandle type)
-        {
-            return (int)RuntimeImports.RhGetCorElementType(type.ToEETypePtr());
         }
 
         // Move memory which may be on the heap which may have object references in it.
         // In general, a memcpy on the heap is unsafe, but this is able to perform the
         // correct write barrier such that the GC is not incorrectly impacted.
-        public unsafe static void BulkMoveWithWriteBarrier(IntPtr dmem, IntPtr smem, int size)
+        public static unsafe void BulkMoveWithWriteBarrier(IntPtr dmem, IntPtr smem, int size)
         {
-            RuntimeImports.RhBulkMoveWithWriteBarrier((byte*)dmem.ToPointer(), (byte*)smem.ToPointer(), size);
+            RuntimeImports.RhBulkMoveWithWriteBarrier(ref *(byte*)dmem.ToPointer(), ref *(byte*)smem.ToPointer(), (uint)size);
         }
 
         public static IntPtr GetUniversalTransitionThunk()
@@ -831,20 +930,41 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhGetUniversalTransitionThunk();
         }
 
-        public static unsafe IntPtr GetRawAddrOfPinnedObject(IntPtr gcHandleAsIntPtr)
+        public static object CreateThunksHeap(IntPtr commonStubAddress)
         {
-            GCHandle gcHandle = (GCHandle)gcHandleAsIntPtr;
-            Debug.Assert(gcHandle.IsPinned());
+            object newHeap = RuntimeImports.RhCreateThunksHeap(commonStubAddress);
+            if (newHeap == null)
+                throw new OutOfMemoryException();
+            return newHeap;
+        }
 
-            Object target = gcHandle.Target;
+        public static IntPtr AllocateThunk(object thunksHeap)
+        {
+            IntPtr newThunk = RuntimeImports.RhAllocateThunk(thunksHeap);
+            if (newThunk == IntPtr.Zero)
+                throw new OutOfMemoryException();
+            TypeLoaderCallbacks.RegisterThunk(newThunk);
+            return newThunk;
+        }
 
-            if (target == null)
-                return IntPtr.Zero;
+        public static void FreeThunk(object thunksHeap, IntPtr thunkAddress)
+        {
+            RuntimeImports.RhFreeThunk(thunksHeap, thunkAddress);
+        }
 
-            fixed (IntPtr* pTargetEEType = &target.m_pEEType)
-            {
-                return (IntPtr)pTargetEEType;
-            }
+        public static void SetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target)
+        {
+            RuntimeImports.RhSetThunkData(thunksHeap, thunkAddress, context, target);
+        }
+
+        public static bool TryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target)
+        {
+            return RuntimeImports.RhTryGetThunkData(thunksHeap, thunkAddress, out context, out target);
+        }
+
+        public static int GetThunkSize()
+        {
+            return RuntimeImports.RhGetThunkSize();
         }
 
         [DebuggerStepThrough]
@@ -855,24 +975,12 @@ namespace Internal.Runtime.Augments
             RuntimeImports.RhCallDescrWorker(callDescr);
         }
 
-        /// <summary>
-        /// This method opens a file if it exists. For console apps, ILC will inject a call to
-        /// InitializeDesktopSupport in StartupCodeTrigger. This will set up the
-        /// _desktopSupportCallbacks that can be then used to open files.
-        /// The return type is actually a Stream (which we cannot use here due to layering).
-        /// This mechanism shields AppX builds from the cost of merging in System.IO.FileSystem.
-        /// </summary>
-        /// <param name="path">File path / name</param>
-        /// <returns>An initialized Stream instance or null if the file doesn't exist;
-        /// throws when the desktop compat quirks are not enabled</returns>
-        public static object OpenFileIfExists(string path)
+        [DebuggerStepThrough]
+        /* TEMP workaround due to bug 149078 */
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void CallDescrWorkerNative(IntPtr callDescr)
         {
-            if (s_desktopSupportCallbacks == null)
-            {
-                throw new NotSupportedException();
-            }
-
-            return s_desktopSupportCallbacks.OpenFileIfExists(path);
+            RuntimeImports.RhCallDescrWorkerNative(callDescr);
         }
 
         public static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object[], object> invoker)
@@ -883,7 +991,16 @@ namespace Internal.Runtime.Augments
         [System.Runtime.InteropServices.McgIntrinsicsAttribute]
         internal class RawCalliHelper
         {
+            [DebuggerHidden]
+            [DebuggerStepThrough]
             public static unsafe void Call<T>(System.IntPtr pfn, void* arg1, ref T arg2)
+            {
+                // This will be filled in by an IL transform
+            }
+
+            [DebuggerHidden]
+            [DebuggerStepThrough]
+            public static unsafe void Call<T, U>(System.IntPtr pfn, void* arg1, ref T arg2, ref U arg3)
             {
                 // This will be filled in by an IL transform
             }
@@ -916,6 +1033,7 @@ namespace Internal.Runtime.Augments
                 int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
                 // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
                 void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
+                Buffer.ZeroMemory((byte*)region, (nuint)cbBufferAligned);
                 RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
 
                 RawCalliHelper.Call<T>(pfnTargetToInvoke, region, ref context);
@@ -923,6 +1041,131 @@ namespace Internal.Runtime.Augments
 
                 RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);
             }
+        }
+
+        /// <summary>
+        /// This method creates a conservatively reported region and calls a function 
+        /// while that region is conservatively reported. 
+        /// </summary>
+        /// <param name="cbBuffer">size of buffer to allocated (buffer size described in bytes)</param>
+        /// <param name="pfnTargetToInvoke">function pointer to execute. Must have the calling convention void(void* pBuffer, ref T context)</param>
+        /// <param name="context">context to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
+        /// <param name="context2">context2 to pass to inner function. Passed by-ref to allow for efficient use of a struct as a context.</param>
+        [DebuggerGuidedStepThroughAttribute]
+        public static void RunFunctionWithConservativelyReportedBuffer<T, U>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref U context2)
+        {
+            RuntimeImports.ConservativelyReportedRegionDesc regionDesc = new RuntimeImports.ConservativelyReportedRegionDesc();
+            RunFunctionWithConservativelyReportedBufferInternal(cbBuffer, pfnTargetToInvoke, ref context, ref context2, ref regionDesc);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+        }
+
+        // Marked as no-inlining so optimizer won't decide to optimize away the fact that pRegionDesc is a pinned interior pointer.
+        // This function must also not make a p/invoke transition, or the fixed statement reporting of the ConservativelyReportedRegionDesc
+        // will be ignored.
+        [DebuggerGuidedStepThroughAttribute]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe void RunFunctionWithConservativelyReportedBufferInternal<T, U>(int cbBuffer, IntPtr pfnTargetToInvoke, ref T context, ref U context2, ref RuntimeImports.ConservativelyReportedRegionDesc regionDesc)
+        {
+            fixed (RuntimeImports.ConservativelyReportedRegionDesc* pRegionDesc = &regionDesc)
+            {
+                int cbBufferAligned = (cbBuffer + (sizeof(IntPtr) - 1)) & ~(sizeof(IntPtr) - 1);
+                // The conservative region must be IntPtr aligned, and a multiple of IntPtr in size
+                void* region = stackalloc IntPtr[cbBufferAligned / sizeof(IntPtr)];
+                Buffer.ZeroMemory((byte*)region, (nuint)cbBufferAligned);
+                RuntimeImports.RhInitializeConservativeReportingRegion(pRegionDesc, region, cbBufferAligned);
+
+                RawCalliHelper.Call<T, U>(pfnTargetToInvoke, region, ref context, ref context2);
+                System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+
+                RuntimeImports.RhDisableConservativeReportingRegion(pRegionDesc);
+            }
+        }
+
+        public static bool FileExists(string path)
+        {
+            return Internal.IO.File.Exists(path);
+        }
+
+        public static string GetLastResortString(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle.LastResortToString;
+        }
+
+        public static void RhpSendCustomEventToDebugger(IntPtr payload, int length)
+        {
+            RuntimeImports.RhpSendCustomEventToDebugger(payload, length);
+        }
+
+        [CLSCompliant(false)]
+        public static uint RhpGetFuncEvalParameterBufferSize()
+        {
+            return RuntimeImports.RhpGetFuncEvalParameterBufferSize();
+        }
+
+        [CLSCompliant(false)]
+        public static uint RhpGetFuncEvalMode()
+        {
+            return RuntimeImports.RhpGetFuncEvalMode();
+        }
+
+        [CLSCompliant(false)]
+        public static unsafe uint RhpRecordDebuggeeInitiatedHandle(IntPtr objectHandle)
+        {
+            return RuntimeImports.RhpRecordDebuggeeInitiatedHandle((void*)objectHandle);
+        }
+
+        public static IntPtr RhHandleAlloc(object value, GCHandleType type)
+        {
+            return RuntimeImports.RhHandleAlloc(value, type);
+        }
+
+        public static void RhHandleFree(IntPtr handle)
+        {
+            RuntimeImports.RhHandleFree(handle);
+        }
+
+        public static IntPtr RhGetOSModuleForMrt()
+        {
+            return RuntimeImports.RhGetOSModuleForMrt();
+        }
+
+        public static void RhpVerifyDebuggerCleanup()
+        {
+            RuntimeImports.RhpVerifyDebuggerCleanup();
+        }
+
+        public static IntPtr RhpGetCurrentThread()
+        {
+            return RuntimeImports.RhpGetCurrentThread();
+        }
+
+        public static void RhpInitiateThreadAbort(IntPtr thread, bool rude)
+        {
+            Exception ex = new ThreadAbortException();
+            RuntimeImports.RhpInitiateThreadAbort(thread, ex, rude);
+        }
+
+        public static void RhpCancelThreadAbort(IntPtr thread)
+        {
+            RuntimeImports.RhpCancelThreadAbort(thread);
+        }
+
+        public static void RhYield()
+        {
+            RuntimeImports.RhYield();
+        }
+
+        public static bool SupportsRelativePointers
+        {
+            get
+            {
+                return Internal.Runtime.EEType.SupportsRelativePointers;
+            }
+        }
+
+        public static bool IsPrimitive(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle.ToEETypePtr().IsPrimitive && !typeHandle.ToEETypePtr().IsEnum;
         }
     }
 }

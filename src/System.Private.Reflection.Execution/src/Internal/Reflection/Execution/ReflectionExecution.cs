@@ -1,6 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
 //    Internal.Reflection.Execution
 //    -------------------------------------------------
 //      Why does this exist?:
@@ -25,24 +25,26 @@
 using global::System;
 using global::System.Collections.Generic;
 using global::System.Reflection;
-using global::System.Runtime.CompilerServices;
+using global::System.Reflection.Runtime.General;
 
 using global::Internal.Runtime.Augments;
 
 using global::Internal.Reflection.Core;
 using global::Internal.Reflection.Core.Execution;
+using global::Internal.Metadata.NativeFormat;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Reflection.Execution
 {
-    [EagerOrderedStaticConstructor(EagerStaticConstructorOrder.ReflectionExecution)]
     public static class ReflectionExecution
     {
         /// <summary>
-        /// This eager constructor initializes runtime reflection support. As part of ExecutionEnvironmentImplementation
+        /// Eager initialization of runtime reflection support. As part of ExecutionEnvironmentImplementation
         /// initialization it enumerates the modules and registers the ones containing EmbeddedMetadata reflection blobs
         /// in its _moduleToMetadataReader map.
         /// </summary>
-        static ReflectionExecution()
+        internal static void Initialize()
         {
             // Initialize Reflection.Core's one and only ExecutionDomain.
             ExecutionEnvironmentImplementation executionEnvironment = new ExecutionEnvironmentImplementation();
@@ -54,37 +56,62 @@ namespace Internal.Reflection.Execution
             ReflectionExecutionDomainCallbacksImplementation runtimeCallbacks = new ReflectionExecutionDomainCallbacksImplementation(executionDomain, executionEnvironment);
             RuntimeAugments.Initialize(runtimeCallbacks);
 
-#if !CORERT
-            ReflectionTracingInitializer.Initialize();
-#endif
-
-            DefaultAssemblyNamesForGetType =
-                new String[]
-                {
-                    DefaultAssemblyNameForGetType,
-                };
-
             ExecutionEnvironment = executionEnvironment;
-            setup.InstallModuleRegistrationCallbacks();
         }
 
         //
         // This entry is targeted by the ILTransformer to implement Type.GetType()'s ability to detect the calling assembly and use it as
         // a default assembly name.
         //
-        public static Type GetType(String typeName, String callingAssemblyName, bool throwOnError, bool ignoreCase)
+        public static Type GetType(string typeName, string callingAssemblyName, bool throwOnError, bool ignoreCase)
+        {
+            return ExtensibleGetType(typeName, callingAssemblyName, null, null, throwOnError: throwOnError, ignoreCase: ignoreCase);
+        }
+
+        //
+        // This entry is targeted by the ILTransformer to implement Type.GetType()'s ability to detect the calling assembly and use it as
+        // a default assembly name.
+        //
+        public static Type ExtensibleGetType(string typeName, string callingAssemblyName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase)
         {
             LowLevelListWithIList<String> defaultAssemblies = new LowLevelListWithIList<String>();
             defaultAssemblies.Add(callingAssemblyName);
-            defaultAssemblies.AddRange(DefaultAssemblyNamesForGetType);
-            return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, throwOnError, ignoreCase, defaultAssemblies);
+            defaultAssemblies.Add(AssemblyBinder.DefaultAssemblyNameForGetType);
+            return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
+        }
+
+        public static bool TryGetMethodMetadataFromStartAddress(IntPtr methodStartAddress, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
+        {
+            reader = null;
+            typeHandle = default(TypeDefinitionHandle);
+            methodHandle = default(MethodHandle);
+
+            // If ExecutionEnvironment is null, reflection must be disabled.
+            if (ExecutionEnvironment == null)
+                return false;
+
+            RuntimeTypeHandle declaringTypeHandle = default(RuntimeTypeHandle);
+            if (!ExecutionEnvironment.TryGetMethodForStartAddress(methodStartAddress,
+                ref declaringTypeHandle, out QMethodDefinition qMethodDefinition))
+                return false;
+
+            if (!qMethodDefinition.IsNativeFormatMetadataBased)
+                return false;
+
+            if (!ExecutionEnvironment.TryGetMetadataForNamedType(declaringTypeHandle, out QTypeDefinition qTypeDefinition))
+                return false;
+
+            Debug.Assert(qTypeDefinition.IsNativeFormatMetadataBased);
+            Debug.Assert(qTypeDefinition.NativeFormatReader == qMethodDefinition.NativeFormatReader);
+
+            reader = qTypeDefinition.NativeFormatReader;
+            typeHandle = qTypeDefinition.NativeFormatHandle;
+            methodHandle = qMethodDefinition.NativeFormatHandle;
+
+            return true;
         }
 
         internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }
-
-        //@todo: Is there a better way than hard-coding?
-        internal const String DefaultAssemblyNameForGetType = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
-        internal static IEnumerable<String> DefaultAssemblyNamesForGetType;
     }
 }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 //
 // GC Object Pointer Location Series Stuff
@@ -11,9 +10,9 @@
 #ifndef _GCDESC_H_
 #define _GCDESC_H_
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 typedef uint32_t HALF_SIZE_T;
-#else   // BIT64
+#else   // HOST_64BIT
 typedef uint16_t HALF_SIZE_T;
 #endif
 
@@ -72,7 +71,7 @@ typedef DPTR(class MethodTable) PTR_MethodTable;
 class CGCDescSeries
 {
 public:
-    union 
+    union
     {
         size_t seriessize;              // adjusted length of series (see above) in bytes
         val_serie_item val_serie[1];    //coded serie for value class array
@@ -80,9 +79,9 @@ public:
 
     size_t startoffset;
 
-    size_t GetSeriesCount () 
-    { 
-        return seriessize/sizeof(JSlot); 
+    size_t GetSeriesCount ()
+    {
+        return seriessize/sizeof(JSlot);
     }
 
     void SetSeriesCount (size_t newcount)
@@ -139,7 +138,7 @@ public:
     static size_t ComputeSize (size_t NumSeries)
     {
         _ASSERTE (ptrdiff_t(NumSeries) > 0);
-        
+
         return sizeof(size_t) + NumSeries*sizeof(CGCDescSeries);
     }
 
@@ -147,7 +146,7 @@ public:
     static size_t ComputeSizeRepeating (size_t NumSeries)
     {
         _ASSERTE (ptrdiff_t(NumSeries) > 0);
-        
+
         return sizeof(size_t) + sizeof(CGCDescSeries) +
                (NumSeries-1)*sizeof(val_serie_item);
     }
@@ -168,9 +167,9 @@ public:
     {
         // If it doesn't contain pointers, there isn't a GCDesc
         PTR_MethodTable mt(pMT);
-#ifndef BINDER
+
         _ASSERTE(mt->ContainsPointersOrCollectible());
-#endif
+
         return PTR_CGCDesc(mt);
     }
 
@@ -248,7 +247,7 @@ public:
     }
 
 private:
-    
+
     BOOL IsValueClassSeries()
     {
         return ((ptrdiff_t) GetNumSeries()) < 0;

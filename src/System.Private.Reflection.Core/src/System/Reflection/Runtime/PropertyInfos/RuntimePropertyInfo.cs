@@ -1,27 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Text;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System;
+using System.Text;
+using System.Reflection;
+using System.Diagnostics;
+using System.Globalization;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.MethodInfos;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Reflection.Extensibility;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Tracing;
 
-using global::Internal.Metadata.NativeFormat;
 
 namespace System.Reflection.Runtime.PropertyInfos
 {
@@ -29,7 +26,7 @@ namespace System.Reflection.Runtime.PropertyInfos
     // The runtime's implementation of PropertyInfo's
     //
     [DebuggerDisplay("{_debugName}")]
-    internal sealed partial class RuntimePropertyInfo : ExtensiblePropertyInfo, ITraceableTypeMember
+    internal abstract partial class RuntimePropertyInfo : PropertyInfo, ITraceableTypeMember
     {
         //
         // propertyHandle - the "tkPropertyDef" that identifies the property.
@@ -50,29 +47,17 @@ namespace System.Reflection.Runtime.PropertyInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimePropertyInfo(PropertyHandle propertyHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        protected RuntimePropertyInfo(RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            _propertyHandle = propertyHandle;
-            _definingTypeInfo = definingTypeInfo;
-            _contextTypeInfo = contextTypeInfo;
-            _reader = definingTypeInfo.Reader;
-            _property = propertyHandle.GetProperty(_reader);
-        }
-
-        public sealed override PropertyAttributes Attributes
-        {
-            get
-            {
-                return _property.Flags;
-            }
+            ContextTypeInfo = contextTypeInfo;
+            _reflectedType = reflectedType;
         }
 
         public sealed override bool CanRead
         {
             get
             {
-                MethodHandle ignore;
-                return GetAccessor(MethodSemanticsAttributes.Getter, out ignore);
+                return Getter != null;
             }
         }
 
@@ -80,28 +65,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-                MethodHandle ignore;
-                return GetAccessor(MethodSemanticsAttributes.Setter, out ignore);
-            }
-        }
-
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.PropertyInfo_CustomAttributes(this);
-#endif
-
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_definingTypeInfo.ReflectionDomain, _reader, _property.CustomAttributes))
-                    yield return cad;
-                ExecutionDomain executionDomain = _definingTypeInfo.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _propertyHandle, _definingTypeInfo.TypeDefinitionHandle))
-                        yield return cad;
-                }
+                return Setter != null;
             }
         }
 
@@ -114,65 +78,44 @@ namespace System.Reflection.Runtime.PropertyInfos
                     ReflectionTrace.PropertyInfo_DeclaringType(this);
 #endif
 
-                return _contextTypeInfo.AsType();
+                return ContextTypeInfo;
             }
-        }
-
-        public sealed override bool Equals(Object obj)
-        {
-            RuntimePropertyInfo other = obj as RuntimePropertyInfo;
-            if (other == null)
-                return false;
-            if (!(this._reader == other._reader))
-                return false;
-            if (!(this._propertyHandle.Equals(other._propertyHandle)))
-                return false;
-            if (!(this._contextTypeInfo.Equals(other._contextTypeInfo)))
-                return false;
-            return true;
-        }
-
-        public sealed override int GetHashCode()
-        {
-            return _propertyHandle.GetHashCode();
-        }
-
-        public sealed override Object GetConstantValue()
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.PropertyInfo_GetConstantValue(this);
-#endif
-
-            if (!(_definingTypeInfo.ReflectionDomain is ExecutionDomain))
-                throw new NotSupportedException(); // Cannot instantiate a boxed enum on a non-execution domain.
-
-            Object defaultValue;
-            if (!ReflectionCoreExecution.ExecutionEnvironment.GetDefaultValueIfAny(
-                _reader,
-                _propertyHandle,
-                this.PropertyType,
-                this.CustomAttributes,
-                out defaultValue))
-            {
-                throw new InvalidOperationException();
-            }
-            return defaultValue;
         }
 
         public sealed override ParameterInfo[] GetIndexParameters()
         {
-            bool useGetter = CanRead;
-            RuntimeMethodInfo accessor = (useGetter ? Getter : Setter);
-            RuntimeParameterInfo[] runtimeMethodParameterInfos = accessor.GetRuntimeParametersAndReturn(accessor);
-            int count = runtimeMethodParameterInfos.Length - 1;  // Subtract one for the return parameter.
-            if (!useGetter)
-                count--;  // If we're taking the parameters off the setter, subtract one for the "value" parameter.
-            if (count == 0)
-                return Array.Empty<ParameterInfo>();
-            ParameterInfo[] result = new ParameterInfo[count];
-            for (int i = 0; i < count; i++)
-                result[i] = RuntimePropertyIndexParameterInfo.GetRuntimePropertyIndexParameterInfo(this, runtimeMethodParameterInfos[i + 1]);
+            ParameterInfo[] indexParameters = _lazyIndexParameters;
+            if (indexParameters == null)
+            {
+                bool useGetter = CanRead;
+                RuntimeMethodInfo accessor = (useGetter ? Getter : Setter);
+                RuntimeParameterInfo[] runtimeMethodParameterInfos = accessor.RuntimeParameters;
+                int count = runtimeMethodParameterInfos.Length;
+                if (!useGetter)
+                    count--;  // If we're taking the parameters off the setter, subtract one for the "value" parameter.
+                if (count == 0)
+                {
+                    _lazyIndexParameters = indexParameters = Array.Empty<ParameterInfo>();
+                }
+                else
+                {
+                    indexParameters = new ParameterInfo[count];
+                    for (int i = 0; i < count; i++)
+                    {
+                        indexParameters[i] = RuntimePropertyIndexParameterInfo.GetRuntimePropertyIndexParameterInfo(this, runtimeMethodParameterInfos[i]);
+                    }
+                    _lazyIndexParameters = indexParameters;
+                }
+            }
+
+            int numParameters = indexParameters.Length;
+            if (numParameters == 0)
+                return indexParameters;
+            ParameterInfo[] result = new ParameterInfo[numParameters];
+            for (int i = 0; i < numParameters; i++)
+            {
+                result[i] = indexParameters[i];
+            }
             return result;
         }
 
@@ -189,31 +132,35 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
         }
 
-        public sealed override Object GetValue(Object obj, Object[] index)
+        public sealed override Type[] GetOptionalCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(ContextTypeInfo.TypeContext, optional: true);
+
+        public sealed override Type[] GetRequiredCustomModifiers() => PropertyTypeHandle.GetCustomModifiers(ContextTypeInfo.TypeContext, optional: false);
+
+        public sealed override object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_GetValue(this, obj, index);
 #endif
-
             if (_lazyGetterInvoker == null)
             {
-                MethodHandle getterMethodHandle;
-                if (!GetAccessor(MethodSemanticsAttributes.Getter, out getterMethodHandle))
+                if (!CanRead)
                     throw new ArgumentException();
-                MethodAttributes getterMethodAttributes = getterMethodHandle.GetMethod(_reader).Flags;
-                _lazyGetterInvoker = ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_reader, _contextTypeInfo.RuntimeType, getterMethodHandle, Array.Empty<RuntimeType>(), this);
+
+                _lazyGetterInvoker = Getter.GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
             if (index == null)
                 index = Array.Empty<Object>();
-            return _lazyGetterInvoker.Invoke(obj, index);
+            return _lazyGetterInvoker.Invoke(obj, index, binder, invokeAttr, culture);
         }
+
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
 
         public sealed override Module Module
         {
             get
             {
-                return _definingTypeInfo.Module;
+                return DefiningTypeInfo.Module;
             }
         }
 
@@ -226,7 +173,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                     ReflectionTrace.PropertyInfo_Name(this);
 #endif
 
-                return _property.Name.GetString(_reader);
+                return MetadataName;
             }
         }
 
@@ -239,9 +186,22 @@ namespace System.Reflection.Runtime.PropertyInfos
                     ReflectionTrace.PropertyInfo_PropertyType(this);
 #endif
 
-                TypeContext typeContext = _contextTypeInfo.TypeContext;
-                Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
-                return _contextTypeInfo.ReflectionDomain.Resolve(_reader, typeHandle, typeContext);
+                Type propertyType = _lazyPropertyType;
+                if (propertyType == null)
+                {
+                    TypeContext typeContext = ContextTypeInfo.TypeContext;
+                    _lazyPropertyType = propertyType = PropertyTypeHandle.Resolve(typeContext);
+                }
+
+                return propertyType;
+            }
+        }
+
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                return _reflectedType;
             }
         }
 
@@ -258,20 +218,18 @@ namespace System.Reflection.Runtime.PropertyInfos
             }
         }
 
-        public sealed override void SetValue(Object obj, Object value, Object[] index)
+        public sealed override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.PropertyInfo_SetValue(this, obj, value, index);
 #endif
-
             if (_lazySetterInvoker == null)
             {
-                MethodHandle setterMethodHandle;
-                if (!GetAccessor(MethodSemanticsAttributes.Setter, out setterMethodHandle))
+                if (!CanWrite)
                     throw new ArgumentException();
-                MethodAttributes setterMethodAttributes = setterMethodHandle.GetMethod(_reader).Flags;
-                _lazySetterInvoker = ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_reader, _contextTypeInfo.RuntimeType, setterMethodHandle, Array.Empty<RuntimeType>(), this);
+
+                _lazySetterInvoker = Setter.GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
             Object[] arguments;
             if (index == null)
@@ -287,17 +245,15 @@ namespace System.Reflection.Runtime.PropertyInfos
                 }
                 arguments[index.Length] = value;
             }
-            _lazySetterInvoker.Invoke(obj, arguments);
+            _lazySetterInvoker.Invoke(obj, arguments, binder, invokeAttr, culture);
         }
 
         public sealed override String ToString()
         {
             StringBuilder sb = new StringBuilder(30);
 
-            ReflectionDomain reflectionDomain = _contextTypeInfo.ReflectionDomain;
-            TypeContext typeContext = _contextTypeInfo.TypeContext;
-            Handle typeHandle = _property.Signature.GetPropertySignature(_reader).Type;
-            sb.Append(typeHandle.FormatTypeName(_reader, typeContext, reflectionDomain));
+            TypeContext typeContext = ContextTypeInfo.TypeContext;
+            sb.Append(PropertyTypeHandle.FormatTypeName(typeContext));
             sb.Append(' ');
             sb.Append(this.Name);
             ParameterInfo[] indexParameters = this.GetIndexParameters();
@@ -307,7 +263,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 for (int i = 0; i < indexParameters.Length; i++)
                     indexRuntimeParameters[i] = (RuntimeParameterInfo)(indexParameters[i]);
                 sb.Append(" [");
-                sb.Append(RuntimeMethodCommon.ComputeParametersString(indexRuntimeParameters, 0));
+                sb.Append(RuntimeMethodHelpers.ComputeParametersString(indexRuntimeParameters));
                 sb.Append(']');
             }
 
@@ -318,7 +274,7 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-                return _property.Name.GetString(_reader);
+                return MetadataName;
             }
         }
 
@@ -326,52 +282,49 @@ namespace System.Reflection.Runtime.PropertyInfos
         {
             get
             {
-                return _contextTypeInfo.AsType();
+                return ContextTypeInfo;
             }
         }
 
-        private RuntimeMethodInfo Getter
+        private RuntimeNamedMethodInfo Getter
         {
             get
             {
-                MethodHandle getterHandle;
-                if (GetAccessor(MethodSemanticsAttributes.Getter, out getterHandle))
+                RuntimeNamedMethodInfo getter = _lazyGetter;
+                if (getter == null)
                 {
-                    return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(getterHandle, _definingTypeInfo, _contextTypeInfo);
+                    getter = GetPropertyMethod(PropertyMethodSemantics.Getter);
+
+                    if (getter == null)
+                        getter = RuntimeDummyMethodInfo.Instance;
+
+                    _lazyGetter = getter;
                 }
-                return null;
+
+                return object.ReferenceEquals(getter, RuntimeDummyMethodInfo.Instance) ? null : getter;
             }
         }
 
-        private RuntimeMethodInfo Setter
+        private RuntimeNamedMethodInfo Setter
         {
             get
             {
-                MethodHandle setterHandle;
-                if (GetAccessor(MethodSemanticsAttributes.Setter, out setterHandle))
+                RuntimeNamedMethodInfo setter = _lazySetter;
+                if (setter == null)
                 {
-                    return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(setterHandle, _definingTypeInfo, _contextTypeInfo);
+                    setter = GetPropertyMethod(PropertyMethodSemantics.Setter);
+
+                    if (setter == null)
+                        setter = RuntimeDummyMethodInfo.Instance;
+
+                    _lazySetter = setter;
                 }
-                return null;
+
+                return object.ReferenceEquals(setter, RuntimeDummyMethodInfo.Instance) ? null : setter;
             }
         }
 
-        private bool GetAccessor(MethodSemanticsAttributes methodSemanticsAttribute, out MethodHandle methodHandle)
-        {
-            foreach (MethodSemanticsHandle methodSemanticsHandle in _property.MethodSemantics)
-            {
-                MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
-                if (methodSemantics.Attributes == methodSemanticsAttribute)
-                {
-                    methodHandle = methodSemantics.Method;
-                    return true;
-                }
-            }
-            methodHandle = default(MethodHandle);
-            return false;
-        }
-
-        private RuntimePropertyInfo WithDebugName()
+        protected RuntimePropertyInfo WithDebugName()
         {
             bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
@@ -383,20 +336,78 @@ namespace System.Reflection.Runtime.PropertyInfos
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
-                _debugName = ((ITraceableTypeMember)this).MemberName;
+                _debugName = MetadataName;
             }
             return this;
         }
 
-        private RuntimeNamedTypeInfo _definingTypeInfo;
-        private PropertyHandle _propertyHandle;
-        private RuntimeTypeInfo _contextTypeInfo;
+        // Types that derive from RuntimePropertyInfo must implement the following public surface area members
+        public abstract override PropertyAttributes Attributes { get; }
+        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        public abstract override bool Equals(Object obj);
+        public abstract override int GetHashCode();
+        public abstract override int MetadataToken { get; }
 
-        private MetadataReader _reader;
-        private Property _property;
+        public sealed override object GetConstantValue() => GetConstantValue(raw: false);
+        public sealed override object GetRawConstantValue() => GetConstantValue(raw: true);
+
+        protected abstract bool GetDefaultValueIfAny(bool raw, out object defaultValue);
+
+        /// <summary>
+        /// Return a qualified handle that can be used to get the type of the property.
+        /// </summary>
+        protected abstract QSignatureTypeHandle PropertyTypeHandle { get; }
+
+        protected enum PropertyMethodSemantics
+        {
+            Getter,
+            Setter,
+        }
+
+        /// <summary>
+        /// Override to return the Method that corresponds to the specified semantic.
+        /// Return null if a method of the appropriate semantic does not exist
+        /// </summary>
+        protected abstract RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod);
+
+        /// <summary>
+        /// Override to provide the metadata based name of a property. (Different from the Name
+        /// property in that it does not go into the reflection trace logic.)
+        /// </summary>
+        protected abstract string MetadataName { get; }
+
+        /// <summary>
+        /// Return the DefiningTypeInfo as a RuntimeTypeInfo (instead of as a format specific type info)
+        /// </summary>
+        protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }
+
+        protected readonly RuntimeTypeInfo ContextTypeInfo;
+        protected readonly RuntimeTypeInfo _reflectedType;
+
+        private object GetConstantValue(bool raw)
+        {
+#if ENABLE_REFLECTION_TRACE
+            if (ReflectionTrace.Enabled)
+                ReflectionTrace.PropertyInfo_GetConstantValue(this);
+#endif
+
+            object defaultValue;
+            if (!GetDefaultValueIfAny(raw, out defaultValue))
+            {
+                throw new InvalidOperationException(SR.Arg_EnumLitValueNotFound);
+            }
+            return defaultValue;
+        }
 
         private volatile MethodInvoker _lazyGetterInvoker = null;
         private volatile MethodInvoker _lazySetterInvoker = null;
+
+        private volatile RuntimeNamedMethodInfo _lazyGetter;
+        private volatile RuntimeNamedMethodInfo _lazySetter;
+
+        private volatile ParameterInfo[] _lazyIndexParameters;
+
+        private volatile Type _lazyPropertyType;
 
         private String _debugName;
     }

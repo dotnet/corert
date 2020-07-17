@@ -1,28 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Globalization;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.ParameterInfos;
 
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Reflection.Extensibility;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Metadata.NativeFormat;
-
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
     //
     // The runtime's implementation of ConstructorInfo.
     //
-    internal abstract partial class RuntimeConstructorInfo : ExtensibleConstructorInfo
+    internal abstract partial class RuntimeConstructorInfo : ConstructorInfo
     {
         public abstract override MethodAttributes Attributes { get; }
 
@@ -32,7 +29,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                return DeclaringType.GetTypeInfo().ContainsGenericParameters;
+                return DeclaringType.ContainsGenericParameters;
             }
         }
 
@@ -46,6 +43,11 @@ namespace System.Reflection.Runtime.MethodInfos
             throw new NotSupportedException();
         }
 
+        public sealed override MethodBody GetMethodBody()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public sealed override ParameterInfo[] GetParameters()
         {
 #if ENABLE_REFLECTION_TRACE
@@ -53,24 +55,31 @@ namespace System.Reflection.Runtime.MethodInfos
                 ReflectionTrace.MethodBase_GetParameters(this);
 #endif
 
-            RuntimeParameterInfo[] runtimeParametersAndReturn = this.RuntimeParametersAndReturn;
-            if (runtimeParametersAndReturn.Length == 1)
+            RuntimeParameterInfo[] parameters = RuntimeParameters;
+            if (parameters.Length == 0)
                 return Array.Empty<ParameterInfo>();
-            ParameterInfo[] result = new ParameterInfo[runtimeParametersAndReturn.Length - 1];
+            ParameterInfo[] result = new ParameterInfo[parameters.Length];
             for (int i = 0; i < result.Length; i++)
-                result[i] = runtimeParametersAndReturn[i + 1];
+                result[i] = parameters[i];
             return result;
         }
 
-        public abstract override Object Invoke(Object[] parameters);
+        public sealed override ParameterInfo[] GetParametersNoCopy()
+        {
+            return RuntimeParameters;
+        }
 
-        public sealed override Object Invoke(Object obj, Object[] parameters)
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+
+        public abstract override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture);
+
+        [DebuggerGuidedStepThrough]
+        public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
 #endif
-
             if (parameters == null)
                 parameters = Array.Empty<Object>();
             MethodInvoker methodInvoker;
@@ -98,14 +107,31 @@ namespace System.Reflection.Runtime.MethodInfos
                 throw;
             }
 
-            return methodInvoker.Invoke(obj, parameters);
+            object result = methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
+        }
+
+        public abstract override MethodBase MetadataDefinitionMethod { get; }
+
+        public abstract override int MetadataToken 
+        { 
+            get; 
         }
 
         public sealed override Module Module
         {
             get
             {
-                return DeclaringType.GetTypeInfo().Module;
+                return DeclaringType.Module;
+            }
+        }
+
+        public sealed override bool IsConstructedGenericMethod
+        {
+            get
+            {
+                return false;
             }
         }
 
@@ -133,7 +159,18 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override int GetHashCode();
 
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                // Constructors are always looked up as if BindingFlags.DeclaredOnly were specified. Thus, the ReflectedType will always be the DeclaringType.
+                return DeclaringType;
+            }
+        }
+
         public abstract override String ToString();
+
+        public abstract override RuntimeMethodHandle MethodHandle { get; }
 
         protected MethodInvoker MethodInvoker
         {
@@ -147,7 +184,9 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        protected abstract RuntimeParameterInfo[] RuntimeParametersAndReturn { get; }
+        internal IntPtr LdFtnResult => MethodInvoker.LdFtnResult;
+
+        protected abstract RuntimeParameterInfo[] RuntimeParameters { get; }
 
         protected abstract MethodInvoker UncachedMethodInvoker { get; }
 

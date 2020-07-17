@@ -1,0 +1,16 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <RyuJITVersion Condition="'$(RyuJITVersion)' == ''">5.0.0-preview.8.20328.6</RyuJITVersion>
+    <ObjectWriterVersion Condition="'$(ObjectWriterVersion)' == ''">1.0.0-alpha-28820-01</ObjectWriterVersion>
+    <CoreDisToolsVersion Condition="'$(CoreDisToolsVersion)' == ''">1.0.1-prerelease-00005</CoreDisToolsVersion>
+    <RuntimeLibrariesVersion Condition="'$(RuntimeLibrariesVersion)' == ''">5.0.0-preview.5.20263.12</RuntimeLibrariesVersion>
+    <CoreFxUapVersion Condition="'$(CoreFxUapVersion)' == ''">4.7.0-preview6.19265.2</CoreFxUapVersion>
+    <MicrosoftNETCoreAppPackageVersion Condition="'$(MicrosoftNETCoreAppPackageVersion)' == ''">2.1.14</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftDotNetTestSdkVersion Condition="'$(MicrosoftDotNetTestSdkVersion)' == ''">15.8.0</MicrosoftDotNetTestSdkVersion>
+    <XUnitPackageVersion Condition="'$(XUnitPackageVersion)' == ''">2.4.1-pre.build.4059</XUnitPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion Condition="'$(MicrosoftDotNetXUnitExtensionsVersion)' == ''">2.4.0-beta.18420.4</MicrosoftDotNetXUnitExtensionsVersion>
+    <SystemReflectionMetadataVersion Condition="'$(SystemReflectionMetadataVersion)' == ''">1.4.3</SystemReflectionMetadataVersion>
+    <FeedTasksPackage Condition="'$(FeedTasksPackage)' == ''">Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
+    <FeedTasksPackageVersion Condition="'$(FeedTasksPackageVersion)' == ''">2.1.0-rc1-03905-01</FeedTasksPackageVersion>
+  </PropertyGroup>
+</Project>

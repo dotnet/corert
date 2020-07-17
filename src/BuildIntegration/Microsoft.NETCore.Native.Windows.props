@@ -1,0 +1,111 @@
+<!--
+***********************************************************************************************
+Microsoft.NETCore.Native.Windows.props
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+This file defines Windows-specific steps in the build process for native AOT compilation.
+
+Licensed to the .NET Foundation under one or more agreements.
+The .NET Foundation licenses this file to you under the MIT license.
+***********************************************************************************************
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <CppCompiler>cl</CppCompiler>
+    <CppLinker>link</CppLinker>
+    <CppLibCreator>lib</CppLibCreator>
+    <FullRuntimeName>Runtime</FullRuntimeName>
+    <FullRuntimeName Condition="'$(ServerGarbageCollection)' != ''">Runtime.ServerGC</FullRuntimeName>
+  </PropertyGroup>
+
+  <!-- Part of workaround for lack of secondary build artifact import - https://github.com/Microsoft/msbuild/issues/2807 -->
+  <!-- Ensure that runtime-specific paths have already been set -->
+  <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+    <ItemGroup>
+      <CppCompilerAndLinkerArg Include="/I$(IlcPath)\inc" />
+      <CppCompilerAndLinkerArg Condition="'$(Configuration)' == 'Debug'" Include="/Od" />
+      <CppCompilerAndLinkerArg Condition="'$(Configuration)' != 'Debug'" Include="/O2" />
+      <CppCompilerAndLinkerArg Include="/c /nologo /W3 /GS /DCPPCODEGEN /EHs /Zi /bigobj" />
+      <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' == 'true'" Include="/MTd" />
+      <CppCompilerAndLinkerArg Condition="'$(UseDebugCrt)' != 'true'" Include="/MT" />
+      <CppCompilerAndLinkerArg Include="$(AdditionalCppCompilerFlags)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) == ''" Include="$(IlcPath)\sdk\bootstrapper.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and $(NativeLib) != ''" Include="$(IlcPath)\sdk\bootstrapperdll.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\$(FullRuntimeName).lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == ''" Include="$(IlcPath)\sdk\System.Private.TypeLoader.Native.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == '' and '$(ExperimentalJitSupport)' == 'true'" Include="$(IlcPath)\sdk\System.Private.Jit.Native.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'cpp'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\bootstrappercpp.lib" />
+      <NativeLibrary Condition="$(NativeCodeGen) == 'wasm'" Include="$(IlcPath)\sdk\PortableRuntime.lib" />
+      <NativeLibrary Condition="'$(IlcMultiModule)' == 'true' and $(NativeCodeGen) == ''" Include="$(SharedLibrary)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <NativeLibrary Include="kernel32.lib" />
+      <NativeLibrary Include="ntdll.lib" />
+      <NativeLibrary Include="user32.lib" />
+      <NativeLibrary Include="gdi32.lib" />
+      <NativeLibrary Include="winspool.lib" />
+      <NativeLibrary Include="comdlg32.lib" />
+      <NativeLibrary Include="advapi32.lib" />
+      <NativeLibrary Include="shell32.lib" />
+      <NativeLibrary Include="ole32.lib" />
+      <NativeLibrary Include="oleaut32.lib" />
+      <NativeLibrary Include="uuid.lib" />
+      <NativeLibrary Include="bcrypt.lib" />
+      <NativeLibrary Include="normaliz.lib" />
+      <NativeLibrary Include="crypt32.lib" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <LinkerArg Condition="$(NativeLib) == 'Shared'" Include="/DLL" />
+      <LinkerArg Include="@(NativeLibrary->'&quot;%(Identity)&quot;')" />
+      <LinkerArg Include="/NOLOGO /MANIFEST:NO" />
+      <LinkerArg Condition="$(NativeDebugSymbols) == 'true'" Include="/DEBUG" />
+      <!-- The runtime is not compatible with jump stubs inserted by incremental linking. -->
+      <LinkerArg Include="/INCREMENTAL:NO" />
+      <LinkerArg Condition="'$(OutputType)' == 'WinExe'" Include="/SUBSYSTEM:WINDOWS /ENTRY:wmainCRTStartup" />
+      <LinkerArg Include="/NATVIS:&quot;$(MSBuildThisFileDirectory)CoreRTNatVis.natvis&quot;" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- TODO <LinkerArg Include="/MACHINE:X64" /> -->
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+      <LinkerArg Include="/OPT:REF" />
+      <LinkerArg Include="/OPT:ICF" />
+    </ItemGroup>
+
+    <Exec Command="where /Q $(CppCompiler) &amp;&amp; where /Q $(CppLinker)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereCppTools"/>
+    </Exec>
+
+    <Message Condition="'$(_WhereCppTools)' != '0'" Text="Tools '$(CppCompiler)' and '$(CppLinker)' not found on PATH. Attempting to autodetect." />
+
+    <Exec Condition="'$(_WhereCppTools)' != '0'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; amd64" IgnoreExitCode="true" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallOutput"/>
+      <Output TaskParameter="ExitCode" PropertyName="_VCVarsAllFound"/>
+    </Exec>
+
+    <ItemGroup Condition="'$(_VCVarsAllFound)' == '0'">
+      <AdditionalNativeLibraryDirectories Include="$(_FindVCVarsallOutput.Split(`#`)[1].Split(';'))" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(_VCVarsAllFound)' == '0'">
+      <_CppToolsDirectory>$(_FindVCVarsallOutput.Split(`#`)[0])</_CppToolsDirectory>
+      <CppCompiler>"$(_CppToolsDirectory)cl.exe"</CppCompiler>
+      <CppLinker>"$(_CppToolsDirectory)link.exe"</CppLinker>
+      <CppLibCreator>"$(_CppToolsDirectory)lib.exe"</CppLibCreator>
+    </PropertyGroup>
+
+    <Error Condition="'$(_WhereCppTools)' != '0' AND '$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. To fix this problem, download and install Visual Studio 2017 from http://visualstudio.com. Make sure to install the Desktop Development for C++ workload." />
+  </Target>
+</Project>

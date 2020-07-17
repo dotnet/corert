@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -12,17 +11,14 @@
 ** 
 ===========================================================*/
 
-using System;
-using System.Runtime;
 using System.Diagnostics;
-using System.Threading;
-using System.Runtime.CompilerServices;
-using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
     internal static class HashHelpers
     {
+        public const int HashCollisionThreshold = 100;
+
         private const Int32 HashPrime = 101;
 
         // Table of prime numbers to use as hash table sizes. 
@@ -62,7 +58,6 @@ namespace System.Collections
         {
             if (min < 0)
                 throw new ArgumentException(SR.Arg_HTCapacityOverflow);
-            Contract.EndContractBlock();
 
             for (int i = 0; i < primes.Length; i++)
             {
@@ -94,7 +89,7 @@ namespace System.Collections
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
             if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
             {
-                Contract.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
+                Debug.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
                 return MaxPrimeArrayLength;
             }
 

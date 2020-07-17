@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -9,16 +8,12 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
-using Internal.TypeSystem;
-
 namespace Internal.TypeSystem.Ecma
 {
-    public sealed class EcmaModule : ModuleDesc, IAssemblyDesc
+    public partial class EcmaModule : ModuleDesc
     {
         private PEReader _peReader;
-        private MetadataReader _metadataReader;
-
-        private AssemblyDefinition _assemblyDefinition;
+        protected MetadataReader _metadataReader;
 
         internal interface IEntityHandleObject
         {
@@ -143,7 +138,16 @@ namespace Internal.TypeSystem.Ecma
                         item = _module.ResolveStandaloneSignature((StandaloneSignatureHandle)handle);
                         break;
 
-                    // TODO: Resolve other tokens
+                    case HandleKind.ModuleDefinition:
+                        // ECMA-335 Partition 2 II.22.38 1d: This should not occur in a CLI ("compressed metadata") module,
+                        // but resolves to "current module".
+                        item = _module;
+                        break;
+
+                    case HandleKind.ModuleReference:
+                        item = _module.ResolveModuleReference((ModuleReferenceHandle)handle);
+                        break;
+
                     default:
                         throw new BadImageFormatException("Unknown metadata token type: " + handle.Kind);
                 }
@@ -162,27 +166,49 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
+        private object ResolveModuleReference(ModuleReferenceHandle handle)
+        {
+            ModuleReference moduleReference = _metadataReader.GetModuleReference(handle);
+            string fileName = _metadataReader.GetString(moduleReference.Name);
 
-        public EcmaModule(TypeSystemContext context, PEReader peReader)
-            : base(context)
+            return _moduleResolver.ResolveModule(this.Assembly, fileName);
+        }
+
+        private LockFreeReaderHashtable<EntityHandle, IEntityHandleObject> _resolvedTokens;
+        IModuleResolver _moduleResolver;
+
+        internal EcmaModule(TypeSystemContext context, PEReader peReader, MetadataReader metadataReader, IAssemblyDesc containingAssembly, IModuleResolver customModuleResolver)
+            : base(context, containingAssembly)
         {
             _peReader = peReader;
+            _metadataReader = metadataReader;
+            _resolvedTokens = new EcmaObjectLookupHashtable(this);
+            _moduleResolver = customModuleResolver != null ? customModuleResolver : context;
+        }
+
+        public static EcmaModule Create(TypeSystemContext context, PEReader peReader, IAssemblyDesc containingAssembly, IModuleResolver customModuleResolver = null)
+        {
+            MetadataReader metadataReader = CreateMetadataReader(context, peReader);
+
+            if (containingAssembly == null)
+                return new EcmaAssembly(context, peReader, metadataReader, customModuleResolver);
+            else
+                return new EcmaModule(context, peReader, metadataReader, containingAssembly, customModuleResolver);
+        }
+
+        private static MetadataReader CreateMetadataReader(TypeSystemContext context, PEReader peReader)
+        {
+            if (!peReader.HasMetadata)
+            {
+                ThrowHelper.ThrowBadImageFormatException();
+            }
 
             var stringDecoderProvider = context as IMetadataStringDecoderProvider;
 
-            _metadataReader = peReader.GetMetadataReader(MetadataReaderOptions.None /* MetadataReaderOptions.ApplyWindowsRuntimeProjections */,
+            MetadataReader metadataReader = peReader.GetMetadataReader(MetadataReaderOptions.None /* MetadataReaderOptions.ApplyWindowsRuntimeProjections */,
                 (stringDecoderProvider != null) ? stringDecoderProvider.GetMetadataStringDecoder() : null);
 
-            _assemblyDefinition = _metadataReader.GetAssemblyDefinition();
-
-            _resolvedTokens = new EcmaObjectLookupHashtable(this);
-        }
-
-        public EcmaModule(TypeSystemContext context, MetadataReader metadataReader)
-            : base(context)
-        {
-            _metadataReader = metadataReader;
+            return metadataReader;
         }
 
         public PEReader PEReader
@@ -201,15 +227,57 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public AssemblyDefinition AssemblyDefinition
+        /// <summary>
+        /// Gets the managed entrypoint method of this module or null if the module has no managed entrypoint.
+        /// </summary>
+        public MethodDesc EntryPoint
         {
             get
             {
-                return _assemblyDefinition;
+                CorHeader corHeader = _peReader.PEHeaders.CorHeader;
+                if ((corHeader.Flags & CorFlags.NativeEntryPoint) != 0)
+                {
+                    // Entrypoint is an RVA to an unmanaged method
+                    return null;
+                }
+
+                int entryPointToken = corHeader.EntryPointTokenOrRelativeVirtualAddress;
+                if (entryPointToken == 0)
+                {
+                    // No entrypoint
+                    return null;
+                }
+
+                EntityHandle handle = MetadataTokens.EntityHandle(entryPointToken);
+
+                if (handle.Kind == HandleKind.MethodDefinition)
+                {
+                    return GetMethod(handle);
+                }
+                else if (handle.Kind == HandleKind.AssemblyFile)
+                {
+                    // Entrypoint not in the manifest assembly
+                    throw new NotImplementedException();
+                }
+
+                // Bad metadata
+                throw new BadImageFormatException();
             }
         }
 
-        public override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
+        public bool IsPlatformNeutral
+        {
+            get
+            {
+                PEHeaders peHeaders = PEReader.PEHeaders;
+                return peHeaders.PEHeader.Magic == PEMagic.PE32
+                    && (peHeaders.CorHeader.Flags & (CorFlags.Prefers32Bit | CorFlags.Requires32Bit)) != CorFlags.Requires32Bit
+                    && (peHeaders.CorHeader.Flags & CorFlags.ILOnly) != 0
+                    && peHeaders.CoffHeader.Machine == Machine.I386;
+            }
+        }
+
+        public sealed override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
         {
             var stringComparer = _metadataReader.StringComparer;
 
@@ -234,9 +302,9 @@ namespace Internal.TypeSystem.Ecma
                     {
                         Object implementation = GetObject(exportedType.Implementation);
 
-                        if (implementation is EcmaModule)
+                        if (implementation is ModuleDesc)
                         {
-                            return ((EcmaModule)(implementation)).GetType(nameSpace, name);
+                            return ((ModuleDesc)(implementation)).GetType(nameSpace, name);
                         }
 
                         // TODO
@@ -248,14 +316,9 @@ namespace Internal.TypeSystem.Ecma
             }
 
             if (throwIfNotFound)
-                throw CreateTypeLoadException(nameSpace + "." + name);
+                ThrowHelper.ThrowTypeLoadException(nameSpace, name, this);
 
             return null;
-        }
-
-        public Exception CreateTypeLoadException(string fullTypeName)
-        {
-            return new TypeLoadException(String.Format("Could not load type '{0}' from assembly '{1}'.", fullTypeName, this.ToString()));
         }
 
         public TypeDesc GetType(EntityHandle handle)
@@ -349,19 +412,18 @@ namespace Internal.TypeSystem.Ecma
                     if (field != null)
                         return field;
 
-                    // TODO: Better error message
-                    throw new MissingMemberException("Field not found " + parent.ToString() + "." + name);
+                    ThrowHelper.ThrowMissingFieldException(parentTypeDesc, name);
                 }
                 else
                 {
                     MethodSignature sig = parser.ParseMethodSignature();
                     TypeDesc typeDescToInspect = parentTypeDesc;
+                    Instantiation substitution = default(Instantiation);
 
                     // Try to resolve the name and signature in the current type, or any of the base types.
                     do
                     {
-                        // TODO: handle substitutions
-                        MethodDesc method = typeDescToInspect.GetMethod(name, sig);
+                        MethodDesc method = typeDescToInspect.GetMethod(name, sig, substitution);
                         if (method != null)
                         {
                             // If this resolved to one of the base types, make sure it's not a constructor.
@@ -371,16 +433,39 @@ namespace Internal.TypeSystem.Ecma
 
                             return method;
                         }
-                        typeDescToInspect = typeDescToInspect.BaseType;
+                        var baseType = typeDescToInspect.BaseType;
+                        if (baseType != null)
+                        {
+                            if (!baseType.HasInstantiation)
+                            {
+                                substitution = default(Instantiation);
+                            }
+                            else
+                            {
+                                // If the base type is generic, any signature match for methods on the base type with the generic details from
+                                // the deriving type
+                                Instantiation newSubstitution = typeDescToInspect.GetTypeDefinition().BaseType.Instantiation;
+                                if (!substitution.IsNull)
+                                {
+                                    TypeDesc[] newSubstitutionTypes = new TypeDesc[newSubstitution.Length];
+                                    for (int i = 0; i < newSubstitution.Length; i++)
+                                    {
+                                        newSubstitutionTypes[i] = newSubstitution[i].InstantiateSignature(substitution, default(Instantiation));
+                                    }
+                                    newSubstitution = new Instantiation(newSubstitutionTypes);
+                                }
+                                substitution = newSubstitution;
+                            }
+                        }
+                        typeDescToInspect = baseType;
                     } while (typeDescToInspect != null);
 
-                    // TODO: Better error message
-                    throw new MissingMemberException("Method not found " + parent.ToString() + "." + name);
+                    ThrowHelper.ThrowMissingMethodException(parentTypeDesc, name, sig);
                 }
             }
             else if (parent is MethodDesc)
             {
-                throw new NotSupportedException("Vararg methods not supported in .NET Core.");
+                ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramVararg, (MethodDesc)parent);
             }
             else if (parent is ModuleDesc)
             {
@@ -396,14 +481,21 @@ namespace Internal.TypeSystem.Ecma
 
             Object resolutionScope = GetObject(typeReference.ResolutionScope);
 
-            if (resolutionScope is EcmaModule)
+            if (resolutionScope is ModuleDesc)
             {
-                return ((EcmaModule)(resolutionScope)).GetType(_metadataReader.GetString(typeReference.Namespace), _metadataReader.GetString(typeReference.Name));
+                return ((ModuleDesc)(resolutionScope)).GetType(_metadataReader.GetString(typeReference.Namespace), _metadataReader.GetString(typeReference.Name));
             }
             else
-            if (resolutionScope is EcmaType)
+            if (resolutionScope is MetadataType)
             {
-                return ((EcmaType)(resolutionScope)).GetNestedType(_metadataReader.GetString(typeReference.Name));
+                string typeName = _metadataReader.GetString(typeReference.Name);
+                if (!typeReference.Namespace.IsNil)
+                    typeName = _metadataReader.GetString(typeReference.Namespace) + "." + typeName;
+                MetadataType result = ((MetadataType)(resolutionScope)).GetNestedType(typeName);
+                if (result != null)
+                    return result;
+
+                ThrowHelper.ThrowTypeLoadException(typeName, ((MetadataType)resolutionScope).Module);
             }
 
             // TODO
@@ -419,7 +511,7 @@ namespace Internal.TypeSystem.Ecma
             an.Version = assemblyReference.Version;
 
             var publicKeyOrToken = _metadataReader.GetBlobBytes(assemblyReference.PublicKeyOrToken);
-            if ((an.Flags & AssemblyNameFlags.PublicKey) != 0)
+            if ((assemblyReference.Flags & AssemblyFlags.PublicKey) != 0)
             {
                 an.SetPublicKey(publicKeyOrToken);
             }
@@ -431,7 +523,7 @@ namespace Internal.TypeSystem.Ecma
             an.CultureName = _metadataReader.GetString(assemblyReference.Culture);
             an.ContentType = GetContentTypeFromAssemblyFlags(assemblyReference.Flags);
 
-            return Context.ResolveAssembly(an);
+            return _moduleResolver.ResolveAssembly(an);
         }
 
         private Object ResolveExportedType(ExportedTypeHandle handle)
@@ -439,22 +531,21 @@ namespace Internal.TypeSystem.Ecma
             ExportedType exportedType = _metadataReader.GetExportedType(handle);
 
             var implementation = GetObject(exportedType.Implementation);
-            if (implementation is EcmaModule)
+            if (implementation is ModuleDesc)
             {
-                var module = (EcmaModule)implementation;
+                var module = (ModuleDesc)implementation;
                 string nameSpace = _metadataReader.GetString(exportedType.Namespace);
                 string name = _metadataReader.GetString(exportedType.Name);
                 return module.GetType(nameSpace, name);
             }
             else
-            if (implementation is TypeDesc)
+            if (implementation is MetadataType)
             {
-                var type = (EcmaType)implementation;
+                var type = (MetadataType)implementation;
                 string name = _metadataReader.GetString(exportedType.Name);
                 var nestedType = type.GetNestedType(name);
-                // TODO: Better error message
                 if (nestedType == null)
-                    throw new TypeLoadException("Nested type not found " + type.ToString() + "." + name);
+                    ThrowHelper.ThrowTypeLoadException(name, this);
                 return nestedType;
             }
             else
@@ -463,7 +554,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override IEnumerable<MetadataType> GetAllTypes()
+        public sealed override IEnumerable<MetadataType> GetAllTypes()
         {
             foreach (var typeDefinitionHandle in _metadataReader.TypeDefinitions)
             {
@@ -471,39 +562,18 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override TypeDesc GetGlobalModuleType()
+        public sealed override MetadataType GetGlobalModuleType()
         {
             int typeDefinitionsCount = _metadataReader.TypeDefinitions.Count;
             if (typeDefinitionsCount == 0)
                 return null;
 
-            return GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
+            return (MetadataType)GetType(MetadataTokens.EntityHandle(0x02000001 /* COR_GLOBAL_PARENT_TOKEN */));
         }
 
-        private static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
+        protected static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
         {
             return (AssemblyContentType)(((int)flags & 0x0E00) >> 9);
-        }
-
-        private AssemblyName _assemblyName;
-
-        // Returns cached copy of the name. Caller has to create a clone before mutating the name.
-        public AssemblyName GetName()
-        {
-            if (_assemblyName == null)
-            {
-                AssemblyName an = new AssemblyName();
-                an.Name = _metadataReader.GetString(_assemblyDefinition.Name);
-                an.Version = _assemblyDefinition.Version;
-                an.SetPublicKey(_metadataReader.GetBlobBytes(_assemblyDefinition.PublicKey));
-
-                an.CultureName = _metadataReader.GetString(_assemblyDefinition.Culture);
-                an.ContentType = GetContentTypeFromAssemblyFlags(_assemblyDefinition.Flags);
-
-                _assemblyName = an;
-            }
-
-            return _assemblyName;
         }
 
         public string GetUserString(UserStringHandle userStringHandle)
@@ -512,15 +582,10 @@ namespace Internal.TypeSystem.Ecma
             return _metadataReader.GetUserString(userStringHandle);
         }
 
-        public bool HasCustomAttribute(string attributeNamespace, string attributeName)
-        {
-            return _metadataReader.HasCustomAttribute(_assemblyDefinition.GetCustomAttributes(),
-                attributeNamespace, attributeName);
-        }
-
         public override string ToString()
         {
-            return GetName().FullName;
+            ModuleDefinition moduleDefinition = _metadataReader.GetModuleDefinition();
+            return _metadataReader.GetString(moduleDefinition.Name);
         }
     }
 }

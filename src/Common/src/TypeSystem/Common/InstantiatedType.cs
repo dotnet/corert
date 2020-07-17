@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -79,27 +78,43 @@ namespace Internal.TypeSystem
             }
         }
 
+        // Type system implementations that support the notion of intrinsic types
+        // will provide an implementation that adds the flag if necessary.
+        partial void AddComputedIntrinsicFlag(ref TypeFlags flags);
+
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                for (int i = 0; i < _instantiation.Length; i++)
-                {
-                    if (_instantiation[i].ContainsGenericVariables)
-                    {
-                        flags |= TypeFlags.ContainsGenericVariables;
-                        break;
-                    }
-                }
-            }
-
             if ((mask & TypeFlags.CategoryMask) != 0)
             {
                 flags |= _typeDef.Category;
+            }
+
+            if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
+            {
+                flags |= TypeFlags.HasGenericVarianceComputed;
+
+                if (_typeDef.HasVariance)
+                    flags |= TypeFlags.HasGenericVariance;
+            }
+
+            if ((mask & TypeFlags.HasFinalizerComputed) != 0)
+            {
+                flags |= TypeFlags.HasFinalizerComputed;
+
+                if (_typeDef.HasFinalizer)
+                    flags |= TypeFlags.HasFinalizer;
+            }
+
+            if ((mask & TypeFlags.AttributeCacheComputed) != 0)
+            {
+                flags |= TypeFlags.AttributeCacheComputed;
+
+                if (_typeDef.IsByRefLike)
+                    flags |= TypeFlags.IsByRefLike;
+
+                AddComputedIntrinsicFlag(ref flags);
             }
 
             return flags;
@@ -130,9 +145,9 @@ namespace Internal.TypeSystem
         }
 
         // TODO: Substitutions, generics, modopts, ...
-        public override MethodDesc GetMethod(string name, MethodSignature signature)
+        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
-            MethodDesc typicalMethodDef = _typeDef.GetMethod(name, signature);
+            MethodDesc typicalMethodDef = _typeDef.GetMethod(name, signature, substitution);
             if (typicalMethodDef == null)
                 return null;
             return _typeDef.Context.GetMethodForInstantiatedType(typicalMethodDef, this);
@@ -146,12 +161,41 @@ namespace Internal.TypeSystem
             return _typeDef.Context.GetMethodForInstantiatedType(typicalCctor, this);
         }
 
+        public override MethodDesc GetDefaultConstructor()
+        {
+            MethodDesc typicalCtor = _typeDef.GetDefaultConstructor();
+            if (typicalCtor == null)
+                return null;
+            return _typeDef.Context.GetMethodForInstantiatedType(typicalCtor, this);
+        }
+
         public override MethodDesc GetFinalizer()
         {
             MethodDesc typicalFinalizer = _typeDef.GetFinalizer();
             if (typicalFinalizer == null)
                 return null;
-            return _typeDef.Context.GetMethodForInstantiatedType(typicalFinalizer, this);
+
+            MetadataType typeInHierarchy = this;
+
+            // Note, we go back to the type definition/typical method definition in this code.
+            // If the finalizer is implemented on a base type that is also a generic, then the 
+            // typicalFinalizer in that case is a MethodForInstantiatedType for an instantiated type 
+            // which is instantiated over the open type variables of the derived type.
+
+            while (typicalFinalizer.OwningType.GetTypeDefinition() != typeInHierarchy.GetTypeDefinition())
+            {
+                typeInHierarchy = typeInHierarchy.MetadataBaseType;
+            }
+
+            if (typeInHierarchy == typicalFinalizer.OwningType)
+            {
+                return typicalFinalizer;
+            }
+            else
+            {
+                Debug.Assert(typeInHierarchy is InstantiatedType);
+                return _typeDef.Context.GetMethodForInstantiatedType(typicalFinalizer.GetTypicalMethodDefinition(), (InstantiatedType)typeInHierarchy);
+            }
         }
 
         public override IEnumerable<FieldDesc> GetFields()
@@ -230,16 +274,6 @@ namespace Internal.TypeSystem
             return _typeDef;
         }
 
-        public override string ToString()
-        {
-            var sb = new StringBuilder(_typeDef.ToString());
-            sb.Append('<');
-            for (int i = 0; i < _instantiation.Length; i++)
-                sb.Append(_instantiation[i].ToString());
-            sb.Append('>');
-            return sb.ToString();
-        }
-
         // Properties that are passed through from the type definition
         public override ClassLayoutMetadata GetClassLayout()
         {
@@ -270,11 +304,28 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsModuleType
+        {
+            get
+            {
+                // The global module type cannot be generic.
+                return false;
+            }
+        }
+
         public override bool IsSealed
         {
             get
             {
                 return _typeDef.IsSealed;
+            }
+        }
+
+        public override bool IsAbstract
+        {
+            get
+            {
+                return _typeDef.IsAbstract;
             }
         }
 
@@ -291,7 +342,7 @@ namespace Internal.TypeSystem
             return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
-        public override MetadataType ContainingType
+        public override DefType ContainingType
         {
             get
             {

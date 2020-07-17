@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -10,10 +9,10 @@ using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    public interface IDependencyAnalyzerLogEdgeVisitor
+    public interface IDependencyAnalyzerLogEdgeVisitor<DependencyContextType>
     {
-        void VisitEdge(DependencyNode nodeDepender, DependencyNode nodeDependedOn, string reason);
-        void VisitEdge(string root, DependencyNode dependedOn);
-        void VisitEdge(DependencyNode nodeDepender, DependencyNode nodeDependerOther, DependencyNode nodeDependedOn, string reason);
+        void VisitEdge(DependencyNodeCore<DependencyContextType> nodeDepender, DependencyNodeCore<DependencyContextType> nodeDependedOn, string reason);
+        void VisitEdge(string root, DependencyNodeCore<DependencyContextType> dependedOn);
+        void VisitEdge(DependencyNodeCore<DependencyContextType> nodeDepender, DependencyNodeCore<DependencyContextType> nodeDependerOther, DependencyNodeCore<DependencyContextType> nodeDependedOn, string reason);
     }
 }

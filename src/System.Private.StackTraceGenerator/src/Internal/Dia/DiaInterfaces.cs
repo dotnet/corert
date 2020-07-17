@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Internal.LightweightInterop;
 
 namespace Internal.StackGenerator.Dia
@@ -15,16 +15,13 @@ namespace Internal.StackGenerator.Dia
         {
         }
 
-        public int LoadDataFromPdb(String pdbPath)
+        public unsafe int LoadDataFromPdb(string pdbPath)
         {
-            unsafe
+            fixed (char* _pdbPath = pdbPath)
             {
-                fixed (char* _pdbPath = pdbPath)
-                {
-                    int hr = S.StdCall<int>(GetVTableMember(4), Punk, _pdbPath);
-                    GC.KeepAlive(this);
-                    return hr;
-                }
+                int hr = S.StdCall<int>(GetVTableMember(4), Punk, _pdbPath);
+                GC.KeepAlive(this);
+                return hr;
             }
         }
 
@@ -48,17 +45,14 @@ namespace Internal.StackGenerator.Dia
         {
         }
 
-        public int FindChildren(IDiaSymbol parent, SymTagEnum symTag, String name, NameSearchOptions compareFlags, out IDiaEnumSymbols enumSymbols)
+        public unsafe int FindChildren(IDiaSymbol parent, SymTagEnum symTag, string name, NameSearchOptions compareFlags, out IDiaEnumSymbols enumSymbols)
         {
             enumSymbols = null;
             IntPtr _enumSymbols;
             int hr;
-            unsafe
+            fixed (char* _name = name)
             {
-                fixed (char* _name = name)
-                {
-                    hr = S.StdCall<int>(GetVTableMember(8), Punk, parent.Punk, (int)symTag, _name, (int)compareFlags, out _enumSymbols);
-                }
+                hr = S.StdCall<int>(GetVTableMember(8), Punk, parent.Punk, (int)symTag, _name, (int)compareFlags, out _enumSymbols);
             }
             GC.KeepAlive(this);
             GC.KeepAlive(parent);
@@ -92,6 +86,18 @@ namespace Internal.StackGenerator.Dia
             enumLineNumbers = new IDiaEnumLineNumbers(_enumLineNumbers);
             return hr;
         }
+
+        public int FindILOffsetsByRVA(int rva, int length, out IDiaEnumLineNumbers enumLineNumbers)
+        {
+            enumLineNumbers = null;
+            IntPtr _enumLineNumbers;
+            int hr = S.StdCall<int>(GetVTableMember(46), Punk, rva, length, out _enumLineNumbers);
+            GC.KeepAlive(this);
+            if (hr != S_OK)
+                return hr;
+            enumLineNumbers = new IDiaEnumLineNumbers(_enumLineNumbers);
+            return hr;
+        }
     }
 
     internal sealed class IDiaEnumSymbols : ComInterface
@@ -108,7 +114,7 @@ namespace Internal.StackGenerator.Dia
             return hr;
         }
 
-        public int Item(int index, out IDiaSymbol symbol)
+        public unsafe int Item(int index, out IDiaSymbol symbol)
         {
             symbol = null;
             IntPtr pSymbol;
@@ -138,16 +144,23 @@ namespace Internal.StackGenerator.Dia
             return hr;
         }
 
-        public int GetName(out String name)
+        public unsafe int GetName(out string name)
         {
             name = null;
-            IntPtr _name;
-            int hr = S.StdCall<int>(GetVTableMember(5), Punk, out _name);
-            GC.KeepAlive(this);
-            if (hr != S_OK)
+            IntPtr _name = IntPtr.Zero;
+            try
+            {
+                int hr = S.StdCall<int>(GetVTableMember(5), Punk, out _name);
+                GC.KeepAlive(this);
+                if (hr != S_OK)
+                    return hr;
+                name = new string((char*)_name);
                 return hr;
-            name = _name.MarshalBstr();
-            return hr;
+            }
+            finally
+            {
+                Marshal.FreeBSTR(_name);
+            }
         }
 
         public int GetType(out IDiaSymbol symbol)
@@ -268,16 +281,23 @@ namespace Internal.StackGenerator.Dia
         {
         }
 
-        public int FileName(out String fileName)
+        public unsafe int FileName(out string fileName)
         {
             fileName = null;
-            IntPtr _fileName;
-            int hr = S.StdCall<int>(GetVTableMember(4), Punk, out _fileName);
-            GC.KeepAlive(this);
-            if (hr != S_OK)
+            IntPtr _fileName = IntPtr.Zero;
+            try
+            {
+                int hr = S.StdCall<int>(GetVTableMember(4), Punk, out _fileName);
+                GC.KeepAlive(this);
+                if (hr != S_OK)
+                    return hr;
+                fileName = new string((char*)_fileName);
                 return hr;
-            fileName = _fileName.MarshalBstr();
-            return hr;
+            }
+            finally
+            {
+                Marshal.FreeBSTR(_fileName);
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /***
 *sal.h - markers for documenting the semantics of APIs
@@ -2861,7 +2860,7 @@ of each annotation, see the advanced annotations section.
 #define __success(expr)                      _Success_(expr)
 #define __nullterminated                     _Null_terminated_
 #define __nullnullterminated
-#define __reserved                           _SAL1_Source_(__reserved, (), _Reserved_)
+#define __clr_reserved                       _SAL1_Source_(__reserved, (), _Reserved_)
 #define __checkReturn                        _SAL1_Source_(__checkReturn, (), _Check_return_)
 #define __typefix(ctype)                     _SAL1_Source_(__typefix, (ctype), __inner_typefix(ctype))
 #define __override                           __inner_override

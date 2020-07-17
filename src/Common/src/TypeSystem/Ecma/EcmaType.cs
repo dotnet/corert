@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading;
 using Debug = System.Diagnostics.Debug;
 
-using Internal.TypeSystem;
 using Internal.NativeFormat;
 
 namespace Internal.TypeSystem.Ecma
@@ -42,25 +41,34 @@ namespace Internal.TypeSystem.Ecma
 
 #if DEBUG
             // Initialize name eagerly in debug builds for convenience
-            this.ToString();
+            InitializeName();
+            InitializeNamespace();
 #endif
         }
 
         public override int GetHashCode()
         {
             if (_hashcode != 0)
-            {
                 return _hashcode;
-            }
-            int nameHash = TypeHashingAlgorithms.ComputeNameHashCode(this.GetFullName());
+            return InitializeHashCode();
+        }
+
+        private int InitializeHashCode()
+        {
             TypeDesc containingType = ContainingType;
             if (containingType == null)
             {
-                _hashcode = nameHash;
+                string ns = Namespace;
+                var hashCodeBuilder = new TypeHashingAlgorithms.HashCodeBuilder(ns);
+                if (ns.Length > 0)
+                    hashCodeBuilder.Append(".");
+                hashCodeBuilder.Append(Name);
+                _hashcode = hashCodeBuilder.ToHashCode();
             }
             else
             {
-                _hashcode = TypeHashingAlgorithms.ComputeNestedTypeHashCode(containingType.GetHashCode(), nameHash);
+                _hashcode = TypeHashingAlgorithms.ComputeNestedTypeHashCode(
+                    containingType.GetHashCode(), TypeHashingAlgorithms.ComputeNameHashCode(Name));
             }
 
             return _hashcode;
@@ -73,11 +81,6 @@ namespace Internal.TypeSystem.Ecma
                 return _handle;
             }
         }
-
-        // TODO: Use stable hashcode based on the type name?
-        // public override int GetHashCode()
-        // {
-        // }
 
         public override TypeSystemContext Context
         {
@@ -161,7 +164,8 @@ namespace Internal.TypeSystem.Ecma
             var type = _module.GetType(baseTypeHandle) as MetadataType;
             if (type == null)
             {
-                throw new BadImageFormatException();
+                // PREFER: "new TypeSystemException.TypeLoadException(ExceptionStringID.ClassLoadBadFormat, this)" but the metadata is too broken
+                ThrowHelper.ThrowTypeLoadException(Namespace, Name, Module);
             }
             _baseType = type;
             return type;
@@ -191,25 +195,16 @@ namespace Internal.TypeSystem.Ecma
         {
             TypeFlags flags = 0;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-
-                // TODO: Do we really want to get the instantiation to figure out whether the type is generic?
-                if (this.HasInstantiation)
-                    flags |= TypeFlags.ContainsGenericVariables;
-            }
-
             if ((mask & TypeFlags.CategoryMask) != 0)
             {
                 TypeDesc baseType = this.BaseType;
 
-                if (_module.Context.IsWellKnownType(baseType, WellKnownType.ValueType))
+                if (baseType != null && baseType.IsWellKnownType(WellKnownType.ValueType))
                 {
                     flags |= TypeFlags.ValueType;
                 }
                 else
-                if (_module.Context.IsWellKnownType(baseType, WellKnownType.Enum))
+                if (baseType != null && baseType.IsWellKnownType(WellKnownType.Enum))
                 {
                     flags |= TypeFlags.Enum;
                 }
@@ -224,7 +219,52 @@ namespace Internal.TypeSystem.Ecma
                 // All other cases are handled during TypeSystemContext intitialization
             }
 
-            Debug.Assert((flags & mask) != 0);
+            if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
+            {
+                flags |= TypeFlags.HasGenericVarianceComputed;
+
+                foreach (GenericParameterDesc genericParam in Instantiation)
+                {
+                    if (genericParam.Variance != GenericVariance.None)
+                    {
+                        flags |= TypeFlags.HasGenericVariance;
+                        break;
+                    }
+                }
+            }
+
+            if ((mask & TypeFlags.HasFinalizerComputed) != 0)
+            {
+                flags |= TypeFlags.HasFinalizerComputed;
+
+                if (GetFinalizer() != null)
+                    flags |= TypeFlags.HasFinalizer;
+            }
+
+            if ((mask & TypeFlags.AttributeCacheComputed) != 0)
+            {
+                MetadataReader reader = MetadataReader;
+                MetadataStringComparer stringComparer = reader.StringComparer;
+                bool isValueType = IsValueType;
+
+                flags |= TypeFlags.AttributeCacheComputed;
+
+                foreach (CustomAttributeHandle attributeHandle in _typeDefinition.GetCustomAttributes())
+                {
+                    if (MetadataReader.GetAttributeNamespaceAndName(attributeHandle, out StringHandle namespaceHandle, out StringHandle nameHandle))
+                    {
+                        if (isValueType &&
+                            stringComparer.Equals(nameHandle, "IsByRefLikeAttribute") &&
+                            stringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices"))
+                            flags |= TypeFlags.IsByRefLike;
+
+                        if (stringComparer.Equals(nameHandle, "IntrinsicAttribute") &&
+                            stringComparer.Equals(namespaceHandle, "System.Runtime.CompilerServices"))
+                            flags |= TypeFlags.IsIntrinsic;
+                    }
+                }
+            }
+
             return flags;
         }
 
@@ -270,7 +310,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MethodDesc GetMethod(string name, MethodSignature signature)
+        public override MethodDesc GetMethod(string name, MethodSignature signature, Instantiation substitution)
         {
             var metadataReader = this.MetadataReader;
             var stringComparer = metadataReader.StringComparer;
@@ -280,7 +320,7 @@ namespace Internal.TypeSystem.Ecma
                 if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
                 {
                     MethodDesc method = (MethodDesc)_module.GetObject(handle);
-                    if (signature == null || signature.Equals(method.Signature))
+                    if (signature == null || signature.Equals(method.Signature.ApplySubstitution(substitution)))
                         return method;
                 }
             }
@@ -296,10 +336,36 @@ namespace Internal.TypeSystem.Ecma
             foreach (var handle in _typeDefinition.GetMethods())
             {
                 var methodDefinition = metadataReader.GetMethodDefinition(handle);
-                if ((methodDefinition.Attributes & MethodAttributes.SpecialName) != 0 &&
+                if (methodDefinition.Attributes.IsRuntimeSpecialName() &&
                     stringComparer.Equals(methodDefinition.Name, ".cctor"))
                 {
                     MethodDesc method = (MethodDesc)_module.GetObject(handle);
+                    return method;
+                }
+            }
+
+            return null;
+        }
+
+        public override MethodDesc GetDefaultConstructor()
+        {
+            if (IsAbstract)
+                return null;
+
+            MetadataReader metadataReader = this.MetadataReader;
+            MetadataStringComparer stringComparer = metadataReader.StringComparer;
+
+            foreach (var handle in _typeDefinition.GetMethods())
+            {
+                var methodDefinition = metadataReader.GetMethodDefinition(handle);
+                MethodAttributes attributes = methodDefinition.Attributes;
+                if (attributes.IsRuntimeSpecialName() && attributes.IsPublic()
+                    && stringComparer.Equals(methodDefinition.Name, ".ctor"))
+                {
+                    MethodDesc method = (MethodDesc)_module.GetObject(handle);
+                    if (method.Signature.Length != 0)
+                        continue;
+
                     return method;
                 }
             }
@@ -321,6 +387,12 @@ namespace Internal.TypeSystem.Ecma
             if (decl != null)
             {
                 MethodDesc impl = this.FindVirtualFunctionTargetMethodOnObjectType(decl);
+                if (impl == null)
+                {
+                    // TODO: invalid input: the type doesn't derive from our System.Object
+                    throw new TypeLoadException(this.GetFullName());
+                }
+
                 if (impl.OwningType != objectType)
                 {
                     return impl;
@@ -329,8 +401,8 @@ namespace Internal.TypeSystem.Ecma
                 return null;
             }
 
-            // TODO: Better exception type. Should be: "CoreLib doesn't have a required thing in it".
-            throw new NotImplementedException();
+            // Class library doesn't have finalizers
+            return null;
         }
 
         public override IEnumerable<FieldDesc> GetFields()
@@ -374,7 +446,20 @@ namespace Internal.TypeSystem.Ecma
 
             foreach (var handle in _typeDefinition.GetNestedTypes())
             {
-                if (stringComparer.Equals(metadataReader.GetTypeDefinition(handle).Name, name))
+                bool nameMatched;
+                TypeDefinition type = metadataReader.GetTypeDefinition(handle);
+                if (type.Namespace.IsNil)
+                {
+                    nameMatched = stringComparer.Equals(type.Name, name);
+                }
+                else
+                {
+                    string typeName = metadataReader.GetString(type.Name);
+                    typeName = metadataReader.GetString(type.Namespace) + "." + typeName;
+                    nameMatched = typeName == name;
+                }
+
+                if (nameMatched)
                     return (MetadataType)_module.GetObject(handle);
             }
 
@@ -389,7 +474,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public override MetadataType ContainingType
+        public override DefType ContainingType
         {
             get
             {
@@ -397,19 +482,14 @@ namespace Internal.TypeSystem.Ecma
                     return null;
 
                 var handle = _typeDefinition.GetDeclaringType();
-                return (MetadataType)_module.GetType(handle);
+                return (DefType)_module.GetType(handle);
             }
         }
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return MetadataReader.HasCustomAttribute(_typeDefinition.GetCustomAttributes(),
-                attributeNamespace, attributeName);
-        }
-
-        public override string ToString()
-        {
-            return "[" + _module.GetName().Name + "]" + this.GetFullName();
+            return !MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                attributeNamespace, attributeName).IsNil;
         }
 
         public override ClassLayoutMetadata GetClassLayout()
@@ -444,11 +524,10 @@ namespace Internal.TypeSystem.Ecma
                     if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
                         continue;
 
-                    // Note: GetOffset() returns -1 when offset was not set in the metadata which maps nicely
-                    //       to FieldAndOffset.InvalidOffset.
-                    Debug.Assert(FieldAndOffset.InvalidOffset == -1);
+                    // Note: GetOffset() returns -1 when offset was not set in the metadata
+                    int specifiedOffset = fieldDefinition.GetOffset();
                     result.Offsets[index] =
-                        new FieldAndOffset((FieldDesc)_module.GetObject(handle), fieldDefinition.GetOffset());
+                        new FieldAndOffset((FieldDesc)_module.GetObject(handle), specifiedOffset == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(specifiedOffset));
 
                     index++;
                 }
@@ -483,11 +562,27 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override bool IsModuleType
+        {
+            get
+            {
+                return _handle.Equals(MetadataTokens.TypeDefinitionHandle(0x00000001 /* COR_GLOBAL_PARENT_TOKEN */));
+            }
+        }
+
         public override bool IsSealed
         {
             get
             {
                 return (_typeDefinition.Attributes & TypeAttributes.Sealed) != 0;
+            }
+        }
+
+        public override bool IsAbstract
+        {
+            get
+            {
+                return (_typeDefinition.Attributes & TypeAttributes.Abstract) != 0;
             }
         }
 

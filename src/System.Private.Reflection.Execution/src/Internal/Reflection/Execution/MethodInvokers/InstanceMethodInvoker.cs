@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using global::System;
 using global::System.Threading;
 using global::System.Reflection;
+using System.Runtime.InteropServices;
 using global::System.Diagnostics;
 using global::System.Collections.Generic;
 
@@ -12,8 +12,6 @@ using global::Internal.Runtime.Augments;
 using global::Internal.Reflection.Execution;
 using global::Internal.Reflection.Core.Execution;
 using global::Internal.Runtime.CompilerServices;
-
-using TargetException = System.ArgumentException;
 
 namespace Internal.Reflection.Execution.MethodInvokers
 {
@@ -28,21 +26,43 @@ namespace Internal.Reflection.Execution.MethodInvokers
             _declaringTypeHandle = declaringTypeHandle;
         }
 
-        public sealed override Object Invoke(Object thisObject, Object[] arguments)
+        [DebuggerGuidedStepThroughAttribute]
+        protected sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            MethodInvokerUtils.ValidateThis(thisObject, _declaringTypeHandle);
-            return RuntimeAugments.CallDynamicInvokeMethod(
-                thisObject, MethodInvokeInfo.LdFtnResult, null, MethodInvokeInfo.DynamicInvokeMethod, MethodInvokeInfo.DynamicInvokeGenericDictionary, MethodInvokeInfo.DefaultValueString, arguments,
-                invokeMethodHelperIsThisCall: false, methodToCallIsThisCall: true);
+            ValidateThis(thisObject, _declaringTypeHandle);
+            object result = RuntimeAugments.CallDynamicInvokeMethod(
+                thisObject,
+                MethodInvokeInfo.LdFtnResult,
+                null /*thisPtrDynamicInvokeMethod*/,
+                MethodInvokeInfo.DynamicInvokeMethod,
+                MethodInvokeInfo.DynamicInvokeGenericDictionary,
+                MethodInvokeInfo.MethodInfo,
+                arguments,
+                binderBundle,
+                wrapInTargetInvocationException: wrapInTargetInvocationException,
+                invokeMethodHelperIsThisCall: false, 
+                methodToCallIsThisCall: true);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
 
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, Object target, bool isStatic, bool isVirtual, bool isOpen)
         {
             if (isOpen)
             {
+                MethodInfo methodInfo = (MethodInfo)MethodInvokeInfo.MethodInfo;
+
+                short resolveType = OpenMethodResolver.OpenNonVirtualResolve;
+
+                if (methodInfo.DeclaringType.IsValueType && !methodInfo.IsStatic)
+                {
+                    // Open instance method for valuetype
+                    resolveType = OpenMethodResolver.OpenNonVirtualResolveLookthruUnboxing;
+                }
+
                 return RuntimeAugments.CreateDelegate(
                     delegateType,
-                    new OpenMethodResolver(_declaringTypeHandle, MethodInvokeInfo.LdFtnResult, 0).ToIntPtr(),
+                    new OpenMethodResolver(_declaringTypeHandle, MethodInvokeInfo.LdFtnResult, default(GCHandle), 0, resolveType).ToIntPtr(),
                     target,
                     isStatic: isStatic,
                     isOpen: isOpen);
@@ -53,6 +73,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
+        public sealed override IntPtr LdFtnResult => MethodInvokeInfo.LdFtnResult;
 
         private RuntimeTypeHandle _declaringTypeHandle;
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // StressLog.cpp
 //
@@ -30,6 +29,7 @@
 #include "RWLock.h"
 #include "event.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 
 template<typename T> inline T VolatileLoad(T const * pt) { return *(T volatile const *)pt; }
 template<typename T> inline void VolatileStore(T* pt, T val) { *(T volatile *)pt = val; }
@@ -41,10 +41,8 @@ GPTR_IMPL(StressLog, g_pStressLog /*, &StressLog::theLog*/);
 
 #ifndef DACCESS_COMPILE
 
-HANDLE StressLogChunk::s_LogChunkHeap = NULL;
-
 /*********************************************************************************/
-#if defined(_X86_)
+#if defined(HOST_X86)
 
 /* This is like QueryPerformanceCounter but a lot faster.  On machines with 
    variable-speed CPUs (for power management), this is not accurate, but may
@@ -58,7 +56,7 @@ inline __declspec(naked) unsigned __int64 getTimeStamp() {
     };
 }
 
-#else // _X86_
+#else // HOST_X86
 unsigned __int64 getTimeStamp() {
     
     LARGE_INTEGER ret;
@@ -69,10 +67,10 @@ unsigned __int64 getTimeStamp() {
     return ret.QuadPart;
 }
 
-#endif // _X86_ else
+#endif // HOST_X86 else
 
 /*********************************************************************************/
-/* Get the the frequency cooresponding to 'getTimeStamp'.  For non-x86 
+/* Get the the frequency corresponding to 'getTimeStamp'.  For non-x86 
    architectures, this is just the performance counter frequency.
 */
 unsigned __int64 getTickFrequency()
@@ -95,7 +93,6 @@ const static unsigned __int64 RECYCLE_AGE = 0x40000000L;        // after a billi
 void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxBytesPerThread, 
             unsigned maxBytesTotal, HANDLE hMod) 
 {
-#if !defined(CORERT) // @TODO: CORERT: disabled because of assumption that hMod is a module base address in stress log code
     if (theLog.MaxSizePerThread != 0)
     {
         // guard ourself against multiple initialization. First init wins.
@@ -128,16 +125,6 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
     theLog.startTimeStamp = getTimeStamp();
 
     theLog.moduleOffset = (size_t)hMod; // HMODULES are base addresses.
-
-#ifndef APP_LOCAL_RUNTIME
-    StressLogChunk::s_LogChunkHeap = PalHeapCreate (0, STRESSLOG_CHUNK_SIZE * 128, 0);
-    if (StressLogChunk::s_LogChunkHeap == NULL)
-#endif
-    {
-        StressLogChunk::s_LogChunkHeap = PalGetProcessHeap ();
-    }
-    _ASSERTE (StressLogChunk::s_LogChunkHeap);
-#endif // !defined(CORERT)
 }
 
 /*********************************************************************************/

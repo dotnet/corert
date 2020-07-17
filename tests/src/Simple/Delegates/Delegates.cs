@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Linq.Expressions;
+
+using Pointer = System.Reflection.Pointer;
 
 public class BringUpTests
 {
@@ -42,6 +44,16 @@ public class BringUpTests
             Console.WriteLine("Failed");
             result = Fail;
         }
+
+        if (!TestDynamicInvoke())
+        {
+            Console.WriteLine("Failed");
+            result = Fail;
+        }
+
+#if !CODEGEN_CPP
+        TestLinqExpressions.Run();
+#endif
 
         return result;
     }
@@ -97,6 +109,14 @@ public class BringUpTests
 
             if (t.GetDerivedDo()() != "Derived")
                 return false;
+        }
+
+        {
+            // This will end up being a delegate to a sealed virtual method.
+            ClassWithIFoo t = new ClassWithIFoo("Class");
+            Func<int, string> d = t.DoFoo;
+            if (d(987) != "Class987")
+                return false;       
         }
 
         Console.WriteLine("OK");
@@ -172,6 +192,103 @@ public class BringUpTests
             if (t.State != 4)
                 return false;
         }
+
+        Console.WriteLine("OK");
+        return true;
+    }
+
+    public static bool TestDynamicInvoke()
+    {
+        Console.Write("Testing dynamic invoke...");
+
+        {
+            TestValueType t = new TestValueType { X = 123 };
+            Func<string, string> d = t.GiveX;
+            string result = (string)d.DynamicInvoke(new object[] { "MyPrefix" });
+            if (result != "MyPrefix123")
+                return false;
+        }
+
+        {
+            Func<int, TestValueType> d = TestValueType.MakeValueType;
+            TestValueType result = (TestValueType)d.DynamicInvoke(new object[] { 789 });
+            if (result.X != 789)
+                return false;
+        }
+
+        {
+            IFoo t = new ClassWithIFoo("Class");
+            Func<int, string> d = t.DoFoo;
+            if ((string)d.DynamicInvoke(new object[] { 987 }) != "Class987")
+                return false;
+        }
+
+        {
+            IFoo t = new StructWithIFoo("Struct");
+            Func<int, string> d = t.DoFoo;
+            if ((string)d.DynamicInvoke(new object[] { 654 }) != "Struct654")
+                return false;
+        }
+
+        {
+            Func<string, string, string> d = ExtensionClass.Combine;
+            if ((string)d.DynamicInvoke(new object[] { "Hello", "World" }) != "HelloWorld")
+                return false;
+        }
+
+        {
+            Func<string, string> d = "Hi".Combine;
+            if ((string)d.DynamicInvoke(new object[] { "There" }) != "HiThere")
+                return false;
+        }
+
+        {
+            Mutate<int> d = ClassWithByRefs.Mutate;
+            object[] args = new object[] { 8 };
+            d.DynamicInvoke(args);
+            if ((int)args[0] != 50)
+                return false;
+        }
+
+        {
+            Mutate<string> d = ClassWithByRefs.Mutate;
+            object[] args = new object[] { "Hello" };
+            d.DynamicInvoke(args);
+            if ((string)args[0] != "HelloMutated")
+                return false;
+        }
+
+        unsafe
+        {
+            GetAndReturnPointerDelegate d = ClassWithPointers.GetAndReturnPointer;
+            if (Pointer.Unbox(d.DynamicInvoke(new object[] { (IntPtr)8 })) != (void*)50)
+                return false;
+
+            if (Pointer.Unbox(d.DynamicInvoke(new object[] { Pointer.Box((void*)9, typeof(void*)) })) != (void*)51)
+                return false;
+        }
+
+#if false
+        // This is hitting an EH bug around throw/rethrow from a catch block (pass is not set properly)
+        unsafe
+        {
+            PassPointerByRefDelegate d = ClassWithPointers.PassPointerByRef;
+            var args = new object[] { (IntPtr)8 };
+
+            bool caught = false;
+            try
+            {
+                d.DynamicInvoke(args);
+            }
+            catch (ArgumentException)
+            {
+                caught = true;
+            }
+
+            if (!caught)
+                return false;
+        }
+#endif
 
         Console.WriteLine("OK");
         return true;
@@ -287,5 +404,69 @@ static class ExtensionClass
     public static string Combine(this string s1, string s2)
     {
         return s1 + s2;
+    }
+}
+
+unsafe delegate byte* GetAndReturnPointerDelegate(void* ptr);
+unsafe delegate void PassPointerByRefDelegate(ref void* ptr);
+
+unsafe static class ClassWithPointers
+{
+    public static byte* GetAndReturnPointer(void* ptr)
+    {
+        return (byte*)ptr + 42;
+    }
+
+    public static void PassPointerByRef(ref void* ptr)
+    {
+        ptr = (byte*)ptr + 42;
+    }
+}
+
+delegate void Mutate<T>(ref T x);
+
+class ClassWithByRefs
+{
+    public static void Mutate(ref int x)
+    {
+        x += 42;
+    }
+
+    public static void Mutate(ref string x)
+    {
+        x += "Mutated";
+    }
+}
+
+class TestLinqExpressions
+{
+    public static void ModifyByRefAndThrow(ref int i)
+    {
+        i = 123;
+        throw new Exception();
+    }
+
+    delegate void RefIntDelegate(ref int i);
+
+    public static void Run()
+    {
+        Console.WriteLine("Testing LINQ Expressions...");
+
+        {
+            ParameterExpression pX = Expression.Parameter(typeof(int).MakeByRefType());
+            RefIntDelegate del =
+                Expression.Lambda<RefIntDelegate>(
+                    Expression.Call(null, typeof(TestLinqExpressions).GetMethod(nameof(ModifyByRefAndThrow)), pX), pX).Compile();
+
+            int i = 0;
+            try
+            {
+                del(ref i);
+            }
+            catch (Exception) { }
+
+            if (i != 123)
+                throw new Exception();
+        }
     }
 }

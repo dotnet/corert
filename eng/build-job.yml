@@ -1,0 +1,126 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  osIdentifier: ''
+  containerName: ''
+  timeoutInMinutes: ''
+  testScenarios: ''
+
+### Product build
+jobs:
+- template: xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osIdentifier: ${{ parameters.osIdentifier }}
+    
+    # Compute job name from template parameters
+    ${{ if and(not(contains(parameters.testScenarios, 'CoreCLR')), not(contains(parameters.testScenarios, 'CoreFX'))) }}:
+      name: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Build {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    ${{ if contains(parameters.testScenarios, 'CoreCLR') }}:
+      name: ${{ format('build_{0}_{1}_{2}_coreclr', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Build {0} {1} {2} and CoreCLR tests', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    ${{ if contains(parameters.testScenarios, 'CoreFX') }}:
+      name: ${{ format('build_{0}_{1}_{2}_corefx', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Build {0} {1} {2} and CoreFX tests', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+
+    # Note that the containers are resources defined in azure-pipelines.yml
+    containerName: ${{ parameters.containerName }}
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    variables:
+    - name: osIdentifier
+      value: ${{ parameters.osIdentifier }}
+
+    - name: buildScriptName
+      value: 'build.cmd'
+    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'),ne(parameters.osGroup, 'WebAssembly')) }}:  # probably want to do this differently so we can build Wasm on other platforms
+      - name: buildScriptName
+        value: './build.sh'
+
+    - name: testScriptName
+      value: 'tests\runtest.cmd'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: testScriptName
+        value: 'tests/runtest.sh'
+
+    - name: testParameterPrefix
+      value: '/'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - name: testParameterPrefix
+        value: '-'
+
+    - name: coreCLRTestSet
+      value: 'Top200'
+    # Temporary disable running the KnownGood set because it times out in CI
+    # - ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
+    #   - name: coreCLRTestSet
+    #     value: 'KnownGood'
+
+    steps:
+
+    # Install native dependencies
+    # Linux builds use docker images with dependencies preinstalled,
+    # so we only need this step for OSX and Windows.
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+      - script: sh eng/install-native-dependencies.sh $(osGroup)
+        displayName: Install native dependencies
+
+    - ${{ if or(eq(parameters.osGroup, 'Windows_NT'),eq(parameters.osGroup, 'WebAssembly')) }}:
+      # Necessary to install python
+      - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
+        displayName: Install native dependencies
+
+    - ${{ if contains(parameters.osGroup, 'WebAssembly') }}:
+      # Install Wasm dependencies: emscripten
+      - script: eng\install-emscripten.cmd $(Build.SourcesDirectory)\wasm-tools
+        displayName: Install/activate emscripten
+
+    # Build product, but not if Wasm as that builds and runs tests in one go
+    - ${{ if not(contains(parameters.osGroup, 'WebAssembly')) }}:
+      - script: $(buildScriptName) $(buildConfig) skiptests
+        displayName: Build product
+
+    # Run the requested test scenarios
+
+    - ${{ if contains(parameters.testScenarios, 'Simple') }}:
+      - script: $(testScriptName) $(buildConfig)
+        displayName: Run simple CoreRT tests
+
+      - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)multimodule
+        displayName: Run simple CoreRT tests in the MultiModule mode
+        enabled: ${{ eq(parameters.osGroup, 'Windows_NT') }}
+
+    - ${{ if contains(parameters.testScenarios, 'CoreCLR') }}:
+      - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)multimodule $(testParameterPrefix)coreclr $(coreCLRTestSet)
+        displayName: Run CoreCLR $(coreCLRTestSet) tests
+        enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
+
+    - ${{ if contains(parameters.testScenarios, 'CoreFX') }}:
+      - script: $(testScriptName) $(buildConfig) $(testParameterPrefix)corefx
+        displayName: Run CoreFX tests
+        enabled: ${{ eq(parameters.buildConfig, 'Debug') }}
+
+    # Unknown why emsdk_env is removing native-tools from the PATH, but that does appear to be happening, so prepend it back before attempting the build
+    - ${{ if contains(parameters.osGroup, 'WebAssembly') }}:
+      - script: |
+          call $(Build.SourcesDirectory)\wasm-tools\emsdk\emsdk_env
+          set PATH=$(Build.SourcesDirectory)\native-tools\bin;%PATH%
+          call $(buildScriptName) wasm $(buildConfig)
+        displayName: Run Wasm tests
+
+    - task: PublishTestResults@2
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFormat: 'xUnit'
+        testResultsFiles: '**/testResults.xml'
+        searchFolder: '$(Build.SourcesDirectory)'
+        mergeTestResults: true
+        failTaskOnFailedTests: true
+        testRunTitle: ${{ format('{0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        buildPlatform: ${{ parameters.osGroup }}
+        buildConfiguration: $(buildConfig)

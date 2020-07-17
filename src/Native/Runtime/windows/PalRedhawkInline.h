@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Implementation of Redhawk PAL inline functions
 
@@ -41,28 +40,28 @@ FORCEINLINE Int32 PalInterlockedExchange(_Inout_ _Interlocked_operand_ Int32 vol
 
 EXTERN_C long __PN__MACHINECALL_CDECL_OR_DEFAULT _InterlockedCompareExchange(long volatile *, long, long);
 #pragma intrinsic(_InterlockedCompareExchange)
-FORCEINLINE Int32 PalInterlockedCompareExchange(_Inout_ _Interlocked_operand_ Int32 volatile *pDst, Int32 iValue, Int32 iComperand)
+FORCEINLINE Int32 PalInterlockedCompareExchange(_Inout_ _Interlocked_operand_ Int32 volatile *pDst, Int32 iValue, Int32 iComparand)
 {
-    return _InterlockedCompareExchange((long volatile *)pDst, iValue, iComperand);
+    return _InterlockedCompareExchange((long volatile *)pDst, iValue, iComparand);
 }
 
 EXTERN_C Int64 _InterlockedCompareExchange64(Int64 volatile *, Int64, Int64);
 #pragma intrinsic(_InterlockedCompareExchange64)
-FORCEINLINE Int64 PalInterlockedCompareExchange64(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValue, Int64 iComperand)
+FORCEINLINE Int64 PalInterlockedCompareExchange64(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValue, Int64 iComparand)
 {
-    return _InterlockedCompareExchange64(pDst, iValue, iComperand);
+    return _InterlockedCompareExchange64(pDst, iValue, iComparand);
 }
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
 EXTERN_C UInt8 _InterlockedCompareExchange128(Int64 volatile *, Int64, Int64, Int64 *);
 #pragma intrinsic(_InterlockedCompareExchange128)
-FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValueHigh, Int64 iValueLow, Int64 *pComperand)
+FORCEINLINE UInt8 PalInterlockedCompareExchange128(_Inout_ _Interlocked_operand_ Int64 volatile *pDst, Int64 iValueHigh, Int64 iValueLow, Int64 *pComparandAndResult)
 {
-    return _InterlockedCompareExchange128(pDst, iValueHigh, iValueLow, pComperand);
+    return _InterlockedCompareExchange128(pDst, iValueHigh, iValueLow, pComparandAndResult);
 }
-#endif // _AMD64_
+#endif // HOST_AMD64
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 
 EXTERN_C void * _InterlockedExchangePointer(void * volatile *, void *);
 #pragma intrinsic(_InterlockedExchangePointer)
@@ -73,45 +72,34 @@ FORCEINLINE void * PalInterlockedExchangePointer(_Inout_ _Interlocked_operand_ v
 
 EXTERN_C void * _InterlockedCompareExchangePointer(void * volatile *, void *, void *);
 #pragma intrinsic(_InterlockedCompareExchangePointer)
-FORCEINLINE void * PalInterlockedCompareExchangePointer(_Inout_ _Interlocked_operand_ void * volatile *pDst, _In_ void *pValue, _In_ void *pComperand)
+FORCEINLINE void * PalInterlockedCompareExchangePointer(_Inout_ _Interlocked_operand_ void * volatile *pDst, _In_ void *pValue, _In_ void *pComparand)
 {
-    return _InterlockedCompareExchangePointer((void * volatile *)pDst, pValue, pComperand);
+    return _InterlockedCompareExchangePointer((void * volatile *)pDst, pValue, pComparand);
 }
 
-#else // BIT64
+#else // HOST_64BIT
 
 #define PalInterlockedExchangePointer(_pDst, _pValue) \
     ((void *)_InterlockedExchange((long volatile *)(_pDst), (long)(size_t)(_pValue)))
 
-#define PalInterlockedCompareExchangePointer(_pDst, _pValue, _pComperand) \
-    ((void *)_InterlockedCompareExchange((long volatile *)(_pDst), (long)(size_t)(_pValue), (long)(size_t)(_pComperand)))
+#define PalInterlockedCompareExchangePointer(_pDst, _pValue, _pComparand) \
+    ((void *)_InterlockedCompareExchange((long volatile *)(_pDst), (long)(size_t)(_pValue), (long)(size_t)(_pComparand)))
 
-#endif // BIT64
+#endif // HOST_64BIT
 
-#if defined(_X86_) || defined(_AMD64_)
-
-// fxsave/fxrstor instruction support, CpuIdEx Function: 1, EDX:24
-#define X86_FXSR    (1<<24)
-
-// fast fxsave/fxrstor flag, CpuIdEx Function: 0x80000001, EDX:25
-#define AMD_FFXSR   (1<<25)
-
-typedef struct _CPU_INFO {
-    uint32_t Eax;
-    uint32_t Ebx;
-    uint32_t Ecx;
-    uint32_t Edx;
-} CPU_INFO;
-
-EXTERN_C void __cpuidex(int CPUInfo[4], int Function, int SubLeaf);
-#pragma intrinsic(__cpuidex)
-inline void PalCpuIdEx(uint32_t Function, uint32_t SubLeaf, CPU_INFO* pCPUInfo)
+EXTERN_C __declspec(dllimport) unsigned long __stdcall GetLastError();
+FORCEINLINE int PalGetLastError()
 {
-    __cpuidex((int*)pCPUInfo, (int)Function, (int)SubLeaf);
+    return (int)GetLastError();
 }
-#endif 
 
-#if defined(_X86_)
+EXTERN_C __declspec(dllimport) void  __stdcall SetLastError(unsigned long error);
+FORCEINLINE void PalSetLastError(int error)
+{
+    SetLastError((unsigned long)error);
+}
+
+#if defined(HOST_X86)
 
 EXTERN_C void _mm_pause();
 #pragma intrinsic(_mm_pause)
@@ -123,7 +111,7 @@ FORCEINLINE void PalMemoryBarrier()
     _InterlockedOr(&Barrier, 0);
 }
 
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
 
 EXTERN_C void _mm_pause();
 #pragma intrinsic(_mm_pause)
@@ -134,7 +122,7 @@ EXTERN_C void __faststorefence();
 #define PalMemoryBarrier() __faststorefence()
 
 
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
 EXTERN_C void __yield(void);
 #pragma intrinsic(__yield)
@@ -148,7 +136,7 @@ FORCEINLINE void PalYieldProcessor()
 
 #define PalMemoryBarrier() __dmb(0xF /* _ARM_BARRIER_SY */)
 
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
 EXTERN_C void __yield(void);
 #pragma intrinsic(__yield)
@@ -165,3 +153,5 @@ FORCEINLINE void PalYieldProcessor()
 #else
 #error Unsupported architecture
 #endif
+
+#define PalDebugBreak() __debugbreak()

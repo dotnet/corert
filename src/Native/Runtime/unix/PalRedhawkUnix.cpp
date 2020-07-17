@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Implementation of the Redhawk Platform Abstraction Layer (PAL) library when Unix is the platform.
@@ -9,16 +8,13 @@
 #include <stdio.h>
 #include <errno.h>
 #include <cwchar>
-#include "CommonTypes.h"
-#include "PalRedhawkCommon.h"
-#include "CommonMacros.h"
 #include <sal.h>
 #include "config.h"
 #include "UnixHandle.h"
 #include <pthread.h>
-#include "gcenv.structs.h"
-#include "gcenv.os.h"
+#include "gcenv.h"
 #include "holder.h"
+#include "HardwareExceptions.h"
 
 #include <unistd.h>
 #include <sched.h>
@@ -33,6 +29,7 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <cstdarg>
+#include <signal.h>
 
 #if HAVE_PTHREAD_GETTHREADID_NP
 #include <pthread_np.h>
@@ -42,12 +39,12 @@
 #include <lwp.h>
 #endif
 
-#if !HAVE_SYSCONF && !HAVE_SYSCTL
-#error Neither sysconf nor sysctl is present on the current system
-#endif
-
-#if HAVE_SYSCTL
+#if HAVE_SYSCONF
+// <unistd.h> already included above
+#elif HAVE_SYSCTL
 #include <sys/sysctl.h>
+#else
+#error Either sysctl or sysconf is required for GetSystemInfo.
 #endif
 
 #if HAVE_SYS_VMPARAM_H
@@ -77,11 +74,6 @@ static mach_timebase_info_data_t s_TimebaseInfo;
 
 using std::nullptr_t;
 
-#include "gcenv.structs.h"
-
-#define REDHAWK_PALEXPORT extern "C"
-#define REDHAWK_PALAPI
-
 #ifndef __APPLE__
 #if HAVE_SYSCONF && HAVE__SC_AVPHYS_PAGES
 #define SYSCONF_PAGES _SC_AVPHYS_PAGES
@@ -91,6 +83,14 @@ using std::nullptr_t;
 #error Dont know how to get page-size on this architecture!
 #endif
 #endif // __APPLE__
+
+#if defined(HOST_ARM) || defined(HOST_ARM64)
+#define SYSCONF_GET_NUMPROCS       _SC_NPROCESSORS_CONF
+#define SYSCONF_GET_NUMPROCS_NAME "_SC_NPROCESSORS_CONF"
+#else
+#define SYSCONF_GET_NUMPROCS       _SC_NPROCESSORS_ONLN
+#define SYSCONF_GET_NUMPROCS_NAME "_SC_NPROCESSORS_ONLN"
+#endif
 
 #define PalRaiseFailFastException RaiseFailFastException
 
@@ -105,32 +105,12 @@ using std::nullptr_t;
     } \
     while(0)
 
-typedef union _LARGE_INTEGER {
-    struct {
-#if BIGENDIAN
-        int32_t HighPart;
-        uint32_t LowPart;
-#else
-        uint32_t LowPart;
-        int32_t HighPart;
-#endif
-    } u;
-    int64_t QuadPart;
-} LARGE_INTEGER, *PLARGE_INTEGER;
-
-typedef void * LPSECURITY_ATTRIBUTES;
-typedef void* PCONTEXT;
-typedef void* PEXCEPTION_RECORD;
-typedef void* PEXCEPTION_POINTERS;
-
 #define INVALID_HANDLE_VALUE    ((HANDLE)(IntNative)-1)
-
-typedef Int32 (__stdcall *PVECTORED_EXCEPTION_HANDLER)(
-    PEXCEPTION_POINTERS ExceptionInfo
-    );
 
 #define PAGE_NOACCESS           0x01
 #define PAGE_READWRITE          0x04
+#define PAGE_EXECUTE_READ       0x20
+#define PAGE_EXECUTE_READWRITE  0x40
 #define MEM_COMMIT              0x1000
 #define MEM_RESERVE             0x2000
 #define MEM_DECOMMIT            0x4000
@@ -147,12 +127,12 @@ static const int tccMilliSecondsToMicroSeconds = 1000;
 static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
 
-static const uint32_t INFINITE = 0xFFFFFFFF;
-
 static uint32_t g_dwPALCapabilities;
-static UInt32 g_cLogicalCpus = 0;
-static size_t g_cbLargestOnDieCache = 0;
-static size_t g_cbLargestOnDieCacheAdjusted = 0;
+static UInt32 g_cNumProcs = 0;
+
+// HACK: the gcenv.h declares OS_PAGE_SIZE as a call instead of a constant, but we need a constant
+#undef OS_PAGE_SIZE
+#define OS_PAGE_SIZE 0x1000
 
 // Helper memory page used by the FlushProcessWriteBuffers
 static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)));
@@ -160,10 +140,7 @@ static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)))
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
-// Key for the thread local storage of the attached thread pointer
-static pthread_key_t g_threadKey;
-
-extern bool PalQueryProcessorTopology();
+bool QueryLogicalProcessorCount();
 bool InitializeFlushProcessWriteBuffers();
 
 extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
@@ -172,7 +149,7 @@ extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UI
     abort();
 }
 
-void TimeSpecAdd(timespec* time, uint32_t milliseconds)
+static void TimeSpecAdd(timespec* time, uint32_t milliseconds)
 {
     uint64_t nsec = time->tv_nsec + (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
     if (nsec >= tccSecondsToNanoSeconds)
@@ -184,17 +161,15 @@ void TimeSpecAdd(timespec* time, uint32_t milliseconds)
     time->tv_nsec = nsec;
 }
 
-#ifdef __APPLE__
 // Convert nanoseconds to the timespec structure
 // Parameters:
 //  nanoseconds - time in nanoseconds to convert
 //  t           - the target timespec structure
-void NanosecondsToTimespec(uint64_t nanoseconds, timespec* t)
+static void NanosecondsToTimeSpec(uint64_t nanoseconds, timespec* t)
 {
     t->tv_sec = nanoseconds / tccSecondsToNanoSeconds;
     t->tv_nsec = nanoseconds % tccSecondsToNanoSeconds;
 }
-#endif // __APPLE__
 
 void ReleaseCondAttr(pthread_condattr_t* condAttr)
 {
@@ -240,7 +215,7 @@ public:
 
         PthreadCondAttrHolder attrsHolder(&attrs);
 
-    #if HAVE_CLOCK_MONOTONIC
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK && !HAVE_MACH_ABSOLUTE_TIME
         // Ensure that the pthread_cond_timedwait will use CLOCK_MONOTONIC
         st = pthread_condattr_setclock(&attrs, CLOCK_MONOTONIC);
         if (st != 0)
@@ -248,7 +223,7 @@ public:
             ASSERT_UNCONDITIONALLY("Failed to set UnixEvent condition variable wait clock");
             return false;
         }
-    #endif // HAVE_CLOCK_MONOTONIC
+#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK && !HAVE_MACH_ABSOLUTE_TIME
 
         st = pthread_mutex_init(&m_mutex, NULL);
         if (st != 0)
@@ -293,26 +268,23 @@ public:
     uint32_t Wait(uint32_t milliseconds)
     {
         timespec endTime;
-#ifdef __APPLE__
+#if HAVE_MACH_ABSOLUTE_TIME
         uint64_t endMachTime;
-#endif
         if (milliseconds != INFINITE)
         {
-#if HAVE_CLOCK_MONOTONIC
+            uint64_t nanoseconds = (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
+            NanosecondsToTimeSpec(nanoseconds, &endTime);
+            endMachTime = mach_absolute_time() + nanoseconds * s_TimebaseInfo.denom / s_TimebaseInfo.numer;
+        }
+#elif HAVE_PTHREAD_CONDATTR_SETCLOCK
+        if (milliseconds != INFINITE)
+        {
             clock_gettime(CLOCK_MONOTONIC, &endTime);
             TimeSpecAdd(&endTime, milliseconds);
-#else // HAVE_CLOCK_MONOTONIC
-
-#ifdef __APPLE__
-            uint64_t nanoseconds = (uint64_t)milliseconds * tccMilliSecondsToNanoSeconds;
-            NanosecondsToTimespec(nanoseconds, &endTime);
-            endMachTime =  mach_absolute_time() + nanoseconds * s_TimebaseInfo.denom / s_TimebaseInfo.numer;
-#else // __APPLE__
-#error Cannot perform reliable timed wait for pthread condition on this platform
-#endif // __APPLE__
-
-#endif // HAVE_CLOCK_MONOTONIC
         }
+#else
+#error Don't know how to perform timed wait on this platform
+#endif
 
         int st = 0;
 
@@ -325,7 +297,7 @@ public:
             }
             else
             {
-#ifdef __APPLE__
+#if HAVE_MACH_ABSOLUTE_TIME
                 // Since OSX doesn't support CLOCK_MONOTONIC, we use relative variant of the 
                 // timed wait and we need to handle spurious wakeups properly.
                 st = pthread_cond_timedwait_relative_np(&m_condition, &m_mutex, &endTime);
@@ -336,7 +308,7 @@ public:
                     {
                         // The wake up was spurious, recalculate the relative endTime
                         uint64_t remainingNanoseconds = (endMachTime - machTime) * s_TimebaseInfo.numer / s_TimebaseInfo.denom;
-                        NanosecondsToTimespec(remainingNanoseconds, &endTime);
+                        NanosecondsToTimeSpec(remainingNanoseconds, &endTime);
                     }
                     else
                     {
@@ -346,9 +318,9 @@ public:
                         st = ETIMEDOUT;
                     }
                 }
-#else // __APPLE__ 
+#else // HAVE_MACH_ABSOLUTE_TIME
                 st = pthread_cond_timedwait(&m_condition, &m_mutex, &endTime);
-#endif // __APPLE__
+#endif // HAVE_MACH_ABSOLUTE_TIME
                 // Verify that if the wait timed out, the event was not set
                 ASSERT((st != ETIMEDOUT) || !m_state);
             }
@@ -420,22 +392,31 @@ public:
 
 typedef UnixHandle<UnixHandleType::Thread, pthread_t> ThreadUnixHandle;
 
-// Destructor of the thread local object represented by the g_threadKey,
-// called when a thread is shut down
-void TlsObjectDestructor(void* data)
-{
-    ASSERT(data == pthread_getspecific(g_threadKey));
+#if !HAVE_THREAD_LOCAL
+extern "C" int __cxa_thread_atexit(void (*)(void*), void*, void *);
+extern "C" void *__dso_handle;
+#endif
 
-    RuntimeThreadShutdown(data);
+// This functions configures behavior of the signals that are not
+// related to hardware exception handling.
+void ConfigureSignals()
+{
+    // The default action for SIGPIPE is process termination.
+    // Since SIGPIPE can be signaled when trying to write on a socket for which
+    // the connection has been dropped, we need to tell the system we want
+    // to ignore this signal.
+    // Instead of terminating the process, the system call which would had
+    // issued a SIGPIPE will, instead, report an error and set errno to EPIPE.
+    signal(SIGPIPE, SIG_IGN);
 }
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 {
-    g_dwPALCapabilities = GetCurrentProcessorNumberCapability;
+    g_dwPALCapabilities = 0;
 
-    if (!PalQueryProcessorTopology())
+    if (!QueryLogicalProcessorCount())
         return false;
 
 #if HAVE_MACH_ABSOLUTE_TIME
@@ -450,12 +431,14 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     {
         return false;
     }
-
-    int status = pthread_key_create(&g_threadKey, TlsObjectDestructor);
-    if (status != 0)
+#ifndef USE_PORTABLE_HELPERS
+    if (!InitializeHardwareExceptionHandling())
     {
         return false;
     }
+#endif // !USE_PORTABLE_HELPERS
+
+    ConfigureSignals();
 
     return true;
 }
@@ -466,6 +449,35 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
     return (g_dwPALCapabilities & (uint32_t)capability) == (uint32_t)capability;
 }
 
+#if HAVE_THREAD_LOCAL
+
+struct TlsDestructionMonitor
+{
+    void* m_thread = nullptr;
+
+    void SetThread(void* thread)
+    {
+        m_thread = thread;
+    }
+
+    ~TlsDestructionMonitor()
+    {
+        if (m_thread != nullptr)
+        {
+            RuntimeThreadShutdown(m_thread);
+        }
+    }
+};
+
+// This thread local object is used to detect thread shutdown. Its destructor
+// is called when a thread is being shut down.
+thread_local TlsDestructionMonitor tls_destructionMonitor;
+
+#endif // HAVE_THREAD_LOCAL
+
+// This thread local variable is used for delegate marshalling
+DECLSPEC_THREAD intptr_t tls_thunkData;
+
 // Attach thread to PAL. 
 // It can be called multiple times for the same thread.
 // It fails fast if a different thread was already registered.
@@ -473,16 +485,11 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalHasCapability(PalCapability capability)
 //  thread        - thread to attach
 extern "C" void PalAttachThread(void* thread)
 {
-    void* attachedThread = pthread_getspecific(g_threadKey);
-
-    ASSERT_MSG(attachedThread == NULL, "PalAttachThread called multiple times for the same thread");
-
-    int status = pthread_setspecific(g_threadKey, thread);
-    if (status != 0)
-    {
-        ASSERT_UNCONDITIONALLY("PalAttachThread failed to store thread pointer in thread local storage");
-        RhFailFast();
-    }
+#if HAVE_THREAD_LOCAL
+    tls_destructionMonitor.SetThread(thread);
+#else
+    __cxa_thread_atexit(RuntimeThreadShutdown, thread, &__dso_handle);
+#endif
 }
 
 // Detach thread from PAL.
@@ -493,54 +500,46 @@ extern "C" void PalAttachThread(void* thread)
 //  true if the thread was detached, false if there was no attached thread
 extern "C" bool PalDetachThread(void* thread)
 {
-    void* attachedThread = pthread_getspecific(g_threadKey);
-
-    if (attachedThread == thread)
+    UNREFERENCED_PARAMETER(thread);
+    if (g_threadExitCallback != nullptr)
     {
-        int status = pthread_setspecific(g_threadKey, NULL);
-        if (status != 0)
-        {
-            ASSERT_UNCONDITIONALLY("PalDetachThread failed to clear thread pointer in thread local storage");
-            RhFailFast();
-        }
-        return true;
+        g_threadExitCallback();
     }
-
-    if (attachedThread != NULL)
-    {
-        ASSERT_UNCONDITIONALLY("PalDetachThread called with different thread pointer than PalAttachThread");
-        RhFailFast();
-    }
-
-    return false;
+    return true;
 }
 
-REDHAWK_PALEXPORT unsigned int REDHAWK_PALAPI PalGetCurrentProcessorNumber()
-{
-#if HAVE_SCHED_GETCPU
-    int processorNumber = sched_getcpu();
-    ASSERT(processorNumber != -1);
-    return processorNumber;
-#else //HAVE_SCHED_GETCPU
-    return 0;
-#endif //HAVE_SCHED_GETCPU    
-}
-
+#if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress)
+{
+    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+}
+#endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
+
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
+    void *virtualAddress,
+    int thunkSize,
+    int thunksPerBlock,
+    int thunkBlockSize,
+    int thunkBlocksPerMapping)
+{
+    return UInt32_TRUE;
+}
+
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
 {
-#if HAVE_CLOCK_MONOTONIC
+#if HAVE_CLOCK_NANOSLEEP
     timespec endTime;
     clock_gettime(CLOCK_MONOTONIC, &endTime);
     TimeSpecAdd(&endTime, milliseconds);
     while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &endTime, NULL) == EINTR)
     {
     }
-#else // HAVE_CLOCK_MONOTONIC
+#else // HAVE_CLOCK_NANOSLEEP
     timespec requested;
     requested.tv_sec = milliseconds / tccSecondsToMilliSeconds;
     requested.tv_nsec = (milliseconds - requested.tv_sec * tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
@@ -550,7 +549,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
     {
         requested = remaining;
     }
-#endif // HAVE_CLOCK_MONOTONIC
+#endif // HAVE_CLOCK_NANOSLEEP
 }
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
@@ -598,6 +597,10 @@ typedef UInt32(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
 {
+#ifdef HOST_WASM
+    // No threads, so we can't start one
+    ASSERT(false);
+#endif // HOST_WASM
     pthread_attr_t attrs;
 
     int st = pthread_attr_init(&attrs);
@@ -638,21 +641,36 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ Background
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
+#ifdef HOST_WASM
+    // WASMTODO: No threads so we can't start the finalizer thread
+    return true;
+#else // HOST_WASM
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE);
+#endif // HOST_WASM
 }
 
 // Returns a 64-bit tick count with a millisecond resolution. It tries its best
 // to return monotonically increasing counts and avoid being affected by changes
 // to the system clock (either due to drift or due to explicit changes to system
 // time).
-REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI GetTickCount64()
+REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI PalGetTickCount64()
 {
     UInt64 retval = 0;
 
-#if HAVE_CLOCK_MONOTONIC
+#if HAVE_MACH_ABSOLUTE_TIME
     {
+        retval = (mach_absolute_time() * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMilliSecondsToNanoSeconds;
+    }
+#elif HAVE_CLOCK_MONOTONIC
+    {
+        clockid_t clockType =
+#if HAVE_CLOCK_MONOTONIC_COARSE
+            CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
+#else
+            CLOCK_MONOTONIC;
+#endif
         struct timespec ts;
-        if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0)
+        if (clock_gettime(clockType, &ts) == 0)
         {
             retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
         }
@@ -661,187 +679,72 @@ REDHAWK_PALEXPORT UInt64 REDHAWK_PALAPI GetTickCount64()
             ASSERT_UNCONDITIONALLY("clock_gettime(CLOCK_MONOTONIC) failed\n");
         }
     }
-#elif HAVE_MACH_ABSOLUTE_TIME
-    {
-        // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
-        if (s_TimebaseInfo.denom != 0)
-        {
-            retval = (mach_absolute_time() * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMilliSecondsToNanoSeconds;
-        }
-        else
-        {
-            ASSERT_UNCONDITIONALLY("s_TimebaseInfo is uninitialized.\n");
-        }
-    }
-#elif HAVE_GETHRTIME
-    {
-        retval = (UInt64)(gethrtime() / tccMilliSecondsToNanoSeconds);
-    }
-#elif HAVE_READ_REAL_TIME
-    {
-        timebasestruct_t tb;
-        read_real_time(&tb, TIMEBASE_SZ);
-        if (time_base_to_time(&tb, TIMEBASE_SZ) == 0)
-        {
-            retval = (tb.tb_high * tccSecondsToMilliSeconds)+(tb.tb_low / tccMilliSecondsToNanoSeconds);
-        }
-        else
-        {
-            ASSERT_UNCONDITIONALLY("time_base_to_time() failed\n");
-        }
-    }
 #else
     {
         struct timeval tv;
         if (gettimeofday(&tv, NULL) == 0)
         {
             retval = (tv.tv_sec * tccSecondsToMilliSeconds) + (tv.tv_usec / tccMilliSecondsToMicroSeconds);
-
         }
         else
         {
             ASSERT_UNCONDITIONALLY("gettimeofday() failed\n");
         }
     }
-#endif // HAVE_CLOCK_MONOTONIC
+#endif
 
     return retval;
 }
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetTickCount()
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalGetTickCount()
 {
-    return (uint32_t)GetTickCount64();
+    return (UInt32)PalGetTickCount64();
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     HANDLE moduleHandle = NULL;
+
+    // Emscripten's implementation of dladdr corrupts memory,
+    // but always returns 0 for the module handle, so just skip the call
+#if !defined(HOST_WASM)
     Dl_info info;
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
         moduleHandle = info.dli_fbase;
     }
+#endif //!defined(HOST_WASM)
 
     return moduleHandle;
 }
 
-REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
 {
-    // UNIXTODO: Implement this function
-    return NULL;
+    return true;
 }
 
-bool QueryCacheSize()
+REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
 {
-    bool success = true;
-    g_cbLargestOnDieCache = 0;
-
-#ifdef __linux__
-    DIR* cpuDir = opendir("/sys/devices/system/cpu");
-    if (cpuDir == nullptr)
-    {
-        ASSERT_UNCONDITIONALLY("opendir on /sys/devices/system/cpu failed\n");
-        return false;
-    }
-
-    dirent* cpuEntry;
-    // Process entries starting with "cpu" (cpu0, cpu1, ...) in the directory
-    while (success && (cpuEntry = readdir(cpuDir)) != nullptr)
-    {
-        if ((strncmp(cpuEntry->d_name, "cpu", 3) == 0) && isdigit(cpuEntry->d_name[3]))
-        {
-            char cpuCachePath[64] = "/sys/devices/system/cpu/";
-            strcat(cpuCachePath, cpuEntry->d_name);
-            strcat(cpuCachePath, "/cache");
-            DIR* cacheDir = opendir(cpuCachePath);
-            if (cacheDir == nullptr)
-            {
-                success = false;
-                break;
-            }
-
-            strcat(cpuCachePath, "/");
-            int cpuCacheBasePathLength = strlen(cpuCachePath);
-
-            dirent* cacheEntry;
-            // For all entries in the directory
-            while ((cacheEntry = readdir(cacheDir)) != nullptr)
-            {
-                if (strncmp(cacheEntry->d_name, "index", 5) == 0)
-                {
-                    cpuCachePath[cpuCacheBasePathLength] = '\0';
-                    strcat(cpuCachePath, cacheEntry->d_name);
-                    strcat(cpuCachePath, "/size");
-
-                    int fd = open(cpuCachePath, O_RDONLY);
-                    if (fd < 0)
-                    {
-                        success = false;
-                        break;
-                    }
-
-                    char cacheSizeStr[16];
-                    int bytesRead = read(fd, cacheSizeStr, sizeof(cacheSizeStr) - 1);
-                    cacheSizeStr[bytesRead] = '\0';
-
-                    // Parse the cache size that is formatted as a number followed by the K letter
-                    char* lastChar;
-                    int cacheSize = strtol(cacheSizeStr, &lastChar, 10) * 1024;
-                    ASSERT(*lastChar == 'K');
-                    g_cbLargestOnDieCache = max(g_cbLargestOnDieCache, cacheSize);
-
-                    close(fd);
-                }
-            }
-
-            closedir(cacheDir);
-        }
-    }
-    closedir(cpuDir);
-
-#elif HAVE_SYSCTL
-
-    int64_t g_cbLargestOnDieCache;
-    size_t sz = sizeof(g_cbLargestOnDieCache);
-
-    if (sysctlbyname("hw.l3cachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
-    {
-        // No L3 cache, try the L2 one
-        if (sysctlbyname("hw.l2cachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
-        {
-            // No L2 cache, try the L1 one
-            if (sysctlbyname("hw.l1dcachesize", &g_cbLargestOnDieCache, &sz, NULL, 0) != 0)
-            {
-                ASSERT_UNCONDITIONALLY("sysctl failed to get cache size\n");
-                return false;
-            }
-        }
-    }
-#else
-#error Don't know how to get cache size on this platform
-#endif // __linux__
-
-    // TODO: implement adjusted cache size
-    g_cbLargestOnDieCacheAdjusted = g_cbLargestOnDieCache;
-
-    return success;
+    // Write the message using lowest-level OS API available. This is used to print the stack overflow
+    // message, so there is not much that can be done here.
+    write(STDERR_FILENO, message, sizeof(message));
 }
 
 bool QueryLogicalProcessorCount()
 {
 #if HAVE_SYSCONF
-    g_cLogicalCpus = sysconf(_SC_NPROCESSORS_ONLN);
-    if (g_cLogicalCpus < 1)
+    g_cNumProcs = sysconf(SYSCONF_GET_NUMPROCS);
+    if (g_cNumProcs < 1)
     {
-        ASSERT_UNCONDITIONALLY("sysconf failed for _SC_NPROCESSORS_ONLN\n");
+        ASSERT_UNCONDITIONALLY("sysconf failed for " SYSCONF_GET_NUMPROCS_NAME "\n");
         return false;
     }
 #elif HAVE_SYSCTL
-    size_t sz = sizeof(g_cLogicalCpus);
+    size_t sz = sizeof(g_cNumProcs);
 
     int st = 0;
-    if (sysctlbyname("hw.logicalcpu_max", &g_cLogicalCpus, &sz, NULL, 0) != 0)
+    if (sysctlbyname("hw.logicalcpu_max", &g_cNumProcs, &sz, NULL, 0) != 0)
     {
         ASSERT_UNCONDITIONALLY("sysctl failed for hw.logicalcpu_max\n");
         return false;
@@ -850,29 +753,6 @@ bool QueryLogicalProcessorCount()
 #endif // HAVE_SYSCONF
 
     return true;
-}
-
-// Method used to initialize the above values.
-bool PalQueryProcessorTopology()
-{
-    if (!QueryLogicalProcessorCount())
-    {
-        return false;
-    }
-
-    return QueryCacheSize();
-}
-
-// Functions called by the GC to obtain our cached values for number of logical processors and cache size.
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetLogicalCpuCount()
-{
-    return g_cLogicalCpus;
-}
-
-REDHAWK_PALEXPORT size_t REDHAWK_PALAPI PalGetLargestOnDieCacheSize(UInt32_BOOL bTrueSize)
-{
-    return bTrueSize ? g_cbLargestOnDieCache
-        : g_cbLargestOnDieCacheAdjusted;
 }
 
 static int W32toUnixAccessControl(uint32_t flProtect)
@@ -886,6 +766,12 @@ static int W32toUnixAccessControl(uint32_t flProtect)
         break;
     case PAGE_READWRITE:
         prot = PROT_READ | PROT_WRITE;
+        break;
+    case PAGE_EXECUTE_READ:
+        prot = PROT_READ | PROT_EXEC;
+        break;
+    case PAGE_EXECUTE_READWRITE:
+        prot = PROT_READ | PROT_WRITE | PROT_EXEC;
         break;
     default:
         ASSERT(false);
@@ -961,6 +847,13 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress,
     return UInt32_TRUE;
 }
 
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect)
+{
+    int unixProtect = W32toUnixAccessControl(protect);
+
+    return mprotect(pAddress, size, unixProtect) == 0;
+}
+
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
 {
     static void* pBuffer;
@@ -1026,16 +919,15 @@ extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
     pthread_mutex_unlock(&lpCriticalSection->mutex);
 }
 
-extern "C" unsigned __int64  __readgsqword(unsigned long Offset)
-{
-    // UNIXTODO: The TLS stuff needs to be better abstracted.
-    return 0;
-}
-
 extern "C" UInt32_BOOL IsDebuggerPresent()
 {
+#ifdef HOST_WASM
+    // For now always true since the browser will handle it in case of WASM.
+    return UInt32_TRUE;
+#else
     // UNIXTODO: Implement this function
     return UInt32_FALSE;
+#endif
 }
 
 extern "C" void TerminateProcess(HANDLE arg1, UInt32 arg2)
@@ -1044,11 +936,6 @@ extern "C" void TerminateProcess(HANDLE arg1, UInt32 arg2)
     // Then if we modified the signature of the DuplicateHandle too, we can
     // get rid of the PalGetCurrentProcess.
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-extern "C" void ExitProcess(UInt32 exitCode)
-{
-    exit(exitCode);
 }
 
 extern "C" UInt32_BOOL SetEvent(HANDLE event)
@@ -1091,32 +978,16 @@ extern "C" UInt32 GetEnvironmentVariableA(const char * name, char * buffer, UInt
 
 extern "C" UInt16 RtlCaptureStackBackTrace(UInt32 arg1, UInt32 arg2, void* arg3, UInt32* arg4)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-extern "C" HANDLE GetProcessHeap()
-{
-    // UNIXTODO: Consider using some special value?
-    return (HANDLE)1;
-}
-
-extern "C" void* HeapAlloc(HANDLE heap, UInt32 flags, UIntNative bytes)
-{
-    return malloc(bytes);
-}
-
-extern "C" UInt32_BOOL HeapFree(HANDLE heap, UInt32 flags, void * mem)
-{
-    free(mem);
-
-    return UInt32_TRUE;
+    // UNIXTODO: Implement this function
+    return 0;
 }
 
 typedef UInt32 (__stdcall *HijackCallback)(HANDLE hThread, _In_ PAL_LIMITED_CONTEXT* pThreadContext, _In_opt_ void* pCallbackContext);
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ HijackCallback callback, _In_opt_ void* pCallbackContext)
+REDHAWK_PALEXPORT UInt32 REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ HijackCallback callback, _In_opt_ void* pCallbackContext)
 {
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
+    // UNIXTODO: Implement PalHijack
+    return E_FAIL;
 }
 
 extern "C" UInt32 WaitForSingleObjectEx(HANDLE handle, UInt32 milliseconds, UInt32_BOOL alertable)
@@ -1138,13 +1009,19 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
     return WaitForSingleObjectEx(pHandles[0], timeout, alertable);
 }
 
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
+#if !__has_builtin(_mm_pause)
 extern "C" void _mm_pause()
 // Defined for implementing PalYieldProcessor in PalRedhawk.h
 {
-#if defined(_AMD64_) || defined(_X86_)
+#if defined(HOST_AMD64) || defined(HOST_X86)
   __asm__ volatile ("pause");
 #endif
 }
+#endif
 
 extern "C" Int32 _stricmp(const char *string1, const char *string2)
 {
@@ -1153,9 +1030,7 @@ extern "C" Int32 _stricmp(const char *string1, const char *string2)
 
 REDHAWK_PALEXPORT Int32 PalGetProcessCpuCount()
 {
-    // The concept of process CPU affinity is going away and so CoreSystem obsoletes the APIs used to
-    // fetch this information. Instead we'll just return total cpu count.
-    return PalGetLogicalCpuCount();
+    return g_cNumProcs;
 }
 
 //Reads the entire contents of the file into the specified buffer, buff
@@ -1231,8 +1106,6 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
     return true;
 }
 
-extern "C" int main(int argc, char** argv);
-
 // retrieves the full path to the specified module, if moduleBase is NULL retreieves the full path to the
 // executable module of the current process.
 //
@@ -1240,13 +1113,12 @@ extern "C" int main(int argc, char** argv);
 //
 REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
-    if (moduleBase == NULL)
-    {
-        // Get an address of the "main" function, which causes the dladdr to return
-        // path of the main executable
-        moduleBase = (HANDLE)&main;
-    }
-
+#if defined(HOST_WASM)
+    // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so make up a name instead
+    const TCHAR* wasmModuleName = "WebAssemblyModule";
+    *pModuleNameOut = wasmModuleName;
+    return strlen(wasmModuleName);
+#else // HOST_WASM
     Dl_info dl;
     if (dladdr(moduleBase, &dl) == 0)
     {
@@ -1256,29 +1128,25 @@ REDHAWK_PALEXPORT Int32 PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut,
 
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
+#endif // defined(HOST_WASM)
 }
 
-void PalDebugBreak()
-{
-    __debugbreak();
-}
-
-GCSystemInfo g_SystemInfo;
+GCSystemInfo g_RhSystemInfo;
 
 // Initialize the g_SystemInfo
 bool InitializeSystemInfo()
 {
     long pagesize = getpagesize();
-    g_SystemInfo.dwPageSize = pagesize;
-    g_SystemInfo.dwAllocationGranularity = pagesize;
+    g_RhSystemInfo.dwPageSize = pagesize;
+    g_RhSystemInfo.dwAllocationGranularity = pagesize;
 
     int nrcpus = 0;
 
 #if HAVE_SYSCONF
-    nrcpus = sysconf(_SC_NPROCESSORS_ONLN);
+    nrcpus = sysconf(SYSCONF_GET_NUMPROCS);
     if (nrcpus < 1)
     {
-        ASSERT_UNCONDITIONALLY("sysconf failed for _SC_NPROCESSORS_ONLN\n");
+        ASSERT_UNCONDITIONALLY("sysconf failed for " SYSCONF_GET_NUMPROCS_NAME "\n");
         return false;
     }
 #elif HAVE_SYSCTL
@@ -1295,7 +1163,7 @@ bool InitializeSystemInfo()
     }
 #endif // HAVE_SYSCONF
 
-    g_SystemInfo.dwNumberOfProcessors = nrcpus;
+    g_RhSystemInfo.dwNumberOfProcessors = nrcpus;
 
     return true;
 }
@@ -1349,6 +1217,21 @@ extern "C" void FlushProcessWriteBuffers()
     FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
 }
 
+static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
+static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
+
+extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
+{
+    struct timeval time = { 0 };
+    gettimeofday(&time, NULL);
+
+    int64_t result = ((int64_t)time.tv_sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS +
+        (time.tv_usec * 10);
+
+    lpSystemTimeAsFileTime->dwLowDateTime = (uint32_t)result;
+    lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
+}
+
 extern "C" UInt32_BOOL QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)
 {
     // TODO: More efficient, platform-specific implementation
@@ -1387,490 +1270,75 @@ extern "C" UInt64 PalGetCurrentThreadIdForLogging()
 #endif
 }
 
-extern "C" UInt32_BOOL WriteFile(
-    HANDLE hFile,
-    const void* lpBuffer,
-    uint32_t nNumberOfBytesToWrite,
-    uint32_t * lpNumberOfBytesWritten,
-    void* lpOverlapped)
+#if defined(HOST_X86) || defined(HOST_AMD64)
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI getcpuid(uint32_t arg, unsigned char result[16])
 {
-    // TODO: Reimplement callers using CRT
-    return UInt32_FALSE;
+    DWORD eax;
+#if defined(HOST_X86)
+    __asm("  xor %%ecx, %%ecx\n" \
+          "  cpuid\n" \
+          "  mov %%eax, 0(%[result])\n" \
+          "  mov %%ebx, 4(%[result])\n" \
+          "  mov %%ecx, 8(%[result])\n" \
+          "  mov %%edx, 12(%[result])\n" \
+          : "=a"(eax) /*output in eax*/\
+          : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
+          : "ebx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+        );
+#endif // defined(HOST_X86)
+#if defined(HOST_AMD64)
+    __asm("  xor %%ecx, %%ecx\n" \
+          "  cpuid\n" \
+          "  mov %%eax, 0(%[result])\n" \
+          "  mov %%ebx, 4(%[result])\n" \
+          "  mov %%ecx, 8(%[result])\n" \
+          "  mov %%edx, 12(%[result])\n" \
+          : "=a"(eax) /*output in eax*/\
+          : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
+          : "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+        );
+#endif // defined(HOST_AMD64)
+    return eax;
 }
 
-extern "C" void YieldProcessor()
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI getextcpuid(uint32_t arg1, uint32_t arg2, unsigned char result[16])
 {
+    DWORD eax;
+#if defined(HOST_X86)
+    DWORD ecx;
+    __asm("  cpuid\n" \
+          "  mov %%eax, 0(%[result])\n" \
+          "  mov %%ebx, 4(%[result])\n" \
+          "  mov %%ecx, 8(%[result])\n" \
+          "  mov %%edx, 12(%[result])\n" \
+          : "=a"(eax), "=c"(ecx) /*output in eax, ecx is rewritten*/\
+          : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
+          : "ebx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+        );
+#endif // defined(HOST_X86)
+#if defined(HOST_AMD64)
+    __asm("  cpuid\n" \
+          "  mov %%eax, 0(%[result])\n" \
+          "  mov %%ebx, 4(%[result])\n" \
+          "  mov %%ecx, 8(%[result])\n" \
+          "  mov %%edx, 12(%[result])\n" \
+          : "=a"(eax) /*output in eax*/\
+          : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
+          : "rbx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+        );
+#endif // defined(HOST_AMD64)
+    return eax;
 }
 
-extern "C" void DebugBreak()
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
 {
-    PalDebugBreak();
+    DWORD eax;
+    __asm("  xgetbv\n" \
+        : "=a"(eax) /*output in eax*/\
+        : "c"(0) /*inputs - 0 in ecx*/\
+        : "edx" /* registers that are clobbered*/
+      );
+    // check OS has enabled both XMM and YMM state support
+    return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
-
-extern "C" uint32_t GetLastError()
-{
-    return 1;
-}
-
-extern "C" UInt32 WaitForMultipleObjectsEx(UInt32, HANDLE *, UInt32_BOOL, UInt32, UInt32_BOOL)
-{
-    PORTABILITY_ASSERT("UNIXTODO: Implement this function");
-}
-
-// Initialize the interface implementation
-bool GCToOSInterface::Initialize()
-{
-    return true;
-}
-
-// Shutdown the interface implementation
-void GCToOSInterface::Shutdown()
-{
-}
-
-// Get numeric id of the current thread if possible on the 
-// current platform. It is indended for logging purposes only.
-// Return:
-//  Numeric id of the current thread or 0 if the 
-uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
-{
-    return PalGetCurrentThreadIdForLogging();
-}
-
-// Get id of the process
-uint32_t GCToOSInterface::GetCurrentProcessId()
-{
-    return ::GetCurrentProcessId();
-}
-
-// Set ideal affinity for the current thread
-// Parameters:
-//  affinity - ideal processor affinity for the thread
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
-{
-    return false;
-}
-
-// Get the number of the current processor
-uint32_t GCToOSInterface::GetCurrentProcessorNumber()
-{
-    return PalGetCurrentProcessorNumber();
-}
-
-// Check if the OS supports getting current processor number
-bool GCToOSInterface::CanGetCurrentProcessorNumber()
-{
-    return HAVE_SCHED_GETCPU;
-}
-
-// Flush write buffers of processors that are executing threads of the current process
-void GCToOSInterface::FlushProcessWriteBuffers()
-{
-    return ::FlushProcessWriteBuffers();
-}
-
-// Break into a debugger
-void GCToOSInterface::DebugBreak()
-{
-    __debugbreak();
-}
-
-// Get number of logical processors
-uint32_t GCToOSInterface::GetLogicalCpuCount()
-{
-    return g_cLogicalCpus;
-}
-
-// Causes the calling thread to sleep for the specified number of milliseconds
-// Parameters:
-//  sleepMSec   - time to sleep before switching to another thread
-void GCToOSInterface::Sleep(uint32_t sleepMSec)
-{
-    PalSleep(sleepMSec);
-}
-
-// Causes the calling thread to yield execution to another thread that is ready to run on the current processor.
-// Parameters:
-//  switchCount - number of times the YieldThread was called in a loop
-void GCToOSInterface::YieldThread(uint32_t switchCount)
-{
-    // UNIXTODO: handle the switchCount
-    YieldProcessor();
-}
-
-// Reserve virtual memory range.
-// Parameters:
-//  address   - starting virtual address, it can be NULL to let the function choose the starting address
-//  size      - size of the virtual memory range
-//  alignment - requested memory alignment, 0 means no specific alignment requested
-//  flags     - flags to control special settings like write watching
-// Return:
-//  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(void* address, size_t size, size_t alignment, uint32_t flags)
-{
-    ASSERT_MSG(!(flags & VirtualReserveFlags::WriteWatch), "WriteWatch not supported on Unix");
-
-    if (alignment == 0)
-    {
-        alignment = OS_PAGE_SIZE;
-    }
-
-    size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
-
-    void * pRetVal = mmap(address, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
-
-    if (pRetVal != NULL)
-    {
-        void * pAlignedRetVal = (void *)(((size_t)pRetVal + (alignment - 1)) & ~(alignment - 1));
-        size_t startPadding = (size_t)pAlignedRetVal - (size_t)pRetVal;
-        if (startPadding != 0)
-        {
-            int ret = munmap(pRetVal, startPadding);
-            ASSERT(ret == 0);
-        }
-
-        size_t endPadding = alignedSize - (startPadding + size);
-        if (endPadding != 0)
-        {
-            int ret = munmap((void *)((size_t)pAlignedRetVal + size), endPadding);
-            ASSERT(ret == 0);
-        }
-
-        pRetVal = pAlignedRetVal;
-    }
-
-    return pRetVal;
-}
-
-// Release virtual memory range previously reserved using VirtualReserve
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualRelease(void* address, size_t size)
-{
-    int ret = munmap(address, size);
-
-    return (ret == 0);
-}
-
-// Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size)
-{
-    return mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
-}
-
-// Decomit virtual memory range.
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
-{
-    return mprotect(address, size, PROT_NONE) == 0;
-}
-
-// Reset virtual memory range. Indicates that data in the memory range specified by address and size is no
-// longer of interest, but it should not be decommitted.
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-//  unlock  - true if the memory range should also be unlocked
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
-{
-    // UNIXTODO: Implement this
-    return true;
-}
-
-// Check if the OS supports write watching
-bool GCToOSInterface::SupportsWriteWatch()
-{
-    return PalHasCapability(WriteWatchCapability);
-}
-
-// Reset the write tracking state for the specified virtual memory range.
-// Parameters:
-//  address - starting virtual address
-//  size    - size of the virtual memory range
-void GCToOSInterface::ResetWriteWatch(void* address, size_t size)
-{
-}
-
-// Retrieve addresses of the pages that are written to in a region of virtual memory
-// Parameters:
-//  resetState         - true indicates to reset the write tracking state
-//  address            - starting virtual address
-//  size               - size of the virtual memory range
-//  pageAddresses      - buffer that receives an array of page addresses in the memory region
-//  pageAddressesCount - on input, size of the lpAddresses array, in array elements
-//                       on output, the number of page addresses that are returned in the array.
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size, void** pageAddresses, uintptr_t* pageAddressesCount)
-{
-    return false;
-}
-
-// Get size of the largest cache on the processor die
-// Parameters:
-//  trueSize - true to return true cache size, false to return scaled up size based on
-//             the processor architecture
-// Return:
-//  Size of the cache
-size_t GCToOSInterface::GetLargestOnDieCacheSize(bool trueSize)
-{
-    // UNIXTODO: implement this
-    return 0;
-}
-
-// Get affinity mask of the current process
-// Parameters:
-//  processMask - affinity mask for the specified process
-//  systemMask  - affinity mask for the system
-// Return:
-//  true if it has succeeded, false if it has failed
-// Remarks:
-//  A process affinity mask is a bit vector in which each bit represents the processors that
-//  a process is allowed to run on. A system affinity mask is a bit vector in which each bit
-//  represents the processors that are configured into a system.
-//  A process affinity mask is a subset of the system affinity mask. A process is only allowed
-//  to run on the processors configured into a system. Therefore, the process affinity mask cannot
-//  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
-bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processMask, uintptr_t* systemMask)
-{
-    return false;
-}
-
-// Get number of processors assigned to the current process
-// Return:
-//  The number of processors
-uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
-{
-    return ::PalGetProcessCpuCount();
-}
-
-// Get global memory status
-// Parameters:
-//  ms - pointer to the structure that will be filled in with the memory status
-void GCToOSInterface::GetMemoryStatus(GCMemoryStatus* ms)
-{
-    ms->dwMemoryLoad = 0;
-    ms->ullTotalPhys = 0;
-    ms->ullAvailPhys = 0;
-    ms->ullTotalPageFile = 0;
-    ms->ullAvailPageFile = 0;
-    ms->ullTotalVirtual = 0;
-    ms->ullAvailVirtual = 0;
-
-    UInt32_BOOL fRetVal = UInt32_FALSE;
-
-    // Get the physical memory size
-#if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    int64_t physical_memory;
-
-    // Get the Physical memory size
-    physical_memory = sysconf( _SC_PHYS_PAGES ) * sysconf( _SC_PAGE_SIZE );
-    ms->ullTotalPhys = (uint64_t)physical_memory;
-    fRetVal = UInt32_TRUE;
-#elif HAVE_SYSCTL
-    int mib[2];
-    int64_t physical_memory;
-    size_t length;
-
-    // Get the Physical memory size
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
-    length = sizeof(int64_t);
-    int rc = sysctl(mib, 2, &physical_memory, &length, NULL, 0);
-    if (rc != 0)
-    {
-        ASSERT_UNCONDITIONALLY("sysctl failed for HW_MEMSIZE\n");
-    }
-    else
-    {
-        ms->ullTotalPhys = (uint64_t)physical_memory;
-        fRetVal = UInt32_TRUE;
-    }
-#elif // HAVE_SYSINFO
-    // TODO: implement getting memory details via sysinfo. On Linux, it provides swap file details that
-    // we can use to fill in the xxxPageFile members.
-
-#endif // HAVE_SYSCONF
-
-    // Get the physical memory in use - from it, we can get the physical memory available.
-    // We do this only when we have the total physical memory available.
-    if (ms->ullTotalPhys > 0)
-    {
-#ifndef __APPLE__
-        ms->ullAvailPhys = sysconf(SYSCONF_PAGES) * sysconf(_SC_PAGE_SIZE);
-        int64_t used_memory = ms->ullTotalPhys - ms->ullAvailPhys;
-        ms->dwMemoryLoad = (uint32_t)((used_memory * 100) / ms->ullTotalPhys);
-#else
-        vm_size_t page_size;
-        mach_port_t mach_port;
-        mach_msg_type_number_t count;
-        vm_statistics_data_t vm_stats;
-        mach_port = mach_host_self();
-        count = sizeof(vm_stats) / sizeof(natural_t);
-        if (KERN_SUCCESS == host_page_size(mach_port, &page_size))
-        {
-            if (KERN_SUCCESS == host_statistics(mach_port, HOST_VM_INFO, (host_info_t)&vm_stats, &count))
-            {
-                ms->ullAvailPhys = (int64_t)vm_stats.free_count * (int64_t)page_size;
-                int64_t used_memory = ((int64_t)vm_stats.active_count + (int64_t)vm_stats.inactive_count + (int64_t)vm_stats.wire_count) *  (int64_t)page_size;
-                ms->dwMemoryLoad = (uint32_t)((used_memory * 100) / ms->ullTotalPhys);
-            }
-        }
-        mach_port_deallocate(mach_task_self(), mach_port);
-#endif // __APPLE__
-    }
-
-    // There is no API to get the total virtual address space size on
-    // Unix, so we use a constant value representing 128TB, which is
-    // the approximate size of total user virtual address space on
-    // the currently supported Unix systems.
-    static const uint64_t _128TB = (1ull << 47);
-    ms->ullTotalVirtual = _128TB;
-    ms->ullAvailVirtual = ms->ullAvailPhys;
-
-    // UNIXTODO: failfast for !fRetVal?
-}
-
-// Get a high precision performance counter
-// Return:
-//  The counter value
-int64_t GCToOSInterface::QueryPerformanceCounter()
-{
-    LARGE_INTEGER ts;
-    if (!::QueryPerformanceCounter(&ts))
-    {
-        DebugBreak();
-        ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
-        abort();
-    }
-
-    return ts.QuadPart;
-}
-
-// Get a frequency of the high precision performance counter
-// Return:
-//  The counter frequency
-int64_t GCToOSInterface::QueryPerformanceFrequency()
-{
-    LARGE_INTEGER frequency;
-    if (!::QueryPerformanceFrequency(&frequency))
-    {
-        DebugBreak();
-        ASSERT_UNCONDITIONALLY("Fatal Error - cannot query performance counter.");
-        abort();
-    }
-
-    return frequency.QuadPart;
-}
-
-// Get a time stamp with a low precision
-// Return:
-//  Time stamp in milliseconds
-uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
-{
-    return PalGetTickCount();
-}
-
-// Parameters of the GC thread stub
-struct GCThreadStubParam
-{
-    GCThreadFunction GCThreadFunction;
-    void* GCThreadParam;
-};
-
-// GC thread stub to convert GC thread function to an OS specific thread function
-static void* GCThreadStub(void* param)
-{
-    GCThreadStubParam *stubParam = (GCThreadStubParam*)param;
-    GCThreadFunction function = stubParam->GCThreadFunction;
-    void* threadParam = stubParam->GCThreadParam;
-
-    delete stubParam;
-
-    function(threadParam);
-
-    return NULL;
-}
-
-// Create a new thread for GC use
-// Parameters:
-//  function - the function to be executed by the thread
-//  param    - parameters of the thread
-//  affinity - processor affinity of the thread
-// Return:
-//  true if it has succeeded, false if it has failed
-bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThreadAffinity* affinity)
-{
-    NewHolder<GCThreadStubParam> stubParam = new (nothrow) GCThreadStubParam();
-    if (stubParam == NULL)
-    {
-        return false;
-    }
-
-    stubParam->GCThreadFunction = function;
-    stubParam->GCThreadParam = param;
-
-    pthread_attr_t attrs;
-
-    int st = pthread_attr_init(&attrs);
-    ASSERT(st == 0);
-
-    // Create the thread as detached, that means not joinable
-    st = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
-    ASSERT(st == 0);
-
-    pthread_t threadId;
-    st = pthread_create(&threadId, &attrs, GCThreadStub, stubParam);
-
-    if (st == 0)
-    {
-        stubParam.SuppressRelease();
-    }
-
-    int st2 = pthread_attr_destroy(&attrs);
-    ASSERT(st2 == 0);
-
-    return (st == 0);
-}
-
-// Initialize the critical section
-void CLRCriticalSection::Initialize()
-{
-    int st = pthread_mutex_init(&m_cs.mutex, NULL);
-    ASSERT(st == 0);
-}
-
-// Destroy the critical section
-void CLRCriticalSection::Destroy()
-{
-    int st = pthread_mutex_destroy(&m_cs.mutex);
-    ASSERT(st == 0);
-}
-
-// Enter the critical section. Blocks until the section can be entered.
-void CLRCriticalSection::Enter()
-{
-    pthread_mutex_lock(&m_cs.mutex);
-}
-
-// Leave the critical section
-void CLRCriticalSection::Leave()
-{
-    pthread_mutex_unlock(&m_cs.mutex);
-}
+#endif // defined(HOST_X86) || defined(HOST_AMD64)

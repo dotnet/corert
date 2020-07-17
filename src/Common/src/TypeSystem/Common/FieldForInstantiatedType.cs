@@ -1,18 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.TypeSystem
 {
-    public sealed class FieldForInstantiatedType : FieldDesc
+    public sealed partial class FieldForInstantiatedType : FieldDesc
     {
-        private FieldDesc _fieldDef;
-        private InstantiatedType _instantiatedType;
+        private readonly FieldDesc _fieldDef;
+        private readonly InstantiatedType _instantiatedType;
 
         internal FieldForInstantiatedType(FieldDesc fieldDef, InstantiatedType instantiatedType)
         {
+            Debug.Assert(fieldDef.GetTypicalFieldDefinition() == fieldDef);
             _fieldDef = fieldDef;
             _instantiatedType = instantiatedType;
         }

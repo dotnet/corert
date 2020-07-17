@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Need to use "extern alias", because both the writer and reader define types with same names.
-extern alias reader;
 extern alias writer;
 
 using System;
@@ -12,7 +10,7 @@ using System.Linq;
 
 using Xunit;
 
-using Reader = reader.Internal.Metadata.NativeFormat;
+using Reader = Internal.Metadata.NativeFormat;
 using Writer = writer.Internal.Metadata.NativeFormat.Writer;
 
 using TypeAttributes = System.Reflection.TypeAttributes;
@@ -112,10 +110,7 @@ namespace System.Private.Reflection.Metadata.Tests
                 Signature = new Writer.MethodSignature
                 {
                     CallingConvention = CallingConventions.HasThis,
-                    ReturnType = new Writer.ReturnTypeSignature
-                    {
-                        Type = voidType
-                    }
+                    ReturnType =  voidType,
                 },
             };
             objectType.Methods.Add(objectCtorMethod);
@@ -130,10 +125,7 @@ namespace System.Private.Reflection.Metadata.Tests
                 Signature = new Writer.MethodSignature
                 {
                     CallingConvention = CallingConventions.HasThis,
-                    ReturnType = new Writer.ReturnTypeSignature
-                    {
-                        Type = voidType
-                    }
+                    ReturnType =  voidType,
                 },
             };
             stringType.Methods.Add(stringCtorMethod);
@@ -142,7 +134,7 @@ namespace System.Private.Reflection.Metadata.Tests
         }
 
         [Fact]
-        public unsafe static void TestSimpleRoundTripping()
+        public static unsafe void TestSimpleRoundTripping()
         {
             var wr = new Writer.MetadataWriter();
             wr.ScopeDefinitions.Add(BuildSimpleTestData());
@@ -161,14 +153,14 @@ namespace System.Private.Reflection.Metadata.Tests
 
                 // Validate the root namespace and <Module> type
                 Reader.NamespaceDefinition rootNamespace = systemRuntimeScope.RootNamespaceDefinition.GetNamespaceDefinition(rd);
-                Assert.Equal(1, rootNamespace.TypeDefinitions.Count());
+                Assert.Equal(1, rootNamespace.TypeDefinitions.Count);
                 Reader.TypeDefinition moduleType = rootNamespace.TypeDefinitions.Single().GetTypeDefinition(rd);
                 Assert.Equal("<Module>", moduleType.Name.GetConstantStringValue(rd).Value);
-                Assert.Equal(1, rootNamespace.NamespaceDefinitions.Count());
+                Assert.Equal(1, rootNamespace.NamespaceDefinitions.Count);
 
                 // Validate the System namespace
                 Reader.NamespaceDefinition systemNamespace = rootNamespace.NamespaceDefinitions.Single().GetNamespaceDefinition(rd);
-                Assert.Equal(4, systemNamespace.TypeDefinitions.Count());
+                Assert.Equal(4, systemNamespace.TypeDefinitions.Count);
                 foreach (var typeHandle in systemNamespace.TypeDefinitions)
                 {
                     Reader.TypeDefinition type = typeHandle.GetTypeDefinition(rd);
@@ -184,19 +176,19 @@ namespace System.Private.Reflection.Metadata.Tests
                     {
                         case "Object":
                             Assert.Null(baseTypeName);
-                            Assert.Equal(1, type.Methods.Count());
+                            Assert.Equal(1, type.Methods.Count);
                             break;
                         case "Void":
                             Assert.Equal("ValueType", baseTypeName);
-                            Assert.Equal(0, type.Methods.Count());
+                            Assert.Equal(0, type.Methods.Count);
                             break;
                         case "String":
                             Assert.Equal("Object", baseTypeName);
-                            Assert.Equal(1, type.Methods.Count());
+                            Assert.Equal(1, type.Methods.Count);
                             break;
                         case "ValueType":
                             Assert.Equal("Object", baseTypeName);
-                            Assert.Equal(0, type.Methods.Count());
+                            Assert.Equal(0, type.Methods.Count);
                             break;
                         default:
                             throw new NotImplementedException();
@@ -206,7 +198,7 @@ namespace System.Private.Reflection.Metadata.Tests
         }
 
         [Fact]
-        public unsafe static void TestCommonTailOptimization()
+        public static unsafe void TestCommonTailOptimization()
         {
             var wr = new Writer.MetadataWriter();
             wr.ScopeDefinitions.Add(BuildSimpleTestData());
@@ -221,7 +213,7 @@ namespace System.Private.Reflection.Metadata.Tests
                 Reader.ScopeDefinition systemRuntimeScope = scopeHandle.GetScopeDefinition(rd);
                 Reader.NamespaceDefinition rootNamespace = systemRuntimeScope.RootNamespaceDefinition.GetNamespaceDefinition(rd);
                 Reader.NamespaceDefinition systemNamespace =
-                    rootNamespace.NamespaceDefinitions.Single(
+                    rootNamespace.NamespaceDefinitions.AsEnumerable().Single(
                         ns => ns.GetNamespaceDefinition(rd).Name.StringEquals("System", rd)
                         ).GetNamespaceDefinition(rd);
 
@@ -229,10 +221,10 @@ namespace System.Private.Reflection.Metadata.Tests
                 // Since both System.Object and System.String define a default constructor and the
                 // records are structurally equivalent, there should only be one metadata record
                 // representing a default .ctor in the blob.
-                Reader.TypeDefinition objectType = systemNamespace.TypeDefinitions.Single(
+                Reader.TypeDefinition objectType = systemNamespace.TypeDefinitions.AsEnumerable().Single(
                     t => t.GetTypeDefinition(rd).Name.StringEquals("Object", rd)
                     ).GetTypeDefinition(rd);
-                Reader.TypeDefinition stringType = systemNamespace.TypeDefinitions.Single(
+                Reader.TypeDefinition stringType = systemNamespace.TypeDefinitions.AsEnumerable().Single(
                     t => t.GetTypeDefinition(rd).Name.StringEquals("String", rd)
                     ).GetTypeDefinition(rd);
 

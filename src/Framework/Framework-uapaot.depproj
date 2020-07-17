@@ -1,0 +1,42 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/framework</OutputPath>
+    <UseCommonOutputDirectory>true</UseCommonOutputDirectory>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+    <TargetFramework>uap10.1</TargetFramework>
+    <RuntimeIdentifiers>win10-x64-aot</RuntimeIdentifiers>
+    <RidSpecificAssets>true</RidSpecificAssets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Private.CoreFx.UAP">
+      <Version>$(CoreFxUapVersion)</Version>
+    </PackageReference>
+
+    <!-- Grab UAP System.Text.Json because it doesn't rely on Reflection.Emit -->
+    <PackageReference Include="System.Text.Json">
+      <Version>4.6.0</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Pickup a few selected aot-specific files from uapaot instead -->
+    <FileToInclude Include="System.Linq.Expressions" />
+    <FileToInclude Include="System.Text.RegularExpressions" />
+    <FileToInclude Include="System.Private.Xml" />
+    <FileToInclude Include="System.Private.Xml.Linq" />
+
+    <!-- System.Linq is built with optimizations for size on AoT -->
+    <!-- See: https://github.com/dotnet/corefx/pull/31025 -->
+    <FileToInclude Include="System.Linq" />
+
+    <!-- Grab UAP System.Text.Json because it doesn't rely on Reflection.Emit -->
+    <FileToInclude Include="System.Text.Json" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

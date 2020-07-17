@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Reflection;
@@ -41,7 +40,11 @@ namespace Internal.TypeSystem.Ecma
             foreach (var interfaceHandle in interfaceHandles)
             {
                 var interfaceImplementation = this.MetadataReader.GetInterfaceImplementation(interfaceHandle);
-                implementedInterfaces[i++] = (DefType)_module.GetType(interfaceImplementation.Interface);
+                DefType interfaceType = _module.GetType(interfaceImplementation.Interface) as DefType;
+                if (interfaceType == null)
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, this);
+
+                implementedInterfaces[i++] = interfaceType;
             }
 
             return (_implementedInterfaces = implementedInterfaces);

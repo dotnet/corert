@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -19,12 +18,14 @@
 #include "event.h"
 #include "RWLock.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 #include "RuntimeInstance.h"
 #include "rhbinder.h"
 #include "CachedInterfaceDispatch.h"
 #include "RhConfig.h"
 #include "stressLog.h"
 #include "RestrictedCallouts.h"
+#include "yieldprocessornormalized.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -32,18 +33,30 @@
 unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 #endif // PROFILE_STARTUP
 
-HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance);
-
-
+#ifdef TARGET_UNIX
+Int32 RhpHardwareExceptionHandler(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
+#else
 Int32 __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
-void CheckForPalFallback();
-void DetectCPUFeatures();
+#endif
+
+static void CheckForPalFallback();
+static bool DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
 
 EXTERN_C bool g_fHasFastFxsave = false;
 
-bool InitDLL(HANDLE hPalInstance)
+CrstStatic g_CastCacheLock;
+CrstStatic g_ThunkPoolLock;
+
+#if defined(HOST_X86) || defined(HOST_AMD64)
+// This field is inspected from the generated code to determine what intrinsics are available.
+EXTERN_C int g_cpuFeatures = 0;
+// This field is defined in the generated code and sets the ISA expectations.
+EXTERN_C int g_requiredCpuFeatures;
+#endif
+
+static bool InitDLL(HANDLE hPalInstance)
 {
     CheckForPalFallback();
 
@@ -61,22 +74,28 @@ bool InitDLL(HANDLE hPalInstance)
     if (!RestrictedCallouts::Initialize())
         return false;
 
-#ifndef APP_LOCAL_RUNTIME
-    PalAddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
-#endif
-
     //
-    // init per-instance state
+    // Initialize RuntimeInstance state
     //
-    HANDLE hRuntimeInstance = RtuCreateRuntimeInstance(hPalInstance);
-    if (NULL == hRuntimeInstance)
+    if (!RuntimeInstance::Initialize(hPalInstance))
         return false;
+
+    // Note: The global exception handler uses RuntimeInstance
+#if !defined(APP_LOCAL_RUNTIME) && !defined(USE_PORTABLE_HELPERS)
+#ifndef TARGET_UNIX
+    PalAddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
+#else
+    PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
+#endif
+#endif // !APP_LOCAL_RUNTIME && !USE_PORTABLE_HELPERS
+
+    InitializeYieldProcessorNormalizedCrst();
+
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
 
-    // @TODO: currently we're always forcing a workstation GC.
-    // @TODO: GC per-instance vs per-DLL state separation
-    if (!RedhawkGCInterface::InitializeSubsystems(RedhawkGCInterface::GCType_Workstation))
+    if (!RedhawkGCInterface::InitializeSubsystems())
         return false;
+
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
 
 #ifdef STRESS_LOG
@@ -84,12 +103,6 @@ bool InitDLL(HANDLE hPalInstance)
     UInt32 dwStressLogLevel = g_pRhConfig->GetStressLogLevel();
 
     unsigned facility = (unsigned)LF_ALL;
-#ifdef _DEBUG
-    if (dwTotalStressLogSize == 0)
-        dwTotalStressLogSize = 1024 * STRESSLOG_CHUNK_SIZE;
-    if (dwStressLogLevel == 0)
-        dwStressLogLevel = LL_INFO1000;
-#endif
     unsigned dwPerThreadChunks = (dwTotalStressLogSize / 24) / STRESSLOG_CHUNK_SIZE;
     if (dwTotalStressLogSize != 0)
     {
@@ -99,12 +112,21 @@ bool InitDLL(HANDLE hPalInstance)
     }
 #endif // STRESS_LOG
 
-    DetectCPUFeatures();
+#ifndef USE_PORTABLE_HELPERS
+    if (!DetectCPUFeatures())
+        return false;
+#endif
+
+    if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
+        return false;
+
+    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstCastCache))
+        return false;
 
     return true;
 }
 
-void CheckForPalFallback()
+static void CheckForPalFallback()
 {
 #ifdef _DEBUG
     UInt32 disallowSetting = g_pRhConfig->GetDisallowRuntimeServicesFallback();
@@ -132,30 +154,155 @@ void CheckForPalFallback()
 #endif // _DEBUG
 }
 
-void DetectCPUFeatures()
+#ifndef USE_PORTABLE_HELPERS
+// Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
+enum XArchIntrinsicConstants
 {
-#if !defined(CORERT) // @TODO: CORERT: DetectCPUFeatures
+    XArchIntrinsicConstants_Aes = 0x0001,
+    XArchIntrinsicConstants_Pclmulqdq = 0x0002,
+    XArchIntrinsicConstants_Sse3 = 0x0004,
+    XArchIntrinsicConstants_Ssse3 = 0x0008,
+    XArchIntrinsicConstants_Sse41 = 0x0010,
+    XArchIntrinsicConstants_Sse42 = 0x0020,
+    XArchIntrinsicConstants_Popcnt = 0x0040,
+    XArchIntrinsicConstants_Avx = 0x0080,
+    XArchIntrinsicConstants_Fma = 0x0100,
+    XArchIntrinsicConstants_Avx2 = 0x0200,
+    XArchIntrinsicConstants_Bmi1 = 0x0400,
+    XArchIntrinsicConstants_Bmi2 = 0x0800,
+    XArchIntrinsicConstants_Lzcnt = 0x1000,
+};
 
-#ifdef _X86_
-    // We depend on fxsave / fxrstor.  These were added to Pentium II and later, so they're pretty well guaranteed to be
-    // available, but we double-check anyway and fail fast if they are not supported.
-    CPU_INFO cpuInfo;
-    PalCpuIdEx(1, 0, &cpuInfo);
-    if (!(cpuInfo.Edx & X86_FXSR))  
-        RhFailFast();
-#endif
+bool DetectCPUFeatures()
+{
+#if defined(HOST_X86) || defined(HOST_AMD64)
+    
+    unsigned char buffer[16];
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
     // AMD has a "fast" mode for fxsave/fxrstor, which omits the saving of xmm registers.  The OS will enable this mode
     // if it is supported.  So if we continue to use fxsave/fxrstor, we must manually save/restore the xmm registers.
-    CPU_INFO cpuInfo;
-    PalCpuIdEx(0x80000001, 0, &cpuInfo);
-    if (cpuInfo.Edx & AMD_FFXSR)
+    // fxsr_opt is bit 25 of EDX
+    getextcpuid(0, 0x80000001, buffer);
+    if ((buffer[15] & 0x02) != 0)
         g_fHasFastFxsave = true;
 #endif
 
-#endif // !CORERT
+    uint32_t maxCpuId = getcpuid(0, buffer);
+
+    if (maxCpuId >= 1)
+    {
+        // getcpuid executes cpuid with eax set to its first argument, and ecx cleared.
+        // It returns the resulting eax in buffer[0-3], ebx in buffer[4-7], ecx in buffer[8-11],
+        // and edx in buffer[12-15].
+
+        (void)getcpuid(1, buffer);
+
+        // If SSE/SSE2 is not enabled, there is no point in checking the rest.
+        //   SSE  is bit 25 of EDX   (buffer[15] & 0x02)
+        //   SSE2 is bit 26 of EDX   (buffer[15] & 0x04)
+        if ((buffer[15] & 0x06) == 0x06)                                    // SSE & SSE2
+        {
+            if ((buffer[11] & 0x02) != 0)                                   // AESNI
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Aes;
+            }
+
+            if ((buffer[8] & 0x02) != 0)                                    // PCLMULQDQ
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Pclmulqdq;
+            }
+
+            if ((buffer[8] & 0x01) != 0)                                    // SSE3
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Sse3;
+
+                if ((buffer[9] & 0x02) != 0)                                // SSSE3
+                {
+                    g_cpuFeatures |= XArchIntrinsicConstants_Ssse3;
+
+                    if ((buffer[10] & 0x08) != 0)                           // SSE4.1
+                    {
+                        g_cpuFeatures |= XArchIntrinsicConstants_Sse41;
+
+                        if ((buffer[10] & 0x10) != 0)                       // SSE4.2
+                        {
+                            g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
+
+                            if ((buffer[10] & 0x80) != 0)                   // POPCNT
+                            {
+                                g_cpuFeatures |= XArchIntrinsicConstants_Popcnt;
+                            }
+
+                            if ((buffer[11] & 0x18) == 0x18)                // AVX & OSXSAVE
+                            {
+                                if (PalIsAvxEnabled() && (xmmYmmStateSupport() == 1))
+                                {
+                                    g_cpuFeatures |= XArchIntrinsicConstants_Avx;
+
+                                    if ((buffer[9] & 0x10) != 0)            // FMA
+                                    {
+                                        g_cpuFeatures |= XArchIntrinsicConstants_Fma;
+                                    }
+
+                                    if (maxCpuId >= 0x07)
+                                    {
+                                        (void)getextcpuid(0, 0x07, buffer);
+
+                                        if ((buffer[4] & 0x20) != 0)        // AVX2
+                                        {
+                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx2;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (maxCpuId >= 0x07)
+        {
+            (void)getextcpuid(0, 0x07, buffer);
+
+            if ((buffer[4] & 0x08) != 0)            // BMI1
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Bmi1;
+            }
+
+            if ((buffer[5] & 0x01) != 0)            // BMI2
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Bmi2;
+            }
+        }
+    }
+
+    uint32_t maxCpuIdEx = getcpuid(0x80000000, buffer);
+    
+    if (maxCpuIdEx >= 0x80000001)
+    {
+        // getcpuid executes cpuid with eax set to its first argument, and ecx cleared.
+        // It returns the resulting eax in buffer[0-3], ebx in buffer[4-7], ecx in buffer[8-11],
+        // and edx in buffer[12-15].
+
+        (void)getcpuid(0x80000001, buffer);
+
+        if ((buffer[8] & 0x20) != 0)            // LZCNT
+        {
+            g_cpuFeatures |= XArchIntrinsicConstants_Lzcnt;
+        }
+    }
+
+    if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
+    {
+        return false;
+    }
+#endif // HOST_X86 || HOST_AMD64
+
+    return true;
 }
+#endif // !USE_PORTABLE_HELPERS
 
 #ifdef PROFILE_STARTUP
 #define STD_OUTPUT_HANDLE ((UInt32)-11)
@@ -171,7 +318,7 @@ int g_registerModuleCount = 0;
 
 RegisterModuleTrace g_registerModuleTraces[NUM_REGISTER_MODULE_TRACES] = { 0 };
 
-void AppendInt64(char * pBuffer, UInt32* pLen, UInt64 value)
+static void AppendInt64(char * pBuffer, UInt32* pLen, UInt64 value)
 {
     char localBuffer[20];
     int cch = 0;
@@ -192,7 +339,7 @@ void AppendInt64(char * pBuffer, UInt32* pLen, UInt64 value)
 }
 #endif // PROFILE_STARTUP
 
-bool UninitDLL(HANDLE /*hModDLL*/)
+static void UninitDLL()
 {
 #ifdef PROFILE_STARTUP
     char buffer[1024];
@@ -214,18 +361,11 @@ bool UninitDLL(HANDLE /*hModDLL*/)
 
     fwrite(buffer, len, 1, stdout);
 #endif // PROFILE_STARTUP
-    return true;
-}
-
-void DllThreadAttach(HANDLE /*hPalInstance*/)
-{
-    // We do not call ThreadStore::AttachThread from here because the loader lock is held.  Instead, the 
-    // threads themselves will do this on their first reverse pinvoke.
 }
 
 volatile bool g_processShutdownHasStarted = false;
 
-void DllThreadDetach()
+static void DllThreadDetach()
 {
     // BEWARE: loader lock is held here!
 
@@ -243,14 +383,16 @@ void DllThreadDetach()
     }
 }
 
-void __stdcall RuntimeThreadShutdown(void* thread)
+void RuntimeThreadShutdown(void* thread)
 {
     // Note: loader lock is normally *not* held here!
     // The one exception is that the loader lock may be held during the thread shutdown callback
     // that is made for the single thread that runs the final stages of orderly process
     // shutdown (i.e., the thread that delivers the DLL_PROCESS_DETACH notifications when the
     // process is being torn down via an ExitProcess call).
+
     UNREFERENCED_PARAMETER(thread);
+
     ASSERT((Thread*)thread == ThreadStore::GetCurrentThread());
 
     if (!g_processShutdownHasStarted)
@@ -259,61 +401,20 @@ void __stdcall RuntimeThreadShutdown(void* thread)
     }
 }
 
-COOP_PINVOKE_HELPER(UInt32_BOOL, RhpRegisterModule, (ModuleHeader *pModuleHeader))
+extern "C" bool RhInitialize()
 {
-#ifdef PROFILE_STARTUP
-    if (g_registerModuleCount < NUM_REGISTER_MODULE_TRACES)
-    {
-        PalQueryPerformanceCounter(&g_registerModuleTraces[g_registerModuleCount].Begin);
-    }
-#endif // PROFILE_STARTUP
+    if (!PalInit())
+        return false;
 
-    RuntimeInstance * pInstance = GetRuntimeInstance();
+    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
+        return false;
 
-    if (!pInstance->RegisterModule(pModuleHeader))
-        return UInt32_FALSE;
-
-#ifdef PROFILE_STARTUP
-    if (g_registerModuleCount < NUM_REGISTER_MODULE_TRACES)
-    {
-        PalQueryPerformanceCounter(&g_registerModuleTraces[g_registerModuleCount].End);
-        g_registerModuleCount++;
-    }
-#endif // PROFILE_STARTUP
-
-    return UInt32_TRUE;
+    return true;
 }
 
-COOP_PINVOKE_HELPER(UInt32_BOOL, RhpEnableConservativeStackReporting, ())
+COOP_PINVOKE_HELPER(void, RhpEnableConservativeStackReporting, ())
 {
-    RuntimeInstance * pInstance = GetRuntimeInstance();
-    if (!pInstance->EnableConservativeStackReporting())
-        return UInt32_FALSE;
-
-    return UInt32_TRUE;
-}
-
-#endif // !DACCESS_COMPILE
-
-GPTR_IMPL_INIT(RuntimeInstance, g_pTheRuntimeInstance, NULL);
-
-#ifndef DACCESS_COMPILE
-
-//
-// Creates a new runtime instance.
-//
-// @TODO: EXPORT
-HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance)
-{
-    CreateHolder<RuntimeInstance> pRuntimeInstance = RuntimeInstance::Create(hPalInstance);
-    if (NULL == pRuntimeInstance)
-        return NULL;
-
-    ASSERT_MSG(g_pTheRuntimeInstance == NULL, "multi-instances are not supported");
-    g_pTheRuntimeInstance = pRuntimeInstance;
-
-    pRuntimeInstance.SuppressRelease();
-    return (HANDLE) pRuntimeInstance;
+    GetRuntimeInstance()->EnableConservativeStackReporting();
 }
 
 //
@@ -324,16 +425,39 @@ HANDLE RtuCreateRuntimeInstance(HANDLE hPalInstance)
 // @TODO: Eventually we'll probably have a hosting API and explicit shutdown request. When that happens we'll
 // something more sophisticated here since we won't be able to rely on the OS cleaning up after us.
 //
-COOP_PINVOKE_HELPER(void, RhpShutdownHelper, (UInt32 /*uExitCode*/))
+COOP_PINVOKE_HELPER(void, RhpShutdown, ())
 {
-    // If the classlib has requested it perform a last pass of the finalizer thread.
-    RedhawkGCInterface::ShutdownFinalization();
-
-#ifdef FEATURE_PROFILING
-    GetRuntimeInstance()->WriteProfileInfo();
-#endif // FEATURE_PROFILING
     // Indicate that runtime shutdown is complete and that the caller is about to start shutting down the entire process.
     g_processShutdownHasStarted = true;
 }
+
+#ifdef _WIN32
+EXTERN_C UInt32_BOOL WINAPI RtuDllMain(HANDLE hPalInstance, UInt32 dwReason, void* /*pvReserved*/)
+{
+    switch (dwReason)
+    {
+    case DLL_PROCESS_ATTACH:
+    {
+        STARTUP_TIMELINE_EVENT(PROCESS_ATTACH_BEGIN);
+
+        if (!InitDLL(hPalInstance))
+            return FALSE;
+
+        STARTUP_TIMELINE_EVENT(PROCESS_ATTACH_COMPLETE);
+    }
+    break;
+
+    case DLL_PROCESS_DETACH:
+        UninitDLL();
+        break;
+
+    case DLL_THREAD_DETACH:
+        DllThreadDetach();
+        break;
+    }
+
+    return TRUE;
+}
+#endif // _WIN32
 
 #endif // !DACCESS_COMPILE

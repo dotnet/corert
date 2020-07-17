@@ -1,105 +1,83 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 
-using ILCompiler.DependencyAnalysisFramework;
+using Internal.NativeFormat;
+using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
     /// Represents a map between EETypes and metadata records within the <see cref="MetadataNode"/>.
     /// </summary>
-    internal sealed class TypeMetadataMapNode : ObjectNode, ISymbolNode
+    public sealed class TypeMetadataMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
+        private ExternalReferencesTableNode _externalReferences;
 
-        public TypeMetadataMapNode()
+        public TypeMetadataMapNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, ((ISymbolNode)this).MangledName + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__type_to_metadata_map_End", true);
+            _externalReferences = externalReferences;
         }
 
-        public ISymbolNode EndSymbol
-        {
-            get
-            {
-                return _endSymbol;
-            }
-        }
+        public ISymbolNode EndSymbol => _endSymbol;
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__type_to_metadata_map";
-            }
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__type_to_metadata_map");
         }
+        public int Offset => 0;
+        public override bool IsShareable => false;
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override ObjectNodeSection Section => _externalReferences.Section;
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
+            var writer = new NativeWriter();
+            var typeMapHashTable = new VertexHashtable();
 
-            foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping())
+            Section hashTableSection = writer.NewSection();
+            hashTableSection.Place(typeMapHashTable);
+
+            foreach (var mappingEntry in factory.MetadataManager.GetTypeDefinitionMapping(factory))
             {
-                if (!factory.CompilationModuleGroup.ContainsType(mappingEntry.Entity))
+                // Types that don't have EETypes don't need mapping table entries because there's no risk of them
+                // not unifying to the same System.Type at runtime.
+                if (!factory.MetadataManager.TypeGeneratesEEType(mappingEntry.Entity) && !factory.CompilationModuleGroup.ShouldReferenceThroughImportTable(mappingEntry.Entity))
                     continue;
-
-                var node = factory.ConstructedTypeSymbol(mappingEntry.Entity) as EETypeNode;
                 
-                if (node.Marked)
-                {
-                    // TODO: this format got very inefficient due to not being able to use RVAs
-                    //       replace with a hash table
+                // Go with a necessary type symbol. It will be upgraded to a constructed one if a constructed was emitted.
+                IEETypeNode typeSymbol = factory.NecessaryTypeSymbol(mappingEntry.Entity);
 
-                    builder.EmitPointerReloc(node);
-                    builder.EmitInt(mappingEntry.MetadataHandle);
+                Vertex vertex = writer.GetTuple(
+                    writer.GetUnsignedConstant(_externalReferences.GetIndex(typeSymbol)),
+                    writer.GetUnsignedConstant((uint)mappingEntry.MetadataHandle)
+                    );
 
-                    if (factory.Target.PointerSize == 8)
-                        builder.EmitInt(0); // Pad
-                }
+                int hashCode = typeSymbol.Type.GetHashCode();
+                typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));
             }
 
-            _endSymbol.SetSymbolOffset(builder.CountBytes);
-            
-            builder.DefinedSymbols.Add(this);
-            builder.DefinedSymbols.Add(_endSymbol);
+            byte[] hashTableBytes = writer.Save();
 
-            return builder.ToObjectData();
+            _endSymbol.SetSymbolOffset(hashTableBytes.Length);
+
+            return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.TypeMetadataMapNode;
     }
 }

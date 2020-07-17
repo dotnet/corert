@@ -1,11 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 
-using ILCompiler.DependencyAnalysisFramework;
+using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -13,79 +12,51 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a blob of native metadata describing assemblies, the types in them, and their members.
     /// The data is used at runtime to e.g. support reflection.
     /// </summary>
-    internal sealed class MetadataNode : ObjectNode, ISymbolNode
+    public sealed class MetadataNode : ObjectNode, ISymbolDefinitionNode
     {
         ObjectAndOffsetSymbolNode _endSymbol;
 
         public MetadataNode()
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, ((ISymbolNode)this).MangledName + "End");
+            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__embedded_metadata_End", true);
         }
 
-        public ISymbolNode EndSymbol
-        {
-            get
-            {
-                return _endSymbol;
-            }
-        }
+        public ISymbolNode EndSymbol => _endSymbol;
 
-        string ISymbolNode.MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
-            {
-                return NodeFactory.NameMangler.CompilationUnitPrefix + "__embedded_metadata";
-            }
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__embedded_metadata");
         }
+        public int Offset => 0;
+        public override bool IsShareable => false;
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
 
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node has no relocations.
             if (relocsOnly)
-                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolNode[] { this });
+                return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            byte[] blob = factory.MetadataManager.GetMetadataBlob();
+            byte[] blob = factory.MetadataManager.GetMetadataBlob(factory);
             _endSymbol.SetSymbolOffset(blob.Length);
 
             return new ObjectData(
                 blob,
                 Array.Empty<Relocation>(),
                 1,
-                new ISymbolNode[]
+                new ISymbolDefinitionNode[]
                 {
                     this,
                     _endSymbol
                 });
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+        public override int ClassCode => (int)ObjectNodeOrder.MetadataNode;
     }
 }
-

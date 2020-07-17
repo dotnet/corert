@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 public class BringUpTest
 {
@@ -19,6 +20,15 @@ public class BringUpTest
             return Fail;
 
         if (TestArrayInterfaces() == Fail)
+            return Fail;
+
+        if (TestVariantInterfaces() == Fail)
+            return Fail;
+
+        if (TestSpecialArrayInterfaces() == Fail)
+            return Fail;
+
+        if (TestIterfaceCallOptimization() == Fail)
             return Fail;
 
         return Pass;
@@ -173,11 +183,11 @@ public class BringUpTest
     #endregion
 
     #region Implicit Interface Test
-    
+
     private static int TestMultipleInterfaces()
     {
         TestClass<int> testInt = new TestClass<int>(5);
-        
+
         MyInterface myInterface = testInt as MyInterface;
         if (!myInterface.GetAString().Equals("TestClass"))
         {
@@ -186,8 +196,8 @@ public class BringUpTest
             Console.WriteLine(" Expected: TestClass");
             return Fail;
         }
-        
-        
+
+
         if (myInterface.GetAnInt() != 1)
         {
             Console.Write("On type TestClass, MyInterface.GetAnInt() returned ");
@@ -195,7 +205,7 @@ public class BringUpTest
             Console.WriteLine(" Expected: 1");
             return Fail;
         }
-        
+
         Interface<int> itf = testInt as Interface<int>;
         if (itf.GetT() != 5)
         {
@@ -204,15 +214,15 @@ public class BringUpTest
             Console.WriteLine(" Expected: 5");
             return Fail;
         }
-        
+
         return Pass;
     }
-    
+
     interface Interface<T>
     {
         T GetT();
     }
-    
+
     class TestClass<T> : MyInterface, Interface<T>
     {
         T _t;
@@ -220,17 +230,17 @@ public class BringUpTest
         {
             _t = t;
         }
-        
+
         public T GetT()
         {
             return _t;
         }
-        
+
         public int GetAnInt()
         {
             return 1;
         }
-        
+
         public string GetAString()
         {
             return "TestClass";
@@ -284,5 +294,102 @@ public class BringUpTest
 
         return Pass;
     }
+    #endregion
+
+    #region Variant interface tests
+
+    interface IContravariantInterface<in T>
+    {
+        string DoContravariant(T value);
+    }
+
+    interface ICovariantInterface<out T>
+    {
+        T DoCovariant(object value);
+    }
+
+    class TypeWithVariantInterfaces<T> : IContravariantInterface<T>, ICovariantInterface<T>
+    {
+        public string DoContravariant(T value)
+        {
+            return value.ToString();
+        }
+
+        public T DoCovariant(object value)
+        {
+            return value is T ? (T)value : default(T);
+        }
+    }
+
+    static IContravariantInterface<string> s_contravariantObject = new TypeWithVariantInterfaces<object>();
+    static ICovariantInterface<object> s_covariantObject = new TypeWithVariantInterfaces<string>();
+    static IEnumerable<int> s_arrayCovariantObject = (IEnumerable<int>)(object)new uint[] { 5, 10, 15 };
+
+    private static int TestVariantInterfaces()
+    {
+        if (s_contravariantObject.DoContravariant("Hello") != "Hello")
+            return Fail;
+
+        if (s_covariantObject.DoCovariant("World") as string != "World")
+            return Fail;
+
+        int sum = 0;
+        foreach (var e in s_arrayCovariantObject)
+            sum += e;
+
+        if (sum != 30)
+            return Fail;
+
+        return Pass;
+    }
+
+    class SpecialArrayBase { }
+    class SpecialArrayDerived : SpecialArrayBase { }
+
+    // NOTE: ICollection is not a variant interface, but arrays can cast with it as if it was
+    static ICollection<SpecialArrayBase> s_specialDerived = new SpecialArrayDerived[42];
+    static ICollection<uint> s_specialInt = (ICollection<uint>)(object)new int[85];
+
+    private static int TestSpecialArrayInterfaces()
+    {
+        if (s_specialDerived.Count != 42)
+            return Fail;
+
+        if (s_specialInt.Count != 85)
+            return Fail;
+
+        return Pass;
+    }
+
+    #endregion
+
+    #region Interface call optimization tests
+
+    public interface ISomeInterface
+    {
+        int SomeValue { get; }
+    }
+
+    public abstract class SomeAbstractBaseClass : ISomeInterface
+    {
+        public abstract int SomeValue { get; }
+    }
+
+    public class SomeClass : SomeAbstractBaseClass
+    {
+        public override int SomeValue
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            get { return 14; }
+        }
+    }
+
+    private static int TestIterfaceCallOptimization()
+    {
+        ISomeInterface test = new SomeClass();
+        int v = test.SomeValue;
+        return (v == 14) ? Pass : Fail;
+    }
+
     #endregion
 }

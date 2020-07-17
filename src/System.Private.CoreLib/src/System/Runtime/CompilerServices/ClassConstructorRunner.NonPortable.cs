@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -10,7 +9,7 @@ using System.Runtime.InteropServices;
 namespace System.Runtime.CompilerServices
 {
     //=========================================================================================================
-    // This is the non-portable part of ClassConstructorRunner. It lives in a seaparate .cs file to make
+    // This is the non-portable part of ClassConstructorRunner. It lives in a separate .cs file to make
     // it easier to include the main ClassConstructorRunner source into a desktop project for testing.
     //=========================================================================================================
 
@@ -19,10 +18,9 @@ namespace System.Runtime.CompilerServices
     {
         //=========================================================================================================
         // Intrinsic to call the cctor given a pointer to the code (this method's body is ignored and replaced
-        // with a calli during compilation). The transform doesn't handle non-generic versions yet (i.e.
-        // functions that are void).
+        // with a calli during compilation).
         //=========================================================================================================
-        private static T Call<T>(System.IntPtr pfn)
+        private static void Call(System.IntPtr pfn)
         {
             throw NotImplemented.ByDesign;
         }
@@ -35,6 +33,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private const int ManagedThreadIdNone = ManagedThreadId.ManagedThreadIdNone;
+        private const int ManagedThreadIdNone = ManagedThreadId.IdNone;
     }
 }

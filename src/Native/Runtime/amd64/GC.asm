@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
 include AsmMacros.inc
 
@@ -13,6 +12,7 @@ NESTED_ENTRY getcpuid, _TEXT
 
         mov     eax, ecx                ; first arg
         mov     rsi, rdx                ; second arg (result)
+        xor     ecx, ecx                ; clear ecx - needed for "Structured Extended Feature Flags"
         cpuid
         mov     [rsi+ 0], eax
         mov     [rsi+ 4], ebx
@@ -46,5 +46,20 @@ NESTED_ENTRY getextcpuid, _TEXT
 
         ret
 NESTED_END getextcpuid, _TEXT
+
+;; extern "C" DWORD __stdcall xmmYmmStateSupport();
+LEAF_ENTRY xmmYmmStateSupport, _TEXT
+        mov     ecx, 0                  ; Specify xcr0
+        xgetbv                          ; result in EDX:EAX
+        and eax, 06H
+        cmp eax, 06H                    ; check OS has enabled both XMM and YMM state support
+        jne     not_supported
+        mov     eax, 1
+        jmp     done
+    not_supported:
+        mov     eax, 0
+    done:
+        ret
+LEAF_END xmmYmmStateSupport, _TEXT
 
         end

@@ -1,0 +1,8 @@
+<Directives>
+    <Application>
+        <Assembly Name="MonoGame.Framework">
+            <Type Name="Microsoft.Xna.Framework.Content.ListReader`1[[System.Char,mscorlib]]" Dynamic="Required All" />
+        </Assembly>
+        <Assembly Name="mscorlib" />
+    </Application>
+</Directives>

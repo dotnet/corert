@@ -1,97 +1,129 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using Internal.TypeSystem;
-using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+
+using Internal.Runtime;
+using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    class InterfaceDispatchCellNode : ObjectNode, ISymbolNode
+    public class InterfaceDispatchCellNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
-        MethodDesc _targetMethod;
+        private readonly MethodDesc _targetMethod;
+        private readonly string _callSiteIdentifier;
 
-        public InterfaceDispatchCellNode(MethodDesc targetMethod)
+        internal MethodDesc TargetMethod => _targetMethod;
+
+        internal string CallSiteIdentifier => _callSiteIdentifier;
+
+        public InterfaceDispatchCellNode(MethodDesc targetMethod, string callSiteIdentifier)
         {
             Debug.Assert(targetMethod.OwningType.IsInterface);
+            Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
             _targetMethod = targetMethod;
+            _callSiteIdentifier = callSiteIdentifier;
         }
 
-        public string MangledName
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            get
+            sb.Append(GetMangledName(nameMangler, _targetMethod, _callSiteIdentifier));
+        }
+
+        int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
+
+        int ISymbolNode.Offset => 0;
+
+        public override bool IsShareable => false;
+
+        public static string GetMangledName(NameMangler nameMangler, MethodDesc method, string callSiteIdentifier)
+        {
+            string name = nameMangler.CompilationUnitPrefix + "__InterfaceDispatchCell_" + nameMangler.GetMangledMethodName(method);
+
+            if (!string.IsNullOrEmpty(callSiteIdentifier))
             {
-                return "__InterfaceDispatchCell_" + NodeFactory.NameMangler.GetMangledMethodName(_targetMethod);
+                name += "_" + callSiteIdentifier;
+            }
+
+            return name;
+        }
+
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        public override bool StaticDependenciesAreComputed => true;
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            DependencyList result = new DependencyList();
+
+            if (!factory.VTable(_targetMethod.OwningType).HasFixedSlots)
+            {
+                result.Add(factory.VirtualMethodUse(_targetMethod), "Interface method use");
+            }
+
+            factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref result, factory, _targetMethod);
+
+            TargetArchitecture targetArchitecture = factory.Target.Architecture;
+            if (targetArchitecture == TargetArchitecture.ARM)
+            {
+                result.Add(factory.InitialInterfaceDispatchStub, "Initial interface dispatch stub");
+            }
+            else
+            {
+                result.Add(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"), "Initial interface dispatch stub");
+            }
+
+            result.Add(factory.NecessaryTypeSymbol(_targetMethod.OwningType), "Interface type");
+
+            return result;
+        }
+
+        public override void EncodeData(ref ObjectDataBuilder objData, NodeFactory factory, bool relocsOnly)
+        {
+            TargetArchitecture targetArchitecture = factory.Target.Architecture;
+            if (targetArchitecture == TargetArchitecture.ARM)
+            {
+                objData.EmitPointerReloc(factory.InitialInterfaceDispatchStub);
+            }
+            else
+            {
+                objData.EmitPointerReloc(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"));
+            }
+
+            IEETypeNode interfaceType = factory.NecessaryTypeSymbol(_targetMethod.OwningType);
+            if (interfaceType.RepresentsIndirectionCell)
+            {
+                objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
+                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsIndirectedInterfaceRelativePointer);
+            }
+            else
+            {
+                objData.EmitReloc(interfaceType, RelocType.IMAGE_REL_BASED_RELPTR32,
+                    (int)InterfaceDispatchCellCachePointerFlags.CachePointerIsInterfaceRelativePointer);
+            }
+
+            if (objData.TargetPointerSize == 8)
+            {
+                // IMAGE_REL_BASED_RELPTR is a 32-bit relocation. However, the cell needs a full pointer 
+                // width there since a pointer to the cache will be written into the cell. Emit additional
+                // 32 bits on targets whose pointer size is 64 bit. 
+                objData.EmitInt(0);
             }
         }
 
-        public override string GetName()
+        protected override void OnMarked(NodeFactory factory)
         {
-            return ((ISymbolNode)this).MangledName;
+            factory.InterfaceDispatchCellSection.AddEmbeddedObject(this);
         }
 
-        public int Offset
+        public override int ClassCode => -2023802120;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
-
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return true;
-        }
-
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
-        {
-            ObjectDataBuilder objData = new ObjectDataBuilder(factory);
-            // The interface dispatch cell has an alignment requirement of 2 * [Pointer size] as part of the 
-            // synchronization mechanism of the two values in the runtime.
-            objData.Alignment = _targetMethod.Context.Target.PointerSize * 2;
-            objData.DefinedSymbols.Add(this);
-            
-            objData.EmitPointerReloc(factory.ExternSymbol("RhpInitialDynamicInterfaceDispatch"));
-            
-            // The second cell field uses the two lower-order bits to communicate the contents.
-            // We add 1 to signal IDC_CachePointerIsInterfacePointer. See src\Native\Runtime\inc\rhbinder.h.
-            objData.EmitPointerReloc(factory.NecessaryTypeSymbol(_targetMethod.OwningType), 1);
-            
-            // End the run of dispatch cells
-            objData.EmitZeroPointer();
-
-            // Avoid consulting VTable slots until they're guaranteed complete during final data emission
-            if (!relocsOnly)
-            {
-                int interfaceMethodSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, _targetMethod);
-                if (factory.Target.PointerSize == 8)
-                {
-                    objData.EmitLong(interfaceMethodSlot);
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-            }
-
-            return objData.ToObjectData();
+            var compare = comparer.Compare(_targetMethod, ((InterfaceDispatchCellNode)other)._targetMethod);
+            return compare != 0 ? compare : string.Compare(_callSiteIdentifier, ((InterfaceDispatchCellNode)other)._callSiteIdentifier);
         }
     }
 }

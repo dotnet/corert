@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -11,34 +10,41 @@
 ** 
 ===========================================================*/
 
-using System;
 using System.Runtime;
-using System.Threading;
 using System.Diagnostics;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+
+using Internal.Runtime.CompilerServices;
+
+using EEType = Internal.Runtime.EEType;
+using EETypeElementType = Internal.Runtime.EETypeElementType;
+using EETypeRef = Internal.Runtime.EETypeRef;
+using CorElementType = System.Reflection.CorElementType;
 
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal struct EETypePtr : IEquatable<EETypePtr>
+    internal unsafe struct EETypePtr : IEquatable<EETypePtr>
     {
-        private IntPtr _value;
+        private EEType* _value;
 
         public EETypePtr(IntPtr value)
+        {
+            _value = (EEType*)value;
+        }
+
+        internal EETypePtr(EEType* value)
         {
             _value = value;
         }
 
-#if INPLACE_RUNTIME
-        internal unsafe System.Runtime.EEType* ToPointer()
+        internal EEType* ToPointer()
         {
-            return (System.Runtime.EEType*)(void*)_value;
+            return _value;
         }
-#endif
 
-        public override bool Equals(Object obj)
+        public override bool Equals(object obj)
         {
             if (obj is EETypePtr)
             {
@@ -70,7 +76,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            return (int)Runtime.RuntimeImports.RhGetEETypeHash(this);
+            return (int)_value->HashCode;
         }
 
         // 
@@ -87,12 +93,25 @@ namespace System
             return RuntimeImports.AreTypesEquivalent(this, other);
         }
 
+        //
+        // An even faster version of FastEquals that only checks if two EEType pointers are identical.
+        // Note: this method might return false for cases where FastEquals would return true.
+        // Only use if you know what you're doing.
+        //
+        internal bool FastEqualsUnreliable(EETypePtr other)
+        {
+            Debug.Assert(!this.IsNull);
+            Debug.Assert(!other.IsNull);
+
+            return this.RawValue == other.RawValue;
+        }
+
         // Caution: You cannot safely compare RawValue's as RH does NOT unify EETypes. Use the == or Equals() methods exposed by EETypePtr itself.
         internal IntPtr RawValue
         {
             get
             {
-                return _value;
+                return (IntPtr)_value;
             }
         }
 
@@ -100,7 +119,7 @@ namespace System
         {
             get
             {
-                return _value == default(IntPtr);
+                return _value == null;
             }
         }
 
@@ -108,7 +127,15 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhIsArray(this);
+                return _value->IsArray;
+            }
+        }
+
+        internal bool IsSzArray
+        {
+            get
+            {
+                return _value->IsSzArray;
             }
         }
 
@@ -116,8 +143,15 @@ namespace System
         {
             get
             {
-                RuntimeImports.RhEETypeClassification classification = RuntimeImports.RhGetEETypeClassification(_value);
-                return classification == RuntimeImports.RhEETypeClassification.UnmanagedPointer;
+                return _value->IsPointerType;
+            }
+        }
+
+        internal bool IsByRef
+        {
+            get
+            {
+                return _value->IsByRefType;
             }
         }
 
@@ -125,7 +159,7 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhIsValueType(this);
+                return _value->IsValueType;
             }
         }
 
@@ -133,33 +167,142 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhIsString(this);
+                return _value->IsString;
             }
         }
 
+        /// <summary>
+        /// Warning! UNLIKE the similarly named Reflection api, this method also returns "true" for Enums.
+        /// </summary>
         internal bool IsPrimitive
         {
             get
             {
-                RuntimeImports.RhCorElementType et = CorElementType;
-                return ((et >= RuntimeImports.RhCorElementType.ELEMENT_TYPE_BOOLEAN) && (et <= RuntimeImports.RhCorElementType.ELEMENT_TYPE_R8)) ||
-                    (et == RuntimeImports.RhCorElementType.ELEMENT_TYPE_I) ||
-                    (et == RuntimeImports.RhCorElementType.ELEMENT_TYPE_U);
+                return ElementType < EETypeElementType.ValueType;
             }
         }
 
+        /// <summary>
+        /// WARNING: Never call unless the EEType came from an instanced object. Nested enums can be open generics (typeof(Outer<>).NestedEnum) 
+        /// and this helper has undefined behavior when passed such as a enum.
+        /// </summary>
         internal bool IsEnum
         {
             get
             {
-                RuntimeImports.RhEETypeClassification classification = RuntimeImports.RhGetEETypeClassification(this);
-
                 // Q: When is an enum type a constructed generic type?
                 // A: When it's nested inside a generic type.
-                if (!(classification == RuntimeImports.RhEETypeClassification.Regular || classification == RuntimeImports.RhEETypeClassification.Generic))
+                if (!(IsDefType))
                     return false;
-                EETypePtr baseType = this.BaseType;
-                return baseType == typeof(Enum).TypeHandle.ToEETypePtr();
+
+                // Generic type definitions that return true for IsPrimitive are type definitions of generic enums.
+                // Otherwise check the base type.
+                return (IsGenericTypeDefinition && IsPrimitive) || this.BaseType == EETypePtr.EETypePtrOf<Enum>();
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a generic type definition (an uninstantiated generic type).
+        /// </summary>
+        internal bool IsGenericTypeDefinition
+        {
+            get
+            {
+                return _value->IsGenericTypeDefinition;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is an instantiated generic type.
+        /// </summary>
+        internal bool IsGeneric
+        {
+            get
+            {
+                return _value->IsGeneric;
+            }
+        }
+
+        internal GenericArgumentCollection Instantiation
+        {
+            get
+            {
+                return new GenericArgumentCollection(_value->GenericArity, _value->GenericArguments);
+            }
+        }
+
+        internal EETypePtr GenericDefinition
+        {
+            get
+            {
+                return new EETypePtr(_value->GenericDefinition);
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this is a class, a struct, an enum, or an interface.
+        /// </summary>
+        internal bool IsDefType
+        {
+            get
+            {
+                return !_value->IsParameterizedType;
+            }
+        }
+
+        internal bool IsDynamicType
+        {
+            get
+            {
+                return _value->IsDynamicType;
+            }
+        }
+
+        internal bool IsInterface
+        {
+            get
+            {
+                return _value->IsInterface;
+            }
+        }
+
+        internal bool IsAbstract
+        {
+            get
+            {
+                return _value->IsAbstract;
+            }
+        }
+
+        internal bool IsByRefLike
+        {
+            get
+            {
+                return _value->IsByRefLike;
+            }
+        }
+
+        internal bool IsNullable
+        {
+            get
+            {
+                return _value->IsNullable;
+            }
+        }
+
+        internal bool HasCctor
+        {
+            get
+            {
+                return _value->HasCctor;
+            }
+        }
+
+        internal EETypePtr NullableType
+        {
+            get
+            {
+                return new EETypePtr(_value->NullableType);
             }
         }
 
@@ -167,7 +310,23 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhGetRelatedParameterType(this);
+                return new EETypePtr(_value->RelatedParameterType);
+            }
+        }
+
+        internal int ArrayRank
+        {
+            get
+            {
+                return _value->ArrayRank;
+            }
+        }
+
+        internal InterfaceCollection Interfaces
+        {
+            get
+            {
+                return new InterfaceCollection(_value);
             }
         }
 
@@ -176,19 +335,12 @@ namespace System
             get
             {
                 if (IsArray)
-                    return typeof(Array).TypeHandle.ToEETypePtr();
+                    return EETypePtr.EETypePtrOf<Array>();
 
-                if (IsPointer)
+                if (IsPointer || IsByRef)
                     return new EETypePtr(default(IntPtr));
 
-                EETypePtr baseEEType = RuntimeImports.RhGetNonArrayBaseType(this);
-                if (baseEEType == typeof(MDArrayRank2).TypeHandle.ToEETypePtr() ||
-                    baseEEType == typeof(MDArrayRank3).TypeHandle.ToEETypePtr() ||
-                    baseEEType == typeof(MDArrayRank4).TypeHandle.ToEETypePtr())
-                {
-                    return typeof(Array).TypeHandle.ToEETypePtr();
-                }
-
+                EETypePtr baseEEType = new EETypePtr(_value->NonArrayBaseType);
                 return baseEEType;
             }
         }
@@ -197,7 +349,23 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhGetComponentSize(this);
+                return _value->ComponentSize;
+            }
+        }
+
+        internal uint BaseSize
+        {
+            get
+            {
+                return _value->BaseSize;
+            }
+        }
+
+        internal IntPtr DispatchMap
+        {
+            get
+            {
+                return (IntPtr)_value->DispatchMap;
             }
         }
 
@@ -206,7 +374,7 @@ namespace System
         {
             get
             {
-                return RuntimeImports.RhHasReferenceFields(this);
+                return _value->HasGCPointers;
             }
         }
 
@@ -214,16 +382,50 @@ namespace System
         {
             get
             {
-                Debug.Assert(IsValueType, "ValueTypeSize should only be used on value types");
-                return RuntimeImports.RhGetValueTypeSize(this);
+                return _value->ValueTypeSize;
             }
         }
 
-        internal RuntimeImports.RhCorElementType CorElementType
+        internal CorElementType CorElementType
         {
             get
             {
-                return RuntimeImports.RhGetCorElementType(this);
+                Debug.Assert((int)CorElementType.ELEMENT_TYPE_BOOLEAN == (int)EETypeElementType.Boolean);
+                Debug.Assert((int)CorElementType.ELEMENT_TYPE_I1 == (int)EETypeElementType.SByte);
+                Debug.Assert((int)CorElementType.ELEMENT_TYPE_I8 == (int)EETypeElementType.Int64);
+                EETypeElementType elementType = ElementType;
+
+                if (elementType <= EETypeElementType.UInt64)
+                    return (CorElementType)elementType;
+                else if (elementType == EETypeElementType.Single)
+                    return CorElementType.ELEMENT_TYPE_R4;
+                else if (elementType == EETypeElementType.Double)
+                    return CorElementType.ELEMENT_TYPE_R8;
+                else if (elementType == EETypeElementType.IntPtr)
+                    return CorElementType.ELEMENT_TYPE_I;
+                else if (elementType == EETypeElementType.UIntPtr)
+                    return CorElementType.ELEMENT_TYPE_U;
+                else if (IsValueType)
+                    return CorElementType.ELEMENT_TYPE_VALUETYPE;
+                else if (IsByRef)
+                    return CorElementType.ELEMENT_TYPE_BYREF;
+                else if (IsPointer)
+                    return CorElementType.ELEMENT_TYPE_PTR;
+                else if (IsSzArray)
+                    return CorElementType.ELEMENT_TYPE_SZARRAY;
+                else if (IsArray)
+                    return CorElementType.ELEMENT_TYPE_ARRAY;
+                else
+                    return CorElementType.ELEMENT_TYPE_CLASS;
+
+            }
+        }
+
+        internal EETypeElementType ElementType
+        {
+            get
+            {
+                return _value->ElementType;
             }
         }
 
@@ -231,14 +433,18 @@ namespace System
         {
             get
             {
-                RuntimeImports.RhCorElementType corElementType = this.CorElementType;
-                return RuntimeImports.GetRhCorElementTypeInfo(corElementType);
+                return RuntimeImports.GetRhCorElementTypeInfo(CorElementType);
             }
         }
 
-#if CORERT
+        internal ref T GetWritableData<T>() where T : unmanaged
+        {
+            Debug.Assert(Internal.Runtime.WritableData.GetSize(IntPtr.Size) == sizeof(T));
+            return ref Unsafe.AsRef<T>((void*)_value->WritableData);
+        }
+
         [Intrinsic]
-#endif
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static EETypePtr EETypePtrOf<T>()
         {
             // Compilers are required to provide a low level implementation of this method.
@@ -246,6 +452,63 @@ namespace System
             // by optimizing typeof(!!0).TypeHandle into "ldtoken !!0", or by
             // completely replacing the body of this method.
             return typeof(T).TypeHandle.ToEETypePtr();
+        }
+
+        public struct InterfaceCollection
+        {
+            private EEType* _value;
+
+            internal InterfaceCollection(EEType* value)
+            {
+                _value = value;
+            }
+
+            public int Count
+            {
+                get
+                {
+                    return _value->NumInterfaces;
+                }
+            }
+
+            public EETypePtr this[int index]
+            {
+                get
+                {
+                    Debug.Assert((uint)index < _value->NumInterfaces);
+
+                    return new EETypePtr(_value->InterfaceMap[index].InterfaceType);
+                }
+            }
+        }
+
+        public struct GenericArgumentCollection
+        {
+            private EETypeRef* _arguments;
+            private uint _argumentCount;
+
+            internal GenericArgumentCollection(uint argumentCount, EETypeRef* arguments)
+            {
+                _argumentCount = argumentCount;
+                _arguments = arguments;
+            }
+
+            public int Length
+            {
+                get
+                {
+                    return (int)_argumentCount;
+                }
+            }
+
+            public EETypePtr this[int index]
+            {
+                get
+                {
+                    Debug.Assert((uint)index < _argumentCount);
+                    return new EETypePtr(_arguments[index].Value);
+                }
+            }
         }
     }
 }

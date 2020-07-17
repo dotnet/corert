@@ -1,48 +1,42 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+using Internal.Runtime;
 
 namespace System.Runtime
 {
-    internal unsafe static class DispatchResolve
+    internal static unsafe class DispatchResolve
     {
-        // CS0649: Field '{blah}' is never assigned to, and will always have its default value
-#pragma warning disable 649
-        public struct DispatchMapEntry
-        {
-            public ushort _usInterfaceIndex;
-            public ushort _usInterfaceMethodSlot;
-            public ushort _usImplMethodSlot;
-        }
-
-        public struct DispatchMap
-        {
-            public uint _entryCount;
-            public DispatchMapEntry _dispatchMap; // Actually a variable length array
-        }
-#pragma warning restore
-
         public static IntPtr FindInterfaceMethodImplementationTarget(EEType* pTgtType,
                                                                  EEType* pItfType,
                                                                  ushort itfSlotNumber)
         {
+            DynamicModule* dynamicModule = pTgtType->DynamicModule;
+
+            // Use the dynamic module resolver if it's present
+            if ((dynamicModule != null) && (dynamicModule->DynamicTypeSlotDispatchResolve != IntPtr.Zero))
+            {
+                return CalliIntrinsics.Call<IntPtr>(dynamicModule->DynamicTypeSlotDispatchResolve,
+                                                    (IntPtr)pTgtType, (IntPtr)pItfType, itfSlotNumber);
+            }
+
             // Start at the current type and work up the inheritance chain
             EEType* pCur = pTgtType;
-            UInt32 iCurInheritanceChainDelta = 0;
 
             if (pItfType->IsCloned)
                 pItfType = pItfType->CanonicalEEType;
 
             while (pCur != null)
             {
-                UInt16 implSlotNumber;
+                ushort implSlotNumber;
                 if (FindImplSlotForCurrentType(
                         pCur, pItfType, itfSlotNumber, &implSlotNumber))
                 {
                     IntPtr targetMethod;
-                    if (implSlotNumber < pCur->NumVTableSlots)
+                    if (implSlotNumber < pCur->NumVtableSlots)
                     {
                         // true virtual - need to get the slot from the target type in case it got overridden
                         targetMethod = pTgtType->GetVTableStartAddress()[implSlotNumber];
@@ -51,15 +45,14 @@ namespace System.Runtime
                     {
                         // sealed virtual - need to get the slot form the implementing type, because
                         // it's not present on the target type
-                        targetMethod = pCur->GetSealedVirtualSlot((ushort)(implSlotNumber - pCur->NumVTableSlots));
+                        targetMethod = pCur->GetSealedVirtualSlot((ushort)(implSlotNumber - pCur->NumVtableSlots));
                     }
                     return targetMethod;
                 }
                 if (pCur->IsArray)
-                    pCur = pCur->ArrayBaseType;
+                    pCur = pCur->GetArrayEEType();
                 else
                     pCur = pCur->NonArrayBaseType;
-                iCurInheritanceChainDelta++;
             }
             return IntPtr.Zero;
         }
@@ -67,8 +60,8 @@ namespace System.Runtime
 
         private static bool FindImplSlotForCurrentType(EEType* pTgtType,
                                         EEType* pItfType,
-                                        UInt16 itfSlotNumber,
-                                        UInt16* pImplSlotNumber)
+                                        ushort itfSlotNumber,
+                                        ushort* pImplSlotNumber)
         {
             bool fRes = false;
 
@@ -108,8 +101,8 @@ namespace System.Runtime
 
         private static bool FindImplSlotInSimpleMap(EEType* pTgtType,
                                      EEType* pItfType,
-                                     UInt32 itfSlotNumber,
-                                     UInt16* pImplSlotNumber,
+                                     uint itfSlotNumber,
+                                     ushort* pImplSlotNumber,
                                      bool actuallyCheckVariance)
         {
             Debug.Assert(pTgtType->HasDispatchMap, "Missing dispatch map");
@@ -134,13 +127,8 @@ namespace System.Runtime
                 // This special case is to allow array enumerators to work
                 if (!fArrayCovariance && pTgtType->HasGenericVariance)
                 {
-                    EETypeRef* pTgtInstantiation;
-                    int tgtEntryArity;
-                    GenericVariance* pTgtVarianceInfo;
-                    EEType* pTgtEntryGenericType = InternalCalls.RhGetGenericInstantiation(pTgtType,
-                                                                                             &tgtEntryArity,
-                                                                                             &pTgtInstantiation,
-                                                                                             &pTgtVarianceInfo);
+                    int tgtEntryArity = (int)pTgtType->GenericArity;
+                    GenericVariance* pTgtVarianceInfo = pTgtType->GenericVariance;
 
                     if ((tgtEntryArity == 1) && pTgtVarianceInfo[0] == GenericVariance.ArrayCovariant)
                     {
@@ -164,8 +152,8 @@ namespace System.Runtime
             }
 
             DispatchMap* pMap = pTgtType->DispatchMap;
-            DispatchMapEntry* i = &pMap->_dispatchMap;
-            DispatchMapEntry* iEnd = (&pMap->_dispatchMap) + pMap->_entryCount;
+            DispatchMap.DispatchMapEntry* i = (*pMap)[0];
+            DispatchMap.DispatchMapEntry* iEnd = (*pMap)[(int)pMap->NumEntries];
             for (; i != iEnd; ++i)
             {
                 if (i->_usInterfaceMethodSlot == itfSlotNumber)
@@ -191,31 +179,27 @@ namespace System.Runtime
                         // lazily get this then cache the result since the lookup isn't necessarily cheap).
                         if (pItfOpenGenericType == null)
                         {
-                            pItfOpenGenericType = InternalCalls.RhGetGenericInstantiation(pItfType,
-                                                                         &itfArity,
-                                                                         &pItfInstantiation,
-                                                                         &pItfVarianceInfo);
+                            pItfOpenGenericType = pItfType->GenericDefinition;
+                            itfArity = (int)pItfType->GenericArity;
+                            pItfInstantiation = pItfType->GenericArguments;
+                            pItfVarianceInfo = pItfType->GenericVariance;
                         }
 
                         // Retrieve the unified generic instance for the interface we're looking at in the map.
-                        // Grab instantiation details for the candidate interface.
-                        EETypeRef* pCurEntryInstantiation;
-                        int curEntryArity;
-                        GenericVariance* pCurEntryVarianceInfo;
-                        EEType* pCurEntryGenericType = InternalCalls.RhGetGenericInstantiation(pCurEntryType,
-                                                                                                 &curEntryArity,
-                                                                                                 &pCurEntryInstantiation,
-                                                                                                 &pCurEntryVarianceInfo);
+                        EEType* pCurEntryGenericType = pCurEntryType->GenericDefinition;
 
                         // If the generic types aren't the same then the types aren't compatible.
                         if (pItfOpenGenericType != pCurEntryGenericType)
                             continue;
 
+                        // Grab instantiation details for the candidate interface.
+                        EETypeRef* pCurEntryInstantiation = pCurEntryType->GenericArguments;
+
                         // The types represent different instantiations of the same generic type. The
                         // arity of both had better be the same.
-                        Debug.Assert(itfArity == curEntryArity, "arity mismatch betweeen generic instantiations");
+                        Debug.Assert(itfArity == (int)pCurEntryType->GenericArity, "arity mismatch betweeen generic instantiations");
 
-                        if (TypeCast.TypeParametersAreCompatible(itfArity, pCurEntryInstantiation, pItfInstantiation, pItfVarianceInfo, fArrayCovariance))
+                        if (TypeCast.TypeParametersAreCompatible(itfArity, pCurEntryInstantiation, pItfInstantiation, pItfVarianceInfo, fArrayCovariance, null))
                         {
                             *pImplSlotNumber = i->_usImplMethodSlot;
                             return true;

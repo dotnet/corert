@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs
@@ -17,7 +17,7 @@ namespace Internal.IL.Stubs
     {
         public static MethodIL EmitIL(MethodDesc target)
         {
-            Debug.Assert(target.Name == "Call");
+            Debug.Assert(target.Name == "Call" || target.Name.StartsWith("StdCall"));
             Debug.Assert(target.Signature.Length > 0
                 && target.Signature[0] == target.Context.GetWellKnownType(WellKnownType.IntPtr));
 
@@ -43,12 +43,15 @@ namespace Internal.IL.Stubs
                 parameters[i - 1] = template[i];
             }
 
-            var signature = new MethodSignature(template.Flags, 0, returnType, parameters);
+            MethodSignatureFlags flags = template.Flags;
+            if (target.Name == "StdCall")
+                flags |= MethodSignatureFlags.UnmanagedCallingConventionStdCall;
 
+            var signature = new MethodSignature(flags, 0, returnType, parameters);
             codeStream.Emit(ILOpcode.calli, emitter.NewToken(signature));
             codeStream.Emit(ILOpcode.ret);
 
-            return emitter.Link();
+            return emitter.Link(target);
         }
     }
 }

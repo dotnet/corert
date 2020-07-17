@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: eventtrace.h
 // Abstract: This module implements Event Tracing support.  This includes
@@ -29,7 +28,18 @@
 #define _VMEVENTTRACE_H_
 
 #include "eventtracebase.h"
+#include "gcinterface.h"
 
+#ifdef FEATURE_EVENT_TRACE
+struct ProfilingScanContext : ScanContext
+{
+    BOOL fProfilerPinned;
+    void * pvEtwContext;
+    void *pHeapId;
+    
+    ProfilingScanContext(BOOL fProfilerPinnedParam);
+};
+#endif // defined(FEATURE_EVENT_TRACE)
 
 namespace ETW
 {
@@ -281,14 +291,7 @@ namespace ETW
         static BOOL ShouldWalkStaticsAndCOMForEtw();
         static HRESULT ForceGCForDiagnostics();
         static void ForceGC(LONGLONG l64ClientSequenceNumber);
-        static void FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo);
-        static void FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth);
-        static void FireSingleGenerationRangeEvent(
-            void * /* context */,
-            int generation, 
-            BYTE * rangeStart, 
-            BYTE * rangeEnd,
-            BYTE * rangeEndReserved);
+        static void FireGcStart(ETW_GC_INFO * pGcInfo);
         static void RootReference(
             LPVOID pvHandle,
             Object * pRootedNode,
@@ -319,8 +322,7 @@ inline BOOL ETW::GCLog::ShouldWalkHeapObjectsForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldWalkHeapRootsForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldTrackMovementForEtw() { return FALSE; }
 inline BOOL ETW::GCLog::ShouldWalkStaticsAndCOMForEtw() { return FALSE; }
-inline void ETW::GCLog::FireGcStartAndGenerationRanges(ETW_GC_INFO * pGcInfo) { }
-inline void ETW::GCLog::FireGcEndAndGenerationRanges(ULONG Count, ULONG Depth) { }
+inline void ETW::GCLog::FireGcStart(ETW_GC_INFO * pGcInfo) { }
 inline void ETW::GCLog::EndHeapDump(ProfilerWalkHeapContext * profilerWalkHeapContext) { }
 inline void ETW::GCLog::BeginMovedReferences(size_t * pProfilingContext) { }
 inline void ETW::GCLog::MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting) { }

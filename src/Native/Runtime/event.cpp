@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -19,6 +18,7 @@
 #include "Crst.h"
 #include "RWLock.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 
 //
 // -----------------------------------------------------------------------------------------------------------
@@ -27,28 +27,32 @@
 // interception). 
 //
 
-void CLREventStatic::CreateManualEvent(bool bInitialState) 
+bool CLREventStatic::CreateManualEventNoThrow(bool bInitialState) 
 { 
     m_hEvent = PalCreateEventW(NULL, TRUE, bInitialState, NULL); 
     m_fInitialized = true;
+    return IsValid();
 }
 
-void CLREventStatic::CreateAutoEvent(bool bInitialState) 
+bool CLREventStatic::CreateAutoEventNoThrow(bool bInitialState)
 { 
     m_hEvent = PalCreateEventW(NULL, FALSE, bInitialState, NULL); 
     m_fInitialized = true;
+    return IsValid();
 }
 
-void CLREventStatic::CreateOSManualEvent(bool bInitialState) 
+bool CLREventStatic::CreateOSManualEventNoThrow(bool bInitialState)
 { 
     m_hEvent = PalCreateEventW(NULL, TRUE, bInitialState, NULL); 
     m_fInitialized = true;
+    return IsValid();
 }
 
-void CLREventStatic::CreateOSAutoEvent (bool bInitialState) 
+bool CLREventStatic::CreateOSAutoEventNoThrow(bool bInitialState)
 { 
     m_hEvent = PalCreateEventW(NULL, FALSE, bInitialState, NULL); 
     m_fInitialized = true;
+    return IsValid();
 }
 
 void CLREventStatic::CloseEvent() 

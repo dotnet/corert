@@ -1,29 +1,15 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+﻿<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Private.Reflection.Metadata</AssemblyName>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
     <OutputType>Library</OutputType>
-    <ProjectGuid>{45A617DF-FEC7-59C8-FD0D-BD27938DC940}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Ignore the CLSCompliance of the generated cs files we are using here -->
-    <NoWarn>$(NoWarn);3003</NoWarn>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
   </PropertyGroup>
-
-  <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
 
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
-    <ProjectReference Include="..\..\AotPackageReference\AotPackageReference.depproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Reflection.Primitives.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.dll" />
-    <ReferencePath Include="$(AotPackageReferencePath)\System.Runtime.Extensions.dll" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -33,6 +19,7 @@
   <ItemGroup>
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Primitives.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -41,6 +28,11 @@
     <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeMetadataReader.cs" />
     <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
+      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

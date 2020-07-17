@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Immutable;
 
 using Internal.TypeSystem;
 
@@ -24,13 +22,13 @@ namespace Internal.IL
 
     public struct ILExceptionRegion
     {
-        private readonly ILExceptionRegionKind _kind;
-        private readonly int _tryOffset;
-        private readonly int _tryLength;
-        private readonly int _handlerOffset;
-        private readonly int _handlerLength;
-        private readonly int _classToken;
-        private readonly int _filterOffset;
+        public readonly ILExceptionRegionKind Kind;
+        public readonly int TryOffset;
+        public readonly int TryLength;
+        public readonly int HandlerOffset;
+        public readonly int HandlerLength;
+        public readonly int ClassToken;
+        public readonly int FilterOffset;
 
         public ILExceptionRegion(
             ILExceptionRegionKind kind,
@@ -41,59 +39,71 @@ namespace Internal.IL
             int classToken,
             int filterOffset)
         {
-            _kind = kind;
-            _tryOffset = tryOffset;
-            _tryLength = tryLength;
-            _handlerOffset = handlerOffset;
-            _handlerLength = handlerLength;
-            _classToken = classToken;
-            _filterOffset = filterOffset;
-        }
-
-        public ILExceptionRegionKind Kind
-        {
-            get { return _kind; }
-        }
-
-        public int TryOffset
-        {
-            get { return _tryOffset; }
-        }
-
-        public int TryLength
-        {
-            get { return _tryLength; }
-        }
-
-        public int HandlerOffset
-        {
-            get { return _handlerOffset; }
-        }
-
-        public int HandlerLength
-        {
-            get { return _handlerLength; }
-        }
-
-        public int ClassToken
-        {
-            get { return _classToken; }
-        }
-
-        public int FilterOffset
-        {
-            get { return _filterOffset; }
+            Kind = kind;
+            TryOffset = tryOffset;
+            TryLength = tryLength;
+            HandlerOffset = handlerOffset;
+            HandlerLength = handlerLength;
+            ClassToken = classToken;
+            FilterOffset = filterOffset;
         }
     }
 
+    /// <summary>
+    /// Represents a method body.
+    /// </summary>
     [System.Diagnostics.DebuggerTypeProxy(typeof(MethodILDebugView))]
-    public abstract class MethodIL
+    public abstract partial class MethodIL
     {
+        /// <summary>
+        /// Gets the method whose body this <see cref="MethodIL"/> represents.
+        /// </summary>
+        public abstract MethodDesc OwningMethod { get; }
+
+        /// <summary>
+        /// Gets the maximum possible stack depth this method declares.
+        /// </summary>
+        public abstract int MaxStack { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the locals should be initialized to zero
+        /// before first access.
+        /// </summary>
+        public abstract bool IsInitLocals { get; }
+
+        /// <summary>
+        /// Retrieves IL opcode bytes of this method body.
+        /// </summary>
         public abstract byte[] GetILBytes();
-        public abstract int GetMaxStack();
-        public abstract bool GetInitLocals();
+
+        /// <summary>
+        /// Gets the list of locals this method body defines.
+        /// </summary>
         public abstract LocalVariableDefinition[] GetLocals();
+
+        /// <summary>
+        /// Resolves a token from within the method body into a type system object
+        /// (typically a <see cref="MethodDesc"/>, <see cref="FieldDesc"/>, <see cref="TypeDesc"/>,
+        /// or <see cref="MethodSignature"/>).
+        /// </summary>
         public abstract Object GetObject(int token);
+
+        /// <summary>
+        /// Gets a list of exception regions this method body defines.
+        /// </summary>
         public abstract ILExceptionRegion[] GetExceptionRegions();
+
+        /// <summary>
+        /// Gets the open (uninstantiated) version of the <see cref="MethodIL"/>.
+        /// </summary>
+        public virtual MethodIL GetMethodILDefinition()
+        {
+            return this;
+        }
+
+        public override string ToString()
+        {
+            return OwningMethod.ToString();
+        }
     }
 }

@@ -1,0 +1,41 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v2.1</NuGetTargetMoniker>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
+    <RidSpecificAssets>true</RidSpecificAssets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.App.Runtime.$(NuPkgRid)">
+      <Version>$(RyuJITVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <FileToInclude Include="clrjit" Condition="'$(OSEnvironment)' == 'Windows_NT'" />
+    <FileToInclude Include="libclrjit" Condition="'$(OSEnvironment)' != 'Windows_NT'" />
+  </ItemGroup>
+
+  <Target Name="RenameToJitIlc">
+    <ItemGroup>
+      <ContentWithTargetPath>
+        <TargetPath>%(Filename)ilc%(Extension)</TargetPath>
+      </ContentWithTargetPath>
+    </ItemGroup>
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <PropertyGroup>
+    <GetCopyToOutputDirectoryItemsDependsOn>
+      $(GetCopyToOutputDirectoryItemsDependsOn);
+      RenameToJitIlc
+    </GetCopyToOutputDirectoryItemsDependsOn>
+  </PropertyGroup>
+</Project>

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
@@ -43,14 +42,13 @@ namespace ILCompiler.Metadata
                 Signature = new PropertySignature
                 {
                     CallingConvention = sig.IsStatic ? CallingConventions.Standard : CallingConventions.HasThis,
-                    // TODO: CustomModifiers
                     Type = HandleType(sig.ReturnType)
                 },
             };
 
             result.Signature.Parameters.Capacity = sig.Length;
             for (int i = 0; i < sig.Length; i++)
-                result.Signature.Parameters.Add(HandleParameterTypeSignature(sig[i]));
+                result.Signature.Parameters.Add(HandleType(sig[i]));
 
             if (getterHasMetadata)
             {

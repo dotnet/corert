@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
-using Internal.Reflection.Core.NonPortable;
+using System.Diagnostics;
+using System.Threading;
+
+using Internal.Runtime.Augments;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -16,6 +19,7 @@ namespace System.Runtime.InteropServices
     ///     in order to be accessible from System.Private.Interop.dll.
     /// </summary>
     [CLSCompliant(false)]
+    [ReflectionBlocked]
     public static class InteropExtensions
     {
         // Converts a managed DateTime to native OLE datetime
@@ -38,131 +42,68 @@ namespace System.Runtime.InteropServices
             safeHandle.InitializeHandle(win32Handle);
         }
 
-        // Used for methods in System.Private.Interop.dll that need to work from offsets on boxed structs
-        public unsafe static void PinObjectAndCall(Object obj, Action<IntPtr> del)
-        {
-            fixed (IntPtr* pEEType = &obj.m_pEEType)
-            {
-                del((IntPtr)pEEType);
-            }
-        }
-
-        public static void CopyToManaged(IntPtr source, Array destination, int startIndex, int length)
-        {
-            Array.CopyToManaged(source, destination, startIndex, length);
-        }
-
-        public static void CopyToNative(Array array, int startIndex, IntPtr destination, int length)
-        {
-            Array.CopyToNative(array, startIndex, destination, length);
-        }
-
         public static int GetElementSize(this Array array)
         {
             return array.EETypePtr.ComponentSize;
         }
 
-        public static unsafe IntPtr GetAddrOfPinnedArrayFromEETypeField(this Array array)
+        internal static bool MightBeBlittable(this EETypePtr eeType)
         {
-            fixed (IntPtr* pEEType = &array.m_pEEType)
-            {
-                return (IntPtr)Array.GetAddrOfPinnedArrayFromEETypeField(pEEType);
-            }
+            //
+            // This is used as the approximate implementation of MethodTable::IsBlittable(). It  will err in the direction of declaring
+            // things blittable since it is used for argument validation only.
+            //
+            return !eeType.HasPointers;
         }
 
         public static bool IsBlittable(this RuntimeTypeHandle handle)
         {
-            //
-            // @todo: B#754744 This is used as the Project N equivalent of MethodTable::IsBlittable(). The current implementation is rather... approximate.
-            //
-            return handle.ToEETypePtr().IsPrimitive ||
-                   !handle.ToEETypePtr().HasPointers;
+            return handle.ToEETypePtr().MightBeBlittable();
         }
 
-        internal static bool MightBeBlittable(this EETypePtr eeType)
+        public static bool IsBlittable(this object obj)
         {
-            //
-            // @todo: B#754744 This is used as the Project N equivalent of MethodTable::IsBlittable(). The current implementation is rather... approximate. This
-            //     version will err in the direction of declaring things blittable. This is used for the pinned GCHandle validation code where false positives
-            //     are the lesser evil (on the grounds that for V1, at least, app developers will almost always be testing IL versions of their apps and will notice
-            //     any failures on that platform.)
-            //
-            return eeType.IsPrimitive ||
-                   !eeType.HasPointers;
-        }
-
-        public static bool IsElementTypeBlittable(this Array array)
-        {
-            return array.IsElementTypeBlittable;
+            return obj.EETypePtr.MightBeBlittable();
         }
 
         public static bool IsGenericType(this RuntimeTypeHandle handle)
         {
-            return handle.Classification == RuntimeImports.RhEETypeClassification.Generic ||
-                   handle.Classification == RuntimeImports.RhEETypeClassification.GenericTypeDefinition;
+            EETypePtr eeType = handle.ToEETypePtr();
+            return eeType.IsGeneric;
         }
 
-        public static TKey FindEquivalentKeyUnsafe<TKey, TValue>(
-            this ConditionalWeakTable<TKey, TValue> table,
-            TKey key,
-            out TValue value
-            )
-            where TKey : class
-            where TValue : class
+        public static bool IsGenericTypeDefinition(this RuntimeTypeHandle handle)
         {
-            return table.FindEquivalentKeyUnsafe(key, out value);
+            EETypePtr eeType = handle.ToEETypePtr();
+            return eeType.IsGenericTypeDefinition;
         }
 
-        public static System.Collections.Generic.ICollection<TValue> GetValues<TKey, TValue>(
-            this ConditionalWeakTable<TKey, TValue> table
-            )
-            where TKey : class
-            where TValue : class
+        public static unsafe int GetGenericArgumentCount(this RuntimeTypeHandle genericTypeDefinitionHandle)
         {
-            return table.Values;
+            Debug.Assert(IsGenericTypeDefinition(genericTypeDefinitionHandle));
+            return genericTypeDefinitionHandle.ToEETypePtr().ToPointer()->GenericArgumentCount;
         }
 
-        public static System.Collections.Generic.ICollection<TKey> GetKeys<TKey, TValue>(
-            this ConditionalWeakTable<TKey, TValue> table
-            )
-            where TKey : class
-            where TValue : class
-        {
-            return table.Keys;
-        }
-
-        public static void Clear<TKey, TValue>(
-            this ConditionalWeakTable<TKey, TValue> table)
-        where TKey : class
-        where TValue : class
-        {
-            table.Clear();
-        }
-        //TODO:Remove Delegate.GetNativeFunctionPointer
-        public static IntPtr GetNativeFunctionPointer(this Delegate del)
-        {
-            return del.GetNativeFunctionPointer();
-        }
         public static IntPtr GetFunctionPointer(this Delegate del, out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate)
         {
-            bool dummyIsOpenInstanceFunction;
-            return del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out dummyIsOpenInstanceFunction);
+            return del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
         }
 
         //
-        // Returns the raw function pointer - if the function has a jump stub 
+        // Returns the raw function pointer for a open static delegate - if the function has a jump stub 
         // it returns the jump target. Therefore the function pointer returned
         // by two delegates may NOT be unique
         //
-        public static IntPtr GetRawFunctionPointer(this Delegate del)
+        public static IntPtr GetRawFunctionPointerForOpenStaticDelegate(this Delegate del)
         {
-            bool dummyIsOpenInstanceFunction;
+            //If it is not open static then return IntPtr.Zero
+            if (!del.IsOpenStatic)
+                return IntPtr.Zero;
+
             RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
 
-            IntPtr funcPtr = del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out dummyIsOpenInstanceFunction);
-
-            // if the function pointer points to a jump stub return the target
-            return RuntimeImports.RhGetJmpStubCodeTarget(funcPtr);
+            IntPtr funcPtr = del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
+            return funcPtr;
         }
 
         public static IntPtr GetRawValue(this RuntimeTypeHandle handle)
@@ -173,7 +114,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Comparing RuntimeTypeHandle with an object's RuntimeTypeHandle, avoiding going through expensive Object.GetType().TypeHandle path
         /// </summary>
-        public static bool IsOfType(this Object obj, RuntimeTypeHandle handle)
+        public static bool IsOfType(this object obj, RuntimeTypeHandle handle)
         {
             RuntimeTypeHandle objType = new RuntimeTypeHandle(obj.EETypePtr);
 
@@ -205,6 +146,11 @@ namespace System.Runtime.InteropServices
             return handle.ToEETypePtr().IsValueType;
         }
 
+        public static bool IsClass(this RuntimeTypeHandle handle)
+        {
+            return handle.ToEETypePtr().IsDefType && !handle.ToEETypePtr().IsInterface && !handle.ToEETypePtr().IsValueType && !handle.IsDelegate();
+        }
+
         public static bool IsEnum(this RuntimeTypeHandle handle)
         {
             return handle.ToEETypePtr().IsEnum;
@@ -212,7 +158,17 @@ namespace System.Runtime.InteropServices
 
         public static bool IsInterface(this RuntimeTypeHandle handle)
         {
-            return RuntimeImports.RhIsInterface(handle.ToEETypePtr());
+            return handle.ToEETypePtr().IsInterface;
+        }
+
+        public static bool IsPrimitive(this RuntimeTypeHandle handle)
+        {
+            return handle.ToEETypePtr().IsPrimitive;
+        }
+
+        public static bool IsDelegate(this RuntimeTypeHandle handle)
+        {
+            return InteropExtensions.AreTypesAssignable(handle, typeof(Delegate).TypeHandle);
         }
 
         public static bool AreTypesAssignable(RuntimeTypeHandle sourceType, RuntimeTypeHandle targetType)
@@ -256,12 +212,12 @@ namespace System.Runtime.InteropServices
         /// weak handle if the callback returns false, which is perfect for controlling lifetime of a CCW
         /// </summary>
         internal const int RefCountedHandleType = 5;
-        public static IntPtr RuntimeHandleAllocRefCounted(Object value)
+        public static IntPtr RuntimeHandleAllocRefCounted(object value)
         {
             return RuntimeImports.RhHandleAlloc(value, (GCHandleType)RefCountedHandleType);
         }
 
-        public static void RuntimeHandleSet(IntPtr handle, Object value)
+        public static void RuntimeHandleSet(IntPtr handle, object value)
         {
             RuntimeImports.RhHandleSet(handle, value);
         }
@@ -281,44 +237,39 @@ namespace System.Runtime.InteropServices
             return RuntimeImports.RhIsPromoted(obj);
         }
 
-        public static void RuntimeHandleSetDependentSecondary(IntPtr handle, Object secondary)
+        public static void RuntimeHandleSetDependentSecondary(IntPtr handle, object secondary)
         {
             RuntimeImports.RhHandleSetDependentSecondary(handle, secondary);
         }
 
         public static T UncheckedCast<T>(object obj) where T : class
         {
-            return RuntimeHelpers.UncheckedCast<T>(obj);
+            return Unsafe.As<T>(obj);
         }
 
         public static bool IsArray(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhIsArray(type.ToEETypePtr());
+            return type.ToEETypePtr().IsArray;
         }
 
         public static RuntimeTypeHandle GetArrayElementType(RuntimeTypeHandle arrayType)
         {
-            return new RuntimeTypeHandle(RuntimeImports.RhGetRelatedParameterType(arrayType.ToEETypePtr()));
+            return new RuntimeTypeHandle(arrayType.ToEETypePtr().ArrayElementType);
+        }
+
+        /// <summary>
+        /// Whether the type is a single dimension zero lower bound array
+        /// </summary>
+        /// <param name="type">specified type</param>
+        /// <returns>true iff it is a single dimension zeo lower bound array</returns>
+        public static bool IsSzArray(RuntimeTypeHandle type)
+        {
+            return type.ToEETypePtr().IsSzArray;
         }
 
         public static RuntimeTypeHandle GetTypeHandle(this object target)
         {
             return new RuntimeTypeHandle(target.EETypePtr);
-        }
-
-        public static bool IsInstanceOf(object obj, RuntimeTypeHandle typeHandle)
-        {
-            return (null != RuntimeImports.IsInstanceOf(obj, typeHandle.ToEETypePtr()));
-        }
-
-        public static bool IsInstanceOfClass(object obj, RuntimeTypeHandle classTypeHandle)
-        {
-            return (null != RuntimeImports.IsInstanceOfClass(obj, classTypeHandle.ToEETypePtr()));
-        }
-
-        public static bool IsInstanceOfInterface(object obj, RuntimeTypeHandle interfaceTypeHandle)
-        {
-            return (null != RuntimeImports.IsInstanceOfInterface(obj, interfaceTypeHandle.ToEETypePtr()));
         }
 
         public static bool GuidEquals(ref Guid left, ref Guid right)
@@ -356,7 +307,7 @@ namespace System.Runtime.InteropServices
             return stringBuilder.GetBuffer(out len);
         }
 
-        public static IntPtr RuntimeHandleAllocVariable(Object value, uint type)
+        public static IntPtr RuntimeHandleAllocVariable(object value, uint type)
         {
             return RuntimeImports.RhHandleAllocVariable(value, type);
         }
@@ -375,12 +326,12 @@ namespace System.Runtime.InteropServices
         {
             return RuntimeImports.RhHandleCompareExchangeVariableType(handle, oldType, newType);
         }
-
+        
         public static void SetExceptionErrorCode(Exception exception, int hr)
         {
-            exception.SetErrorCode(hr);
+            exception.HResult = hr;
         }
-
+        
         public static void SetExceptionMessage(Exception exception, string message)
         {
             exception.SetMessage(message);
@@ -391,7 +342,7 @@ namespace System.Runtime.InteropServices
             return new DataMisalignedException(message);
         }
 
-        public static Delegate CreateDelegate(RuntimeTypeHandle typeHandleForDelegate, IntPtr ldftnResult, Object thisObject, bool isStatic, bool isVirtual, bool isOpen)
+        public static Delegate CreateDelegate(RuntimeTypeHandle typeHandleForDelegate, IntPtr ldftnResult, object thisObject, bool isStatic, bool isVirtual, bool isOpen)
         {
             return Delegate.CreateDelegate(typeHandleForDelegate.ToEETypePtr(), ldftnResult, thisObject, isStatic, isOpen);
         }
@@ -419,17 +370,14 @@ namespace System.Runtime.InteropServices
             return ex.TryGetRestrictedErrorDetails(out restrictedError, out restrictedErrorReference, out restrictedCapabilitySid);
         }
 
+        public static IntPtr[] ExceptionGetStackIPs(Exception ex)
+        {
+            return ex.GetStackIPs();
+        }
+
         public static TypeInitializationException CreateTypeInitializationException(string message)
         {
             return new TypeInitializationException(message);
-        }
-
-        public unsafe static IntPtr GetObjectID(object obj)
-        {
-            fixed (void* p = &obj.m_pEEType)
-            {
-                return (IntPtr)p;
-            }
         }
 
         public static bool RhpETWShouldWalkCom()
@@ -437,46 +385,34 @@ namespace System.Runtime.InteropServices
             return RuntimeImports.RhpETWShouldWalkCom();
         }
 
-        public static void RhpETWLogLiveCom(int eventType, IntPtr CCWHandle, IntPtr objectID, IntPtr typeRawValue, IntPtr IUnknown, IntPtr VTable, Int32 comRefCount, Int32 jupiterRefCount, Int32 flags)
+        public static void RhpETWLogLiveCom(int eventType, IntPtr CCWHandle, IntPtr objectID, IntPtr typeRawValue, IntPtr IUnknown, IntPtr VTable, int comRefCount, int jupiterRefCount, int flags)
         {
             RuntimeImports.RhpETWLogLiveCom(eventType, CCWHandle, objectID, typeRawValue, IUnknown, VTable, comRefCount, jupiterRefCount, flags);
         }
 
         public static bool SupportsReflection(this Type type)
         {
-            RuntimeType runtimeType = type as RuntimeType;
-            if (runtimeType == null)
-                return false;
-
-            if (null == runtimeType.InternalNameIfAvailable)
-            {
-                return false;
-            }
-
-            if (Internal.Runtime.Augments.RuntimeAugments.Callbacks.IsReflectionBlocked(type.TypeHandle))
-            {
-                // The type is an internal framework type and is blocked from reflection
-                return false;
-            }
-
-            if (runtimeType.InternalFullNameOfAssembly == Internal.Runtime.Augments.RuntimeAugments.HiddenScopeAssemblyName)
-            {
-                // The type is an internal framework type but is reflectable for internal class library use
-                // where we make the type appear in a hidden assembly
-                return false;
-            }
-
-            return true;
+            return RuntimeAugments.Callbacks.SupportsReflection(type);
         }
 
         public static void SuppressReentrantWaits()
         {
-            System.Threading.LowLevelThread.SuppressReentrantWaits();
+            Thread.SuppressReentrantWaits();
         }
 
         public static void RestoreReentrantWaits()
         {
-            System.Threading.LowLevelThread.RestoreReentrantWaits();
+            Thread.RestoreReentrantWaits();
+        }
+
+        public static IntPtr GetCriticalHandle(CriticalHandle criticalHandle)
+        {
+            return criticalHandle.GetHandleInternal();
+        }
+
+        public static void SetCriticalHandle(CriticalHandle criticalHandle, IntPtr handle)
+        {
+            criticalHandle.SetHandleInternal(handle);
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -21,13 +20,15 @@ namespace Internal.IL.Stubs
 
         private ArrayMethodILEmitter(ArrayMethod method)
         {
+            Debug.Assert(method.Kind != ArrayMethodKind.Address, "Should be " + nameof(ArrayMethodKind.AddressWithHiddenArg));
+
             _method = method;
 
             ArrayType arrayType = (ArrayType)method.OwningType;
             _rank = arrayType.Rank;
             _elementType = arrayType.ElementType;
             _emitter = new ILEmitter();
-            
+
             // This helper field is needed to generate proper GC tracking. There is no direct way
             // to create interior pointer. 
             _helperFieldToken = _emitter.NewToken(_method.Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"));
@@ -47,7 +48,7 @@ namespace Internal.IL.Stubs
             {
                 case ArrayMethodKind.Get:
                 case ArrayMethodKind.Set:
-                case ArrayMethodKind.Address:
+                case ArrayMethodKind.AddressWithHiddenArg:
                     EmitILForAccessor();
                     break;
 
@@ -58,7 +59,7 @@ namespace Internal.IL.Stubs
                     throw new InvalidOperationException();
             }
 
-            return _emitter.Link();
+            return _emitter.Link(_method);
         }
 
         public static MethodIL EmitIL(ArrayMethod arrayMethod)
@@ -68,7 +69,7 @@ namespace Internal.IL.Stubs
 
         private void EmitILForAccessor()
         {
-            Debug.Assert(!_method.OwningType.IsSzArray);
+            Debug.Assert(_method.OwningType.IsMdArray);
 
             var codeStream = _emitter.NewCodeStream();
             var context = _method.Context;
@@ -80,10 +81,12 @@ namespace Internal.IL.Stubs
 
             int pointerSize = context.Target.PointerSize;
 
+            int argStartOffset = _method.Kind == ArrayMethodKind.AddressWithHiddenArg ? 2 : 1;
+
             var rangeExceptionLabel = _emitter.NewCodeLabel();
             ILCodeLabel typeMismatchExceptionLabel = null;
 
-            if (!_elementType.IsValueType)
+            if (_elementType.IsGCPointer)
             {
                 // Type check
                 if (_method.Kind == ArrayMethodKind.Set)
@@ -92,50 +95,95 @@ namespace Internal.IL.Stubs
                         context.SystemModule.GetKnownType("System.Runtime", "RuntimeImports").GetKnownMethod("RhCheckArrayStore", null);
 
                     codeStream.EmitLdArg(0);
-                    codeStream.EmitLdArg(_rank + 1);
+                    codeStream.EmitLdArg(_rank + argStartOffset);
 
                     codeStream.Emit(ILOpcode.call, _emitter.NewToken(checkArrayStore));
                 }
-                else if (_method.Kind == ArrayMethodKind.Address)
+                else if (_method.Kind == ArrayMethodKind.AddressWithHiddenArg)
                 {
                     TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
-                    TypeDesc eetypePtrType = context.SystemModule.GetKnownType("System", "EETypePtr");
-
-                    MethodDesc eetypePtrOfMethod = eetypePtrType.GetKnownMethod("EETypePtrOf", null)
-                        .MakeInstantiatedMethod(new Instantiation(new[] { _elementType }));
+                    TypeDesc eetypeType = context.SystemModule.GetKnownType("Internal.Runtime", "EEType");
 
                     typeMismatchExceptionLabel = _emitter.NewCodeLabel();
 
-                    ILLocalVariable thisEEType = _emitter.NewLocal(eetypePtrType);
+                    ILCodeLabel typeCheckPassedLabel = _emitter.NewCodeLabel();
 
-                    // EETypePtr actualElementType = this.EETypePtr.ArrayElementType;
+                    // Codegen will pass a null hidden argument if this is a `constrained.` call to the Address method.
+                    // As per ECMA-335 III.2.3, the prefix suppresses the type check.
+                    // if (hiddenArg == IntPtr.Zero)
+                    //     goto TypeCheckPassed;
+                    codeStream.EmitLdArg(1);
+                    codeStream.Emit(ILOpcode.brfalse, typeCheckPassedLabel);
+
+                    // EEType* actualElementType = this.EEType.RelatedParameterType; // ArrayElementType
                     codeStream.EmitLdArg(0);
-                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_EETypePtr", null)));
-                    codeStream.EmitStLoc(thisEEType);
-                    codeStream.EmitLdLoca(thisEEType);
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_EEType", null)));
                     codeStream.Emit(ILOpcode.call,
-                        _emitter.NewToken(eetypePtrType.GetKnownMethod("get_ArrayElementType", null)));
-                    
-                    // EETypePtr expectedElementType = EETypePtr.EETypePtrOf<_elementType>();
-                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrOfMethod));
-                    
-                    // if (expectedElementType != actualElementType)
+                        _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType", null)));
+
+                    // EEType* expectedElementType = hiddenArg->RelatedParameterType; // ArrayElementType
+                    codeStream.EmitLdArg(1);
+                    codeStream.Emit(ILOpcode.call,
+                        _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType", null)));
+
+                    // if (TypeCast.AreTypesEquivalent(expectedElementType, actualElementType))
                     //     ThrowHelpers.ThrowArrayTypeMismatchException();
-                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(eetypePtrType.GetKnownMethod("op_Equality", null)));
+                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(
+                        context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("AreTypesEquivalent", null)));
                     codeStream.Emit(ILOpcode.brfalse, typeMismatchExceptionLabel);
+
+                    codeStream.EmitLabel(typeCheckPassedLabel);
                 }
+            }
+
+            // Methods on Rank 1 MdArray need to be able to handle `this` that is an SzArray
+            // because SzArray is castable to Rank 1 MdArray (but not the other way around).
+
+            ILCodeLabel rangeCheckDoneLabel = null;
+            if (_rank == 1)
+            {
+                TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
+                TypeDesc eetypePtrType = context.SystemModule.GetKnownType("System", "EETypePtr");
+                ILLocalVariable thisEEType = _emitter.NewLocal(eetypePtrType);
+
+                codeStream.EmitLdArg(0);
+                codeStream.Emit(ILOpcode.call, _emitter.NewToken(objectType.GetKnownMethod("get_EETypePtr", null)));
+                codeStream.EmitStLoc(thisEEType);
+                codeStream.EmitLdLoca(thisEEType);
+                codeStream.Emit(ILOpcode.call,
+                    _emitter.NewToken(eetypePtrType.GetKnownMethod("get_IsSzArray", null)));
+
+                ILCodeLabel notSzArrayLabel = _emitter.NewCodeLabel();
+                codeStream.Emit(ILOpcode.brfalse, notSzArrayLabel);
+
+                // We have an SzArray - do the bounds check differently
+                EmitLoadInteriorAddress(codeStream, pointerSize);
+                codeStream.Emit(ILOpcode.dup);
+                codeStream.Emit(ILOpcode.ldind_i4);
+                codeStream.EmitLdArg(argStartOffset);
+                codeStream.EmitStLoc(totalLocalNum);
+                codeStream.EmitLdLoc(totalLocalNum);
+                codeStream.Emit(ILOpcode.ble_un, rangeExceptionLabel);
+
+                codeStream.EmitLdc(pointerSize);
+                codeStream.Emit(ILOpcode.add);
+
+                rangeCheckDoneLabel = _emitter.NewCodeLabel();
+                codeStream.Emit(ILOpcode.br, rangeCheckDoneLabel);
+
+                codeStream.EmitLabel(notSzArrayLabel);
             }
 
             for (int i = 0; i < _rank; i++)
             {
                 // The first two fields are EEType pointer and total length. Lengths for each dimension follows.
-                int lengthOffset = (2 * pointerSize + i * int32Type.GetElementSize());
+                int lengthOffset = (2 * pointerSize + i * sizeof(int));
 
                 EmitLoadInteriorAddress(codeStream, lengthOffset);
                 codeStream.Emit(ILOpcode.ldind_i4);
                 codeStream.EmitStLoc(lengthLocalNum);
 
-                codeStream.EmitLdArg(i + 1);
+                codeStream.EmitLdArg(i + argStartOffset);
 
                 // Compare with length
                 codeStream.Emit(ILOpcode.dup);
@@ -155,12 +203,16 @@ namespace Internal.IL.Stubs
 
             // Compute element offset
             // TODO: This leaves unused space for lower bounds to match CoreCLR...
-            int firstElementOffset = (2 * pointerSize + 2 * _rank * int32Type.GetElementSize());
+            int firstElementOffset = (2 * pointerSize + 2 * _rank * sizeof(int));
             EmitLoadInteriorAddress(codeStream, firstElementOffset);
 
-            codeStream.EmitLdLoc(totalLocalNum);
+            if (rangeCheckDoneLabel != null)
+                codeStream.EmitLabel(rangeCheckDoneLabel);
 
-            int elementSize = _elementType.GetElementSize();
+            codeStream.EmitLdLoc(totalLocalNum);
+            codeStream.Emit(ILOpcode.conv_u);
+
+            int elementSize = _elementType.GetElementSize().AsInt;
             if (elementSize != 1)
             {
                 codeStream.EmitLdc(elementSize);
@@ -175,11 +227,11 @@ namespace Internal.IL.Stubs
                     break;
 
                 case ArrayMethodKind.Set:
-                    codeStream.EmitLdArg(_rank + 1);
+                    codeStream.EmitLdArg(_rank + argStartOffset);
                     codeStream.Emit(ILOpcode.stobj, _emitter.NewToken(_elementType));
                     break;
 
-                case ArrayMethodKind.Address:
+                case ArrayMethodKind.AddressWithHiddenArg:
                     break;
             }
 

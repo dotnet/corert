@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This is where we group together all the runtime export calls.
@@ -8,378 +7,292 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
+
+using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
+
+#if TARGET_64BIT
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
 
 namespace System.Runtime
 {
     internal static class RuntimeExports
     {
-#if !CORERT
-        //
-        // internalcalls for System.Runtime.InteropServices.GCHandle.
-        //
-
-        // Allocate handle.
-        [RuntimeExport("RhHandleAlloc")]
-        public static IntPtr RhHandleAlloc(object value, GCHandleType type)
-        {
-            IntPtr h = InternalCalls.RhpHandleAlloc(value, type);
-
-            if (h == IntPtr.Zero)
-            {
-                // Throw the out of memory exception defined by the classlib, using the return address of this method
-                // to find the correct classlib.
-
-                ExceptionIDs exID = ExceptionIDs.OutOfMemory;
-
-                IntPtr returnAddr = BinderIntrinsics.GetReturnAddress();
-                Exception e = EH.GetClasslibException(exID, returnAddr);
-                throw e;
-            }
-
-            return h;
-        }
-
-        // Allocate dependent handle.
-        [RuntimeExport("RhHandleAllocDependent")]
-        public static IntPtr RhHandleAllocDependent(object primary, object secondary)
-        {
-            IntPtr h = InternalCalls.RhpHandleAllocDependent(primary, secondary);
-
-            if (h == IntPtr.Zero)
-            {
-                // Throw the out of memory exception defined by the classlib, using the return address of this method
-                // to find the correct classlib.
-
-                ExceptionIDs exID = ExceptionIDs.OutOfMemory;
-
-                IntPtr returnAddr = BinderIntrinsics.GetReturnAddress();
-                Exception e = EH.GetClasslibException(exID, returnAddr);
-                throw e;
-            }
-
-            return h;
-        }
-
-        // Allocate variable handle.
-        [RuntimeExport("RhHandleAllocVariable")]
-        public static IntPtr RhHandleAllocVariable(object value, uint type)
-        {
-            IntPtr h = InternalCalls.RhpHandleAllocVariable(value, type);
-
-            if (h == IntPtr.Zero)
-            {
-                // Throw the out of memory exception defined by the classlib, using the return address of this method
-                // to find the correct classlib.
-
-                ExceptionIDs exID = ExceptionIDs.OutOfMemory;
-
-                IntPtr returnAddr = BinderIntrinsics.GetReturnAddress();
-                Exception e = EH.GetClasslibException(exID, returnAddr);
-                throw e;
-            }
-
-            return h;
-        }
-#endif // !CORERT
-
         //
         // internal calls for allocation
         //
         [RuntimeExport("RhNewObject")]
-        public unsafe static object RhNewObject(EETypePtr pEEType)
+        public static unsafe object RhNewObject(EEType* pEEType)
         {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
+            // This is structured in a funny way because at the present state of things in CoreRT, the Debug.Assert
+            // below will call into the assert defined in the class library (and not the MRT version of it). The one
+            // in the class library is not low level enough to be callable when GC statics are not initialized yet.
+            // Feel free to restructure once that's not a problem.
+#if DEBUG
+            bool isValid = !pEEType->IsGenericTypeDefinition &&
+                !pEEType->IsInterface &&
+                !pEEType->IsArray &&
+                !pEEType->IsString &&
+                !pEEType->IsByRefLike;
+            if (!isValid)
+                Debug.Assert(false);
+#endif
+
 #if FEATURE_64BIT_ALIGNMENT
-            if (ptrEEType->RequiresAlign8)
+            if (pEEType->RequiresAlign8)
             {
-                if (ptrEEType->IsValueType)
-                    return InternalCalls.RhpNewFastMisalign(ptrEEType);
-                if (ptrEEType->IsFinalizable)
-                    return InternalCalls.RhpNewFinalizableAlign8(ptrEEType);
-                return InternalCalls.RhpNewFastAlign8(ptrEEType);
+                if (pEEType->IsValueType)
+                    return InternalCalls.RhpNewFastMisalign(pEEType);
+                if (pEEType->IsFinalizable)
+                    return InternalCalls.RhpNewFinalizableAlign8(pEEType);
+                return InternalCalls.RhpNewFastAlign8(pEEType);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                if (ptrEEType->IsFinalizable)
-                    return InternalCalls.RhpNewFinalizable(ptrEEType);
-                return InternalCalls.RhpNewFast(ptrEEType);
+                if (pEEType->IsFinalizable)
+                    return InternalCalls.RhpNewFinalizable(pEEType);
+                return InternalCalls.RhpNewFast(pEEType);
             }
         }
 
         [RuntimeExport("RhNewArray")]
-        public unsafe static object RhNewArray(EETypePtr pEEType, int length)
+        public static unsafe object RhNewArray(EEType* pEEType, int length)
         {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
+            Debug.Assert(pEEType->IsArray || pEEType->IsString);
+
 #if FEATURE_64BIT_ALIGNMENT
-            if (ptrEEType->RequiresAlign8)
+            if (pEEType->RequiresAlign8)
             {
-                return InternalCalls.RhpNewArrayAlign8(ptrEEType, length);
+                return InternalCalls.RhpNewArrayAlign8(pEEType, length);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                return InternalCalls.RhpNewArray(ptrEEType, length);
+                return InternalCalls.RhpNewArray(pEEType, length);
             }
         }
 
         [RuntimeExport("RhBox")]
-        public unsafe static object RhBox(EETypePtr pEEType, void* pData)
+        public static unsafe object RhBox(EEType* pEEType, ref byte data)
         {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            object result;
+            ref byte dataAdjustedForNullable = ref data;
+
+            // Can box value types only (which also implies no finalizers).
+            Debug.Assert(pEEType->IsValueType && !pEEType->IsFinalizable);
 
             // If we're boxing a Nullable<T> then either box the underlying T or return null (if the
             // nullable's value is empty).
-            if (ptrEEType->IsNullable)
+            if (pEEType->IsNullable)
             {
                 // The boolean which indicates whether the value is null comes first in the Nullable struct.
-                if (!*(bool*)pData)
+                if (data == 0)
                     return null;
 
                 // Switch type we're going to box to the Nullable<T> target type and advance the data pointer
                 // to the value embedded within the nullable.
-                pData = (byte*)pData + ptrEEType->GetNullableValueOffset();
-                ptrEEType = ptrEEType->GetNullableType();
+                dataAdjustedForNullable = ref Unsafe.Add(ref data, pEEType->NullableValueOffset);
+                pEEType = pEEType->NullableType;
             }
 
+            object result;
 #if FEATURE_64BIT_ALIGNMENT
-            if (ptrEEType->RequiresAlign8)
+            if (pEEType->RequiresAlign8)
             {
-                result = InternalCalls.RhpNewFastMisalign(ptrEEType);
+                result = InternalCalls.RhpNewFastMisalign(pEEType);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                result = InternalCalls.RhpNewFast(ptrEEType);
+                result = InternalCalls.RhpNewFast(pEEType);
             }
-            InternalCalls.RhpBox(result, pData);
-            return result;
-        }
 
-        // this serves as a kind of union where:
-        // - the field o is used if the struct wraps a reference type
-        // - the field p is used together with pointer arithmetic if the struct is a valuetype
-        public struct Hack_o_p
-        {
-            internal Object o;
-            internal IntPtr p;
+            // Copy the unboxed value type data into the new object.
+            // Perform any write barriers necessary for embedded reference fields.
+            if (pEEType->HasGCPointers)
+            {
+                InternalCalls.RhBulkMoveWithWriteBarrier(ref result.GetRawData(), ref dataAdjustedForNullable, pEEType->ValueTypeSize);
+            }
+            else
+            {
+                fixed (byte* pFields = &result.GetRawData())
+                fixed (byte* pData = &dataAdjustedForNullable)
+                    InternalCalls.memmove(pFields, pData, pEEType->ValueTypeSize);
+            }
+
+            return result;
         }
 
         [RuntimeExport("RhBoxAny")]
-        public unsafe static object RhBoxAny(ref Hack_o_p data, EETypePtr pEEType)
+        public static unsafe object RhBoxAny(ref byte data, EEType* pEEType)
         {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            if (ptrEEType->IsValueType)
+            if (pEEType->IsValueType)
             {
-                // HACK: we would really want to take the address of o here,
-                // but the rules of the C# language don't let us do that,
-                // so we arrive at the same result by taking the address of p
-                // and going back one pointer-sized unit
-                fixed (IntPtr* pData = &data.p)
-                    return RhBox(pEEType, pData - 1);
+                return RhBox(pEEType, ref data);
             }
             else
-                return data.o;
+            {
+                return Unsafe.As<byte, object>(ref data);
+            }
         }
 
-        private unsafe static bool UnboxAnyTypeCompare(EEType *pEEType, EEType *ptrUnboxToEEType)
+        private static unsafe bool UnboxAnyTypeCompare(EEType* pEEType, EEType* ptrUnboxToEEType)
         {
-            bool result = false;
+            if (TypeCast.AreTypesEquivalent(pEEType, ptrUnboxToEEType))
+                return true;
 
-            if (pEEType->CorElementType == ptrUnboxToEEType->CorElementType)
+            if (pEEType->ElementType == ptrUnboxToEEType->ElementType)
             {
-                result = TypeCast.AreTypesEquivalentInternal(pEEType, ptrUnboxToEEType);
-
-                if (!result)
+                // Enum's and primitive types should pass the UnboxAny exception cases
+                // if they have an exactly matching cor element type.
+                switch (ptrUnboxToEEType->ElementType)
                 {
-                    // Enum's and primitive types should pass the UnboxAny exception cases
-                    // if they have an exactly matching cor element type.
-                    switch (ptrUnboxToEEType->CorElementType)
-                    {
-                        case TypeCast.CorElementType.ELEMENT_TYPE_I1:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_U1:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_I2:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_U2:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_I4:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_U4:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_I8:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_U8:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_I:
-                        case TypeCast.CorElementType.ELEMENT_TYPE_U:
-                            result = true;
-                            break;
-                    }
+                    case EETypeElementType.Byte:
+                    case EETypeElementType.SByte:
+                    case EETypeElementType.Int16:
+                    case EETypeElementType.UInt16:
+                    case EETypeElementType.Int32:
+                    case EETypeElementType.UInt32:
+                    case EETypeElementType.Int64:
+                    case EETypeElementType.UInt64:
+                    case EETypeElementType.IntPtr:
+                    case EETypeElementType.UIntPtr:
+                        return true;
                 }
             }
 
-            return result;
+            return false;
         }
 
         [RuntimeExport("RhUnboxAny")]
-        public unsafe static void RhUnboxAny(object o, ref Hack_o_p data, EETypePtr pUnboxToEEType)
+        public static unsafe void RhUnboxAny(object o, ref byte data, EETypePtr pUnboxToEEType)
         {
             EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
             if (ptrUnboxToEEType->IsValueType)
             {
-                // HACK: we would really want to take the address of o here,
-                // but the rules of the C# language don't let us do that,
-                // so we arrive at the same result by taking the address of p
-                // and going back one pointer-sized unit
-                fixed (IntPtr* pData = &data.p)
+                bool isValid = false;
+
+                if (ptrUnboxToEEType->IsNullable)
                 {
-                    bool isValid = false;
-
-                    if (ptrUnboxToEEType->IsNullable)
-                        isValid = (o == null) || TypeCast.AreTypesEquivalentInternal(o.EEType, ptrUnboxToEEType->GetNullableType());
-                    else if (o != null)
-                    {
-                        isValid = UnboxAnyTypeCompare(o.EEType, ptrUnboxToEEType);
-                    }
-
-                    if (!isValid)
-                    {
-                        // Throw the invalid cast exception defined by the classlib, using the input unbox EEType* 
-                        // to find the correct classlib.
-
-                        ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
-
-                        IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
-                        Exception e = EH.GetClasslibException(exID, addr);
-
-                        BinderIntrinsics.TailCall_RhpThrowEx(e);
-                    }
-                    InternalCalls.RhUnbox(o, pData - 1, ptrUnboxToEEType);
-                }
-            }
-            else
-            {
-                if (o == null || (TypeCast.IsInstanceOf(o, ptrUnboxToEEType) != null))
-                {
-                    data.o = o;
+                    isValid = (o == null) || TypeCast.AreTypesEquivalent(o.EEType, ptrUnboxToEEType->NullableType);
                 }
                 else
                 {
-                    IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
-                    Exception e = EH.GetClasslibException(ExceptionIDs.InvalidCast, addr);
-
-                    BinderIntrinsics.TailCall_RhpThrowEx(e);
+                    isValid = (o != null) && UnboxAnyTypeCompare(o.EEType, ptrUnboxToEEType);
                 }
+
+                if (!isValid)
+                {
+                    // Throw the invalid cast exception defined by the classlib, using the input unbox EEType* 
+                    // to find the correct classlib.
+
+                    ExceptionIDs exID = o == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
+
+                    throw ptrUnboxToEEType->GetClasslibException(exID);
+                }
+
+                RhUnbox(o, ref data, ptrUnboxToEEType);
+            }
+            else
+            {
+                if (o != null && (TypeCast.IsInstanceOf(ptrUnboxToEEType, o) == null))
+                {
+                    throw ptrUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
+                }
+
+                Unsafe.As<byte, object>(ref data) = o;
             }
         }
 
-#if CORERT
         //
         // Unbox helpers with RyuJIT conventions
         //
         [RuntimeExport("RhUnbox2")]
-        static public unsafe void* RhUnbox2(EETypePtr pUnboxToEEType, Object obj)
+        public static unsafe ref byte RhUnbox2(EEType* pUnboxToEEType, object obj)
         {
-            EEType * ptrUnboxToEEType = (EEType *)pUnboxToEEType.ToPointer();
-            if (obj.EEType != ptrUnboxToEEType)
+            if ((obj == null) || !UnboxAnyTypeCompare(obj.EEType, pUnboxToEEType))
             {
-                // We allow enums and their primtive type to be interchangable
-                if (obj.EEType->CorElementType != ptrUnboxToEEType->CorElementType)
-                {
-                    IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
-                    Exception e = EH.GetClasslibException(ExceptionIDs.InvalidCast, addr);
-
-                    BinderIntrinsics.TailCall_RhpThrowEx(e);
-                }
+                ExceptionIDs exID = obj == null ? ExceptionIDs.NullReference : ExceptionIDs.InvalidCast;
+                throw pUnboxToEEType->GetClasslibException(exID);
             }
-
-            fixed (void* pObject = &obj.m_pEEType)
-            {
-                // CORERT-TODO: This code has GC hole - the method return type should really be byref.
-                // Requires byref returns in C# to fix cleanly (https://github.com/dotnet/roslyn/issues/118)
-                return (IntPtr*)pObject + 1;
-            }
+            return ref obj.GetRawData();
         }
 
         [RuntimeExport("RhUnboxNullable")]
-        static public unsafe void RhUnboxNullable(ref Hack_o_p data, EETypePtr pUnboxToEEType, Object obj)
+        public static unsafe void RhUnboxNullable(ref byte data, EEType* pUnboxToEEType, object obj)
         {
-            EEType* ptrUnboxToEEType = (EEType*)pUnboxToEEType.ToPointer();
-
-            // HACK: we would really want to take the address of o here,
-            // but the rules of the C# language don't let us do that,
-            // so we arrive at the same result by taking the address of p
-            // and going back one pointer-sized unit
-            fixed (IntPtr* pData = &data.p)
+            if ((obj != null) && !TypeCast.AreTypesEquivalent(obj.EEType, pUnboxToEEType->NullableType))
             {
-                if ((obj != null) && (obj.EEType != ptrUnboxToEEType->GetNullableType()))
-                {
-                    IntPtr addr = ptrUnboxToEEType->GetAssociatedModuleAddress();
-                    Exception e = EH.GetClasslibException(ExceptionIDs.InvalidCast, addr);
-
-                    BinderIntrinsics.TailCall_RhpThrowEx(e);
-                }
-                InternalCalls.RhUnbox(obj, pData - 1, ptrUnboxToEEType);
+                throw pUnboxToEEType->GetClasslibException(ExceptionIDs.InvalidCast);
             }
+            RhUnbox(obj, ref data, pUnboxToEEType);
         }
-#endif // CORERT
 
-        [RuntimeExport("RhArrayStoreCheckAny")]
-        static public unsafe void RhArrayStoreCheckAny(object array, ref Hack_o_p data)
+        [RuntimeExport("RhUnbox")]
+        public static unsafe void RhUnbox(object obj, ref byte data, EEType* pUnboxToEEType)
         {
-            if (array == null)
+            // When unboxing to a Nullable the input object may be null.
+            if (obj == null)
             {
+                Debug.Assert(pUnboxToEEType != null && pUnboxToEEType->IsNullable);
+
+                // Set HasValue to false and clear the value (in case there were GC references we wish to stop reporting).
+                InternalCalls.RhpInitMultibyte(
+                    ref data,
+                    0,
+                    pUnboxToEEType->ValueTypeSize);
+
                 return;
             }
 
-            Debug.Assert(array.EEType->IsArray, "first argument must be an array");
+            EEType* pEEType = obj.EEType;
 
-            EEType* arrayElemType = array.EEType->RelatedParameterType;
-            if (arrayElemType->IsValueType)
+            // Can unbox value types only.
+            Debug.Assert(pEEType->IsValueType);
+
+            // A special case is that we can unbox a value type T into a Nullable<T>. It's the only case where
+            // pUnboxToEEType is useful.
+            Debug.Assert((pUnboxToEEType == null) || UnboxAnyTypeCompare(pEEType, pUnboxToEEType) || pUnboxToEEType->IsNullable);
+            if (pUnboxToEEType != null && pUnboxToEEType->IsNullable)
             {
-                return;
+                Debug.Assert(pUnboxToEEType->NullableType->IsEquivalentTo(pEEType));
+
+                // Set the first field of the Nullable to true to indicate the value is present.
+                Unsafe.As<byte, bool>(ref data) = true;
+
+                // Adjust the data pointer so that it points at the value field in the Nullable.
+                data = ref Unsafe.Add(ref data, pUnboxToEEType->NullableValueOffset);
             }
 
-            TypeCast.CheckArrayStore(array, data.o);
-        }
+            ref byte fields = ref obj.GetRawData();
 
-        [RuntimeExport("RhBoxAndNullCheck")]
-        static public unsafe bool RhBoxAndNullCheck(ref Hack_o_p data, EETypePtr pEEType)
-        {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            if (ptrEEType->IsValueType)
-                return true;
-            else
-                return data.o != null;
-        }
-
-#pragma warning disable 169 // The field 'System.Runtime.RuntimeExports.Wrapper.o' is never used. 
-        private class Wrapper
-        {
-            private Object _o;
-        }
-#pragma warning restore 169
-
-        [RuntimeExport("RhAllocLocal")]
-        public unsafe static object RhAllocLocal(EETypePtr pEEType)
-        {
-            EEType* ptrEEType = (EEType*)pEEType.ToPointer();
-            if (ptrEEType->IsValueType)
+            if (pEEType->HasGCPointers)
             {
-#if FEATURE_64BIT_ALIGNMENT
-                if (ptrEEType->RequiresAlign8)
-                    return InternalCalls.RhpNewFastMisalign(ptrEEType);
-#endif
-                return InternalCalls.RhpNewFast(ptrEEType);
+                // Copy the boxed fields into the new location in a GC safe manner
+                InternalCalls.RhBulkMoveWithWriteBarrier(ref data, ref fields, pEEType->ValueTypeSize);
             }
             else
-                return new Wrapper();
+            {
+                // Copy the boxed fields into the new location.
+                fixed (byte *pData = &data)
+                    fixed (byte* pFields = &fields)
+                        InternalCalls.memmove(pData, pFields, pEEType->ValueTypeSize);
+            }
         }
 
         [RuntimeExport("RhMemberwiseClone")]
-        public unsafe static object RhMemberwiseClone(object src)
+        public static unsafe object RhMemberwiseClone(object src)
         {
             object objClone;
 
             if (src.EEType->IsArray)
-                objClone = RhNewArray(new EETypePtr((IntPtr)src.EEType), src.GetArrayLength());
+                objClone = RhNewArray(src.EEType, Unsafe.As<Array>(src).Length);
             else
-                objClone = RhNewObject(new EETypePtr((IntPtr)src.EEType));
+                objClone = RhNewObject(src.EEType);
 
             InternalCalls.RhpCopyObjectContents(objClone, src);
 
@@ -387,189 +300,24 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhpReversePInvokeBadTransition")]
-        public static void RhpReversePInvokeBadTransition()
+        public static void RhpReversePInvokeBadTransition(IntPtr returnAddress)
         {
-#if CORERT
-            EH.FallbackFailFast(RhFailFastReason.IllegalNativeCallableEntry, null);
-#else
-            IntPtr returnAddress = BinderIntrinsics.GetReturnAddress();
-            if (returnAddress != IntPtr.Zero)
-            {
-                EH.FailFastViaClasslib(
-                    RhFailFastReason.IllegalNativeCallableEntry,
-                    null,
-                    returnAddress);
-            }
-            else
-            {
-                // @HACKHACK: we need to force the method to have an EBP frame so that we can use the
-                // GetReturnAddress() intrinsic above.  This seems to be the smallest way to do this.
-                EH.FallbackFailFast(RhFailFastReason.InternalError, null);
-                throw EH.GetClasslibException(ExceptionIDs.Arithmetic, returnAddress);
-            }
-#endif
+            EH.FailFastViaClasslib(
+                RhFailFastReason.IllegalUnmanagedCallersOnlyEntry,
+                null,
+                returnAddress);
         }
 
-        // EEType interrogation methods.
-
-        [RuntimeExport("RhGetRelatedParameterType")]
-        public static unsafe EETypePtr RhGetRelatedParameterType(EETypePtr ptrEEType)
+        [RuntimeExport("RhGetCurrentThreadStackTrace")]
+        [MethodImpl(MethodImplOptions.NoInlining)] // Ensures that the RhGetCurrentThreadStackTrace frame is always present
+        public static unsafe int RhGetCurrentThreadStackTrace(IntPtr[] outputBuffer)
         {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return new EETypePtr((IntPtr)pEEType->RelatedParameterType);
+            fixed (IntPtr* pOutputBuffer = outputBuffer)
+                return RhpGetCurrentThreadStackTrace(pOutputBuffer, (uint)((outputBuffer != null) ? outputBuffer.Length : 0));
         }
 
-        [RuntimeExport("RhGetNonArrayBaseType")]
-        public static unsafe EETypePtr RhGetNonArrayBaseType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return new EETypePtr((IntPtr)pEEType->NonArrayBaseType);
-        }
-
-        [RuntimeExport("RhGetComponentSize")]
-        public static unsafe ushort RhGetComponentSize(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->ComponentSize;
-        }
-
-        [RuntimeExport("RhGetNumInterfaces")]
-        public static unsafe uint RhGetNumInterfaces(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return (uint)pEEType->NumInterfaces;
-        }
-
-        [RuntimeExport("RhGetInterface")]
-        public static unsafe EETypePtr RhGetInterface(EETypePtr ptrEEType, uint index)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-
-            // The convoluted pointer arithmetic into the interface map below (rather than a simply array
-            // dereference) is because C# will generate a 64-bit multiply for the lookup by default. This
-            // causes us a problem on x86 because it uses a helper that's mapped directly into the CRT via
-            // import magic and that technique doesn't work with the way we link this code into the runtime
-            // image. Since we don't need a 64-bit multiply here (the classlib is trusted code) we manually
-            // perform the calculation.
-            EEInterfaceInfo* pInfo = (EEInterfaceInfo*)((byte*)pEEType->InterfaceMap + (index * (uint)sizeof(EEInterfaceInfo)));
-
-            return new EETypePtr((IntPtr)pInfo->InterfaceType);
-        }
-
-        [RuntimeExport("RhSetInterface")]
-        public static unsafe void RhSetInterface(EETypePtr ptrEEType, int index, EETypePtr ptrInterfaceEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            EEType* pInterfaceEEType = ptrInterfaceEEType.ToPointer();
-            pEEType->InterfaceMap[index].InterfaceType = pInterfaceEEType;
-        }
-
-        [RuntimeExport("RhIsDynamicType")]
-        public static unsafe bool RhIsDynamicType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->IsDynamicType;
-        }
-
-        [RuntimeExport("RhHasCctor")]
-        public static unsafe bool RhHasCctor(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->HasCctor;
-        }
-
-        [RuntimeExport("RhIsValueType")]
-        public static unsafe bool RhIsValueType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->IsValueType;
-        }
-
-        [RuntimeExport("RhIsInterface")]
-        public static unsafe bool RhIsInterface(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->IsInterface;
-        }
-
-        [RuntimeExport("RhIsArray")]
-        public static unsafe bool RhIsArray(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->IsArray;
-        }
-
-        [RuntimeExport("RhIsString")]
-        public static unsafe bool RhIsString(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            // String is currently the only non-array type with a non-zero component size.
-            return (pEEType->ComponentSize == sizeof(char)) && !pEEType->IsArray;
-        }
-
-        [RuntimeExport("RhIsNullable")]
-        public static unsafe bool RhIsNullable(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->IsNullable;
-        }
-
-        [RuntimeExport("RhGetNullableType")]
-        public static unsafe EETypePtr RhGetNullableType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return new EETypePtr((IntPtr)pEEType->GetNullableType());
-        }
-
-        [RuntimeExport("RhHasReferenceFields")]
-        public static unsafe bool RhHasReferenceFields(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->HasReferenceFields;
-        }
-
-        [RuntimeExport("RhGetCorElementType")]
-        public static unsafe byte RhGetCorElementType(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return (byte)pEEType->CorElementType;
-        }
-
-        public enum RhEETypeClassification
-        {
-            Regular,                // Object, String, Int32
-            Array,                  // String[]
-            Generic,                // List<Int32>
-            GenericTypeDefinition,  // List<T>
-            UnmanagedPointer,       // void*
-        }
-
-        [RuntimeExport("RhGetEETypeClassification")]
-        public static unsafe RhEETypeClassification RhGetEETypeClassification(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-
-            if (pEEType->IsArray)
-                return RhEETypeClassification.Array;
-
-            if (pEEType->IsGeneric)
-                return RhEETypeClassification.Generic;
-
-            if (pEEType->IsGenericTypeDefinition)
-                return RhEETypeClassification.GenericTypeDefinition;
-
-            if (pEEType->IsPointerTypeDefinition)
-                return RhEETypeClassification.UnmanagedPointer;
-
-            return RhEETypeClassification.Regular;
-        }
-
-        [RuntimeExport("RhGetEETypeHash")]
-        public static unsafe uint RhGetEETypeHash(EETypePtr ptrEEType)
-        {
-            EEType* pEEType = ptrEEType.ToPointer();
-            return pEEType->HashCode;
-        }
+        [DllImport(Redhawk.BaseName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern unsafe int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength);
 
         // Worker for RhGetCurrentThreadStackTrace.  RhGetCurrentThreadStackTrace just allocates a transition
         // frame that will be used to seed the stack trace and this method does all the real work.
@@ -583,26 +331,29 @@ namespace System.Runtime
         // NOTE: We don't want to allocate the array on behalf of the caller because we don't know which class
         // library's objects the caller understands (we support multiple class libraries with multiple root
         // System.Object types).
-        [RuntimeExport("RhpCalculateStackTraceWorker")]
-        public static unsafe int RhpCalculateStackTraceWorker(IntPtr[] outputBuffer)
+        [UnmanagedCallersOnly(EntryPoint = "RhpCalculateStackTraceWorker", CallingConvention = CallingConvention.Cdecl)]
+        private static unsafe int RhpCalculateStackTraceWorker(IntPtr* pOutputBuffer, uint outputBufferLength)
         {
-            int nFrames = 0;
-            bool success = (outputBuffer != null);
+            uint nFrames = 0;
+            bool success = true;
 
             StackFrameIterator frameIter = new StackFrameIterator();
+
             bool isValid = frameIter.Init(null);
-            for (; isValid; isValid = frameIter.Next())
+            Debug.Assert(isValid, "Missing RhGetCurrentThreadStackTrace frame");
+
+            // Note that the while loop will skip RhGetCurrentThreadStackTrace frame
+            while (frameIter.Next())
             {
-                if (outputBuffer != null)
-                {
-                    if (nFrames < outputBuffer.Length)
-                        outputBuffer[nFrames] = new IntPtr(frameIter.ControlPC);
-                    else
-                        success = false;
-                }
+                if (nFrames < outputBufferLength)
+                    pOutputBuffer[nFrames] = new IntPtr(frameIter.ControlPC);
+                else
+                    success = false;
+
                 nFrames++;
             }
-            return success ? nFrames : -nFrames;
+
+            return success ? (int)nFrames : -(int)nFrames;
         }
 
         // The GC conservative reporting descriptor is a special structure of data that the GC
@@ -643,7 +394,7 @@ namespace System.Runtime
             regionDesc->_regionPointerHigh = regionPointerHigh;
 
             // Activate the region for processing
-#if BIT64
+#if TARGET_64BIT
             ulong hash = ConservativelyReportedRegionDesc.MagicNumber64;
             hash = ((hash << 13) ^ hash) ^ (ulong)regionPointerLow;
             hash = ((hash << 13) ^ hash) ^ (ulong)regionPointerHigh;
@@ -665,6 +416,42 @@ namespace System.Runtime
         public static unsafe void RhDisableConservativeReportingRegion(ConservativelyReportedRegionDesc* regionDesc)
         {
             regionDesc->_magic = default(UIntPtr);
+        }
+
+        [RuntimeExport("RhCreateThunksHeap")]
+        public static object RhCreateThunksHeap(IntPtr commonStubAddress)
+        {
+            return ThunksHeap.CreateThunksHeap(commonStubAddress);
+        }
+
+        [RuntimeExport("RhAllocateThunk")]
+        public static IntPtr RhAllocateThunk(object thunksHeap)
+        {
+            return ((ThunksHeap)thunksHeap).AllocateThunk();
+        }
+
+        [RuntimeExport("RhFreeThunk")]
+        public static void RhFreeThunk(object thunksHeap, IntPtr thunkAddress)
+        {
+            ((ThunksHeap)thunksHeap).FreeThunk(thunkAddress);
+        }
+
+        [RuntimeExport("RhSetThunkData")]
+        public static void RhSetThunkData(object thunksHeap, IntPtr thunkAddress, IntPtr context, IntPtr target)
+        {
+            ((ThunksHeap)thunksHeap).SetThunkData(thunkAddress, context, target);
+        }
+
+        [RuntimeExport("RhTryGetThunkData")]
+        public static bool RhTryGetThunkData(object thunksHeap, IntPtr thunkAddress, out IntPtr context, out IntPtr target)
+        {
+            return ((ThunksHeap)thunksHeap).TryGetThunkData(thunkAddress, out context, out target);
+        }
+
+        [RuntimeExport("RhGetThunkSize")]
+        public static int RhGetThunkSize()
+        {
+            return InternalCalls.RhpGetThunkSize();
         }
     }
 }

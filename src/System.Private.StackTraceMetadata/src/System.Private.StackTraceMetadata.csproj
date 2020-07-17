@@ -1,0 +1,33 @@
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName Condition="'$(AssemblyName)' == ''">System.Private.StackTraceMetadata</AssemblyName>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.Reflection.Metadata\src\System.Private.Reflection.Metadata.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' != 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' != 'true'" Include="..\..\System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' == 'true'" Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.Experimental.csproj" />
+    <ProjectReference Condition="'$(DynamicCodeSupport)' == 'true'" Include="..\..\System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.Experimental.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+    <Compile Include="Internal\StackTraceMetadata\StackTraceMetadata.cs" />
+    <Compile Include="Internal\StackTraceMetadata\MethodNameFormatter.cs" />
+    <Compile Include="..\..\Common\src\Internal\Runtime\MetadataBlob.cs">
+      <Link>Internal\Runtime\MetadataBlob.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
+      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

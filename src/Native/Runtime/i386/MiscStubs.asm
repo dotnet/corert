@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
         .586
         .model  flat
@@ -9,44 +8,11 @@
 
 include AsmMacros.inc
 
-EXTERN @RhpShutdownHelper@4     : PROC
 EXTERN @GetClasslibCCtorCheck@4 : PROC
 EXTERN _memcpy                  : PROC
 EXTERN _memcpyGCRefs            : PROC
 EXTERN _memcpyGCRefsWithWriteBarrier  : PROC
 EXTERN _memcpyAnyWithWriteBarrier     : PROC
-
-;;
-;; Currently called only from a managed executable once Main returns, this routine does whatever is needed to
-;; cleanup managed state before exiting. This routine never returns.
-;;
-;;  Input:
-;;      ecx : Process exit code
-;;
-FASTCALL_FUNC RhpShutdown, 4
-
-        ;; Build an EBP frame, mostly so we get a good stack trace during debugging.
-        push        ebp
-        mov         ebp, esp
-
-        ;; edx = GetThread(), TRASHES eax
-        INLINE_GETTHREAD edx, eax
-
-        ;; Save managed state in a frame and update the thread so it can find this frame once we transition to
-        ;; pre-emptive mode in the garbage collection.
-        PUSH_COOP_PINVOKE_FRAME edx
-
-        ;; Call the bulk of the helper implemented in C++. Takes the exit code already in ecx.
-        call    @RhpShutdownHelper@4
-
-        ;; Restore register state.
-        POP_COOP_PINVOKE_FRAME
-
-        ;; Epilog, tear down EBP frame and return.
-        pop         ebp
-        ret
-
-FASTCALL_ENDFUNC
 
 ;;
 ;; Checks whether the static class constructor for the type indicated by the context structure has been
@@ -131,49 +97,6 @@ RhpCheckCctor2__SlowPath:
 
 FASTCALL_ENDFUNC
 
-;;
-;; Input:
-;;      ecx: address of location on stack containing return address.
-;;      
-;; Outpt:
-;;      eax: proper (unhijacked) return address
-;;
-;; Trashes: ecx, edx
-;;
-FASTCALL_FUNC RhpLoadReturnAddress, 0
-
-        INLINE_GETTHREAD   eax, edx
-        cmp     ecx, [eax + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
-        je      GetHijackedReturnAddress
-        mov     eax, [ecx]
-        ret
-
-GetHijackedReturnAddress:
-        mov     eax, [eax + OFFSETOF__Thread__m_pvHijackedReturnAddress]
-        ret
-
-FASTCALL_ENDFUNC
-
-;;
-;; ECX = output buffer (an IntPtr[] managed object)
-;;
-FASTCALL_FUNC RhGetCurrentThreadStackTrace, 4
-
-        push        ebp
-        mov         ebp, esp
-
-        INLINE_GETTHREAD edx, eax       ; edx <- thread, eax <- trashed
-        PUSH_COOP_PINVOKE_FRAME edx
-
-        ;; pass-through argument registers
-        call        RhpCalculateStackTraceWorker
-
-        POP_COOP_PINVOKE_FRAME
-
-        pop         ebp
-        ret
-
-FASTCALL_ENDFUNC
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -343,5 +266,36 @@ NothingToCopy:
         ret
 
 _RhpCopyAnyWithWriteBarrier ENDP
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; The following helper will access ("probe") a word on each page of the stack
+; starting with the page right beneath esp down to the one pointed to by eax.
+; The procedure is needed to make sure that the "guard" page is pushed down below the allocated stack frame.
+; The call to the helper will be emitted by JIT in the function prolog when large (larger than 0x3000 bytes) stack frame is required.
+;
+; NOTE: this helper will modify a value of esp and must establish the frame pointer.
+PAGE_SIZE equ 1000h
+
+_RhpStackProbe PROC public
+    ; On entry:
+    ;   eax - the lowest address of the stack frame being allocated (i.e. [InitialSp - FrameSize])
+    ;
+    ; NOTE: this helper will probe at least one page below the one pointed by esp.
+    push    ebp
+    mov     ebp, esp
+
+    and     esp, -PAGE_SIZE      ; esp points to the **lowest address** on the last probed page
+                                 ; This is done to make the loop end condition simpler.
+ProbeLoop:
+    sub     esp, PAGE_SIZE       ; esp points to the lowest address of the **next page** to probe
+    test    [esp], eax           ; esp points to the lowest address on the **last probed** page
+    cmp     esp, eax
+    jg      ProbeLoop            ; if esp > eax, then we need to probe at least one more page.
+
+    mov     esp, ebp
+    pop     ebp
+    ret
+
+_RhpStackProbe ENDP
 
 end

@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
 #include "AsmMacros.h"
 
@@ -58,8 +57,15 @@ LNoFloatingPoint
         ;; Note that remoting expect target in r4.
         ldr     r4, [r5,#OFFSETOF__CallDescrData__pTarget]
         blx     r4
-    LABELED_RETURN_ADDRESS ReturnFromCallDescrThunk
 
+        EXPORT_POINTER_TO_ADDRESS PointerToReturnFromCallDescrThunk
+
+        ;; Symbol used to identify thunk call to managed function so the special
+        ;; case unwinder can unwind through this function. Sadly we cannot directly
+        ;; export this symbol right now because it confuses DIA unwinder to believe
+        ;; it's the beginning of a new method, therefore we export the address
+        ;; of an auxiliary variable holding the address instead.
+        
         ldr     r3, [r5,#OFFSETOF__CallDescrData__fpReturnSize]
 
         ;; Save FP return value if appropriate

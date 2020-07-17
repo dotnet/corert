@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This header contains the definition of an interface between the GC/HandleTable portions of the Redhawk
@@ -25,7 +24,7 @@ extern "C" unsigned char *g_lowest_address;
 extern "C" unsigned char *g_highest_address;
 #endif
 
-struct alloc_context;
+struct gc_alloc_context;
 class MethodInfo;
 struct REGDISPLAY;
 class Thread;
@@ -84,12 +83,6 @@ typedef int (*GcScanObjectFunction)(void*, void*);
 //      void ScanFunction(Object** pRoot, void* pContext)
 typedef void (*GcScanRootFunction)(void**, void*);
 
-// Heap scans are scheduled by setting the following global variables and then triggering a full garbage
-// collection. This requires careful synchronization. See the implementation of RedhawkGCInterface::ScanHeap
-// for details.
-extern GcScanObjectFunction g_pfnHeapScan;
-extern void * g_pvHeapScanContext;
-
 typedef void * GcSegmentHandle;
 
 #define RH_LARGE_OBJECT_SIZE 85000
@@ -109,35 +102,12 @@ typedef void * GcSegmentHandle;
 class RedhawkGCInterface
 {
 public:
-    enum GCType
-    {
-        GCType_Workstation,
-        GCType_Server,
-    };
-
     // Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in
-    // gcrhenv. The enum parameter is used to choose between workstation and server GC.
-    // Returns true on success or false if a subsystem failed to initialize.
-    // todo: figure out the final error reporting strategy
-    static bool InitializeSubsystems(GCType gcType);
+    // gcrhenv. Returns true on success or false if a subsystem failed to initialize.
+    static bool InitializeSubsystems();
 
-    // Allocate an object on the GC heap.
-    //  pThread         -  current Thread
-    //  cbSize          -  size in bytes of the final object
-    //  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
-    //  pEEType         -  type of the object
-    // Returns a pointer to the object allocated or NULL on failure.
-    static void* Alloc(Thread *pThread, UIntNative cbSize, UInt32 uFlags, EEType *pEEType);
-
-    // Allocate an object on the large GC heap. Used when you want to force an allocation on the large heap
-    // that wouldn't normally go there (e.g. objects containing double fields).
-    //  cbSize          -  size in bytes of the final object
-    //  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
-    // Returns a pointer to the object allocated or NULL on failure.
-    static void* AllocLarge(UIntNative cbSize, UInt32 uFlags);
-
-    static void InitAllocContext(alloc_context * pAllocContext);
-    static void ReleaseAllocContext(alloc_context * pAllocContext);
+    static void InitAllocContext(gc_alloc_context * pAllocContext);
+    static void ReleaseAllocContext(gc_alloc_context * pAllocContext);
 
     static void WaitForGCCompletion();
 
@@ -147,7 +117,7 @@ public:
 
     static void EnumGcRefs(ICodeManager * pCodeManager,
                            MethodInfo * pMethodInfo, 
-                           UInt32 codeOffset,
+                           PTR_VOID safePointAddress,
                            REGDISPLAY * pRegisterSet,
                            void * pfnEnumCallback,
                            void * pvCallbackData);
@@ -157,8 +127,8 @@ public:
                                                  void * pfnEnumCallback,
                                                  void * pvCallbackData);
 
-    static GcSegmentHandle RegisterFrozenSection(void * pSection, UInt32 SizeSection);
-    static void UnregisterFrozenSection(GcSegmentHandle segment);
+    static GcSegmentHandle RegisterFrozenSegment(void * pSection, size_t SizeSection);
+    static void UnregisterFrozenSegment(GcSegmentHandle segment);
 
 #ifdef FEATURE_GC_STRESS
     static void StressGc();
@@ -166,23 +136,10 @@ public:
 
     // Various routines used to enumerate objects contained within a given scope (on the GC heap, as reference
     // fields of an object, on a thread stack, in a static or in one of the handle tables).
-    static void ScanHeap(GcScanObjectFunction pfnScanCallback, void *pContext);
     static void ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext);
     static void ScanStackRoots(Thread *pThread, GcScanRootFunction pfnScanCallback, void *pContext);
     static void ScanStaticRoots(GcScanRootFunction pfnScanCallback, void *pContext);
     static void ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext);
-
-    // These three methods may only be called from a point at which the runtime is suspended.
-    // Currently, this is used by the VSD infrastructure on a SyncClean::CleanUp callback
-    // from the GC when a collection is complete.
-    static bool IsScanInProgress();
-    static GcScanObjectFunction GetCurrentScanCallbackFunction();
-    static void* GetCurrentScanContext();
-
-    // If the class library has requested it, call this method on clean shutdown (i.e. return from Main) to
-    // perform a final pass of finalization where all finalizable objects are processed regardless of whether
-    // they are still rooted.
-    static void ShutdownFinalization();
 
     // Returns size GCDesc. Used by type cloning.
     static UInt32 GetGCDescSize(void * pType);
@@ -191,11 +148,21 @@ public:
     static EEType * GetLastAllocEEType();
     static void SetLastAllocEEType(EEType *pEEType);
 
+    static uint64_t GetDeadThreadsNonAllocBytes();
+
+    // Used by debugger hook
+    static void* CreateTypedHandle(void* object, int type);
+    static void DestroyTypedHandle(void* handle);
+
 private:
     // The EEType for the last allocation.  This value is used inside of the GC allocator
     // to emit allocation ETW events with type information.  We set this value unconditionally to avoid
     // race conditions where ETW is enabled after the value is set.
     DECLSPEC_THREAD static EEType * tls_pLastAllocationEEType;
+
+    // Tracks the amount of bytes that were reserved for threads in their gc_alloc_context and went unused when they died.
+    // Used for GC.GetTotalAllocatedBytes
+    static uint64_t s_DeadThreadsNonAllocBytes;
 };
 
 #endif // __GCRHINTERFACE_INCLUDED

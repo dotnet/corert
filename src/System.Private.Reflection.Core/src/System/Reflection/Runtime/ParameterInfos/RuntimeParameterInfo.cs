@@ -1,27 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-
-using global::System.Reflection.Runtime.CustomAttributes;
-
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Reflection.Extensibility;
-
-using global::Internal.Metadata.NativeFormat;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace System.Reflection.Runtime.ParameterInfos
 {
     //
     // Abstract base for all ParameterInfo objects created by the Runtime.
     //
-    internal abstract class RuntimeParameterInfo : ExtensibleParameterInfo
+    internal abstract partial class RuntimeParameterInfo : ParameterInfo
     {
         protected RuntimeParameterInfo(MemberInfo member, int position)
         {
@@ -32,15 +22,15 @@ namespace System.Reflection.Runtime.ParameterInfos
         public abstract override ParameterAttributes Attributes { get; }
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
         public abstract override Object DefaultValue { get; }
+        public abstract override object RawDefaultValue { get; }
 
         public sealed override bool Equals(Object obj)
         {
-            RuntimeParameterInfo other = obj as RuntimeParameterInfo;
-            if (other == null)
+            if (!(obj is RuntimeParameterInfo other))
                 return false;
-            if (this._position != other._position)
+            if (_position != other._position)
                 return false;
-            if (!(this._member.Equals(other._member)))
+            if (!(_member.Equals(other._member)))
                 return false;
             return true;
         }
@@ -50,7 +40,16 @@ namespace System.Reflection.Runtime.ParameterInfos
             return _member.GetHashCode();
         }
 
+        public abstract override Type[] GetOptionalCustomModifiers();
+
+        public abstract override Type[] GetRequiredCustomModifiers();
+
         public abstract override bool HasDefaultValue { get; }
+
+        public abstract override int MetadataToken
+        {
+            get;
+        }
 
         public sealed override MemberInfo Member
         {
@@ -80,16 +79,8 @@ namespace System.Reflection.Runtime.ParameterInfos
         // "ParameterType.ToString()".
         internal abstract String ParameterTypeString { get; }
 
-        protected ReflectionDomain ReflectionDomain
-        {
-            get
-            {
-                return ReflectionCoreExecution.ExecutionDomain; //@TODO: User Reflection Domains not yet supported.
-            }
-        }
-
-        private MemberInfo _member;
-        private int _position;
+        private readonly MemberInfo _member;
+        private readonly int _position;
     }
 }
 

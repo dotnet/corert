@@ -1,24 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Collections.Concurrent;
-using global::System.Reflection.Runtime.Types;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Assemblies;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.LowLevelLinq;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-
-using global::Internal.Reflection.Tracing;
-
-using global::Internal.Metadata.NativeFormat;
+using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
@@ -26,36 +16,18 @@ namespace System.Reflection.Runtime.TypeInfos
     // TypeInfos that represent type definitions (i.e. Foo or Foo<>, but not Foo<int> or arrays/pointers/byrefs.)
     // 
     //
-    internal sealed partial class RuntimeNamedTypeInfo : RuntimeTypeInfo, IEquatable<RuntimeNamedTypeInfo>
+    internal abstract partial class RuntimeNamedTypeInfo : RuntimeTypeDefinitionTypeInfo, IEquatable<RuntimeNamedTypeInfo>
     {
-        private RuntimeNamedTypeInfo(MetadataReader reader, TypeDefinitionHandle typeDefinitionHandle)
+        protected RuntimeNamedTypeInfo(RuntimeTypeHandle typeHandle)
         {
-            _reader = reader;
-            _typeDefinitionHandle = typeDefinitionHandle;
-            _typeDefinition = _typeDefinitionHandle.GetTypeDefinition(reader);
+            _typeHandle = typeHandle;
         }
 
-        public sealed override Assembly Assembly
+        public sealed override bool ContainsGenericParameters
         {
             get
             {
-                // If an assembly is split across multiple metadata blobs then the defining scope may
-                // not be the canonical scope representing the assembly. We need to look up the assembly
-                // by name to ensure we get the right one.
-
-                ScopeDefinitionHandle scopeDefinitionHandle = NamespaceChain.DefiningScope;
-                RuntimeAssemblyName runtimeAssemblyName = scopeDefinitionHandle.ToRuntimeAssemblyName(_reader);
-
-                return RuntimeAssembly.GetRuntimeAssembly(this.ReflectionDomain, runtimeAssemblyName);
-            }
-        }
-
-        public sealed override TypeAttributes Attributes
-        {
-            get
-            {
-                TypeAttributes attr = _typeDefinition.Flags;
-                return attr;
+                return IsGenericTypeDefinition;
             }
         }
 
@@ -68,92 +40,34 @@ namespace System.Reflection.Runtime.TypeInfos
                     ReflectionTrace.TypeInfo_CustomAttributes(this);
 #endif
 
-                IEnumerable<CustomAttributeData> customAttributes = RuntimeCustomAttributeData.GetCustomAttributes(this.ReflectionDomain, _reader, _typeDefinition.CustomAttributes);
-                foreach (CustomAttributeData cad in customAttributes)
+                foreach (CustomAttributeData cad in TrueCustomAttributes)
                     yield return cad;
-                ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _typeDefinitionHandle))
-                    {
-                        yield return cad;
-                    }
-                }
+
+                if (0 != (Attributes & TypeAttributes.Import))
+                    yield return new RuntimePseudoCustomAttributeData(typeof(ComImportAttribute), null, null);
             }
-        }
-
-        public sealed override IEnumerable<TypeInfo> DeclaredNestedTypes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.TypeInfo_DeclaredNestedTypes(this);
-#endif
-
-                foreach (TypeDefinitionHandle nestedTypeHandle in _typeDefinition.NestedTypes)
-                {
-                    yield return RuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(_reader, nestedTypeHandle);
-                }
-            }
-        }
-
-        public sealed override bool Equals(Object obj)
-        {
-            if (Object.ReferenceEquals(this, obj))
-                return true;
-
-            RuntimeNamedTypeInfo other = obj as RuntimeNamedTypeInfo;
-            if (!Equals(other))
-                return false;
-            return true;
         }
 
         public bool Equals(RuntimeNamedTypeInfo other)
         {
-            if (other == null)
-                return false;
-            if (this._reader != other._reader)
-                return false;
-            if (!(this._typeDefinitionHandle.Equals(other._typeDefinitionHandle)))
-                return false;
-            return true;
+            // RuntimeTypeInfo.Equals(object) is the one that encapsulates our unification strategy so defer to him.
+            object otherAsObject = other;
+            return base.Equals(otherAsObject);
         }
 
-        public sealed override int GetHashCode()
-        {
-            return _typeDefinitionHandle.GetHashCode();
-        }
+        /// <summary>
+        /// Override this function to read the Guid attribute from a type's metadata. If the attribute
+        /// is not present, or isn't parseable, return null. Should be overriden by metadata specific logic
+        /// </summary>
+        protected abstract Guid? ComputeGuidFromCustomAttributes();
 
         public sealed override Guid GUID
         {
             get
             {
-                //
-                // Look for a [Guid] attribute. If found, return that.
-                // 
-                foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
-                {
-                    // We can't reference the GuidAttribute class directly as we don't have an official dependency on System.Runtime.InteropServices.
-                    // Following age-old CLR tradition, we search for the custom attribute using a name-based search. Since this makes it harder
-                    // to be sure we won't run into custom attribute constructors that comply with the GuidAttribute(String) signature, 
-                    // we'll check that it does and silently skip the CA if it doesn't match the expected pattern.
-                    if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.InteropServices", "GuidAttribute"))
-                    {
-                        CustomAttribute ca = cah.GetCustomAttribute(_reader);
-                        IEnumerator<FixedArgumentHandle> fahEnumerator = ca.FixedArguments.GetEnumerator();
-                        if (!fahEnumerator.MoveNext())
-                            continue;
-                        FixedArgumentHandle guidStringArgumentHandle = fahEnumerator.Current;
-                        if (fahEnumerator.MoveNext())
-                            continue;
-                        FixedArgument guidStringArgument = guidStringArgumentHandle.GetFixedArgument(_reader);
-                        String guidString = guidStringArgument.Value.ParseConstantValue(this.ReflectionDomain, _reader) as String;
-                        if (guidString == null)
-                            continue;
-                        return new Guid(guidString);
-                    }
-                }
+                Guid? guidFromAttributes = ComputeGuidFromCustomAttributes();
+                if (guidFromAttributes.HasValue)
+                    return guidFromAttributes.Value;
 
                 //
                 // If we got here, there was no [Guid] attribute.
@@ -166,25 +80,96 @@ namespace System.Reflection.Runtime.TypeInfos
                 // uses the GUID as a dictionary key to look up types.) It will not be the same GUID on multiple runs of the app but so far, there's
                 // no evidence that's needed.
                 //
-                return _namedTypeToGuidTable.GetOrAdd(this).Item1;
+                return s_namedTypeToGuidTable.GetOrAdd(this).Item1;
             }
         }
 
-        public sealed override bool IsGenericTypeDefinition
+        public sealed override string FullName
         {
             get
             {
-                return _typeDefinition.GenericParameters.GetEnumerator().MoveNext();
+#if ENABLE_REFLECTION_TRACE
+                if (ReflectionTrace.Enabled)
+                    ReflectionTrace.TypeInfo_FullName(this);
+#endif
+
+                Debug.Assert(!IsConstructedGenericType);
+                Debug.Assert(!IsGenericParameter);
+                Debug.Assert(!HasElementType);
+
+                string name = Name;
+
+                Type declaringType = this.DeclaringType;
+                if (declaringType != null)
+                {
+                    string declaringTypeFullName = declaringType.FullName;
+                    return declaringTypeFullName + "+" + name;
+                }
+
+                string ns = Namespace;
+                if (ns == null)
+                    return name;
+                return ns + "." + name;
             }
         }
 
-        public sealed override bool IsGenericType
+#if DEBUG
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => base.HasSameMetadataDefinitionAs(other);
+#endif
+
+        protected abstract void GetPackSizeAndSize(out int packSize, out int size);
+
+        public sealed override StructLayoutAttribute StructLayoutAttribute
         {
             get
             {
-                return _typeDefinition.GenericParameters.GetEnumerator().MoveNext();
+                const int DefaultPackingSize = 8;
+
+                // Note: CoreClr checks HasElementType and IsGenericParameter in addition to IsInterface but those properties cannot be true here as this
+                // RuntimeTypeInfo subclass is solely for TypeDef types.)
+                if (IsInterface)
+                    return null;
+
+                TypeAttributes attributes = Attributes;
+
+                LayoutKind layoutKind;
+                switch (attributes & TypeAttributes.LayoutMask)
+                {
+                    case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
+                    case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
+                    case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
+                    default: layoutKind = LayoutKind.Auto;  break;
+                }
+
+                CharSet charSet;
+                switch (attributes & TypeAttributes.StringFormatMask)
+                {
+                    case TypeAttributes.AnsiClass: charSet = CharSet.Ansi; break;
+                    case TypeAttributes.AutoClass: charSet = CharSet.Auto; break;
+                    case TypeAttributes.UnicodeClass: charSet = CharSet.Unicode; break;
+                    default: charSet = CharSet.None;  break;
+                }
+
+                int pack;
+                int size;
+                GetPackSizeAndSize(out pack, out size);
+
+                // Metadata parameter checking should not have allowed 0 for packing size.
+                // The runtime later converts a packing size of 0 to 8 so do the same here
+                // because it's more useful from a user perspective. 
+                if (pack == 0)
+                    pack = DefaultPackingSize;
+
+                return new StructLayoutAttribute(layoutKind)
+                {
+                    CharSet = charSet,
+                    Pack = pack,
+                    Size = size,
+                };
             }
         }
+
+        protected abstract IEnumerable<CustomAttributeData> TrueCustomAttributes { get; }
 
         //
         // Returns the anchoring typedef that declares the members that this type wants returned by the Declared*** properties.
@@ -208,60 +193,13 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override RuntimeType[] RuntimeGenericTypeParameters
+        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => true;
+
+        internal sealed override RuntimeTypeHandle InternalTypeHandleIfAvailable
         {
             get
             {
-                LowLevelList<RuntimeType> genericTypeParameters = new LowLevelList<RuntimeType>();
-
-                foreach (GenericParameterHandle genericParameterHandle in _typeDefinition.GenericParameters)
-                {
-                    RuntimeType genericParameterType = RuntimeTypeUnifierEx.GetRuntimeGenericParameterTypeForTypes(this, genericParameterHandle);
-                    genericTypeParameters.Add(genericParameterType);
-                }
-
-                return genericTypeParameters.ToArray();
-            }
-        }
-
-        internal sealed override RuntimeType RuntimeType
-        {
-            get
-            {
-                if (_lazyType == null)
-                {
-                    _lazyType = this.ReflectionDomain.ResolveTypeDefinition(_reader, _typeDefinitionHandle);
-                }
-                return _lazyType;
-            }
-        }
-
-        //
-        // Returns the base type as a typeDef, Ref, or Spec. Default behavior is to QTypeDefRefOrSpec.Null, which causes BaseType to return null.
-        //
-        internal sealed override QTypeDefRefOrSpec TypeRefDefOrSpecForBaseType
-        {
-            get
-            {
-                Handle baseType = _typeDefinition.BaseType;
-                if (baseType.IsNull(_reader))
-                    return QTypeDefRefOrSpec.Null;
-                return new QTypeDefRefOrSpec(_reader, baseType);
-            }
-        }
-
-        //
-        // Returns the *directly implemented* interfaces as typedefs, specs or refs. ImplementedInterfaces will take care of the transitive closure and
-        // insertion of the TypeContext.
-        //
-        internal sealed override QTypeDefRefOrSpec[] TypeRefDefOrSpecsForDirectlyImplementedInterfaces
-        {
-            get
-            {
-                LowLevelList<QTypeDefRefOrSpec> directlyImplementedInterfaces = new LowLevelList<QTypeDefRefOrSpec>();
-                foreach (Handle ifcHandle in _typeDefinition.Interfaces)
-                    directlyImplementedInterfaces.Add(new QTypeDefRefOrSpec(_reader, ifcHandle));
-                return directlyImplementedInterfaces.ToArray();
+                return _typeHandle;
             }
         }
 
@@ -276,85 +214,19 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal MetadataReader Reader
-        {
-            get
-            {
-                return _reader;
-            }
-        }
+#if ENABLE_REFLECTION_TRACE
+        internal abstract string TraceableTypeName { get; }
+#endif
 
-        internal TypeDefinitionHandle TypeDefinitionHandle
-        {
-            get
-            {
-                return _typeDefinitionHandle;
-            }
-        }
+        /// <summary>
+        /// QTypeDefRefOrSpec handle that can be used to re-acquire this type. Must be implemented
+        /// for all metadata sourced type implementations.
+        /// </summary>
+        internal abstract QTypeDefRefOrSpec TypeDefinitionQHandle { get; }
 
-        internal IEnumerable<MethodHandle> DeclaredConstructorHandles
-        {
-            get
-            {
-                foreach (MethodHandle methodHandle in _typeDefinition.Methods)
-                {
-                    if (methodHandle.IsConstructor(_reader))
-                        yield return methodHandle;
-                }
-            }
-        }
+        private readonly RuntimeTypeHandle _typeHandle;
 
-        internal IEnumerable<EventHandle> DeclaredEventHandles
-        {
-            get
-            {
-                return _typeDefinition.Events;
-            }
-        }
-
-        internal IEnumerable<FieldHandle> DeclaredFieldHandles
-        {
-            get
-            {
-                return _typeDefinition.Fields;
-            }
-        }
-
-        internal IEnumerable<MethodHandle> DeclaredMethodAndConstructorHandles
-        {
-            get
-            {
-                return _typeDefinition.Methods;
-            }
-        }
-
-        internal IEnumerable<PropertyHandle> DeclaredPropertyHandles
-        {
-            get
-            {
-                return _typeDefinition.Properties;
-            }
-        }
-
-        private MetadataReader _reader;
-        private TypeDefinitionHandle _typeDefinitionHandle;
-        private TypeDefinition _typeDefinition;
-
-        private NamespaceChain NamespaceChain
-        {
-            get
-            {
-                if (_lazyNamespaceChain == null)
-                    _lazyNamespaceChain = new NamespaceChain(_reader, _typeDefinition.NamespaceDefinition);
-                return _lazyNamespaceChain;
-            }
-        }
-
-        private volatile NamespaceChain _lazyNamespaceChain;
-
-        private volatile RuntimeType _lazyType;
-
-        private static NamedTypeToGuidTable _namedTypeToGuidTable = new NamedTypeToGuidTable();
+        private static readonly NamedTypeToGuidTable s_namedTypeToGuidTable = new NamedTypeToGuidTable();
         private sealed class NamedTypeToGuidTable : ConcurrentUnifier<RuntimeNamedTypeInfo, Tuple<Guid>>
         {
             protected sealed override Tuple<Guid> Factory(RuntimeNamedTypeInfo key)

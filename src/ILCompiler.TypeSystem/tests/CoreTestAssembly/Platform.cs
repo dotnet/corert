@@ -1,17 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable 649
+#pragma warning disable 169
 
 namespace System
 {
     // Dummy core types to allow us compiling this assembly as a core library so that the type
     // system tests don't have a dependency on a real core library.
 
-    // We might need to bring in some extra things (Interface lists? Other virtual methods on Object?),
-    // but let's postpone that until actually needed.
-    
     public class Object
     {
         internal IntPtr m_pEEType;
@@ -63,23 +60,37 @@ namespace System
 
     public class Attribute { }
 
+    public class ThreadStaticAttribute : Attribute { }
+
     public class Array<T> : Array, System.Collections.Generic.IList<T> { }
 
     public class Exception { }
+
+    public ref struct TypedReference
+    {
+        private readonly ByReference<byte> _value;
+        private readonly RuntimeTypeHandle _typeHandle;
+    }
+
+    public ref struct ByReference<T> { }
 }
 
 namespace System.Collections
 {
-    interface IList
-    { }
+    interface IEnumerable { }
+
+    interface ICollection : IEnumerable { }
+
+    interface IList : ICollection { }
 }
 
 namespace System.Collections.Generic
 {
-    interface IList<T>
-    {
+    interface IEnumerable<out T> { }
 
-    }
+    interface ICollection<T> : IEnumerable<T> { }
+
+    interface IList<T> : ICollection<T> { }
 }
 
 namespace System.Runtime.InteropServices
@@ -116,3 +127,9 @@ namespace System.Runtime.InteropServices
     }
 }
 
+namespace System.Runtime.CompilerServices
+{
+    public sealed class IsByRefLikeAttribute : Attribute
+    {
+    }
+}

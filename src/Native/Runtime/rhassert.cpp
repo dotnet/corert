@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -93,6 +92,19 @@ void Assert(const char * expr, const char * file, UInt32 line_num, const char * 
     UNREFERENCED_PARAMETER(line_num);
     UNREFERENCED_PARAMETER(message);
 #endif //!DACCESS_COMPILE
+}
+
+extern "C" void NYI_Assert(const char *message, ...)
+{
+#if !defined(DACCESS_COMPILE)
+    va_list args;
+    va_start(args, message);
+    vprintf(message, args);
+    va_end(args);
+    ASSERT_UNCONDITIONALLY("NYI");
+#else
+    UNREFERENCED_PARAMETER(message);
+#endif
 }
 
 #endif // _DEBUG

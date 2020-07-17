@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #ifndef __GCENV_STRUCTS_INCLUDED__
 #define __GCENV_STRUCTS_INCLUDED__
 //
@@ -9,28 +8,14 @@
 
 struct GCSystemInfo
 {
-    uint32_t dwNumberOfProcessors;
-    uint32_t dwPageSize;
-    uint32_t dwAllocationGranularity;
-};
-
-// An 'abstract' definition of Windows MEMORYSTATUSEX.  In practice, the only difference is the missing struct size
-// field and one field that Windows documents to always be 0.  If additional information is available on other OSes,
-// this information should be surfaced through this structure as additional fields that the GC may optionally depend on.
-struct GCMemoryStatus
-{
-    uint32_t dwMemoryLoad;
-    uint64_t ullTotalPhys;
-    uint64_t ullAvailPhys;
-    uint64_t ullTotalPageFile;
-    uint64_t ullAvailPageFile;
-    uint64_t ullTotalVirtual;
-    uint64_t ullAvailVirtual;
+    uint32_t        dwNumberOfProcessors;
+    uint32_t        dwPageSize;
+    uint32_t        dwAllocationGranularity;
 };
 
 typedef void * HANDLE;
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 
 typedef char TCHAR;
 #define _T(s) s
@@ -44,7 +29,7 @@ typedef wchar_t TCHAR;
 
 #endif
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 
 class EEThreadId
 {
@@ -71,7 +56,7 @@ public:
     }
 };
 
-#else // PLATFORM_UNIX
+#else // TARGET_UNIX
 
 #ifndef _INC_WINDOWS
 extern "C" uint32_t __stdcall GetCurrentThreadId();
@@ -79,7 +64,7 @@ extern "C" uint32_t __stdcall GetCurrentThreadId();
 
 class EEThreadId
 {
-    uint32_t m_uiId;
+    uint64_t m_uiId;
 public:
 
     bool IsCurrentThread()
@@ -98,11 +83,11 @@ public:
     }
 };
 
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
 #ifndef _INC_WINDOWS
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 
 typedef struct _RTL_CRITICAL_SECTION {
     pthread_mutex_t mutex;

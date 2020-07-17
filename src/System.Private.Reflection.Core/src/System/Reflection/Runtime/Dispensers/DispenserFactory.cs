@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Diagnostics;
-using global::System.Reflection.Runtime.TypeInfos;
-
-using global::Internal.Reflection.Core.NonPortable;
+using System;
+using System.Diagnostics;
+using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.Dispensers
 {
@@ -22,7 +19,7 @@ namespace System.Reflection.Runtime.Dispensers
             where K : class, IEquatable<K>
             where V : class
         {
-            DispenserAlgorithm algorithm = _dispenserPolicy.GetAlgorithm(scenario);
+            DispenserAlgorithm algorithm = s_dispenserPolicy.GetAlgorithm(scenario);
             if (algorithm == DispenserAlgorithm.ReuseAsLongAsKeyIsAlive)
                 return new DispenserThatReusesAsLongAsKeyIsAlive<K, V>(factory);
             else
@@ -40,7 +37,7 @@ namespace System.Reflection.Runtime.Dispensers
             where K : IEquatable<K>
             where V : class
         {
-            DispenserAlgorithm algorithm = _dispenserPolicy.GetAlgorithm(scenario);
+            DispenserAlgorithm algorithm = s_dispenserPolicy.GetAlgorithm(scenario);
 
             Debug.Assert(algorithm != DispenserAlgorithm.ReuseAsLongAsKeyIsAlive,
                 "Use CreateDispenser() if you want to use this algorithm. The key must not be a valuetype.");
@@ -51,14 +48,12 @@ namespace System.Reflection.Runtime.Dispensers
                 return new DispenserThatAlwaysReuses<K, V>(factory);
             else if (algorithm == DispenserAlgorithm.ReuseAsLongAsValueIsAlive)
                 return new DispenserThatReusesAsLongAsValueIsAlive<K, V>(factory);
-            else if (algorithm == DispenserAlgorithm.LatchesTypeInfoInsideType)
-                return (Dispenser<K, V>)(Object)(new DispenserThatLatchesTypeInfosInsideTypes((Func<RuntimeType, RuntimeTypeInfo>)(Object)factory));
 
             throw new Exception();
         }
 
 
-        private static DispenserPolicy _dispenserPolicy = new DefaultDispenserPolicy();
+        private static readonly DispenserPolicy s_dispenserPolicy = new DefaultDispenserPolicy();
     }
 }
 

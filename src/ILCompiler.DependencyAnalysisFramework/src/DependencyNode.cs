@@ -1,17 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    public abstract class DependencyNode
+    public abstract class DependencyNode : IDependencyNode
     {
         private object _mark;
 
@@ -39,12 +34,14 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
         }
 
-        // Force all non-abstract nodes to provide a name
-        public abstract string GetName();
-
-        public sealed override string ToString()
+        public sealed override bool Equals(object obj)
         {
-            return GetName();
+            return Object.ReferenceEquals(this, obj);
+        }
+
+        public sealed override int GetHashCode()
+        {
+            return base.GetHashCode();
         }
     }
 }

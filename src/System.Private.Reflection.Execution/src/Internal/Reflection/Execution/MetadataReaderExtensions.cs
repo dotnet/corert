@@ -1,15 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using global::System;
-using global::System.Reflection;
-using global::System.Collections.Generic;
 
 using global::Internal.Metadata.NativeFormat;
-
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -28,50 +22,6 @@ namespace Internal.Reflection.Execution
             if (reader.IsNull(handle))
                 return null;
             return reader.GetConstantStringValue(handle).Value;
-        }
-
-        public static int AsInt(this TypeDefinitionHandle typeDefinitionHandle)
-        {
-            unsafe
-            {
-                return *(int*)&typeDefinitionHandle;
-            }
-        }
-
-        public static TypeDefinitionHandle AsTypeDefinitionHandle(this int i)
-        {
-            unsafe
-            {
-                Debug.Assert((HandleType)((uint)i >> 24) == HandleType.TypeDefinition);
-                return *(TypeDefinitionHandle*)&i;
-            }
-        }
-
-        public static bool IsTypeDefinitionHandle(this int i)
-        {
-            return (HandleType)((uint)i >> 24) == HandleType.TypeDefinition;
-        }
-
-        public static int AsInt(this TypeReferenceHandle typeReferenceHandle)
-        {
-            unsafe
-            {
-                return *(int*)&typeReferenceHandle;
-            }
-        }
-
-        public static TypeReferenceHandle AsTypeReferenceHandle(this int i)
-        {
-            unsafe
-            {
-                Debug.Assert((HandleType)((uint)i >> 24) == HandleType.TypeReference);
-                return *(TypeReferenceHandle*)&i;
-            }
-        }
-
-        public static bool IsTypeReferenceHandle(this int i)
-        {
-            return (HandleType)((uint)i >> 24) == HandleType.TypeReference;
         }
 
         public static bool IsMethodHandle(this int i)
@@ -110,6 +60,15 @@ namespace Internal.Reflection.Execution
             {
                 Debug.Assert((HandleType)((uint)i >> 24) == HandleType.Field);
                 return *(FieldHandle*)&i;
+            }
+        }
+
+        public static TypeDefinitionHandle AsTypeDefinitionHandle(this int i)
+        {
+            unsafe
+            {
+                Debug.Assert((HandleType)((uint)i >> 24) == HandleType.TypeDefinition);
+                return *(TypeDefinitionHandle*)&i;
             }
         }
 

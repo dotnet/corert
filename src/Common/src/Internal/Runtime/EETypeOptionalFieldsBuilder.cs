@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -13,47 +12,47 @@ namespace Internal.Runtime
 {
     internal unsafe partial class EETypeOptionalFieldsBuilder
     {
-        NativePrimitiveEncoder _encoder;
-        OptionalField[] _rgFields = new OptionalField[(int)EETypeOptionalFieldsElement.Count];
+        private NativePrimitiveEncoder _encoder;
+        private OptionalField[] _rgFields = new OptionalField[(int)EETypeOptionalFieldTag.Count];
 
-        struct OptionalField
+        private struct OptionalField
         {
             internal bool _fieldPresent;
             internal UInt32 _value;
         }
 
-        internal EETypeOptionalFieldsBuilder() {}
-        
-        internal UInt32 GetFieldValue(EETypeOptionalFieldsElement eTag, UInt32 defaultValueIfNotFound)
+        internal EETypeOptionalFieldsBuilder() { }
+
+        internal UInt32 GetFieldValue(EETypeOptionalFieldTag eTag, UInt32 defaultValueIfNotFound)
         {
             return _rgFields[(int)eTag]._fieldPresent ? _rgFields[(int)eTag]._value : defaultValueIfNotFound;
         }
 
-        internal void SetFieldValue(EETypeOptionalFieldsElement eTag, UInt32 value)
+        internal void SetFieldValue(EETypeOptionalFieldTag eTag, UInt32 value)
         {
             _rgFields[(int)eTag]._fieldPresent = true;
             _rgFields[(int)eTag]._value = value;
         }
 
-        internal void ClearField(EETypeOptionalFieldsElement eTag)
+        internal void ClearField(EETypeOptionalFieldTag eTag)
         {
             _rgFields[(int)eTag]._fieldPresent = false;
         }
 
         private int Encode()
         {
-            EETypeOptionalFieldsElement eLastTag = EETypeOptionalFieldsElement.Count;
+            EETypeOptionalFieldTag eLastTag = EETypeOptionalFieldTag.Count;
 
-            for (EETypeOptionalFieldsElement eTag = 0; eTag < EETypeOptionalFieldsElement.Count; eTag++)
+            for (EETypeOptionalFieldTag eTag = 0; eTag < EETypeOptionalFieldTag.Count; eTag++)
                 eLastTag = _rgFields[(int)eTag]._fieldPresent ? eTag : eLastTag;
 
-            if (eLastTag == EETypeOptionalFieldsElement.Count)
+            if (eLastTag == EETypeOptionalFieldTag.Count)
                 return 0;
 
             _encoder = new NativePrimitiveEncoder();
             _encoder.Init();
 
-            for (EETypeOptionalFieldsElement eTag = 0; eTag < EETypeOptionalFieldsElement.Count; eTag++)
+            for (EETypeOptionalFieldTag eTag = 0; eTag < EETypeOptionalFieldTag.Count; eTag++)
             {
                 if (!_rgFields[(int)eTag]._fieldPresent)
                     continue;
@@ -78,7 +77,7 @@ namespace Internal.Runtime
 
         public bool IsAtLeastOneFieldUsed()
         {
-            for (int i = 0; i < (int)EETypeOptionalFieldsElement.Count; i++)
+            for (int i = 0; i < (int)EETypeOptionalFieldTag.Count; i++)
             {
                 if (_rgFields[i]._fieldPresent)
                     return true;
@@ -91,7 +90,7 @@ namespace Internal.Runtime
         {
             StringBuilder sb = new StringBuilder();
 
-            for (int i = 0; i < (int)EETypeOptionalFieldsElement.Count; i++)
+            for (int i = 0; i < (int)EETypeOptionalFieldTag.Count; i++)
             {
                 if (_rgFields[i]._fieldPresent)
                 {
@@ -101,9 +100,9 @@ namespace Internal.Runtime
                 {
                     sb.Append("x");
                 }
-                
 
-                if (i != (int)EETypeOptionalFieldsElement.Count - 1)
+
+                if (i != (int)EETypeOptionalFieldTag.Count - 1)
                 {
                     sb.Append("_");
                 }
@@ -125,7 +124,7 @@ namespace Internal.Runtime
             if (ReferenceEquals(this, other))
                 return true;
 
-            for (EETypeOptionalFieldsElement eTag = 0; eTag < EETypeOptionalFieldsElement.Count; eTag++)
+            for (EETypeOptionalFieldTag eTag = 0; eTag < EETypeOptionalFieldTag.Count; eTag++)
             {
                 int index = (int)eTag;
                 if (_rgFields[index]._fieldPresent != other._rgFields[index]._fieldPresent ||
@@ -140,7 +139,7 @@ namespace Internal.Runtime
         {
             int hash = 31;
 
-            for (EETypeOptionalFieldsElement eTag = 0; eTag < EETypeOptionalFieldsElement.Count; eTag++)
+            for (EETypeOptionalFieldTag eTag = 0; eTag < EETypeOptionalFieldTag.Count; eTag++)
             {
                 hash = hash * 486187739 + (int)GetFieldValue(eTag, 0);
             }

@@ -1,21 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Diagnostics;
-using global::System.Collections;
-using global::System.Reflection;
-using global::System.Collections.Generic;
+using System;
+using System.Diagnostics;
+using System.Collections;
+using System.Reflection;
+using System.Collections.Generic;
 
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.Assemblies;
-
-using global::Internal.Metadata.NativeFormat;
-
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.NonPortable;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.Assemblies;
 
 namespace System.Reflection.Runtime.TypeParsing
 {
@@ -25,52 +19,44 @@ namespace System.Reflection.Runtime.TypeParsing
     //
     internal abstract class TypeName
     {
-        public abstract Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result);
-        public abstract override String ToString();
+        /// <summary>
+        /// Helper for the Type.GetType() family of apis. "containingAssemblyIsAny" is the assembly to search for (as determined
+        /// by a qualifying assembly string in the original type string passed to Type.GetType(). If null, it means the type stream
+        /// didn't specify an assembly name. How to respond to that is up to the type resolver delegate in getTypeOptions - this class
+        /// is just a middleman.
+        /// </summary>
+        public abstract Type ResolveType(Assembly containingAssemblyIfAny, GetTypeOptions getTypeOptions);
+        public abstract override string ToString();
     }
 
-
     //
-    // Represents a parse of a type name OPTIONALLY qualified by an assembly name. If present, the assembly name follows
-    // a comma following the type name.
-    //
-    // Note that unlike the reflection model, the assembly qualification is a property of a typename string as a whole
-    // rather than the property of the single namespace type that "represents" the type. This model is simply a better match to
-    // how type names passed to GetType() are constructed and parsed.
+    // Represents a parse of a type name qualified by an assembly name.
     //
     internal sealed class AssemblyQualifiedTypeName : TypeName
     {
-        public AssemblyQualifiedTypeName(NonQualifiedTypeName typeName, RuntimeAssemblyName assemblyName)
+        public AssemblyQualifiedTypeName(NonQualifiedTypeName nonQualifiedTypeName, RuntimeAssemblyName assemblyName)
         {
-            Debug.Assert(typeName != null);
-            TypeName = typeName;
-            AssemblyName = assemblyName;
+            Debug.Assert(nonQualifiedTypeName != null);
+            Debug.Assert(assemblyName != null);
+            _nonQualifiedTypeName = nonQualifiedTypeName;
+            _assemblyName = assemblyName;
         }
 
-        public NonQualifiedTypeName TypeName { get; private set; }
-        public RuntimeAssemblyName AssemblyName { get; private set; }  // This can return null if the type name was not actually qualified.
-
-        public sealed override String ToString()
+        public sealed override string ToString()
         {
-            return TypeName.ToString() + ((AssemblyName == null) ? "" : ", " + AssemblyName.FullName);
+            return _nonQualifiedTypeName.ToString() + ", " + _assemblyName.FullName;
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Type ResolveType(Assembly containingAssemblyIfAny, GetTypeOptions getTypeOptions)
         {
-            result = null;
-            if (AssemblyName == null)
-            {
-                return TypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out result);
-            }
-            else
-            {
-                RuntimeAssembly newAssembly;
-                Exception assemblyLoadException = RuntimeAssembly.TryGetRuntimeAssembly(reflectionDomain, AssemblyName, out newAssembly);
-                if (assemblyLoadException != null)
-                    return assemblyLoadException;
-                return TypeName.TryResolve(reflectionDomain, newAssembly, ignoreCase, out result);
-            }
+            containingAssemblyIfAny = getTypeOptions.CoreResolveAssembly(_assemblyName);
+            if (containingAssemblyIfAny == null)
+                return null;
+            return _nonQualifiedTypeName.ResolveType(containingAssemblyIfAny, getTypeOptions);
         }
+
+        private readonly RuntimeAssemblyName _assemblyName;
+        private readonly NonQualifiedTypeName _nonQualifiedTypeName;
     }
 
     //
@@ -93,250 +79,46 @@ namespace System.Reflection.Runtime.TypeParsing
     //
     internal sealed partial class NamespaceTypeName : NamedTypeName
     {
-        public NamespaceTypeName(String[] namespaceParts, String name)
+        public NamespaceTypeName(string fullName)
         {
-            Debug.Assert(namespaceParts != null);
-            Debug.Assert(name != null);
-
-            _name = name;
-            _namespaceParts = namespaceParts;
+            _fullName = fullName;
         }
 
-        public sealed override String ToString()
+        public sealed override Type ResolveType(Assembly containingAssemblyIfAny, GetTypeOptions getTypeOptions)
         {
-            String fullName = "";
-            for (int i = 0; i < _namespaceParts.Length; i++)
-            {
-                fullName += _namespaceParts[_namespaceParts.Length - i - 1];
-                fullName += ".";
-            }
-            fullName += _name;
-            return fullName;
+            return getTypeOptions.CoreResolveType(containingAssemblyIfAny, _fullName);
         }
 
-        private bool TryResolveNamespaceDefinitionCaseSensitive(MetadataReader reader, ScopeDefinitionHandle scopeDefinitionHandle, out NamespaceDefinition namespaceDefinition)
+        public sealed override string ToString()
         {
-            namespaceDefinition = scopeDefinitionHandle.GetScopeDefinition(reader).RootNamespaceDefinition.GetNamespaceDefinition(reader);
-            IEnumerable<NamespaceDefinitionHandle> candidates = namespaceDefinition.NamespaceDefinitions;
-            int idx = _namespaceParts.Length;
-            while (idx-- != 0)
-            {
-                // Each iteration finds a match for one segment of the namespace chain.
-                String expected = _namespaceParts[idx];
-                bool foundMatch = false;
-                foreach (NamespaceDefinitionHandle candidate in candidates)
-                {
-                    namespaceDefinition = candidate.GetNamespaceDefinition(reader);
-                    if (namespaceDefinition.Name.StringOrNullEquals(expected, reader))
-                    {
-                        // Found a match for this segment of the namespace chain. Move on to the next level.
-                        foundMatch = true;
-                        candidates = namespaceDefinition.NamespaceDefinitions;
-                        break;
-                    }
-                }
-
-                if (!foundMatch)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return _fullName.EscapeTypeNameIdentifier();
         }
 
-        private Exception UncachedTryResolveCaseSensitive(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, out RuntimeType result)
-        {
-            result = null;
-
-            foreach (QScopeDefinition scopeDefinition in currentAssembly.AllScopes)
-            {
-                MetadataReader reader = scopeDefinition.Reader;
-                ScopeDefinitionHandle scopeDefinitionHandle = scopeDefinition.Handle;
-
-                NamespaceDefinition namespaceDefinition;
-                if (!TryResolveNamespaceDefinitionCaseSensitive(reader, scopeDefinitionHandle, out namespaceDefinition))
-                {
-                    continue;
-                }
-
-                // We've successfully drilled down the namespace chain. Now look for a top-level type matching the type name.
-                IEnumerable<TypeDefinitionHandle> candidateTypes = namespaceDefinition.TypeDefinitions;
-                foreach (TypeDefinitionHandle candidateType in candidateTypes)
-                {
-                    TypeDefinition typeDefinition = candidateType.GetTypeDefinition(reader);
-                    if (typeDefinition.Name.StringEquals(_name, reader))
-                    {
-                        result = reflectionDomain.ResolveTypeDefinition(reader, candidateType);
-                        return null;
-                    }
-                }
-
-                // No match found in this assembly - see if there's a matching type forwarder.
-                IEnumerable<TypeForwarderHandle> candidateTypeForwarders = namespaceDefinition.TypeForwarders;
-                foreach (TypeForwarderHandle typeForwarderHandle in candidateTypeForwarders)
-                {
-                    TypeForwarder typeForwarder = typeForwarderHandle.GetTypeForwarder(reader);
-                    if (typeForwarder.Name.StringEquals(_name, reader))
-                    {
-                        RuntimeAssemblyName redirectedAssemblyName = typeForwarder.Scope.ToRuntimeAssemblyName(reader);
-                        AssemblyQualifiedTypeName redirectedTypeName = new AssemblyQualifiedTypeName(this, redirectedAssemblyName);
-                        return redirectedTypeName.TryResolve(reflectionDomain, null, /*ignoreCase: */false, out result);
-                    }
-                }
-            }
-
-            {
-                String typeName = this.ToString();
-                String message = SR.Format(SR.TypeLoad_TypeNotFound, typeName, currentAssembly.FullName);
-                return ReflectionCoreNonPortable.CreateTypeLoadException(message, typeName);
-            }
-        }
-
-        private Exception TryResolveCaseInsensitive(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, out RuntimeType result)
-        {
-            String fullName = this.ToString().ToLower();
-
-            LowLevelDictionary<String, QHandle> dict = GetCaseInsensitiveTypeDictionary(currentAssembly);
-            QHandle qualifiedHandle;
-            if (!dict.TryGetValue(fullName, out qualifiedHandle))
-            {
-                result = null;
-                return new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, this.ToString(), currentAssembly.FullName));
-            }
-
-            MetadataReader reader = qualifiedHandle.Reader;
-            Handle typeDefOrForwarderHandle = qualifiedHandle.Handle;
-
-            HandleType handleType = typeDefOrForwarderHandle.HandleType;
-            switch (handleType)
-            {
-                case HandleType.TypeDefinition:
-                    {
-                        TypeDefinitionHandle typeDefinitionHandle = typeDefOrForwarderHandle.ToTypeDefinitionHandle(reader);
-                        result = reflectionDomain.ResolveTypeDefinition(reader, typeDefinitionHandle);
-                        return null;
-                    }
-                case HandleType.TypeForwarder:
-                    {
-                        TypeForwarder typeForwarder = typeDefOrForwarderHandle.ToTypeForwarderHandle(reader).GetTypeForwarder(reader);
-                        ScopeReferenceHandle destinationScope = typeForwarder.Scope;
-                        RuntimeAssemblyName destinationAssemblyName = destinationScope.ToRuntimeAssemblyName(reader);
-                        RuntimeAssembly destinationAssembly;
-                        Exception exception = RuntimeAssembly.TryGetRuntimeAssembly(reflectionDomain, destinationAssemblyName, out destinationAssembly);
-                        if (exception != null)
-                        {
-                            result = null;
-                            return exception;
-                        }
-                        return TryResolveCaseInsensitive(reflectionDomain, destinationAssembly, out result);
-                    }
-                default:
-                    throw new InvalidOperationException();
-            }
-        }
-
-        private static LowLevelDictionary<String, QHandle> CreateCaseInsensitiveTypeDictionary(RuntimeAssembly assembly)
-        {
-            //
-            // Collect all of the *non-nested* types and type-forwards. 
-            //
-            //   The keys are full typenames in lower-cased form.
-            //   The value is a tuple containing either a TypeDefinitionHandle or TypeForwarderHandle and the associated Reader
-            //      for that handle.
-            //
-            // We do not store nested types here. The container type is resolved and chosen first, then the nested type chosen from 
-            // that. If we chose the wrong container type and fail the match as a result, that's too bad. (The desktop CLR has the
-            // same issue.)
-            //
-            ReflectionDomain reflectionDomain = assembly.ReflectionDomain;
-            LowLevelDictionary<String, QHandle> dict = new LowLevelDictionary<string, QHandle>();
-
-            foreach (QScopeDefinition scope in assembly.AllScopes)
-            {
-                MetadataReader reader = scope.Reader;
-                ScopeDefinition scopeDefinition = scope.ScopeDefinition;
-                IEnumerable<NamespaceDefinitionHandle> topLevelNamespaceHandles = new NamespaceDefinitionHandle[] { scopeDefinition.RootNamespaceDefinition };
-                IEnumerable<NamespaceDefinitionHandle> allNamespaceHandles = reader.GetTransitiveNamespaces(topLevelNamespaceHandles);
-                foreach (NamespaceDefinitionHandle namespaceHandle in allNamespaceHandles)
-                {
-                    String ns = namespaceHandle.ToNamespaceName(reader);
-                    if (ns.Length != 0)
-                        ns = ns + ".";
-                    ns = ns.ToLower();
-
-                    NamespaceDefinition namespaceDefinition = namespaceHandle.GetNamespaceDefinition(reader);
-                    foreach (TypeDefinitionHandle typeDefinitionHandle in namespaceDefinition.TypeDefinitions)
-                    {
-                        String fullName = ns + typeDefinitionHandle.GetTypeDefinition(reader).Name.GetString(reader).ToLower();
-                        QHandle existingValue;
-                        if (!dict.TryGetValue(fullName, out existingValue))
-                        {
-                            dict.Add(fullName, new QHandle(reader, typeDefinitionHandle));
-                        }
-                    }
-
-                    foreach (TypeForwarderHandle typeForwarderHandle in namespaceDefinition.TypeForwarders)
-                    {
-                        String fullName = ns + typeForwarderHandle.GetTypeForwarder(reader).Name.GetString(reader).ToLower();
-                        QHandle existingValue;
-                        if (!dict.TryGetValue(fullName, out existingValue))
-                        {
-                            dict.Add(fullName, new QHandle(reader, typeForwarderHandle));
-                        }
-                    }
-                }
-            }
-
-            return dict;
-        }
-
-        private String _name;
-        private String[] _namespaceParts;
+        private readonly string _fullName;
     }
 
     //
-    // A nested type. The Name is the simple name of the type (not including any portion of its declaring type name.
+    // A nested type. The Name is the simple name of the type (not including any portion of its declaring type name.)
     //
     internal sealed class NestedTypeName : NamedTypeName
     {
-        public NestedTypeName(String name, NamedTypeName declaringType)
+        public NestedTypeName(string nestedTypeName, NamedTypeName declaringType)
         {
-            Name = name;
-            DeclaringType = declaringType;
+            _nestedTypeName = nestedTypeName;
+            _declaringType = declaringType;
         }
 
-        public String Name { get; private set; }
-        public NamedTypeName DeclaringType { get; private set; }
-
-        public sealed override String ToString()
+        public sealed override string ToString()
         {
-            return DeclaringType + "+" + Name;
+            return _declaringType + "+" + _nestedTypeName.EscapeTypeNameIdentifier();
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Type ResolveType(Assembly containingAssemblyIfAny, GetTypeOptions getTypeOptions)
         {
-            result = null;
-            RuntimeType declaringType;
-            Exception typeLoadException = DeclaringType.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out declaringType);
-            if (typeLoadException != null)
-                return typeLoadException;
-            TypeInfo nestedTypeInfo = FindDeclaredNestedType(declaringType.GetTypeInfo(), Name, ignoreCase);
-            if (nestedTypeInfo == null)
-                return new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, declaringType.FullName + "+" + Name, currentAssembly.FullName));
-            result = (RuntimeType)(nestedTypeInfo.AsType());
-            return null;
-        }
-
-        private TypeInfo FindDeclaredNestedType(TypeInfo declaringTypeInfo, String name, bool ignoreCase)
-        {
-            TypeInfo nestedType = declaringTypeInfo.GetDeclaredNestedType(name);
-            if (nestedType != null)
-                return nestedType;
-            if (!ignoreCase)
+            Type declaringType = _declaringType.ResolveType(containingAssemblyIfAny, getTypeOptions);
+            if (declaringType == null)
                 return null;
 
-            //
             // Desktop compat note: If there is more than one nested type that matches the name in a case-blind match,
             // we might not return the same one that the desktop returns. The actual selection method is influenced both by the type's
             // placement in the IL and the implementation details of the CLR's internal hashtables so it would be very
@@ -345,15 +127,36 @@ namespace System.Reflection.Runtime.TypeParsing
             // Desktop compat note #2: Case-insensitive lookups: If we don't find a match, we do *not* go back and search
             // other declaring types that might match the case-insensitive search and contain the nested type being sought.
             // Though this is somewhat unsatisfactory, the desktop CLR has the same limitation.
-            //
-            foreach (TypeInfo candidate in declaringTypeInfo.DeclaredNestedTypes)
+
+            // Don't change these flags - we may be talking to a third party type here and we need to invoke it the way CoreClr does.
+            BindingFlags bf = BindingFlags.Public | BindingFlags.NonPublic;
+            Type nestedType;
+            if (!getTypeOptions.IgnoreCase)
             {
-                String candidateName = candidate.Name;
-                if (name.Equals(candidateName, StringComparison.OrdinalIgnoreCase))
-                    return candidate;
+                nestedType = declaringType.GetNestedType(_nestedTypeName, bf);
             }
-            return null;
+            else
+            {
+                // Return the first name that matches. Which one gets returned on a multiple match is an implementation detail.
+                // Unfortunately, compat prevents us from just throwing AmbiguousMatchException.
+                nestedType = null;
+                string lowerNestedTypeName = _nestedTypeName.ToLowerInvariant(); //@todo: Once String.Equals() works with StringComparison.InvariantIgnoreCase, it would be better to use that.
+                foreach (Type nt in declaringType.GetNestedTypes(bf))
+                {
+                    if (nt.Name.ToLowerInvariant() == lowerNestedTypeName)
+                    {
+                        nestedType = nt;
+                        break;
+                    }
+                }
+            }
+            if (nestedType == null && getTypeOptions.ThrowOnError)
+                throw Helpers.CreateTypeLoadException(ToString(), containingAssemblyIfAny);
+            return nestedType;
         }
+
+        private readonly string _nestedTypeName;
+        private readonly NamedTypeName _declaringType;
     }
 
     //
@@ -366,7 +169,7 @@ namespace System.Reflection.Runtime.TypeParsing
             ElementTypeName = elementTypeName;
         }
 
-        public TypeName ElementTypeName { get; private set; }
+        protected TypeName ElementTypeName { get; }
     }
 
     //
@@ -379,20 +182,14 @@ namespace System.Reflection.Runtime.TypeParsing
         {
         }
 
-        public sealed override String ToString()
+        public sealed override string ToString()
         {
             return ElementTypeName + "[]";
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Type ResolveType(Assembly containingAssemblyIfAny, GetTypeOptions getTypeOptions)
         {
-            result = null;
-            RuntimeType elementType;
-            Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
-            if (typeLoadException != null)
-                return typeLoadException;
-            result = ReflectionCoreNonPortable.GetArrayType(elementType);
-            return null;
+            return ElementTypeName.ResolveType(containingAssemblyIfAny, getTypeOptions)?.MakeArrayType();
         }
     }
 
@@ -407,23 +204,17 @@ namespace System.Reflection.Runtime.TypeParsing
             _rank = rank;
         }
 
-        public sealed override String ToString()
+        public sealed override string ToString()
         {
-            return ElementTypeName + "[" + (_rank == 1 ? "*" : new String(',', _rank - 1)) + "]";
+            return ElementTypeName + "[" + (_rank == 1 ? "*" : new string(',', _rank - 1)) + "]";
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Type ResolveType(Assembly containingAssemblyIfAny, GetTypeOptions getTypeOptions)
         {
-            result = null;
-            RuntimeType elementType;
-            Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
-            if (typeLoadException != null)
-                return typeLoadException;
-            result = ReflectionCoreNonPortable.GetMultiDimArrayType(elementType, _rank);
-            return null;
+            return ElementTypeName.ResolveType(containingAssemblyIfAny, getTypeOptions)?.MakeArrayType(_rank);
         }
 
-        private int _rank;
+        private readonly int _rank;
     }
 
     //
@@ -436,20 +227,14 @@ namespace System.Reflection.Runtime.TypeParsing
         {
         }
 
-        public sealed override String ToString()
+        public sealed override string ToString()
         {
             return ElementTypeName + "&";
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Type ResolveType(Assembly containingAssemblyIfAny, GetTypeOptions getTypeOptions)
         {
-            result = null;
-            RuntimeType elementType;
-            Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
-            if (typeLoadException != null)
-                return typeLoadException;
-            result = ReflectionCoreNonPortable.GetByRefType(elementType);
-            return null;
+            return ElementTypeName.ResolveType(containingAssemblyIfAny, getTypeOptions)?.MakeByRefType();
         }
     }
 
@@ -463,20 +248,14 @@ namespace System.Reflection.Runtime.TypeParsing
         {
         }
 
-        public sealed override String ToString()
+        public sealed override string ToString()
         {
             return ElementTypeName + "*";
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Type ResolveType(Assembly containingAssemblyIfAny, GetTypeOptions getTypeOptions)
         {
-            result = null;
-            RuntimeType elementType;
-            Exception typeLoadException = ElementTypeName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out elementType);
-            if (typeLoadException != null)
-                return typeLoadException;
-            result = ReflectionCoreNonPortable.GetPointerType(elementType);
-            return null;
+            return ElementTypeName.ResolveType(containingAssemblyIfAny, getTypeOptions)?.MakePointerType();
         }
     }
 
@@ -485,52 +264,48 @@ namespace System.Reflection.Runtime.TypeParsing
     //
     internal sealed class ConstructedGenericTypeName : NonQualifiedTypeName
     {
-        public ConstructedGenericTypeName(NamedTypeName genericType, IEnumerable<TypeName> genericArguments)
+        public ConstructedGenericTypeName(NamedTypeName genericTypeDefinition, IList<TypeName> genericTypeArguments)
         {
-            GenericType = genericType;
-            GenericArguments = genericArguments;
+            _genericTypeDefinition = genericTypeDefinition;
+            _genericTypeArguments = genericTypeArguments;
         }
 
-        public NamedTypeName GenericType { get; private set; }
-        public IEnumerable<TypeName> GenericArguments { get; private set; }
-
-        public sealed override String ToString()
+        public sealed override string ToString()
         {
-            String s = GenericType.ToString();
+            string s = _genericTypeDefinition.ToString();
             s += "[";
-            String sep = "";
-            foreach (TypeName genericTypeArgument in GenericArguments)
+            string sep = "";
+            foreach (TypeName genericTypeArgument in _genericTypeArguments)
             {
                 s += sep;
                 sep = ",";
-                AssemblyQualifiedTypeName assemblyQualifiedTypeArgument = genericTypeArgument as AssemblyQualifiedTypeName;
-                if (assemblyQualifiedTypeArgument == null || assemblyQualifiedTypeArgument.AssemblyName == null)
-                    s += genericTypeArgument.ToString();
-                else
+                if (genericTypeArgument is AssemblyQualifiedTypeName)
                     s += "[" + genericTypeArgument.ToString() + "]";
+                else
+                    s += genericTypeArgument.ToString();
             }
             s += "]";
             return s;
         }
 
-        public sealed override Exception TryResolve(ReflectionDomain reflectionDomain, RuntimeAssembly currentAssembly, bool ignoreCase, out RuntimeType result)
+        public sealed override Type ResolveType(Assembly containingAssemblyIfAny, GetTypeOptions getTypeOptions)
         {
-            result = null;
-            RuntimeType genericType;
-            Exception typeLoadException = GenericType.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out genericType);
-            if (typeLoadException != null)
-                return typeLoadException;
-            LowLevelList<RuntimeType> genericTypeArguments = new LowLevelList<RuntimeType>();
-            foreach (TypeName genericTypeArgumentName in GenericArguments)
+            Type genericTypeDefinition = _genericTypeDefinition.ResolveType(containingAssemblyIfAny, getTypeOptions);
+            if (genericTypeDefinition == null)
+                return null;
+
+            int numGenericArguments = _genericTypeArguments.Count;
+            Type[] genericArgumentTypes = new Type[numGenericArguments];
+            for (int i = 0; i < numGenericArguments; i++)
             {
-                RuntimeType genericTypeArgument;
-                typeLoadException = genericTypeArgumentName.TryResolve(reflectionDomain, currentAssembly, ignoreCase, out genericTypeArgument);
-                if (typeLoadException != null)
-                    return typeLoadException;
-                genericTypeArguments.Add(genericTypeArgument);
+                // Do not pass containingAssemblyIfAny down to ResolveType for the generic type arguments.
+                if ((genericArgumentTypes[i] = _genericTypeArguments[i].ResolveType(null, getTypeOptions)) == null)
+                    return null;
             }
-            result = ReflectionCoreNonPortable.GetConstructedGenericType(genericType, genericTypeArguments.ToArray());
-            return null;
+            return genericTypeDefinition.MakeGenericType(genericArgumentTypes);
         }
+
+        private readonly NamedTypeName _genericTypeDefinition;
+        private readonly IList<TypeName> _genericTypeArguments;
     }
 }

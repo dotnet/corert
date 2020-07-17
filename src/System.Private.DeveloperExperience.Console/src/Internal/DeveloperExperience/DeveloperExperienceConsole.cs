@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Reflection;
+
 using Internal.StackTraceGenerator;
 
 namespace Internal.DeveloperExperience
@@ -12,7 +13,7 @@ namespace Internal.DeveloperExperience
     {
         public sealed override void WriteLine(String s)
         {
-            ConsolePal.WriteError(s);
+            Console.Error.WriteLine(s);
         }
 
         public sealed override String CreateStackTraceString(IntPtr ip, bool includeFileInfo)
@@ -28,6 +29,11 @@ namespace Internal.DeveloperExperience
             Internal.StackTraceGenerator.StackTraceGenerator.TryGetSourceLineInfo(ip, out fileName, out lineNumber, out columnNumber);
             // we take whatever data StackTraceGenerator can get (none/partial/all). No reason to fall-back because the base-type
             // never finds anything.
+        }
+
+        public sealed override void TryGetILOffsetWithinMethod(IntPtr ip, out int ilOffset)
+        {
+            Internal.StackTraceGenerator.StackTraceGenerator.TryGetILOffsetWithinMethod(ip, out ilOffset);
         }
     }
 }

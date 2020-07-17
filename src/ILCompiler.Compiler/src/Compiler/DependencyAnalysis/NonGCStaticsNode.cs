@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+
+using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -15,49 +17,79 @@ namespace ILCompiler.DependencyAnalysis
     /// with the class constructor context if the type has a class constructor that
     /// needs to be triggered before the type members can be accessed.
     /// </summary>
-    internal class NonGCStaticsNode : ObjectNode, ISymbolNode
+    public class NonGCStaticsNode : ObjectNode, IExportableSymbolNode, ISortableSymbolNode, ISymbolNodeWithDebugInfo
     {
-        private MetadataType _type;
+        private readonly MetadataType _type;
+        private readonly PreinitializationManager _preinitializationManager;
 
-        public NonGCStaticsNode(MetadataType type, NodeFactory factory)
+        public NonGCStaticsNode(MetadataType type, PreinitializationManager preinitializationManager)
         {
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
+            _preinitializationManager = preinitializationManager;
         }
 
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectNodeSection Section
         {
             get
             {
-                return ObjectNodeSection.DataSection;
+                if (_preinitializationManager.HasLazyStaticConstructor(_type)
+                    || _preinitializationManager.IsPreinitialized(_type))
+                {
+                    // We have data to be emitted so this needs to be in an initialized data section
+                    return ObjectNodeSection.DataSection;
+                }
+                else
+                {
+                    // This is all zeros; place this to the BSS section
+                    return ObjectNodeSection.BssSection;
+                }
             }
         }
 
-        string ISymbolNode.MangledName
+        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
+        {
+            return nameMangler.NodeMangler.NonGCStatics(type);
+        }
+ 
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.NodeMangler.NonGCStatics(_type));
+        }
+
+        int ISymbolNode.Offset => 0;
+
+        int ISymbolDefinitionNode.Offset
         {
             get
             {
-                return "__NonGCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
+                // Make sure the NonGCStatics symbol always points to the beginning of the data.
+                if (_preinitializationManager.HasLazyStaticConstructor(_type))
+                {
+                    return GetClassConstructorContextStorageSize(_type.Context.Target, _type);
+                }
+                else
+                {
+                    return 0;
+                }
             }
         }
 
-        int ISymbolNode.Offset
+        public bool HasCCtorContext => _preinitializationManager.HasLazyStaticConstructor(_type);
+
+        public IDebugInfo DebugInfo => NullTypeIndexDebugInfo.Instance;
+
+        public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
+
+        public MetadataType Type => _type;
+
+        public virtual ExportForm GetExportForm(NodeFactory factory)
         {
-            get
-            {
-                return 0;
-            }
+            return factory.CompilationModuleGroup.GetExportTypeForm(Type);
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
-        }
-        
         private static int GetClassConstructorContextSize(TargetDetails target)
         {
             // TODO: Assert that StaticClassConstructionContext type has the expected size
@@ -67,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static int GetClassConstructorContextStorageSize(TargetDetails target, MetadataType type)
         {
-            int alignmentRequired = Math.Max(type.NonGCStaticFieldAlignment, GetClassConstructorContextAlignment(target));
+            int alignmentRequired = Math.Max(type.NonGCStaticFieldAlignment.AsInt, GetClassConstructorContextAlignment(target));
             return AlignmentHelper.AlignUp(GetClassConstructorContextSize(type.Context.Target), alignmentRequired);
         }
 
@@ -78,37 +110,34 @@ namespace ILCompiler.DependencyAnalysis
             return target.PointerSize;
         }
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            if (factory.TypeInitializationManager.HasEagerStaticConstructor(_type))
+            DependencyList dependencyList = null;
+
+            if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
             {
-                var result = new DependencyList();
-                result.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
-                return result;
+                dependencyList = new DependencyList();
+                dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
 
-            return null;
+            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);
+
+            return dependencyList;
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
             // If the type has a class constructor, its non-GC statics section is prefixed  
             // by System.Runtime.CompilerServices.StaticClassConstructionContext struct.
-            if (factory.TypeInitializationManager.HasLazyStaticConstructor(_type))
+            if (factory.PreinitializationManager.HasLazyStaticConstructor(_type))
             {
-                int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment, GetClassConstructorContextAlignment(_type.Context.Target));
+                int alignmentRequired = Math.Max(_type.NonGCStaticFieldAlignment.AsInt, GetClassConstructorContextAlignment(_type.Context.Target));
                 int classConstructorContextStorageSize = GetClassConstructorContextStorageSize(factory.Target, _type);
-                builder.RequireAlignment(alignmentRequired);
+                builder.RequireInitialAlignment(alignmentRequired);
                 
                 Debug.Assert(classConstructorContextStorageSize >= GetClassConstructorContextSize(_type.Context.Target));
 
@@ -116,19 +145,53 @@ namespace ILCompiler.DependencyAnalysis
                 builder.EmitZeros(classConstructorContextStorageSize - GetClassConstructorContextSize(_type.Context.Target));
 
                 // Emit the actual StaticClassConstructionContext
-                var cctorMethod = _type.GetStaticConstructor();
-                builder.EmitPointerReloc(factory.MethodEntrypoint(cctorMethod));
+                MethodDesc cctorMethod = _type.GetStaticConstructor();
+                builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod));
                 builder.EmitZeroPointer();
             }
             else
             {
-                builder.RequireAlignment(_type.NonGCStaticFieldAlignment);
+                builder.RequireInitialAlignment(_type.NonGCStaticFieldAlignment.AsInt);
             }
 
-            builder.EmitZeros(_type.NonGCStaticFieldSize);
-            builder.DefinedSymbols.Add(this);
+            if (_preinitializationManager.IsPreinitialized(_type))
+            {
+                TypePreinit.PreinitializationInfo preinitInfo = _preinitializationManager.GetPreinitializationInfo(_type);
+                int initialOffset = builder.CountBytes;
+                foreach (FieldDesc field in _type.GetFields())
+                {
+                    if (!field.IsStatic || field.HasRva || field.IsLiteral || field.IsThreadStatic || field.HasGCStaticBase)
+                        continue;
+
+                    int padding = field.Offset.AsInt - builder.CountBytes + initialOffset;
+                    Debug.Assert(padding >= 0);
+                    builder.EmitZeros(padding);
+
+                    TypePreinit.ISerializableValue val = preinitInfo.GetFieldValue(field);
+                    int currentOffset = builder.CountBytes;
+                    val.WriteFieldData(ref builder, field, factory);
+                    Debug.Assert(builder.CountBytes - currentOffset == field.FieldType.GetElementSize().AsInt);
+                }
+
+                int pad = _type.NonGCStaticFieldSize.AsInt - builder.CountBytes + initialOffset;
+                Debug.Assert(pad >= 0);
+                builder.EmitZeros(pad);
+            }
+            else
+            {
+                builder.EmitZeros(_type.NonGCStaticFieldSize.AsInt);
+            }
+
+            builder.AddSymbol(this);
 
             return builder.ToObjectData();
+        }
+
+        public override int ClassCode => -1173104872;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((NonGCStaticsNode)other)._type);
         }
     }
 }

@@ -1,27 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Globalization;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.ParameterInfos;
 
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
+using Internal.Reflection.Core.Execution;
 
-using global::Internal.Reflection.Tracing;
-
-using global::Internal.Metadata.NativeFormat;
+using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
     //
     // The runtime's implementation of ConstructorInfo's represented in the metadata (this is the 99% case.)
     //
-    internal sealed partial class RuntimePlainConstructorInfo : RuntimeConstructorInfo
+    internal sealed partial class RuntimePlainConstructorInfo<TRuntimeMethodCommon> : RuntimeConstructorInfo where TRuntimeMethodCommon : IRuntimeMethodCommon<TRuntimeMethodCommon>, IEquatable<TRuntimeMethodCommon>
     {
         //
         // methodHandle    - the "tkMethodDef" that identifies the method.
@@ -42,9 +40,9 @@ namespace System.Reflection.Runtime.MethodInfos
         //
         //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
         //
-        private RuntimePlainConstructorInfo(MethodHandle methodHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        private RuntimePlainConstructorInfo(TRuntimeMethodCommon common)
         {
-            _common = new RuntimeMethodCommon(methodHandle, definingTypeInfo, contextTypeInfo);
+            _common = common;
         }
 
         public sealed override MethodAttributes Attributes
@@ -72,7 +70,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodBase_CustomAttributes(this);
 #endif
 
-                return _common.CustomAttributes;
+                return _common.TrueCustomAttributes;
             }
         }
 
@@ -89,13 +87,13 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        public sealed override Object Invoke(Object[] parameters)
+        [DebuggerGuidedStepThrough]
+        public sealed override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.ConstructorInfo_Invoke(this, parameters);
 #endif
-
             if (parameters == null)
                 parameters = Array.Empty<Object>();
 
@@ -104,8 +102,17 @@ namespace System.Reflection.Runtime.MethodInfos
             // Reflection.Core does not hardcode these special cases. It's up to the ExecutionEnvironment to steer 
             // us the right way by coordinating the implementation of NewObject and MethodInvoker.
             Object newObject = ReflectionCoreExecution.ExecutionEnvironment.NewObject(this.DeclaringType.TypeHandle);
-            Object ctorAllocatedObject = this.MethodInvoker.Invoke(newObject, parameters);
+            Object ctorAllocatedObject = this.MethodInvoker.Invoke(newObject, parameters, binder, invokeAttr, culture);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return newObject != null ? newObject : ctorAllocatedObject;
+        }
+
+        public sealed override MethodBase MetadataDefinitionMethod
+        {
+            get
+            {
+                return RuntimePlainConstructorInfo<TRuntimeMethodCommon>.GetRuntimePlainConstructorInfo(_common.RuntimeMethodCommonOfUninstantiatedMethod);
+            }
         }
 
         public sealed override MethodImplAttributes MethodImplementationFlags
@@ -129,12 +136,30 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return _common.MetadataToken;
+            }
+        }
+
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
+        {
+            if (other == null)
+                throw new ArgumentNullException(nameof(other));
+
+            if (!(other is RuntimePlainConstructorInfo<TRuntimeMethodCommon> otherConstructor))
+                return false;
+
+            return _common.HasSameMetadataDefinitionAs(otherConstructor._common);
+        }
+
         public sealed override bool Equals(Object obj)
         {
-            RuntimePlainConstructorInfo other = obj as RuntimePlainConstructorInfo;
-            if (other == null)
+            if (!(obj is RuntimePlainConstructorInfo<TRuntimeMethodCommon> other))
                 return false;
-            return this._common.Equals(other._common);
+            return _common.Equals(other._common);
         }
 
         public sealed override int GetHashCode()
@@ -144,14 +169,17 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override String ToString()
         {
-            return _common.ComputeToString(this, Array.Empty<RuntimeType>());
+            return RuntimeMethodHelpers.ComputeToString(ref _common, this, Array.Empty<RuntimeTypeInfo>());
         }
 
-        protected sealed override RuntimeParameterInfo[] RuntimeParametersAndReturn
+        public sealed override RuntimeMethodHandle MethodHandle => _common.GetRuntimeMethodHandle(null);
+
+        protected sealed override RuntimeParameterInfo[] RuntimeParameters
         {
             get
             {
-                return _common.GetRuntimeParametersAndReturn(this, Array.Empty<RuntimeType>());
+                RuntimeParameterInfo ignore;
+                return _lazyParameters ?? (_lazyParameters = RuntimeMethodHelpers.GetRuntimeParameters(ref _common, this, Array.Empty<RuntimeTypeInfo>(), out ignore));
             }
         }
 
@@ -159,17 +187,22 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                if (this._common.DefiningTypeInfo.IsAbstract)
-                    throw new MemberAccessException(SR.Format(SR.Acc_CreateAbstEx, this._common.DefiningTypeInfo.FullName));
+                if (_common.DefiningTypeInfo.IsAbstract)
+                    throw new MemberAccessException(SR.Format(SR.Acc_CreateAbstEx, _common.DefiningTypeInfo.FullName));
 
                 if (this.IsStatic)
                     throw new MemberAccessException(SR.Acc_NotClassInit);
 
-                return ReflectionCoreExecution.ExecutionEnvironment.GetMethodInvoker(_common.Reader, _common.DeclaringType, _common.MethodHandle, Array.Empty<RuntimeType>(), this);
+                MethodInvoker invoker = this.GetCustomMethodInvokerIfNeeded();
+                if (invoker != null)
+                    return invoker;
+
+                return _common.GetUncachedMethodInvoker(Array.Empty<RuntimeTypeInfo>(), this);
             }
         }
 
-        private RuntimeMethodCommon _common;
+        private volatile RuntimeParameterInfo[] _lazyParameters;
+        private TRuntimeMethodCommon _common;
     }
 }
 

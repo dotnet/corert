@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
 include AsmMacros.inc
 
@@ -59,7 +58,10 @@ endm
 ;;
 POP_PROBE_FRAME macro extraStack
     movdqa      xmm0, [rsp + 20h]
-    add         rsp, 20h + 10h + (extraStack AND (10h-1)) + 4*8
+    add         rsp, 20h + 10h + (extraStack AND (10h-1)) + 8
+    pop         rbp
+    pop         rax     ; discard Thread*
+    pop         rax     ; discard BITMASK
     pop         rbx
     pop         rsi
     pop         rdi
@@ -124,14 +126,14 @@ endm
 ;;  All other registers trashed
 ;;
 
-EXTERN RhpWaitForGC : PROC
+EXTERN RhpWaitForGCNoAbort : PROC
 
 WaitForGCCompletion macro
         test        dword ptr [rbx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_SuppressGcStress + TSF_DoNotTriggerGc
         jnz         @F
 
         mov         rcx, [rbx + OFFSETOF__Thread__m_pHackPInvokeTunnel]
-        call        RhpWaitForGC
+        call        RhpWaitForGCNoAbort
 @@:
 
 endm
@@ -215,9 +217,11 @@ NESTED_END RhpGcStressProbe, _TEXT
 
 endif ;; FEATURE_GC_STRESS
 
+EXTERN RhpThrowHwEx : PROC
+
 NESTED_ENTRY RhpGcProbe, _TEXT
-        cmp         [RhpTrapThreads], 0
-        jne         @f
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         @f
         ret
 @@:
         PUSH_PROBE_FRAME rdx, rax, 0, rcx
@@ -226,26 +230,19 @@ NESTED_ENTRY RhpGcProbe, _TEXT
         mov         rbx, rdx
         WaitForGCCompletion
 
+        mov         rax, [rbx + OFFSETOF__Thread__m_pHackPInvokeTunnel]
+        test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
+        jnz         Abort
         POP_PROBE_FRAME 0
         ret
+Abort:  
+        POP_PROBE_FRAME 0
+        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        pop         rdx         ;; return address as exception RIP
+        jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
+
 NESTED_END RhpGcProbe, _TEXT
 
-
-LEAF_ENTRY RhpGcPoll, _TEXT
-        ;
-        ; loop hijacking is used instead
-        ;
-        int 3
-
-LEAF_END RhpGcPoll, _TEXT
-
-LEAF_ENTRY RhpGcPollStress, _TEXT
-        ;
-        ; loop hijacking is used instead
-        ;
-        int 3
-
-LEAF_END RhpGcPollStress, _TEXT
 
 ifdef FEATURE_GC_STRESS
 ;; PAL_LIMITED_CONTEXT, 6 xmm regs to save, 2 scratch regs to save, plus 20h bytes for scratch space
@@ -483,10 +480,10 @@ ifdef _DEBUG
         ;; If we get here, then we have been hijacked for a real GC, and our SyncState must
         ;; reflect that we've been requested to synchronize.
 
-        cmp         [RhpTrapThreads], 0
-        jne         @F
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         @F
 
-        call        PALDEBUGBREAK
+        call        RhDebugBreak
 @@:
 endif ;; _DEBUG
 
@@ -529,26 +526,27 @@ EXTERN RuntimeInstance__ShouldHijackLoopForGcStress : PROC
 
 endif ;; FEATURE_GC_STRESS
 
-EXTERN RecoverLoopHijackTarget : PROC
 EXTERN g_fGcStressStarted : DWORD
 EXTERN g_fHasFastFxsave : BYTE
 
 FXSAVE_SIZE             equ 512
 
-NESTED_ENTRY RhpLoopHijack, _TEXT
+;; Trap to GC.
+;; Set up the P/Invoke transition frame with the return address as the safe point.
+;; All registers, both volatile and non-volatile, are preserved.
+;; The function should be called not jumped because it's expecting the return address
+NESTED_ENTRY RhpTrapToGC, _TEXT
 
     sizeof_OutgoingScratchSpace equ 20h
     sizeof_PInvokeFrame         equ OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs + 15*8
     sizeof_XmmAlignPad          equ 8
     sizeof_XmmSave              equ FXSAVE_SIZE
     sizeof_MachineFrame         equ 6*8
-    sizeof_ThunkPushedArgs      equ 4*8             ;; eflags, ModuleHeader *, chunk starting index, chunk sub-index
+    sizeof_InitialPushedArgs    equ 2*8             ;; eflags, return value
     sizeof_FixedFrame           equ sizeof_OutgoingScratchSpace + sizeof_PInvokeFrame + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame
 
         ;; On the stack on entry: 
-        ;;   [rsp     ]  -> ModuleHeader * 
-        ;;   [rsp +  8]  -> chunk starting index
-        ;;   [rsp + 10]  -> chunk sub-index (0-256)  BEWARE: this has been sign-extended, but it is unsigned
+        ;;   [rsp     ]  -> Return address 
 
         ;; save eflags before we trash them
         pushfq
@@ -560,7 +558,7 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         ;;   [rsp + 20]  -> m_RIP                           -------|
         ;;   [rsp + 28]  -> m_FramePointer                         |
         ;;   [rsp + 30]  -> m_pThread                              |
-        ;;   [rsp + 38]  -> m_dwFlags / m_dwAlignPad2              |
+        ;;   [rsp + 38]  -> m_Flags / m_dwAlignPad2                |
         ;;   [rsp + 40]  -> rbx save                               |
         ;;   [rsp + 48]  -> rsi save                               |
         ;;   [rsp + 50]  -> rdi save                               |
@@ -588,27 +586,27 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         ;;   [rsp +2e0]  | SS       |
         ;;   [rsp +2e8]  | padding  |
         ;;
-        ;;   [rsp +2f0]  [optional stack alignment]
+        ;;   [rsp +2f0]  [PSP]
+        ;;   [rsp +2f8]  [optional stack alignment]
         ;;
-        ;;   [PSP - 20] -> eflags save
-        ;;   [PSP - 18] -> ModuleHeader * 
-        ;;   [PSP - 10] -> chunk starting index
-        ;;   [PSP -  8] -> chunk sub-index (0-256)  BEWARE: this has been sign-extended, but it is unsigned
+        ;;   [PSP - 10] -> eflags save
+        ;;   [PSP -  8] -> Return address
         ;;   [PSP]      -> caller's frame
 
         test        rsp, 0Fh
         jz          AlreadyAligned
 
-        sub         rsp, sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 8  ; +8 to align RSP
+        sub         rsp, sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 8 ; +8 to save PSP,
         push        r11                         ; save incoming R11 into save location
-        lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 8 + sizeof_ThunkPushedArgs]
+        lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 8 + sizeof_InitialPushedArgs]
         jmp         PspCalculated
 
     AlreadyAligned:
-        sub         rsp, sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame
-        push        r11                         ; save incoming R11 into save location
-        lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + sizeof_ThunkPushedArgs]
 
+        sub         rsp, sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 16 ; +8 to save RSP, +8 to re-align PSP,
+        push        r11                         ; save incoming R11 into save location
+        lea         r11, [rsp + 8 + sizeof_XmmAlignPad + sizeof_XmmSave + sizeof_MachineFrame + 16 + sizeof_InitialPushedArgs]
+        
     PspCalculated:
         push        r10                         ; save incoming R10 into save location
         xor         r10d, r10d
@@ -623,6 +621,7 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         mov         [rsp + 2d0h - 0a8h], r10           ; init EFLAGS to zero
         mov         [rsp + 2d8h - 0a8h], r11           ; save PSP in the 'machine frame'
         mov         [rsp + 2e0h - 0a8h], r10           ; init SS to zero
+        mov         [rsp + 2f0h - 0a8h], r11           ; save PSP
 
         .pushframe
         .allocstack sizeof_XmmAlignPad + sizeof_XmmSave + 2*8    ;; only 2 of the regs from the PInvokeTransitionFrame are on the stack
@@ -640,7 +639,7 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         push_nonvol_reg rdi
         push_nonvol_reg rsi
         push_nonvol_reg rbx
-        push_vol_reg    PROBE_SAVE_FLAGS_EVERYTHING     ; m_dwFlags / m_dwAlignPad2
+        push_vol_reg    PROBE_SAVE_FLAGS_EVERYTHING     ; m_Flags / m_dwAlignPad2
 
         ;; rdx <- GetThread(), TRASHES rcx
         INLINE_GETTHREAD rdx, rcx
@@ -683,19 +682,9 @@ NESTED_ENTRY RhpLoopHijack, _TEXT
         movdqa      [rsp + 0c0h + 0a0h + 15*10h], xmm15
 
 DontSaveXmmAgain:
-        xor         ecx, ecx                ; Combine the two indexes 
-        mov         cl,  [r11 -  8h]        ; ...
-        add         ecx, [r11 - 10h]        ; ...
-        mov         rdx, [r11 - 18h]        ; Load the ModuleHeader*
-
-        ;; RCX contains full index now
-        ;; RDX contains the ModuleHeader*
-
-        call        RecoverLoopHijackTarget
-        mov         [rsp + 2c0h], rax       ; save original target address into 'machine frame'
-        mov         [rsp +  20h], rax       ; save original target address into PInvokeTransitionFrame
-
-        mov         [rbx - 8], rax          ; store original target address for our 'return'
+        mov         rax, [rbx - 8]
+        mov         [rsp + 2c0h], rax       ; save return address into 'machine frame'
+        mov         [rsp +  20h], rax       ; save return address into PInvokeTransitionFrame
 
         ; Early out if GC stress is currently suppressed. Do this after we have computed the real address to
         ; return to but before we link the transition frame onto m_pHackPInvokeTunnel (because hitting this
@@ -730,13 +719,9 @@ ifdef FEATURE_GC_STRESS
 endif ;; FEATURE_GC_STRESS
 
         lea         rcx, [rsp + sizeof_OutgoingScratchSpace]    ; calculate PInvokeTransitionFrame pointer
-        call        RhpWaitForGC
+        call        RhpWaitForGCNoAbort
 
     DoneWaitingForGc:
-        ;; Prepare for our return by stashing a scratch register where we can pop it just before returning
-        mov         rcx, [rsp + 88h]        ; get RCX save value
-        mov         [rbx - 10h], rcx        ; store RCX save value into location for popping
-        mov         rcx, rbx                ; RCX <- PSP
 
         fxrstor     [rsp + 0c0h]
 
@@ -762,10 +747,12 @@ endif ;; FEATURE_GC_STRESS
 
 DontRestoreXmmAgain:
         add         rsp, sizeof_OutgoingScratchSpace
+        mov         eax, [rsp + OFFSETOF__PInvokeTransitionFrame__m_Flags]
+        test        eax, PTFF_THREAD_ABORT
         pop         rax                     ; m_RIP
         pop         rbp                     ; m_FramePointer
         pop         rax                     ; m_pThread
-        pop         rax                     ; m_dwFlags / m_dwAlign2
+        pop         rax                     ; m_Flags / m_dwAlign2
         pop         rbx
         pop         rsi
         pop         rdi
@@ -775,30 +762,37 @@ DontRestoreXmmAgain:
         pop         r15
         pop         rax                     ; RSP
         pop         rax                     ; RAX save
-        pop         rdx                     ; RCX save (intentionally discarding it)
+        pop         rcx                     
         pop         rdx
         pop         r8
         pop         r9
         pop         r10
         pop         r11
 
+        ;; restore PSP
+        ;; 2F0h -> offset of the PSP area
+        ;; 0B8h -> offset of the end of the integer register area which is already popped
+        mov         rsp, [rsp + 2f0h - 0b8h]    
 
-        ;; RCX is PSP at this point and the stack looks like this:
-        ;;   [PSP - 20] -> eflags save
-        ;;   [PSP - 18] -> ModuleHeader * 
-        ;;   [PSP - 10] -> rcx save
+        ;; RSP is PSP at this point and the stack looks like this:
+        ;;   [PSP - 10] -> eflags save
         ;;   [PSP -  8] -> return address
         ;;   [PSP]      -> caller's frame
         ;;
-        ;; The final step is to restore eflags, rcx, and return back to the loop target location.
+        ;; The final step is to restore eflags and return 
+        
+        lea         rsp, [rsp - 10h]
+        jz          @f          ;; result of the test instruction before the pops above
+        popfq                   ;; restore flags
+        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        pop         rdx         ;; return address as exception RIP
+        jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 
-        lea         rsp, [rcx - 20h]
+@@:
         popfq               ;; restore flags
-        pop         rcx     ;; discard ModuleHeader*
-        pop         rcx     ;; restore rcx
         ret
 
-NESTED_END RhpLoopHijack, _TEXT
+NESTED_END RhpTrapToGC, _TEXT
 
 ifdef FEATURE_GC_STRESS
 ;;

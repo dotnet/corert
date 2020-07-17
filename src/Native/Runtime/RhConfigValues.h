@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Definitions of each configuration value used by the RhConfig class.
@@ -18,6 +17,7 @@ RETAIL_CONFIG_VALUE(HeapVerify)
 RETAIL_CONFIG_VALUE(StressLogLevel)
 RETAIL_CONFIG_VALUE(TotalStressLogSize)
 RETAIL_CONFIG_VALUE(DisableBGC)
+RETAIL_CONFIG_VALUE(UseServerGC)
 DEBUG_CONFIG_VALUE(DisallowRuntimeServicesFallback)
 DEBUG_CONFIG_VALUE(GcStressThrottleMode)    // gcstm_TriggerAlways / gcstm_TriggerOnFirstHit / gcstm_TriggerRandom
 DEBUG_CONFIG_VALUE(GcStressFreqCallsite)    // Number of times to force GC out of GcStressFreqDenom (for GCSTM_RANDOM)

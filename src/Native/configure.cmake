@@ -2,6 +2,7 @@ include(CheckFunctionExists)
 include(CheckStructHasMember)
 include(CheckCXXSourceCompiles)
 include(CheckCXXSourceRuns)
+include(CheckCXXSymbolExists)
 
 add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
 

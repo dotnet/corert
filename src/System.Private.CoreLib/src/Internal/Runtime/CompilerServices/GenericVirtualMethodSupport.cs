@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -12,7 +11,7 @@ namespace Internal.Runtime.CompilerServices
 {
     internal static class GenericVirtualMethodSupport
     {
-        private unsafe static IntPtr GVMLookupForSlotWorker(RuntimeTypeHandle type, RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, MethodNameAndSignature methodNameAndSignature)
+        private static unsafe IntPtr GVMLookupForSlotWorker(RuntimeTypeHandle type, RuntimeTypeHandle declaringType, RuntimeTypeHandle[] genericArguments, MethodNameAndSignature methodNameAndSignature)
         {
             bool slotChanged = false;
 
@@ -28,8 +27,8 @@ namespace Internal.Runtime.CompilerServices
             {
                 RuntimeTypeHandle handle = new RuntimeTypeHandle(eetype);
                 string methodName = methodNameAndSignature.Name;
-                IntPtr methodSignature = methodNameAndSignature.Signature;
-                if (RuntimeAugments.Callbacks.TryGetGenericVirtualTargetForTypeAndSlot(handle, ref declaringType, genericArguments, ref methodName, ref methodSignature, out functionPointer, out genericDictionary, out slotChanged))
+                RuntimeSignature methodSignature = methodNameAndSignature.Signature;
+                if (RuntimeAugments.TypeLoaderCallbacks.TryGetGenericVirtualTargetForTypeAndSlot(handle, ref declaringType, genericArguments, ref methodName, ref methodSignature, out functionPointer, out genericDictionary, out slotChanged))
                 {
                     methodNameAndSignature = new MethodNameAndSignature(methodName, methodSignature);
 
@@ -56,7 +55,7 @@ namespace Internal.Runtime.CompilerServices
             return resolution;
         }
 
-        internal unsafe static IntPtr GVMLookupForSlot(RuntimeTypeHandle type, RuntimeMethodHandle slot)
+        internal static unsafe IntPtr GVMLookupForSlot(RuntimeTypeHandle type, RuntimeMethodHandle slot)
         {
             RuntimeTypeHandle declaringTypeHandle;
             MethodNameAndSignature nameAndSignature;

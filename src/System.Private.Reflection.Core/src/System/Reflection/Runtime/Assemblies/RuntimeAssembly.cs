@@ -1,104 +1,40 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.IO;
-using global::System.Text;
-using global::System.Diagnostics;
-using global::System.Reflection;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.Modules;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.TypeParsing;
-using global::System.Reflection.Runtime.CustomAttributes;
-using global::System.Collections.Generic;
+using System;
+using System.Collections.Concurrent;
+using System.IO;
+using System.Text;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.Serialization;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.Modules;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.TypeParsing;
+using System.Reflection.Runtime.CustomAttributes;
+using System.Collections.Generic;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Reflection.Extensibility;
-using global::Internal.Metadata.NativeFormat;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Core.NonPortable;
 
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Tracing;
+using System.Security;
 
 namespace System.Reflection.Runtime.Assemblies
 {
     //
     // The runtime's implementation of an Assembly. 
     //
-    internal sealed partial class RuntimeAssembly : ExtensibleAssembly, IEquatable<RuntimeAssembly>
+    internal abstract partial class RuntimeAssembly : Assembly, IEquatable<RuntimeAssembly>, IRuntimeImplemented
     {
-        private RuntimeAssembly(MetadataReader reader, ScopeDefinitionHandle scope, IEnumerable<QScopeDefinition> overflowScopes)
+        public bool Equals(RuntimeAssembly other)
         {
-            Scope = new QScopeDefinition(reader, scope);
-            OverflowScopes = overflowScopes;
-        }
+            if (other == null)
+                return false;
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.Assembly_CustomAttributes(this);
-#endif
-
-                foreach (QScopeDefinition scope in AllScopes)
-                {
-                    foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(this.ReflectionDomain, scope.Reader, scope.ScopeDefinition.CustomAttributes))
-                        yield return cad;
-
-                    ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-                    if (executionDomain != null)
-                    {
-                        foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(scope.Reader, scope.Handle))
-                            yield return cad;
-                    }
-                }
-            }
-        }
-
-        public sealed override IEnumerable<TypeInfo> DefinedTypes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.Assembly_DefinedTypes(this);
-#endif
-
-                foreach (QScopeDefinition scope in AllScopes)
-                {
-                    MetadataReader reader = scope.Reader;
-                    ScopeDefinition scopeDefinition = scope.ScopeDefinition;
-                    IEnumerable<NamespaceDefinitionHandle> topLevelNamespaceHandles = new NamespaceDefinitionHandle[] { scopeDefinition.RootNamespaceDefinition };
-                    IEnumerable<NamespaceDefinitionHandle> allNamespaceHandles = reader.GetTransitiveNamespaces(topLevelNamespaceHandles);
-                    IEnumerable<TypeDefinitionHandle> allTopLevelTypes = reader.GetTopLevelTypes(allNamespaceHandles);
-                    IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: false);
-                    foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
-                        yield return RuntimeNamedTypeInfo.GetRuntimeNamedTypeInfo(reader, typeDefinitionHandle);
-                }
-            }
-        }
-
-        public sealed override IEnumerable<Type> ExportedTypes
-        {
-            get
-            {
-                foreach (QScopeDefinition scope in AllScopes)
-                {
-                    MetadataReader reader = scope.Reader;
-                    ScopeDefinition scopeDefinition = scope.ScopeDefinition;
-                    ReflectionDomain reflectionDomain = this.ReflectionDomain;
-                    IEnumerable<NamespaceDefinitionHandle> topLevelNamespaceHandles = new NamespaceDefinitionHandle[] { scopeDefinition.RootNamespaceDefinition };
-                    IEnumerable<NamespaceDefinitionHandle> allNamespaceHandles = reader.GetTransitiveNamespaces(topLevelNamespaceHandles);
-                    IEnumerable<TypeDefinitionHandle> allTopLevelTypes = reader.GetTopLevelTypes(allNamespaceHandles);
-                    IEnumerable<TypeDefinitionHandle> allTypes = reader.GetTransitiveTypes(allTopLevelTypes, publicOnly: true);
-                    foreach (TypeDefinitionHandle typeDefinitionHandle in allTypes)
-                        yield return reflectionDomain.ResolveTypeDefinition(reader, typeDefinitionHandle);
-                }
-            }
+            return this.Equals((object)other);
         }
 
         public sealed override String FullName
@@ -114,13 +50,12 @@ namespace System.Reflection.Runtime.Assemblies
             }
         }
 
-        public sealed override Module ManifestModule
+        public sealed override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            get
-            {
-                return RuntimeModule.GetRuntimeModule(this);
-            }
+            throw new PlatformNotSupportedException();
         }
+
+        public abstract override Module ManifestModule { get; }
 
         public sealed override IEnumerable<Module> Modules
         {
@@ -128,62 +63,6 @@ namespace System.Reflection.Runtime.Assemblies
             {
                 yield return ManifestModule;
             }
-        }
-
-        public sealed override bool Equals(Object obj)
-        {
-            RuntimeAssembly other = obj as RuntimeAssembly;
-            return Equals(other);
-        }
-
-        public bool Equals(RuntimeAssembly other)
-        {
-            if (other == null)
-                return false;
-            if (!(this.Scope.Reader == other.Scope.Reader))
-                return false;
-            if (!(this.Scope.Handle.Equals(other.Scope.Handle)))
-                return false;
-            return true;
-        }
-
-        public sealed override int GetHashCode()
-        {
-            return Scope.Handle.GetHashCode();
-        }
-
-        public sealed override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
-        {
-            ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-            if (executionDomain == null)
-                throw new PlatformNotSupportedException();
-            return executionDomain.ExecutionEnvironment.GetManifestResourceInfo(this, resourceName);
-        }
-
-        public sealed override String[] GetManifestResourceNames()
-        {
-            ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-            if (executionDomain == null)
-                throw new PlatformNotSupportedException();
-            return executionDomain.ExecutionEnvironment.GetManifestResourceNames(this);
-        }
-
-        public sealed override Stream GetManifestResourceStream(String name)
-        {
-            ExecutionDomain executionDomain = this.ReflectionDomain as ExecutionDomain;
-            if (executionDomain == null)
-                throw new PlatformNotSupportedException();
-            return executionDomain.ExecutionEnvironment.GetManifestResourceStream(this, name);
-        }
-
-        public sealed override AssemblyName GetName()
-        {
-#if ENABLE_REFLECTION_TRACE
-            if (ReflectionTrace.Enabled)
-                ReflectionTrace.Assembly_GetName(this);
-#endif
-
-            return Scope.Handle.ToRuntimeAssemblyName(Scope.Reader).ToAssemblyName();
         }
 
         public sealed override Type GetType(String name, bool throwOnError, bool ignoreCase)
@@ -198,57 +77,249 @@ namespace System.Reflection.Runtime.Assemblies
             if (name.Length == 0)
                 throw new ArgumentException();
 
-            AssemblyQualifiedTypeName assemblyQualifiedTypeName;
-            try
-            {
-                assemblyQualifiedTypeName = TypeParser.ParseAssemblyQualifiedTypeName(name);
-                if (assemblyQualifiedTypeName.AssemblyName != null)
-                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);  // Cannot specify an assembly qualifier in a typename passed to Assembly.GetType()
-            }
-            catch (ArgumentException)
+            TypeName typeName = TypeParser.ParseAssemblyQualifiedTypeName(name, throwOnError: throwOnError);
+            if (typeName == null)
+                return null;
+            if (typeName is AssemblyQualifiedTypeName)
             {
                 if (throwOnError)
-                    throw;
-                return null;
+                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);  // Cannot specify an assembly qualifier in a typename passed to Assembly.GetType()
+                else
+                    return null;
             }
 
-            RuntimeType result;
-            Exception typeLoadException = assemblyQualifiedTypeName.TypeName.TryResolve(this.ReflectionDomain, this, ignoreCase, out result);
-            if (typeLoadException != null)
-            {
-                if (throwOnError)
-                    throw typeLoadException;
-                return null;
-            }
-            return result;
+            CoreAssemblyResolver coreAssemblyResolver = RuntimeAssembly.GetRuntimeAssemblyIfExists;
+            CoreTypeResolver coreTypeResolver =
+                delegate (Assembly containingAssemblyIfAny, string coreTypeName)
+                {
+                    if (containingAssemblyIfAny == null)
+                        return GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
+                    else
+                        return containingAssemblyIfAny.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
+                };
+            GetTypeOptions getTypeOptions = new GetTypeOptions(coreAssemblyResolver, coreTypeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
+
+            return typeName.ResolveType(this, getTypeOptions);
         }
 
-        internal QScopeDefinition Scope { get; private set; }
+#pragma warning disable 0067  // Silence warning about ModuleResolve not being used.
+        public sealed override event ModuleResolveEventHandler ModuleResolve;
+#pragma warning restore 0067
 
-        internal IEnumerable<QScopeDefinition> OverflowScopes { get; private set; }
+        public sealed override bool ReflectionOnly => false; // ReflectionOnly loading not supported.
 
-        internal IEnumerable<QScopeDefinition> AllScopes
+        public sealed override bool IsCollectible => false; // Unloading not supported.
+
+        internal abstract RuntimeAssemblyName RuntimeAssemblyName { get; }
+
+        public sealed override AssemblyName GetName()
         {
-            get
-            {
-                yield return Scope;
+#if ENABLE_REFLECTION_TRACE
+            if (ReflectionTrace.Enabled)
+                ReflectionTrace.Assembly_GetName(this);
+#endif
+            return RuntimeAssemblyName.ToAssemblyName();
+        }
 
-                foreach (QScopeDefinition overflowScope in OverflowScopes)
+        public sealed override Type[] GetForwardedTypes()
+        {
+            List<Type> types = new List<Type>();
+            List<Exception> exceptions = null;
+
+            foreach (TypeForwardInfo typeForwardInfo in TypeForwardInfos)
+            {
+                string fullTypeName = typeForwardInfo.NamespaceName.Length == 0 ? typeForwardInfo.TypeName : typeForwardInfo.NamespaceName + "." + typeForwardInfo.TypeName;
+                RuntimeAssemblyName redirectedAssemblyName = typeForwardInfo.RedirectedAssemblyName;
+
+                Type type = null;
+                RuntimeAssembly redirectedAssembly;
+                Exception exception = RuntimeAssembly.TryGetRuntimeAssembly(redirectedAssemblyName, out redirectedAssembly);
+                if (exception == null)
                 {
-                    yield return overflowScope;
+                    type = redirectedAssembly.GetTypeCore(fullTypeName, ignoreCase: false); // GetTypeCore() will follow any further type-forwards if needed.
+                    if (type == null)
+                        exception = Helpers.CreateTypeLoadException(fullTypeName.EscapeTypeNameIdentifier(), redirectedAssembly);
+                }
+
+                Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null.
+
+                if (type != null)
+                {
+                    types.Add(type);
+                    AddPublicNestedTypes(type, types);
+                }
+                else
+                {
+                    if (exceptions == null)
+                    {
+                        exceptions = new List<Exception>();
+                    }
+                    exceptions.Add(exception);
                 }
             }
+
+            if (exceptions != null)
+            {
+                int numTypes = types.Count;
+                int numExceptions = exceptions.Count;
+                types.AddRange(new Type[numExceptions]); // add one null Type for each exception.
+                exceptions.InsertRange(0, new Exception[numTypes]); // align the Exceptions with the null Types.
+                throw new ReflectionTypeLoadException(types.ToArray(), exceptions.ToArray());
+            }
+
+            return types.ToArray();
         }
 
-        internal ReflectionDomain ReflectionDomain
+        /// <summary>
+        /// Intentionally excludes forwards to nested types.
+        /// </summary>
+        protected abstract IEnumerable<TypeForwardInfo> TypeForwardInfos { get; }
+
+        private static void AddPublicNestedTypes(Type type, List<Type> types)
+        {
+            foreach (Type nestedType in type.GetNestedTypes(BindingFlags.Public))
+            {
+                types.Add(nestedType);
+                AddPublicNestedTypes(nestedType, types);
+            }
+        }
+
+        /// <summary>
+        /// Helper routine for the more general Type.GetType() family of apis.
+        ///
+        /// Resolves top-level named types only. No nested types. No constructed types.
+        ///
+        /// Returns null if the type does not exist. Throws for all other error cases.
+        /// </summary>
+        internal RuntimeTypeInfo GetTypeCore(string fullName, bool ignoreCase)
+        {
+            if (ignoreCase)
+                return GetTypeCoreCaseInsensitive(fullName);
+            else
+                return GetTypeCoreCaseSensitive(fullName);
+        }
+
+        // Types that derive from RuntimeAssembly must implement the following public surface area members
+        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        public abstract override IEnumerable<TypeInfo> DefinedTypes { get; }
+        public abstract override MethodInfo EntryPoint { get; }
+        public abstract override IEnumerable<Type> ExportedTypes { get; }
+        public abstract override ManifestResourceInfo GetManifestResourceInfo(String resourceName);
+        public abstract override String[] GetManifestResourceNames();
+        public abstract override Stream GetManifestResourceStream(String name);
+        public abstract override string ImageRuntimeVersion { get; }
+        public abstract override bool Equals(Object obj);
+        public abstract override int GetHashCode();
+
+        /// <summary>
+        /// Ensures a module is loaded and that its module constructor is executed. If the module is fully
+        /// loaded and its constructor already ran, we do not run it again.
+        /// </summary>
+        internal abstract void RunModuleConstructor();
+
+        /// <summary>
+        /// Perform a lookup for a type based on a name. Overriders are expected to
+        /// have a non-cached implementation, as the result is expected to be cached by
+        /// callers of this method. Should be implemented by every format specific 
+        /// RuntimeAssembly implementor
+        /// </summary>
+        internal abstract RuntimeTypeInfo UncachedGetTypeCoreCaseSensitive(string fullName);
+
+
+        /// <summary>
+        /// Perform a lookup for a type based on a name. Overriders may or may not 
+        /// have a cached implementation, as the result is not expected to be cached by
+        /// callers of this method, but it is also a rarely used api. Should be 
+        /// implemented by every format specific RuntimeAssembly implementor
+        /// </summary>
+        internal abstract RuntimeTypeInfo GetTypeCoreCaseInsensitive(string fullName);
+
+        internal RuntimeTypeInfo GetTypeCoreCaseSensitive(string fullName)
+        {
+            return this.CaseSensitiveTypeTable.GetOrAdd(fullName);
+        }
+
+        private CaseSensitiveTypeCache CaseSensitiveTypeTable
         {
             get
             {
-                return ReflectionCoreExecution.ExecutionDomain;  //@todo: User Reflection Domains not yet supported.
+                return _lazyCaseSensitiveTypeTable ?? (_lazyCaseSensitiveTypeTable = new CaseSensitiveTypeCache(this));
             }
+        }
+
+        public sealed override bool GlobalAssemblyCache
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public sealed override long HostContext
+        {
+            get
+            {
+                return 0;
+            }
+        }
+
+        public sealed override Module LoadModule(string moduleName, byte[] rawModule, byte[] rawSymbolStore)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override FileStream GetFile(string name)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override FileStream[] GetFiles(bool getResourceModules)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public sealed override SecurityRuleSet SecurityRuleSet
+        {
+            get
+            {
+                return SecurityRuleSet.None;
+            }
+        }
+
+        /// <summary>
+        /// Returns a *freshly allocated* array of loaded Assemblies.
+        /// </summary>
+        internal static Assembly[] GetLoadedAssemblies()
+        {
+            // Important: The result of this method is the return value of the AppDomain.GetAssemblies() api so
+            // so it must return a freshly allocated array on each call.
+
+            AssemblyBinder binder = ReflectionCoreExecution.ExecutionDomain.ReflectionDomainSetup.AssemblyBinder;
+            IList<AssemblyBindResult> bindResults = binder.GetLoadedAssemblies();
+            Assembly[] results = new Assembly[bindResults.Count];
+            for (int i = 0; i < bindResults.Count; i++)
+            {
+                Assembly assembly = GetRuntimeAssembly(bindResults[i]);
+                results[i] = assembly;
+            }
+            return results;
+        }
+
+        private volatile CaseSensitiveTypeCache _lazyCaseSensitiveTypeTable;
+
+        private sealed class CaseSensitiveTypeCache : ConcurrentUnifier<string, RuntimeTypeInfo>
+        {
+            public CaseSensitiveTypeCache(RuntimeAssembly runtimeAssembly)
+            {
+                _runtimeAssembly = runtimeAssembly;
+            }
+
+            protected sealed override RuntimeTypeInfo Factory(string key)
+            {
+                return _runtimeAssembly.UncachedGetTypeCoreCaseSensitive(key);
+            }
+
+            private readonly RuntimeAssembly _runtimeAssembly;
         }
     }
 }
-
-
-

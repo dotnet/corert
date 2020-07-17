@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ==--==
 //
 // Shared (non-architecture specific) portions of a mechanism to perform interface dispatch using an alternate
@@ -35,7 +34,7 @@ struct InterfaceDispatchCache
     union
     {
         InterfaceDispatchCache *    m_pNextFree;    // next in free list
-#ifndef _AMD64_
+#ifndef HOST_AMD64
         InterfaceDispatchCell  *    m_pCell;        // pointer back to interface dispatch cell - not used for AMD64
 #endif
     };

@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma warning disable 0420 //passing volatile fields by ref
 
 
-using System;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 
 namespace System.Threading
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public sealed class Condition
     {
         internal class Waiter
@@ -38,29 +37,29 @@ namespace System.Threading
 
         private unsafe void AssertIsInList(Waiter waiter)
         {
-            Contract.Assert(_waitersHead != null && _waitersTail != null);
-            Contract.Assert((_waitersHead == waiter) == (waiter.prev == null));
-            Contract.Assert((_waitersTail == waiter) == (waiter.next == null));
+            Debug.Assert(_waitersHead != null && _waitersTail != null);
+            Debug.Assert((_waitersHead == waiter) == (waiter.prev == null));
+            Debug.Assert((_waitersTail == waiter) == (waiter.next == null));
 
             for (Waiter current = _waitersHead; current != null; current = current.next)
                 if (current == waiter)
                     return;
-            Contract.Assert(false, "Waiter is not in the waiter list");
+            Debug.Fail("Waiter is not in the waiter list");
         }
 
         private unsafe void AssertIsNotInList(Waiter waiter)
         {
-            Contract.Assert(waiter.next == null && waiter.prev == null);
-            Contract.Assert((_waitersHead == null) == (_waitersTail == null));
+            Debug.Assert(waiter.next == null && waiter.prev == null);
+            Debug.Assert((_waitersHead == null) == (_waitersTail == null));
 
             for (Waiter current = _waitersHead; current != null; current = current.next)
                 if (current == waiter)
-                    Contract.Assert(false, "Waiter is in the waiter list, but should not be");
+                    Debug.Fail("Waiter is in the waiter list, but should not be");
         }
 
         private unsafe void AddWaiter(Waiter waiter)
         {
-            Contract.Assert(_lock.IsAcquired);
+            Debug.Assert(_lock.IsAcquired);
             AssertIsNotInList(waiter);
 
             waiter.prev = _waitersTail;
@@ -75,7 +74,7 @@ namespace System.Threading
 
         private unsafe void RemoveWaiter(Waiter waiter)
         {
-            Contract.Assert(_lock.IsAcquired);
+            Debug.Assert(_lock.IsAcquired);
             AssertIsInList(waiter);
 
             if (waiter.next != null)
@@ -95,27 +94,18 @@ namespace System.Threading
         public Condition(Lock @lock)
         {
             if (@lock == null)
-                throw new ArgumentNullException("lock");
+                throw new ArgumentNullException(nameof(@lock));
             _lock = @lock;
         }
 
-        public bool Wait()
-        {
-            return Wait(Timeout.Infinite);
-        }
+        public bool Wait() => Wait(Timeout.Infinite);
 
-        public bool Wait(TimeSpan timeout)
-        {
-            long tm = (long)timeout.TotalMilliseconds;
-            if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException("timeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
-            return Wait((int)tm);
-        }
+        public bool Wait(TimeSpan timeout) => Wait(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         public unsafe bool Wait(int millisecondsTimeout)
         {
             if (millisecondsTimeout < -1)
-                throw new ArgumentOutOfRangeException("millisecondsTimeout", SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
 
             if (!_lock.IsAcquired)
                 throw new SynchronizationLockException();
@@ -132,7 +122,7 @@ namespace System.Threading
             finally
             {
                 _lock.Reacquire(recursionCount);
-                Contract.Assert(_lock.IsAcquired);
+                Debug.Assert(_lock.IsAcquired);
 
                 if (!waiter.signalled)
                 {

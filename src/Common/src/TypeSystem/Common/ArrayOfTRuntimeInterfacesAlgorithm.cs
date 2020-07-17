@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Debug = System.Diagnostics.Debug;
@@ -31,8 +30,7 @@ namespace Internal.TypeSystem
         {
             ArrayType arrayType = (ArrayType)_type;
             Debug.Assert(arrayType.IsSzArray);
-            Instantiation arrayInstantiation = new Instantiation(new TypeDesc[] { arrayType.ElementType });
-            TypeDesc arrayOfTInstantiation = _arrayOfTType.Context.GetInstantiatedType(_arrayOfTType, arrayInstantiation);
+            TypeDesc arrayOfTInstantiation = _arrayOfTType.MakeInstantiatedType(arrayType.ElementType);
 
             return arrayOfTInstantiation.RuntimeInterfaces;
         }

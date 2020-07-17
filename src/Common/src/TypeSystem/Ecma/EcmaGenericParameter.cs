@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -21,14 +20,6 @@ namespace Internal.TypeSystem.Ecma
         {
             _module = module;
             _handle = handle;
-        }
-
-        public override int GetHashCode()
-        {
-            // TODO: Determine what a the right hash function should be. Use stable hashcode based on the type name?
-            // For now, use the same hash as a SignatureVariable type.
-            GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
-            return TypeHashingAlgorithms.ComputeSignatureVariableHashCode(parameter.Index, parameter.Parent.Kind == HandleKind.MethodDefinition);
         }
 
         public GenericParameterHandle Handle
@@ -63,29 +54,12 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
+        public override string Name
         {
-            TypeFlags flags = 0;
-
-            flags |= TypeFlags.ContainsGenericVariablesComputed | TypeFlags.ContainsGenericVariables;
-
-            flags |= TypeFlags.GenericParameter;
-
-            Debug.Assert((flags & mask) != 0);
-            return flags;
-        }
-
-        public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
-        {
-            GenericParameter parameter = _module.MetadataReader.GetGenericParameter(_handle);
-            if (parameter.Parent.Kind == HandleKind.MethodDefinition)
+            get
             {
-                return methodInstantiation[parameter.Index];
-            }
-            else
-            {
-                Debug.Assert(parameter.Parent.Kind == HandleKind.TypeDefinition);
-                return typeInstantiation[parameter.Index];
+                MetadataReader reader = _module.MetadataReader;
+                return reader.GetString(reader.GetGenericParameter(_handle).Name);
             }
         }
 
@@ -145,7 +119,7 @@ namespace Internal.TypeSystem.Ecma
                 GenericParameterConstraintHandleCollection constraintHandles = parameter.GetConstraints();
 
                 if (constraintHandles.Count == 0)
-                    return Array.Empty<TypeDesc>();
+                    return TypeDesc.EmptyTypes;
 
                 TypeDesc[] constraintTypes = new TypeDesc[constraintHandles.Count];
 

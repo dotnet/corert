@@ -1,19 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-** Object is the root class for all CLR objects.  This class
-** defines only the basics.
-**
-** 
-===========================================================*/
+using System.Runtime.InteropServices;
 
-using System.Runtime;
-using System.Diagnostics;
+using Internal.Runtime;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -22,24 +13,15 @@ namespace System
     // Data Contract: Single field of type EEType*
     // VTable Contract: The first vtable slot should be the finalizer for object => The first virtual method in the object class should be the Finalizer
 
-    // The Object is the root class for all object in the CLR System. Object 
-    // is the super class for all other CLR objects and provide a set of methods and low level
-    // services to subclasses. 
-
     public unsafe class Object
     {
         // CS0649: Field '{blah}' is never assigned to, and will always have its default value
 #pragma warning disable 649
-
-        // Marked as internal for now so that some classes can use C#'s fixed statement on objects. 
-        // Wouldn't have to do this if we could directly declared pinned locals.
-        // TODO: Consider making this EETypePtr instead of EEType*.
-        internal EEType* m_pEEType;
-
+        private EEType* m_pEEType;
 #pragma warning restore
 
         // Creates a new instance of an Object.
-        internal Object()
+        public Object()
         {
         }
 
@@ -52,7 +34,7 @@ namespace System
         {
         }
 
-        internal unsafe EEType* EEType
+        internal EEType* EEType
         {
             get
             {
@@ -60,17 +42,39 @@ namespace System
                 //        unsafe.  But, generically, we don't expect managed code such as this to be allowed
                 //        to run while the GC is running.
                 return m_pEEType;
-                //PREFER m_pEEType.ToPointer();
             }
         }
 
-        internal unsafe int GetArrayLength()
+        internal EETypePtr EETypePtr
         {
-            Debug.Assert(m_pEEType->IsArray, "this is only supported on arrays");
+            get
+            {
+                return new EETypePtr(new IntPtr(m_pEEType));
+            }
+        }
 
-            // m_numComponents is an int field that is directly after m_pEEType
-            fixed (EEType** ptr = &m_pEEType)
-                return *(int*)(ptr + 1);
+        [StructLayout(LayoutKind.Sequential)]
+        private class RawData
+        {
+            public byte Data;
+        }
+
+        /// <summary>
+        /// Return beginning of all data (excluding ObjHeader and EEType*) within this object.
+        /// Note that for strings/arrays this would include the Length as well. 
+        /// </summary>
+        internal ref byte GetRawData()
+        {
+            return ref Unsafe.As<RawData>(this).Data;
+        }
+
+        /// <summary>
+        /// Return size of all data (excluding ObjHeader and EEType*).
+        /// Note that for strings/arrays this would include the Length as well.
+        /// </summary>
+        internal uint GetRawDataSize()
+        {
+            return EETypePtr.BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(EEType*);
         }
     }
 }

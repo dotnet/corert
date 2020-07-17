@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Decoding;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -21,68 +19,7 @@ namespace Internal.TypeSystem.Ecma
 
         public TypeDesc GetPrimitiveType(PrimitiveTypeCode typeCode)
         {
-            WellKnownType wkt;
-
-            switch (typeCode)
-            {
-                case PrimitiveTypeCode.Boolean:
-                    wkt = WellKnownType.Boolean;
-                    break;
-                case PrimitiveTypeCode.Byte:
-                    wkt = WellKnownType.Byte;
-                    break;
-                case PrimitiveTypeCode.Char:
-                    wkt = WellKnownType.Char;
-                    break;
-                case PrimitiveTypeCode.Double:
-                    wkt = WellKnownType.Double;
-                    break;
-                case PrimitiveTypeCode.Int16:
-                    wkt = WellKnownType.Int16;
-                    break;
-                case PrimitiveTypeCode.Int32:
-                    wkt = WellKnownType.Int32;
-                    break;
-                case PrimitiveTypeCode.Int64:
-                    wkt = WellKnownType.Int64;
-                    break;
-                case PrimitiveTypeCode.IntPtr:
-                    wkt = WellKnownType.IntPtr;
-                    break;
-                case PrimitiveTypeCode.Object:
-                    wkt = WellKnownType.Object;
-                    break;
-                case PrimitiveTypeCode.SByte:
-                    wkt = WellKnownType.SByte;
-                    break;
-                case PrimitiveTypeCode.Single:
-                    wkt = WellKnownType.Single;
-                    break;
-                case PrimitiveTypeCode.String:
-                    wkt = WellKnownType.String;
-                    break;
-                case PrimitiveTypeCode.UInt16:
-                    wkt = WellKnownType.UInt16;
-                    break;
-                case PrimitiveTypeCode.UInt32:
-                    wkt = WellKnownType.UInt32;
-                    break;
-                case PrimitiveTypeCode.UInt64:
-                    wkt = WellKnownType.UInt64;
-                    break;
-                case PrimitiveTypeCode.UIntPtr:
-                    wkt = WellKnownType.UIntPtr;
-                    break;
-                case PrimitiveTypeCode.Void:
-                    wkt = WellKnownType.Void;
-                    break;
-                case PrimitiveTypeCode.TypedReference:
-                    throw new NotSupportedException();
-                default:
-                    throw new BadImageFormatException();
-            }
-
-            return _module.Context.GetWellKnownType(wkt);
+            return PrimitiveTypeProvider.GetPrimitiveType(_module.Context, typeCode);
         }
 
         public TypeDesc GetSystemType()
@@ -96,19 +33,19 @@ namespace Internal.TypeSystem.Ecma
             return elementType.MakeArrayType();
         }
 
-        public TypeDesc GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, SignatureTypeHandleCode code)
+        public TypeDesc GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
         {
             Debug.Assert(reader == _module.MetadataReader);
             return _module.GetType(handle);
         }
 
-        public TypeDesc GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, SignatureTypeHandleCode code)
+        public TypeDesc GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
         {
             Debug.Assert(reader == _module.MetadataReader);
             return _module.GetType(handle);
         }
 
-        public TypeDesc GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, SignatureTypeHandleCode code)
+        public TypeDesc GetTypeFromSpecification(MetadataReader reader, TypeSpecificationHandle handle, byte rawTypeKind)
         {
             Debug.Assert(reader == _module.MetadataReader);
             return _module.GetType(handle);

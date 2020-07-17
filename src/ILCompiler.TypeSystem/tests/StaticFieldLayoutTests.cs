@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Linq;
@@ -39,13 +38,13 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "int1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     case "byte1":
-                        Assert.Equal(4, field.Offset);
+                        Assert.Equal(4, field.Offset.AsInt);
                         break;
                     case "char1":
-                        Assert.Equal(6, field.Offset);
+                        Assert.Equal(6, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -70,7 +69,7 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "bool1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -95,13 +94,13 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "int1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     case "byte1":
-                        Assert.Equal(4, field.Offset);
+                        Assert.Equal(4, field.Offset.AsInt);
                         break;
                     case "char1":
-                        Assert.Equal(6, field.Offset);
+                        Assert.Equal(6, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -126,10 +125,10 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "string1":
-                        Assert.Equal(8, field.Offset);
+                        Assert.Equal(8, field.Offset.AsInt);
                         break;
                     case "class1":
-                        Assert.Equal(16, field.Offset);
+                        Assert.Equal(16, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -154,19 +153,19 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "string1":
-                        Assert.Equal(8, field.Offset);
+                        Assert.Equal(8, field.Offset.AsInt);
                         break;
                     case "int1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     case "class1":
-                        Assert.Equal(16, field.Offset);
+                        Assert.Equal(16, field.Offset.AsInt);
                         break;
                     case "int2":
-                        Assert.Equal(4, field.Offset);
+                        Assert.Equal(4, field.Offset.AsInt);
                         break;
                     case "string2":
-                        Assert.Equal(24, field.Offset);
+                        Assert.Equal(24, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -192,10 +191,10 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "int3":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     case "string3":
-                        Assert.Equal(8, field.Offset);
+                        Assert.Equal(8, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -225,13 +224,12 @@ namespace TypeSystemTests
                     case "StringConstant":
                         Assert.True(field.IsStatic);
                         Assert.True(field.IsLiteral);
-                        Assert.Throws<BadImageFormatException>(() => field.Offset);
                         break;
                     case "Int1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     case "String1":
-                        Assert.Equal(8, field.Offset);
+                        Assert.Equal(8, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -257,7 +255,7 @@ namespace TypeSystemTests
                 switch (field.Name)
                 {
                     case "selfRef1":
-                        Assert.Equal(0, field.Offset);
+                        Assert.Equal(0, field.Offset.AsInt);
                         break;
                     default:
                         throw new Exception(field.Name);
@@ -288,6 +286,21 @@ namespace TypeSystemTests
                 rvaData[3] << 24;
 
             Assert.Equal(0x78563412, value);
+        }
+
+        [Fact]
+        public void TestFunctionPointer()
+        {
+            //
+            // Test layout with a function pointer typed-field.
+            //
+
+            var ilModule = _context.GetModuleForSimpleName("ILTestAssembly");
+            var t = ilModule.GetType("StaticFieldLayout", "FunctionPointerType");
+            var field = t.GetField("StaticMethodField");
+
+            Assert.Equal(8, field.Offset.AsInt);
+            Assert.False(field.HasGCStaticBase);
         }
     }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using Internal.Metadata.NativeFormat.Writer;
@@ -9,6 +8,8 @@ using ILCompiler.Metadata;
 using Cts = Internal.TypeSystem;
 
 using Xunit;
+
+#pragma warning disable xUnit2013 // Do not use Assert.Equal() to check for collection size
 
 namespace MetadataTransformTests
 {
@@ -31,7 +32,7 @@ namespace MetadataTransformTests
             var transformResult = MetadataTransform.Run(policy, new[] { _systemModule });
 
             Assert.Equal(1, transformResult.Scopes.Count());
-            
+
             Assert.Equal(
                 _systemModule.GetAllTypes().Count(x => !policy.IsBlocked(x)),
                 transformResult.Scopes.Single().GetAllTypes().Count());
@@ -40,19 +41,19 @@ namespace MetadataTransformTests
         [Fact]
         public void TestBlockedInterface()
         {
-            // __ComObject implements ICastable, which is a metadata blocked type and should not show
-            // up in the __ComObject interface list.
+            // BlockedObject implements IBlockedInterface, which is a metadata blocked type and should not show
+            // up in the BlockedObject interface list.
 
             var policy = new SingleFileMetadataPolicy();
             var transformResult = MetadataTransform.Run(policy, new[] { _systemModule });
 
-            Cts.MetadataType icastable = _systemModule.GetType("System.Private.CompilerServices", "ICastable");
-            Cts.MetadataType comObject = _systemModule.GetType("System", "__ComObject");
+            Cts.MetadataType iblockedinterface = _systemModule.GetType("System.Private.CompilerServices", "IBlockedInterface");
+            Cts.MetadataType comObject = _systemModule.GetType("System", "BlockedObject");
             Assert.Equal(1, comObject.ExplicitlyImplementedInterfaces.Length);
-            Assert.Equal(icastable, comObject.ExplicitlyImplementedInterfaces[0]);
+            Assert.Equal(iblockedinterface, comObject.ExplicitlyImplementedInterfaces[0]);
 
-            Assert.Null(transformResult.GetTransformedTypeDefinition(icastable));
-            Assert.Null(transformResult.GetTransformedTypeReference(icastable));
+            Assert.Null(transformResult.GetTransformedTypeDefinition(iblockedinterface));
+            Assert.Null(transformResult.GetTransformedTypeReference(iblockedinterface));
 
             TypeDefinition comObjectRecord = transformResult.GetTransformedTypeDefinition(comObject);
             Assert.NotNull(comObjectRecord);
@@ -77,9 +78,9 @@ namespace MetadataTransformTests
             var sigRecord = transformResult.Transform.HandleMethodSignature(sig);
 
             // Verify the signature is connected to the existing transformResult world
-            Assert.Same(stringRecord, sigRecord.ReturnType.Type);
+            Assert.Same(stringRecord, sigRecord.ReturnType);
             Assert.Equal(1, sigRecord.Parameters.Count);
-            Assert.Same(singleRecord, sigRecord.Parameters[0].Type);
+            Assert.Same(singleRecord, sigRecord.Parameters[0]);
         }
 
         [Fact]
@@ -206,6 +207,78 @@ namespace MetadataTransformTests
 
             Assert.Equal(5, allowedCount);
             Assert.Equal(8, blockedCount);
+        }
+
+        [Fact]
+        public void TestMethodImplMetadata()
+        {
+            // Test that custom attributes referring to blocked types don't show up in metadata
+
+            var sampleMetadataModule = _context.GetModuleForSimpleName("SampleMetadataAssembly");
+            Cts.MetadataType iCloneable = sampleMetadataModule.GetType("SampleMetadataMethodImpl", "ICloneable");
+            Cts.MetadataType implementsICloneable = sampleMetadataModule.GetType("SampleMetadataMethodImpl", "ImplementsICloneable");
+            Cts.MethodDesc iCloneableDotClone = iCloneable.GetMethod("Clone", null);
+            Cts.MethodDesc iCloneableImplementation = implementsICloneable.GetMethod("SampleMetadataMethodImpl.ICloneable.Clone", null);
+            Cts.MethodDesc iCloneableDotGenericClone = iCloneable.GetMethod("GenericClone", null);
+            Cts.MethodDesc iCloneableGenericImplementation = implementsICloneable.GetMethod("SampleMetadataMethodImpl.ICloneable.GenericClone", null);
+
+            var policy = new SingleFileMetadataPolicy();
+            var transformResult = MetadataTransform.Run(policy,
+                new[] { _systemModule, sampleMetadataModule });
+
+            var iCloneableType = transformResult.GetTransformedTypeDefinition(iCloneable);
+            var implementsICloneableType = transformResult.GetTransformedTypeDefinition(implementsICloneable);
+
+            Assert.Equal(2, implementsICloneableType.MethodImpls.Count);
+
+            // non-generic MethodImpl
+            Method iCloneableDotCloneMethod = transformResult.GetTransformedMethodDefinition(iCloneableDotClone);
+            Method iCloneableImplementationMethod = transformResult.GetTransformedMethodDefinition(iCloneableImplementation);
+            QualifiedMethod methodImplMethodDecl = (QualifiedMethod)implementsICloneableType.MethodImpls[0].MethodDeclaration;
+            QualifiedMethod methodImplMethodBody = (QualifiedMethod)implementsICloneableType.MethodImpls[0].MethodBody;
+
+            Assert.Equal(iCloneableDotCloneMethod, methodImplMethodDecl.Method);
+            Assert.Equal(iCloneableType, methodImplMethodDecl.EnclosingType);
+
+            Assert.Equal(iCloneableImplementationMethod, methodImplMethodBody.Method);
+            Assert.Equal(implementsICloneableType, methodImplMethodBody.EnclosingType);
+
+            // generic MethodImpl
+            Method iCloneableDotGenericCloneMethod = transformResult.GetTransformedMethodDefinition(iCloneableDotGenericClone);
+            Method iCloneableGenericImplementationMethod = transformResult.GetTransformedMethodDefinition(iCloneableGenericImplementation);
+            QualifiedMethod methodImplGenericMethodDecl = (QualifiedMethod)implementsICloneableType.MethodImpls[1].MethodDeclaration;
+            QualifiedMethod methodImplGenericMethodBody = (QualifiedMethod)implementsICloneableType.MethodImpls[1].MethodBody;
+
+            Assert.Equal(iCloneableDotGenericCloneMethod, methodImplGenericMethodDecl.Method);
+            Assert.Equal(iCloneableType, methodImplGenericMethodDecl.EnclosingType);
+
+            Assert.Equal(iCloneableGenericImplementationMethod, methodImplGenericMethodBody.Method);
+            Assert.Equal(implementsICloneableType, methodImplGenericMethodBody.EnclosingType);
+        }
+
+        [Fact]
+        public void TestFunctionPointerSignatures()
+        {
+            var ilModule = _context.GetModuleForSimpleName("ILMetadataAssembly");
+            Cts.MetadataType typeWithFunctionPointers = ilModule.GetType("SampleMetadata", "TypeWithFunctionPointers");
+
+            var policy = new SingleFileMetadataPolicy();
+            var transformResult = MetadataTransform.Run(policy,
+                new[] { _systemModule, ilModule });
+
+            var typeWithFunctionPointersType = transformResult.GetTransformedTypeDefinition(typeWithFunctionPointers);
+            var objectType = transformResult.GetTransformedTypeDefinition((Cts.MetadataType)_context.GetWellKnownType(Cts.WellKnownType.Object));
+
+            Assert.Equal(1, typeWithFunctionPointersType.Fields.Count);
+
+            var theField = typeWithFunctionPointersType.Fields[0];
+            Assert.IsType<TypeSpecification>(theField.Signature.Type);
+            var theFieldSignature = (TypeSpecification)theField.Signature.Type;
+            Assert.IsType<FunctionPointerSignature>(theFieldSignature.Signature);
+            var theFieldPointerSignature = (FunctionPointerSignature)theFieldSignature.Signature;
+            Assert.Equal(objectType, theFieldPointerSignature.Signature.ReturnType);
+            Assert.Equal(1, theFieldPointerSignature.Signature.Parameters.Count);
+            Assert.Equal(objectType, theFieldPointerSignature.Signature.Parameters[0]);
         }
     }
 }

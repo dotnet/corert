@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Support for optional fields attached out-of-line to EETypes (or any other data structure for that matter).
@@ -145,7 +144,6 @@
 enum OptionalFieldTag
 {
 #define DEFINE_INLINE_OPTIONAL_FIELD(_name, _type) OFT_##_name,
-#define DEFINE_OUTLINE_OPTIONAL_FIELD(_name, _type) OFT_##_name,
 #include "OptionalFieldDefinitions.h"
     OFT_Count // Number of field types we support
 };
@@ -153,7 +151,6 @@ enum OptionalFieldTag
 // Array that indicates whether a given field type is inline (true) or out-of-line (false).
 static bool g_rgOptionalFieldTypeIsInline[OFT_Count] = {
 #define DEFINE_INLINE_OPTIONAL_FIELD(_name, _type) true,
-#define DEFINE_OUTLINE_OPTIONAL_FIELD(_name, _type) false,
 #include "OptionalFieldDefinitions.h"
 };
 
@@ -177,47 +174,12 @@ enum OptionalFieldConstants
     OFC_HeaderAlignmentMask     = OFC_HeaderAlignmentBytes - 1,
 };
 
-// Support for some simple statistics gathering. Only used for performance tweaking and debugging of the
-// algorithm so left disabled most of the time.
-#ifdef BINDER
-//#define FEATURE_OPTIONAL_FIELD_STATS 1
-#endif
-#ifdef FEATURE_OPTIONAL_FIELD_STATS
-struct OptionalFieldStats
-{
-    UInt32      m_cOptionalFieldsStructs;
-    UInt32      m_rgFieldCounts[OFT_Count];
-    UInt32      m_rgSizeDist[8];
-    UInt32      m_cHeaders;
-    UInt32      m_cbPadding;
-};
-extern "C" OptionalFieldStats g_sOFStats;
-#define OFS_COUNTER_INC(_name) g_sOFStats.m_c##_name++;
-#else
-#define OFS_COUNTER_INC(_name) 
-#endif
-
-#ifndef RHDUMP
 typedef DPTR(class OptionalFields) PTR_OptionalFields;
 typedef DPTR(PTR_OptionalFields) PTR_PTR_OptionalFields;
-#endif // !RHDUMP
-
 
 class OptionalFields
 {
 public:
-
-    // Return the number of bytes necessary to encode the given integer.
-    static UInt32 EncodingSize(UInt32 uiValue);
-
-    // Encode the given field type and integer into the buffer provided (which is guaranteed to have enough
-    // space). Update the pointer into the buffer to point just past the newly encoded bytes. Note that any
-    // processing of the value for use with out-of-line records has already been performed; we're given the
-    // raw value to encode.
-    static void EncodeField(UInt8 ** ppFields, OptionalFieldTag eTag, bool fLastField, UInt32 uiValue);
-
-#ifndef BINDER
-
     // Define accessors for each field type.
 #define DEFINE_INLINE_OPTIONAL_FIELD(_name, _type)                       \
     _type Get##_name(_type defaultValue)                                 \
@@ -225,17 +187,9 @@ public:
     return (_type)GetInlineField(OFT_##_name, (UInt32)defaultValue); \
     }
 
-#define DEFINE_OUTLINE_OPTIONAL_FIELD(_name, _type)                      \
-    _type * Get##_name()                                                 \
-    {                                                                    \
-    return (_type*)GetOutlineField(OFT_##_name, _alignof(_type));    \
-    }
-
 #include "OptionalFieldDefinitions.h"
 
 private:
-    friend struct OptionalFieldsRuntimeBuilder;
-
     // Reads a field value (or the basis for an out-of-line record delta) starting from the first byte after
     // the field header. Advances the field location to the start of the next field.
     static OptionalFieldTag DecodeFieldTag(PTR_UInt8 * ppFields, bool *pfLastField);
@@ -245,159 +199,4 @@ private:
     static UInt32 DecodeFieldValue(PTR_UInt8 * ppFields);
 
     UInt32 GetInlineField(OptionalFieldTag eTag, UInt32 uiDefaultValue);
-#if 0
-    // Currently not used for ProjectN, implementation needs to be "DAC'ified" if needed again
-    void * GetOutlineField(OptionalFieldTag eTag, size_t cbValueAlignment);
-#endif
-
-#endif // !BINDER
-};
-
-#ifdef BINDER
-
-class OptionalFieldsManager;
-
-//
-// Binder support for laying out OptionalFields structures. Note that this is relatively simple currently since
-// none of the optional fields contain pointers. This will have to be revisited to support fixups and
-// understand ZapNodes if pointers are introduced.
-//
-// Mostly this class just caches the fields declared for a particular OptionalFields and the resulting ZapNode
-// once those fields have been encoded. The layout of OptionalFields in memory is handled by
-// OptionalFieldsManager while the details of the encoding of each individual field are handled by the
-// OptionalFields class itself.
-//
-class OptionalFieldsBuilder
-{
-public:
-    // At construction time associate this build with a manager.
-    OptionalFieldsBuilder(OptionalFieldsManager *pManager);
-
-    // Once all fields have been added the ZapNode representing the OptionalFields structure can be retrieved
-    // (and not before; this will be asserted in debug builds).
-    ZapNode *GetNode();
-
-    // Define setters for each field type.
-#define DEFINE_INLINE_OPTIONAL_FIELD(_name, _type)  \
-    void Add##_name(_type value)                    \
-    {                                               \
-        AddInlineField(OFT_##_name, (UInt32)value); \
-    }
-
-    // Note that the ZapBlob provided here must not have been placed since the OptionalFieldsManager will
-    // place it later in a specific order within a special section.
-#define DEFINE_OUTLINE_OPTIONAL_FIELD(_name, _type) \
-    void Add##_name(ZapBlob * pValueBlob)           \
-    {                                               \
-        assert(!pValueBlob->IsPlaced());            \
-        AddOutlineField(OFT_##_name, pValueBlob);   \
-    }
-
-#include "OptionalFieldDefinitions.h"
-
-private:
-    friend class OptionalFieldsManager;
-
-    void AddInlineField(OptionalFieldTag eTag, UInt32 uiValue);
-    void AddOutlineField(OptionalFieldTag eTag, ZapBlob * pValueBlob);
-
-    // Cached field values specficied by one of the Add* methods above.
-    struct OptionalField
-    {
-        bool                    m_fPresent;         // This field was added (we keep an array of all possible
-                                                    // field types).
-        UInt32                  m_uiOffset;         // Offset of image copy of the value from the base of the
-                                                    // out-of-line record section. Set by manager during field
-                                                    // encoding and used only for out-of-line fields.
-        union
-        {
-            UInt32              m_uiValue;          // Inline value.
-            ZapBlob *           m_pValueBlob;       // Out-of-line value.
-        };
-    };
-
-    OptionalFieldsManager *     m_pManager;
-    ZapNode *                   m_pNode;
-    UInt32                      m_cFields;
-    bool                        m_fContainsOutOfLineFields;
-    OptionalField               m_rgFields[OFT_Count];
-};
-
-// The OptionalFieldsManager takes care of the layout of the two virtual sections used by OptionalFields: the
-// OptionalFields themselves (possibly with base addresses interleaved) and the out-of-line data records.
-class OptionalFieldsManager
-{
-public:
-    OptionalFieldsManager(ZapImage * pZapImage);
-
-    // Encode all the fields for one OptionalFields description cached in the given OptionalFieldsBuilder.
-    ZapNode * EncodeFields(OptionalFieldsBuilder * pBuilder);
-
-    // Place all the nodes created by this manager once all OptionalFields creation is complete.
-    void Place();
-
-private:
-    // When we collect all the out-of-line records for later placement we also wish to cache the offset into
-    // the virtual section at which each node lies. We could work this out from the nodes themselves but that
-    // would be very expensive. This information is used to calculate the deltas between OptionalFields
-    // out-of-line data references and the last out-of-line data record that was recorded as a base address.
-    struct OutOfLineRecord
-    {
-        ZapNode *       m_pNode;
-        UInt32          m_uiOffset;
-    };
-
-    // Given a builder calculate the size of the encoded version of the OptionalFields structure given the
-    // current state of the OptionalFieldsManager (i.e. which base address is current etc.).
-    UInt32 PlanEncoding(OptionalFieldsBuilder * pBuilder);
-
-    // Actually encode the builder into an OptionalFields structure. The size of the encoding must have been
-    // calculated by a previous call to PlanEncoding with no intervening manager state updates.
-    ZapNode * PerformEncoding(OptionalFieldsBuilder * pBuilder, UInt32 cbEncoding);
-
-    // Emit a new base address record using the given out-of-line data record as the new base. It's assumed
-    // that sufficient padding has already been emitted such that the optional fields section is properly
-    // aligned for this header record.
-    void AddNewBaseAddressHeader(UInt32 idxBaseOutOfLineRecord);
-
-    // Go through the builder looking for out-of-line records (it's assumed there is at least one if this is
-    // called) adding copies of the data to the out-of-line records section. Returns the index of the first
-    // record referenced by the builder which is the record that should be used as the base address if this is
-    // the first OptionalFields emitted after a base address header.
-    UInt32 AddOutOfLineRecords(OptionalFieldsBuilder * pBuilder);
-
-    ZapImage *              m_pZapImage;
-    vector<ZapNode*>        m_vecSimpleFields;              // OptionalFields without out-of-line records
-    vector<ZapNode*>        m_vecComplexFields;             // OptionalFields with at least one out-of-line record
-    vector<OutOfLineRecord> m_vecOutOfLineRecords;          // Out-of-line records referenced by above
-    UInt32                  m_cbNextOutOfLineRecordOffset;  // Offset into section the next OOL record will occupy
-    UInt32                  m_idxCurrentBaseOutOfLineRecord;// Index of OOL record currently being used as base
-    UInt32                  m_cbFreeSpaceInCurrentGroup;    // Count of bytes left before next header is emitted
-    bool                    m_fHeaderEmitted;               // Has at least one base address header been emitted?
-};
-
-#endif // BINDER
-
-//
-// Optional field encoder/decoder for dynamic types built at runtime
-//
-struct OptionalFieldsRuntimeBuilder
-{
-    void Decode(OptionalFields * pOptionalFields);
-
-    UInt32 EncodingSize();
-
-    UInt32 Encode(OptionalFields * pOptionalFields);
-
-   struct OptionalField
-    {
-        bool                    m_fPresent;
-        union
-        {
-            UInt32              m_uiValue;
-            void *              m_pValueBlob;
-        };
-    };
-
-    OptionalField               m_rgFields[OFT_Count];
 };

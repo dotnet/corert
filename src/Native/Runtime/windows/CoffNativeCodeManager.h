@@ -1,21 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #pragma once
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 struct T_RUNTIME_FUNCTION {
     uint32_t BeginAddress;
     uint32_t EndAddress;
     uint32_t UnwindInfoAddress;
 };
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 struct T_RUNTIME_FUNCTION {
     uint32_t BeginAddress;
     uint32_t UnwindData;
 };
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 struct T_RUNTIME_FUNCTION {
     uint32_t BeginAddress;
     union {
@@ -40,6 +39,10 @@ typedef DPTR(T_RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 class CoffNativeCodeManager : public ICodeManager
 {
     TADDR m_moduleBase;
+
+    PTR_VOID m_pvManagedCodeStartRange;
+    UInt32 m_cbManagedCodeRange;
+
     PTR_RUNTIME_FUNCTION m_pRuntimeFunctionTable;
     UInt32 m_nRuntimeFunctionTable;
 
@@ -48,6 +51,7 @@ class CoffNativeCodeManager : public ICodeManager
 
 public:
     CoffNativeCodeManager(TADDR moduleBase, 
+                          PTR_VOID pvManagedCodeStartRange, UInt32 cbManagedCodeRange,
                           PTR_RUNTIME_FUNCTION pRuntimeFunctionTable, UInt32 nRuntimeFunctionTable,
                           PTR_PTR_VOID pClasslibFunctions, UInt32 nClasslibFunctions);
     ~CoffNativeCodeManager();
@@ -57,21 +61,21 @@ public:
     //
 
     bool FindMethodInfo(PTR_VOID        ControlPC, 
-                        MethodInfo *    pMethodInfoOut,
-                        UInt32 *        pCodeOffset);
+                        MethodInfo *    pMethodInfoOut);
 
     bool IsFunclet(MethodInfo * pMethodInfo);
+
+    bool IsFilter(MethodInfo * pMethodInfo);
 
     PTR_VOID GetFramePointer(MethodInfo *   pMethodInfo,
                              REGDISPLAY *   pRegisterSet);
 
     void EnumGcRefs(MethodInfo *    pMethodInfo, 
-                    UInt32          codeOffset,
+                    PTR_VOID        safePointAddress,
                     REGDISPLAY *    pRegisterSet,
                     GCEnumContext * hCallback);
 
     bool UnwindStackFrame(MethodInfo *    pMethodInfo,
-                          UInt32          codeOffset,
                           REGDISPLAY *    pRegisterSet,                 // in/out
                           PTR_VOID *      ppPreviousTransitionFrame);   // out
 
@@ -79,18 +83,23 @@ public:
                                                         REGDISPLAY *   pRegisterSet);
 
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
-                                    UInt32          codeOffset,
                                     REGDISPLAY *    pRegisterSet,       // in
                                     PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                     GCRefKind *     pRetValueKind);     // out
 
     void UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo);
 
-    void RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, UInt32 * pCodeOffset);
+    PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC);
 
     bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumState);
 
     bool EHEnumNext(EHEnumState * pEHEnumState, EHClause * pEHClause);
 
+    PTR_VOID GetMethodStartAddress(MethodInfo * pMethodInfo);
+
     void * GetClasslibFunction(ClasslibFunctionId functionId);
+
+    PTR_VOID GetAssociatedData(PTR_VOID ControlPC);
+
+    PTR_VOID GetOsModuleHandle();
 };

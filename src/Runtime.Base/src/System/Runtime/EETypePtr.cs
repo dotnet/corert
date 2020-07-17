@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 /*============================================================
 **
 ** Class:  EETypePtr
@@ -34,9 +34,23 @@ namespace System
             return (_value == p._value);
         }
 
-        internal unsafe System.Runtime.EEType* ToPointer()
+        internal unsafe Internal.Runtime.EEType* ToPointer()
         {
-            return (System.Runtime.EEType*)(void*)_value;
+            return (Internal.Runtime.EEType*)(void*)_value;
+        }
+
+        [Intrinsic]
+        internal static EETypePtr EETypePtrOf<T>()
+        {
+            throw new NotImplementedException();
+        }
+
+        internal unsafe uint BaseSize
+        {
+            get
+            {
+                return ToPointer()->BaseSize;
+            }
         }
     }
 }

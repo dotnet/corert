@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Low-level types describing GC object layouts.
@@ -17,9 +16,9 @@
 class ObjHeader
 {
 private:
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     UInt32   m_uAlignpad;
-#endif // BIT64
+#endif // HOST_64BIT
     UInt32   m_uSyncBlockValue;
 
 public:
@@ -91,9 +90,9 @@ class Array : public Object
     friend class AsmOffsets;
 
     UInt32       m_Length;
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     UInt32       m_uAlignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 public:  
     UInt32 GetArrayLength();
     void InitArrayLength(UInt32 length);
@@ -102,14 +101,29 @@ public:
 typedef DPTR(Array) PTR_Array;
 
 //-------------------------------------------------------------------------------------------------
-class MDArray : public Object
+class String : public Object
 {
+    friend class AsmOffsets;
+    friend class StringConstants;
+
     UInt32       m_Length;
-#if defined(BIT64)
-    UInt32       m_uAlignpad;
-#endif // BIT64
-    UInt32       m_Dimensions[1];
-public:  
-    void InitMDArrayLength(UInt32 length);
-    void InitMDArrayDimension(UInt32 dimension, UInt32 value);
+    UInt16       m_FirstChar;
 };
+typedef DPTR(String) PTR_String;
+
+//-------------------------------------------------------------------------------------------------
+class StringConstants
+{
+public:
+    static UIntNative const ComponentSize = sizeof(((String*)0)->m_FirstChar);
+    static UIntNative const BaseSize = sizeof(ObjHeader) + offsetof(String, m_FirstChar) + ComponentSize;
+};
+
+//-------------------------------------------------------------------------------------------------
+static UIntNative const STRING_COMPONENT_SIZE = StringConstants::ComponentSize;
+
+//-------------------------------------------------------------------------------------------------
+static UIntNative const STRING_BASE_SIZE = StringConstants::BaseSize;
+
+//-------------------------------------------------------------------------------------------------
+static UIntNative const MAX_STRING_LENGTH = 0x3FFFFFDF;

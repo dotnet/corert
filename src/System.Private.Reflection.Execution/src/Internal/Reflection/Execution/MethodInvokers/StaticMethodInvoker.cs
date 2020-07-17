@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using global::System;
 using global::System.Threading;
@@ -24,12 +23,26 @@ namespace Internal.Reflection.Execution.MethodInvokers
         {
         }
 
-        public sealed override Object Invoke(Object thisObject, Object[] arguments)
+        [DebuggerGuidedStepThroughAttribute]
+        protected sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            return RuntimeAugments.CallDynamicInvokeMethod(
-                thisObject, MethodInvokeInfo.LdFtnResult, null, MethodInvokeInfo.DynamicInvokeMethod, MethodInvokeInfo.DynamicInvokeGenericDictionary, MethodInvokeInfo.DefaultValueString, arguments,
-                invokeMethodHelperIsThisCall: false, methodToCallIsThisCall: false);
+            object result = RuntimeAugments.CallDynamicInvokeMethod(
+                thisObject,
+                MethodInvokeInfo.LdFtnResult,
+                null /*thisPtrDynamicInvokeMethod*/,
+                MethodInvokeInfo.DynamicInvokeMethod,
+                MethodInvokeInfo.DynamicInvokeGenericDictionary,
+                MethodInvokeInfo.MethodInfo,
+                arguments,
+                binderBundle,
+                wrapInTargetInvocationException: wrapInTargetInvocationException,
+                invokeMethodHelperIsThisCall: false,
+                methodToCallIsThisCall: false);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
         }
+
+        public sealed override IntPtr LdFtnResult => MethodInvokeInfo.LdFtnResult;
     }
 }
 

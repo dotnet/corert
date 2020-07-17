@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Implementations of functions dealing with object layout related types.
@@ -40,20 +39,7 @@ void* Array::GetArrayData()
 #ifndef DACCESS_COMPILE
 void Array::InitArrayLength(UInt32 length)
 {
-    ASSERT(NULL == m_Length);
     m_Length = length;
-}
-
-void MDArray::InitMDArrayLength(UInt32 length)
-{
-    ASSERT(NULL == m_Length);
-    m_Length = length;
-}
-
-void MDArray::InitMDArrayDimension(UInt32 dimension, UInt32 value)
-{
-    ASSERT(m_Dimensions[dimension] == NULL);
-    m_Dimensions[dimension] = value;
 }
 
 void ObjHeader::SetBit(UInt32 uBit)

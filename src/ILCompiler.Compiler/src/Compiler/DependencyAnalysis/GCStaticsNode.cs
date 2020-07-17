@@ -1,99 +1,111 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
+using Internal.Text;
 using Internal.TypeSystem;
-using ILCompiler.DependencyAnalysisFramework;
+
+using Debug = System.Diagnostics.Debug;
+using GCStaticRegionConstants = Internal.Runtime.GCStaticRegionConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class GCStaticsNode : ObjectNode, ISymbolNode
+    public class GCStaticsNode : ObjectNode, IExportableSymbolNode, ISortableSymbolNode, ISymbolNodeWithDebugInfo
     {
-        private MetadataType _type;
+        private readonly MetadataType _type;
+        private readonly TypePreinit.PreinitializationInfo _preinitializationInfo;
 
-        public GCStaticsNode(MetadataType type)
+        public GCStaticsNode(MetadataType type, PreinitializationManager preinitManager)
         {
+            Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             _type = type;
+
+            if (preinitManager.IsPreinitialized(type))
+                _preinitializationInfo = preinitManager.GetPreinitializationInfo(_type);
         }
 
-        public override string GetName()
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            return ((ISymbolNode)this).MangledName;
+            sb.Append(nameMangler.NodeMangler.GCStatics(_type));
         }
-        
-        string ISymbolNode.MangledName
+
+        public int Offset => 0;
+        public MetadataType Type => _type;
+
+        public IDebugInfo DebugInfo => NullTypeIndexDebugInfo.Instance;
+
+        public static string GetMangledName(TypeDesc type, NameMangler nameMangler)
         {
-            get
-            {
-                return "__GCStaticBase_" + NodeFactory.NameMangler.GetMangledTypeName(_type);
-            }
+            return nameMangler.NodeMangler.GCStatics(type);
         }
+
+        public virtual ExportForm GetExportForm(NodeFactory factory) => factory.CompilationModuleGroup.GetExportTypeForm(Type);
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
-            // TODO Replace with better gcDesc computation algorithm when we add gc handling to the type system
-            bool[] gcDesc = new bool[_type.GCStaticFieldSize / factory.Target.PointerSize + 1];
-            return factory.GCStaticEEType(gcDesc);
+            GCPointerMap map = GCPointerMap.FromStaticLayout(_type);
+            return factory.GCStaticEEType(map);
+        }
+
+        public GCStaticsPreInitDataNode NewPreInitDataNode()
+        {
+            Debug.Assert(_preinitializationInfo != null && _preinitializationInfo.IsPreinitialized);
+            return new GCStaticsPreInitDataNode(_preinitializationInfo);
         }
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = new DependencyList();
-            
-            if (factory.TypeInitializationManager.HasEagerStaticConstructor(_type))
+
+            if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
             {
                 dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
 
             dependencyList.Add(factory.GCStaticsRegion, "GCStatics Region");
-            dependencyList.Add(GetGCStaticEETypeNode(factory), "GCStatic EEType");
+
             dependencyList.Add(factory.GCStaticIndirection(_type), "GC statics indirection");
+            EETypeNode.AddDependenciesForStaticsNode(factory, _type, ref dependencyList);
+
             return dependencyList;
         }
 
-        public override bool ShouldShareNodeAcrossModules(NodeFactory factory)
-        {
-            return factory.CompilationModuleGroup.ShouldShareAcrossModules(_type);
-        }
+        public override bool StaticDependenciesAreComputed => true;
 
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override ObjectNodeSection Section
-        {
-            get
-            {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override bool IsShareable => EETypeNode.IsTypeNodeShareable(_type);
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
 
-            builder.RequirePointerAlignment();
-            builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), 1);
-            builder.DefinedSymbols.Add(this);
+            builder.RequireInitialPointerAlignment();
+
+            int delta = GCStaticRegionConstants.Uninitialized;
+
+            // Set the flag that indicates next pointer following EEType is the preinit data
+            bool isPreinitialized = _preinitializationInfo != null && _preinitializationInfo.IsPreinitialized;
+            if (isPreinitialized)
+                delta |= GCStaticRegionConstants.HasPreInitializedData;
+                
+            builder.EmitPointerReloc(GetGCStaticEETypeNode(factory), delta);
+
+            if (isPreinitialized)
+                builder.EmitPointerReloc(factory.GCStaticsPreInitDataNode(_type));
+
+            builder.AddSymbol(this);
 
             return builder.ToObjectData();
+        }
+
+        public override int ClassCode => -522346696;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return comparer.Compare(_type, ((GCStaticsNode)other)._type);
         }
     }
 }

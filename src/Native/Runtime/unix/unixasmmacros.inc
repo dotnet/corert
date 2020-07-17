@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #define INVALIDGCVALUE 0xCCCCCCCD
 
@@ -20,10 +19,6 @@
 #define C_PLTFUNC(name) name@PLT
 #endif
 
-.macro LEAF_END Name, Section
-        LEAF_END_MARKED \Name, \Section
-.endm
-
 .macro END_PROLOGUE
 .endm
 
@@ -31,10 +26,12 @@
         .equiv \New, \Old
 .endm
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
 #include "unixasmmacrosamd64.inc"
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 #include "unixasmmacrosarm.inc"
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 #include "unixasmmacrosarm64.inc"
+#elif defined(HOST_X86)
+#include "unixasmmacrosx86.inc"
 #endif

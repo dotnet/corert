@@ -1,25 +1,29 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
 namespace Internal.TypeSystem
 {
-    public abstract partial class ModuleDesc
+    public abstract partial class ModuleDesc : TypeSystemEntity
     {
-        /// <summary>
-        /// Gets the type system context the module belongs to.
-        /// </summary>
-        public TypeSystemContext Context
+        public override TypeSystemContext Context
         {
             get;
-            private set;
         }
 
-        public ModuleDesc(TypeSystemContext context)
+        /// <summary>
+        /// Gets the assembly this module is part of (the assembly manifest module).
+        /// </summary>
+        public virtual IAssemblyDesc Assembly
+        {
+            get;
+        }
+
+        public ModuleDesc(TypeSystemContext context, IAssemblyDesc assembly)
         {
             Context = context;
+            Assembly = assembly;
         }
 
         /// <summary>
@@ -30,7 +34,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets the global &lt;Module&gt; type.
         /// </summary>
-        public abstract TypeDesc GetGlobalModuleType();
+        public abstract MetadataType GetGlobalModuleType();
 
         /// <summary>
         /// Retrieves a collection of all types defined in the current module. This includes nested types.

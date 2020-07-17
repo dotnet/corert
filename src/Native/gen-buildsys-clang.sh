@@ -15,18 +15,18 @@ then
 fi
 
 # Set up the environment to be used for building with clang.
-if which "clang-$2.$3" > /dev/null 2>&1
+if command -v "clang-$2.$3" > /dev/null 2>&1 && command -v "clang++-$2.$3" > /dev/null 2>&1
     then
-        export CC="$(which clang-$2.$3)"
-        export CXX="$(which clang++-$2.$3)"
-elif which "clang$2$3" > /dev/null 2>&1
+        export CC="$(command -v clang-$2.$3)"
+        export CXX="$(command -v clang++-$2.$3)"
+elif command -v "clang$2$3" > /dev/null 2>&1 && command -v "clang++$2$3" > /dev/null 2>&1
     then
-        export CC="$(which clang$2$3)"
-        export CXX="$(which clang++$2$3)"
-elif which clang > /dev/null 2>&1
+        export CC="$(command -v clang$2$3)"
+        export CXX="$(command -v clang++$2$3)"
+elif command -v clang > /dev/null 2>&1 && command -v clang++ > /dev/null 2>&1
     then
-        export CC="$(which clang)"
-        export CXX="$(which clang++)"
+        export CC="$(command -v clang)"
+        export CXX="$(command -v clang++)"
 else
     echo "Unable to find Clang Compiler"
     exit 1
@@ -75,12 +75,12 @@ else
   desired_llvm_version="-$desired_llvm_major_version.$desired_llvm_minor_version"
 fi
 locate_llvm_exec() {
-  if which "$llvm_prefix$1$desired_llvm_version" > /dev/null 2>&1
+  if command -v "$llvm_prefix$1$desired_llvm_version" > /dev/null 2>&1
   then
-    echo "$(which $llvm_prefix$1$desired_llvm_version)"
-  elif which "$llvm_prefix$1" > /dev/null 2>&1
+    echo "$(command -v $llvm_prefix$1$desired_llvm_version)"
+  elif command -v "$llvm_prefix$1" > /dev/null 2>&1
   then
-    echo "$(which $llvm_prefix$1)"
+    echo "$(command -v $llvm_prefix$1)"
   else
     exit 1
   fi
@@ -109,16 +109,33 @@ if [[ -n "$CROSSCOMPILE" ]]; then
         echo "ROOTFS_DIR not set for crosscompile"
         exit 1
     fi
-    cmake_extra_defines="$cmake_extra_defines -C $1/cross/$build_arch/tryrun.cmake"
-    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$1/cross/$build_arch/toolchain.cmake"
+    if [[ -z $CONFIG_DIR ]]; then
+        CONFIG_DIR="$1/cross"
+    fi
+    export TARGET_BUILD_ARCH=$build_arch
+    cmake_extra_defines="$cmake_extra_defines -C $CONFIG_DIR/tryrun.cmake"
+    cmake_extra_defines="$cmake_extra_defines -DCMAKE_TOOLCHAIN_FILE=$CONFIG_DIR/toolchain.cmake"
 fi
 
-cmake \
-  "-DCMAKE_AR=$llvm_ar" \
-  "-DCMAKE_LINKER=$llvm_link" \
-  "-DCMAKE_NM=$llvm_nm" \
-  "-DCMAKE_OBJDUMP=$llvm_objdump" \
-  "-DCMAKE_RANLIB=$llvm_ranlib" \
-  "-DCMAKE_BUILD_TYPE=$build_type" \
-  $cmake_extra_defines \
-  "$1/src/Native"
+if [ "${__ObjWriterBuild}" = 1 ]; then
+    cmake_extra_defines="$cmake_extra_defines -DOBJWRITER_BUILD=${__ObjWriterBuild} -DCROSS_BUILD=${__CrossBuild}"
+fi
+
+if [ "$build_arch" = "wasm" ]; then
+    emcmake $CMAKE \
+        "-DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake" \
+        "-DCLR_CMAKE_TARGET_ARCH=$build_arch" \
+        "-DCMAKE_BUILD_TYPE=$build_type" \
+        "$1/src/Native"
+else
+    $CMAKE \
+        "-DCMAKE_AR=$llvm_ar" \
+        "-DCMAKE_LINKER=$llvm_link" \
+        "-DCMAKE_NM=$llvm_nm" \
+        "-DCMAKE_OBJDUMP=$llvm_objdump" \
+        "-DCMAKE_RANLIB=$llvm_ranlib" \
+        "-DCMAKE_BUILD_TYPE=$build_type" \
+        "-DCLR_CMAKE_TARGET_ARCH=$build_arch" \
+        $cmake_extra_defines \
+        "$1/src/Native"
+fi

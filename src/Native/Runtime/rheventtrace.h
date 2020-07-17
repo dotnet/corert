@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This header provides Redhawk-specific ETW code and macros, to allow sharing of common
@@ -71,7 +70,6 @@
     )
 
 class EEType;
-class Module;
 class BulkTypeEventLogger;
 
 namespace ETW
@@ -90,12 +88,6 @@ namespace ETW
         };
 
         static void LogTypeAndParametersIfNecessary(BulkTypeEventLogger * pLogger, UInt64 thAsAddr, TypeLogBehavior typeLogBehavior);
-    };
-
-    class LoaderLog
-    {
-    public:
-        static void SendModuleEvent(Module *pModule);
     };
 };
 

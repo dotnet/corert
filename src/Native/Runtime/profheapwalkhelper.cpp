@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // 
 // On desktop CLR, GC ETW event firing borrows heavily from code in the profiling API,
@@ -14,8 +13,9 @@
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 
 #include "gcenv.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "eventtrace.h"
+#include "profheapwalkhelper.h"
 
 //---------------------------------------------------------------------------------------
 //
@@ -70,7 +70,7 @@ void ScanRootsHelper(Object* pObj, Object** ppRoot, ScanContext * pSC, DWORD dwF
 //      Always returns TRUE to object walker so it walks the entire object
 //
 
-BOOL CountContainedObjectRef(Object * pBO, void * context)
+bool CountContainedObjectRef(Object * pBO, void * context)
 {
     LIMITED_METHOD_CONTRACT;
     UNREFERENCED_PARAMETER(pBO);
@@ -96,7 +96,7 @@ BOOL CountContainedObjectRef(Object * pBO, void * context)
 //      Always returns TRUE to object walker so it walks the entire object
 //
 
-BOOL SaveContainedObjectRef(Object * pBO, void * context)
+bool SaveContainedObjectRef(Object * pBO, void * context)
 {
     LIMITED_METHOD_CONTRACT;
     // Assign the value
@@ -129,7 +129,7 @@ BOOL SaveContainedObjectRef(Object * pBO, void * context)
 //      FALSE=stop
 //
 
-BOOL HeapWalkHelper(Object * pBO, void * pvContext)
+bool HeapWalkHelper(Object * pBO, void * pvContext)
 {
     OBJECTREF *   arrObjRef      = NULL;
     size_t        cNumRefs       = 0;
@@ -141,7 +141,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
     //if (pMT->ContainsPointersOrCollectible())
     {
         // First round through calculates the number of object refs for this class
-        GCHeap::GetGCHeap()->WalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
+        GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &CountContainedObjectRef, (void *)&cNumRefs);
 
         if (cNumRefs > 0)
         {
@@ -166,7 +166,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
 
             // Second round saves off all of the ref values
             OBJECTREF * pCurObjRef = arrObjRef;
-            GCHeap::GetGCHeap()->WalkObject(pBO, &SaveContainedObjectRef, (void *)&pCurObjRef);
+            GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &SaveContainedObjectRef, (void *)&pCurObjRef);
         }
     }
 

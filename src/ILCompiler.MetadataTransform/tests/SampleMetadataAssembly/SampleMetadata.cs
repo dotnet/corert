@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -1210,7 +1208,7 @@ namespace SampleMetadataRex
 
         internal static int B_StaticFieldAssembly;
 
-        protected static internal int B_StaticFieldFamOrAssembly;
+        protected internal static int B_StaticFieldFamOrAssembly;
 
         // Instance methods
 
@@ -1245,7 +1243,7 @@ namespace SampleMetadataRex
         private static void B_StaticMethPrivate() { }
 
         internal static void B_StaticMethAssembly() { }
-        protected static internal void B_StaticMethFamOrAssembly() { }
+        protected internal static void B_StaticMethFamOrAssembly() { }
 
         // Virtual methods
 
@@ -1291,7 +1289,7 @@ namespace SampleMetadataRex
 
         internal static int B_StaticPropAssembly { get { return 5; } }
 
-        protected static internal int B_StaticPropFamOrAssembly { get { return 5; } }
+        protected internal static int B_StaticPropFamOrAssembly { get { return 5; } }
 
         // Virtual properties
 
@@ -1337,7 +1335,7 @@ namespace SampleMetadataRex
 
         internal static event Action B_StaticEventAssembly { add { } remove { } }
 
-        protected static internal event Action B_StaticEventFamOrAssembly { add { } remove { } }
+        protected internal static event Action B_StaticEventFamOrAssembly { add { } remove { } }
 
         // Virtual events
 
@@ -1386,7 +1384,7 @@ namespace SampleMetadataRex
 
         internal static int M_StaticFieldAssembly;
 
-        protected static internal int M_StaticFieldFamOrAssembly;
+        protected internal static int M_StaticFieldFamOrAssembly;
 
         // Instance methods
 
@@ -1422,7 +1420,7 @@ namespace SampleMetadataRex
 
         internal static void M_StaticMethAssembly() { }
 
-        protected static internal void M_StaticMethFamOrAssembly() { }
+        protected internal static void M_StaticMethFamOrAssembly() { }
 
         // Overriding Virtual methods
 
@@ -1468,7 +1466,7 @@ namespace SampleMetadataRex
 
         internal static int M_StaticPropAssembly { get { return 5; } }
 
-        protected static internal int M_StaticPropFamOrAssembly { get { return 5; } }
+        protected internal static int M_StaticPropFamOrAssembly { get { return 5; } }
 
         // Overriding Virtual properties
 
@@ -1514,7 +1512,7 @@ namespace SampleMetadataRex
 
         internal static event Action M_StaticEventAssembly { add { } remove { } }
 
-        protected static internal event Action M_StaticEventFamOrAssembly { add { } remove { } }
+        protected internal static event Action M_StaticEventFamOrAssembly { add { } remove { } }
 
         // Overriding Virtual events
 
@@ -1648,6 +1646,25 @@ namespace SampleMetadataRex
         public new void Hidden1(int x) { }
 
         public void Close1(Object s) { }
+    }
+}
+
+namespace SampleMetadataMethodImpl
+{
+    interface ICloneable
+    {
+        void Clone();
+        void GenericClone<T>();
+    }
+
+    class ImplementsICloneable : ICloneable
+    {
+        void ICloneable.Clone()
+        {
+        }
+        void ICloneable.GenericClone<T>()
+        {
+        }
     }
 }
 

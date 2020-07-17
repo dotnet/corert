@@ -1,109 +1,100 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
+    public interface IHasStartSymbol
+    {
+        ObjectAndOffsetSymbolNode StartSymbol { get; }
+    }
+
     /// <summary>
     /// Represents an array of <typeparamref name="TEmbedded"/> nodes. The contents of this node will be emitted
     /// by placing a starting symbol, followed by contents of <typeparamref name="TEmbedded"/> nodes (optionally
     /// sorted using provided comparer), followed by ending symbol.
     /// </summary>
-    public class ArrayOfEmbeddedDataNode<TEmbedded> : ObjectNode
+    public class ArrayOfEmbeddedDataNode<TEmbedded> : EmbeddedDataContainerNode, IHasStartSymbol
         where TEmbedded : EmbeddedObjectNode
     {
         private HashSet<TEmbedded> _nestedNodes = new HashSet<TEmbedded>();
         private List<TEmbedded> _nestedNodesList = new List<TEmbedded>();
-        private ObjectAndOffsetSymbolNode _startSymbol;
-        private ObjectAndOffsetSymbolNode _endSymbol;
         private IComparer<TEmbedded> _sorter;
 
-        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter)
+        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<TEmbedded> nodeSorter) : base(startSymbolMangledName, endSymbolMangledName)
         {
-            _startSymbol = new ObjectAndOffsetSymbolNode(this, 0, startSymbolMangledName);
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, endSymbolMangledName);
             _sorter = nodeSorter;
         }
-
-        internal ObjectAndOffsetSymbolNode StartSymbol
-        {
-            get
-            {
-                return _startSymbol;
-            }
-        }
-
-        internal ObjectAndOffsetSymbolNode EndSymbol
-        {
-            get
-            {
-                return _endSymbol;
-            }
-        }
-
+        
         public void AddEmbeddedObject(TEmbedded symbol)
         {
-            if (_nestedNodes.Add(symbol))
+            lock (_nestedNodes)
             {
-                _nestedNodesList.Add(symbol);
+                if (_nestedNodes.Add(symbol))
+                {
+                    _nestedNodesList.Add(symbol);
+                }
+                symbol.ContainingNode = this;
             }
         }
 
-        public int IndexOfEmbeddedObject(TEmbedded symbol)
-        {
-            Debug.Assert(_sorter == null);
-            return _nestedNodesList.IndexOf(symbol);
-        }
+        protected override string GetName(NodeFactory factory) => $"Region {StartSymbol.GetMangledName(factory.NameMangler)}";
 
-        public override string GetName()
-        {
-            return "Region " + ((ISymbolNode)_startSymbol).MangledName;
-        }
+        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override bool IsShareable => false;
 
-        public override ObjectNodeSection Section
+        public override bool StaticDependenciesAreComputed => true;
+
+        protected IEnumerable<TEmbedded> NodesList =>  _nestedNodesList;
+        private TEmbedded _nextElementToEncode;
+        public TEmbedded NextElementToEncode => _nextElementToEncode;
+
+        protected virtual void GetElementDataForNodes(ref ObjectDataBuilder builder, NodeFactory factory, bool relocsOnly)
         {
-            get
+            int index = 0;
+            _nextElementToEncode = null;
+            for (int i = 0; i < _nestedNodesList.Count; i++)
             {
-                return ObjectNodeSection.DataSection;
-            }
-        }
+                TEmbedded node = _nestedNodesList[i];
+                if ((i + 1) < _nestedNodesList.Count)
+                    _nextElementToEncode = _nestedNodesList[i + 1];
+                else
+                    _nextElementToEncode = null;
 
-        public override bool StaticDependenciesAreComputed
-        {
-            get
-            {
-                return true;
+                if (!relocsOnly)
+                {
+                    node.InitializeOffsetFromBeginningOfArray(builder.CountBytes);
+                    node.InitializeIndexFromBeginningOfArray(index++);
+                }
+
+                node.EncodeData(ref builder, factory, relocsOnly);
+                if (node is ISymbolDefinitionNode symbolDef)
+                {
+                    builder.AddSymbol(symbolDef);
+                }
             }
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory);
-            builder.Alignment = factory.Target.PointerSize;
+            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
+            builder.RequireInitialPointerAlignment();
 
             if (_sorter != null)
                 _nestedNodesList.Sort(_sorter);
 
-            builder.DefinedSymbols.Add(_startSymbol);
-            foreach (TEmbedded node in _nestedNodesList)
-            {
-                if (!relocsOnly)
-                    node.Offset = builder.CountBytes;
+            builder.AddSymbol(StartSymbol);
 
-                node.EncodeData(ref builder, factory, relocsOnly);
-                if (node is ISymbolNode)
-                {
-                    builder.DefinedSymbols.Add((ISymbolNode)node);
-                }
-            }
-            _endSymbol.SetSymbolOffset(builder.CountBytes);
-            builder.DefinedSymbols.Add(_endSymbol);
+            GetElementDataForNodes(ref builder, factory, relocsOnly);
+
+            EndSymbol.SetSymbolOffset(builder.CountBytes);
+            builder.AddSymbol(EndSymbol);
 
             ObjectData objData = builder.ToObjectData();
             return objData;
@@ -113,15 +104,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _nestedNodesList.Count == 0;
         }
-    }
 
-    // TODO: delete this once we review each use of this and put it on the generic plan with the
-    //       right element type
-    public class ArrayOfEmbeddedDataNode : ArrayOfEmbeddedDataNode<EmbeddedObjectNode>
-    {
-        public ArrayOfEmbeddedDataNode(string startSymbolMangledName, string endSymbolMangledName, IComparer<EmbeddedObjectNode> nodeSorter)
-            : base(startSymbolMangledName, endSymbolMangledName, nodeSorter)
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
+            DependencyList dependencies = new DependencyList();
+            dependencies.Add(StartSymbol, "StartSymbol");
+            dependencies.Add(EndSymbol, "EndSymbol");
+
+            return dependencies;
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.ArrayOfEmbeddedDataNode;
     }
 }

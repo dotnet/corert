@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * GCSCAN.H
@@ -33,8 +32,6 @@ struct DhContext
 
 class GCScan
 {
-    friend struct ::_DacGlobals;
-
   public:
 
     static void GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc);
@@ -48,21 +45,19 @@ class GCScan
     static void GcRuntimeStructuresValid (BOOL bValid);
 
     static bool GetGcRuntimeStructuresValid ();
-#ifdef DACCESS_COMPILE    
+#ifdef DACCESS_COMPILE
     static void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif // DACCESS_COMPILE
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-    static void GcScanHandlesForProfilerAndETW (int max_gen, ScanContext* sc);
-    static void GcScanDependentHandlesForProfilerAndETW (int max_gen, ProfilingScanContext* sc);
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+    static void GcScanHandlesForProfilerAndETW (int max_gen, ScanContext* sc, handle_scan_fn fn);
+    static void GcScanDependentHandlesForProfilerAndETW (int max_gen, ScanContext* sc, handle_scan_fn fn);
 
     // scan for dead weak pointers
     static void GcWeakPtrScan (promote_func* fn, int condemned, int max_gen, ScanContext*sc );
     static void GcWeakPtrScanBySingleThread (int condemned, int max_gen, ScanContext*sc );
 
     // scan for dead weak pointers
-    static void GcShortWeakPtrScan (promote_func* fn, int condemned, int max_gen, 
+    static void GcShortWeakPtrScan (promote_func* fn, int condemned, int max_gen,
                                     ScanContext* sc);
 
     //
@@ -81,29 +76,17 @@ class GCScan
     static bool GcDhReScan(ScanContext* sc);
 
     // post-promotions callback
-    static void GcPromotionsGranted (int condemned, int max_gen, 
+    static void GcPromotionsGranted (int condemned, int max_gen,
                                      ScanContext* sc);
 
     // post-promotions callback some roots were demoted
     static void GcDemote (int condemned, int max_gen, ScanContext* sc);
-    
+
     static size_t AskForMoreReservedMemory (size_t old_size, size_t need_size);
 
     static void VerifyHandleTable(int condemned, int max_gen, ScanContext* sc);
-    
-private:
-#ifdef DACCESS_COMPILE    
-    SVAL_DECL(int32_t, m_GcStructuresInvalidCnt);
-#else
-    static VOLATILE(int32_t) m_GcStructuresInvalidCnt;
-#endif //DACCESS_COMPILE
-};
 
-// These two functions are utilized to scan the heap if requested by ETW
-// or a profiler. The implementations of these two functions are in profheapwalkhelper.cpp.
-#if defined(FEATURE_EVENT_TRACE) | defined(GC_PROFILING)
-void ScanRootsHelper(Object* pObj, Object** ppRoot, ScanContext * pSC, DWORD dwFlags);
-BOOL HeapWalkHelper(Object * pBO, void * pvContext);
-#endif
+    static VOLATILE(int32_t) m_GcStructuresInvalidCnt;
+};
 
 #endif // _GCSCAN_H_

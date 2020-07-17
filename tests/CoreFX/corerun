@@ -1,0 +1,83 @@
+#!/usr/bin/env bash 
+
+# This is the Unix equivalent of build-and-run-test.cmd
+# It is invoked by each test's bash script. The reason it's called corerun is that
+# the unix CoreCLR tests don't have a custom runner override environment variable.
+# See issue https://github.com/dotnet/runtime/issues/7252
+# The CoreFX alternative is named corerun to keep parity with the CoreCLR testing convention
+
+
+export TestFolderName=$1
+export TestFileName=$(basename ${TestFolderName})
+export TestRootDir=${CoreRT_TestRoot}/CoreFX
+export LogDir=$2
+#
+# We're only interested in referencing the xunit runner - the test dlls will be imported by the test wrapper project
+#
+TestExecutable=xunit.console.netcore
+
+source "$CoreRT_TestRoot/coredump_handling.sh"
+
+if [[ $CoreRT_EnableCoreDumps == 1 ]]; then
+    set_up_core_dump_generation
+fi
+
+if [ ! -e "${TestFolderName}/${TestExecutable}.exe" ]; then 
+    echo "not found in ${TestFolderName}/${TestExecutable}.exe"
+    # Not a test we support, exit silently
+    exit 0
+fi
+
+# Copy the artefacts we need to compile and run the xunit exe
+cp -a "${CoreRT_TestRoot}/CoreFX/runtest/CoreFXTestHarness/." "${TestFolderName}"
+export __exitcode=$?
+if [ ${__exitcode} != 0 ];
+then
+    exit ${__exitcode}
+fi
+
+# Workaround until we have a better reflection engine
+# Add name of currently executing test to rd.xml
+sed -i.bak  "s/\*Application\*/${TestFileName}/g" "${TestFolderName}/default.rd.xml"
+
+echo Building ${TestFileName}
+
+${CoreRT_CliBinDir}/dotnet publish "/p:IlcPath=${CoreRT_ToolchainDir}" "/p:DebugSymbols=false" /p:OSGroup=${CoreRT_BuildOS} "/p:Configuration=${CoreRT_BuildType}" "/p:FrameworkLibPath=${CoreRT_TestRoot}/../bin/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/lib" "/p:FrameworkObjPath=${CoreRT_TestRoot}/../bin/obj/${CoreRT_BuildOS}.${CoreRT_BuildArch}.${CoreRT_BuildType}/Framework" /p:DisableFrameworkLibGeneration=true /p:TestRootDir=${TestRootDir} /p:ExecutableName=${TestExecutable} "/p:OutputPath=/${TestFolderName}/" ${TestFolderName}/Test.csproj
+export __exitcode=$?
+if [ ${__exitcode} != 0 ];
+then
+    exit ${__exitcode}
+fi
+
+if [ ! -d "${LogDir}/${TestFileName}" ]; then
+    mkdir -p "${LogDir}/${TestFileName}"
+fi
+
+local ExtraXUnitArgs=""
+if [[ $CoreRT_SingleThreaded == 1 ]]; then
+    ExtraXUnitArgs="-parallel none"
+fi
+
+echo Executing ${TestFileName} - writing logs to ${LogDir}/${TestFileName}/testResults.xml
+echo To repro directly, run ${TestFolderName}/native/${TestExecutable} ${TestFolderName}/${TestFileName}.dll @${TestFolderName}/${TestFileName}.rsp -xml ${LogDir}/${TestFileName}/testResults.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing ${ExtraXUnitArgs}
+chmod +x ${TestFolderName}/native/${TestExecutable} 
+
+case "$(uname -s)" in 
+    # Check if we're running under Linux
+    Linux)
+    export OSCategory="nonlinuxtests"
+    ;;
+    # Check if we're running under OSX
+    Darwin)
+    export OSCategory="nonosxtests"
+    ;;
+    # Default to Linux if we don't recognize the OS
+    *)
+    export OSCategory="nonlinuxtests"
+    ;;
+esac
+
+${TestFolderName}/native/${TestExecutable} ${TestFolderName}/${TestFileName}.dll @${TestFolderName}/${TestFileName}.rsp -xml ${LogDir}/${TestFileName}/testResults.xml -notrait category=nonnetcoreapptests -notrait category=${OSCategory}  -notrait category=failing ${ExtraXUnitArgs}
+export __exitcode=$?
+
+exit ${__exitcode}

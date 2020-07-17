@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -16,7 +15,7 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
         public class TestNode : ComputedStaticDependencyNode<TestGraph>
         {
             private readonly string _data;
-            private readonly static CombinedDependencyListEntry[] s_emptyDynamicList = new CombinedDependencyListEntry[0];
+            private static readonly CombinedDependencyListEntry[] s_emptyDynamicList = new CombinedDependencyListEntry[0];
 
             public TestNode(string data)
             {
@@ -31,7 +30,7 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
                 }
             }
 
-            public override string GetName()
+            protected override string GetName(TestGraph context)
             {
                 return _data;
             }
@@ -163,6 +162,9 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
             get
             {
                 List<string> liveNodes = new List<string>();
+
+                _analyzer.ComputeMarkedNodes();
+
                 foreach (var node in _analyzer.MarkedNodeList)
                 {
                     liveNodes.Add(((TestNode)node).Data);

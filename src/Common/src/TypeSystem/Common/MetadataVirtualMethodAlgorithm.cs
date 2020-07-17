@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -42,8 +41,11 @@ namespace Internal.TypeSystem
 
         private class UnificationGroup
         {
-            private MethodDesc[] _members = Array.Empty<MethodDesc>();
+            private MethodDesc[] _members = MethodDesc.EmptyMethods;
             private int _memberCount = 0;
+
+            private MethodDesc[] _methodsRequiringSlotUnification = MethodDesc.EmptyMethods;
+            private int _methodsRequiringSlotUnificationCount = 0;
 
             /// <summary>
             /// Custom enumerator struct for Unification group. Makes enumeration require 0 allocations.
@@ -86,6 +88,21 @@ namespace Internal.TypeSystem
                 }
             }
 
+            public struct Enumerable
+            {
+                private readonly MethodDesc[] _arrayToEnumerate;
+
+                public Enumerable(MethodDesc[] arrayToEnumerate)
+                {
+                    _arrayToEnumerate = arrayToEnumerate;
+                }
+
+                public Enumerator GetEnumerator()
+                {
+                    return new Enumerator(_arrayToEnumerate);
+                }
+            }
+
             public UnificationGroup(MethodDesc definingMethod)
             {
                 DefiningMethod = definingMethod;
@@ -94,9 +111,31 @@ namespace Internal.TypeSystem
 
             public MethodDesc DefiningMethod;
 
-            public Enumerator GetEnumerator()
+            public Enumerable Members => new Enumerable(_members);
+
+            public Enumerable MethodsRequiringSlotUnification => new Enumerable(_methodsRequiringSlotUnification);
+
+            public void AddMethodRequiringSlotUnification(MethodDesc method)
             {
-                return new Enumerator(_members);
+                if (RequiresSlotUnification(method))
+                    return;
+
+                _methodsRequiringSlotUnificationCount++;
+                if (_methodsRequiringSlotUnificationCount >= _methodsRequiringSlotUnification.Length)
+                {
+                    Array.Resize(ref _methodsRequiringSlotUnification, Math.Max(_methodsRequiringSlotUnification.Length * 2, 2));
+                }
+                _methodsRequiringSlotUnification[_methodsRequiringSlotUnificationCount - 1] = method;
+            }
+
+            public bool RequiresSlotUnification(MethodDesc method)
+            {
+                for(int i = 0; i < _methodsRequiringSlotUnificationCount; i++)
+                {
+                    if (_methodsRequiringSlotUnification[i] == method)
+                        return true;
+                }
+                return false;
             }
 
             public void SetDefiningMethod(MethodDesc newDefiningMethod)
@@ -106,7 +145,11 @@ namespace Internal.TypeSystem
                 if (!IsInGroup(newDefiningMethod) &&
                     DefiningMethod != newDefiningMethod)
                 {
+                    // When we set the defining method, ensure that the old defining method isn't removed from the group
+                    MethodDesc oldDefiningMethod = DefiningMethod;
                     DefiningMethod = newDefiningMethod;
+                    AddToGroup(oldDefiningMethod);
+
                     // TODO! Add assertion that DefiningMethod is a slot defining method
                 }
             }
@@ -128,6 +171,7 @@ namespace Internal.TypeSystem
                         if (_members[i] == null)
                         {
                             _members[i] = method;
+                            break;
                         }
                     }
                 }
@@ -204,6 +248,8 @@ namespace Internal.TypeSystem
 
             // Step 4, name/sig match virtual function resolve
             MethodDesc resolutionTarget = FindNameSigOverrideForVirtualMethod(group.DefiningMethod, uninstantiatedType);
+            if (resolutionTarget == null)
+                return null;
 
             // Step 5, convert resolution target from uninstantiated form target to objecttype target,
             // and instantiate as appropriate
@@ -267,27 +313,41 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType)
+        /// <summary>
+        /// Find matching a matching method by name and sig on a type. (Restricted to virtual methods only)
+        /// </summary>
+        /// <param name="targetMethod"></param>
+        /// <param name="currentType"></param>
+        /// <param name="reverseMethodSearch">Used to control the order of the search. For historical purposes to 
+        /// match .NET Framework behavior, this is typically true, but not always. There is no particular rationale 
+        /// for the particular orders other than to attempt to be consistent in virtual method override behavior 
+        /// betweeen runtimes.</param>
+        /// <param name="nameSigMatchMethodIsValidCandidate"></param>
+        /// <returns></returns>
+        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType, bool reverseMethodSearch, Func<MethodDesc, MethodDesc, bool> nameSigMatchMethodIsValidCandidate)
         {
             string name = targetMethod.Name;
             MethodSignature sig = targetMethod.Signature;
 
-            // TODO: InstantiatedType.GetMethod can't handle this for a situation like
-            // an instantiation of Foo<T>.M(T) because sig is instantiated, but it compares
-            // it to the uninstantiated version
-            //MethodDesc implMethod = currentType.GetMethod(name, sig);
             MethodDesc implMethod = null;
-            foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
+            foreach (MethodDesc candidate in currentType.GetAllMethods())
             {
+                if (!candidate.IsVirtual)
+                    continue;
+
                 if (candidate.Name == name)
                 {
                     if (candidate.Signature.Equals(sig))
                     {
-                        if (implMethod != null)
+                        if (nameSigMatchMethodIsValidCandidate == null || nameSigMatchMethodIsValidCandidate(targetMethod, candidate))
                         {
-                            throw new NotImplementedException("NYI: differentiating between overloads on instantiations when the instantiated signatures match.");
+                            implMethod = candidate;
+
+                            // If reverseMethodSearch is enabled, we want to find the last match on this type, not the first
+                            // (reverseMethodSearch is used for most matches except for searches for name/sig method matches for interface methods on the most derived type)
+                            if (!reverseMethodSearch)
+                                return implMethod;
                         }
-                        implMethod = candidate;
                     }
                 }
             }
@@ -303,7 +363,7 @@ namespace Internal.TypeSystem
         {
             while (currentType != null)
             {
-                MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(targetMethod, currentType);
+                MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(targetMethod, currentType, reverseMethodSearch:true);
 
                 if (nameSigOverride != null)
                 {
@@ -319,7 +379,7 @@ namespace Internal.TypeSystem
         // This function looks for the base type method that defines the slot for a method
         // This is either the newslot method most derived that is in the parent hierarchy of method
         // or the least derived method that isn't newslot that matches by name and sig.
-        private static MethodDesc FindSlotDefiningMethodForVirtualMethod(MethodDesc method)
+        public static MethodDesc FindSlotDefiningMethodForVirtualMethod(MethodDesc method)
         {
             if (method == null)
                 return method;
@@ -329,7 +389,7 @@ namespace Internal.TypeSystem
             // Loop until a newslot method is found
             while ((currentType != null) && !method.IsNewSlot)
             {
-                MethodDesc foundMethod = FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType);
+                MethodDesc foundMethod = FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType, reverseMethodSearch: true, nameSigMatchMethodIsValidCandidate:null);
                 if (foundMethod != null)
                 {
                     method = foundMethod;
@@ -343,22 +403,25 @@ namespace Internal.TypeSystem
             return method;
         }
 
-        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(MethodDesc method, DefType currentType)
+        /// <summary>
+        /// Find matching a matching method by name and sig on a type. (Restricted to virtual methods only) Only search amongst methods with the same vtable slot.
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="currentType"></param>
+        /// <param name="reverseMethodSearch">Used to control the order of the search. For historical purposes to 
+        /// match .NET Framework behavior, this is typically true, but not always. There is no particular rationale 
+        /// for the particular orders other than to attempt to be consistent in virtual method override behavior 
+        /// betweeen runtimes.</param>
+        /// <returns></returns>
+        private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(MethodDesc method, DefType currentType, bool reverseMethodSearch)
         {
-            MethodDesc foundMethod = FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType);
-            if (foundMethod != null)
-            {
-                if (VerifyMethodsHaveTheSameVirtualSlot(foundMethod, method))
-                {
-                    return foundMethod;
-                }
-            }
-
-            return null;
+            return FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType, reverseMethodSearch, nameSigMatchMethodIsValidCandidate: s_VerifyMethodsHaveTheSameVirtualSlot);
         }
 
+        private static Func<MethodDesc, MethodDesc, bool> s_VerifyMethodsHaveTheSameVirtualSlot = VerifyMethodsHaveTheSameVirtualSlot;
+
         // Return true if the slot that defines methodToVerify matches slotDefiningMethod
-        private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc methodToVerify, MethodDesc slotDefiningMethod)
+        private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc slotDefiningMethod, MethodDesc methodToVerify)
         {
             MethodDesc slotDefiningMethodOfMethodToVerify = FindSlotDefiningMethodForVirtualMethod(methodToVerify);
             return slotDefiningMethodOfMethodToVerify == slotDefiningMethod;
@@ -371,10 +434,15 @@ namespace Internal.TypeSystem
             MethodDesc methodImpl = FindImplFromDeclFromMethodImpls(currentType, unificationGroup.DefiningMethod);
             if (methodImpl != null)
             {
+                if(methodImpl.RequiresSlotUnification())
+                {
+                    unificationGroup.AddMethodRequiringSlotUnification(unificationGroup.DefiningMethod);
+                    unificationGroup.AddMethodRequiringSlotUnification(methodImpl);
+                }
                 unificationGroup.SetDefiningMethod(methodImpl);
             }
 
-            MethodDesc nameSigMatchMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(unificationGroup.DefiningMethod, currentType);
+            MethodDesc nameSigMatchMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(unificationGroup.DefiningMethod, currentType, reverseMethodSearch: true);
             MetadataType baseType = currentType.MetadataBaseType;
 
             // Unless the current type has a name/sig match for the group, look to the base type to define the unification group further
@@ -390,22 +458,22 @@ namespace Internal.TypeSystem
             // have seperated themselves from the group
 
             // Start with removing methods that seperated themselves from the group via name/sig matches
-            MethodDescHashtable seperatedMethods = null;
+            MethodDescHashtable separatedMethods = null;
 
-            foreach (MethodDesc memberMethod in unificationGroup)
+            foreach (MethodDesc memberMethod in unificationGroup.Members)
             {
-                MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType);
-                if (nameSigMatchMemberMethod != null)
+                MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType, reverseMethodSearch: true);
+                if (nameSigMatchMemberMethod != null && nameSigMatchMemberMethod != memberMethod)
                 {
-                    if (seperatedMethods == null)
-                        seperatedMethods = new MethodDescHashtable();
-                    seperatedMethods.AddOrGetExisting(memberMethod);
+                    if (separatedMethods == null)
+                        separatedMethods = new MethodDescHashtable();
+                    separatedMethods.AddOrGetExisting(memberMethod);
                 }
             }
 
-            if (seperatedMethods != null)
+            if (separatedMethods != null)
             {
-                foreach (MethodDesc seperatedMethod in MethodDescHashtable.Enumerator.Get(seperatedMethods))
+                foreach (MethodDesc seperatedMethod in MethodDescHashtable.Enumerator.Get(separatedMethods))
                 {
                     unificationGroup.RemoveFromGroup(seperatedMethod);
                 }
@@ -420,30 +488,72 @@ namespace Internal.TypeSystem
                 if (unificationGroup.IsInGroup(declSlot) && !unificationGroup.IsInGroupOrIsDefiningSlot(implSlot))
                 {
                     unificationGroup.RemoveFromGroup(declSlot);
-                    seperatedMethods.AddOrGetExisting(declSlot);
-                    continue;
-                }
-                if (!unificationGroup.IsInGroupOrIsDefiningSlot(declSlot) && unificationGroup.IsInGroupOrIsDefiningSlot(implSlot))
-                {
-                    // Add decl to group.
 
-                    // To do so, we need to have the Unification Group of the decl slot, as it may have multiple members itself
-                    UnificationGroup addDeclGroup = new UnificationGroup(declSlot);
-                    FindBaseUnificationGroup(baseType, addDeclGroup);
-                    Debug.Assert(addDeclGroup.IsInGroupOrIsDefiningSlot(declSlot));
+                    if (separatedMethods == null)
+                        separatedMethods = new MethodDescHashtable();
+                    separatedMethods.AddOrGetExisting(declSlot);
 
-                    // Add all members from the decl's unification group except for ones that have been seperated by name/sig matches
-                    // or previously processed methodimpls. NOTE: This implies that method impls are order dependent.
-                    if (!seperatedMethods.Contains(addDeclGroup.DefiningMethod))
+                    if (unificationGroup.RequiresSlotUnification(declSlot) || implSlot.RequiresSlotUnification())
                     {
-                        unificationGroup.AddToGroup(addDeclGroup.DefiningMethod);
+                        if (implSlot.Signature.EqualsWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
+                        {
+                            unificationGroup.AddMethodRequiringSlotUnification(declSlot);
+                            unificationGroup.AddMethodRequiringSlotUnification(implSlot);
+                            unificationGroup.SetDefiningMethod(implSlot);
+                        }
                     }
 
-                    foreach (MethodDesc addDeclGroupMemberMethod in addDeclGroup)
+                    continue;
+                }
+                if (!unificationGroup.IsInGroupOrIsDefiningSlot(declSlot))
+                {
+                    if (unificationGroup.IsInGroupOrIsDefiningSlot(implSlot))
                     {
-                        if (!seperatedMethods.Contains(addDeclGroupMemberMethod))
+                        // Add decl to group.
+
+                        // To do so, we need to have the Unification Group of the decl slot, as it may have multiple members itself
+                        UnificationGroup addDeclGroup = new UnificationGroup(declSlot);
+                        FindBaseUnificationGroup(baseType, addDeclGroup);
+                        Debug.Assert(
+                            addDeclGroup.IsInGroupOrIsDefiningSlot(declSlot) ||
+                            (addDeclGroup.RequiresSlotUnification(declSlot) && addDeclGroup.DefiningMethod.Signature.EqualsWithCovariantReturnType(declSlot.Signature)));
+
+                        foreach(MethodDesc methodImplRequiredToRemainInEffect in addDeclGroup.MethodsRequiringSlotUnification)
                         {
-                            unificationGroup.AddToGroup(addDeclGroupMemberMethod);
+                            unificationGroup.AddMethodRequiringSlotUnification(methodImplRequiredToRemainInEffect);
+                        }
+
+                        // Add all members from the decl's unification group except for ones that have been seperated by name/sig matches
+                        // or previously processed methodimpls. NOTE: This implies that method impls are order dependent.
+                        if (separatedMethods == null || !separatedMethods.Contains(addDeclGroup.DefiningMethod))
+                        {
+                            unificationGroup.AddToGroup(addDeclGroup.DefiningMethod);
+                        }
+
+                        foreach (MethodDesc addDeclGroupMemberMethod in addDeclGroup.Members)
+                        {
+                            if (separatedMethods == null || !separatedMethods.Contains(addDeclGroupMemberMethod))
+                            {
+                                unificationGroup.AddToGroup(addDeclGroupMemberMethod);
+                            }
+                        }
+
+                        if(unificationGroup.RequiresSlotUnification(declSlot))
+                        {
+                            unificationGroup.AddMethodRequiringSlotUnification(implSlot);
+                        }
+                        else if (implSlot == unificationGroup.DefiningMethod && implSlot.RequiresSlotUnification())
+                        {
+                            unificationGroup.AddMethodRequiringSlotUnification(declSlot);
+                            unificationGroup.AddMethodRequiringSlotUnification(implSlot);
+                        }
+                    }
+                    else if (unificationGroup.RequiresSlotUnification(declSlot))
+                    {
+                        if (implSlot.Signature.EqualsWithCovariantReturnType(unificationGroup.DefiningMethod.Signature))
+                        {
+                            unificationGroup.AddMethodRequiringSlotUnification(implSlot);
+                            unificationGroup.SetDefiningMethod(implSlot);
                         }
                     }
                 }
@@ -453,6 +563,11 @@ namespace Internal.TypeSystem
         public override MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType)
         {
             return ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
+        }
+
+        public override MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType)
+        {
+            return ResolveVariantInterfaceMethodToVirtualMethodOnType(interfaceMethod, (MetadataType)currentType);
         }
 
         //////////////////////// INTERFACE RESOLUTION
@@ -486,7 +601,9 @@ namespace Internal.TypeSystem
 
             if (foundExplicitInterface)
             {
-                MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType);
+                MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType
+                    , reverseMethodSearch: false /* When searching for name/sig overrides on a type that explicitly defines an interface, search through the type in the forward direction*/
+                    , nameSigMatchMethodIsValidCandidate :null);
                 foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
 
                 if (baseType == null)
@@ -522,16 +639,53 @@ namespace Internal.TypeSystem
                 }
                 else
                 {
-                    return FindNameSigOverrideForInterfaceMethodRecursive(interfaceMethod, currentType);
+                    MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType
+                                            , reverseMethodSearch: false /* When searching for name/sig overrides on a type that is the first type in the hierarchy to require the interface, search through the type in the forward direction*/
+                                            , nameSigMatchMethodIsValidCandidate: null);
+
+                    foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
+
+                    if (foundOnCurrentType != null)
+                        return foundOnCurrentType;
+
+                    return FindNameSigOverrideForInterfaceMethodRecursive(interfaceMethod, baseType);
                 }
             }
+        }
+
+        public static MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
+        {
+            MetadataType interfaceType = (MetadataType)interfaceMethod.OwningType;
+            bool foundInterface = IsInterfaceImplementedOnType(currentType, interfaceType);
+            MethodDesc implMethod;
+
+            if (foundInterface)
+            {
+                implMethod = ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod, currentType);
+                if (implMethod != null)
+                    return implMethod;
+            }
+
+            foreach (TypeDesc iface in currentType.RuntimeInterfaces)
+            {
+                if (iface.CanCastTo(interfaceType))
+                {
+                    implMethod = iface.FindMethodOnTypeWithMatchingTypicalMethod(interfaceMethod);
+                    Debug.Assert(implMethod != null);
+                    implMethod = ResolveInterfaceMethodToVirtualMethodOnType(implMethod, currentType);
+                    if (implMethod != null)
+                        return implMethod;
+                }
+            }
+
+            return null;
         }
 
         // Helper routine used during implicit interface implementation discovery
         private static MethodDesc ResolveInterfaceMethodToVirtualMethodOnTypeRecursive(MethodDesc interfaceMethod, MetadataType currentType)
         {
             while (true)
-            {
+            {       
                 if (currentType == null)
                     return null;
 
@@ -559,7 +713,10 @@ namespace Internal.TypeSystem
                 if (currentType == null)
                     return null;
 
-                MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType);
+                MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType
+                    , reverseMethodSearch: true /* When searching for a name sig match for an interface on parent types search in reverse order of declaration */
+                    , nameSigMatchMethodIsValidCandidate:null);
+
                 if (nameSigOverride != null)
                 {
                     return FindSlotDefiningMethodForVirtualMethod(nameSigOverride);
@@ -582,8 +739,11 @@ namespace Internal.TypeSystem
             {
                 do
                 {
-                    foreach (MethodDesc m in type.GetAllVirtualMethods())
+                    foreach (MethodDesc m in type.GetAllMethods())
                     {
+                        if (!m.IsVirtual)
+                            continue;
+
                         MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
                         if (!alreadyEnumerated.Contains(possibleVirtual))
                         {

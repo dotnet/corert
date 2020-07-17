@@ -1,0 +1,86 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/framework</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v5.0</NuGetTargetMoniker>
+    <TargetFramework>netcoreapp5.0</TargetFramework>
+    <RuntimeIdentifiers>$(NuPkgRid)</RuntimeIdentifiers>
+    <RidSpecificAssets>true</RidSpecificAssets>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Framework-uapaot.depproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.App.Runtime.$(NuPkgRid)">
+      <Version>$(RuntimeLibrariesVersion)</Version>
+    </PackageReference>
+
+    <!-- Needed by UAP System.Text.Json we grab in Framework-uapaot.depproj -->
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
+      <Version>1.0.0</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- CoreRT has own CoreLib -->
+    <FileToExclude Include="System.Private.CoreLib" />
+
+    <!-- Pickup a few selected aot-specific files from uapaot instead -->
+    <FileToExclude Include="System.Linq.Expressions" />
+    <FileToExclude Include="System.Text.RegularExpressions" />
+    <FileToExclude Include="System.Private.Xml" />
+    <FileToExclude Include="System.Private.Xml.Linq" />
+
+    <!-- System.Linq in the aot-specific package is optimized for size -->
+    <FileToExclude Include="System.Linq" />
+
+    <!-- Relies on Reflection.Emit - we take S.T.Json from UAP -->
+    <FileToExclude Include="System.Text.Json" />
+
+    <!-- TODO: WinRT -->
+    <FileToExclude Include="System.Runtime.InteropServices.WindowsRuntime" />
+    <FileToExclude Include="System.Runtime.WindowsRuntime" />
+    <FileToExclude Include="System.Runtime.WindowsRuntime.UI.Xaml" />
+
+    <!-- Unmanaged .dlls -->
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.x86" />
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.amd64" />
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.arm" />
+    <FileToExclude Include="Microsoft.DiaSymReader.Native.arm64" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Override default FilterNugetPackages to perform additional filtering -->
+  <Target Name="FilterNugetPackages" AfterTargets="ResolveNuGetPackages">
+    <ItemGroup>
+      <_nuGetDeployByFileName Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
+        <OriginalItemSpec>%(Identity)</OriginalItemSpec>
+      </_nuGetDeployByFileName>
+
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="$([System.String]::new('%(Identity)').StartsWith('System'))" />
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="$([System.String]::new('%(Identity)').StartsWith('Microsoft'))" />
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="'%(Identity)' == 'netstandard'" />
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="'%(Identity)' == 'mscorlib'" />
+
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="$([System.String]::new('%(Identity)').StartsWith('libSystem'))" />
+
+      <!-- TODO: https://github.com/dotnet/corert/issues/5496 -->
+      <_filteredNuGetDeployByFileName Include="@(_nuGetDeployByFileName)" Condition="'%(Identity)' == 'clrcompression'" />
+
+      <_filteredNuGetDeployByFileName Remove="@(FileToExclude)" />
+
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+      <ReferenceCopyLocalPaths Include="@(_filteredNuGetDeployByFileName->'%(OriginalItemSpec)')" />
+    </ItemGroup>
+  </Target>
+
+</Project>

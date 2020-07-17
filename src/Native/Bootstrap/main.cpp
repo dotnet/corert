@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 
@@ -8,30 +7,17 @@
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 
-#include <stdlib.h> 
-#include "vector.h"
+#include <stdlib.h>
 
 #ifndef CPPCODEGEN
-NoStl::vector<void*> __myVector;
+
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
 // startup of the application.
 //
-// Sections are created in the output obj file to mark the beginning and end of merged global data. They 
-// are named .modules$A and .modules$Z. Each section defines a sentinel symbol that is used to
-// get the addresses of the start and end of global data at runtime.
-//
-// Each obj file compiled from managed code has a .modules$I section containing a pointer to its ReadyToRun
-// data (which points at eager class constructors, frozen strings, etc).
-//
-// On Windows, the #pragma ... /merge directive folds the book-end sections and all .modules$I sections from all input
-// obj files into .rdata in alphabetical order.
-//
-// On Linux, a linker script is used (see src/scripts/linkerscript) to do the equivalent since there is no similar
-// #pragma directive.
-//
-// On OSX, neither of these options are available but we can use a feature of MachO sections that invokes
-// each pointer in the section as a function to achieve the same effect with the helper RegisterReadyToRunModule
+// ILC creates sections in the output obj file to mark the beginning and end of merged global data.
+// It defines sentinel symbols that are used to get the addresses of the start and end of global data 
+// at runtime. The section names are platform-specific to match platform-specific linker conventions.
 //
 #if defined(_MSC_VER)
 
@@ -42,55 +28,95 @@ extern "C" __declspec(allocate(".modules$Z")) void * __modules_z[];
 
 __declspec(allocate(".modules$A")) void * __modules_a[] = { nullptr };
 __declspec(allocate(".modules$Z")) void * __modules_z[] = { nullptr };
+
+//
+// Each obj file compiled from managed code has a .modules$I section containing a pointer to its ReadyToRun
+// data (which points at eager class constructors, frozen strings, etc).
+//
+// The #pragma ... /merge directive folds the book-end sections and all .modules$I sections from all input
+// obj files into .rdata in alphabetical order.
+//
 #pragma comment(linker, "/merge:.modules=.rdata")
 
-// Sentinels for managed code section are not implemented here because of the C++ compiler 
-// wraps them with a jump stub in debug builds. They are emitted in ilc instead.
-extern "C" void __managedcode_a();
-extern "C" void __managedcode_z();
+// 
+// Unboxing stubs need to be merged, folded and sorted. They are delimited by two special sections (.unbox$A
+// and .unbox$Z). All unboxing stubs are in .unbox$M sections.
+//
+#pragma comment(linker, "/merge:.unbox=.text")
+
+char _bookend_a;
+char _bookend_z;
+
+//
+// Generate bookends for the managed code section.
+// We give them unique bodies to prevent folding.
+//
+
+#pragma code_seg(".managedcode$A")
+void* __managedcode_a() { return &_bookend_a; }
+#pragma code_seg(".managedcode$Z")
+void* __managedcode_z() { return &_bookend_z; }
+#pragma code_seg()
+
+//
+// Generate bookends for the unboxing stub section.
+// We give them unique bodies to prevent folding.
+//
+
+#pragma code_seg(".unbox$A")
+void* __unbox_a() { return &_bookend_a; }
+#pragma code_seg(".unbox$Z")
+void* __unbox_z() { return &_bookend_z; }
+#pragma code_seg()
 
 #else // _MSC_VER
 
 #if defined(__APPLE__)
 
-//
-// On platforms with MachO binaries (OSX), we cannot use the above mechanism to register
-// global data for each module. Instead, we use a special section type whose contents
-// are a list of function pointers to call.  We create a jump stub that passes the global
-// data pointer into RegisterReadyToRunModule where we save it in a list for the startup
-// code to consume.
-//
-NoStl::vector<void*> __registeredModules;
-
-extern "C" void RegisterReadyToRunModule(void * pModule)
-{
-    __registeredModules.push_back(pModule);
-}
+extern void * __modules_a[] __asm("section$start$__DATA$__modules");
+extern void * __modules_z[] __asm("section$end$__DATA$__modules");
+extern char __managedcode_a __asm("section$start$__TEXT$__managedcode");
+extern char __managedcode_z __asm("section$end$__TEXT$__managedcode");
+extern char __unbox_a __asm("section$start$__TEXT$__unbox");
+extern char __unbox_z __asm("section$end$__TEXT$__unbox");
 
 #else // __APPLE__
 
-extern "C" __attribute((section (".modules$A"))) void * __modules_a[];
-extern "C" __attribute((section (".modules$Z"))) void * __modules_z[];
-__attribute((section (".modules$A"))) void * __modules_a[] = { nullptr };
-__attribute((section (".modules$Z"))) void * __modules_z[] = { nullptr };
+extern "C" void * __start___modules[];
+extern "C" void * __stop___modules[];
+static void * (&__modules_a)[] = __start___modules;
+static void * (&__modules_z)[] = __stop___modules;
+
+extern "C" char __start___managedcode;
+extern "C" char __stop___managedcode;
+static char& __managedcode_a = __start___managedcode;
+static char& __managedcode_z = __stop___managedcode;
+
+extern "C" char __start___unbox;
+extern "C" char __stop___unbox;
+static char& __unbox_a = __start___unbox;
+static char& __unbox_z = __stop___unbox;
 
 #endif // __APPLE__
 
 #endif // _MSC_VER
 
-#endif // CPPCODEGEN
+#endif // !CPPCODEGEN
 
+// Do not warn that extern C methods throw exceptions. This is temporary
+// as long as we have unimplemented/throwing APIs in this file.
 #pragma warning(disable:4297)
+
+#ifdef CPPCODEGEN
 
 extern "C" Object * RhNewObject(MethodTable * pMT);
 extern "C" Object * RhNewArray(MethodTable * pMT, int32_t elements);
-extern "C" void * RhTypeCast_IsInstanceOf(void * pObject, MethodTable * pMT);
-extern "C" void * RhTypeCast_CheckCast(void * pObject, MethodTable * pMT);
+extern "C" void * RhTypeCast_IsInstanceOf(MethodTable * pMT, void* pObject);
+extern "C" void * RhTypeCast_CheckCast(MethodTable * pMT, void* pObject);
 extern "C" void RhpStelemRef(void * pArray, int index, void * pObj);
 extern "C" void * RhpLdelemaRef(void * pArray, int index, MethodTable * pMT);
 extern "C" __NORETURN void RhpThrowEx(void * pEx);
-
-#ifdef CPPCODEGEN
+extern "C" void RhDebugBreak();
 
 extern "C" Object * __allocate_object(MethodTable * pMT)
 {
@@ -102,14 +128,14 @@ extern "C" Object * __allocate_array(size_t elements, MethodTable * pMT)
     return RhNewArray(pMT, (int32_t)elements); // TODO: type mismatch
 }
 
-extern "C" Object * __castclass(void * obj, MethodTable * pTargetMT)
+extern "C" Object * __castclass(MethodTable * pTargetMT, void* obj)
 {
-    return (Object *)RhTypeCast_CheckCast(obj, pTargetMT);
+    return (Object *)RhTypeCast_CheckCast(pTargetMT, obj);
 }
 
-extern "C" Object * __isinst(void * obj, MethodTable * pTargetMT)
+extern "C" Object * __isinst(MethodTable * pTargetMT, void* obj)
 {
-    return (Object *)RhTypeCast_IsInstanceOf(obj, pTargetMT);
+    return (Object *)RhTypeCast_IsInstanceOf(pTargetMT, obj);
 }
 
 extern "C" void __stelem_ref(void * pArray, unsigned idx, void * obj)
@@ -127,43 +153,18 @@ extern "C" void __throw_exception(void * pEx)
     RhpThrowEx(pEx);
 }
 
+extern "C" void __debug_break()
+{
+    RhDebugBreak();
+}
+
 void __range_check_fail()
 {
     throw "ThrowRangeOverflowException";
 }
-#endif // CPPCODEGEN
-
 
 extern "C" void RhpReversePInvoke2(ReversePInvokeFrame* pRevFrame);
-extern "C" void RhpReversePInvokeReturn(ReversePInvokeFrame* pRevFrame);
-extern "C" int32_t RhpEnableConservativeStackReporting();
-
-extern "C" bool RhpRegisterCoffModule(void * pModule, 
-    void * pvStartRange, uint32_t cbRange,
-    void ** pClasslibFunctions, uint32_t nClasslibFunctions);
-
-#define DLL_PROCESS_ATTACH      1
-extern "C" BOOL WINAPI RtuDllMain(HANDLE hPalInstance, DWORD dwReason, void* pvReserved);
-
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
-
-int __initialize_runtime()
-{
-    if (!PalInit())
-        return -1;
-
-    if (!RtuDllMain(NULL, DLL_PROCESS_ATTACH, NULL))
-        return -1;
-
-    if (!RhpEnableConservativeStackReporting())
-        return -1;
-
-    return 0;
-}
-
-void __shutdown_runtime()
-{
-}
+extern "C" void RhpReversePInvokeReturn2(ReversePInvokeFrame* pRevFrame);
 
 void __reverse_pinvoke(ReversePInvokeFrame* pRevFrame)
 {
@@ -172,7 +173,20 @@ void __reverse_pinvoke(ReversePInvokeFrame* pRevFrame)
 
 void __reverse_pinvoke_return(ReversePInvokeFrame* pRevFrame)
 {
-    RhpReversePInvokeReturn(pRevFrame);
+    RhpReversePInvokeReturn2(pRevFrame);
+}
+
+extern "C" void RhpPInvoke2(PInvokeTransitionFrame* pFrame);
+extern "C" void RhpPInvokeReturn2(PInvokeTransitionFrame* pFrame);
+
+void __pinvoke(PInvokeTransitionFrame* pFrame)
+{
+    RhpPInvoke2(pFrame);
+}
+
+void __pinvoke_return(PInvokeTransitionFrame* pFrame)
+{
+    RhpPInvokeReturn2(pFrame);
 }
 
 namespace System_Private_CoreLib { namespace System { 
@@ -206,46 +220,6 @@ namespace System_Private_CoreLib { namespace System {
 
 }; };
 
-using namespace System_Private_CoreLib;
-
-void PrintStringObject(System::String *pStringToPrint)
-{
-    // Get the number of characters in managed string (stored as UTF16)
-    int32_t length = *((int32_t*)((char*)(pStringToPrint)+sizeof(intptr_t)));
-
-    // Get the pointer to the start of the character array
-    uint16_t *pString = (uint16_t*)((char*)(pStringToPrint)+sizeof(intptr_t) + sizeof(int32_t));
-    
-    // Loop to display the string
-    int32_t index = 0;
-    while (index < length)
-    {
-        putwchar(*pString);
-        pString++;
-        index++;
-    }   
-}
-extern "C" void __not_yet_implemented(System::String * pMethodName, System::String * pMessage)
-{
-    printf("ILCompiler failed generating code for this method; execution cannot continue.\n");
-    printf("This is likely because of a feature that is not yet implemented in the compiler.\n");
-    printf("Method: ");
-    PrintStringObject(pMethodName);
-    printf("\n\n");
-    printf("Reason: ");
-    PrintStringObject(pMessage);
-    printf("\n");
-
-    exit(-1);
-}
-
-extern "C" void __fail_fast()
-{
-    // TODO: FailFast
-    throw "__fail_fast";
-}
-
-#ifdef CPPCODEGEN
 Object * __load_string_literal(const char * string)
 {
     // TODO: Cache/intern string literals
@@ -253,73 +227,132 @@ Object * __load_string_literal(const char * string)
 
     size_t len = strlen(string);
 
-    Object * pString = RhNewArray(System::String::__getMethodTable(), (int32_t)len);
+    Object * pString = RhNewArray(System_Private_CoreLib::System::String::__getMethodTable(), (int32_t)len);
 
     uint16_t * p = (uint16_t *)((char*)pString + sizeof(intptr_t) + sizeof(int32_t));
     for (size_t i = 0; i < len; i++)
         p[i] = string[i];
     return pString;
 }
-#endif // CPPCODEGEN
 
-#ifdef CPPCODEGEN
-extern "C" void * g_pSystemArrayEETypeTemporaryWorkaround = 0;
-#else
-extern "C" void * __EEType_System_Private_CoreLib_System_Array;
-extern "C" void * g_pSystemArrayEETypeTemporaryWorkaround = &__EEType_System_Private_CoreLib_System_Array;
+#if defined(HOST_WASM)
+// Exception wrapper type that allows us to differentiate managed and native exceptions
+class ManagedExceptionWrapper : exception
+{
+public:
+    ManagedExceptionWrapper(void* pManagedException)
+    {
+        m_pManagedException = pManagedException;
+    }
+
+public:
+    void* m_pManagedException;
+};
 #endif
 
-#if !defined(_WIN32) || defined(CPPCODEGEN)
 extern "C" void RhpThrowEx(void * pEx)
 {
+#if defined(HOST_WASM)
+    throw ManagedExceptionWrapper(pEx);
+#else 
     throw "RhpThrowEx";
+#endif
 }
+
 extern "C" void RhpThrowHwEx()
 {
     throw "RhpThrowHwEx";
 }
-extern "C" void RhpCallCatchFunclet()
+
+#if defined(HOST_WASM)
+// returns the Leave target
+extern "C" uint32_t LlvmCatchFunclet(void* pHandlerIP, void* pvRegDisplay); 
+extern "C" uint32_t RhpCallCatchFunclet(void * exceptionObj, void* pHandlerIP, void* pvRegDisplay, void *exInfo)
+{
+    return LlvmCatchFunclet(pHandlerIP, pvRegDisplay);
+}
+
+extern "C" uint32_t LlvmFilterFunclet(void* pHandlerIP, void* pvRegDisplay);
+extern "C" uint32_t RhpCallFilterFunclet(void* exceptionObj, void * pHandlerIP, void* shadowStack)
+{
+    return LlvmFilterFunclet(pHandlerIP, shadowStack);
+}
+#else 
+extern "C" uint32_t RhpCallCatchFunclet(void *, void*, void*, void*)
 {
     throw "RhpCallCatchFunclet";
 }
-extern "C" void RhpCallFilterFunclet()
+extern "C" void* RhpCallFilterFunclet(void*, void*, void*)
 {
     throw "RhpCallFilterFunclet";
 }
-extern "C" void RhpCallFinallyFunclet()
+#endif
+
+#if defined(HOST_WASM)
+extern "C" void LlvmFinallyFunclet(void *finallyHandler, void *shadowStack);
+extern "C" void RhpCallFinallyFunclet(void *finallyHandler, void *shadowStack)
+{
+    LlvmFinallyFunclet(finallyHandler, shadowStack);
+}
+#else 
+extern "C" void RhpCallFinallyFunclet(void *, void*)
 {
     throw "RhpCallFinallyFunclet";
 }
-#endif //. !_WIN32 || CPPCODEGEN
+#endif
 
-extern "C" void RhGetCurrentThreadStackTrace()
-{
-    throw "RhGetCurrentThreadStackTrace";
-}
 extern "C" void RhpUniversalTransition()
 {
     throw "RhpUniversalTransition";
 }
-extern "C" void RhpFailFastForPInvokeExceptionPreemp()
+extern "C" void RhpUniversalTransition_DebugStepTailCall()
 {
-    throw "RhpFailFastForPInvokeExceptionPreemp";
+    throw "RhpUniversalTransition_DebugStepTailCall";
 }
-extern "C" void RhpEtwExceptionThrown()
+extern "C" void ConstrainedCallSupport_GetStubs(void*, void*)
 {
-    throw "RhpEtwExceptionThrown";
+    throw "ConstrainedCallSupport_GetStubs";
 }
+
+extern "C" void* RtRHeaderWrapper();
+#endif // CPPCODEGEN
+
+// This works around System.Private.Interop's references to Interop.Native.
+// This won't be needed once we stop dragging in S.P.Interop for basic p/invoke support.
+extern "C" void CCWAddRef()
+{
+    throw "CCWAddRef";
+}
+
+extern "C" void __fail_fast()
+{
+    // TODO: FailFast
+    printf("Call to an unimplemented runtime method; execution cannot continue.\n");
+    printf("Method: __fail_fast\n");
+    exit(-1);
+}
+
+extern "C" bool RhInitialize();
+extern "C" void RhpEnableConservativeStackReporting();
+extern "C" void RhpShutdown();
+extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 #ifndef CPPCODEGEN
 
-extern "C" void InitializeModules(void ** modules, int count);
+extern "C" bool RhRegisterOSModule(void * pModule,
+    void * pvManagedCodeStartRange, uint32_t cbManagedCodeRange,
+    void * pvUnboxingStubsStartRange, uint32_t cbUnboxingStubsRange,
+    void ** pClasslibFunctions, uint32_t nClasslibFunctions);
 
-#ifdef _WIN32
-extern "C" void* WINAPI GetModuleHandleW(const wchar_t *);
-#endif
+extern "C" void* PalGetModuleHandleFromPointer(void* pointer);
+
+#endif // !CPPCODEGEN
 
 extern "C" void GetRuntimeException();
 extern "C" void FailFast();
 extern "C" void AppendExceptionStackFrame();
+extern "C" void GetSystemArrayEEType();
+extern "C" void OnFirstChanceException();
 
 typedef void(*pfn)();
 
@@ -327,52 +360,105 @@ static const pfn c_classlibFunctions[] = {
     &GetRuntimeException,
     &FailFast,
     nullptr, // &UnhandledExceptionHandler,
-    nullptr, // &AppendExceptionStackFrame,
+    &AppendExceptionStackFrame,
+    nullptr, // &CheckStaticClassConstruction,
+    &GetSystemArrayEEType,
+    &OnFirstChanceException,
+    nullptr, // &DebugFuncEvalHelper,
+    nullptr, // &DebugFuncEvalAbortHelper,
 };
 
+extern "C" void InitializeModules(void* osModule, void ** modules, int count, void ** pClasslibFunctions, int nClasslibFunctions);
+
+#ifndef CORERT_DLL
+#define CORERT_ENTRYPOINT __managed__Main
 #if defined(_WIN32)
 extern "C" int __managed__Main(int argc, wchar_t* argv[]);
-int wmain(int argc, wchar_t* argv[])
 #else
 extern "C" int __managed__Main(int argc, char* argv[]);
-int main(int argc, char* argv[])
 #endif
-{
-    if (__initialize_runtime() != 0) return -1;
+#else
+#define CORERT_ENTRYPOINT __managed__Startup
+extern "C" void __managed__Startup();
+#endif // !CORERT_DLL
 
-#if defined(_WIN32) && !defined(CPPCODEGEN)
-    if (!RhpRegisterCoffModule(GetModuleHandleW(NULL),
-        &__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
+static int InitializeRuntime()
+{
+    if (!RhInitialize())
+        return -1;
+
+#if defined(CPPCODEGEN) || defined(HOST_WASM)
+    RhpEnableConservativeStackReporting();
+#endif // CPPCODEGEN
+
+#ifndef CPPCODEGEN
+    void * osModule = PalGetModuleHandleFromPointer((void*)&CORERT_ENTRYPOINT);
+
+    // TODO: pass struct with parameters instead of the large signature of RhRegisterOSModule
+    if (!RhRegisterOSModule(
+        osModule,
+        (void*)&__managedcode_a, (uint32_t)((char *)&__managedcode_z - (char*)&__managedcode_a),
+        (void*)&__unbox_a, (uint32_t)((char *)&__unbox_z - (char*)&__unbox_a),
         (void **)&c_classlibFunctions, _countof(c_classlibFunctions)))
     {
         return -1;
     }
-#endif
+#endif // !CPPCODEGEN
 
-    ReversePInvokeFrame frame; __reverse_pinvoke(&frame);
-#if defined (__APPLE__)
-    InitializeModules(&__registeredModules[0], __registeredModules.size());
+#ifndef CPPCODEGEN
+    InitializeModules(osModule, __modules_a, (int)((__modules_z - __modules_a)), (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
+#elif defined HOST_WASM
+    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 1, (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
+#else // !CPPCODEGEN
+    InitializeModules(nullptr, (void**)RtRHeaderWrapper(), 2, (void **)&c_classlibFunctions, _countof(c_classlibFunctions));
+#endif // !CPPCODEGEN
+
+#ifdef CORERT_DLL
+    // Run startup method immediately for a native library
+    __managed__Startup();
+#endif // CORERT_DLL
+
+    return 0;
+}
+
+#ifndef CORERT_DLL
+#if defined(_WIN32)
+int __cdecl wmain(int argc, wchar_t* argv[])
 #else
-    InitializeModules(__modules_a, (int)((__modules_z - __modules_a))); 
+int main(int argc, char* argv[])
 #endif
+{
+    int initval = InitializeRuntime();
+    if (initval != 0)
+        return initval;
 
     int retval;
+#ifdef CPPCODEGEN
     try
+#endif
     {
-        // Managed apps don't see the first args argument (full path of executable) so skip it
-        assert(argc > 0);
-        retval = __managed__Main(argc - 1, argv + 1);
+        retval = __managed__Main(argc, argv);
     }
+#ifdef CPPCODEGEN
     catch (const char* &e)
     {
         printf("Call to an unimplemented runtime method; execution cannot continue.\n");
         printf("Method: %s\n", e);
         retval = -1;
     }
+#endif
+    RhpShutdown();
 
-    __reverse_pinvoke_return(&frame);
-    __shutdown_runtime();
     return retval;
 }
+#endif // !CORERT_DLL
 
-#endif // !CPPCODEGEN
+#ifdef CORERT_DLL
+static struct InitializeRuntimePointerHelper
+{
+    InitializeRuntimePointerHelper()
+    {
+        RhSetRuntimeInitializationCallback(&InitializeRuntime);
+    }
+} initializeRuntimePointerHelper;
+#endif // CORERT_DLL

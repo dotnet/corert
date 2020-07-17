@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Callouts from the unmanaged portion of the runtime to C# helpers made during garbage collections. See
@@ -19,7 +18,6 @@
 #include "gcrhinterface.h"
 #include "shash.h"
 #include "RWLock.h"
-#include "module.h"
 #include "rhbinder.h"
 #include "Crst.h"
 #include "RuntimeInstance.h"
@@ -31,6 +29,7 @@
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 #include "RestrictedCallouts.h"
 
 // The head of the chains of GC callouts, one per callout type.

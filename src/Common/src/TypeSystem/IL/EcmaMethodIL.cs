@@ -1,40 +1,61 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.InteropServices;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-
+using System.Threading;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
 {
-    public class EcmaMethodIL : MethodIL
+    public sealed partial class EcmaMethodIL : MethodIL
     {
-        private EcmaModule _module;
-        private MethodBodyBlock _methodBody;
+        private readonly EcmaModule _module;
+        private readonly EcmaMethod _method;
+        private readonly MethodBodyBlock _methodBody;
 
         // Cached values
         private byte[] _ilBytes;
         private LocalVariableDefinition[] _locals;
         private ILExceptionRegion[] _ilExceptionRegions;
 
-        static public EcmaMethodIL Create(EcmaMethod method)
+        // TODO: Remove: Workaround for missing ClearInitLocals transforms in CoreRT CoreLib
+        private readonly bool _clearInitLocals;
+
+        public static EcmaMethodIL Create(EcmaMethod method, bool clearInitLocals = false)
         {
             var rva = method.MetadataReader.GetMethodDefinition(method.Handle).RelativeVirtualAddress;
             if (rva == 0)
                 return null;
-            return new EcmaMethodIL(method.Module, rva);
+            return new EcmaMethodIL(method, rva, clearInitLocals);
         }
 
-        private EcmaMethodIL(EcmaModule module, int rva)
+        private EcmaMethodIL(EcmaMethod method, int rva, bool clearInitLocals)
         {
-            _module = module;
-            _methodBody = module.PEReader.GetMethodBody(rva);
+            _method = method;
+            _module = method.Module;
+            _methodBody = _module.PEReader.GetMethodBody(rva);
+
+            _clearInitLocals = clearInitLocals;
+        }
+
+        public EcmaModule Module
+        {
+            get
+            {
+                return _module;
+            }
+        }
+
+        public override MethodDesc OwningMethod
+        {
+            get
+            {
+                return _method;
+            }
         }
 
         public override byte[] GetILBytes()
@@ -42,18 +63,24 @@ namespace Internal.IL
             if (_ilBytes != null)
                 return _ilBytes;
 
-            byte[] ilBytes = _methodBody.GetILBytes();
-            return (_ilBytes = ilBytes);
+            Interlocked.CompareExchange(ref _ilBytes, _methodBody.GetILBytes(), null);
+            return _ilBytes;
         }
 
-        public override bool GetInitLocals()
+        public override bool IsInitLocals
         {
-            return _methodBody.LocalVariablesInitialized;
+            get
+            {
+                return !_clearInitLocals && _methodBody.LocalVariablesInitialized;
+            }
         }
 
-        public override int GetMaxStack()
+        public override int MaxStack
         {
-            return _methodBody.MaxStack;
+            get
+            {
+                return _methodBody.MaxStack;
+            }
         }
 
         public override LocalVariableDefinition[] GetLocals()
@@ -69,7 +96,9 @@ namespace Internal.IL
 
             EcmaSignatureParser parser = new EcmaSignatureParser(_module, signatureReader);
             LocalVariableDefinition[] locals = parser.ParseLocalsSignature();
-            return (_locals = locals);
+
+            Interlocked.CompareExchange(ref _locals, locals, null);
+            return _locals;
         }
 
         public override ILExceptionRegion[] GetExceptionRegions()
@@ -103,7 +132,8 @@ namespace Internal.IL
                 }
             }
 
-            return (_ilExceptionRegions = ilExceptionRegions);
+            Interlocked.CompareExchange(ref _ilExceptionRegions, ilExceptionRegions, null);
+            return _ilExceptionRegions;
         }
 
         public override object GetObject(int token)

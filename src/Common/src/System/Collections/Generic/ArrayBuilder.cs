@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Debug = System.Diagnostics.Debug;
 
@@ -32,11 +31,29 @@ namespace System.Collections.Generic
 
         public void Append(T[] newItems)
         {
-            if (newItems.Length == 0)
+            Append(newItems, 0, newItems.Length);
+        }
+
+        public void Append(T[] newItems, int offset, int length)
+        {
+            if (length == 0)
                 return;
-            EnsureCapacity(_count + newItems.Length);
-            Array.Copy(newItems, 0, _items, _count, newItems.Length);
-            _count += newItems.Length;
+
+            Debug.Assert(length > 0);
+            Debug.Assert(newItems.Length >= offset + length);
+
+            EnsureCapacity(_count + length);
+            Array.Copy(newItems, offset, _items, _count, length);
+            _count += length; 
+        }
+
+        public void Append(ArrayBuilder<T> newItems)
+        {
+            if (newItems.Count == 0)
+                return;
+            EnsureCapacity(_count + newItems.Count);
+            Array.Copy(newItems._items, 0, _items, _count, newItems.Count);
+            _count += newItems.Count;
         }
 
         public void ZeroExtend(int numItems)

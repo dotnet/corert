@@ -1,15 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+VisualStudioVersion = 14.0.24711.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataTransform", "src\ILCompiler.MetadataTransform.csproj", "{A965EA82-219D-48F7-AD51-BC030C16CC6F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataWriter", "..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj", "{D66338D4-F9E4-4051-B302-232C6BFB6EF6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.TypeSystem", "..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj", "{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILCompiler.MetadataTransform.Tests", "tests\ILCompiler.MetadataTransform.Tests.csproj", "{B4B713D9-68A1-4EB3-8164-4DC8BE69BCBC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILMetadataAssembly", "tests\ILMetadataAssembly\ILMetadataAssembly.ilproj", "{347E2A5A-54E5-4482-9723-ED460DE79CE8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrimaryMetadataAssembly", "tests\PrimaryMetadataAssembly\PrimaryMetadataAssembly.csproj", "{C29B7395-F925-4B0E-972D-187D2D4BFEC7}"
 EndProject
@@ -25,10 +25,6 @@ Global
 		{A965EA82-219D-48F7-AD51-BC030C16CC6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A965EA82-219D-48F7-AD51-BC030C16CC6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A965EA82-219D-48F7-AD51-BC030C16CC6F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D66338D4-F9E4-4051-B302-232C6BFB6EF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D66338D4-F9E4-4051-B302-232C6BFB6EF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D66338D4-F9E4-4051-B302-232C6BFB6EF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D66338D4-F9E4-4051-B302-232C6BFB6EF6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1A9DF196-43A9-44BB-B2C6-D62AA56B0E49}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -37,6 +33,10 @@ Global
 		{B4B713D9-68A1-4EB3-8164-4DC8BE69BCBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4B713D9-68A1-4EB3-8164-4DC8BE69BCBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4B713D9-68A1-4EB3-8164-4DC8BE69BCBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{347E2A5A-54E5-4482-9723-ED460DE79CE8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{347E2A5A-54E5-4482-9723-ED460DE79CE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{347E2A5A-54E5-4482-9723-ED460DE79CE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{347E2A5A-54E5-4482-9723-ED460DE79CE8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C29B7395-F925-4B0E-972D-187D2D4BFEC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C29B7395-F925-4B0E-972D-187D2D4BFEC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C29B7395-F925-4B0E-972D-187D2D4BFEC7}.Release|Any CPU.ActiveCfg = Release|Any CPU

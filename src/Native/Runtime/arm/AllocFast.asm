@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
 #include "AsmMacros.h"
 
@@ -53,6 +52,9 @@ AllocFailed
 
         LEAF_END RhpNewFast
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
+
 ;; Allocate non-array object with finalizer.
 ;;  r0 == EEType
         LEAF_ENTRY RhpNewFinalizable
@@ -65,23 +67,19 @@ AllocFailed
 ;;  r1 == alloc flags
         NESTED_ENTRY RhpNewObject
 
-        COOP_PINVOKE_FRAME_PROLOG           ; r4 <- Thread
+        PUSH_COOP_PINVOKE_FRAME r3
 
         ; r0: EEType
         ; r1: alloc flags
-        ; r4: Thread *
+        ; r3: transition frame
 
         ;; Preserve the EEType in r5.
         mov         r5, r0
 
-        mov         r3, r5                                      ; pEEType
-        mov         r2, r1                                      ; uFlags
-        ldr         r1, [r5, #OFFSETOF__EEType__m_uBaseSize]    ; cbSize
-        mov         r0, r4                                      ; pThread
+        ldr         r2, [r0, #OFFSETOF__EEType__m_uBaseSize]    ; cbSize
 
-        ;; Call the rest of the allocation helper.
-        ;; void* RedhawkGCInterface::Alloc(Thread *pThread, UIntNative cbSize, UInt32 uFlags, EEType *pEEType)
-        blx         $REDHAWKGCINTERFACE__ALLOC
+        ;; void* RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
+        blx         RhpGcAlloc
 
         ;; Set the new object's EEType pointer on success.
         cbz         r0, NewOutOfMemory
@@ -98,7 +96,8 @@ AllocFailed
         bl          RhpPublishObject
                                         ;; r0: function returned the passed-in object
 New_SkipPublish
-        COOP_PINVOKE_FRAME_EPILOG
+        POP_COOP_PINVOKE_FRAME
+        EPILOG_RETURN
 
 NewOutOfMemory
         ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
@@ -107,11 +106,75 @@ NewOutOfMemory
         mov         r0, r5              ; EEType pointer
         mov         r1, #0              ; Indicate that we should throw OOM.
 
-        COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
-
+        POP_COOP_PINVOKE_FRAME
         EPILOG_BRANCH RhExceptionHandling_FailedAllocation
 
         NESTED_END RhpNewObject
+
+
+;; Allocate a string.
+;;  r0 == EEType
+;;  r1 == element/character count
+        LEAF_ENTRY RhNewString
+
+        ; Make sure computing the overall allocation size won't overflow
+        MOV32       r2, MAX_STRING_LENGTH
+        cmp         r1, r2
+        bhs         StringSizeOverflow
+
+        ; Compute overall allocation size (align(base size + (element size * elements), 4)).
+        mov         r2, #(STRING_BASE_SIZE + 3)
+#if STRING_COMPONENT_SIZE == 2
+        add         r2, r2, r1, lsl #1                  ; r2 += characters * 2
+#else
+        NotImplementedComponentSize
+#endif
+        bic         r2, r2, #3
+
+        ; r0 == EEType
+        ; r1 == element count
+        ; r2 == string size
+
+        INLINE_GETTHREAD        r3, r12
+
+        ;; Load potential new object address into r12.
+        ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
+        ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        adds        r2, r12
+        bcs         RhpNewArrayRare ; if we get a carry here, the array is too large to fit below 4 GB
+        ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_limit]
+        cmp         r2, r12
+        bhi         RhpNewArrayRare
+
+        ;; Reload new object address into r12.
+        ldr         r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        ;; Update the alloc pointer to account for the allocation.
+        str         r2, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+
+        ;; Set the new object's EEType pointer and element count.
+        str         r0, [r12, #OFFSETOF__Object__m_pEEType]
+        str         r1, [r12, #OFFSETOF__String__m_Length]
+
+        ;; Return the object allocated in r0.
+        mov         r0, r12
+
+        bx          lr
+
+StringSizeOverflow
+        ; We get here if the size of the final string object can't be represented as an unsigned 
+        ; 32-bit value. We're going to tail-call to a managed helper that will throw
+        ; an OOM exception that the caller of this allocator understands.
+
+        ; r0 holds EEType pointer already
+        mov         r1, #0                  ; Indicate that we should throw OOM.
+        b           RhExceptionHandling_FailedAllocation
+
+        LEAF_END    RhNewString
+
+        INLINE_GETTHREAD_CONSTANT_POOL
 
 
 ;; Allocate one dimensional, zero based array (SZARRAY).
@@ -122,7 +185,7 @@ NewOutOfMemory
         ; Compute overall allocation size (align(base size + (element size * elements), 4)).
         ; if the element count is <= 0x10000, no overflow is possible because the component
         ; size is <= 0xffff (it's an unsigned 16-bit value) and thus the product is <= 0xffff0000
-        ; and the base size is only 12 bytes.
+        ; and the base size for the worst case (32 dimensional MdArray) is less than 0xffff.
         ldrh        r2, [r0, #OFFSETOF__EEType__m_usComponentSize]
         cmp         r1, #0x10000
         bhi         ArraySizeBig
@@ -198,6 +261,9 @@ ArrayOutOfMemoryFinal
 
         LEAF_END    RhpNewArray
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
+
 ;; Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 ;;  r0 == EEType
 ;;  r1 == element count
@@ -205,26 +271,22 @@ ArrayOutOfMemoryFinal
 ;;  r3 == Thread
         NESTED_ENTRY RhpNewArrayRare
 
-        COOP_PINVOKE_FRAME_PROLOG   ; r4 <- Thread
+        ; Recover array size by subtracting the alloc_ptr from r2.
+        PROLOG_NOP ldr r12, [r3, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
+        PROLOG_NOP sub r2, r12
+
+        PUSH_COOP_PINVOKE_FRAME r3
 
         ; Preserve the EEType in r5 and element count in r6.
         mov         r5, r0
         mov         r6, r1
 
-        ; Recover array size by subtracting the alloc_ptr from r2.
-        ldr         r0, [r4, #OFFSETOF__Thread__m_alloc_context__alloc_ptr]
-        sub         r2, r0
-
         mov         r7, r2          ; Save array size in r7
 
-        mov         r0, r4          ; pThread
-        mov         r1, r2          ; cbSize
-        mov         r2, #0          ; uFlags
-        mov         r3, r5          ; pEEType
+        mov         r1, #0          ; uFlags
 
-        ; Call the rest of the allocation helper.
-        ; void* RedhawkGCInterface::Alloc(Thread *pThread, UIntNative cbSize, UInt32 uFlags, EEType *pEEType)
-        blx         $REDHAWKGCINTERFACE__ALLOC
+        ; void* RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
+        blx         RhpGcAlloc
 
         ; Test for failure (NULL return).
         cbz         r0, ArrayOutOfMemory
@@ -244,7 +306,8 @@ ArrayOutOfMemoryFinal
                                         ;; r0: function returned the passed-in object
 NewArray_SkipPublish
 
-        COOP_PINVOKE_FRAME_EPILOG
+        POP_COOP_PINVOKE_FRAME
+        EPILOG_RETURN
 
 ArrayOutOfMemory
         ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
@@ -253,9 +316,8 @@ ArrayOutOfMemory
         mov         r0, r5              ;; EEType pointer
         mov         r1, #0              ;; Indicate that we should throw OOM.
 
-        COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
-
-        EPILOG_BRANCH   RhExceptionHandling_FailedAllocation
+        POP_COOP_PINVOKE_FRAME
+        EPILOG_BRANCH RhExceptionHandling_FailedAllocation
 
         NESTED_END RhpNewArrayRare
 
@@ -338,6 +400,9 @@ Alloc8Failed
         b           RhpNewObject
 
         LEAF_END RhpNewFastAlign8
+
+        INLINE_GETTHREAD_CONSTANT_POOL
+
 
 ;; Allocate a finalizable object (by definition not an array or value type) on an 8 byte boundary.
 ;;  r0 == EEType
@@ -430,22 +495,25 @@ BoxAlloc8Failed
 
         LEAF_END RhpNewFastMisalign
 
+        INLINE_GETTHREAD_CONSTANT_POOL
+
+
 ;; Allocate an array on an 8 byte boundary.
 ;;  r0 == EEType
 ;;  r1 == element count
         NESTED_ENTRY RhpNewArrayAlign8
 
-        COOP_PINVOKE_FRAME_PROLOG   ; r4 <- Thread
+        PUSH_COOP_PINVOKE_FRAME r3
 
         ; Compute overall allocation size (base size + align((element size * elements), 4)).
         ldrh        r2, [r0, #OFFSETOF__EEType__m_usComponentSize]
-        umull       r2, r3, r2, r1
-        cbnz        r3, Array8SizeOverflow
+        umull       r2, r4, r2, r1
+        cbnz        r4, Array8SizeOverflow
         adds        r2, #3
         bcs         Array8SizeOverflow
         bic         r2, r2, #3
-        ldr         r3, [r0, #OFFSETOF__EEType__m_uBaseSize]
-        adds        r2, r3
+        ldr         r4, [r0, #OFFSETOF__EEType__m_uBaseSize]
+        adds        r2, r4
         bcs         Array8SizeOverflow
 
         ; Preserve the EEType in r5 and element count in r6.
@@ -453,13 +521,10 @@ BoxAlloc8Failed
         mov         r6, r1
         mov         r7, r2                  ; Save array size in r7
 
-        ; Call the rest of the allocation helper.
-        ; void* RedhawkGCInterface::Alloc(Thread *pThread, UIntNative cbSize, UInt32 uFlags, EEType *pEEType)
-        mov         r0, r4                  ; pThread
-        mov         r1, r2                  ; cbSize
-        mov         r2, #GC_ALLOC_ALIGN8    ; uFlags
-        mov         r3, r5                  ; pEEType
-        blx         $REDHAWKGCINTERFACE__ALLOC
+        mov         r1, #GC_ALLOC_ALIGN8    ; uFlags
+
+        ; void* RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame)
+        blx         RhpGcAlloc
 
         ; Test for failure (NULL return).
         cbz         r0, Array8OutOfMemory
@@ -479,32 +544,34 @@ BoxAlloc8Failed
                                         ;; r0: function returned the passed-in object
 NewArray8_SkipPublish
 
-        COOP_PINVOKE_FRAME_EPILOG
+        POP_COOP_PINVOKE_FRAME
+        EPILOG_RETURN
 
 Array8SizeOverflow
         ; We get here if the size of the final array object can't be represented as an unsigned 
         ; 32-bit value. We're going to tail-call to a managed helper that will throw
-        ; an overflow exception that the caller of this allocator understands.
+        ; an OOM or overflow exception that the caller of this allocator understands.
+
+        ; if the element count is non-negative, it's an OOM error
+        cmp         r1, #0
+        bge         Array8OutOfMemory1
 
         ; r0 holds EEType pointer already
         mov         r1, #1              ;; Indicate that we should throw OverflowException
 
-        COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
-
-        ; Jump to the helper. 
-        EPILOG_BRANCH   RhExceptionHandling_FailedAllocation
+        POP_COOP_PINVOKE_FRAME
+        EPILOG_BRANCH RhExceptionHandling_FailedAllocation
 
 Array8OutOfMemory
         ; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ; an out of memory exception that the caller of this allocator understands.
 
         mov         r0, r5              ;; EEType pointer
+Array8OutOfMemory1
         mov         r1, #0              ;; Indicate that we should throw OOM.
 
-        COOP_PINVOKE_FRAME_EPILOG_NO_RETURN
-
-        ; Jump to the helper. 
-        EPILOG_BRANCH   RhExceptionHandling_FailedAllocation
+        POP_COOP_PINVOKE_FRAME
+        EPILOG_BRANCH RhExceptionHandling_FailedAllocation
 
         NESTED_END RhpNewArrayAlign8
 

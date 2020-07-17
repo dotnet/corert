@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -11,15 +10,7 @@ namespace Internal.Reflection.Execution
 {
     internal static partial class ConstraintValidator
     {
-        static TypeInfo[] TypesToTypeInfos(Type[] types)
-        {
-            TypeInfo[] result = new TypeInfo[types.Length];
-            for (int i = 0; i < types.Length; i++)
-                result[i] = types[i].GetTypeInfo();
-            return result;
-        }
-
-        static bool SatisfiesConstraints(this TypeInfo genericVariable, SigTypeContext typeContextOfConstraintDeclarer, TypeInfo typeArg)
+        private static bool SatisfiesConstraints(this Type genericVariable, SigTypeContext typeContextOfConstraintDeclarer, Type typeArg)
         {
             GenericParameterAttributes specialConstraints = genericVariable.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
 
@@ -51,9 +42,7 @@ namespace Internal.Reflection.Execution
             // Now check general subtype constraints
             foreach (var constraint in genericVariable.GetGenericParameterConstraints())
             {
-                TypeInfo typeConstraint = constraint.GetTypeInfo();
-
-                TypeInfo instantiatedTypeConstraint = typeConstraint.Instantiate(typeContextOfConstraintDeclarer);
+                Type instantiatedTypeConstraint = constraint.Instantiate(typeContextOfConstraintDeclarer);
 
                 // System.Object constraint will be always satisfied - even if argList is empty
                 if (instantiatedTypeConstraint.IsSystemObject())
@@ -67,7 +56,7 @@ namespace Internal.Reflection.Execution
             return true;
         }
 
-        static void EnsureSatisfiesClassConstraints(TypeInfo[] typeParameters, TypeInfo[] typeArguments, object definition, SigTypeContext typeContext)
+        private static void EnsureSatisfiesClassConstraints(Type[] typeParameters, Type[] typeArguments, object definition, SigTypeContext typeContext)
         {
             if (typeParameters.Length != typeArguments.Length)
             {
@@ -78,7 +67,7 @@ namespace Internal.Reflection.Execution
             // if it hits SigTypeContext with these never valid types.
             for (int i = 0; i < typeParameters.Length; i++)
             {
-                TypeInfo actualArg = typeArguments[i];
+                Type actualArg = typeArguments[i];
 
                 if (actualArg.IsSystemVoid() || (actualArg.HasElementType && !actualArg.IsArray))
                 {
@@ -88,8 +77,8 @@ namespace Internal.Reflection.Execution
 
             for (int i = 0; i < typeParameters.Length; i++)
             {
-                TypeInfo formalArg = typeParameters[i];
-                TypeInfo actualArg = typeArguments[i];
+                Type formalArg = typeParameters[i];
+                Type actualArg = typeArguments[i];
 
                 if (!formalArg.SatisfiesConstraints(typeContext, actualArg))
                 {
@@ -99,9 +88,9 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        public static void EnsureSatisfiesClassConstraints(TypeInfo typeDefinition, TypeInfo[] typeArguments)
+        public static void EnsureSatisfiesClassConstraints(Type typeDefinition, Type[] typeArguments)
         {
-            TypeInfo[] typeParameters = TypesToTypeInfos(typeDefinition.GenericTypeParameters);
+            Type[] typeParameters = typeDefinition.GetGenericArguments();
             SigTypeContext typeContext = new SigTypeContext(typeArguments, null);
             EnsureSatisfiesClassConstraints(typeParameters, typeArguments, typeDefinition, typeContext);
         }
@@ -109,9 +98,9 @@ namespace Internal.Reflection.Execution
         public static void EnsureSatisfiesClassConstraints(MethodInfo reflectionMethodInfo)
         {
             MethodInfo genericMethodDefinition = reflectionMethodInfo.GetGenericMethodDefinition();
-            TypeInfo[] methodArguments = TypesToTypeInfos(reflectionMethodInfo.GetGenericArguments());
-            TypeInfo[] methodParameters = TypesToTypeInfos(genericMethodDefinition.GetGenericArguments());
-            TypeInfo[] typeArguments = TypesToTypeInfos(reflectionMethodInfo.DeclaringType.GetGenericArguments());
+            Type[] methodArguments = reflectionMethodInfo.GetGenericArguments();
+            Type[] methodParameters = genericMethodDefinition.GetGenericArguments();
+            Type[] typeArguments = reflectionMethodInfo.DeclaringType.GetGenericArguments();
             SigTypeContext typeContext = new SigTypeContext(typeArguments, methodArguments);
             EnsureSatisfiesClassConstraints(methodParameters, methodArguments, genericMethodDefinition, typeContext);
         }

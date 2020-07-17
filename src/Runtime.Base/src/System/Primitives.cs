@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // This file contains the basic primitive type definitions (int etc)
 // These types are well known to the compiler and the runtime and are basic interchange types that do not change
@@ -43,7 +42,7 @@ namespace System
 
     public struct Boolean
     {
-        // Disable compile warning about unused m_value field
+        // Disable compile warning about unused _value field
 #pragma warning disable 0169
         private bool _value;
 #pragma warning restore 0169
@@ -61,7 +60,6 @@ namespace System
     ===========================================================*/
 
 
-
     // CONTRACT with Runtime
     // The Char type is one of the primitives understood by the compilers and runtime
     // Data Contract: Single field of type char
@@ -71,6 +69,9 @@ namespace System
     public struct Char
     {
         private char _value;
+
+        public const char MaxValue = (char)0xFFFF;
+        public const char MinValue = (char)0x00;
     }
 
 
@@ -93,6 +94,9 @@ namespace System
     public struct SByte
     {
         private sbyte _value;
+
+        public const sbyte MaxValue = (sbyte)0x7F;
+        public const sbyte MinValue = unchecked((sbyte)0x80);
     }
 
 
@@ -116,6 +120,9 @@ namespace System
     public struct Byte
     {
         private byte _value;
+
+        public const byte MaxValue = (byte)0xFF;
+        public const byte MinValue = 0;
     }
 
 
@@ -139,6 +146,9 @@ namespace System
     public struct Int16
     {
         private short _value;
+
+        public const short MaxValue = (short)0x7FFF;
+        public const short MinValue = unchecked((short)0x8000);
     }
 
     /*============================================================
@@ -160,6 +170,9 @@ namespace System
     public struct UInt16
     {
         private ushort _value;
+
+        public const ushort MaxValue = (ushort)0xffff;
+        public const ushort MinValue = 0;
     }
 
     /*============================================================
@@ -181,6 +194,9 @@ namespace System
     public struct Int32
     {
         private int _value;
+
+        public const int MaxValue = 0x7fffffff;
+        public const int MinValue = unchecked((int)0x80000000);
     }
 
 
@@ -203,6 +219,9 @@ namespace System
     public struct UInt32
     {
         private uint _value;
+
+        public const uint MaxValue = (uint)0xffffffff;
+        public const uint MinValue = 0;
     }
 
 
@@ -225,6 +244,9 @@ namespace System
     public struct Int64
     {
         private long _value;
+
+        public const long MaxValue = 0x7fffffffffffffffL;
+        public const long MinValue = unchecked((long)0x8000000000000000L);
     }
 
 
@@ -247,6 +269,9 @@ namespace System
     public struct UInt64
     {
         private ulong _value;
+
+        public const ulong MaxValue = (ulong)0xffffffffffffffffL;
+        public const ulong MinValue = 0;
     }
 
 
@@ -295,7 +320,6 @@ namespace System
     }
 
 
-
     /*============================================================
     **
     ** Class:  IntPtr
@@ -319,10 +343,57 @@ namespace System
         [Intrinsic]
         public static readonly IntPtr Zero;
 
+        public static unsafe int Size
+        {
+            [Intrinsic]
+            get
+            {
+#if TARGET_64BIT
+                return 8;
+#else
+                return 4;
+#endif
+            }
+        }
+
         [Intrinsic]
         public unsafe IntPtr(void* value)
         {
             _value = value;
+        }
+
+        [Intrinsic]
+        public unsafe IntPtr(int value)
+        {
+            _value = (void*)value;
+        }
+
+        [Intrinsic]
+        public unsafe IntPtr(long value)
+        {
+            _value = (void*)value;
+        }
+
+        [Intrinsic]
+        public unsafe long ToInt64()
+        {
+#if TARGET_64BIT
+            return (long)_value;
+#else
+            return (long)(int)_value;
+#endif
+        }
+
+        [Intrinsic]
+        public static unsafe explicit operator IntPtr(int value)
+        {
+            return new IntPtr(value);
+        }
+
+        [Intrinsic]
+        public static unsafe explicit operator IntPtr(long value)
+        {
+            return new IntPtr(value);
         }
 
         [Intrinsic]
@@ -338,19 +409,40 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe static bool operator ==(IntPtr value1, IntPtr value2)
+        public static unsafe explicit operator int(IntPtr value)
+        {
+            return unchecked((int)value._value);
+        }
+
+        [Intrinsic]
+        public static unsafe explicit operator long(IntPtr value)
+        {
+            return unchecked((long)value._value);
+        }
+
+        [Intrinsic]
+        public static unsafe bool operator ==(IntPtr value1, IntPtr value2)
+        {
+            return value1._value == value2._value;
+        }
+
+        [Intrinsic]
+        public static unsafe bool operator !=(IntPtr value1, IntPtr value2)
         {
             return value1._value != value2._value;
         }
 
         [Intrinsic]
-        public unsafe static bool operator !=(IntPtr value1, IntPtr value2)
+        public static unsafe IntPtr operator +(IntPtr pointer, int offset)
         {
-            return value1._value != value2._value;
+#if TARGET_64BIT
+            return new IntPtr((long)pointer._value + offset);
+#else
+            return new IntPtr((int)pointer._value + offset);
+#endif
         }
     }
 #pragma warning restore 0660, 0661
-#pragma warning restore 0661
 
 
     /*============================================================
@@ -385,7 +477,7 @@ namespace System
         [Intrinsic]
         public unsafe UIntPtr(ulong value)
         {
-#if BIT64
+#if TARGET_64BIT
             _value = (void*)value;
 #else
             _value = (void*)checked((uint)value);
@@ -411,9 +503,9 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe static explicit operator uint (UIntPtr value)
+        public static unsafe explicit operator uint (UIntPtr value)
         {
-#if BIT64
+#if TARGET_64BIT
             return checked((uint)value._value);
 #else
             return (uint)value._value;
@@ -421,23 +513,22 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe static explicit operator ulong (UIntPtr value)
+        public static unsafe explicit operator ulong (UIntPtr value)
         {
             return (ulong)value._value;
         }
 
         [Intrinsic]
-        public unsafe static bool operator ==(UIntPtr value1, UIntPtr value2)
+        public static unsafe bool operator ==(UIntPtr value1, UIntPtr value2)
         {
             return value1._value == value2._value;
         }
 
         [Intrinsic]
-        public unsafe static bool operator !=(UIntPtr value1, UIntPtr value2)
+        public static unsafe bool operator !=(UIntPtr value1, UIntPtr value2)
         {
             return value1._value != value2._value;
         }
     }
 #pragma warning restore 0660, 0661
 }
-

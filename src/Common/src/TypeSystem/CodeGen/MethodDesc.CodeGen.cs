@@ -1,9 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using System;
-using System.Runtime.CompilerServices;
 
 namespace Internal.TypeSystem
 {
@@ -49,10 +45,107 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
+        /// Gets a value specifying whether this method contains hot code and should
+        /// be aggressively optimized if possible.
+        /// </summary>
+        public virtual bool IsAggressiveOptimization
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this method was marked with the
+        /// System.Security.DynamicSecurityMethod attribute. For such methods
+        /// runtime needs to be able to find their caller, their caller's caller
+        /// or the method itself on the call stack using stack walking.
+        /// </summary>
+        public virtual bool RequireSecObject
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether this method should not be optimized.
+        /// </summary>
+        public virtual bool IsNoOptimization
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Gets a value specifying whether the implementation of this method
-        /// is provided by the runtime.
+        /// is provided by the runtime (i.e., through generated IL).
         /// </summary>
         public virtual bool IsRuntimeImplemented
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether the implementation of this method is
+        /// provided externally by calling out into the runtime.
+        /// </summary>
+        public virtual bool IsInternalCall
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether the implementation of this method is
+        /// implicitly synchronized
+        /// </summary>
+        public virtual bool IsSynchronized
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether this method is directly callable
+        /// by external unmanaged code.
+        /// </summary>
+        public virtual bool IsUnmanagedCallersOnly
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether this method is an exported managed
+        /// entrypoint.
+        /// </summary>
+        public virtual bool IsRuntimeExport
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets a value specifying whether this method has special semantics.
+        /// The name indicates the semantics.
+        /// </summary>
+        public virtual bool IsSpecialName
         {
             get
             {
@@ -80,6 +173,30 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsAggressiveOptimization
+        {
+            get
+            {
+                return _methodDef.IsAggressiveOptimization;
+            }
+        }
+
+        public override bool RequireSecObject
+        {
+            get
+            {
+                return _methodDef.RequireSecObject;
+            }
+        }
+
+        public override bool IsNoOptimization
+        {
+            get
+            {
+                return _methodDef.IsNoOptimization;
+            }
+        }
+
         public override bool IsAggressiveInlining
         {
             get
@@ -93,6 +210,38 @@ namespace Internal.TypeSystem
             get
             {
                 return _methodDef.IsRuntimeImplemented;
+            }
+        }
+
+        public override bool IsInternalCall
+        {
+            get
+            {
+                return _methodDef.IsInternalCall;
+            }
+        }
+
+        public override bool IsSynchronized
+        {
+            get
+            {
+                return _methodDef.IsSynchronized;
+            }
+        }
+
+        public override bool IsUnmanagedCallersOnly
+        {
+            get
+            {
+                return _methodDef.IsUnmanagedCallersOnly;
+            }
+        }
+
+        public override bool IsSpecialName
+        {
+            get
+            {
+                return _methodDef.IsSpecialName;
             }
         }
     }
@@ -116,6 +265,30 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsAggressiveOptimization
+        {
+            get
+            {
+                return _typicalMethodDef.IsAggressiveOptimization;
+            }
+        }
+
+        public override bool RequireSecObject
+        {
+            get
+            {
+                return _typicalMethodDef.RequireSecObject;
+            }
+        }
+
+        public override bool IsNoOptimization
+        {
+            get
+            {
+                return _typicalMethodDef.IsNoOptimization;
+            }
+        }
+
         public override bool IsAggressiveInlining
         {
             get
@@ -131,6 +304,38 @@ namespace Internal.TypeSystem
                 return _typicalMethodDef.IsRuntimeImplemented;
             }
         }
+
+        public override bool IsInternalCall
+        {
+            get
+            {
+                return _typicalMethodDef.IsInternalCall;
+            }
+        }
+
+        public override bool IsSynchronized
+        {
+            get
+            {
+                return _typicalMethodDef.IsSynchronized;
+            }
+        }
+
+        public override bool IsUnmanagedCallersOnly
+        {
+            get
+            {
+                return _typicalMethodDef.IsUnmanagedCallersOnly;
+            }
+        }
+
+        public override bool IsSpecialName
+        {
+            get
+            {
+                return _typicalMethodDef.IsSpecialName;
+            }
+        }
     }
 
     // Additional members of ArrayMethod related to code generation.
@@ -141,6 +346,26 @@ namespace Internal.TypeSystem
             get
             {
                 return true;
+            }
+        }
+
+        public override bool IsNoInlining
+        {
+            get
+            {
+                // Do not allow inlining the Address method. The method that actually gets called is
+                // the one that has a hidden argument with the expected array type.
+                return Kind == ArrayMethodKind.Address;
+            }
+        }
+
+        public override bool IsInternalCall
+        {
+            get
+            {
+                // We consider Address method an internal call since this will end up calling a different
+                // method at runtime.
+                return Kind == ArrayMethodKind.Address;
             }
         }
     }

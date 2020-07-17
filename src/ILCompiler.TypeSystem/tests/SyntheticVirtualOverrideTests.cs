@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -13,7 +12,7 @@ using Xunit;
 
 namespace TypeSystemTests
 {
-    public class SyntheticVirtualOverrideTests
+    public partial class SyntheticVirtualOverrideTests
     {
         TestTypeSystemContext _context;
         ModuleDesc _testModule;
@@ -41,7 +40,7 @@ namespace TypeSystemTests
             Assert.DoesNotContain(t.GetMethods(), m => m.Name == "Equals");
             Assert.DoesNotContain(t.GetMethods(), m => m.Name == "GetHashCode");
 
-            List<MethodDesc> introducedVirtualMethods = new List<MethodDesc>(t.GetAllVirtualMethods());
+            List<MethodDesc> introducedVirtualMethods = new List<MethodDesc>(t.GetAllMethods().Where(m => m.IsVirtual));
             Assert.Equal(2, introducedVirtualMethods.Count);
             Assert.Contains(introducedVirtualMethods, m => m.Name == "Equals");
             Assert.Contains(introducedVirtualMethods, m => m.Name == "GetHashCode");
@@ -105,13 +104,15 @@ namespace TypeSystemTests
             Assert.Contains(vtable, m => m.Name == "ToString" && m.OwningType.IsObject);
         }
 
-        /// <summary>
-        /// An algorithm that provides synthetic Equals and GetHashCode overrides.
-        /// </summary>
-        private class EqualsAndGetHashCodeProvidingAlgorithm : VirtualMethodEnumerationAlgorithm
+        private class SyntheticVirtualOverrideTypeSystemContext : TestTypeSystemContext
         {
             private Dictionary<TypeDesc, MethodDesc> _getHashCodeMethods = new Dictionary<TypeDesc, MethodDesc>();
             private Dictionary<TypeDesc, MethodDesc> _equalsMethods = new Dictionary<TypeDesc, MethodDesc>();
+
+            public SyntheticVirtualOverrideTypeSystemContext()
+                : base(TargetArchitecture.Unknown)
+            {
+            }
 
             private MethodDesc GetGetHashCodeMethod(TypeDesc type)
             {
@@ -138,37 +139,23 @@ namespace TypeSystemTests
                 return result;
             }
 
-            public override IEnumerable<MethodDesc> ComputeAllVirtualMethods(TypeDesc type)
-            {
-                yield return GetGetHashCodeMethod(type);
-                yield return GetEqualsMethod(type);
-            }
-        }
-
-        private class SyntheticVirtualOverrideTypeSystemContext : TestTypeSystemContext
-        {
-            EqualsAndGetHashCodeProvidingAlgorithm _equalsAndGetHashCodeProvidingAlgorithm = new EqualsAndGetHashCodeProvidingAlgorithm();
-
-            public SyntheticVirtualOverrideTypeSystemContext()
-                : base(TargetArchitecture.Unknown)
-            {
-            }
-
-            public override VirtualMethodEnumerationAlgorithm GetVirtualMethodEnumerationAlgorithmForType(TypeDesc type)
+            protected override IEnumerable<MethodDesc> GetAllMethods(TypeDesc type)
             {
                 MetadataType mdType = type as MetadataType;
 
                 if (mdType.Name == "StructWithNoEqualsAndGetHashCode"
                     || mdType.Name == "ClassWithInjectedEqualsAndGetHashCode")
                 {
-                    return _equalsAndGetHashCodeProvidingAlgorithm;
+                    yield return GetEqualsMethod(type);
+                    yield return GetGetHashCodeMethod(type);
                 }
 
-                return base.GetVirtualMethodEnumerationAlgorithmForType(type);
+                foreach (var m in mdType.GetMethods())
+                    yield return m;
             }
         }
 
-        private class SyntheticMethod : MethodDesc
+        private partial class SyntheticMethod : MethodDesc
         {
             private TypeDesc _owningType;
             private MethodSignature _signature;
@@ -179,6 +166,19 @@ namespace TypeSystemTests
                 _owningType = owningType;
                 _signature = signature;
                 _name = name;
+            }
+
+            protected override int ClassCode
+            {
+                get
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+            {
+                throw new NotImplementedException();
             }
 
             public override bool IsVirtual
@@ -224,11 +224,6 @@ namespace TypeSystemTests
             public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
             {
                 return false;
-            }
-
-            public override string ToString()
-            {
-                return "[::Synthetic]" + _owningType.ToString() + "." + _name;
             }
         }
     }

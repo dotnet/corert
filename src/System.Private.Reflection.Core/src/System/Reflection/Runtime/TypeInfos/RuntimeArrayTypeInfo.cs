@@ -1,97 +1,85 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.MethodInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.MethodInfos;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-
-using global::Internal.Metadata.NativeFormat;
-
-using TargetException = System.ArgumentException;
+using Internal.Reflection.Core;
+using Internal.Reflection.Core.Execution;
 
 namespace System.Reflection.Runtime.TypeInfos
 {
     //
     // The runtime's implementation of TypeInfo's for array types. 
     //
-
     internal sealed partial class RuntimeArrayTypeInfo : RuntimeHasElementTypeInfo
     {
-        private RuntimeArrayTypeInfo(RuntimeType hasElementType)
-            : base(hasElementType)
+        private RuntimeArrayTypeInfo(UnificationKey key, bool multiDim, int rank)
+            : base(key)
         {
-            Debug.Assert(hasElementType.IsArray);
+            Debug.Assert(multiDim || rank == 1);
+            _multiDim = multiDim;
+            _rank = rank;
         }
 
-        public sealed override TypeAttributes Attributes
+        public sealed override int GetArrayRank()
         {
-            get
-            {
-                return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
-            }
+            return _rank;
+        }
+
+        protected sealed override bool IsArrayImpl() => true;
+        public sealed override bool IsSZArray => !_multiDim;
+        public sealed override bool IsVariableBoundArray => _multiDim;
+        protected sealed override bool IsByRefImpl() => false;
+        protected sealed override bool IsPointerImpl() => false;
+
+        protected sealed override TypeAttributes GetAttributeFlagsImpl()
+        {
+            return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
         }
 
         internal sealed override IEnumerable<RuntimeConstructorInfo> SyntheticConstructors
         {
             get
             {
-                bool multiDim = this.RuntimeType.InternalIsMultiDimArray;
-                int rank = this.RuntimeType.GetArrayRank();
+                bool multiDim = this.IsVariableBoundArray;
+                int rank = this.GetArrayRank();
 
-                ReflectionDomain reflectionDomain = this.ReflectionDomain;
-                FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
-                RuntimeType arrayType = this.RuntimeType;
-                RuntimeType countType = foundationTypes.SystemInt32.AsConfirmedRuntimeType();
-                RuntimeType voidType = foundationTypes.SystemVoid.AsConfirmedRuntimeType();
+                RuntimeArrayTypeInfo arrayType = this;
+                RuntimeTypeInfo countType = CommonRuntimeTypes.Int32.CastToRuntimeTypeInfo();
 
                 {
-                    RuntimeType[] ctorParametersAndReturn = new RuntimeType[rank + 1];
-                    ctorParametersAndReturn[0] = voidType;
+                    //
+                    // Expose a constructor that takes n Int32's (one for each dimension) and constructs a zero lower-bounded array. For example,
+                    //
+                    //   String[,]
+                    //
+                    // exposes
+                    //
+                    //   .ctor(int32, int32)
+                    //
+
+                    RuntimeTypeInfo[] ctorParameters = new RuntimeTypeInfo[rank];
                     for (int i = 0; i < rank; i++)
-                        ctorParametersAndReturn[i + 1] = countType;
+                        ctorParameters[i] = countType;
                     yield return RuntimeSyntheticConstructorInfo.GetRuntimeSyntheticConstructorInfo(
                         SyntheticMethodId.ArrayCtor,
                         arrayType,
-                        ctorParametersAndReturn,
+                        ctorParameters,
                         InvokerOptions.AllowNullThis | InvokerOptions.DontWrapException,
-                        delegate (Object _this, Object[] args)
+                        delegate (Object _this, Object[] args, Type thisType)
                         {
-                            if (rank == 1)
+                            int[] lengths = new int[rank];
+                            for (int i = 0; i < rank; i++)
                             {
-                                // Legacy: This seems really wrong in the rank1-multidim case (as it's a case of a synthetic constructor that's declared on T[*] returning an instance of T[])
-                                // This is how the desktop behaves, however.
-
-                                int count = (int)(args[0]);
-
-                                RuntimeType vectorType;
-                                if (multiDim)
-                                {
-                                    vectorType = ReflectionCoreNonPortable.GetArrayType(arrayType.InternalRuntimeElementType);
-                                }
-                                else
-                                {
-                                    vectorType = arrayType;
-                                }
-
-                                return ReflectionCoreExecution.ExecutionEnvironment.NewArray(vectorType.TypeHandle, count);
+                                lengths[i] = (int)(args[i]);
                             }
-                            else
-                            {
-                                int[] lengths = new int[rank];
-                                for (int i = 0; i < rank; i++)
-                                {
-                                    lengths[i] = (int)(args[i]);
-                                }
-                                return ReflectionCoreExecution.ExecutionEnvironment.NewMultiDimArray(arrayType.TypeHandle, lengths, null);
-                            }
+                            return ReflectionCoreExecution.ExecutionEnvironment.NewMultiDimArray(arrayType.TypeHandle, lengths, null);
                         }
                     );
                 }
@@ -111,19 +99,18 @@ namespace System.Reflection.Runtime.TypeInfos
                     //
 
                     int parameterCount = 2;
-                    RuntimeType elementType = this.RuntimeType.InternalRuntimeElementType;
-                    while (elementType.IsArray && elementType.GetArrayRank() == 1)
+                    RuntimeTypeInfo elementType = this.InternalRuntimeElementType;
+                    while (elementType.IsSZArray)
                     {
-                        RuntimeType[] ctorParametersAndReturn = new RuntimeType[parameterCount + 1];
-                        ctorParametersAndReturn[0] = voidType;
+                        RuntimeTypeInfo[] ctorParameters = new RuntimeTypeInfo[parameterCount];
                         for (int i = 0; i < parameterCount; i++)
-                            ctorParametersAndReturn[i + 1] = countType;
+                            ctorParameters[i] = countType;
                         yield return RuntimeSyntheticConstructorInfo.GetRuntimeSyntheticConstructorInfo(
                             SyntheticMethodId.ArrayCtorJagged + parameterCount,
                             arrayType,
-                            ctorParametersAndReturn,
+                            ctorParameters,
                             InvokerOptions.AllowNullThis | InvokerOptions.DontWrapException,
-                            delegate (Object _this, Object[] args)
+                            delegate (Object _this, Object[] args, Type thisType)
                             {
                                 int[] lengths = new int[args.Length];
                                 for (int i = 0; i < args.Length; i++)
@@ -141,16 +128,25 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 if (multiDim)
                 {
-                    RuntimeType[] ctorParametersAndReturn = new RuntimeType[rank * 2 + 1];
-                    ctorParametersAndReturn[0] = voidType;
+                    //
+                    // Expose a constructor that takes n*2 Int32's (two for each dimension) and constructs a arbitrarily lower-bounded array. For example,
+                    //
+                    //   String[,]
+                    //
+                    // exposes
+                    //
+                    //   .ctor(int32, int32, int32, int32)
+                    //
+
+                    RuntimeTypeInfo[] ctorParameters = new RuntimeTypeInfo[rank * 2];
                     for (int i = 0; i < rank * 2; i++)
-                        ctorParametersAndReturn[i + 1] = countType;
+                        ctorParameters[i] = countType;
                     yield return RuntimeSyntheticConstructorInfo.GetRuntimeSyntheticConstructorInfo(
                         SyntheticMethodId.ArrayMultiDimCtor,
                         arrayType,
-                        ctorParametersAndReturn,
+                        ctorParameters,
                         InvokerOptions.AllowNullThis | InvokerOptions.DontWrapException,
-                        delegate (Object _this, Object[] args)
+                        delegate (Object _this, Object[] args, Type thisType)
                         {
                             int[] lengths = new int[rank];
                             int[] lowerBounds = new int[rank];
@@ -170,27 +166,25 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                int rank = this.RuntimeType.GetArrayRank();
+                int rank = this.GetArrayRank();
 
-                ReflectionDomain reflectionDomain = this.ReflectionDomain;
-                FoundationTypes foundationTypes = reflectionDomain.FoundationTypes;
-                RuntimeType indexType = foundationTypes.SystemInt32.AsConfirmedRuntimeType();
-                RuntimeType arrayType = this.RuntimeType;
-                RuntimeType elementType = arrayType.InternalRuntimeElementType;
-                RuntimeType voidType = foundationTypes.SystemVoid.AsConfirmedRuntimeType();
+                RuntimeTypeInfo indexType = CommonRuntimeTypes.Int32.CastToRuntimeTypeInfo();
+                RuntimeArrayTypeInfo arrayType = this;
+                RuntimeTypeInfo elementType = arrayType.InternalRuntimeElementType;
+                RuntimeTypeInfo voidType = CommonRuntimeTypes.Void.CastToRuntimeTypeInfo();
 
                 {
-                    RuntimeType[] getParametersAndReturn = new RuntimeType[rank + 1];
-                    getParametersAndReturn[0] = elementType;
+                    RuntimeTypeInfo[] getParameters = new RuntimeTypeInfo[rank];
                     for (int i = 0; i < rank; i++)
-                        getParametersAndReturn[i + 1] = indexType;
+                        getParameters[i] = indexType;
                     yield return RuntimeSyntheticMethodInfo.GetRuntimeSyntheticMethodInfo(
                         SyntheticMethodId.ArrayGet,
                         "Get",
                         arrayType,
-                        getParametersAndReturn,
+                        getParameters,
+                        elementType,
                         InvokerOptions.None,
-                        delegate (Object _this, Object[] args)
+                        delegate (Object _this, Object[] args, Type thisType)
                         {
                             Array array = (Array)_this;
                             int[] indices = new int[rank];
@@ -202,18 +196,18 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
 
                 {
-                    RuntimeType[] setParametersAndReturn = new RuntimeType[rank + 2];
-                    setParametersAndReturn[0] = voidType;
+                    RuntimeTypeInfo[] setParameters = new RuntimeTypeInfo[rank + 1];
                     for (int i = 0; i < rank; i++)
-                        setParametersAndReturn[i + 1] = indexType;
-                    setParametersAndReturn[rank + 1] = elementType;
+                        setParameters[i] = indexType;
+                    setParameters[rank] = elementType;
                     yield return RuntimeSyntheticMethodInfo.GetRuntimeSyntheticMethodInfo(
                         SyntheticMethodId.ArraySet,
                         "Set",
                         arrayType,
-                        setParametersAndReturn,
+                        setParameters,
+                        voidType,
                         InvokerOptions.None,
-                        delegate (Object _this, Object[] args)
+                        delegate (Object _this, Object[] args, Type thisType)
                         {
                             Array array = (Array)_this;
                             int[] indices = new int[rank];
@@ -227,17 +221,17 @@ namespace System.Reflection.Runtime.TypeInfos
                 }
 
                 {
-                    RuntimeType[] addressParametersAndReturn = new RuntimeType[rank + 1];
-                    addressParametersAndReturn[0] = ReflectionCoreNonPortable.GetByRefType(elementType);
+                    RuntimeTypeInfo[] addressParameters = new RuntimeTypeInfo[rank];
                     for (int i = 0; i < rank; i++)
-                        addressParametersAndReturn[i + 1] = indexType;
+                        addressParameters[i] = indexType;
                     yield return RuntimeSyntheticMethodInfo.GetRuntimeSyntheticMethodInfo(
                         SyntheticMethodId.ArrayAddress,
                         "Address",
                         arrayType,
-                        addressParametersAndReturn,
+                        addressParameters,
+                        elementType.GetByRefType(),
                         InvokerOptions.None,
-                        delegate (Object _this, Object[] args)
+                        delegate (Object _this, Object[] args, Type thisType)
                         {
                             throw new NotSupportedException();
                         }
@@ -265,7 +259,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                if (this.RuntimeType.InternalIsMultiDimArray)
+                if (this.IsVariableBoundArray)
                     return Array.Empty<QTypeDefRefOrSpec>();
                 else
                     return TypeDefInfoProjectionForArrays.TypeRefDefOrSpecsForDirectlyImplementedInterfaces;
@@ -279,28 +273,40 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             get
             {
-                return new TypeContext(new RuntimeType[] { this.RuntimeType.InternalRuntimeElementType }, null);
+                return new TypeContext(new RuntimeTypeInfo[] { this.InternalRuntimeElementType }, null);
+            }
+        }
+
+        protected sealed override string Suffix
+        {
+            get
+            {
+                if (!_multiDim)
+                    return "[]";
+                else if (_rank == 1)
+                    return "[*]";
+                else
+                    return "[" + new string(',', _rank - 1) + "]";
             }
         }
 
         //
         // Arrays don't have a true typedef behind them but for the purpose of reporting base classes and interfaces, we can create a pretender.
         //
-        private RuntimeNamedTypeInfo TypeDefInfoProjectionForArrays
+        private RuntimeTypeInfo TypeDefInfoProjectionForArrays
         {
             get
             {
-                Debug.Assert(this.ReflectionDomain == ReflectionCoreExecution.ExecutionDomain, "User Reflectable Domains not yet implemented.");
                 RuntimeTypeHandle projectionTypeHandleForArrays = ReflectionCoreExecution.ExecutionEnvironment.ProjectionTypeForArrays;
-                RuntimeType projectionRuntimeTypeForArrays = ReflectionCoreNonPortable.GetTypeForRuntimeTypeHandle(projectionTypeHandleForArrays);
-                return projectionRuntimeTypeForArrays.GetRuntimeTypeInfo<RuntimeNamedTypeInfo>();
+                RuntimeTypeInfo projectionRuntimeTypeForArrays = projectionTypeHandleForArrays.GetTypeForRuntimeTypeHandle();
+                return projectionRuntimeTypeForArrays;
             }
         }
 
         //
         // Helper for jagged array constructors.
         //
-        private Array CreateJaggedArray(RuntimeType arrayType, int[] lengths, int index)
+        private Array CreateJaggedArray(RuntimeTypeInfo arrayType, int[] lengths, int index)
         {
             int length = lengths[index];
             Array jaggedArray = ReflectionCoreExecution.ExecutionEnvironment.NewArray(arrayType.TypeHandle, length);
@@ -314,5 +320,8 @@ namespace System.Reflection.Runtime.TypeInfos
             }
             return jaggedArray;
         }
+
+        private readonly int _rank;
+        private readonly bool _multiDim;
     }
 }

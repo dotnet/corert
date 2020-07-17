@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * Generational GC handle manager.  Handle Caching Routines.
@@ -14,6 +13,12 @@
 #include "common.h"
 
 #include "gcenv.h"
+
+#ifdef Sleep // TODO(segilles)
+#undef Sleep
+#endif // Sleep
+
+#include "env/gcenv.os.h"
 
 #include "handletablepriv.h"
 
@@ -40,7 +45,7 @@ void SpinUntil(void *pCond, BOOL fNonZero)
         GC_NOTRIGGER;
         MODE_ANY;
     */
-    
+
     // if we have to sleep then we will keep track of a sleep period
     uint32_t dwThisSleepPeriod = 1;    // first just give up our timeslice
     uint32_t dwNextSleepPeriod = 10;   // next try a real delay
@@ -51,7 +56,7 @@ void SpinUntil(void *pCond, BOOL fNonZero)
 #endif //_DEBUG
 
     // on MP machines, allow ourselves some spin time before sleeping
-    uint32_t uNonSleepSpins = 8 * (g_SystemInfo.dwNumberOfProcessors - 1);
+    static uint32_t uNonSleepSpins = 8 * (GCToOSInterface::GetCurrentProcessCpuCount() - 1);
 
     // spin until the specificed condition is met
     while ((*(uintptr_t *)pCond != 0) != (fNonZero != 0))
@@ -97,7 +102,7 @@ void SpinUntil(void *pCond, BOOL fNonZero)
         else
         {
             // nope - just spin again
-            YieldProcessor();           // indicate to the processor that we are spining 
+            YieldProcessor();           // indicate to the processor that we are spinning
             uNonSleepSpins--;
         }
     }
@@ -156,7 +161,7 @@ OBJECTHANDLE *SyncReadAndZeroCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc
         GC_NOTRIGGER;
         MODE_ANY;
     */
-    
+
     // set up to loop
     // we loop backwards since that is the order handles are added to the bank
     // this is designed to reduce the chance that we will have to spin on a handle
@@ -236,7 +241,7 @@ void SyncWriteCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, uint32_t uCou
         GC_NOTRIGGER;
         MODE_ANY;
     */
-    
+
     // set up to loop
     // we loop backwards since that is the order handles are removed from the bank
     // this is designed to reduce the chance that we will have to spin on a handle
@@ -281,7 +286,7 @@ void SyncTransferCacheHandles(OBJECTHANDLE *pDst, OBJECTHANDLE *pSrc, uint32_t u
         GC_NOTRIGGER;
         MODE_ANY;
     */
-    
+
     // set up to loop
     // we loop backwards since that is the order handles are added to the bank
     // this is designed to reduce the chance that we will have to spin on a handle
@@ -515,7 +520,7 @@ void TableQuickRebalanceCache(HandleTable *pTable,
         GC_NOTRIGGER;
         MODE_ANY;
     */
-    
+
     // clamp the min free index to be non-negative
     if (lMinFreeIndex < 0)
         lMinFreeIndex = 0;
@@ -674,7 +679,7 @@ void TableCacheMissOnFree(HandleTable *pTable, HandleTypeCache *pCache, uint32_t
         GC_NOTRIGGER;
         MODE_ANY;
     */
-    
+
     // acquire the handle manager lock
     CrstHolder ch(&pTable->Lock);
 
@@ -766,7 +771,6 @@ void TableFreeSingleHandleToCache(HandleTable *pTable, uint32_t uType, OBJECTHAN
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        SO_TOLERANT;
         CAN_TAKE_LOCK;         // because of TableCacheMissOnFree
     }
     CONTRACTL_END;

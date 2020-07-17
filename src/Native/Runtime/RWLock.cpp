@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // RWLock.cpp -- adapted from CLR SimpleRWLock.cpp
@@ -23,7 +22,9 @@
 #include "event.h"
 #include "RWLock.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 #include "RuntimeInstance.h"
+#include "yieldprocessornormalized.h"
 
 // Configurable constants used across our spin locks
 // Initialization here is necessary so that we have meaningful values before the runtime is started
@@ -81,7 +82,7 @@ ReaderWriterLock::WriteHolder::~WriteHolder()
 #endif // !DACCESS_COMPILE
 }
 
-ReaderWriterLock::ReaderWriterLock() : 
+ReaderWriterLock::ReaderWriterLock(bool fBlockOnGc) :
     m_RWLock(0)
 #if 0
     , m_WriterWaiting(false)
@@ -92,6 +93,7 @@ ReaderWriterLock::ReaderWriterLock() :
         (PalGetProcessCpuCount() == 1) ? 0 : 
 #endif
         4000);
+    m_fBlockOnGc = fBlockOnGc;
 }
 
 
@@ -173,27 +175,12 @@ void ReaderWriterLock::AcquireReadLockWorker()
             if (TryAcquireReadLock())
                 return;
 
-            if (g_SystemInfo.dwNumberOfProcessors <= 1)
+            if (g_RhSystemInfo.dwNumberOfProcessors <= 1)
                 break;
 
             // Delay by approximately 2*i clock cycles (Pentium III).
-            // This is brittle code - future processors may of course execute this
-            // faster or slower, and future code generators may eliminate the loop altogether.
-            // The precise value of the delay is not critical, however, and I can't think
-            // of a better way that isn't machine-dependent - petersol.
-            int sum = 0;
-            for (int delayCount = uDelay; --delayCount; ) 
-            {
-                sum += delayCount;
-                PalYieldProcessor();           // indicate to the processor that we are spining 
-            }
-            if (sum == 0)
-            {
-                // never executed, just to fool the compiler into thinking sum is live here,
-                // so that it won't optimize away the loop.
-                static char dummy;
-                dummy++;
-            }
+            YieldProcessorNormalizedForPreSkylakeCount(uDelay);
+
             // exponential backoff: wait a factor longer in the next iteration
             uDelay *= g_SpinConstants.uBackoffFactor;
         }
@@ -247,28 +234,21 @@ void ReaderWriterLock::AcquireWriteLock()
             if (TryAcquireWriteLock())
                 return;
 
-            if (g_SystemInfo.dwNumberOfProcessors <= 1)
+            // Do not spin if GC is in progress because the lock will not
+            // be released until GC is finished.
+            if (m_fBlockOnGc && ThreadStore::IsTrapThreadsRequested())
+            {
+                RedhawkGCInterface::WaitForGCCompletion();
+            }
+
+            if (g_RhSystemInfo.dwNumberOfProcessors <= 1)
             {
                 break;
             }
+
             // Delay by approximately 2*i clock cycles (Pentium III).
-            // This is brittle code - future processors may of course execute this
-            // faster or slower, and future code generators may eliminate the loop altogether.
-            // The precise value of the delay is not critical, however, and I can't think
-            // of a better way that isn't machine-dependent - petersol.
-            int sum = 0;
-            for (int delayCount = uDelay; --delayCount; ) 
-            {
-                sum += delayCount;
-                PalYieldProcessor();           // indicate to the processor that we are spining 
-            }
-            if (sum == 0)
-            {
-                // never executed, just to fool the compiler into thinking sum is live here,
-                // so that it won't optimize away the loop.
-                static char dummy;
-                dummy++;
-            }
+            YieldProcessorNormalizedForPreSkylakeCount(uDelay);
+
             // exponential backoff: wait a factor longer in the next iteration
             uDelay *= g_SpinConstants.uBackoffFactor;
         }

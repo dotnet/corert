@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #include "common.h"
+#include "gcenv.h"
+#include "gcheaputilities.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -15,19 +16,22 @@
 #include "StackFrameIterator.h"
 #include "thread.h"
 #include "holder.h"
-#include "Crst.h"
-#include "event.h"
+#include "rhbinder.h"
 #include "RWLock.h"
 #include "threadstore.h"
+#include "threadstore.inl"
 #include "RuntimeInstance.h"
-#include "ObjectLayout.h"
 #include "TargetPtrs.h"
-#include "eetype.h"
+#include "yieldprocessornormalized.h"
 
 #include "slist.inl"
 #include "GCMemoryHelpers.h"
 
-EXTERN_C volatile UInt32 RhpTrapThreads = 0;
+#include "Debug.h"
+#include "DebugEventSource.h"
+#include "DebugFuncEval.h"
+
+EXTERN_C volatile UInt32 RhpTrapThreads = (UInt32)TrapThreadsFlags::None;
 
 GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
 
@@ -54,25 +58,24 @@ PTR_Thread ThreadStore::Iterator::GetNext()
     return pResult;
 }
 
+//static
+PTR_Thread ThreadStore::GetSuspendingThread()
+{
+    return (RhpSuspendingThread);
+}
 
 #ifndef DACCESS_COMPILE
 
 
 ThreadStore::ThreadStore() : 
     m_ThreadList(),
-    m_Lock()
+    m_Lock(true /* writers (i.e. attaching/detaching threads) should wait on GC event */)
 {
+    SaveCurrentThreadOffsetForDAC();
 }
 
 ThreadStore::~ThreadStore()
 {
-    // @TODO: For now, the approach will be to cleanup everything we can, even in the face of failure in 
-    // individual operations within this method.  We're faced with a difficult situation -- what is the caller
-    // supposed to do on failure?  Wait and try again?  Do nothing?  We will assume they do nothing and 
-    // attempt to free as many of our resources as we can.  If any of those fail, we only leak those parts.
-    // Whereas if we were to fail on the first operation and then return to the caller without doing anymore,
-    // we would have leaked much more.
-
 }
 
 // static 
@@ -82,7 +85,8 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
     if (NULL == pNewThreadStore)
         return NULL;
 
-    pNewThreadStore->m_SuspendCompleteEvent.CreateManualEvent(TRUE);
+    if (!pNewThreadStore->m_SuspendCompleteEvent.CreateManualEventNoThrow(true))
+        return NULL;
 
     pNewThreadStore->m_pRuntimeInstance = pRuntimeInstance;
 
@@ -94,20 +98,6 @@ void ThreadStore::Destroy()
 {
     delete this;
 }
-
-#endif //!DACCESS_COMPILE
-
-//static
-PTR_Thread ThreadStore::GetSuspendingThread()
-{
-    return (RhpSuspendingThread);
-}
-#ifndef DACCESS_COMPILE
-
-GPTR_DECL(RuntimeInstance, g_pTheRuntimeInstance);
-
-extern UInt32 _fls_index;
-
 
 // static 
 void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
@@ -122,10 +112,6 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     // we want to avoid at construction time because the loader lock is held then.
     Thread * pAttachingThread = RawGetCurrentThread();
 
-    // On CHK build, validate that our GetThread assembly implementation matches the C++ implementation using
-    // TLS.
-    CreateCurrentThreadBuffer();
-
     // The thread was already initialized, so it is already attached
     if (pAttachingThread->IsInitialized())
     {
@@ -139,6 +125,13 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     //
     pAttachingThread->Construct();
     ASSERT(pAttachingThread->m_ThreadStateFlags == Thread::TSF_Unknown);
+
+    // The runtime holds the thread store lock for the duration of thread suspension for GC, so let's check to 
+    // see if that's going on and, if so, use a proper wait instead of the RWL's spinning.  NOTE: when we are 
+    // called with fAcquireThreadStoreLock==false, we are being called in a situation where the GC is trying to 
+    // init a GC thread, so we must honor the flag to mean "do not block on GC" or else we will deadlock.
+    if (fAcquireThreadStoreLock && (RhpTrapThreads != (UInt32)TrapThreadsFlags::None))
+        RedhawkGCInterface::WaitForGCCompletion();
 
     ThreadStore* pTS = GetThreadStore();
     ReaderWriterLock::WriteHolder write(&pTS->m_Lock, fAcquireThreadStoreLock);
@@ -173,7 +166,7 @@ void ThreadStore::DetachCurrentThread()
     {
         return;
     }
-        
+
 #ifdef STRESS_LOG
     ThreadStressLog * ptsl = reinterpret_cast<ThreadStressLog *>(
         pDetachingThread->GetThreadStressLog());
@@ -202,30 +195,58 @@ void ThreadStore::LockThreadStore()
 {
     m_Lock.AcquireReadLock();
 }
+
 void ThreadStore::UnlockThreadStore()
 { 
     m_Lock.ReleaseReadLock();
 }
 
-void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
+void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 {
+    ThreadStore::SuspendAllThreads(waitForGCEvent, /* fireDebugEvent = */ true);
+}
+
+void ThreadStore::SuspendAllThreads(bool waitForGCEvent, bool fireDebugEvent)
+{    
+    // 
+    // SuspendAllThreads requires all threads running
+    // 
+    // Threads are by default frozen by the debugger during FuncEval
+    // Therefore, in case of FuncEval, we need to inform the debugger 
+    // to unfreeze the threads.
+    // 
+    if (fireDebugEvent && DebugFuncEval::GetMostRecentFuncEvalHijackInstructionPointer() != 0)
+    {
+        struct DebuggerFuncEvalCrossThreadDependencyNotification crossThreadDependencyEventPayload;
+        crossThreadDependencyEventPayload.kind = DebuggerResponseKind::FuncEvalCrossThreadDependency;
+        crossThreadDependencyEventPayload.payload = 0;
+        DebugEventSource::SendCustomEvent(&crossThreadDependencyEventPayload, sizeof(struct DebuggerFuncEvalCrossThreadDependencyNotification));
+    }
+
     Thread * pThisThread = GetCurrentThreadIfAvailable();
 
     LockThreadStore();
 
     RhpSuspendingThread = pThisThread;
 
-    pCompletionEvent->Reset();
+    if (waitForGCEvent)
+    {
+        GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
+    }
     m_SuspendCompleteEvent.Reset();
 
     // set the global trap for pinvoke leave and return
-    RhpTrapThreads = 1;
+    RhpTrapThreads |= (UInt32)TrapThreadsFlags::TrapThreads;
+
+    // Set each module's loop hijack flag
+    GetRuntimeInstance()->SetLoopHijackFlags(RhpTrapThreads);
 
     // Our lock-free algorithm depends on flushing write buffers of all processors running RH code.  The
-    // reason for this is that we essentially implement Decker's algorithm, which requires write ordering.
+    // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
     PalFlushProcessWriteBuffers();
 
     bool keepWaiting;
+    YieldProcessorNormalizationInfo normalizationInfo;
     do
     {
         keepWaiting = false;
@@ -254,7 +275,7 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
 
         if (keepWaiting)
         {
-            if (PalSwitchToThread() == 0 && g_SystemInfo.dwNumberOfProcessors > 1)
+            if (PalSwitchToThread() == 0 && g_RhSystemInfo.dwNumberOfProcessors > 1)
             {
                 // No threads are scheduled on this processor.  Perhaps we're waiting for a thread
                 // that's scheduled on another processor.  If so, let's give it a little time
@@ -263,8 +284,7 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
                 // too long (we probably don't need a 15ms wait here).  Instead, we'll just burn some
                 // cycles.
     	        // @TODO: need tuning for spin
-                for (int i = 0; i < 10000; i++)
-                    PalYieldProcessor();
+                YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, 10000);
             }
         }
 
@@ -273,27 +293,26 @@ void ThreadStore::SuspendAllThreads(CLREventStatic* pCompletionEvent)
     m_SuspendCompleteEvent.Set();
 }
 
-void ThreadStore::ResumeAllThreads(CLREventStatic* pCompletionEvent)
+void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
 {
-    m_pRuntimeInstance->UnsychronizedResetHijackedLoops();
-
     FOREACH_THREAD(pTargetThread)
     {
         pTargetThread->ResetCachedTransitionFrame();
     }
     END_FOREACH_THREAD
 
-    RhpTrapThreads = 0;
+    RhpTrapThreads &= ~(UInt32)TrapThreadsFlags::TrapThreads;
+
+    // Reset module's hijackLoops flag 
+    GetRuntimeInstance()->SetLoopHijackFlags(0);
+
     RhpSuspendingThread = NULL;
-    pCompletionEvent->Set();
+    if (waitForGCEvent)
+    {
+        GCHeapUtilities::GetGCHeap()->SetWaitForGCEvent();
+    }
     UnlockThreadStore();
 } // ResumeAllThreads
-
-// static
-bool ThreadStore::IsTrapThreadsRequested()
-{
-    return (RhpTrapThreads != 0);
-}
 
 void ThreadStore::WaitForSuspendComplete()
 {
@@ -302,11 +321,85 @@ void ThreadStore::WaitForSuspendComplete()
         RhFailFast();
 }
 
+#ifndef DACCESS_COMPILE
+
+void ThreadStore::InitiateThreadAbort(Thread* targetThread, Object * threadAbortException, bool doRudeAbort)
+{
+    SuspendAllThreads(/* waitForGCEvent = */ false, /* fireDebugEvent = */ false);
+    // TODO: consider enabling multiple thread aborts running in parallel on different threads
+    ASSERT((RhpTrapThreads & (UInt32)TrapThreadsFlags::AbortInProgress) == 0);
+    RhpTrapThreads |= (UInt32)TrapThreadsFlags::AbortInProgress;
+
+    targetThread->SetThreadAbortException(threadAbortException);
+
+    // TODO: Stage 2: Queue APC to the target thread to break out of possible wait
+
+    bool initiateAbort = false;
+
+    if (!doRudeAbort)
+    {
+        // TODO: Stage 3: protected regions (finally, catch) handling
+        //  If it was in a protected region, set the "throw at protected region end" flag on the native Thread object
+        // TODO: Stage 4: reverse PInvoke handling
+        //  If there was a reverse Pinvoke frame between the current frame and the funceval frame of the target thread, 
+        //  find the outermost reverse Pinvoke frame below the funceval frame and set the thread abort flag in its transition frame.
+        //  If both of these cases happened at once, find out which one of the outermost frame of the protected region
+        //  and the outermost reverse Pinvoke frame is closer to the funceval frame and perform one of the two actions
+        //  described above based on the one that's closer.
+        initiateAbort = true;
+    }
+    else
+    {
+        initiateAbort = true;
+    }
+
+    if (initiateAbort)
+    {
+        PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
+        transitionFrame->m_Flags |= PTFF_THREAD_ABORT;
+    }
+
+    ResumeAllThreads(/* waitForGCEvent = */ false);
+}
+
+void ThreadStore::CancelThreadAbort(Thread* targetThread)
+{
+    SuspendAllThreads(/* waitForGCEvent = */ false, /* fireDebugEvent = */ false);
+
+    ASSERT((RhpTrapThreads & (UInt32)TrapThreadsFlags::AbortInProgress) != 0);
+    RhpTrapThreads &= ~(UInt32)TrapThreadsFlags::AbortInProgress;
+
+    PInvokeTransitionFrame* transitionFrame = reinterpret_cast<PInvokeTransitionFrame*>(targetThread->GetTransitionFrame());
+    if (transitionFrame != nullptr)
+    {
+        transitionFrame->m_Flags &= ~PTFF_THREAD_ABORT;
+    }
+
+    targetThread->SetThreadAbortException(nullptr);
+
+    ResumeAllThreads(/* waitForGCEvent = */ false);
+}
+
+COOP_PINVOKE_HELPER(void *, RhpGetCurrentThread, ())
+{
+    return ThreadStore::GetCurrentThread();
+}
+
+COOP_PINVOKE_HELPER(void, RhpInitiateThreadAbort, (void* thread, Object * threadAbortException, Boolean doRudeAbort))
+{
+    GetThreadStore()->InitiateThreadAbort((Thread*)thread, threadAbortException, doRudeAbort);
+}
+
+COOP_PINVOKE_HELPER(void, RhpCancelThreadAbort, (void* thread))
+{
+    GetThreadStore()->CancelThreadAbort((Thread*)thread);
+}
+
+#endif // DACCESS_COMPILE
+
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
-EXTERN_C Thread * FASTCALL RhpGetThread();
-
-DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
+EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
 { 
     { 0 },                              // m_rgbAllocContextBuffer
     Thread::TSF_Unknown,                // m_ThreadStateFlags
@@ -317,88 +410,46 @@ DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     INVALID_HANDLE_VALUE,               // m_hPalThread
     0,                                  // m_ppvHijackedReturnAddressLocation
     0,                                  // m_pvHijackedReturnAddress
-    0,                                  // m_pExInfoStackHead
-    0,                                  // m_pStackLow
-    0,                                  // m_pStackHigh
-    0,                                  // m_pTEB
-    0,                                  // m_uPalThreadIdForLogging
+    0,                                  // all other fields are initialized by zeroes
 };
 
-#ifdef CORERT
-Thread * FASTCALL RhpGetThread()
-{
-    return (Thread *)&tls_CurrentThread;
-}
-#endif
-
-// static
-void * ThreadStore::CreateCurrentThreadBuffer()
-{
-    void * pvBuffer = &tls_CurrentThread;
-
-    ASSERT(RhpGetThread() == pvBuffer);
-
-    return pvBuffer;
-}
-
-// static
-Thread * ThreadStore::RawGetCurrentThread()
-{
-    return (Thread *) &tls_CurrentThread;
-}
-
-// static
-Thread * ThreadStore::GetCurrentThread()
-{
-    Thread * pCurThread = RawGetCurrentThread();
-
-    // If this assert fires, and you only need the Thread pointer if the thread has ever previously
-    // entered the runtime, then you should be using GetCurrentThreadIfAvailable instead.
-    ASSERT(pCurThread->IsInitialized());    
-    return pCurThread;
-};
-
-// static
-Thread * ThreadStore::GetCurrentThreadIfAvailable()
-{
-    Thread * pCurThread = RawGetCurrentThread();
-    if (pCurThread->IsInitialized())
-        return pCurThread;
-
-    return NULL;
-}
 #endif // !DACCESS_COMPILE
 
-#ifdef _MSC_VER
+#ifdef _WIN32
+
+#ifndef DACCESS_COMPILE
+
 // Keep a global variable in the target process which contains
 // the address of _tls_index.  This is the breadcrumb needed
 // by DAC to read _tls_index since we don't control the 
 // declaration of _tls_index directly.
+
+// volatile to prevent the compiler from removing the unused global variable
+volatile UInt32 * p_tls_index;
+volatile UInt32 SECTIONREL__tls_CurrentThread;
+
 EXTERN_C UInt32 _tls_index;
-GPTR_IMPL_INIT(UInt32, p_tls_index, &_tls_index);
-#endif // _MSC_VER
-
-#ifndef DACCESS_COMPILE
-
-// We must prevent the linker from removing the unused global variable 
-// that DAC will be looking at to find _tls_index.
-#ifdef _MSC_VER
-#ifdef _WIN64
-#pragma comment(linker, "/INCLUDE:?p_tls_index@@3PEAIEA")
-#else
-#pragma comment(linker, "/INCLUDE:?p_tls_index@@3PAIA")
+#if defined(TARGET_ARM64)
+// ARM64TODO: Re-enable optimization
+#pragma optimize("", off)
 #endif
-#endif // _MSC_VER
+void ThreadStore::SaveCurrentThreadOffsetForDAC()
+{
+    p_tls_index = &_tls_index;
 
+    UInt8 * pTls = *(UInt8 **)(PalNtCurrentTeb() + OFFSETOF__TEB__ThreadLocalStoragePointer);
+
+    UInt8 * pOurTls = *(UInt8 **)(pTls + (_tls_index * sizeof(void*)));
+
+    SECTIONREL__tls_CurrentThread = (UInt32)((UInt8 *)&tls_CurrentThread - pOurTls);
+}
+#if defined(TARGET_ARM64)
+#pragma optimize("", on)
+#endif
 #else // DACCESS_COMPILE
 
-#if defined(BIT64)
-#define OFFSETOF__TLS__tls_CurrentThread            0x20
-#elif defined(_ARM_)
-#define OFFSETOF__TLS__tls_CurrentThread            0x10
-#else
-#define OFFSETOF__TLS__tls_CurrentThread            0x08
-#endif
+GPTR_IMPL(UInt32, p_tls_index);
+GVAL_IMPL(UInt32, SECTIONREL__tls_CurrentThread);
 
 //
 // This routine supports the !Thread debugger extension routine
@@ -419,10 +470,19 @@ PTR_Thread ThreadStore::GetThreadFromTEB(TADDR pTEB)
     if (pOurTls == NULL)
         return NULL;
 
-    return (PTR_Thread)(pOurTls + OFFSETOF__TLS__tls_CurrentThread);
+    return (PTR_Thread)(pOurTls + SECTIONREL__tls_CurrentThread);
 }
 
 #endif // DACCESS_COMPILE
+
+#else // _WIN32
+
+void ThreadStore::SaveCurrentThreadOffsetForDAC()
+{
+}
+
+#endif // _WIN32
+
 
 #ifndef DACCESS_COMPILE
 

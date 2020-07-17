@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using global::System;
 using global::System.Runtime.InteropServices;
@@ -16,7 +15,11 @@ namespace Internal.Reflection.Execution
     {
         public sealed override bool IsCOMObject(Type type)
         {
-            return McgMarshal.IsCOMObject(type);
+#if PROJECTN
+            return McgMarshal.IsComObject(type);
+#else
+            return false;
+#endif
         }
     }
 }

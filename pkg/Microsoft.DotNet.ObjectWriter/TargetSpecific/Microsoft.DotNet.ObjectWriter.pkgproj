@@ -1,0 +1,38 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <PackageTargetRuntime>$(NuPkgRid)</PackageTargetRuntime>
+  </PropertyGroup>
+
+  <!-- This target defines files and properties that need to be included in the package regardless of platform -->
+  <PropertyGroup>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
+    <PackagePlatforms>x64;</PackagePlatforms>
+    <PreventImplementationReference>true</PreventImplementationReference>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ObjWriterLibrary Condition="'$(OSGroup)' == 'Windows_NT'">objwriter.dll</ObjWriterLibrary>
+    <ObjWriterLibrary Condition="'$(OSGroup)' == 'Linux'">libobjwriter.so</ObjWriterLibrary>
+    <ObjWriterLibrary Condition="'$(OSGroup)' == 'OSX'">libobjwriter.dylib</ObjWriterLibrary>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(OSGroup)' == 'Windows_NT'">
+    <File Include="$(ObjDir)Native\$(OSPlatformConfig)\ObjWriter\llvmCap\LLVM-prefix\src\LLVM-build\bin\$(ConfigurationGroup)\$(ObjWriterLibrary)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
+  </ItemGroup>
+  <ItemGroup Condition="'$(OSGroup)' != 'Windows_NT'">
+    <File Include="$(ObjDir)Native\$(OSPlatformConfig)\ObjWriter\llvmCap\LLVM-prefix\src\LLVM-build\lib\$(ObjWriterLibrary)">
+      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <Target Name="GetPackageDependencies"/>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />
+</Project>

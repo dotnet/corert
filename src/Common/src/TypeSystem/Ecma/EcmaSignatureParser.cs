@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 using Internal.TypeSystem;
 
@@ -22,8 +22,6 @@ namespace Internal.TypeSystem.Ecma
         {
             _module = module;
             _reader = reader;
-
-            // _hasModifiers = false;
         }
 
         private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
@@ -110,26 +108,36 @@ namespace Internal.TypeSystem.Ecma
                         return _module.Context.GetInstantiatedType(metadataTypeDef, new Instantiation(instance));
                     }
                 case SignatureTypeCode.TypedReference:
-                    throw new PlatformNotSupportedException("TypedReference not supported in .NET Core");
+                    return GetWellKnownType(WellKnownType.TypedReference);
                 case SignatureTypeCode.FunctionPointer:
-                    throw new PlatformNotSupportedException("Function pointer types are not supported in .NET Core");
+                    return _module.Context.GetFunctionPointerType(ParseMethodSignature());
                 default:
                     throw new BadImageFormatException();
             }
         }
 
-        private SignatureTypeCode ParseTypeCode()
+        private SignatureTypeCode ParseTypeCode(bool skipPinned = true)
         {
             for (;;)
             {
                 SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
 
-                if (typeCode != SignatureTypeCode.RequiredModifier && typeCode != SignatureTypeCode.OptionalModifier)
-                    return typeCode;
+                // TODO: actually consume modopts
+                if (typeCode == SignatureTypeCode.RequiredModifier ||
+                    typeCode == SignatureTypeCode.OptionalModifier)
+                {
+                    _reader.ReadTypeHandle();
+                    continue;
+                }
 
-                _reader.ReadTypeHandle();
+                // TODO: treat PINNED in the signature same as modopts (it matters
+                // in signature matching - you can actually define overloads on this)
+                if (skipPinned && typeCode == SignatureTypeCode.Pinned)
+                {
+                    continue;
+                }
 
-                // _hasModifiers = true;
+                return typeCode;
             }
         }
 
@@ -149,9 +157,24 @@ namespace Internal.TypeSystem.Ecma
 
         public MethodSignature ParseMethodSignature()
         {
+            SignatureHeader header = _reader.ReadSignatureHeader();
+
             MethodSignatureFlags flags = 0;
 
-            SignatureHeader header = _reader.ReadSignatureHeader();
+            SignatureCallingConvention signatureCallConv = header.CallingConvention;
+            if (signatureCallConv != SignatureCallingConvention.Default)
+            {
+                // Verify that it is safe to convert CallingConvention to MethodSignatureFlags via a simple cast
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)SignatureCallingConvention.CDecl);
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionStdCall == (int)SignatureCallingConvention.StdCall);
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)SignatureCallingConvention.ThisCall);
+                Debug.Assert((int)MethodSignatureFlags.CallingConventionVarargs == (int)SignatureCallingConvention.VarArgs);
+                // [TODO] Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConvention == (int)SignatureCallingConvention.Unmanaged);
+                Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConvention == 9);
+
+                flags = (MethodSignatureFlags)signatureCallConv;
+            }
+
             if (!header.IsInstance)
                 flags |= MethodSignatureFlags.Static;
 
@@ -233,7 +256,7 @@ namespace Internal.TypeSystem.Ecma
                 {
                     bool isPinned = false;
 
-                    SignatureTypeCode typeCode = ParseTypeCode();
+                    SignatureTypeCode typeCode = ParseTypeCode(skipPinned: false);
                     if (typeCode == SignatureTypeCode.Pinned)
                     {
                         isPinned = true;
@@ -266,6 +289,110 @@ namespace Internal.TypeSystem.Ecma
                 arguments[i] = ParseType();
             }
             return arguments;
+        }
+
+        public MarshalAsDescriptor ParseMarshalAsDescriptor()
+        {
+            Debug.Assert(_reader.RemainingBytes != 0);
+
+            NativeTypeKind type = (NativeTypeKind)_reader.ReadByte();
+            NativeTypeKind arraySubType = NativeTypeKind.Default;
+            uint? paramNum = null, numElem = null;
+
+            switch (type)
+            {
+                case NativeTypeKind.Array:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            arraySubType = (NativeTypeKind)_reader.ReadByte();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            paramNum = (uint)_reader.ReadCompressedInteger();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            numElem = (uint)_reader.ReadCompressedInteger();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            int flag = _reader.ReadCompressedInteger();
+                            if (flag == 0)
+                            {
+                                paramNum = null; //paramNum is just a place holder so that numElem can be present
+                            }
+                        }
+
+                    }
+                    break;
+                case NativeTypeKind.ByValArray:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            numElem = (uint)_reader.ReadCompressedInteger();
+                        }
+
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            arraySubType = (NativeTypeKind)_reader.ReadByte();
+                        }
+                    }
+                    break;
+                case NativeTypeKind.ByValTStr:
+                    {
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            numElem = (uint)_reader.ReadCompressedInteger();
+                        }
+                    }
+                    break;
+                case NativeTypeKind.SafeArray:
+                    {
+                        // There's nobody to consume SafeArrays, so let's just parse the data
+                        // to avoid asserting later.
+
+                        // Get optional VARTYPE for the element
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            _reader.ReadCompressedInteger();
+                        }
+
+                        // VARTYPE can be followed by optional type name
+                        if (_reader.RemainingBytes != 0)
+                        {
+                            _reader.ReadSerializedString();
+                        }
+                    }
+                    break;
+                case NativeTypeKind.CustomMarshaler:
+                    {
+                        // There's nobody to consume CustomMarshaller, so let's just parse the data
+                        // to avoid asserting later.
+
+                        // Read typelib guid
+                        _reader.ReadSerializedString();
+
+                        // Read native type name
+                        _reader.ReadSerializedString();
+
+                        // Read managed marshaler name
+                        _reader.ReadSerializedString();
+
+                        // Read cookie
+                        _reader.ReadSerializedString();
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            Debug.Assert(_reader.RemainingBytes == 0);
+
+            return new MarshalAsDescriptor(type, arraySubType, paramNum, numElem);
         }
     }
 }

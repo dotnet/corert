@@ -1,9 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
+
+using Internal.Text;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -12,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis
     /// of node each pointer within the vector points to.
     /// </summary>
     public sealed class ArrayOfEmbeddedPointersNode<TTarget> : ArrayOfEmbeddedDataNode<EmbeddedPointerIndirectionNode<TTarget>>
-        where TTarget : ISymbolNode
+        where TTarget : ISortableSymbolNode
     {
         private int _nextId;
         private string _startSymbolMangledName;
@@ -42,15 +43,14 @@ namespace ILCompiler.DependencyAnalysis
             return new EmbeddedPointerIndirectionWithSymbolNode(this, target, GetNextId());
         }
 
-        public EmbeddedObjectNode NewNodeWithSymbol(TTarget target, OnMarkedDelegate callback)
-        {
-            return new EmbeddedPointerIndirectionWithSymbolAndOnMarkedCallbackNode(this, target, GetNextId(), callback);
-        }
-
         int GetNextId()
         {
             return System.Threading.Interlocked.Increment(ref _nextId);
         }
+
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.ArrayOfEmbeddedPointersNode;
 
         private class PointerIndirectionNodeComparer : IComparer<EmbeddedPointerIndirectionNode<TTarget>>
         {
@@ -77,10 +77,7 @@ namespace ILCompiler.DependencyAnalysis
                 _parentNode = futureParent;
             }
 
-            public override string GetName()
-            {
-                return "Embedded pointer to " + Target.MangledName;
-            }
+            protected override string GetName(NodeFactory factory) => $"Embedded pointer to {Target.GetMangledName(factory.NameMangler)}";
 
             protected override void OnMarked(NodeFactory factory)
             {
@@ -97,9 +94,11 @@ namespace ILCompiler.DependencyAnalysis
                     new DependencyListEntry(_parentNode, "Pointer region")
                 };
             }
+
+            public override int ClassCode => -66002498;
         }
 
-        private class EmbeddedPointerIndirectionWithSymbolNode : SimpleEmbeddedPointerIndirectionNode, ISymbolNode
+        private class EmbeddedPointerIndirectionWithSymbolNode : SimpleEmbeddedPointerIndirectionNode, ISymbolDefinitionNode
         {
             private int _id;
 
@@ -109,29 +108,14 @@ namespace ILCompiler.DependencyAnalysis
                 _id = id;
             }
 
-            public string MangledName
-            {
-                get
-                {
-                    return String.Concat(_parentNode._startSymbolMangledName, "_", _id.ToStringInvariant());
-                }
-            }
-        }
-        
-        private class EmbeddedPointerIndirectionWithSymbolAndOnMarkedCallbackNode : EmbeddedPointerIndirectionWithSymbolNode
-        {
-            private OnMarkedDelegate _onMarkedCallback;
 
-            public EmbeddedPointerIndirectionWithSymbolAndOnMarkedCallbackNode(ArrayOfEmbeddedPointersNode<TTarget> futureParent, TTarget target, int id, OnMarkedDelegate onMarkedCallback)
-                : base(futureParent, target, id)
-            {
-                _onMarkedCallback = onMarkedCallback;
-            }
+            int ISymbolNode.Offset => 0;
 
-            protected override void OnMarked(NodeFactory factory)
+            int ISymbolDefinitionNode.Offset => OffsetFromBeginningOfArray;
+
+            public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
             {
-                base.OnMarked(factory);
-                _onMarkedCallback(this);
+                sb.Append(nameMangler.CompilationUnitPrefix).Append(_parentNode._startSymbolMangledName).Append("_").Append(_id.ToStringInvariant());
             }
         }
     }

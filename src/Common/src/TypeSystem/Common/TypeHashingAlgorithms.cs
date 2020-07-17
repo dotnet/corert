@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // ---------------------------------------------------------------------------
 // Generic functions to compute the hashcode value of types
@@ -9,11 +8,58 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Internal.NativeFormat
 {
-    static public class TypeHashingAlgorithms
+    public static class TypeHashingAlgorithms
     {
+        public struct HashCodeBuilder
+        {
+            private int _hash1;
+            private int _hash2;
+            private int _numCharactersHashed;
+
+            public HashCodeBuilder(string seed)
+            {
+                _hash1 = 0x6DA3B944;
+                _hash2 = 0;
+                _numCharactersHashed = 0;
+
+                Append(seed);
+            }
+
+            public void Append(string src)
+            {
+                if (src.Length == 0)
+                    return;
+
+                int startIndex = 0;
+                if ((_numCharactersHashed & 1) == 1)
+                {
+                    _hash2 = (_hash2 + _rotl(_hash2, 5)) ^ src[0];
+                    startIndex = 1;
+                }
+
+                for (int i = startIndex; i < src.Length; i += 2)
+                {
+                    _hash1 = (_hash1 + _rotl(_hash1, 5)) ^ src[i];
+                    if ((i + 1) < src.Length)
+                        _hash2 = (_hash2 + _rotl(_hash2, 5)) ^ src[i + 1];
+                }
+
+                _numCharactersHashed += src.Length;
+            }
+
+            public int ToHashCode()
+            {
+                int hash1 = _hash1 + _rotl(_hash1, 8);
+                int hash2 = _hash2 + _rotl(_hash2, 8);
+
+                return hash1 ^ hash2;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int _rotl(int value, int shift)
         {
@@ -68,20 +114,48 @@ namespace Internal.NativeFormat
             return hash1 ^ hash2;
         }
 
+        // This function may be needed in a portion of the codebase which is too low level to use
+        // globalization, ergo, we cannot call ToString on the integer.
+        private static string IntToString(int arg)
+        {
+            // This IntToString function is only expected to be used for MDArrayRanks, and therefore is only for positive numbers
+            Debug.Assert(arg > 0);
+            StringBuilder sb = new StringBuilder(1);
+
+            while (arg != 0)
+            {
+                sb.Append((char)('0' + (arg % 10)));
+                arg = arg / 10;
+            }
+
+            // Reverse the string
+            int sbLen = sb.Length;
+            int pivot = sbLen / 2;
+            for (int i = 0; i < pivot; i++)
+            {
+                int iToSwapWith = sbLen - i - 1;
+                char temp = sb[i];
+                sb[i] = sb[iToSwapWith];
+                sb[iToSwapWith] = temp;
+            }
+
+            return sb.ToString();
+        }
+
         public static int ComputeArrayTypeHashCode(int elementTypeHashCode, int rank)
         {
-            // Arrays are treated as generic types in some parts of our system. The array hashcodes are 
+            // Arrays are treated as generic types in some parts of our system. The array hashcodes are
             // carefully crafted to be the same as the hashcodes of their implementation generic types.
 
             int hashCode;
-            if (rank == 1)
+            if (rank == -1)
             {
                 hashCode = unchecked((int)0xd5313557u);
                 Debug.Assert(hashCode == ComputeNameHashCode("System.Array`1"));
             }
             else
             {
-                hashCode = ComputeNameHashCode("System.MDArrayRank" + rank.ToString() + "`1");
+                hashCode = ComputeNameHashCode("System.MDArrayRank" + IntToString(rank) + "`1");
             }
 
             hashCode = (hashCode + _rotl(hashCode, 13)) ^ elementTypeHashCode;
@@ -129,6 +203,20 @@ namespace Internal.NativeFormat
             {
                 int argumentHashCode = genericTypeArguments[i].GetHashCode();
                 hashcode = (hashcode + _rotl(hashcode, 13)) ^ argumentHashCode;
+            }
+            return (hashcode + _rotl(hashcode, 15));
+        }
+
+        public static int ComputeMethodSignatureHashCode<ARG>(int returnTypeHashCode, ARG[] parameters)
+        {
+            // We're not taking calling conventions into consideration here mostly because there's no
+            // exchange enum type that would define them. We could define one, but the amount of additional
+            // information it would bring (16 or so possibilities) is likely not worth it.
+            int hashcode = returnTypeHashCode;
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                int parameterHashCode = parameters[i].GetHashCode();
+                hashcode = (hashcode + _rotl(hashcode, 13)) ^ parameterHashCode;
             }
             return (hashcode + _rotl(hashcode, 15));
         }

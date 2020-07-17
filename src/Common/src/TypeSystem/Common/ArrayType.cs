@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Threading;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
+    /// <summary>
+    /// Represents an array type - either a multidimensional array, or a vector
+    /// (a one-dimensional array with a zero lower bound).
+    /// </summary>
     public sealed partial class ArrayType : ParameterizedType
     {
         private int _rank; // -1 for regular single dimensional arrays, > 0 for multidimensional arrays
@@ -22,7 +23,8 @@ namespace Internal.TypeSystem
 
         public override int GetHashCode()
         {
-            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(this.ElementType.GetHashCode(), _rank == -1 ? 1 : _rank);
+            // ComputeArrayTypeHashCode expects -1 for an SzArray
+            return Internal.NativeFormat.TypeHashingAlgorithms.ComputeArrayTypeHashCode(this.ElementType.GetHashCode(), _rank);
         }
 
         public override DefType BaseType
@@ -33,6 +35,9 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets the type of the element of this array.
+        /// </summary>
         public TypeDesc ElementType
         {
             get
@@ -43,6 +48,9 @@ namespace Internal.TypeSystem
 
         internal MethodDesc[] _methods;
 
+        /// <summary>
+        /// Gets a value indicating whether this type is a vector.
+        /// </summary>
         public new bool IsSzArray
         {
             get
@@ -51,6 +59,21 @@ namespace Internal.TypeSystem
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this type is an mdarray.
+        /// </summary>
+        public new bool IsMdArray
+        {
+            get
+            {
+                return _rank > 0;
+            }
+        }
+
+        /// <summary>
+        /// Gets the rank of this array. Note this returns "1" for both vectors, and
+        /// for general arrays of rank 1. Use <see cref="IsSzArray"/> to disambiguate.
+        /// </summary>
         public int Rank
         {
             get
@@ -67,6 +90,7 @@ namespace Internal.TypeSystem
             {
                 numCtors = 1;
 
+                // Jagged arrays have constructor for each possible depth
                 var t = this.ElementType;
                 while (t.IsSzArray)
                 {
@@ -76,7 +100,7 @@ namespace Internal.TypeSystem
             }
             else
             {
-                // ELEMENT_TYPE_ARRAY has two ctor functions, one with and one without lower bounds
+                // Multidimensional arrays have two ctors, one with and one without lower bounds
                 numCtors = 2;
             }
 
@@ -104,38 +128,25 @@ namespace Internal.TypeSystem
 
         public override TypeDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            TypeDesc instantiatedElementType = this.ElementType.InstantiateSignature(typeInstantiation, methodInstantiation);
-            return instantiatedElementType.Context.GetArrayType(instantiatedElementType, _rank);
-        }
+            TypeDesc elementType = this.ElementType;
+            TypeDesc instantiatedElementType = elementType.InstantiateSignature(typeInstantiation, methodInstantiation);
+            if (instantiatedElementType != elementType)
+                return Context.GetArrayType(instantiatedElementType, _rank);
 
-        public override TypeDesc GetTypeDefinition()
-        {
-            TypeDesc result = this;
-
-            TypeDesc elementDef = this.ElementType.GetTypeDefinition();
-            if (elementDef != this.ElementType)
-                result = elementDef.Context.GetArrayType(elementDef);
-
-            return result;
+            return this;
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
-            TypeFlags flags = TypeFlags.Array;
+            TypeFlags flags = _rank == -1 ? TypeFlags.SzArray : TypeFlags.Array;
 
-            if ((mask & TypeFlags.ContainsGenericVariablesComputed) != 0)
-            {
-                flags |= TypeFlags.ContainsGenericVariablesComputed;
-                if (this.ParameterType.ContainsGenericVariables)
-                    flags |= TypeFlags.ContainsGenericVariables;
-            }
+            flags |= TypeFlags.HasGenericVarianceComputed;
+
+            flags |= TypeFlags.HasFinalizerComputed;
+
+            flags |= TypeFlags.AttributeCacheComputed;
 
             return flags;
-        }
-
-        public override string ToString()
-        {
-            return this.ElementType.ToString() + "[" + new String(',', Rank - 1) + "]";
         }
     }
 
@@ -144,10 +155,27 @@ namespace Internal.TypeSystem
         Get,
         Set,
         Address,
+        AddressWithHiddenArg,
         Ctor
     }
 
-    public partial class ArrayMethod : MethodDesc
+    /// <summary>
+    /// Represents one of the methods on array types. While array types are not typical
+    /// classes backed by metadata, they do have methods that can be referenced from the IL
+    /// and the type system needs to provide a way to represent them.
+    /// </summary>
+    /// <remarks>
+    /// There are two array Address methods (<see cref="ArrayMethodKind.Address"/> and 
+    /// <see cref="ArrayMethodKind.AddressWithHiddenArg"/>). One is used when referencing Address
+    /// method from IL, the other is used when *compiling* the method body.
+    /// The reason we need to do this is that the Address method is required to do a type check using a type
+    /// that is only known at the callsite. The trick we use is that we tell codegen that the
+    /// <see cref="ArrayMethodKind.Address"/> method requires a hidden instantiation parameter (even though it doesn't).
+    /// The instantiation parameter is where we capture the type at the callsite.
+    /// When we compile the method body, we compile it as <see cref="ArrayMethodKind.AddressWithHiddenArg"/> that
+    /// has the hidden argument explicitly listed in it's signature and is available as a regular parameter.
+    /// </remarks>
+    public sealed partial class ArrayMethod : MethodDesc
     {
         private ArrayType _owningType;
         private ArrayMethodKind _kind;
@@ -167,6 +195,14 @@ namespace Internal.TypeSystem
         }
 
         public override TypeDesc OwningType
+        {
+            get
+            {
+                return _owningType;
+            }
+        }
+
+        public ArrayType OwningArray
         {
             get
             {
@@ -217,6 +253,15 @@ namespace Internal.TypeSystem
                                 _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters);
                             }
                             break;
+                        case ArrayMethodKind.AddressWithHiddenArg:
+                            {
+                                var parameters = new TypeDesc[_owningType.Rank + 1];
+                                parameters[0] = Context.GetWellKnownType(WellKnownType.IntPtr);
+                                for (int i = 0; i < _owningType.Rank; i++)
+                                    parameters[i + 1] = _owningType.Context.GetWellKnownType(WellKnownType.Int32);
+                                _signature = new MethodSignature(0, 0, _owningType.ElementType.MakeByRefType(), parameters);
+                            }
+                            break;
                         default:
                             {
                                 int numArgs;
@@ -252,6 +297,7 @@ namespace Internal.TypeSystem
                     case ArrayMethodKind.Set:
                         return "Set";
                     case ArrayMethodKind.Address:
+                    case ArrayMethodKind.AddressWithHiddenArg:
                         return "Address";
                     default:
                         return ".ctor";
@@ -259,21 +305,9 @@ namespace Internal.TypeSystem
             }
         }
 
-        // Strips method instantiation. E.g C<int>.m<string> -> C<int>.m<U>
-        public override MethodDesc GetMethodDefinition()
-        {
-            return this;
-        }
-
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return false;
-        }
-
-        // Strips both type and method instantiation. E.g C<int>.m<string> -> C<T>.m<U>
-        public override MethodDesc GetTypicalMethodDefinition()
-        {
-            return this;
         }
 
         public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
@@ -285,11 +319,6 @@ namespace Internal.TypeSystem
                 return ((ArrayType)instantiatedOwningType).GetArrayMethod(_kind);
             else
                 return this;
-        }
-
-        public override string ToString()
-        {
-            return _owningType.ToString() + "." + Name;
         }
     }
 }

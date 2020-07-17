@@ -1,0 +1,18 @@
+<Project DefaultTargets="LinkNative" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <!-- <TargetName>$(TestFileName)</TargetName> -->
+    <TargetName>$([System.IO.Path]::GetFileNameWithoutExtension('$(TestFileName)'))</TargetName>
+    <TargetExt>.dll</TargetExt>
+    <OutputType>Library</OutputType>
+    <OutputPath>$(CoreRT_CoreCLRRuntimeDir)\</OutputPath>
+    <IntermediateOutputPath>$(CoreRT_CoreCLRRuntimeDir)\</IntermediateOutputPath>
+    <Optimize Condition="'$(Configuration)' == 'Release'">true</Optimize>
+  </PropertyGroup>
+
+  <!-- Since tests are already compiled, override Compile target to prevent CSC running -->
+  <Target Name="Compile" />
+
+  <Import Project="$(IlcPath)\build\Microsoft.NETCore.Native.targets" />
+
+</Project>

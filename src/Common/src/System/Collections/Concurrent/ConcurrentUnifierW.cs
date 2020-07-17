@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
@@ -90,7 +89,7 @@ namespace System.Collections.Concurrent
         public V GetOrAdd(K key)
         {
             Debug.Assert(key != null);
-            Debug.Assert(!Monitor.IsEntered(_lock), "GetOrAdd called while lock already acquired. A possible cause of this is an Equals or GetHashCode method that causes reentrancy in the table.");
+            Debug.Assert(!_lock.IsAcquired, "GetOrAdd called while lock already acquired. A possible cause of this is an Equals or GetHashCode method that causes reentrancy in the table.");
 
             int hashCode = key.GetHashCode();
             V value;
@@ -100,16 +99,11 @@ namespace System.Collections.Concurrent
                 V checkedValue;
                 bool checkedFound;
                 // In debug builds, always exercise a locked TryGet (this is a good way to detect deadlock/reentrancy through Equals/GetHashCode()).
-                try
+                using (LockHolder.Hold(_lock))
                 {
-                    _lock.Acquire();
                     _container.VerifyUnifierConsistency();
                     int h = key.GetHashCode();
                     checkedFound = _container.TryGetValue(key, h, out checkedValue);
-                }
-                finally
-                {
-                    _lock.Release();
                 }
 
                 if (found)
@@ -117,7 +111,7 @@ namespace System.Collections.Concurrent
                     // Since this DEBUG code is holding a strong reference to "value", state of a key must never go from found to not found, 
                     // and only one value may exist per key.
                     Debug.Assert(checkedFound);
-                    Debug.Assert(Object.ReferenceEquals(checkedValue, value));
+                    Debug.Assert(object.ReferenceEquals(checkedValue, value));
                     GC.KeepAlive(value);
                 }
             }
@@ -143,10 +137,8 @@ namespace System.Collections.Concurrent
                 return null;
             }
 
-            try
+            using (LockHolder.Hold(_lock))
             {
-                _lock.Acquire();
-
                 V heyIWasHereFirst;
                 if (_container.TryGetValue(key, hashCode, out heyIWasHereFirst))
                     return heyIWasHereFirst;
@@ -154,10 +146,6 @@ namespace System.Collections.Concurrent
                     _container.Resize(); // This overwrites the _container field.
                 _container.Add(key, hashCode, value);
                 return value;
-            }
-            finally
-            {
-                _lock.Release();
             }
         }
 
@@ -213,7 +201,7 @@ namespace System.Collections.Concurrent
 
             public void Add(K key, int hashCode, V value)
             {
-                Debug.Assert(Monitor.IsEntered(_owner._lock));
+                Debug.Assert(_owner._lock.IsAcquired);
 
                 int bucket = ComputeBucket(hashCode, _buckets.Length);
 
@@ -231,7 +219,7 @@ namespace System.Collections.Concurrent
                         {
                             V heyYoureSupposedToBeDead;
                             if (_entries[idx]._weakValue.TryGetTarget(out heyYoureSupposedToBeDead))
-                                Debug.Assert(false, "Add: You were supposed to verify inside the lock that this entry's weak reference had already expired!");
+                                Debug.Fail("Add: You were supposed to verify inside the lock that this entry's weak reference had already expired!");
                         }
 #endif //DEBUG
                         _entries[idx]._weakValue = new WeakReference<V>(value, trackResurrection: false);
@@ -263,14 +251,14 @@ namespace System.Collections.Concurrent
             {
                 get
                 {
-                    Debug.Assert(Monitor.IsEntered(_owner._lock));
+                    Debug.Assert(_owner._lock.IsAcquired);
                     return _nextFreeEntry != _entries.Length;
                 }
             }
 
             public void Resize()
             {
-                Debug.Assert(Monitor.IsEntered(_owner._lock));
+                Debug.Assert(_owner._lock.IsAcquired);
 
                 // Before we actually grow the size of the table, figure out how much we can recover just by dropping entries with
                 // expired weak references. 
@@ -354,7 +342,7 @@ namespace System.Collections.Concurrent
                 if (_nextFreeEntry >= 5000 || (0 != (_nextFreeEntry % 100)))
                     return;
 
-                Debug.Assert(Monitor.IsEntered(_owner._lock));
+                Debug.Assert(_owner._lock.IsAcquired);
                 Debug.Assert(_nextFreeEntry >= 0 && _nextFreeEntry <= _entries.Length);
                 int numEntriesEncountered = 0;
                 for (int bucket = 0; bucket < _buckets.Length; bucket++)
@@ -378,7 +366,7 @@ namespace System.Collections.Concurrent
                         if (walk2 != -1)
                             walk2 = _entries[walk2]._next;
                         if (walk1 == walk2 && walk2 != -1)
-                            Debug.Assert(false, "Bucket " + bucket + " has a cycle in its linked list.");
+                            Debug.Fail("Bucket " + bucket + " has a cycle in its linked list.");
                     }
                 }
                 // The assertion is "<=" rather than "==" because we allow an entry to "leak" until the next resize if 

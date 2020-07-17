@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Diagnostics;
-using global::System.Collections;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.Assemblies;
+using System;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.Assemblies;
 
 namespace System.Reflection.Runtime.TypeParsing
 {
@@ -18,7 +16,25 @@ namespace System.Reflection.Runtime.TypeParsing
         //
         // Parses a typename. The typename may be optionally postpended with a "," followed by a legal assembly name.
         //
-        public static AssemblyQualifiedTypeName ParseAssemblyQualifiedTypeName(String s)
+        public static TypeName ParseAssemblyQualifiedTypeName(string s, bool throwOnError)
+        {
+            if (throwOnError)
+                return ParseAssemblyQualifiedTypeName(s);
+
+            try
+            {
+                return ParseAssemblyQualifiedTypeName(s);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+        }
+
+        //
+        // Parses a typename. The typename may be optionally postpended with a "," followed by a legal assembly name.
+        //
+        private static TypeName ParseAssemblyQualifiedTypeName(String s)
         {
             // Desktop compat: a whitespace-only "typename" qualified by an assembly name throws an ArgumentException rather than
             // a TypeLoadException.
@@ -36,7 +52,7 @@ namespace System.Reflection.Runtime.TypeParsing
                 NonQualifiedTypeName typeName = parser.ParseNonQualifiedTypeName();
                 TokenType token = parser._lexer.GetNextToken();
                 if (token == TokenType.End)
-                    return new AssemblyQualifiedTypeName(typeName, null);
+                    return typeName;
                 if (token == TokenType.Comma)
                 {
                     RuntimeAssemblyName assemblyName = parser._lexer.GetNextAssemblyName();
@@ -69,7 +85,7 @@ namespace System.Reflection.Runtime.TypeParsing
             NonQualifiedTypeName typeName = ParseNamedOrConstructedGenericTypeName();
 
             // Iterate through any "has-element" qualifiers ([], &, *).
-            for (; ;)
+            for (;;)
             {
                 TokenType token = _lexer.Peek;
                 if (token == TokenType.End)
@@ -130,7 +146,7 @@ namespace System.Reflection.Runtime.TypeParsing
             {
                 _lexer.Skip();
                 LowLevelListWithIList<TypeName> genericTypeArguments = new LowLevelListWithIList<TypeName>();
-                for (; ;)
+                for (;;)
                 {
                     TypeName genericTypeArgument = ParseGenericTypeArgument();
                     genericTypeArguments.Add(genericTypeArgument);
@@ -166,13 +182,7 @@ namespace System.Reflection.Runtime.TypeParsing
         private NamespaceTypeName ParseNamespaceTypeName()
         {
             String fullName = _lexer.GetNextIdentifier();
-            String[] parts = fullName.Split('.');
-            int numNamespaceParts = parts.Length - 1;
-            String[] namespaceParts = new String[numNamespaceParts];
-            for (int i = 0; i < numNamespaceParts; i++)
-                namespaceParts[numNamespaceParts - i - 1] = parts[i];
-            String name = parts[numNamespaceParts];
-            return new NamespaceTypeName(namespaceParts, name);
+            return new NamespaceTypeName(fullName);
         }
 
         //
@@ -184,7 +194,7 @@ namespace System.Reflection.Runtime.TypeParsing
             if (token == TokenType.Other)
             {
                 NonQualifiedTypeName nonQualifiedTypeName = ParseNonQualifiedTypeName();
-                return new AssemblyQualifiedTypeName(nonQualifiedTypeName, null);
+                return nonQualifiedTypeName;
             }
             else if (token == TokenType.OpenSqBracket)
             {
@@ -198,14 +208,16 @@ namespace System.Reflection.Runtime.TypeParsing
                 }
                 if (token != TokenType.CloseSqBracket)
                     throw new ArgumentException();
-                return new AssemblyQualifiedTypeName(typeName, assemblyName);
+                if (assemblyName == null)
+                    return typeName;
+                else
+                    return new AssemblyQualifiedTypeName(typeName, assemblyName);
             }
             else
                 throw new ArgumentException();
         }
 
-
-        private TypeLexer _lexer;
+        private readonly TypeLexer _lexer;
     }
 }
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * Generational GC handle manager.  Table Scanning Routines.
@@ -20,10 +19,6 @@
 #include "objecthandle.h"
 #include "handletablepriv.h"
 
-#ifndef FEATURE_REDHAWK
-#include "nativeoverlapped.h"
-#endif // FEATURE_REDHAWK
-
 
 /****************************************************************************
  *
@@ -32,27 +27,27 @@
  ****************************************************************************/
  /*
 How the macros work:
-Handle table's generation (TableSegmentHeader::rgGeneration) is actually a byte array, each byte is generation of a clump. 
-However it's often used as a uint32_t array for perf reasons, 1 uint32_t contains 4 bytes for ages of 4 clumps. Operations on such 
+Handle table's generation (TableSegmentHeader::rgGeneration) is actually a byte array, each byte is generation of a clump.
+However it's often used as a uint32_t array for perf reasons, 1 uint32_t contains 4 bytes for ages of 4 clumps. Operations on such
 a uint32_t include:
 
-1. COMPUTE_CLUMP_MASK. For some GC operations, we only want to scan handles in certain generation. To do that, we calculate 
+1. COMPUTE_CLUMP_MASK. For some GC operations, we only want to scan handles in certain generation. To do that, we calculate
 a Mask uint32_t from the original generation uint32_t:
     MaskDWORD = COMPUTE_CLUMP_MASK (GenerationDWORD, BuildAgeMask(generationToScan, MaxGen))
-so that if a byte in GenerationDWORD is smaller than or equals to generationToScan, the corresponding byte in MaskDWORD is non-zero, 
-otherwise it is zero. However, if a byte in GenerationDWORD is between [2, 3E] and generationToScan is 2, the corresponding byte in 
+so that if a byte in GenerationDWORD is smaller than or equals to generationToScan, the corresponding byte in MaskDWORD is non-zero,
+otherwise it is zero. However, if a byte in GenerationDWORD is between [2, 3E] and generationToScan is 2, the corresponding byte in
 MaskDWORD is also non-zero.
 
-2. AgeEphemeral. When Ephemeral GC happens, ages for handles which belong to the GC condemned generation should be 
+2. AgeEphemeral. When Ephemeral GC happens, ages for handles which belong to the GC condemned generation should be
 incremented by 1. The operation is done by calculating a new uint32_t using the old uint32_t value:
     NewGenerationDWORD = COMPUTE_AGED_CLUMPS(OldGenerationDWORD, BuildAgeMask(condemnedGeneration, MaxGen))
-so that if a byte in OldGenerationDWORD is smaller than or equals to condemnedGeneration. the coresponding byte in 
+so that if a byte in OldGenerationDWORD is smaller than or equals to condemnedGeneration. the corresponding byte in
 NewGenerationDWORD is 1 bigger than the old value, otherwise it remains unchanged.
 
 3. Age. Similar as AgeEphemeral, but we use a special mask if condemned generation is max gen (2):
     NewGenerationDWORD = COMPUTE_AGED_CLUMPS(OldGenerationDWORD, GEN_FULLGC)
-under this operation, if a byte in OldGenerationDWORD is bigger than or equals to max gen(2) but smaller than 3F, the corresponding byte in 
-NewGenerationDWORD will be incremented by 1. Basically, a handle clump's age could be in [0, 3E]. But from GC's point of view, [2,3E] 
+under this operation, if a byte in OldGenerationDWORD is bigger than or equals to max gen(2) but smaller than 3F, the corresponding byte in
+NewGenerationDWORD will be incremented by 1. Basically, a handle clump's age could be in [0, 3E]. But from GC's point of view, [2,3E]
 are all considered as gen 2.
 
 If you change any of those algorithm, please verify it by this program:
@@ -67,7 +62,7 @@ If you change any of those algorithm, please verify it by this program:
             VerifyAgeEphemeralCalc (0xff, 0xff, 0xff, 0xff, 0);
             VerifyAgeEphemeralCalc (0xff, 0xff, 0xff, 0xff, 1);
             VerifyAgeCalc (0xff, 0xff, 0xff, 0xff);
-		       
+
             //each byte could independently change from 0 to 0x3e
             for (byte b0 = 0; b0 <= 0x3f; b0++)
             {
@@ -78,7 +73,7 @@ If you change any of those algorithm, please verify it by this program:
                         for (byte b3 = 0; b3 <= 0x3f; b3++)
                         {
                             //verify we calculate mask correctly
-                            VerifyMaskCalc (b0, b1, b2, b3, 0);					
+                            VerifyMaskCalc (b0, b1, b2, b3, 0);
                             VerifyMaskCalc (b0, b1, b2, b3, 1);
                             VerifyMaskCalc (b0, b1, b2, b3, 2);
 
@@ -97,13 +92,13 @@ If you change any of those algorithm, please verify it by this program:
         void VerifyMaskCalc (byte b0, byte b1, byte b2, byte b3, uint gennum)
         {
             uint genDword = (uint)(b0 | b1 << 8 | b2 << 16 | b3 << 24);
-							
+
             uint maskedByGen0 = COMPUTE_CLUMP_MASK(genDword, BuildAgeMask (gennum, 2));
             byte b0_ = (byte)(maskedByGen0 & 0xff);
             byte b1_ = (byte)((maskedByGen0 & 0xff00) >> 8);
             byte b2_ = (byte)((maskedByGen0 & 0xff0000) >> 16);
             byte b3_ = (byte)((maskedByGen0 & 0xff000000)>> 24);
-							
+
             AssertGenMask (b0, b0_, gennum);
             AssertGenMask (b1, b1_, gennum);
             AssertGenMask (b2, b2_, gennum);
@@ -118,7 +113,7 @@ If you change any of those algorithm, please verify it by this program:
                     assert (mask == 0);
                     return;
             }
-            //any generaion bigger than 2 is actually 2
+            //any generation bigger than 2 is actually 2
             if (gen > 2)
                 gen = 2;
 
@@ -131,13 +126,13 @@ If you change any of those algorithm, please verify it by this program:
         void VerifyAgeEphemeralCalc (byte b0, byte b1, byte b2, byte b3, uint gennum)
         {
             uint genDword = (uint)(b0 | b1 << 8 | b2 << 16 | b3 << 24);
-							
+
             uint agedClump = COMPUTE_AGED_CLUMPS(genDword, BuildAgeMask (gennum, 2));
             byte b0_ = (byte)(agedClump & 0xff);
             byte b1_ = (byte)((agedClump & 0xff00) >> 8);
             byte b2_ = (byte)((agedClump & 0xff0000) >> 16);
             byte b3_ = (byte)((agedClump & 0xff000000) >> 24);
-							
+
             AssertAgedClump (b0, b0_, gennum);
             AssertAgedClump (b1, b1_, gennum);
             AssertAgedClump (b2, b2_, gennum);
@@ -152,7 +147,7 @@ If you change any of those algorithm, please verify it by this program:
                 assert (agedGen == gen);
                 return;
             }
-			
+
             if (gen <= gennum || (gen > 2 && gennum >= 2))
                 assert (agedGen == gen + 1);
             else
@@ -162,18 +157,18 @@ If you change any of those algorithm, please verify it by this program:
         void VerifyAgeCalc (byte b0, byte b1, byte b2, byte b3)
         {
             uint genDword = (uint)(b0 | b1 << 8 | b2 << 16 | b3 << 24);
-							
+
             uint agedClump = COMPUTE_AGED_CLUMPS(genDword, GEN_FULLGC);
             byte b0_ = (byte)(agedClump & 0xff);
             byte b1_ = (byte)((agedClump & 0xff00) >> 8);
             byte b2_ = (byte)((agedClump & 0xff0000) >> 16);
             byte b3_ = (byte)((agedClump & 0xff000000) >> 24);
-							
+
             AssertAgedClump (b0, b0_, 2);
             AssertAgedClump (b1, b1_, 2);
             AssertAgedClump (b2, b2_, 2);
             AssertAgedClump (b3, b3_, 2);
-        }    
+        }
  */
 
 #define GEN_MAX_AGE                         (0x3F)
@@ -188,10 +183,10 @@ If you change any of those algorithm, please verify it by this program:
 
 #define GEN_FULLGC                          PREFOLD_FILL_INTO_AGEMASK(GEN_AGE_LIMIT)
 
-#define MAKE_CLUMP_MASK_ADDENDS(bytes)      (bytes >> GEN_INC_SHIFT)
-#define APPLY_CLUMP_ADDENDS(gen, addend)    (gen + addend)
+#define MAKE_CLUMP_MASK_ADDENDS(bytes)      ((bytes) >> GEN_INC_SHIFT)
+#define APPLY_CLUMP_ADDENDS(gen, addend)    ((gen) + (addend))
 
-#define COMPUTE_CLUMP_MASK(gen, msk)        (((gen & GEN_CLAMP) - msk) & GEN_MASK)
+#define COMPUTE_CLUMP_MASK(gen, msk)        ((((gen) & GEN_CLAMP) - (msk)) & GEN_MASK)
 #define COMPUTE_CLUMP_ADDENDS(gen, msk)     MAKE_CLUMP_MASK_ADDENDS(COMPUTE_CLUMP_MASK(gen, msk))
 #define COMPUTE_AGED_CLUMPS(gen, msk)       APPLY_CLUMP_ADDENDS(gen, COMPUTE_CLUMP_ADDENDS(gen, msk))
 
@@ -545,20 +540,20 @@ void CALLBACK BlockAgeBlocks(PTR_TableSegment pSegment, uint32_t uBlock, uint32_
 void CALLBACK BlockScanBlocksWithoutUserData(PTR_TableSegment pSegment, uint32_t uBlock, uint32_t uCount, ScanCallbackInfo *pInfo)
 {
     LIMITED_METHOD_CONTRACT;
-    
+
 #ifndef DACCESS_COMPILE
     // get the first and limit handles for these blocks
     _UNCHECKED_OBJECTREF *pValue = pSegment->rgValue + (uBlock * HANDLE_HANDLES_PER_BLOCK);
     _UNCHECKED_OBJECTREF *pLast  = pValue            + (uCount * HANDLE_HANDLES_PER_BLOCK);
 #else
-    PTR_UNCHECKED_OBJECTREF pValue = dac_cast<PTR_UNCHECKED_OBJECTREF>(PTR_HOST_MEMBER_TADDR(TableSegment, pSegment, rgValue)) 
+    PTR_UNCHECKED_OBJECTREF pValue = dac_cast<PTR_UNCHECKED_OBJECTREF>(PTR_HOST_MEMBER_TADDR(TableSegment, pSegment, rgValue))
                                                      + (uBlock * HANDLE_HANDLES_PER_BLOCK);
     PTR_UNCHECKED_OBJECTREF pLast  = pValue          + (uCount * HANDLE_HANDLES_PER_BLOCK);
 #endif
-    
+
     // scan the specified handles
     ScanConsecutiveHandlesWithoutUserData(pValue, pLast, pInfo, NULL);
-    
+
     // optionally update the clump generations for these blocks too
     if (pInfo->uFlags & HNDGCF_AGE)
         BlockAgeBlocks(pSegment, uBlock, uCount, pInfo);
@@ -596,11 +591,11 @@ void CALLBACK BlockScanBlocksWithUserData(PTR_TableSegment pSegment, uint32_t uB
         _UNCHECKED_OBJECTREF *pValue = pSegment->rgValue + (uCur * HANDLE_HANDLES_PER_BLOCK);
         _UNCHECKED_OBJECTREF *pLast  = pValue            + HANDLE_HANDLES_PER_BLOCK;
 #else
-        PTR_UNCHECKED_OBJECTREF pValue = dac_cast<PTR_UNCHECKED_OBJECTREF>(PTR_HOST_MEMBER_TADDR(TableSegment, pSegment, rgValue)) 
+        PTR_UNCHECKED_OBJECTREF pValue = dac_cast<PTR_UNCHECKED_OBJECTREF>(PTR_HOST_MEMBER_TADDR(TableSegment, pSegment, rgValue))
                                                          + (uCur * HANDLE_HANDLES_PER_BLOCK);
         PTR_UNCHECKED_OBJECTREF pLast  = pValue          + HANDLE_HANDLES_PER_BLOCK;
 #endif
-        
+
         // scan the handles in this block
         ScanConsecutiveHandlesWithUserData(pValue, pLast, pInfo, pUserData);
     }
@@ -656,7 +651,7 @@ void BlockScanBlocksEphemeralWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Scan
     // compute the first handle in the first clump of this block
     _UNCHECKED_OBJECTREF *pValue = pSegment->rgValue + (uClump * HANDLE_HANDLES_PER_CLUMP);
 #else
-    PTR_UNCHECKED_OBJECTREF pValue = dac_cast<PTR_UNCHECKED_OBJECTREF>(PTR_HOST_MEMBER_TADDR(TableSegment, pSegment, rgValue)) 
+    PTR_UNCHECKED_OBJECTREF pValue = dac_cast<PTR_UNCHECKED_OBJECTREF>(PTR_HOST_MEMBER_TADDR(TableSegment, pSegment, rgValue))
                                                      + (uClump * HANDLE_HANDLES_PER_CLUMP);
 #endif
 
@@ -716,10 +711,10 @@ void CALLBACK BlockScanBlocksEphemeral(PTR_TableSegment pSegment, uint32_t uBloc
     uint32_t *pdwGen     = (uint32_t *)pSegment->rgGeneration + uBlock;
     uint32_t *pdwGenLast =             pdwGen                 + uCount;
 
-    // loop over all the blocks, checking for elligible clumps as we go
+    // loop over all the blocks, checking for eligible clumps as we go
     do
     {
-        // determine if any clumps in this block are elligible
+        // determine if any clumps in this block are eligible
         uint32_t dwClumpMask = COMPUTE_CLUMP_MASK(*pdwGen, dwAgeMask);
 
         // if there are any clumps to scan then scan them now
@@ -791,7 +786,6 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     // fetch the table segment we are working in
@@ -805,7 +799,7 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
 
     // loop over the clumps, scanning those that are identified by the mask
     do
-    {        
+    {
                 // compute the last handle in this clump
         _UNCHECKED_OBJECTREF *pLast = pValue + HANDLE_HANDLES_PER_CLUMP;
 
@@ -818,37 +812,21 @@ void BlockResetAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sca
             {
                 if (!HndIsNullOrDestroyedHandle(*pValue))
                 {
-                    int thisAge = GCHeap::GetGCHeap()->WhichGeneration(*pValue);
+                    int thisAge = g_theGCHeap->WhichGeneration(*pValue);
                     if (minAge > thisAge)
                         minAge = thisAge;
 
-#ifndef FEATURE_REDHAWK
-                    if ((*pValue)->GetGCSafeMethodTable() == g_pOverlappedDataClass)
-                    {
-                        // reporting the pinned user objects
-                        OverlappedDataObject *pOverlapped = (OverlappedDataObject *)(*pValue);
-                        if (pOverlapped->m_userObject != NULL)
+                    GCToEEInterface::WalkAsyncPinned(*pValue, &minAge,
+                        [](Object*, Object* to, void* ctx)
                         {
-                            Object * pUserObject = OBJECTREFToObject(pOverlapped->m_userObject);
-                            thisAge = GCHeap::GetGCHeap()->WhichGeneration(pUserObject);
-                            if (minAge > thisAge)
-                                minAge = thisAge;
-                            if (pOverlapped->m_isArray)
+                            int* minAge = reinterpret_cast<int*>(ctx);
+                            int generation = g_theGCHeap->WhichGeneration(to);
+                            if (*minAge > generation)
                             {
-                                ArrayBase* pUserArrayObject = (ArrayBase*)pUserObject;
-                                Object **pObj = (Object**)pUserArrayObject->GetDataPtr(TRUE);
-                                size_t num = pUserArrayObject->GetNumComponents();
-                                for (size_t i = 0; i < num; i ++)
-                                {
-                                     thisAge = GCHeap::GetGCHeap()->WhichGeneration(pObj[i]);
-                                     if (minAge > thisAge)
-                                         minAge = thisAge;
-                                 }                                    
-                            }                            
-                        }
-                    }
-#endif // !FEATURE_REDHAWK                    
-                }
+                                *minAge = generation;
+                            }
+                        });
+               }
             }
             _ASSERTE(FitsInU1(minAge));
             ((uint8_t *)pSegment->rgGeneration)[uClump] = static_cast<uint8_t>(minAge);
@@ -911,24 +889,23 @@ void CALLBACK BlockResetAgeMapForBlocks(TableSegment *pSegment, uint32_t uBlock,
 
 static void VerifyObject(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj)
 {
-#ifdef FEATURE_REDHAWK
+#if defined(FEATURE_REDHAWK) || defined(BUILD_AS_STANDALONE)
     UNREFERENCED_PARAMETER(from);
     MethodTable* pMT = (MethodTable*)(obj->GetGCSafeMethodTable());
     pMT->SanityCheck();
 #else
-    obj->ValidateHeap(from);
+    obj->ValidateHeap();
 #endif // FEATURE_REDHAWK
 }
 
-static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF *pValue, _UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj, uint8_t minAge)
+static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF obj, uint8_t minAge)
 {
-    UNREFERENCED_PARAMETER(pValue);
     VerifyObject(from, obj);
 
-    int thisAge = GCHeap::GetGCHeap()->WhichGeneration(obj);
+    int thisAge = g_theGCHeap->WhichGeneration(obj);
 
     //debugging code
-    //if (minAge > thisAge && thisAge < GCHeap::GetGCHeap()->GetMaxGeneration())
+    //if (minAge > thisAge && thisAge < g_theGCHeap->GetMaxGeneration())
     //{
     //    if ((*pValue) == obj)
     //        printf("Handle (age %u) %p -> %p (age %u)", minAge, pValue, obj, thisAge);
@@ -946,10 +923,10 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF *pValue, _UNCHECKED_OBJECTRE
     //    }
     //}
 
-    if (minAge >= GEN_MAX_AGE || (minAge > thisAge && thisAge < static_cast<int>(GCHeap::GetGCHeap()->GetMaxGeneration())))
+    if (minAge >= GEN_MAX_AGE || (minAge > thisAge && thisAge < static_cast<int>(g_theGCHeap->GetMaxGeneration())))
     {
         _ASSERTE(!"Fatal Error in HandleTable.");
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+        GCToEEInterface::HandleFatalError(COR_E_EXECUTIONENGINE);
     }
 }
 
@@ -976,7 +953,7 @@ void BlockVerifyAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sc
 
     // loop over the clumps, scanning those that are identified by the mask
     do
-    {        
+    {
         // compute the last handle in this clump
         _UNCHECKED_OBJECTREF *pLast = pValue + HANDLE_HANDLES_PER_CLUMP;
 
@@ -989,29 +966,13 @@ void BlockVerifyAgeMapForBlocksWorker(uint32_t *pdwGen, uint32_t dwClumpMask, Sc
             {
                 if (!HndIsNullOrDestroyedHandle(*pValue))
                 {
-                    VerifyObjectAndAge(pValue, (*pValue), (*pValue), minAge);
-#ifndef FEATURE_REDHAWK
-                    if ((*pValue)->GetGCSafeMethodTable() == g_pOverlappedDataClass)
-                    {
-                        // reporting the pinned user objects
-                        OverlappedDataObject *pOverlapped = (OverlappedDataObject *)(*pValue);
-                        if (pOverlapped->m_userObject != NULL)
+                    VerifyObjectAndAge((*pValue), (*pValue), minAge);
+                    GCToEEInterface::WalkAsyncPinned(*pValue, &minAge,
+                        [](Object* from, Object* object, void* age)
                         {
-                            Object * pUserObject = OBJECTREFToObject(pOverlapped->m_userObject);
-                            VerifyObjectAndAge(pValue, (*pValue), pUserObject, minAge);
-                            if (pOverlapped->m_isArray)
-                            {
-                                ArrayBase* pUserArrayObject = (ArrayBase*)pUserObject;
-                                Object **pObj = (Object**)pUserArrayObject->GetDataPtr(TRUE);
-                                size_t num = pUserArrayObject->GetNumComponents();
-                                for (size_t i = 0; i < num; i ++)
-                                {
-                                     VerifyObjectAndAge(pValue, pUserObject, pObj[i], minAge);
-                                }                                    
-                            }                            
-                        }
-                    }
-#endif // !FEATURE_REDHAWK
+                            uint8_t* minAge = reinterpret_cast<uint8_t*>(age);
+                            VerifyObjectAndAge(from, object, *minAge);
+                        });
 
                     if (uType == HNDTYPE_DEPENDENT)
                     {
@@ -1094,7 +1055,7 @@ void CALLBACK BlockUnlockBlocks(TableSegment *pSegment, uint32_t uBlock, uint32_
         BlockUnlock(pSegment, uBlock);
 }
 #endif // !DACCESS_COMPILE
-    
+
 /*
  * BlockQueueBlocksForAsyncScan
  *
@@ -1129,7 +1090,7 @@ void CALLBACK BlockQueueBlocksForAsyncScan(PTR_TableSegment pSegment, uint32_t u
             if (!pQNode->pNext)
             {
                 // no more nodes - allocate a new one
-                ScanQNode *pQNodeT = new (nothrow) ScanQNode(); 
+                ScanQNode *pQNodeT = new (nothrow) ScanQNode();
 
                 // did it succeed?
                 if (!pQNodeT)
@@ -1228,7 +1189,7 @@ void ProcessScanQueue(AsyncScanInfo *pAsyncInfo, QNODESCANPROC pfnNodeHandler, u
 
 	if (pAsyncInfo->pQueueTail == NULL && fCountEmptyQNodes == FALSE)
 		return;
-		
+
     // if any entries were added to the block list after our initial node, clean them up now
     ScanQNode *pQNode = pAsyncInfo->pScanQueue;
     while (pQNode)
@@ -1360,7 +1321,7 @@ void xxxTableScanQueuedBlocksAsync(PTR_HandleTable pTable, PTR_TableSegment pSeg
 
 #ifndef DACCESS_COMPILE
     // loop through, unlock all the blocks we had locked, and reset the queue nodes
-    ProcessScanQueue(pAsyncInfo, UnlockAndForgetQueuedBlocks, NULL, FALSE);
+    ProcessScanQueue(pAsyncInfo, UnlockAndForgetQueuedBlocks, (uintptr_t)NULL, FALSE);
 #endif
 
     // we are done processing this segment
@@ -1423,7 +1384,7 @@ PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_Ta
 {
     CONTRACTL
     {
-        WRAPPER(THROWS);
+        WRAPPER(NOTHROW);
         WRAPPER(GC_TRIGGERS);
         FORBID_FAULT;
         SUPPORTS_DAC;
@@ -1434,7 +1395,7 @@ PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_Ta
     PTR_TableSegment pNextSegment = QuickSegmentIterator(pTable, pPrevSegment);
 
 #ifndef DACCESS_COMPILE
-    // re-sort the block chains if neccessary
+    // re-sort the block chains if necessary
     if (pNextSegment && pNextSegment->fResortChains)
         SegmentResortChains(pNextSegment);
 #endif
@@ -1607,7 +1568,7 @@ void SegmentScanByTypeChain(PTR_TableSegment pSegment, uint32_t uType, BLOCKSCAN
 
     // fetch the tail
     uint32_t uBlock = pSegment->rgTail[uType];
-    
+
     // if we didn't find a terminator then there's blocks to enumerate
     if (uBlock != BLOCK_INVALID)
     {
@@ -1630,7 +1591,7 @@ void SegmentScanByTypeChain(PTR_TableSegment pSegment, uint32_t uType, BLOCKSCAN
 
             } while ((uNext == uLast) && (uNext != uHead));
 
-            // call the calback for this group of blocks
+            // call the callback for this group of blocks
             pfnBlockHandler(pSegment, uBlock, (uLast - uBlock), pInfo);
 
             // advance to the next block
@@ -1694,7 +1655,7 @@ void SegmentScanByTypeMap(PTR_TableSegment pSegment, const BOOL *rgTypeInclusion
                 break;
         }
 
-        // call the calback for the group of blocks we found
+        // call the callback for the group of blocks we found
         pfnBlockHandler(pSegment, uFirst, (uBlock - uFirst), pInfo);
 
         // look for another range starting with the next block
@@ -1836,7 +1797,7 @@ void CALLBACK xxxTableScanHandlesAsync(PTR_HandleTable pTable,
         asyncInfo.pScanQueue = initialNode.pNext;
 
         // loop through and free all the queue nodes
-        ProcessScanQueue(&asyncInfo, FreeScanQNode, NULL, TRUE);
+        ProcessScanQueue(&asyncInfo, FreeScanQNode, (uintptr_t)NULL, TRUE);
     }
 
     // unlink our async scanning info from the table
@@ -1850,10 +1811,10 @@ void CALLBACK xxxTableScanHandlesAsync(PTR_HandleTable pTable,
 uint32_t TableSegment::DacSize(TADDR addr)
 {
     WRAPPER_NO_CONTRACT;
-    
+
     uint8_t commitLine = 0;
     DacReadAll(addr + offsetof(TableSegment, bCommitLine), &commitLine, sizeof(commitLine), true);
-    
+
     return offsetof(TableSegment, rgValue) + (uint32_t)commitLine * HANDLE_BYTES_PER_BLOCK;
 }
 #endif

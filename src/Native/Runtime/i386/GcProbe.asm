@@ -1,6 +1,5 @@
 ;; Licensed to the .NET Foundation under one or more agreements.
 ;; The .NET Foundation licenses this file to you under the MIT license.
-;; See the LICENSE file in the project root for more information.
 
         .586
         .xmm
@@ -112,7 +111,7 @@ ifdef _DEBUG
         and         eax, DEFAULT_PROBE_SAVE_FLAGS
         cmp         eax, DEFAULT_PROBE_SAVE_FLAGS ; make sure we have at least the flags to match what the macro pushes
         je          @F
-        call        PALDEBUGBREAK
+        call        RhDebugBreak
 @@:
 endif ;; _DEBUG
         push        edx                     ; Thread *
@@ -161,17 +160,20 @@ endm
 ;;  All other registers trashed
 ;;
 
-EXTERN _RhpWaitForGC : PROC
+EXTERN _RhpWaitForGCNoAbort : PROC
 
 WaitForGCCompletion macro
         test        dword ptr [ebx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_SuppressGcStress + TSF_DoNotTriggerGc
         jnz         @F
 
         mov         ecx, esp
-        call        _RhpWaitForGC
+        call        _RhpWaitForGCNoAbort
 @@:
 
 endm
+
+RhpThrowHwEx equ @RhpThrowHwEx@0
+extern RhpThrowHwEx : proc
 
 ;;
 ;; Main worker for our GC probes.  Do not call directly!! This assumes that HijackFixupProlog has been done.
@@ -188,8 +190,8 @@ endm
 ;;  All registers restored as they were when the hijack was first reached.
 ;;
 RhpGcProbe  proc
-        cmp         [RhpTrapThreads], 0
-        jne         SynchronousRendezVous
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         SynchronousRendezVous
 
         HijackFixupEpilog
 
@@ -198,12 +200,23 @@ SynchronousRendezVous:
 
         WaitForGCCompletion
 
+        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_Flags]
         ;;
         ;; Restore preserved registers -- they may have been updated by GC 
         ;;
         PopProbeFrame
 
+        test        edx, PTFF_THREAD_ABORT
+        jnz         Abort
+
         HijackFixupEpilog
+Abort:
+        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
+        pop         edx
+        pop         eax         ;; ecx was pushed here, but we don't care for its value
+        pop         ebp
+        pop         edx         ;; return address as exception RIP
+        jmp         RhpThrowHwEx
 
 RhpGcProbe  endp
 
@@ -257,22 +270,6 @@ RhpGcStressProbe  proc
 RhpGcStressProbe  endp
 
 endif ;; FEATURE_GC_STRESS
-
-FASTCALL_FUNC RhpGcPoll, 0
-        ;
-        ; loop hijacking is used instead
-        ;
-        int 3
-
-FASTCALL_ENDFUNC
-
-FASTCALL_FUNC RhpGcPollStress, 0
-        ;
-        ; loop hijacking is used instead
-        ;
-        int 3
-
-FASTCALL_ENDFUNC
 
 FASTCALL_FUNC RhpGcProbeHijackScalar, 0
 
@@ -501,10 +498,10 @@ ifdef _DEBUG
         ;; If we get here, then we have been hijacked for a real GC, and our SyncState must
         ;; reflect that we've been requested to synchronize.
 
-        cmp         [RhpTrapThreads], 0
-        jne         @F
+        test        [RhpTrapThreads], TrapThreadsFlags_TrapThreads
+        jnz         @F
 
-        call        PALDEBUGBREAK
+        call        RhDebugBreak
 @@:
 endif ;; _DEBUG
 
@@ -554,186 +551,6 @@ RhpGCStressProbeForEHJump proc
 
 RhpGCStressProbeForEHJump endp
 
-g_pTheRuntimeInstance equ ?g_pTheRuntimeInstance@@3PAVRuntimeInstance@@A
-EXTERN g_pTheRuntimeInstance : DWORD
-RuntimeInstance__ShouldHijackLoopForGcStress equ ?ShouldHijackLoopForGcStress@RuntimeInstance@@QAE_NI@Z
-EXTERN RuntimeInstance__ShouldHijackLoopForGcStress : PROC
-
 endif ;; FEATURE_GC_STRESS
-
-RecoverLoopHijackTarget equ @RecoverLoopHijackTarget@8
-EXTERN RecoverLoopHijackTarget : PROC
-EXTERN _g_fGcStressStarted : DWORD
-EXTERN RhpCall : PROC
-
-FXSAVE_SIZE             equ 512
-
-FASTCALL_FUNC RhpLoopHijack, 8  ;; ecx, edx are ignored, 12 bytes are on the stack, but we have to pretend
-                                ;; that we don't have any stack arguments so that debuggers don't mess up our
-                                ;; stack traces
-
-        ;; On the stack: 
-        ;;      [esp +  0h] -> ModuleHeader * 
-        ;;      [esp +  4h] -> chunk starting index
-        ;;      [esp +  8h] -> chunk sub-index (0-256)  BEWARE: this has been sign-extended, but it is unsigned
-        ;;
-
-        pushfd          ; eflags
-        push        ecx
-        push        edx
-
-        ;;
-        ;; NOTE: Do not trash EAX or any preserved register until the PushProbeFrame
-        ;;
-
-        ;; On the stack: 
-        ;;      [esp +  0h] -> edx save
-        ;;      [esp +  4h] -> ecx save
-        ;;      [esp +  8h] -> eflags save
-        ;;      [esp + 0ch] -> ModuleHeader * 
-        ;;      [esp + 10h] -> chunk starting index
-        ;;      [esp + 14h] -> chunk sub-index (0-256)  BEWARE: this has been sign-extended, but it is unsigned
-        ;;
-
-        ;; Combine the two indexes
-        xor         ecx, ecx            ; ecx <- 0
-        mov         cl,  [esp + 14h]    ; ecx <- chunk sub-index
-        add         ecx, [esp + 10h]    ; ecx <- (chunk sub-index) + (chunk starting index) = (indirection cell index)
-        push        ecx
-
-        ;; On the stack: 
-        ;;      [esp +  0h] -> indirection cell index
-        ;;      [esp +  4h] -> edx save
-        ;;      [esp +  8h] -> ecx save
-        ;;      [esp + 0ch] -> eflags save
-        ;;      [esp + 10h] -> ModuleHeader * 
-        ;;      [esp + 14h] -> scratch          -> will be ebp save
-        ;;      [esp + 18h] -> scratch          -> will be return address
-        ;;
-
-        ;; Setup EBP frame
-        mov     [esp + 14h], ebp
-        lea     ebp, [esp + 14h]
-
-        ;; On the stack: 
-        ;;      [ebp - 14h] -> indirection cell index
-        ;;      [ebp - 10h] -> edx save
-        ;;      [ebp - 0ch] -> ecx save
-        ;;      [ebp -  8h] -> eflags save
-        ;;      [ebp -  4h] -> ModuleHeader * 
-        ;;  ebp:[ebp +  0h] -> ebp save
-        ;;      [ebp +  4h] -> scratch          -> will be return address
-        ;;
-
-        ;; make (aligned) space for the XMM spills
-        sub         esp, FXSAVE_SIZE
-        and         esp, NOT 0Fh
-
-        ;; @TODO: save AVX state (currently our code generator doesn't use AVX)
-        fxsave      [esp]
-
-        ;; PushProbeFrame wants the Thread* in edx
-        INLINE_GETTHREAD edx, ecx       ;; edx <- GetThread(), TRASHES ecx
-
-        ;; Push edx and ecx as part of the PInvokeTransitionFrame
-        push    [ebp - 10h]             ;; push edx
-        push    [ebp - 0ch]             ;; push ecx
-        PushProbeFrame  PROBE_SAVE_FLAGS_EVERYTHING     ;; pushes 9 dwords
-
-ifdef _DEBUG
-        ;; trash the old save locations for ecx / edx to make sure we don't use them -- they must be restored from the
-        ;; PInvokeTransitionFrame
-        xor     ecx, ecx
-        mov     [ebp - 10h], ecx
-        mov     [ebp - 0ch], ecx
-endif
-
-        ;; On the stack:
-        ;;  esp:[esp +  0h] ->  PInvokeTransitionFrame (pushed by PushProbeFrame)
-        ;;      [esp + 24h] ->  ECX save (part of PInvokeTransitionFrame)
-        ;;      [esp + 28h] ->  EDX save (part of PInvokeTransitionFrame)
-        ;;      [esp + 2ch] ->  FXSAVE area
-        ;; --------------------------------------------------
-        ;;      [ebp - 14h] -> indirection cell index
-        ;;      [ebp - 10h] -> edx save
-        ;;      [ebp -  ch] -> ecx save
-        ;;      [ebp -  8h] -> eflags save
-        ;;      [ebp -  4h] -> ModuleHeader * 
-        ;;  ebp:[ebp +  0h] -> ebp save
-        ;;      [ebp +  4h] -> scratch          -> will be return address
-
-        mov         ecx, [ebp - 14h]    ; ecx <- indirection cell index
-        mov         edx, [ebp - 4h]     ; edx <- ModuleHeader *
-        call        RecoverLoopHijackTarget
-        mov         [ebp + 4h], eax     ; store original loop target as return address
-        mov         [esp + OFFSETOF__PInvokeTransitionFrame__m_RIP], eax        ; patch EIP in the Frame
-
-        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_pThread]    ; recover Thread * from Frame
-
-        ; Early out if GC stress is currently suppressed. Do this after we have computed the real address to
-        ; return to but before we link the transition frame onto m_pHackPInvokeTunnel (because hitting this
-        ; condition implies we're running restricted callouts during a GC itself and we could end up
-        ; overwriting a co-op frame set by the code that caused the GC in the first place, e.g. a GC.Collect
-        ; call).
-        test        dword ptr [edx + OFFSETOF__Thread__m_ThreadStateFlags], TSF_SuppressGcStress + TSF_DoNotTriggerGc
-        jnz         DoneWaitingForGc
-
-        ;;
-        ;; Unhijack this thread, if necessary.
-        ;;
-        INLINE_THREAD_UNHIJACK  edx, eax, ecx       ;; trashes EAX, ECX
-
-        ;; The following two calls are indirected through a specially generated thunk, RhpCall. This routine
-        ;; simply calls the target in EAX and returns but it is also associated with a special debug record
-        ;; that tells debuggers how to unwind back from the call to the code we hijacked. Without this unwind
-        ;; info the debugger gets confused when it unwinds from this routine (via the ebp chain) but doesn't
-        ;; see a call instruction in the caller. Ideally the debug record would be associated directly with
-        ;; this routine but MASM only supports emitting the older and insufficient FPO record.
-
-ifdef FEATURE_GC_STRESS
-        xor         eax, eax
-        cmp         [_g_fGcStressStarted], eax
-        jz          @F
-
-        mov         eax, [ebp + 4]
-        push        eax
-        mov         ecx, [g_pTheRuntimeInstance]
-        call        RuntimeInstance__ShouldHijackLoopForGcStress
-        cmp         al, 0
-        je          @F
-
-        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_pThread]    ; recover Thread * from Frame
-        mov         [edx + OFFSETOF__Thread__m_pHackPInvokeTunnel], esp         ; esp is address of PInvokeTransitionFrame
-        mov         eax, REDHAWKGCINTERFACE__STRESSGC
-        call        RhpCall
-@@:
-endif ;; FEATURE_GC_STRESS
-
-        mov         ecx, esp            ; esp is address of PInvokeTransitionFrame
-        mov         eax, _RhpWaitForGC
-        call        RhpCall
-
-DoneWaitingForGc:
-
-        ;; Shuffle the eflags next to ebp so that we don't have to do any funny business in the epilog that might trash 
-        ;; the flags.
-        mov         ecx, [ebp - 8h]
-        mov         [ebp - 4h], ecx
-
-        ; Restore our integer register state from the PInvokeTransitionFrame
-        PopProbeFrame
-        pop         ecx
-        pop         edx
-
-        ; Restore our FP state from the FXSAVE area
-        fxrstor     [esp]
-
-        ; Pop the rest of our frame
-        lea         esp, [ebp - 4]
-        popfd
-        pop         ebp
-        ret
-
-FASTCALL_ENDFUNC
 
         end

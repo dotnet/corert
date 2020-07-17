@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // This file is used by AsmOffsets.cpp to validate that our
@@ -8,7 +7,7 @@
 
 // You must #define PLAT_ASM_OFFSET and PLAT_ASM_SIZEOF before you #include this file
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define ASM_OFFSET(offset32, offset64, cls, member) PLAT_ASM_OFFSET(offset64, cls, member)
 #define ASM_SIZEOF(sizeof32, sizeof64, cls        ) PLAT_ASM_SIZEOF(sizeof64, cls)
 #define ASM_CONST(const32, const64, expr)           PLAT_ASM_CONST(const64, expr)
@@ -30,16 +29,16 @@ ASM_OFFSET(    0,     0, Object, m_pEEType)
 
 ASM_OFFSET(    4,     8, Array, m_Length)
 
+ASM_OFFSET(    4,     8, String, m_Length)
+ASM_OFFSET(    8,     C, String, m_FirstChar)
+ASM_CONST(     2,     2, STRING_COMPONENT_SIZE)
+ASM_CONST(     E,    16, STRING_BASE_SIZE)
+ASM_CONST(3FFFFFDF,3FFFFFDF,MAX_STRING_LENGTH)
+
 ASM_OFFSET(    0,     0, EEType, m_usComponentSize)
 ASM_OFFSET(    2,     2, EEType, m_usFlags)
 ASM_OFFSET(    4,     4, EEType, m_uBaseSize)
-#if defined(CORERT)
-// If this ever changes, you must update src\ILCompiler.Compiler\src\Compiler\DependencyAnalysis\EETypeNode.cs GetVTableOffset()
-// to reflect the updated VTable offset
-ASM_OFFSET(   18,    20, EEType, m_VTable)
-#else
 ASM_OFFSET(   14,    18, EEType, m_VTable)
-#endif
 
 ASM_OFFSET(    0,     0, Thread, m_rgbAllocContextBuffer)
 ASM_OFFSET(   28,    38, Thread, m_ThreadStateFlags)
@@ -47,18 +46,20 @@ ASM_OFFSET(   2c,    40, Thread, m_pTransitionFrame)
 ASM_OFFSET(   30,    48, Thread, m_pHackPInvokeTunnel)
 ASM_OFFSET(   40,    68, Thread, m_ppvHijackedReturnAddressLocation)
 ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
-ASM_OFFSET(   48,    78, Thread, m_pExInfoStackHead)
+#ifdef HOST_64BIT
+ASM_OFFSET(    0,    78, Thread, m_uHijackedReturnValueFlags)
+#endif
+ASM_OFFSET(   48,    80, Thread, m_pExInfoStackHead)
+ASM_OFFSET(   4c,    88, Thread, m_threadAbortException)
 
 ASM_SIZEOF(   14,    20, EHEnum)
 
-ASM_OFFSET(    0,     0, alloc_context, alloc_ptr)
-ASM_OFFSET(    4,     8, alloc_context, alloc_limit)
-
-ASM_OFFSET(    4,     8, RuntimeInstance, m_pThreadStore)
+ASM_OFFSET(    0,     0, gc_alloc_context, alloc_ptr)
+ASM_OFFSET(    4,     8, gc_alloc_context, alloc_limit)
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
-#ifndef BIT64
+#ifndef HOST_64BIT
 ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
 #endif
 ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)
@@ -111,6 +112,10 @@ private:
 void BogusFunction()
 {
     // Sample usage to generate the error
-    FindCompileTimeConstant<offsetof(ExInfo, m_passNumber)> bogus_variable;
+    FindCompileTimeConstant<sizeof(ExInfo)> bogus_variable;
+    FindCompileTimeConstant<offsetof(ExInfo, m_notifyDebuggerSP)> bogus_variable2;
+    FindCompileTimeConstant<sizeof(StackFrameIterator)> bogus_variable3;
+    FindCompileTimeConstant<sizeof(PAL_LIMITED_CONTEXT)> bogus_variable4;
+    FindCompileTimeConstant<offsetof(PAL_LIMITED_CONTEXT, IP)> bogus_variable5;
 }
 #endif // defined(__cplusplus) && defined(USE_COMPILE_TIME_CONSTANT_FINDER)

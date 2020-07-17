@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Provide common definitions between the Redhawk and the Redhawk PAL implementation. This header file is used
@@ -22,16 +21,21 @@ enum PalCapability
 {
     WriteWatchCapability                = 0x00000001,   // GetWriteWatch() and friends
     LowMemoryNotificationCapability     = 0x00000002,   // CreateMemoryResourceNotification() and friends
-    GetCurrentProcessorNumberCapability = 0x00000004,   // GetCurrentProcessorNumber()
 };
 
+#ifndef DECLSPEC_ALIGN
+#ifdef _MSC_VER
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
+#else
+#define DECLSPEC_ALIGN(x)   __attribute__((aligned(x)))
+#endif
+#endif // DECLSPEC_ALIGN
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
 #define AMD64_ALIGN_16 DECLSPEC_ALIGN(16)
-#else // _AMD64_
+#else // HOST_AMD64
 #define AMD64_ALIGN_16
-#endif // _AMD64_
+#endif // HOST_AMD64
 
 struct AMD64_ALIGN_16 Fp128 {
     UInt64 Low;
@@ -41,7 +45,8 @@ struct AMD64_ALIGN_16 Fp128 {
 
 struct PAL_LIMITED_CONTEXT
 {
-#ifdef _TARGET_ARM_
+    // Includes special registers, callee saved registers and general purpose registers used to return values from functions (not floating point return registers)
+#ifdef TARGET_ARM
     UIntNative  R0;
     UIntNative  R4;
     UIntNative  R5;
@@ -61,14 +66,58 @@ struct PAL_LIMITED_CONTEXT
     UIntNative GetIp() const { return IP; }
     UIntNative GetSp() const { return SP; }
     UIntNative GetFp() const { return R7; }
-#elif defined(_ARM64_)
-    // @TODO: Add ARM64 registers
-    UIntNative IP;
-    UIntNative GetIp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
-    UIntNative GetSp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
-    UIntNative GetFp() const { PORTABILITY_ASSERT("@TODO: FIXME:ARM64"); }
+    UIntNative GetLr() const { return LR; }
+    void SetIp(UIntNative ip) { IP = ip; }
+    void SetSp(UIntNative sp) { SP = sp; }
+#elif defined(TARGET_ARM64)
+    UIntNative  FP;
+    UIntNative  LR;
 
-#else // _ARM_
+    UIntNative  X0;
+    UIntNative  X1;
+    UIntNative  X19;
+    UIntNative  X20;
+    UIntNative  X21;
+    UIntNative  X22;
+    UIntNative  X23;
+    UIntNative  X24;
+    UIntNative  X25;
+    UIntNative  X26;
+    UIntNative  X27;
+    UIntNative  X28;
+
+    UIntNative  SP;
+    UIntNative  IP;
+
+    UInt64      D[16 - 8];  // Only the bottom 64-bit value of the V registers V8..V15 needs to be preserved
+                            // (V0-V7 and V16-V31 are not preserved according to the ABI spec).
+
+
+    UIntNative GetIp() const { return IP; }
+    UIntNative GetSp() const { return SP; }
+    UIntNative GetFp() const { return FP; }
+    UIntNative GetLr() const { return LR; }
+    void SetIp(UIntNative ip) { IP = ip; }
+    void SetSp(UIntNative sp) { SP = sp; }
+#elif defined(UNIX_AMD64_ABI)
+    // Param regs: rdi, rsi, rdx, rcx, r8, r9, scratch: rax, rdx (both return val), preserved: rbp, rbx, r12-r15
+    UIntNative  IP;
+    UIntNative  Rsp;
+    UIntNative  Rbp;
+    UIntNative  Rax;
+    UIntNative  Rbx;
+    UIntNative  Rdx;
+    UIntNative  R12;
+    UIntNative  R13;
+    UIntNative  R14;
+    UIntNative  R15;
+
+    UIntNative GetIp() const { return IP; }
+    UIntNative GetSp() const { return Rsp; }
+    void SetIp(UIntNative ip) { IP = ip; }
+    void SetSp(UIntNative sp) { Rsp = sp; }
+    UIntNative GetFp() const { return Rbp; }
+#elif defined(TARGET_X86) || defined(TARGET_AMD64)
     UIntNative  IP;
     UIntNative  Rsp;
     UIntNative  Rbp;
@@ -76,7 +125,7 @@ struct PAL_LIMITED_CONTEXT
     UIntNative  Rsi;
     UIntNative  Rax;
     UIntNative  Rbx;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     UIntNative  R12;
     UIntNative  R13;
     UIntNative  R14;
@@ -92,14 +141,32 @@ struct PAL_LIMITED_CONTEXT
     Fp128       Xmm13;
     Fp128       Xmm14;
     Fp128       Xmm15;
-#endif // _AMD64_
+#endif // TARGET_AMD64
 
     UIntNative GetIp() const { return IP; }
     UIntNative GetSp() const { return Rsp; }
     UIntNative GetFp() const { return Rbp; }
-#endif // _ARM_
+    void SetIp(UIntNative ip) { IP = ip; }
+    void SetSp(UIntNative sp) { Rsp = sp; }
+#else // TARGET_ARM
+    UIntNative  IP;
+
+    UIntNative GetIp() const { PORTABILITY_ASSERT("GetIp");  return 0; }
+    UIntNative GetSp() const { PORTABILITY_ASSERT("GetSp"); return 0; }
+    UIntNative GetFp() const { PORTABILITY_ASSERT("GetFp"); return 0; }
+    void SetIp(UIntNative ip) { PORTABILITY_ASSERT("SetIp"); }
+    void SetSp(UIntNative sp) { PORTABILITY_ASSERT("GetSp"); }
+#endif // TARGET_ARM
 };
 
-void __stdcall RuntimeThreadShutdown(void* thread);
+void RuntimeThreadShutdown(void* thread);
+
+#ifdef TARGET_UNIX
+typedef void (__fastcall * ThreadExitCallback)();
+
+extern ThreadExitCallback g_threadExitCallback;
+
+typedef Int32 (*PHARDWARE_EXCEPTION_HANDLER)(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
+#endif
 
 #endif // __PAL_REDHAWK_COMMON_INCLUDED

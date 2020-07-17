@@ -1,0 +1,154 @@
+{
+  "Repository": "corert",
+  "Definitions": {
+    "Path": ".",
+    "Type": "VSTS",
+    "BaseUrl":  "https://devdiv.visualstudio.com/DefaultCollection"
+  },
+  "Pipelines": [
+    {
+      "Name": "All-Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "Configuration": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-CoreRT-Linux",
+          "Parameters": {
+            "Platform": "x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Debian 8.2",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "DotNet-CoreRT-Mac",
+          "Parameters": {
+            "Platform": "x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "OSX",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "DotNet-CoreRT-Windows",
+          "Parameters": {
+            "Platform": "x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release",
+            "Platform": "x64"
+          }
+        }
+      ]
+    },
+    {
+      "Name": "All-Debug",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "Configuration": "Debug"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-CoreRT-Linux",
+          "Parameters": {
+            "Platform": "x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Debian 8.2",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "DotNet-CoreRT-Mac",
+          "Parameters": {
+            "Platform": "x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "OSX",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "DotNet-CoreRT-Windows",
+          "Parameters": {
+            "Platform": "x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug",
+            "Platform": "x64"
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Publish-Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "Configuration": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-CoreRT-Publish",
+          "Parameters": {
+            "GitHubRepositoryName": "corert"
+          },
+          "ReportingParameters": {
+            "TaskName": "Package Publish",
+            "Type": "build/publish/",
+            "ConfigurationGroup": "Release - Push to MyGet Feed"
+          }
+        }
+      ],
+      "DependsOn": [
+        "All-Release"
+      ]
+    },
+    {
+      "Name": "Publish-Debug",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "ConfigurationGroup": "Debug"
+      },
+      "Definitions": [
+        {
+          "Name": "DotNet-CoreRT-Publish",
+          "Parameters": {
+            "GitHubRepositoryName": "corert"
+          },
+          "ReportingParameters": {
+            "TaskName": "Package Publish",
+            "Type": "build/publish/",
+            "ConfigurationGroup": "Debug - Push to Azure Storage"
+          }
+        }
+      ],
+      "DependsOn": [
+        "All-Debug"
+      ]
+    }
+  ]
+}

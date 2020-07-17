@@ -1,9 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #include "forward_declarations.h"
 
-struct alloc_context;
+struct gc_alloc_context;
 class RuntimeInstance;
 class ThreadStore;
 class CLREventStatic;
@@ -14,19 +13,19 @@ class Thread;
 // runtime build.
 #define KEEP_THREAD_LAYOUT_CONSTANT
 
-#if defined(_X86_) || defined(_ARM_)
+#ifndef HOST_64BIT
 # if defined(FEATURE_SVR_GC) || defined(KEEP_THREAD_LAYOUT_CONSTANT)
 #  define SIZEOF_ALLOC_CONTEXT 40
-# else // FEATURE_SVR_GC
+# else
 #  define SIZEOF_ALLOC_CONTEXT 28
-# endif // FEATURE_SVR_GC
-#elif defined(_AMD64_) || defined(_ARM64_)
+# endif
+#else // HOST_64BIT
 # if defined(FEATURE_SVR_GC) || defined(KEEP_THREAD_LAYOUT_CONSTANT)
 #  define SIZEOF_ALLOC_CONTEXT 56
-# else // FEATURE_SVR_GC
+# else
 #  define SIZEOF_ALLOC_CONTEXT 40
-# endif // FEATURE_SVR_GC
-#endif // _AMD64_
+# endif
+#endif // HOST_64BIT
 
 #define TOP_OF_STACK_MARKER ((PTR_VOID)(UIntNative)(IntNative)-1)
 
@@ -46,7 +45,9 @@ struct ExInfo;
 typedef DPTR(ExInfo) PTR_ExInfo;
 
 
-// also defined in ExceptionHandling.cs, layouts must match
+// Also defined in ExceptionHandling.cs, layouts must match.
+// When adding new fields to this struct, ensure they get properly initialized in the exception handling 
+// assembly stubs
 struct ExInfo
 {
 
@@ -59,8 +60,6 @@ struct ExInfo
     StackFrameIterator      m_frameIter;
     volatile void*          m_notifyDebuggerSP;
 };
-
-
 
 struct ThreadBuffer
 {
@@ -77,7 +76,11 @@ struct ThreadBuffer
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
+#ifdef HOST_64BIT
+    UIntNative              m_uHijackedReturnValueFlags;            // used on ARM64 only; however, ARM64 and AMD64 share field offsets
+#endif // HOST_64BIT
     PTR_ExInfo              m_pExInfoStackHead;
+    Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
     PTR_UInt8               m_pTEB;                                 // Pointer to OS TEB structure for this thread
@@ -90,7 +93,10 @@ struct ThreadBuffer
 
     // Thread Statics Storage for dynamic types
     UInt32          m_numDynamicTypesTlsCells;
-    PTR_UInt8*      m_pDynamicTypesTlsCells;
+    PTR_PTR_UInt8   m_pDynamicTypesTlsCells;
+
+    PTR_PTR_VOID    m_pThreadLocalModuleStatics;
+    UInt32          m_numThreadLocalModuleStatics;
 };
 
 struct ReversePInvokeFrame
@@ -130,12 +136,13 @@ private:
     bool IsStateSet(ThreadStateFlags flags);
 
     static UInt32_BOOL HijackCallback(HANDLE hThread, PAL_LIMITED_CONTEXT* pThreadContext, void* pCallbackContext);
-    bool InternalHijack(PAL_LIMITED_CONTEXT * pCtx, void* HijackTargets[3]);
+    bool InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTargets[]);
 
     bool CacheTransitionFrameForSuspend();
     void ResetCachedTransitionFrame();
     void CrossThreadUnhijack();
     void UnhijackWorker();
+    void EnsureRuntimeInitialized();
 #ifdef _DEBUG
     bool DebugIsSuspended();
 #endif
@@ -144,12 +151,6 @@ private:
     // SyncState members
     //
     PTR_VOID    GetTransitionFrame();
-
-    //
-    // Synchronous state transitions -- these must occur on the thread whose state is changing
-    //
-    void        LeaveRendezVous(void * pTransitionFrame);
-    bool        TryReturnRendezVous(void * pTransitionFrame);
 
     void GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, StackFrameIterator & sfIter);
 
@@ -160,7 +161,7 @@ public:
 
     bool                IsInitialized();
 
-    alloc_context *     GetAllocContext();  // @TODO: I would prefer to not expose this in this way
+    gc_alloc_context *  GetAllocContext();  // @TODO: I would prefer to not expose this in this way
 
 #ifndef DACCESS_COMPILE
     UInt64              GetPalThreadIdForLogging();
@@ -175,7 +176,7 @@ public:
     bool                Hijack();
     void                Unhijack();
 #ifdef FEATURE_GC_STRESS
-    static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pCtx);
+    static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
 #endif // FEATURE_GC_STRESS
     bool                IsHijacked();
     void *              GetHijackedReturnAddress();
@@ -187,7 +188,10 @@ public:
     void                ClearSuppressGcStress();
     bool                IsWithinStackBounds(PTR_VOID p);
 
+    void                GetStackBounds(PTR_VOID * ppStackLow, PTR_VOID * ppStackHigh);
+
     PTR_UInt8           AllocateThreadLocalStorageForDynamicType(UInt32 uTlsTypeOffset, UInt32 tlsStorageSize, UInt32 numTlsCells);
+    // mrt100 Debugger (dac) has dependencies on the GetThreadLocalStorageForDynamicType method.
     PTR_UInt8           GetThreadLocalStorageForDynamicType(UInt32 uTlsTypeOffset);
     PTR_UInt8           GetThreadLocalStorage(UInt32 uTlsIndex, UInt32 uTlsStartOffset);
     PTR_UInt8           GetTEB();
@@ -225,6 +229,13 @@ public:
     //
     void                EnablePreemptiveMode();
     void                DisablePreemptiveMode();
+
+    // Set the m_pHackPInvokeTunnel field for GC allocation helpers that setup transition frame 
+    // in assembly code. Do not use anywhere else.
+    void                SetCurrentThreadPInvokeTunnelForGcAlloc(void * pTransitionFrame);
+
+    // Setup the m_pHackPInvokeTunnel field for GC helpers entered via regular PInvoke.
+    // Do not use anywhere else.
     void                SetupHackPInvokeTunnel();
 
     //
@@ -234,15 +245,31 @@ public:
     bool IsGCSpecial();
     bool CatchAtSafePoint();
 
-    bool TryFastReversePInvoke(ReversePInvokeFrame * pFrame);
-    void ReversePInvoke(ReversePInvokeFrame * pFrame);
-    void ReversePInvokeReturn(ReversePInvokeFrame * pFrame);
+    //
+    // Managed/unmanaged interop transitions support APIs
+    //
+    void WaitForSuspend();
+    void WaitForGC(void * pTransitionFrame);
+
+    void ReversePInvokeAttachOrTrapThread(ReversePInvokeFrame * pFrame);
+
+    bool InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame);
+    void InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame);
+
+    void InlinePInvoke(PInvokeTransitionFrame * pFrame);
+    void InlinePInvokeReturn(PInvokeTransitionFrame * pFrame);
+
+    Object * GetThreadAbortException();
+    void SetThreadAbortException(Object *exception);
+
+    Object* GetThreadStaticStorageForModule(UInt32 moduleIndex);
+    Boolean SetThreadStaticStorageForModule(Object * pStorage, UInt32 moduleIndex);
 };
 
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 typedef DPTR(Object) PTR_Object;
 typedef DPTR(PTR_Object) PTR_PTR_Object;
-#endif // !GCENV_INCLUDED
+#endif // !__GCENV_BASE_INCLUDED__
 #ifdef DACCESS_COMPILE
 
 // The DAC uses DebuggerEnumGcRefContext in place of a GCCONTEXT when doing reference
@@ -268,10 +295,10 @@ typedef DacScanCallbackData EnumGcRefScanContext;
 typedef void EnumGcRefCallbackFunc(PTR_PTR_Object, EnumGcRefScanContext* callbackData, UInt32 flags);
 
 #else // DACCESS_COMPILE
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 struct ScanContext;
 typedef void promote_func(PTR_PTR_Object, ScanContext*, unsigned);
-#endif // !GCENV_INCLUDED
+#endif // !__GCENV_BASE_INCLUDED__
 typedef promote_func EnumGcRefCallbackFunc;
 typedef ScanContext  EnumGcRefScanContext;
 

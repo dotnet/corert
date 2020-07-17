@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ILCompiler</RootNamespace>
+    <AssemblyName>ILCompiler.RyuJit</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TargetFramework>netstandard1.6</TargetFramework>
+    <NoWarn>8002</NoWarn>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools</OutputPath>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
+    <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Threading.ThreadPool">
+      <Version>4.0.10</Version>
+    </PackageReference>
+    <PackageReference Include="System.Threading.Thread">
+      <Version>4.0.0</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Compiler\DependencyAnalysis\MethodCodeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\RyuJitNodeFactory.cs" />
+    <Compile Include="Compiler\RyuJitCompilation.cs" />
+    <Compile Include="Compiler\RyuJitCompilationBuilder.cs" />
+    <Compile Include="JitInterface\CorInfoImpl.RyuJit.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>Common\ArrayBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs">
+      <Link>Common\EEType.Constants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\CorConstants.cs">
+      <Link>Common\CorConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\FormattingHelpers.cs">
+      <Link>Common\FormattingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ILCompiler.Compiler\src\Compiler\JitHelper.cs">
+      <Link>Compiler\JitHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\HelperExtensions.cs">
+      <Link>IL\HelperExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
+      <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\JitConfigProvider.cs">
+      <Link>JitInterface\JitConfigProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\TypeString.cs">
+      <Link>JitInterface\TypeString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoBase.cs">
+      <Link>JitInterface\CorInfoBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoHelpFunc.cs">
+      <Link>JitInterface\CorInfoHelpFunc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoImpl.cs">
+      <Link>JitInterface\CorInfoImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoImpl.Intrinsics.cs">
+      <Link>JitInterface\CorInfoImpl.Intrinsics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\CorInfoTypes.cs">
+      <Link>JitInterface\CorInfoTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\MemoryHelper.cs">
+      <Link>JitInterface\MemoryHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\UnboxingMethodDesc.cs">
+      <Link>JitInterface\UnboxingMethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\UnboxingMethodDescFactory.cs">
+      <Link>JitInterface\UnboxingMethodDescFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\JitInterface\src\SystemVStructClassificator.cs">
+      <Link>JitInterface\SystemVStructClassificator.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

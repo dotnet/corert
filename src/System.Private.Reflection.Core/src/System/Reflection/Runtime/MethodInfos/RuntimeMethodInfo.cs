@@ -1,21 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Globalization;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.BindingFlagSupport;
 
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Core.NonPortable;
-using global::Internal.Reflection.Extensibility;
-using global::Internal.Reflection.Tracing;
-
-using global::Internal.Metadata.NativeFormat;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.MethodInfos
 {
@@ -23,7 +21,7 @@ namespace System.Reflection.Runtime.MethodInfos
     // Abstract base class for RuntimeNamedMethodInfo, RuntimeConstructedGenericMethodInfo.
     //
     [DebuggerDisplay("{_debugName}")]
-    internal abstract class RuntimeMethodInfo : ExtensibleMethodInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeMethodInfo : MethodInfo, ITraceableTypeMember
     {
         protected RuntimeMethodInfo()
         {
@@ -43,7 +41,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                if (DeclaringType.GetTypeInfo().ContainsGenericParameters)
+                if (DeclaringType.ContainsGenericParameters)
                     return true;
 
                 if (!IsGenericMethod)
@@ -52,7 +50,7 @@ namespace System.Reflection.Runtime.MethodInfos
                 Type[] pis = GetGenericArguments();
                 for (int i = 0; i < pis.Length; i++)
                 {
-                    if (pis[i].GetTypeInfo().ContainsGenericParameters)
+                    if (pis[i].ContainsGenericParameters)
                         return true;
                 }
 
@@ -60,6 +58,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        // V4.5 api - Creates open delegates over static or instance methods.
         public sealed override Delegate CreateDelegate(Type delegateType)
         {
 #if ENABLE_REFLECTION_TRACE
@@ -67,11 +66,10 @@ namespace System.Reflection.Runtime.MethodInfos
                 ReflectionTrace.MethodInfo_CreateDelegate(this, delegateType);
 #endif
 
-            // Legacy: The only difference between calling CreateDelegate(type) and CreateDelegate(type, null) is that the former
-            // disallows closed instance delegates for V1.1 backward compatibility.
-            return CreateDelegate(delegateType, null, allowClosedInstanceDelegates: false);
+            return CreateDelegateWorker(delegateType, null, allowClosed: false);
         }
 
+        // V4.5 api - Creates open or closed delegates over static or instance methods.
         public sealed override Delegate CreateDelegate(Type delegateType, Object target)
         {
 #if ENABLE_REFLECTION_TRACE
@@ -79,7 +77,24 @@ namespace System.Reflection.Runtime.MethodInfos
                 ReflectionTrace.MethodInfo_CreateDelegate(this, delegateType, target);
 #endif
 
-            return CreateDelegate(delegateType, target, allowClosedInstanceDelegates: true);
+            return CreateDelegateWorker(delegateType, target, allowClosed: true);
+        }
+
+        private Delegate CreateDelegateWorker(Type delegateType, object target, bool allowClosed)
+        {
+            if (delegateType == null)
+                throw new ArgumentNullException(nameof(delegateType));
+
+            if (!(delegateType is RuntimeTypeInfo runtimeDelegateType))
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
+
+            if (!runtimeDelegateType.IsDelegate)
+                throw new ArgumentException(SR.Arg_MustBeDelegate);
+
+            Delegate result = CreateDelegateNoThrowOnBindFailure(runtimeDelegateType, target, allowClosed);
+            if (result == null)
+                throw new ArgumentException(SR.Arg_DlgtTargMeth);
+            return result;
         }
 
         public abstract override IEnumerable<CustomAttributeData> CustomAttributes
@@ -102,20 +117,44 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override bool Equals(object obj);
 
+        public abstract override int GetHashCode();
+
+        public sealed override MethodInfo GetBaseDefinition()
+        {
+            // This check is for compatibility. Yes, it happens before we normalize constructed generic methods back to their backing definition.
+            Type declaringType = DeclaringType;
+            if (!IsVirtual || IsStatic || declaringType == null || declaringType.IsInterface)
+                return this;
+
+            MethodInfo method = this;
+
+            // For compat: Remove any instantation on generic methods.
+            if (method.IsConstructedGenericMethod)
+                method = method.GetGenericMethodDefinition();
+
+            while (true)
+            {
+                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember();
+                if (next == null)
+                    return ((RuntimeMethodInfo)method).WithReflectedTypeSetToDeclaringType;
+
+                method = next;
+            }
+        }
+
         public sealed override Type[] GetGenericArguments()
         {
-            RuntimeType[] genericArgumentsOrParameters = this.RuntimeGenericArgumentsOrParameters;
-            if (genericArgumentsOrParameters.Length == 0)
-                return Array.Empty<Type>();
-            Type[] result = new Type[genericArgumentsOrParameters.Length];
-            for (int i = 0; i < genericArgumentsOrParameters.Length; i++)
-                result[i] = genericArgumentsOrParameters[i];
-            return result;
+            return RuntimeGenericArgumentsOrParameters.CloneTypeArray();
         }
+
+        public abstract override int GenericParameterCount { get; }
 
         public abstract override MethodInfo GetGenericMethodDefinition();
 
-        public abstract override int GetHashCode();
+        public sealed override MethodBody GetMethodBody()
+        {
+            throw new PlatformNotSupportedException();
+        }
 
         public sealed override ParameterInfo[] GetParameters()
         {
@@ -124,29 +163,40 @@ namespace System.Reflection.Runtime.MethodInfos
                 ReflectionTrace.MethodBase_GetParameters(this);
 #endif
 
-            RuntimeParameterInfo[] runtimeParameterInfos = this.GetRuntimeParametersAndReturn(this);
-            if (runtimeParameterInfos.Length == 1)
+            RuntimeParameterInfo[] runtimeParameterInfos = RuntimeParameters;
+            if (runtimeParameterInfos.Length == 0)
                 return Array.Empty<ParameterInfo>();
-            ParameterInfo[] result = new ParameterInfo[runtimeParameterInfos.Length - 1];
+            ParameterInfo[] result = new ParameterInfo[runtimeParameterInfos.Length];
             for (int i = 0; i < result.Length; i++)
-                result[i] = runtimeParameterInfos[i + 1];
+                result[i] = runtimeParameterInfos[i];
             return result;
         }
 
+        public sealed override ParameterInfo[] GetParametersNoCopy()
+        {
+            return RuntimeParameters;
+        }
+
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
+
         [DebuggerGuidedStepThroughAttribute]
-        public sealed override Object Invoke(Object obj, Object[] parameters)
+        public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
 #if ENABLE_REFLECTION_TRACE
             if (ReflectionTrace.Enabled)
                 ReflectionTrace.MethodBase_Invoke(this, obj, parameters);
 #endif
-
             if (parameters == null)
                 parameters = Array.Empty<Object>();
             MethodInvoker methodInvoker = this.MethodInvoker;
-            object result = methodInvoker.Invoke(obj, parameters);
+            object result = methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
+        }
+
+        public abstract override bool IsConstructedGenericMethod
+        {
+            get;
         }
 
         public abstract override bool IsGenericMethod
@@ -160,6 +210,13 @@ namespace System.Reflection.Runtime.MethodInfos
         }
 
         public abstract override MethodInfo MakeGenericMethod(params Type[] typeArguments);
+
+        public abstract override MethodBase MetadataDefinitionMethod { get; }
+
+        public abstract override int MetadataToken
+        {
+            get;
+        }
 
         public abstract override MethodImplAttributes MethodImplementationFlags
         {
@@ -183,6 +240,8 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
+        public abstract override Type ReflectedType { get; }
+
         public sealed override ParameterInfo ReturnParameter
         {
             get
@@ -192,7 +251,7 @@ namespace System.Reflection.Runtime.MethodInfos
                     ReflectionTrace.MethodInfo_ReturnParameter(this);
 #endif
 
-                return this.GetRuntimeParametersAndReturn(this)[0];
+                return this.RuntimeReturnParameter;
             }
         }
 
@@ -211,6 +270,8 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public abstract override String ToString();
 
+        public abstract override RuntimeMethodHandle MethodHandle { get; }
+
         Type ITraceableTypeMember.ContainingType
         {
             get
@@ -227,7 +288,7 @@ namespace System.Reflection.Runtime.MethodInfos
             }
         }
 
-        internal abstract RuntimeType RuntimeDeclaringType
+        internal abstract RuntimeTypeInfo RuntimeDeclaringType
         {
             get;
         }
@@ -237,18 +298,52 @@ namespace System.Reflection.Runtime.MethodInfos
             get;
         }
 
+        internal abstract RuntimeMethodInfo WithReflectedTypeSetToDeclaringType { get; }
+
         protected abstract MethodInvoker UncachedMethodInvoker { get; }
 
         //
         // The non-public version of MethodInfo.GetGenericArguments() (does not array-copy and has a more truthful name.)
         //
-        internal abstract RuntimeType[] RuntimeGenericArgumentsOrParameters { get; }
+        internal abstract RuntimeTypeInfo[] RuntimeGenericArgumentsOrParameters { get; }
+
+        internal abstract RuntimeParameterInfo[] GetRuntimeParameters(RuntimeMethodInfo contextMethod, out RuntimeParameterInfo returnParameter);
 
         //
         // The non-public version of MethodInfo.GetParameters() (does not array-copy.) 
-        // The first element is actually the ReturnParameter value.
         //
-        internal abstract RuntimeParameterInfo[] GetRuntimeParametersAndReturn(RuntimeMethodInfo contextMethod);
+        internal RuntimeParameterInfo[] RuntimeParameters
+        {
+            get
+            {
+                RuntimeParameterInfo[] parameters = _lazyParameters;
+                if (parameters == null)
+                {
+                    RuntimeParameterInfo returnParameter;
+                    parameters = _lazyParameters = GetRuntimeParameters(this, out returnParameter);
+                    _lazyReturnParameter = returnParameter;  // Opportunistically initialize the _lazyReturnParameter latch as well.
+                }
+                return parameters;
+            }
+        }
+
+        internal RuntimeParameterInfo RuntimeReturnParameter
+        {
+            get
+            {
+                RuntimeParameterInfo returnParameter = _lazyReturnParameter;
+                if (returnParameter == null)
+                {
+                    // Though the returnParameter is our primary objective, we can opportunistically initialize the _lazyParameters latch too.
+                    _lazyParameters = GetRuntimeParameters(this, out returnParameter);
+                    _lazyReturnParameter = returnParameter;
+                }
+                return returnParameter;
+            }
+        }
+
+        private volatile RuntimeParameterInfo[] _lazyParameters;
+        private volatile RuntimeParameterInfo _lazyReturnParameter;
 
         internal MethodInvoker MethodInvoker
         {
@@ -258,48 +353,47 @@ namespace System.Reflection.Runtime.MethodInfos
                 if (methodInvoker == null)
                 {
                     if (ReturnType.IsByRef)
-                        throw new NotSupportedException(SR.NotSupported_ByRefReturn);
+                    {
+                        // The invoker is going to dereference and box (for structs) the result of the invocation
+                        // on behalf of the caller. Can't box byref-like types and can't box void.
+                        if (ReturnType.GetElementType().IsByRefLike || ReturnType.GetElementType() == CommonRuntimeTypes.Void)
+                            throw new NotSupportedException();
+                    }
                     methodInvoker = _lazyMethodInvoker = this.UncachedMethodInvoker;
                 }
                 return methodInvoker;
             }
         }
 
+        internal IntPtr LdFtnResult => MethodInvoker.LdFtnResult;
+
         private volatile MethodInvoker _lazyMethodInvoker = null;
 
-
-        //
-        // Common CreateDelegate worker.
-        //
-        private Delegate CreateDelegate(Type delegateType, Object target, bool allowClosedInstanceDelegates)
+        /// <summary>
+        /// Common CreateDelegate worker. NOTE: If the method signature is not compatible, this method returns null rather than throwing an ArgumentException.
+        /// This is needed to support the api overloads that have a "throwOnBindFailure" parameter.
+        /// </summary>
+        internal Delegate CreateDelegateNoThrowOnBindFailure(RuntimeTypeInfo runtimeDelegateType, Object target, bool allowClosed)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException("delegateType");
+            Debug.Assert(runtimeDelegateType.IsDelegate);
 
             ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
-            RuntimeTypeHandle delegateTypeHandle = delegateType.TypeHandle;
-            if (!executionEnvironment.IsAssignableFrom(typeof(Delegate).TypeHandle, delegateTypeHandle))
-                throw new ArgumentException(SR.Arg_MustBeDelegate);
-            IEnumerator<MethodInfo> invokeMethodEnumerator = delegateType.GetTypeInfo().GetDeclaredMethods("Invoke").GetEnumerator();
-            if (!invokeMethodEnumerator.MoveNext())
-            {
-                // No Invoke method found. Since delegate types are compiler constructed, the most likely cause is missing metadata rather than
-                // a missing Invoke method. 
-
-                // We're deliberating calling FullName rather than ToString() because if it's the type that's missing metadata, 
-                // the FullName property constructs a more informative MissingMetadataException than we can. 
-                String fullName = delegateType.FullName;
-                throw new MissingMetadataException(SR.Format(SR.Arg_InvokeMethodMissingMetadata, fullName)); // No invoke method found.
-            }
-            MethodInfo invokeMethod = invokeMethodEnumerator.Current;
-            if (invokeMethodEnumerator.MoveNext())
-                throw new ArgumentException(SR.Arg_MustBeDelegate); // Multiple invoke methods found.
+            MethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
 
             // Make sure the return type is assignment-compatible.
-            CheckIsAssignableFrom(executionEnvironment, invokeMethod.ReturnParameter.ParameterType, this.ReturnParameter.ParameterType);
+            Type expectedReturnType = ReturnParameter.ParameterType;
+            Type actualReturnType = invokeMethod.ReturnParameter.ParameterType;
+            if (!IsAssignableFrom(executionEnvironment, actualReturnType, expectedReturnType))
+                return null;
+            if (expectedReturnType.IsValueType && !actualReturnType.IsValueType)
+            {
+                // For value type returning methods, conversions between enums and primitives are allowed (and screened by the above call to IsAssignableFrom)
+                // but conversions to Object or interfaces implemented by the value type are not.
+                return null;
+            }
 
-            IList<ParameterInfo> delegateParameters = invokeMethod.GetParameters();
-            IList<ParameterInfo> targetParameters = this.GetParameters();
+            IList<ParameterInfo> delegateParameters = invokeMethod.GetParametersNoCopy();
+            IList<ParameterInfo> targetParameters = this.GetParametersNoCopy();
             IEnumerator<ParameterInfo> delegateParameterEnumerator = delegateParameters.GetEnumerator();
             IEnumerator<ParameterInfo> targetParameterEnumerator = targetParameters.GetEnumerator();
 
@@ -312,17 +406,19 @@ namespace System.Reflection.Runtime.MethodInfos
                     // Open static: This is the "typical" case of calling a static method.
                     isOpen = true;
                     if (target != null)
-                        throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                        return null;
                 }
                 else
                 {
                     // Closed static: This is the "weird" v2.0 case where the delegate is closed over the target method's first parameter.
                     //   (it make some kinda sense if you think of extension methods.)
+                    if (!allowClosed)
+                        return null;
                     isOpen = false;
                     if (!targetParameterEnumerator.MoveNext())
-                        throw new ArgumentException(SR.Arg_DlgtTargMeth);
-                    if (target != null)
-                        CheckIsAssignableFrom(executionEnvironment, targetParameterEnumerator.Current.ParameterType, target.GetType());
+                        return null;
+                    if (target != null && !IsAssignableFrom(executionEnvironment, targetParameterEnumerator.Current.ParameterType, target.GetType()))
+                        return null;
                 }
             }
             else
@@ -331,21 +427,26 @@ namespace System.Reflection.Runtime.MethodInfos
                 {
                     // Closed instance: This is the "typical" case of invoking an instance method.
                     isOpen = false;
-                    if (!allowClosedInstanceDelegates)
-                        throw new ArgumentException(SR.Arg_DlgtTargMeth);
-                    if (target != null)
-                        CheckIsAssignableFrom(executionEnvironment, this.DeclaringType, target.GetType());
+                    if (!allowClosed)
+                        return null;
+                    if (target != null && !IsAssignableFrom(executionEnvironment, this.DeclaringType, target.GetType()))
+                        return null;
                 }
                 else
                 {
                     // Open instance: This is the "weird" v2.0 case where the delegate has a leading extra parameter that's assignable to the target method's
                     // declaring type.
                     if (!delegateParameterEnumerator.MoveNext())
-                        throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                        return null;
                     isOpen = true;
-                    CheckIsAssignableFrom(executionEnvironment, this.DeclaringType, delegateParameterEnumerator.Current.ParameterType);
+                    Type firstParameterOfMethodType = this.DeclaringType;
+                    if (firstParameterOfMethodType.IsValueType)
+                        firstParameterOfMethodType = firstParameterOfMethodType.MakeByRefType();
+
+                    if (!IsAssignableFrom(executionEnvironment, firstParameterOfMethodType, delegateParameterEnumerator.Current.ParameterType))
+                        return null;
                     if (target != null)
-                        throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                        return null;
                 }
             }
 
@@ -353,56 +454,61 @@ namespace System.Reflection.Runtime.MethodInfos
             while (delegateParameterEnumerator.MoveNext())
             {
                 if (!targetParameterEnumerator.MoveNext())
-                    throw new ArgumentException(SR.Arg_DlgtTargMeth);
-                CheckIsAssignableFrom(executionEnvironment, targetParameterEnumerator.Current.ParameterType, delegateParameterEnumerator.Current.ParameterType);
+                    return null;
+                if (!IsAssignableFrom(executionEnvironment, targetParameterEnumerator.Current.ParameterType, delegateParameterEnumerator.Current.ParameterType))
+                    return null;
             }
             if (targetParameterEnumerator.MoveNext())
-                throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                return null;
 
-            return this.MethodInvoker.CreateDelegate(delegateType.TypeHandle, target, isStatic: isStatic, isVirtual: false, isOpen: isOpen);
+            return CreateDelegateWithoutSignatureValidation(runtimeDelegateType, target, isStatic: isStatic, isOpen: isOpen);
         }
 
+        internal Delegate CreateDelegateWithoutSignatureValidation(Type delegateType, object target, bool isStatic, bool isOpen)
+        {
+            return MethodInvoker.CreateDelegate(delegateType.TypeHandle, target, isStatic: isStatic, isVirtual: false, isOpen: isOpen);
+        }
 
-        private static void CheckIsAssignableFrom(ExecutionEnvironment executionEnvironment, Type dstType, Type srcType)
+        private static bool IsAssignableFrom(ExecutionEnvironment executionEnvironment, Type dstType, Type srcType)
         {
             // byref types do not have a TypeHandle so we must treat these separately.
             if (dstType.IsByRef && srcType.IsByRef)
             {
                 if (!dstType.Equals(srcType))
-                    throw new ArgumentException(SR.Arg_DlgtTargMeth);
+                    return false;
             }
 
             // Enable pointers (which don't necessarily have typehandles). todo:be able to handle intptr <-> pointer, check if we need to handle 
             // casts via pointer where the pointer types aren't identical
             if (dstType.Equals(srcType))
             {
-                return;
+                return true;
             }
 
             // If assignment compatible in the normal way, allow
             if (executionEnvironment.IsAssignableFrom(dstType.TypeHandle, srcType.TypeHandle))
             {
-                return;
+                return true;
             }
 
             // they are not compatible yet enums can go into each other if their underlying element type is the same
             // or into their equivalent integral type
             Type dstTypeUnderlying = dstType;
-            if (dstType.GetTypeInfo().IsEnum)
+            if (dstType.IsEnum)
             {
                 dstTypeUnderlying = Enum.GetUnderlyingType(dstType);
             }
             Type srcTypeUnderlying = srcType;
-            if (srcType.GetTypeInfo().IsEnum)
+            if (srcType.IsEnum)
             {
                 srcTypeUnderlying = Enum.GetUnderlyingType(srcType);
             }
             if (dstTypeUnderlying.Equals(srcTypeUnderlying))
             {
-                return;
+                return true;
             }
 
-            throw new ArgumentException(SR.Arg_DlgtTargMeth);
+            return false;
         }
 
         protected RuntimeMethodInfo WithDebugName()

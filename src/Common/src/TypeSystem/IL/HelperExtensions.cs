@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -13,31 +12,6 @@ namespace Internal.IL
 {
     internal static class HelperExtensions
     {
-        /// <summary>
-        /// NEWOBJ operation on String type is actually a call to a static method that returns a String
-        /// instance (i.e. there's an explicit call to the runtime allocator from the static method body).
-        /// This method returns the alloc+init helper corresponding to a given string constructor.
-        /// </summary>
-        public static MethodDesc GetStringInitializer(this MethodDesc constructorMethod)
-        {
-            Debug.Assert(constructorMethod.IsConstructor);
-            Debug.Assert(constructorMethod.OwningType.IsString);
-
-            var constructorSignature = constructorMethod.Signature;
-
-            // There's an extra (useless) Object as the first arg to match RyuJIT expectations.
-            var parameters = new TypeDesc[constructorSignature.Length + 1];
-            parameters[0] = constructorMethod.Context.GetWellKnownType(WellKnownType.Object);
-            for (int i = 0; i < constructorSignature.Length; i++)
-                parameters[i + 1] = constructorSignature[i];
-
-            MethodSignature sig = new MethodSignature(
-                MethodSignatureFlags.Static, 0, constructorMethod.OwningType, parameters);
-
-            MethodDesc result = constructorMethod.OwningType.GetKnownMethod("Ctor", sig);
-            return result;
-        }
-
         public static MetadataType GetHelperType(this TypeSystemContext context, string name)
         {
             MetadataType helperType = context.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", name);
@@ -102,6 +76,21 @@ namespace Internal.IL
         }
 
         /// <summary>
+        /// Retrieves a nested type on <paramref name="type"/> that is well known to the compiler.
+        /// Throws an exception if the nested type doesn't exist.
+        /// </summary>
+        public static MetadataType GetKnownNestedType(this MetadataType type, string name)
+        {
+            MetadataType nestedType = type.GetNestedType(name);
+            if (nestedType == null)
+            {
+                throw new InvalidOperationException(String.Format("Expected type '{0}' not found on type '{1}'", name, type));
+            }
+
+            return nestedType;
+        }
+
+        /// <summary>
         /// Retrieves a namespace type in <paramref name= "module" /> that is well known to the compiler.
         /// Throws an exception if the type doesn't exist.
         /// </summary>
@@ -112,8 +101,8 @@ namespace Internal.IL
             {
                 throw new InvalidOperationException(
                     String.Format("Expected type '{0}' not found in module '{1}'",
-                    module,
-                    @namespace.Length > 0 ? String.Concat(@namespace, ".", name) : name));
+                    @namespace.Length > 0 ? String.Concat(@namespace, ".", name) : name,
+                    module));
             }
 
             return type;

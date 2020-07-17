@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -10,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
-    public abstract class DependencyNodeCore<DependencyContextType> : DependencyNode
+    public abstract class DependencyNodeCore<DependencyContextType> : DependencyNode, IDependencyNode<DependencyContextType>
     {
         public struct DependencyListEntry
         {
@@ -34,6 +33,13 @@ namespace ILCompiler.DependencyAnalysisFramework
 
         public class DependencyList : List<DependencyListEntry>
         {
+            public DependencyList() { }
+
+            public DependencyList(IEnumerable<DependencyListEntry> collection)
+                : base(collection)
+            {
+            }
+
             public void Add(DependencyNodeCore<DependencyContextType> node,
                                        string reason)
             {
@@ -46,7 +52,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
         }
 
-        public struct CombinedDependencyListEntry
+        public struct CombinedDependencyListEntry : IEquatable<CombinedDependencyListEntry>
         {
             public CombinedDependencyListEntry(DependencyNodeCore<DependencyContextType> node,
                                                DependencyNodeCore<DependencyContextType> otherReasonNode,
@@ -67,9 +73,35 @@ namespace ILCompiler.DependencyAnalysisFramework
             }
 
             // Used by HashSet, so must have good Equals/GetHashCode
-            public DependencyNodeCore<DependencyContextType> Node;
-            public DependencyNodeCore<DependencyContextType> OtherReasonNode;
-            public string Reason;
+            public readonly DependencyNodeCore<DependencyContextType> Node;
+            public readonly DependencyNodeCore<DependencyContextType> OtherReasonNode;
+            public readonly string Reason;
+
+            public override bool Equals(object obj)
+            {
+                return obj is CombinedDependencyListEntry && Equals((CombinedDependencyListEntry)obj);
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = 23;
+                hash = hash * 31 + Node.GetHashCode();
+
+                if (OtherReasonNode != null)
+                    hash = hash * 31 + OtherReasonNode.GetHashCode();
+
+                if (Reason != null)
+                    hash = hash * 31 + Reason.GetHashCode();
+
+                return hash;
+            }
+
+            public bool Equals(CombinedDependencyListEntry other)
+            {
+                return Object.ReferenceEquals(Node, other.Node)
+                    && Object.ReferenceEquals(OtherReasonNode, other.OtherReasonNode)
+                    && Object.Equals(Reason, other.Reason);
+            }
         }
 
         public abstract bool InterestingForDynamicDependencyAnalysis
@@ -111,6 +143,16 @@ namespace ILCompiler.DependencyAnalysisFramework
         protected virtual void OnMarked(DependencyContextType context)
         {
             // Do nothing by default
+        }
+
+        // Force all non-abstract nodes to provide a name
+        protected abstract string GetName(DependencyContextType context);
+
+        // We would prefer GetName to be "protected internal", but that will break people who want to source
+        // include the dependency analysis framework. When nobody does that, maybe we can get rid of this method.
+        internal string GetNameInternal(DependencyContextType context)
+        {
+            return GetName(context);
         }
     }
 }

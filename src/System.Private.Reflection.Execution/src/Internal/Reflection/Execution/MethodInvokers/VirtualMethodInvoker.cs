@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using global::System;
 using global::System.Threading;
@@ -12,8 +11,6 @@ using global::Internal.Runtime.Augments;
 using global::Internal.Runtime.CompilerServices;
 using global::Internal.Reflection.Execution;
 using global::Internal.Reflection.Core.Execution;
-
-using TargetException = System.ArgumentException;
 
 namespace Internal.Reflection.Execution.MethodInvokers
 {
@@ -53,17 +50,49 @@ namespace Internal.Reflection.Execution.MethodInvokers
             }
         }
 
-        public sealed override Object Invoke(Object thisObject, Object[] arguments)
+        [DebuggerGuidedStepThroughAttribute]
+        protected sealed override Object Invoke(Object thisObject, Object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
-            MethodInvokerUtils.ValidateThis(thisObject, _declaringTypeHandle);
+            ValidateThis(thisObject, _declaringTypeHandle);
 
             IntPtr resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
 
             Object result = RuntimeAugments.CallDynamicInvokeMethod(
-                thisObject, resolvedVirtual, null, MethodInvokeInfo.DynamicInvokeMethod, MethodInvokeInfo.DynamicInvokeGenericDictionary, MethodInvokeInfo.DefaultValueString, arguments,
-                invokeMethodHelperIsThisCall: false, methodToCallIsThisCall: true);
-
+                thisObject,
+                resolvedVirtual,
+                null /*thisPtrDynamicInvokeMethod*/,
+                MethodInvokeInfo.DynamicInvokeMethod,
+                MethodInvokeInfo.DynamicInvokeGenericDictionary,
+                MethodInvokeInfo.MethodInfo,
+                arguments,
+                binderBundle,
+                wrapInTargetInvocationException: wrapInTargetInvocationException,
+                invokeMethodHelperIsThisCall: false,
+                methodToCallIsThisCall: true);
+            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
+        }
+
+        internal IntPtr ResolveTarget(RuntimeTypeHandle type)
+        {
+            return OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, type);
+        }
+
+        // On CoreCLR/Desktop, we do not attempt to resolve the target virtual method based on the type of the 'this' pointer.
+        // For compatibility reasons, we'll do the same here.
+        public sealed override IntPtr LdFtnResult
+        {
+            get
+            {
+                if (RuntimeAugments.IsInterface(_declaringTypeHandle))
+                    throw new PlatformNotSupportedException();
+
+                // Must be an abstract method
+                if (MethodInvokeInfo.LdFtnResult == IntPtr.Zero && MethodInvokeInfo.VirtualResolveData != IntPtr.Zero)
+                    throw new PlatformNotSupportedException();
+
+                return MethodInvokeInfo.LdFtnResult;
+            }
         }
 
         private RuntimeTypeHandle _declaringTypeHandle;

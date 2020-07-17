@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ---------------------------------------------------------------------------
 // Native Format Reader
 //
@@ -19,6 +18,11 @@ namespace Internal.NativeFormat
             string value;
             _offset = _reader.DecodeString(_offset, out value);
             return value;
+        }
+
+        public void SkipString()
+        {
+            _offset = _reader.SkipString(_offset);
         }
     }
     
@@ -55,6 +59,24 @@ namespace Internal.NativeFormat
 #else
             value = Encoding.UTF8.GetString(_base + offset, (int)numBytes);
 #endif
+
+            return endOffset;
+        }
+
+        // Decode a string, but just skip it instead of returning it
+        public uint SkipString(uint offset)
+        {
+            uint numBytes;
+            offset = DecodeUnsigned(offset, out numBytes);
+
+            if (numBytes == 0)
+            {
+                return offset;
+            }
+
+            uint endOffset = offset + numBytes;
+            if (endOffset < numBytes || endOffset > _size)
+                ThrowBadImageFormatException();
 
             return endOffset;
         }

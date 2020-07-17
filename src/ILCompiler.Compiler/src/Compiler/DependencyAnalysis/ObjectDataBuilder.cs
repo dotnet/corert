@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -11,27 +10,36 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     public struct ObjectDataBuilder
+#if !READYTORUN
+        : Internal.Runtime.ITargetBinaryWriter
+#endif
     {
-        public ObjectDataBuilder(NodeFactory factory)
+        public ObjectDataBuilder(NodeFactory factory, bool relocsOnly) : this(factory.Target, relocsOnly)
         {
-            _target = factory.Target;
+        }
+
+        public ObjectDataBuilder(TargetDetails target, bool relocsOnly)
+        {
+            _target = target;
             _data = new ArrayBuilder<byte>();
             _relocs = new ArrayBuilder<Relocation>();
             Alignment = 1;
-            DefinedSymbols = new ArrayBuilder<ISymbolNode>();
+            _definedSymbols = new ArrayBuilder<ISymbolDefinitionNode>();
 #if DEBUG
             _numReservations = 0;
+            _checkAllSymbolDependenciesMustBeMarked = !relocsOnly;
 #endif
         }
 
         private TargetDetails _target;
         private ArrayBuilder<Relocation> _relocs;
         private ArrayBuilder<byte> _data;
-        internal int Alignment;
-        internal ArrayBuilder<ISymbolNode> DefinedSymbols;
+        public int Alignment { get; private set; }
+        private ArrayBuilder<ISymbolDefinitionNode> _definedSymbols;
 
 #if DEBUG
         private int _numReservations;
+        private bool _checkAllSymbolDependenciesMustBeMarked;
 #endif
 
         public int CountBytes
@@ -42,14 +50,30 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void RequireAlignment(int align)
+        public int TargetPointerSize
+        {
+            get
+            {
+                return _target.PointerSize;
+            }
+        }
+
+        /// <summary>
+        /// Raise the alignment requirement of this object to <paramref name="align"/>. This has no effect
+        /// if the alignment requirement is already larger than <paramref name="align"/>.
+        /// </summary>
+        public void RequireInitialAlignment(int align)
         {
             Alignment = Math.Max(align, Alignment);
         }
 
-        public void RequirePointerAlignment()
+        /// <summary>
+        /// Raise the alignment requirement of this object to the target pointer size. This has no effect
+        /// if the alignment requirement is already larger than a pointer size.
+        /// </summary>
+        public void RequireInitialPointerAlignment()
         {
-            RequireAlignment(_target.PointerSize);
+            RequireInitialAlignment(_target.PointerSize);
         }
 
         public void EmitByte(byte emit)
@@ -63,7 +87,21 @@ namespace ILCompiler.DependencyAnalysis
             EmitByte((byte)((emit >> 8) & 0xFF));
         }
 
+        public void EmitUShort(ushort emit)
+        {
+            EmitByte((byte)(emit & 0xFF));
+            EmitByte((byte)((emit >> 8) & 0xFF));
+        }
+
         public void EmitInt(int emit)
+        {
+            EmitByte((byte)(emit & 0xFF));
+            EmitByte((byte)((emit >> 8) & 0xFF));
+            EmitByte((byte)((emit >> 16) & 0xFF));
+            EmitByte((byte)((emit >> 24) & 0xFF));
+        }
+
+        public void EmitUInt(uint emit)
         {
             EmitByte((byte)(emit & 0xFF));
             EmitByte((byte)((emit >> 8) & 0xFF));
@@ -81,6 +119,32 @@ namespace ILCompiler.DependencyAnalysis
             EmitByte((byte)((emit >> 40) & 0xFF));
             EmitByte((byte)((emit >> 48) & 0xFF));
             EmitByte((byte)((emit >> 56) & 0xFF));
+        }
+
+        public void EmitNaturalInt(int emit)
+        {
+            if (_target.PointerSize == 8)
+            {
+                EmitLong(emit);
+            }
+            else
+            {
+                Debug.Assert(_target.PointerSize == 4);
+                EmitInt(emit);
+            }
+        }
+
+        public void EmitHalfNaturalInt(short emit)
+        {
+            if (_target.PointerSize == 8)
+            {
+                EmitInt(emit);
+            }
+            else
+            {
+                Debug.Assert(_target.PointerSize == 4);
+                EmitShort(emit);
+            }
         }
 
         public void EmitCompressedUInt(uint emit)
@@ -115,6 +179,16 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public void EmitBytes(byte[] bytes)
+        {
+            _data.Append(bytes);
+        }
+
+        public void EmitBytes(byte[] bytes, int offset, int length)
+        {
+            _data.Append(bytes, offset, length);
+        }
+
+        internal void EmitBytes(ArrayBuilder<byte> bytes)
         {
             _data.Append(bytes);
         }
@@ -185,30 +259,52 @@ namespace ILCompiler.DependencyAnalysis
             _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
         }
 
-        public void AddRelocAtOffset(ISymbolNode symbol, RelocType relocType, int offset, int delta = 0)
+        public void EmitUInt(Reservation reservation, uint emit)
         {
-            Relocation symbolReloc = new Relocation();
-            symbolReloc.Target = symbol;
-            symbolReloc.RelocType = relocType;
-            symbolReloc.Offset = offset;
-            symbolReloc.Delta = delta;
-            _relocs.Add(symbolReloc);
+            int offset = ReturnReservationTicket(reservation);
+            _data[offset] = (byte)(emit & 0xFF);
+            _data[offset + 1] = (byte)((emit >> 8) & 0xFF);
+            _data[offset + 2] = (byte)((emit >> 16) & 0xFF);
+            _data[offset + 3] = (byte)((emit >> 24) & 0xFF);
         }
 
         public void EmitReloc(ISymbolNode symbol, RelocType relocType, int delta = 0)
         {
-            AddRelocAtOffset(symbol, relocType, _data.Count, delta);
+#if DEBUG
+            if (_checkAllSymbolDependenciesMustBeMarked)
+            {
+                var node = symbol as ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>;
+                if (node != null)
+                    Debug.Assert(node.Marked);
+            }
+#endif
+
+            _relocs.Add(new Relocation(relocType, _data.Count, symbol));
 
             // And add space for the reloc
             switch (relocType)
             {
                 case RelocType.IMAGE_REL_BASED_REL32:
+                case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_BASED_ABSOLUTE:
-                    EmitInt(0);
+                case RelocType.IMAGE_REL_BASED_HIGHLOW:
+                case RelocType.IMAGE_REL_SECREL:
+                case RelocType.IMAGE_REL_FILE_ABSOLUTE:
+                case RelocType.IMAGE_REL_BASED_ADDR32NB:
+                case RelocType.IMAGE_REL_SYMBOL_SIZE:
+                    EmitInt(delta);
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
-                    EmitLong(0);
+                    EmitLong(delta);
                     break;
+                case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
+                case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
+                case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
+                    // Do not vacate space for this kind of relocation, because
+                    // the space is embedded in the instruction.
+                    break;                    
                 default:
                     throw new NotImplementedException();
             }
@@ -228,11 +324,26 @@ namespace ILCompiler.DependencyAnalysis
             ObjectNode.ObjectData returnData = new ObjectNode.ObjectData(_data.ToArray(),
                                                                          _relocs.ToArray(),
                                                                          Alignment,
-                                                                         DefinedSymbols.ToArray());
+                                                                         _definedSymbols.ToArray());
 
             return returnData;
         }
 
         public enum Reservation { }
+
+        public void AddSymbol(ISymbolDefinitionNode node)
+        {
+            _definedSymbols.Add(node);
+        }
+
+        public void PadAlignment(int align)
+        {
+            Debug.Assert((align == 2) || (align == 4) || (align == 8) || (align == 16));
+            int misalignment = _data.Count & (align - 1);
+            if (misalignment != 0)
+            {
+                EmitZeros(align - misalignment);
+            }
+        }
     }
 }

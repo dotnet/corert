@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.IO;
@@ -10,8 +9,8 @@ namespace Internal.NativeFormat
 {
     internal struct NativePrimitiveEncoder
     {
-        byte[] _buffer;
-        int _size;
+        private byte[] _buffer;
+        private int _size;
 
         public void Init()
         {

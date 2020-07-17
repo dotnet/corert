@@ -1,12 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using System;
-using System.Collections.Generic;
-using Internal.Metadata.NativeFormat.Writer;
 
 using Cts = Internal.TypeSystem;
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.Metadata
 {
@@ -20,35 +16,53 @@ namespace ILCompiler.Metadata
         where TPolicy : struct, IMetadataPolicy
     {
         private TPolicy _policy;
-        private HashSet<Cts.ModuleDesc> _modulesToTransform;
 
-        public Transform(TPolicy policy, IEnumerable<Cts.ModuleDesc> modules)
+        public Transform(TPolicy policy)
         {
             _policy = policy;
-            _modulesToTransform = new HashSet<Cts.ModuleDesc>(modules);
         }
 
         private bool IsBlocked(Cts.TypeDesc type)
         {
-            if (type.IsArray || type.IsByRef || type.IsPointer)
-                return IsBlocked(((Cts.ParameterizedType)type).ParameterType);
-
-            if (type is Cts.SignatureVariable)
-                return false;
-
-            if (!type.IsTypeDefinition)
+            switch (type.Category)
             {
-                if (IsBlocked(type.GetTypeDefinition()))
-                    return true;
+                case Cts.TypeFlags.SzArray:
+                case Cts.TypeFlags.Array:
+                case Cts.TypeFlags.Pointer:
+                case Cts.TypeFlags.ByRef:
+                    return IsBlocked(((Cts.ParameterizedType)type).ParameterType);
 
-                foreach (var arg in type.Instantiation)
-                    if (IsBlocked(arg))
-                        return true;
+                case Cts.TypeFlags.SignatureMethodVariable:
+                case Cts.TypeFlags.SignatureTypeVariable:
+                    return false;
 
-                return false;
-            }
+                case Cts.TypeFlags.FunctionPointer:
+                    {
+                        Cts.MethodSignature pointerSignature = ((Cts.FunctionPointerType)type).Signature;
 
-            return _policy.IsBlocked((Cts.MetadataType)type);
+                        for (int i = 0; i < pointerSignature.Length; i++)
+                            if (IsBlocked(pointerSignature[i]))
+                                return true;
+
+                        return IsBlocked(pointerSignature.ReturnType);
+                    }
+                default:
+                    Debug.Assert(type.IsDefType);
+
+                    if (!type.IsTypeDefinition)
+                    {
+                        if (IsBlocked(type.GetTypeDefinition()))
+                            return true;
+
+                        foreach (var arg in type.Instantiation)
+                            if (IsBlocked(arg))
+                                return true;
+
+                        return false;
+                    }
+
+                    return _policy.IsBlocked((Cts.MetadataType)type);
+            }            
         }
     }
 }

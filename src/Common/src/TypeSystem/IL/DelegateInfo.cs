@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+using System;
+using System.Collections.Generic;
 
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
@@ -15,7 +17,8 @@ namespace Internal.IL
     /// </summary>
     public class DelegateInfo
     {
-        private TypeDesc _delegateType;
+        private readonly TypeDesc _delegateType;
+        private readonly DelegateFeature _supportedFeatures;
 
         private MethodSignature _signature;
 
@@ -23,9 +26,9 @@ namespace Internal.IL
         private DelegateThunkCollection _thunks;
 
         /// <summary>
-        /// Gets the Delegate.GetThunk override implementation for this delegate type.
+        /// Gets the synthetic methods that support this delegate type.
         /// </summary>
-        public MethodDesc GetThunkMethod
+        public IEnumerable<MethodDesc> Methods
         {
             get
             {
@@ -34,7 +37,15 @@ namespace Internal.IL
                     Interlocked.CompareExchange(ref _getThunkMethod, new DelegateGetThunkMethodOverride(this), null);
                 }
 
-                return _getThunkMethod;
+                yield return _getThunkMethod;
+
+                DelegateThunkCollection thunks = Thunks;
+                for (DelegateThunkKind kind = 0; kind < DelegateThunkCollection.MaxThunkKind; kind++)
+                {
+                    MethodDesc thunk = thunks[kind];
+                    if (thunk != null)
+                        yield return thunk;
+                }
             }
         }
 
@@ -68,6 +79,14 @@ namespace Internal.IL
             }
         }
 
+        public DelegateFeature SupportedFeatures
+        {
+            get
+            {
+                return _supportedFeatures;
+            }
+        }
+
         /// <summary>
         /// Gets the type of the delegate.
         /// </summary>
@@ -79,12 +98,13 @@ namespace Internal.IL
             }
         }
 
-        public DelegateInfo(TypeDesc delegateType)
+        public DelegateInfo(TypeDesc delegateType, DelegateFeature features)
         {
             Debug.Assert(delegateType.IsDelegate);
             Debug.Assert(delegateType.IsTypeDefinition);
 
             _delegateType = delegateType;
+            _supportedFeatures = features;
         }
     }
 
@@ -93,15 +113,93 @@ namespace Internal.IL
     /// </summary>
     public class DelegateThunkCollection
     {
+        public const DelegateThunkKind MaxThunkKind = DelegateThunkKind.ObjectArrayThunk + 1;
+
         private MethodDesc _openStaticThunk;
         private MethodDesc _multicastThunk;
         private MethodDesc _closedStaticThunk;
+        private MethodDesc _closedInstanceOverGeneric;
+        private MethodDesc _invokeObjectArrayThunk;
+        private MethodDesc _openInstanceThunk;
 
         internal DelegateThunkCollection(DelegateInfo owningDelegate)
         {
             _openStaticThunk = new DelegateInvokeOpenStaticThunk(owningDelegate);
             _multicastThunk = new DelegateInvokeMulticastThunk(owningDelegate);
             _closedStaticThunk = new DelegateInvokeClosedStaticThunk(owningDelegate);
+            _closedInstanceOverGeneric = new DelegateInvokeInstanceClosedOverGenericMethodThunk(owningDelegate);
+
+            // Methods that have a byref-like type in the signature cannot be invoked with the object array thunk.
+            // We would need to box the parameter and these can't be boxed.
+            // Neither can be methods that have pointers in the signature.
+            MethodSignature delegateSignature = owningDelegate.Signature;
+            bool generateObjectArrayThunk = true;
+            for (int i = 0; i < delegateSignature.Length; i++)
+            {
+                TypeDesc paramType = delegateSignature[i];
+                if (paramType.IsByRef)
+                    paramType = ((ByRefType)paramType).ParameterType;
+                if (!paramType.IsSignatureVariable && paramType.IsByRefLike)
+                {
+                    generateObjectArrayThunk = false;
+                    break;
+                }
+                if (paramType.IsPointer || paramType.IsFunctionPointer)
+                {
+                    generateObjectArrayThunk = false;
+                    break;
+                }
+            }
+            TypeDesc returnType = delegateSignature.ReturnType;
+            if (returnType.IsByRef)
+                generateObjectArrayThunk = false;
+            if (!returnType.IsSignatureVariable && returnType.IsByRefLike)
+                generateObjectArrayThunk = false;
+            if (returnType.IsPointer || returnType.IsFunctionPointer)
+                generateObjectArrayThunk = false;
+
+            if ((owningDelegate.SupportedFeatures & DelegateFeature.ObjectArrayThunk) != 0 && generateObjectArrayThunk)
+                _invokeObjectArrayThunk = new DelegateInvokeObjectArrayThunk(owningDelegate);
+
+            //
+            // Check whether we have an open instance thunk
+            //
+
+            if ((owningDelegate.SupportedFeatures & DelegateFeature.OpenInstanceThunk) != 0 && delegateSignature.Length > 0)
+            {
+                TypeDesc firstParam = delegateSignature[0];
+
+                bool generateOpenInstanceMethod;
+
+                switch (firstParam.Category)
+                {
+                    case TypeFlags.Pointer:
+                    case TypeFlags.FunctionPointer:
+                        generateOpenInstanceMethod = false;
+                        break;
+
+                    case TypeFlags.ByRef:
+                        firstParam = ((ByRefType)firstParam).ParameterType;
+                        generateOpenInstanceMethod = firstParam.IsSignatureVariable || firstParam.IsValueType;
+                        break;
+
+                    case TypeFlags.Array:
+                    case TypeFlags.SzArray:
+                    case TypeFlags.SignatureTypeVariable:
+                        generateOpenInstanceMethod = true;
+                        break;
+
+                    default:
+                        Debug.Assert(firstParam.IsDefType);
+                        generateOpenInstanceMethod = !firstParam.IsValueType;
+                        break;
+                }
+
+                if (generateOpenInstanceMethod)
+                {
+                    _openInstanceThunk = new DelegateInvokeOpenInstanceThunk(owningDelegate);
+                }
+            }
         }
 
         public MethodDesc this[DelegateThunkKind kind]
@@ -116,6 +214,12 @@ namespace Internal.IL
                         return _multicastThunk;
                     case DelegateThunkKind.ClosedStaticThunk:
                         return _closedStaticThunk;
+                    case DelegateThunkKind.ClosedInstanceThunkOverGenericMethod:
+                        return _closedInstanceOverGeneric;
+                    case DelegateThunkKind.ObjectArrayThunk:
+                        return _invokeObjectArrayThunk;
+                    case DelegateThunkKind.OpenInstanceThunk:
+                        return _openInstanceThunk;
                     default:
                         return null;
                 }
@@ -132,7 +236,16 @@ namespace Internal.IL
         ClosedInstanceThunkOverGenericMethod = 3, // This may not exist
         DelegateInvokeThunk = 4,
         OpenInstanceThunk = 5,        // This may not exist
-        ReversePinvokeThunk = 6,       // This may not exist
-        ObjectArrayThunk = 7,         // This may not exist
+        ObjectArrayThunk = 6,         // This may not exist
+    }
+
+    [Flags]
+    public enum DelegateFeature
+    {
+        DynamicInvoke = 0x1,
+        ObjectArrayThunk = 0x2,
+        OpenInstanceThunk = 0x4,
+
+        All = 0x7,
     }
 }

@@ -1,0 +1,10 @@
+<Project DefaultTargets="Build;IlcCompile" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <IlcMultiModule>true</IlcMultiModule>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Library.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), SimpleTest.targets))\SimpleTest.targets" />
+</Project>

@@ -1,23 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Runtime.CompilerServices;
-using global::System.Reflection.Runtime.General;
-using global::System.Reflection.Runtime.TypeInfos;
-using global::System.Reflection.Runtime.MethodInfos;
-using global::System.Reflection.Runtime.ParameterInfos;
-using global::System.Reflection.Runtime.CustomAttributes;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
+using System.Reflection.Runtime.ParameterInfos;
+using System.Reflection.Runtime.CustomAttributes;
 
-using global::Internal.Metadata.NativeFormat;
-
-using global::Internal.Reflection.Core.Execution;
-using global::Internal.Reflection.Extensibility;
-using global::Internal.Reflection.Tracing;
+using Internal.Reflection.Core.Execution;
+using Internal.Reflection.Tracing;
 
 namespace System.Reflection.Runtime.EventInfos
 {
@@ -25,42 +20,12 @@ namespace System.Reflection.Runtime.EventInfos
     // The runtime's implementation of EventInfo's
     //
     [DebuggerDisplay("{_debugName}")]
-    internal sealed partial class RuntimeEventInfo : ExtensibleEventInfo, ITraceableTypeMember
+    internal abstract partial class RuntimeEventInfo : EventInfo, ITraceableTypeMember
     {
-        //
-        // eventHandle    - the "tkEventDef" that identifies the event.
-        // definingType   - the "tkTypeDef" that defined the field (this is where you get the metadata reader that created eventHandle.)
-        // contextType    - the type that supplies the type context (i.e. substitutions for generic parameters.) Though you
-        //                  get your raw information from "definingType", you report "contextType" as your DeclaringType property.
-        //
-        //  For example:
-        //
-        //       typeof(Foo<>).GetTypeInfo().DeclaredMembers
-        //
-        //           The definingType and contextType are both Foo<>
-        //
-        //       typeof(Foo<int,String>).GetTypeInfo().DeclaredMembers
-        //
-        //          The definingType is "Foo<,>"
-        //          The contextType is "Foo<int,String>"
-        //
-        //  We don't report any DeclaredMembers for arrays or generic parameters so those don't apply.
-        //
-        private RuntimeEventInfo(EventHandle eventHandle, RuntimeNamedTypeInfo definingTypeInfo, RuntimeTypeInfo contextTypeInfo)
+        protected RuntimeEventInfo(RuntimeTypeInfo contextTypeInfo, RuntimeTypeInfo reflectedType)
         {
-            _eventHandle = eventHandle;
-            _definingTypeInfo = definingTypeInfo;
-            _contextTypeInfo = contextTypeInfo;
-            _reader = definingTypeInfo.Reader;
-            _event = eventHandle.GetEvent(_reader);
-        }
-
-        public sealed override void AddEventHandler(Object target, Delegate handler)
-        {
-            MethodInfo addMethod = this.AddMethod;
-            if (!addMethod.IsPublic)
-                throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
-            addMethod.Invoke(target, new Object[] { handler });
+            ContextTypeInfo = contextTypeInfo;
+            ReflectedTypeInfo = reflectedType;
         }
 
         public sealed override MethodInfo AddMethod
@@ -72,43 +37,16 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_AddMethod(this);
 #endif
 
-                foreach (MethodSemanticsHandle methodSemanticsHandle in _event.MethodSemantics)
+                MethodInfo adder = _lazyAdder;
+                if (adder == null)
                 {
-                    MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
-                    if (methodSemantics.Attributes == MethodSemanticsAttributes.AddOn)
-                    {
-                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo);
-                    }
+                    adder = GetEventMethod(EventMethodSemantics.Add);
+                    if (adder != null)
+                        return _lazyAdder = adder;
+
+                    throw new BadImageFormatException(); // Added is a required method.
                 }
-                throw new BadImageFormatException(); // Added is a required method.
-            }
-        }
-
-        public sealed override EventAttributes Attributes
-        {
-            get
-            {
-                return _event.Flags;
-            }
-        }
-
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-#if ENABLE_REFLECTION_TRACE
-                if (ReflectionTrace.Enabled)
-                    ReflectionTrace.EventInfo_CustomAttributes(this);
-#endif
-
-                foreach (CustomAttributeData cad in RuntimeCustomAttributeData.GetCustomAttributes(_definingTypeInfo.ReflectionDomain, _reader, _event.CustomAttributes))
-                    yield return cad;
-                ExecutionDomain executionDomain = _definingTypeInfo.ReflectionDomain as ExecutionDomain;
-                if (executionDomain != null)
-                {
-                    foreach (CustomAttributeData cad in executionDomain.ExecutionEnvironment.GetPsuedoCustomAttributes(_reader, _eventHandle, _definingTypeInfo.TypeDefinitionHandle))
-                        yield return cad;
-                }
+                return adder;
             }
         }
 
@@ -121,42 +59,22 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_DeclaringType(this);
 #endif
 
-                return _contextTypeInfo.AsType();
+                return ContextTypeInfo;
             }
         }
 
-        public sealed override bool Equals(Object obj)
+        public sealed override MethodInfo[] GetOtherMethods(bool nonPublic)
         {
-            RuntimeEventInfo other = obj as RuntimeEventInfo;
-            if (other == null)
-                return false;
-            if (!(this._reader == other._reader))
-                return false;
-            if (!(this._eventHandle.Equals(other._eventHandle)))
-                return false;
-            if (!(this._contextTypeInfo.Equals(other._contextTypeInfo)))
-                return false;
-            return true;
+            throw new PlatformNotSupportedException();
         }
 
-        public sealed override int GetHashCode()
-        {
-            return _eventHandle.GetHashCode();
-        }
-
-        public sealed override Type EventHandlerType
-        {
-            get
-            {
-                return _definingTypeInfo.ReflectionDomain.Resolve(_reader, _event.Type, _contextTypeInfo.TypeContext);
-            }
-        }
+        public abstract override bool HasSameMetadataDefinitionAs(MemberInfo other);
 
         public sealed override Module Module
         {
             get
             {
-                return _definingTypeInfo.Module;
+                return DefiningTypeInfo.Module;
             }
         }
 
@@ -169,7 +87,15 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_Name(this);
 #endif
 
-                return _event.Name.GetString(_reader);
+                return MetadataName;
+            }
+        }
+
+        public sealed override Type ReflectedType
+        {
+            get
+            {
+                return ReflectedTypeInfo;
             }
         }
 
@@ -182,24 +108,8 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_RaiseMethod(this);
 #endif
 
-                foreach (MethodSemanticsHandle methodSemanticsHandle in _event.MethodSemantics)
-                {
-                    MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
-                    if (methodSemantics.Attributes == MethodSemanticsAttributes.Fire)
-                    {
-                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo);
-                    }
-                }
-                return null;
+                return GetEventMethod(EventMethodSemantics.Fire);
             }
-        }
-
-        public sealed override void RemoveEventHandler(Object target, Delegate handler)
-        {
-            MethodInfo removeMethod = this.RemoveMethod;
-            if (!removeMethod.IsPublic)
-                throw new InvalidOperationException(SR.InvalidOperation_NoPublicRemoveMethod);
-            removeMethod.Invoke(target, new Object[] { handler });
         }
 
         public sealed override MethodInfo RemoveMethod
@@ -211,22 +121,23 @@ namespace System.Reflection.Runtime.EventInfos
                     ReflectionTrace.EventInfo_RemoveMethod(this);
 #endif
 
-                foreach (MethodSemanticsHandle methodSemanticsHandle in _event.MethodSemantics)
+                MethodInfo remover = _lazyRemover;
+                if (remover == null)
                 {
-                    MethodSemantics methodSemantics = methodSemanticsHandle.GetMethodSemantics(_reader);
-                    if (methodSemantics.Attributes == MethodSemanticsAttributes.RemoveOn)
-                    {
-                        return RuntimeNamedMethodInfo.GetRuntimeNamedMethodInfo(methodSemantics.Method, _definingTypeInfo, _contextTypeInfo);
-                    }
+                    remover = GetEventMethod(EventMethodSemantics.Remove);
+                    if (remover != null)
+                        return _lazyRemover = remover;
+
+                    throw new BadImageFormatException(); // Removed is a required method.
                 }
-                throw new BadImageFormatException(); // Removed is a required method.
+                return remover;
             }
         }
 
         public sealed override String ToString()
         {
             MethodInfo addMethod = this.AddMethod;
-            ParameterInfo[] parameters = addMethod.GetParameters();
+            ParameterInfo[] parameters = addMethod.GetParametersNoCopy();
             if (parameters.Length == 0)
                 throw new InvalidOperationException(); // Legacy: Why is a ToString() intentionally throwing an exception?
             RuntimeParameterInfo runtimeParameterInfo = (RuntimeParameterInfo)(parameters[0]);
@@ -237,7 +148,7 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return _event.Name.GetString(_reader);
+                return MetadataName;
             }
         }
 
@@ -245,11 +156,11 @@ namespace System.Reflection.Runtime.EventInfos
         {
             get
             {
-                return _contextTypeInfo.AsType();
+                return ContextTypeInfo;
             }
         }
 
-        private RuntimeEventInfo WithDebugName()
+        protected RuntimeEventInfo WithDebugName()
         {
             bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
@@ -261,17 +172,49 @@ namespace System.Reflection.Runtime.EventInfos
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
-                _debugName = ((ITraceableTypeMember)this).MemberName;
+                _debugName = MetadataName;
             }
             return this;
         }
 
-        private RuntimeNamedTypeInfo _definingTypeInfo;
-        private EventHandle _eventHandle;
-        private RuntimeTypeInfo _contextTypeInfo;
+        // Types that derive from RuntimeEventInfo must implement the following public surface area members
+        public abstract override EventAttributes Attributes { get; }
+        public abstract override IEnumerable<CustomAttributeData> CustomAttributes { get; }
+        public abstract override bool Equals(Object obj);
+        public abstract override int GetHashCode();
+        public abstract override Type EventHandlerType { get; }
+        public abstract override int MetadataToken { get; }
 
-        private MetadataReader _reader;
-        private Event _event;
+        protected enum EventMethodSemantics
+        {
+            Add,
+            Remove,
+            Fire
+        }
+
+        /// <summary>
+        /// Override to return the Method that corresponds to the specified semantic.
+        /// Return null if no method is to be found.
+        /// </summary>
+        protected abstract MethodInfo GetEventMethod(EventMethodSemantics whichMethod);
+
+        /// <summary>
+        /// Override to provide the metadata based name of an event. (Different from the Name
+        /// property in that it does not go into the reflection trace logic.)
+        /// </summary>
+        protected abstract string MetadataName { get; }
+
+        /// <summary>
+        /// Return the DefiningTypeInfo as a RuntimeTypeInfo (instead of as a format specific type info)
+        /// </summary>
+        protected abstract RuntimeTypeInfo DefiningTypeInfo { get; }
+
+
+        protected readonly RuntimeTypeInfo ContextTypeInfo;
+        protected readonly RuntimeTypeInfo ReflectedTypeInfo;
+
+        private volatile MethodInfo _lazyAdder;
+        private volatile MethodInfo _lazyRemover;
 
         private String _debugName;
     }

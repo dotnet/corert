@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <ItemGroup>
+
+    <!-- Only build the metapackage in Windows - in CoreCLR this logic is included in a dir.props file. This is a workaround until CoreRT supports multiple packages -->
+    <Project Include="Microsoft.DotNet.ObjectWriter.pkgproj" Condition="'$(BuildIdentityPackage)' != 'false'"/>
+
+    <!-- Include this to force a build of platform-specific packages -->
+    <Project Include="$(MSBuildThisFileDirectory)\TargetSpecific\Microsoft.DotNet.ObjectWriter.pkgproj"/>
+
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>

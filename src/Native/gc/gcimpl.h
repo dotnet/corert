@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 #ifndef GCIMPL_H_
 #define GCIMPL_H_
-
-#define CLREvent CLREventStatic
 
 #ifdef SERVER_GC
 #define MULTIPLE_HEAPS 1
@@ -36,29 +33,15 @@ inline void checkGCWriteBarrier() {}
 
 void GCProfileWalkHeap();
 
-class GCHeap;
 class gc_heap;
 class CFinalize;
 
-// TODO : it would be easier to make this an ORed value
-enum gc_reason
-{
-    reason_alloc_soh = 0,
-    reason_induced = 1,
-    reason_lowmemory = 2,
-    reason_empty = 3,
-    reason_alloc_loh = 4,
-    reason_oos_soh = 5,
-    reason_oos_loh = 6,
-    reason_induced_noforce = 7, // it's an induced GC and doesn't have to be blocking.
-    reason_gcstress = 8,        // this turns into reason_induced & gc_mechanisms.stress_induced = true
-    reason_lowmemory_blocking = 9,
-    reason_induced_compacting = 10,
-    reason_lowmemory_host = 11,
-    reason_max
-};
+extern bool g_fFinalizerRunOnShutDown;
+extern bool g_built_with_svr_gc;
+extern uint8_t g_build_variant;
+extern VOLATILE(int32_t) g_no_gc_lock;
 
-class GCHeap : public ::GCHeap
+class GCHeap : public IGCHeapInternal
 {
 protected:
 
@@ -67,7 +50,7 @@ protected:
 #else
     #define pGenGCHeap ((gc_heap*)0)
 #endif //MULTIPLE_HEAPS
-    
+
     friend class CFinalize;
     friend class gc_heap;
     friend struct ::alloc_context;
@@ -77,7 +60,7 @@ protected:
     friend void GCProfileWalkHeap();
 
 public:
-    //In order to keep gc.cpp cleaner, ugly EE specific code is relegated to methods. 
+    //In order to keep gc.cpp cleaner, ugly EE specific code is relegated to methods.
     static void UpdatePreGCCounters();
     static void UpdatePostGCCounters();
 
@@ -86,45 +69,43 @@ public:
     ~GCHeap(){};
 
     /* BaseGCHeap Methods*/
-    PER_HEAP_ISOLATED   HRESULT Shutdown ();
+    PER_HEAP_ISOLATED   HRESULT StaticShutdown ();
 
     size_t  GetTotalBytesInUse ();
     // Gets the amount of bytes objects currently occupy on the GC heap.
     size_t  GetCurrentObjSize();
 
+    uint64_t GetTotalAllocatedBytes();
+
     size_t  GetLastGCStartTime(int generation);
     size_t  GetLastGCDuration(int generation);
     size_t  GetNow();
 
-    void  TraceGCSegments ();    
+    void  DiagTraceGCSegments ();
     void PublishObject(uint8_t* obj);
-    
-    BOOL    IsGCInProgressHelper (BOOL bConsiderGCStart = FALSE);
 
-    uint32_t    WaitUntilGCComplete (BOOL bConsiderGCStart = FALSE);
+    bool IsGCInProgressHelper (bool bConsiderGCStart = false);
 
-    void     SetGCInProgress(BOOL fInProgress);
+    uint32_t    WaitUntilGCComplete (bool bConsiderGCStart = false);
 
-    CLREvent * GetWaitForGCEvent();
+    void     SetGCInProgress(bool fInProgress);
+
+    bool RuntimeStructuresValid();
+
+    void SetSuspensionPending(bool fSuspensionPending);
+
+    void SetYieldProcessorScalingFactor(float yieldProcessorScalingFactor);
+
+    void SetWaitForGCEvent();
+    void ResetWaitForGCEvent();
 
     HRESULT Initialize ();
 
-    //flags can be GC_ALLOC_CONTAINS_REF GC_ALLOC_FINALIZE
-    Object*  Alloc (size_t size, uint32_t flags);
-#ifdef FEATURE_64BIT_ALIGNMENT
-    Object*  AllocAlign8 (size_t size, uint32_t flags);
-    Object*  AllocAlign8 (alloc_context* acontext, size_t size, uint32_t flags);
-private:
-    Object*  AllocAlign8Common (void* hp, alloc_context* acontext, size_t size, uint32_t flags);
-public:
-#endif // FEATURE_64BIT_ALIGNMENT
-    Object*  AllocLHeap (size_t size, uint32_t flags);
-    Object* Alloc (alloc_context* acontext, size_t size, uint32_t flags);
+    Object* Alloc (gc_alloc_context* acontext, size_t size, uint32_t flags);
 
-    void FixAllocContext (alloc_context* acontext,
-                                            BOOL lockp, void* arg, void *heap);
+    void FixAllocContext (gc_alloc_context* acontext, void* arg, void *heap);
 
-    Object* GetContainingObject(void *pInteriorPtr);
+    Object* GetContainingObject(void *pInteriorPtr, bool fCollectedGenOnly);
 
 #ifdef MULTIPLE_HEAPS
     static void AssignHeap (alloc_context* acontext);
@@ -132,58 +113,63 @@ public:
 #endif //MULTIPLE_HEAPS
 
     int GetHomeHeapNumber ();
-    bool IsThreadUsingAllocationContextHeap(alloc_context* acontext, int thread_number);
+    bool IsThreadUsingAllocationContextHeap(gc_alloc_context* acontext, int thread_number);
     int GetNumberOfHeaps ();
     void HideAllocContext(alloc_context*);
     void RevealAllocContext(alloc_context*);
 
-    BOOL IsObjectInFixedHeap(Object *pObj);
+    bool IsLargeObject(Object *pObj);
 
-    HRESULT GarbageCollect (int generation = -1, BOOL low_memory_p=FALSE, int mode=collection_blocking);
+    HRESULT GarbageCollect (int generation = -1, bool low_memory_p=false, int mode=collection_blocking);
 
     ////
     // GC callback functions
     // Check if an argument is promoted (ONLY CALL DURING
     // THE PROMOTIONSGRANTED CALLBACK.)
-    BOOL    IsPromoted (Object *object);
+    bool IsPromoted (Object *object);
 
     size_t GetPromotedBytes (int heap_index);
-    
+
     int CollectionCount (int generation, int get_bgc_fgc_count = 0);
 
     // promote an object
-    PER_HEAP_ISOLATED void    Promote (Object** object, 
+    PER_HEAP_ISOLATED void    Promote (Object** object,
                                           ScanContext* sc,
                                           uint32_t flags=0);
 
     // Find the relocation address for an object
     PER_HEAP_ISOLATED void    Relocate (Object** object,
-                                           ScanContext* sc, 
+                                           ScanContext* sc,
                                            uint32_t flags=0);
 
 
     HRESULT Init (size_t heapSize);
 
     //Register an object for finalization
-    bool    RegisterForFinalization (int gen, Object* obj); 
-    
+    bool    RegisterForFinalization (int gen, Object* obj);
+
     //Unregister an object for finalization
-    void    SetFinalizationRun (Object* obj); 
-    
+    void    SetFinalizationRun (Object* obj);
+
     //returns the generation number of an object (not valid during relocation)
     unsigned WhichGeneration (Object* object);
-    // returns TRUE is the object is ephemeral 
-    BOOL    IsEphemeral (Object* object);
-    BOOL    IsHeapPointer (void* object, BOOL small_heap_only = FALSE);
-    
-#ifdef VERIFY_HEAP
+    // returns TRUE is the object is ephemeral
+    bool IsEphemeral (Object* object);
+    bool IsHeapPointer (void* object, bool small_heap_only = false);
+
     void    ValidateObjectMember (Object *obj);
-#endif //_DEBUG
 
     PER_HEAP    size_t  ApproxTotalBytesInUse(BOOL small_heap_only = FALSE);
     PER_HEAP    size_t  ApproxFreeBytes();
 
     unsigned GetCondemnedGeneration();
+
+    void GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
+                       uint64_t* totalAvailableMemoryBytes,
+                       uint64_t* lastRecordedMemLoadBytes,
+                       uint32_t* lastRecordedMemLoadPct,
+                       size_t* lastRecordedHeapSizeBytes,
+                       size_t* lastRecordedFragmentationBytes);
 
     int GetGcLatencyMode();
     int SetGcLatencyMode(int newLatencyMode);
@@ -191,17 +177,15 @@ public:
     int GetLOHCompactionMode();
     void SetLOHCompactionMode(int newLOHCompactionyMode);
 
-    BOOL RegisterForFullGCNotification(uint32_t gen2Percentage,
+    bool RegisterForFullGCNotification(uint32_t gen2Percentage,
                                        uint32_t lohPercentage);
-    BOOL CancelFullGCNotification();
+    bool CancelFullGCNotification();
     int WaitForFullGCApproach(int millisecondsTimeout);
     int WaitForFullGCComplete(int millisecondsTimeout);
 
-    int StartNoGCRegion(uint64_t totalSize, BOOL lohSizeKnown, uint64_t lohSize, BOOL disallowFullBlockingGC);
+    int StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohSize, bool disallowFullBlockingGC);
     int EndNoGCRegion();
 
-    PER_HEAP_ISOLATED     unsigned GetMaxGeneration();
- 
     unsigned GetGcCount();
 
     Object* GetNextFinalizable() { return GetNextFinalizableObject(); };
@@ -209,9 +193,7 @@ public:
 
     PER_HEAP_ISOLATED HRESULT GetGcCounters(int gen, gc_counters* counters);
 
-    size_t GetValidSegmentSize(BOOL large_seg = FALSE);
-
-    static size_t GetValidGen0MaxSize(size_t seg_size);
+    size_t GetValidSegmentSize(bool large_seg = false);
 
     void SetReservedVMLimit (size_t vmlimit);
 
@@ -219,19 +201,17 @@ public:
     PER_HEAP_ISOLATED size_t GetNumberFinalizableObjects();
     PER_HEAP_ISOLATED size_t GetFinalizablePromotedCount();
 
-    void SetFinalizeQueueForShutdown(BOOL fHasLock);
-    BOOL FinalizeAppDomain(AppDomain *pDomain, BOOL fRunFinalizers);
-    BOOL ShouldRestartFinalizerWatchDog();
+    void SetFinalizeQueueForShutdown(bool fHasLock);
+    bool ShouldRestartFinalizerWatchDog();
 
-    void SetCardsAfterBulkCopy( Object**, size_t);
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-    void WalkObject (Object* obj, walk_fn fn, void* context);
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+    void DiagWalkObject (Object* obj, walk_fn fn, void* context);
+    void DiagWalkObject2 (Object* obj, walk_fn2 fn, void* context);
+    void SetFinalizeRunOnShutdown(bool value);
 
-public:	// FIX 
+public:	// FIX
 
     // Lock for finalization
-    PER_HEAP_ISOLATED   
+    PER_HEAP_ISOLATED
         VOLATILE(int32_t)          m_GCFLock;
 
     PER_HEAP_ISOLATED   BOOL    GcCollectClasses;
@@ -243,30 +223,33 @@ public:	// FIX
     PER_HEAP_ISOLATED   size_t  totalSurvivedSize;
 
     // Use only for GC tracing.
-    PER_HEAP    unsigned int GcDuration;
+    PER_HEAP    uint64_t GcDuration;
 
     size_t  GarbageCollectGeneration (unsigned int gen=0, gc_reason reason=reason_empty);
     // Interface with gc_heap
     size_t  GarbageCollectTry (int generation, BOOL low_memory_p=FALSE, int mode=collection_blocking);
 
-#ifdef FEATURE_BASICFREEZE
     // frozen segment management functions
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo);
     virtual void UnregisterFrozenSegment(segment_handle seg);
-#endif // FEATURE_BASICFREEZE
+    virtual bool IsInFrozenSegment(Object *object);
+
+    // Event control functions
+    void ControlEvents(GCEventKeyword keyword, GCEventLevel level);
+    void ControlPrivateEvents(GCEventKeyword keyword, GCEventLevel level);
 
     void    WaitUntilConcurrentGCComplete ();                               // Use in managd threads
-#ifndef DACCESS_COMPILE    
+#ifndef DACCESS_COMPILE
     HRESULT WaitUntilConcurrentGCCompleteAsync(int millisecondsTimeout);    // Use in native threads. TRUE if succeed. FALSE if failed or timeout
-#endif    
-    BOOL    IsConcurrentGCInProgress();
+#endif
+    bool IsConcurrentGCInProgress();
 
-    // Enable/disable concurrent GC    
+    // Enable/disable concurrent GC
     void TemporaryEnableConcurrentGC();
     void TemporaryDisableConcurrentGC();
-    BOOL IsConcurrentGCEnabled();    
+    bool IsConcurrentGCEnabled();
 
-    PER_HEAP_ISOLATED   CLREvent *WaitForGCEvent;     // used for syncing w/GC
+    PER_HEAP_ISOLATED   GCEvent *WaitForGCEvent;     // used for syncing w/GC
 
     PER_HEAP_ISOLATED    CFinalize* m_Finalize;
 
@@ -279,13 +262,14 @@ private:
         // to threads returning to cooperative mode is down after gc.
         // In other words, if the sequence in GCHeap::RestartEE changes,
         // the condition here may have to change as well.
-        return g_TrapReturningThreads == 0;
+        return g_fSuspensionPending == 0;
     }
-#ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
-#ifdef STRESS_HEAP 
 public:
     //return TRUE if GC actually happens, otherwise FALSE
-    BOOL    StressHeap(alloc_context * acontext = 0);
+    bool StressHeap(gc_alloc_context * acontext);
+
+#ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
+#ifdef STRESS_HEAP
 protected:
 
     // only used in BACKGROUND_GC, but the symbol is not defined yet...
@@ -297,20 +281,31 @@ protected:
     PER_HEAP OBJECTHANDLE m_StressObjs[NUM_HEAP_STRESS_OBJS];
     PER_HEAP int m_CurStressObj;
 #endif  // !defined(MULTIPLE_HEAPS)
-#endif  // STRESS_HEAP 
+#endif  // STRESS_HEAP
 #endif // FEATURE_REDHAWK
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-    virtual void DescrGenerationsToProfiler (gen_walk_fn fn, void *context);
-#endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+    virtual void DiagDescrGenerations (gen_walk_fn fn, void *context);
 
-#ifdef VERIFY_HEAP
+    virtual void DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type, int gen_number=-1);
+
+    virtual void DiagWalkFinalizeQueue (void* gc_context, fq_walk_fn fn);
+
+    virtual void DiagScanFinalizeQueue (fq_scan_fn fn, ScanContext* context);
+
+    virtual void DiagScanHandles (handle_scan_fn fn, int gen_number, ScanContext* context);
+
+    virtual void DiagScanDependentHandles (handle_scan_fn fn, int gen_number, ScanContext* context);
+
+    virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p);
+
 public:
     Object * NextObj (Object * object);
-#ifdef FEATURE_BASICFREEZE
-    BOOL IsInFrozenSegment (Object * object);
-#endif //FEATURE_BASICFREEZE
-#endif //VERIFY_HEAP     
+
+    int GetLastGCPercentTimeInGC();
+
+    size_t GetLastGCGenerationSize(int gen);
+
+    virtual void Shutdown();
 };
 
 #endif  // GCIMPL_H_

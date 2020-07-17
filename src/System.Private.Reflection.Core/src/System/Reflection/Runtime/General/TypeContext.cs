@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Diagnostics;
-using global::Internal.Reflection.Core.NonPortable;
+using System;
+using System.Diagnostics;
+using System.Reflection.Runtime.General;
+using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.General
 {
@@ -15,13 +15,13 @@ namespace System.Reflection.Runtime.General
 
     internal struct TypeContext
     {
-        internal TypeContext(RuntimeType[] genericTypeArguments, RuntimeType[] genericMethodArguments)
+        internal TypeContext(RuntimeTypeInfo[] genericTypeArguments, RuntimeTypeInfo[] genericMethodArguments)
         {
             _genericTypeArguments = genericTypeArguments;
             _genericMethodArguments = genericMethodArguments;
         }
 
-        internal RuntimeType[] GenericTypeArguments
+        internal RuntimeTypeInfo[] GenericTypeArguments
         {
             get
             {
@@ -29,7 +29,7 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        internal RuntimeType[] GenericMethodArguments
+        internal RuntimeTypeInfo[] GenericMethodArguments
         {
             get
             {
@@ -37,8 +37,8 @@ namespace System.Reflection.Runtime.General
             }
         }
 
-        private RuntimeType[] _genericTypeArguments;
-        private RuntimeType[] _genericMethodArguments;
+        private readonly RuntimeTypeInfo[] _genericTypeArguments;
+        private readonly RuntimeTypeInfo[] _genericMethodArguments;
     }
 }
 

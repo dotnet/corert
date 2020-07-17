@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -23,6 +22,15 @@ namespace Internal.TypeSystem
 
             Debug.Assert(instantiation.Length > 0);
             _instantiation = instantiation;
+        }
+
+        // This constructor is a performance optimization - it allows supplying the hash code if it has already
+        // been computed prior to the allocation of this type. The supplied hash code still has to match the
+        // hash code this type would compute on it's own (and we assert to enforce that).
+        internal InstantiatedMethod(MethodDesc methodDef, Instantiation instantiation, int hashcode)
+            : this(methodDef, instantiation)
+        {
+            SetHashCode(hashcode);
         }
 
         protected override int ComputeHashCode()
@@ -116,6 +124,14 @@ namespace Internal.TypeSystem
             return _methodDef.HasCustomAttribute(attributeNamespace, attributeName);
         }
 
+        public override bool IsDefaultConstructor
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public override MethodDesc GetMethodDefinition()
         {
             return _methodDef;
@@ -132,16 +148,6 @@ namespace Internal.TypeSystem
             {
                 return _methodDef.Name;
             }
-        }
-
-        public override string ToString()
-        {
-            var sb = new StringBuilder(_methodDef.ToString());
-            sb.Append('<');
-            for (int i = 0; i < _instantiation.Length; i++)
-                sb.Append(_instantiation[i].ToString());
-            sb.Append('>');
-            return sb.ToString();
         }
     }
 }

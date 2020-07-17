@@ -1,11 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+#ifndef __RWLock_h__
+#define __RWLock_h__
 
 class ReaderWriterLock
 {
     volatile Int32  m_RWLock;       // lock used for R/W synchronization
     Int32           m_spinCount;    // spin count for a reader waiting for a writer to release the lock
+    bool            m_fBlockOnGc;   // True if the spinning writers should block when GC is in progress
+
 
 #if 0
     // used to prevent writers from being starved by readers
@@ -36,7 +40,7 @@ public:
         ~WriteHolder();
     };
 
-    ReaderWriterLock();
+    ReaderWriterLock(bool fBlockOnGc = false);
 
     void AcquireReadLock();
     void ReleaseReadLock();
@@ -51,3 +55,4 @@ protected:
 
 };
 
+#endif // __RWLock_h__

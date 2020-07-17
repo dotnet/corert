@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*
  * Generational GC handle manager.  Internal Implementation Header.
@@ -33,20 +32,20 @@
 #define HANDLE_SEGMENT_SIZE     (0x10000)   // MUST be a power of 2 (and currently must be 64K due to VirtualAlloc semantics)
 #define HANDLE_HEADER_SIZE      (0x1000)    // SHOULD be <= OS page size
 
-#define HANDLE_SEGMENT_ALIGNMENT     HANDLE_SEGMENT_SIZE 
+#define HANDLE_SEGMENT_ALIGNMENT     HANDLE_SEGMENT_SIZE
 
 
 #if !BIGENDIAN
 
     // little-endian write barrier mask manipulation
     #define GEN_CLUMP_0_MASK        (0x000000FF)
-    #define NEXT_CLUMP_IN_MASK(dw)  (dw >> BITS_PER_BYTE)
+    #define NEXT_CLUMP_IN_MASK(dw)  ((dw) >> BITS_PER_BYTE)
 
 #else
 
     // big-endian write barrier mask manipulation
     #define GEN_CLUMP_0_MASK        (0xFF000000)
-    #define NEXT_CLUMP_IN_MASK(dw)  (dw << BITS_PER_BYTE)
+    #define NEXT_CLUMP_IN_MASK(dw)  ((dw) << BITS_PER_BYTE)
 
 #endif
 
@@ -55,9 +54,6 @@
 #define HANDLE_HANDLES_PER_CLUMP    (16)        // segment write-barrier granularity
 #define HANDLE_HANDLES_PER_BLOCK    (64)        // segment suballocation granularity
 #define HANDLE_OPTIMIZE_FOR_64_HANDLE_BLOCKS    // flag for certain optimizations
-
-// maximum number of internally supported handle types
-#define HANDLE_MAX_INTERNAL_TYPES   (12)                             // should be a multiple of 4
 
 // number of types allowed for public callers
 #define HANDLE_MAX_PUBLIC_TYPES     (HANDLE_MAX_INTERNAL_TYPES - 1) // reserve one internal type
@@ -215,7 +211,7 @@ struct _TableSegmentHeader
      *
      * Points to the next segment in the chain (if we ran out of space in this one).
      */
-#ifdef DACCESS_COMPILE     
+#ifdef DACCESS_COMPILE
     TADDR pNextSegment;
 #else
     struct TableSegment *pNextSegment;
@@ -276,7 +272,7 @@ typedef DPTR(uintptr_t) PTR_uintptr_t;
 
 // The handle table is large and may not be entirely mapped. That's one reason for splitting out the table
 // segment and the header as two separate classes. In DAC builds, we generally need only a single element from
-// the table segment, so we can use the DAC to retrieve just the information we require. 
+// the table segment, so we can use the DAC to retrieve just the information we require.
 /*
  * Table Segment
  *
@@ -293,7 +289,7 @@ struct TableSegment : public _TableSegmentHeader
      * Handles
      */
     _UNCHECKED_OBJECTREF rgValue[HANDLE_HANDLES_PER_SEGMENT];
-    
+
 #ifdef DACCESS_COMPILE
     static uint32_t DacSize(TADDR addr);
 #endif
@@ -323,7 +319,7 @@ struct HandleTypeCache
      * index of next available handle slot in the reserve bank
      */
     int32_t lReserveIndex;
-    
+
 
     /*---------------------------------------------------------------------------------
      * N.B. this structure is split up this way so that when HANDLES_PER_CACHE_BANK is
@@ -340,7 +336,6 @@ struct HandleTypeCache
      */
     int32_t lFreeIndex;
 };
-
 
 /*---------------------------------------------------------------------------*/
 
@@ -511,11 +506,6 @@ struct HandleTable
      * per-table user info
      */
     uint32_t uTableIndex;
-
-    /*
-     * per-table AppDomain info
-     */
-    ADIndex uADIndex;
 
     /*
      * one-level per-type 'quick' handle cache
@@ -752,22 +742,6 @@ TableSegment *SegmentAlloc(HandleTable *pTable);
  *
  */
 void SegmentFree(TableSegment *pSegment);
-
-/*
- * TableHandleAsyncPinHandles
- *
- * Mark ready for all non-pending OverlappedData that get moved to default domain.
- *
- */
-BOOL TableHandleAsyncPinHandles(HandleTable *pTable);
-
-/*
- * TableRelocateAsyncPinHandles
- *
- * Replaces async pin handles with ones in default domain.
- *
- */
-void TableRelocateAsyncPinHandles(HandleTable *pTable, HandleTable *pTargetTable);
 
 /*
  * Check if a handle is part of a HandleTable

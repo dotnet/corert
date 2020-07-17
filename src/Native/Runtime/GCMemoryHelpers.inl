@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+
+#include "volatile.h"
 
 //
 // Unmanaged GC memory helpers
@@ -17,17 +18,18 @@ FORCEINLINE void InlineGCSafeFillMemory(void * mem, size_t size, size_t pv)
     UInt8 * memBytes = (UInt8 *)mem;
     UInt8 * endBytes = &memBytes[size];
 
-    // handle unaligned bytes at the beginning 
+    // handle unaligned bytes at the beginning
     while (!IS_ALIGNED(memBytes, sizeof(void *)) && (memBytes < endBytes))
         *memBytes++ = (UInt8)pv;
 
-    // now write pointer sized pieces 
+    // now write pointer sized pieces
+    // volatile ensures that this doesn't get optimized back into a memset call
     size_t nPtrs = (endBytes - memBytes) / sizeof(void *);
-    UIntNative* memPtr = (UIntNative*)memBytes;
+    volatile UIntNative* memPtr = (UIntNative*)memBytes;
     for (size_t i = 0; i < nPtrs; i++)
         *memPtr++ = pv;
 
-    // handle remaining bytes at the end 
+    // handle remaining bytes at the end
     memBytes = (UInt8*)memPtr;
     while (memBytes < endBytes)
         *memBytes++ = (UInt8)pv;
@@ -162,7 +164,7 @@ FORCEINLINE void InlineCheckedWriteBarrier(void * dst, void * ref)
     InlineWriteBarrier(dst, ref);
 }
 
-FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, UInt32 cbMemSize)
+FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, size_t cbMemSize)
 {
     // Check whether the writes were even into the heap. If not there's no card update required.
     // Also if the size is smaller than a pointer, no write barrier is required.

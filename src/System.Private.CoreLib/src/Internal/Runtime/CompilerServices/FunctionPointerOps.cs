@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -9,10 +8,43 @@ using Internal.Runtime.Augments;
 
 namespace Internal.Runtime.CompilerServices
 {
+    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class FunctionPointerOps
     {
-        private struct GenericMethodDescriptorInfo
+#if TARGET_WASM
+        private const int FatFunctionPointerOffset = 1 << 31;
+#else
+        private const int FatFunctionPointerOffset = 2;
+#endif
+
+        private struct GenericMethodDescriptorInfo : IEquatable<GenericMethodDescriptorInfo>
         {
+            public override bool Equals(object obj)
+            {
+                if (!(obj is GenericMethodDescriptorInfo))
+                    return false;
+
+                return Equals((GenericMethodDescriptorInfo)obj);
+            }
+
+            public bool Equals(GenericMethodDescriptorInfo other)
+            {
+                if (MethodFunctionPointer != other.MethodFunctionPointer)
+                    return false;
+
+                if (InstantiationArgument != other.InstantiationArgument)
+                    return false;
+
+                return true;
+            }
+
+            public override int GetHashCode()
+            {
+                int a = InstantiationArgument.GetHashCode();
+                int b = MethodFunctionPointer.GetHashCode();
+                return (a ^ b) + (a << 11) - (b >> 13);
+            }
+
             public IntPtr MethodFunctionPointer;
             public IntPtr InstantiationArgument;
         }
@@ -38,30 +70,8 @@ namespace Internal.Runtime.CompilerServices
 
         private static uint s_genericFunctionPointerNextIndex = 0;
         private const uint c_genericDictionaryChunkSize = 1024;
-        private const int c_genericFunctionPointerOffset = 2;
         private static LowLevelList<IntPtr> s_genericFunctionPointerCollection = new LowLevelList<IntPtr>();
-        private static LowLevelDictionary<GenericMethodDescriptorInfo, uint> s_genericFunctionPointerDictionary = new LowLevelDictionary<GenericMethodDescriptorInfo, uint>(new GenericMethodFunctionPointerDescriptorHashingType());
-
-        private class GenericMethodFunctionPointerDescriptorHashingType : IEqualityComparer<GenericMethodDescriptorInfo>
-        {
-            bool IEqualityComparer<GenericMethodDescriptorInfo>.Equals(GenericMethodDescriptorInfo x, GenericMethodDescriptorInfo y)
-            {
-                if (x.MethodFunctionPointer != y.MethodFunctionPointer)
-                    return false;
-
-                if (x.InstantiationArgument != y.InstantiationArgument)
-                    return false;
-
-                return true;
-            }
-
-            int IEqualityComparer<GenericMethodDescriptorInfo>.GetHashCode(GenericMethodDescriptorInfo obj)
-            {
-                int a = obj.InstantiationArgument.GetHashCode();
-                int b = obj.MethodFunctionPointer.GetHashCode();
-                return (a ^ b) + (a << 11) - (b >> 13);
-            }
-        }
+        private static LowLevelDictionary<GenericMethodDescriptorInfo, uint> s_genericFunctionPointerDictionary = new LowLevelDictionary<GenericMethodDescriptorInfo, uint>();
 
         public static unsafe IntPtr GetGenericMethodFunctionPointer(IntPtr canonFunctionPointer, IntPtr instantiationArgument)
         {
@@ -113,17 +123,17 @@ namespace Internal.Runtime.CompilerServices
                 System.Diagnostics.Debug.Assert(canonFunctionPointer == genericFunctionPointer->MethodFunctionPointer);
                 System.Diagnostics.Debug.Assert(instantiationArgument == genericFunctionPointer->InstantiationArgument);
 
-                return (IntPtr)((byte*)genericFunctionPointer + c_genericFunctionPointerOffset);
+                return (IntPtr)((byte*)genericFunctionPointer + FatFunctionPointerOffset);
             }
         }
 
         public static unsafe bool IsGenericMethodPointer(IntPtr functionPointer)
         {
             // Check the low bit to find out what kind of function pointer we have here.
-#if BIT64
-            if ((functionPointer.ToInt64() & c_genericFunctionPointerOffset) == c_genericFunctionPointerOffset)
+#if TARGET_64BIT
+            if ((functionPointer.ToInt64() & FatFunctionPointerOffset) == FatFunctionPointerOffset)
 #else
-            if ((functionPointer.ToInt32() & c_genericFunctionPointerOffset) == c_genericFunctionPointerOffset)
+            if ((functionPointer.ToInt32() & FatFunctionPointerOffset) == FatFunctionPointerOffset)
 #endif
             {
                 return true;
@@ -134,7 +144,7 @@ namespace Internal.Runtime.CompilerServices
         [CLSCompliant(false)]
         public static unsafe GenericMethodDescriptor* ConvertToGenericDescriptor(IntPtr functionPointer)
         {
-            return (GenericMethodDescriptor*)((byte*)functionPointer - c_genericFunctionPointerOffset);
+            return (GenericMethodDescriptor*)((byte*)functionPointer - FatFunctionPointerOffset);
         }
 
         public static unsafe bool Compare(IntPtr functionPointerA, IntPtr functionPointerB)

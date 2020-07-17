@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -11,9 +10,9 @@ namespace Internal.TypeSystem
 
     public partial class FieldDesc
     {
-        private int _offset = FieldAndOffset.InvalidOffset;
+        private LayoutInt _offset = FieldAndOffset.InvalidOffset;
 
-        public int Offset
+        public LayoutInt Offset
         {
             get
             {
@@ -24,33 +23,27 @@ namespace Internal.TypeSystem
                     else
                         OwningType.ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
 
-                    if (_offset == FieldAndOffset.InvalidOffset)
-                    {
-                        // Must be a field that doesn't participate in layout (literal or RVA mapped)
-                        throw new BadImageFormatException();
-                    }
+                    // If the offset still wasn't computed, this must be a field that doesn't participate in layout
+                    // (either literal or RVA mapped). We shouldn't be asking for the offset.
+                    Debug.Assert(_offset != FieldAndOffset.InvalidOffset);
                 }
                 return _offset;
             }
         }
 
         /// <summary>
-        /// For static fields, represents whether or not the field is held in the GC or non GC statics region
-        /// Does not apply to thread static fields.
+        /// For static fields, represents whether or not the field is held in the GC or non GC statics region.
         /// </summary>
-        public virtual bool HasGCStaticBase
+        public bool HasGCStaticBase
         {
             get
             {
-                if (!FieldType.IsValueType)
-                    return true;
-
-                DefType fieldType = FieldType as DefType;
-                return fieldType != null && fieldType.ContainsPointers;
+                Debug.Assert(IsStatic);
+                return Context.ComputeHasGCStaticBase(this);
             }
         }
 
-        internal void InitializeOffset(int offset)
+        internal void InitializeOffset(LayoutInt offset)
         {
             Debug.Assert(_offset == FieldAndOffset.InvalidOffset || _offset == offset);
             _offset = offset;

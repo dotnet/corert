@@ -1,5 +1,11 @@
 syntax: glob
 
+# Build tools related files
+/[Tt]ools/
+
+# External tests
+tests_downloaded/
+
 ### VisualStudio ###
 
 # User-specific files
@@ -7,6 +13,7 @@ syntax: glob
 *.user
 *.userosscache
 *.sln.docstates
+launchSettings.json
 
 # Build results
 [Dd]ebug/
@@ -20,6 +27,8 @@ bld/
 [Bb]in/
 [Oo]bj/
 msbuild.log
+msbuild.err
+msbuild.wrn
 project.lock.json
 
 # Visual Studio 2015
@@ -75,10 +84,11 @@ _Chutzpah*
 ipch/
 *.aps
 *.ncb
+*.opendb
 *.opensdf
 *.sdf
 *.cachefile
-*.opendb
+*.VC.db
 
 # Visual Studio profiler
 *.psess
@@ -139,6 +149,8 @@ publish/
 *.publishproj
 
 # NuGet Packages
+*.nuget.props
+*.nuget.targets
 *.nupkg
 **/packages/*
 /packages/*
@@ -276,3 +288,9 @@ src/ILCompiler/reproNative/repro.cpp
 src/ILCompiler/reproNative/repro.s
 src/ILCompiler/reproNative/reproNative.sln
 src/ILCompiler/reproNative/reproNativeCpp.sln
+
+# Visual Studio Code
+.vscode/
+
+#python import files
+*.pyc

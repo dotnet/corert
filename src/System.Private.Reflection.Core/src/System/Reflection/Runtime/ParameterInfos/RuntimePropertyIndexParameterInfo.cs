@@ -1,16 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.PropertyInfos;
-
-using global::Internal.Metadata.NativeFormat;
-
-using global::Internal.Reflection.Core.NonPortable;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.PropertyInfos;
 
 namespace System.Reflection.Runtime.ParameterInfos
 {
@@ -50,6 +45,24 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override object RawDefaultValue
+        {
+            get
+            {
+                return _backingParameter.RawDefaultValue;
+            }
+        }
+
+        public sealed override Type[] GetOptionalCustomModifiers()
+        {
+            return _backingParameter.GetOptionalCustomModifiers();
+        }
+
+        public sealed override Type[] GetRequiredCustomModifiers()
+        {
+            return _backingParameter.GetRequiredCustomModifiers();
+        }
+
         public sealed override bool HasDefaultValue
         {
             get
@@ -82,7 +95,15 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
-        private RuntimeParameterInfo _backingParameter;
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return _backingParameter.MetadataToken;
+            }
+        }
+
+        private readonly RuntimeParameterInfo _backingParameter;
     }
 }
 

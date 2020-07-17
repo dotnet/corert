@@ -1,33 +1,58 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System;
+using System.Diagnostics;
+
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
-    class SingleFileCompilationModuleGroup : CompilationModuleGroup
+    public class SingleFileCompilationModuleGroup : CompilationModuleGroup
     {
-        public SingleFileCompilationModuleGroup(CompilerTypeSystemContext typeSystemContext, ICompilationRootProvider rootProvider) : base(typeSystemContext, rootProvider)
-        { }
-
         public override bool ContainsType(TypeDesc type)
         {
             return true;
         }
 
-        public override bool ContainsMethod(MethodDesc method)
+        public override bool ContainsTypeDictionary(TypeDesc type)
         {
             return true;
         }
 
-        public override void AddCompilationRoots()
+        public override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
-            base.AddCompilationRoots();
+            return true;
+        }
 
-            AddCompilationRootsForRuntimeExports((EcmaModule)_typeSystemContext.SystemModule);
+        public override bool ContainsMethodDictionary(MethodDesc method)
+        {
+            Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) != method);
+            return ContainsMethodBody(method, false);
+        }
+
+        public override bool ImportsMethod(MethodDesc method, bool unboxingStub)
+        {
+            return false;
+        }
+
+        public override ExportForm GetExportTypeForm(TypeDesc type)
+        {
+            return ExportForm.None;
+        }
+
+        public override ExportForm GetExportTypeFormDictionary(TypeDesc type)
+        {
+            return ExportForm.None;
+        }
+
+        public override ExportForm GetExportMethodForm(MethodDesc method, bool unboxingStub)
+        {
+            return ExportForm.None;
+        }
+
+        public override ExportForm GetExportMethodDictionaryForm(MethodDesc method)
+        {
+            return ExportForm.None;
         }
 
         public override bool IsSingleFileCompilation
@@ -38,19 +63,32 @@ namespace ILCompiler
             }
         }
 
-        public override bool ShouldShareAcrossModules(MethodDesc method)
+        public override bool ShouldProduceFullVTable(TypeDesc type)
         {
             return false;
         }
 
-        public override bool ShouldShareAcrossModules(TypeDesc type)
+        public override bool ShouldPromoteToFullType(TypeDesc type)
         {
             return false;
         }
 
-        public override bool ShouldProduceFullType(TypeDesc type)
+        public override bool PresenceOfEETypeImpliesAllMethodsOnType(TypeDesc type)
         {
             return false;
         }
+
+        public override bool ShouldReferenceThroughImportTable(TypeDesc type)
+        {
+            return false;
+        }
+
+        public override bool CanHaveReferenceThroughImportTable
+        {
+            get
+            {
+                return false;
+            }
+        } 
     }
 }

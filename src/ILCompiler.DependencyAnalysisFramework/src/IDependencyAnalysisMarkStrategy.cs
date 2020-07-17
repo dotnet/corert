@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -19,8 +18,10 @@ namespace ILCompiler.DependencyAnalysisFramework
         /// <returns>true if the node is newly marked</returns>
         bool MarkNode(DependencyNodeCore<DependencyContextType> node, DependencyNodeCore<DependencyContextType> reasonNode, DependencyNodeCore<DependencyContextType> reasonNode2, string reason);
 
-        void VisitLogNodes(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogNodeVisitor logNodeVisitor);
+        void VisitLogNodes(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogNodeVisitor<DependencyContextType> logNodeVisitor);
 
-        void VisitLogEdges(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogEdgeVisitor logEdgeVisitor);
+        void VisitLogEdges(IEnumerable<DependencyNodeCore<DependencyContextType>> nodeList, IDependencyAnalyzerLogEdgeVisitor<DependencyContextType> logEdgeVisitor);
+
+        void AttachContext(DependencyContextType context);
     }
 }

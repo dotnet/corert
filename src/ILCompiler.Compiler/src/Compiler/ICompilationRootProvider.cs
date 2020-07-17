@@ -1,17 +1,17 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using Internal.TypeSystem;
 
 namespace ILCompiler
 {
     /// <summary>
-    /// Provides a means to root types / methods at the compiler driver layer
+    /// Provides a set of seeds from which compilation will start.
     /// </summary>
     public interface ICompilationRootProvider
     {
-        void AddCompilationRoot(MethodDesc method, string reason, string exportName = null);
-        void AddCompilationRoot(TypeDesc type, string reason);
+        /// <summary>
+        /// When implemented in a class, uses <paramref name="rootProvider"/> to add compilation
+        /// roots to the compilation.
+        /// </summary>
+        void AddCompilationRoots(IRootingServiceProvider rootProvider);
     }
 }

@@ -1,15 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-// Some of our header files are shared with the binder, which needs the _TARGET_* macros defined
-#if defined(_TARGET_AMD64_)
-#elif defined(_TARGET_X86_)
-#elif defined(_TARGET_ARM_)
-#elif defined(_TARGET_ARM64_)
-#else
-#error Unsupported architecture
-#endif
+#ifndef __COMMONMACROS_H__
+#define __COMMONMACROS_H__
+
+#include "rhassert.h"
 
 #define EXTERN_C extern "C"
 #define FASTCALL __fastcall
@@ -41,10 +36,23 @@ char (*COUNTOF_helper(_CountofType (&_Array)[_SizeOfArray]))[_SizeOfArray];
 #define offsetof(s,m)   (UIntNative)( (IntNative)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
 #endif // offsetof
 
-#ifndef GCENV_INCLUDED
+#ifndef FORCEINLINE
 #define FORCEINLINE __forceinline
-#endif // GCENV_INCLUDED
+#endif
 
+#ifndef NOINLINE
+#ifdef _MSC_VER
+#define NOINLINE __declspec(noinline)
+#else
+#define NOINLINE __attribute__((noinline))
+#endif
+#endif
+
+#ifndef __GCENV_BASE_INCLUDED__
+
+//
+// This macro returns val rounded up as necessary to be a multiple of alignment; alignment must be a power of 2
+//
 inline UIntNative ALIGN_UP(UIntNative val, UIntNative alignment);
 template <typename T>
 inline T* ALIGN_UP(T* val, UIntNative alignment);
@@ -53,33 +61,17 @@ inline UIntNative ALIGN_DOWN(UIntNative val, UIntNative alignment);
 template <typename T>
 inline T* ALIGN_DOWN(T* val, UIntNative alignment);
 
+#endif // !__GCENV_BASE_INCLUDED__
+
 inline bool IS_ALIGNED(UIntNative val, UIntNative alignment);
 template <typename T>
 inline bool IS_ALIGNED(T* val, UIntNative alignment);
 
 #ifndef DACCESS_COMPILE
-//
-// Basic memory copying/clearing functionality (rather than depend on the CRT). All our current compilers
-// actually provide these as intrinsics so use those for now (and provide non-CRT names for them as well).
-//
 
-EXTERN_C void * __cdecl memcpy(void *, const void *, size_t);
-#pragma intrinsic(memcpy)
-#ifndef CopyMemory
-#define CopyMemory(_dst, _src, _size) memcpy((_dst), (_src), (_size))
-#endif
-
-EXTERN_C void * __cdecl memset(void *, int, size_t);
-#pragma intrinsic(memset)
-#ifndef FillMemory
-#define FillMemory(_dst, _size, _fill) memset((_dst), (_fill), (_size))
-#endif
 #ifndef ZeroMemory
 #define ZeroMemory(_dst, _size) memset((_dst), 0, (_size))
 #endif
-
-EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
-#pragma intrinsic(memcmp)
 
 //-------------------------------------------------------------------------------------------------
 // min/max
@@ -96,68 +88,84 @@ EXTERN_C int __cdecl memcmp(const void *,const void *,size_t);
 //-------------------------------------------------------------------------------------------------
 // Platform-specific defines
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
 
 #define LOG2_PTRSIZE 3
 #define POINTER_SIZE 8
 
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
 #define LOG2_PTRSIZE 3
 #define POINTER_SIZE 8
+
+#elif defined (HOST_WASM)
+
+#define LOG2_PTRSIZE 2
+#define POINTER_SIZE 4
 
 #else
 #error Unsupported target architecture
 #endif
 
-#ifndef GCENV_INCLUDED
-#if defined(_AMD64_)
+#ifndef __GCENV_BASE_INCLUDED__
+#if defined(HOST_AMD64)
 
 #define DATA_ALIGNMENT  8
 #define OS_PAGE_SIZE    0x1000
 
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 
 #define DATA_ALIGNMENT  4
 #ifndef OS_PAGE_SIZE
 #define OS_PAGE_SIZE    0x1000
 #endif
 
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
 #define DATA_ALIGNMENT  4
 #ifndef OS_PAGE_SIZE
 #define OS_PAGE_SIZE    0x1000
 #endif
 
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
 #define DATA_ALIGNMENT  8
 #ifndef OS_PAGE_SIZE
 #define OS_PAGE_SIZE    0x1000
 #endif
 
+#elif defined(HOST_WASM)
+
+#define DATA_ALIGNMENT  4
+#ifndef OS_PAGE_SIZE
+#define OS_PAGE_SIZE    0x4
+#endif
+
 #else
 #error Unsupported target architecture
 #endif
-#endif // GCENV_INCLUDED
+#endif // __GCENV_BASE_INCLUDED__
+
+#if defined(TARGET_ARM)
+#define THUMB_CODE 1
+#endif
 
 //
 // Define an unmanaged function called from managed code that needs to execute in co-operative GC mode. (There
 // should be very few of these, most such functions will be simply p/invoked).
 //
 #define COOP_PINVOKE_HELPER(_rettype, _method, _args) EXTERN_C REDHAWK_API _rettype __fastcall _method _args
-#ifdef _X86_
+#ifdef HOST_X86
 // We have helpers that act like memcpy and memset from the CRT, so they need to be __cdecl.
 #define COOP_PINVOKE_CDECL_HELPER(_rettype, _method, _args) EXTERN_C REDHAWK_API _rettype __cdecl _method _args
 #else
@@ -191,11 +199,6 @@ extern unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #define STARTUP_TIMELINE_EVENT(eventid)
 #endif // PROFILE_STARTUP
 
-bool inline FitsInI4(__int64 val)
-{
-    return val == (__int64)(__int32)val;
-}
-
 #ifndef C_ASSERT
 #define C_ASSERT(e) static_assert(e, #e)
 #endif // C_ASSERT
@@ -206,8 +209,8 @@ bool inline FitsInI4(__int64 val)
 #define DECLSPEC_THREAD __declspec(thread)
 #endif // !__llvm__
 
-#ifndef GCENV_INCLUDED
-#if !defined(_INC_WINDOWS) && !defined(BINDER)
+#ifndef __GCENV_BASE_INCLUDED__
+#if !defined(_INC_WINDOWS)
 #ifdef _WIN32
 // this must exactly match the typedef used by windows.h
 typedef long HRESULT;
@@ -219,5 +222,7 @@ typedef int32_t HRESULT;
 #define E_FAIL 0x80004005
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
-#endif // !defined(_INC_WINDOWS) && !defined(BINDER)
-#endif // GCENV_INCLUDED
+#endif // !defined(_INC_WINDOWS)
+#endif // __GCENV_BASE_INCLUDED__
+
+#endif // __COMMONMACROS_H__

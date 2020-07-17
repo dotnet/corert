@@ -1,0 +1,92 @@
+# Setting batch to true, triggers one build at a time.
+# if there is a push while a build in progress, it will wait,
+# until the running build finishes, and produce a build with all the changes
+# that happened during the last build.
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+
+pr:
+- master
+
+resources:
+  containers:
+  - container: ubuntu_1604_x64_build_image
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-10fcdcf-20190208200917
+
+jobs:
+
+##   The following is the matrix of test runs that we have. This is
+##   duplicated for each os/arch combination in platform-matrix.yml.
+
+##
+##   Product build       Test build              Test run
+##   (Azure DevOps)      (Azure DevOps)          (Azure DevOps)
+##
+##   ###########################################################################################
+##
+##   Debug   ----------> Inner  -----------------> simple CoreRT test (single file & multimodule)
+##                             \ ----------------> CoreCLR Top200
+##                             \-----------------> CoreFX
+##
+##
+##           \---------> Outer  -----------------> simple CoreRT test (single file & multimodule)
+##                             \-----------------> CoreCLR Pri0 KnownGood (Windows only)
+##                             \-----------------> CoreFX
+##
+##   Release ----------> Inner  -----------------> simple CoreRT test (single file & multimodule)
+##           |
+##           \---------> Outer  -----------------> simple CoreRT test (single file & multimodule)
+##
+##
+
+##
+## Templates used to define jobs:
+## Please update this if the factoring changes.
+##
+## This file defines the set of jobs in a platform-agnostic manner,
+## using the platform-matrix.yml template. This will create one job
+## for each platform from the passed-in jobTemplate (either a build
+## job or a test job). The build-job.yml template
+## uses xplat-job.yml to handle some of the common logic for
+## abstracting over platforms. Finally, xplat-job.yml uses the arcade
+## base.yml job template, which sets up telemetry and signing support.
+
+## azure-pipelines.yml -> platform-matrix.yml -------> build-job.yml -------> xplat-job.yml -> base.yml
+##                                            |  (passed-in jobTemplate)  |                    (arcade)
+
+
+#
+# Debug build and tests
+#
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: debug
+    jobParameters:
+      timeoutInMinutes: 180
+      testScenarios: 'Simple, CoreCLR'
+
+#
+# Release build and tests
+#
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: release
+    jobParameters:
+      timeoutInMinutes: 180
+      testScenarios: 'Simple'
+
+#
+# Debug build and CoreFX tests
+#
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: debug
+    jobParameters:
+      timeoutInMinutes: 180
+      testScenarios: 'CoreFX'

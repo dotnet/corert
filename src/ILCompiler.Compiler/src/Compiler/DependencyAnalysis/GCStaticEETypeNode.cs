@@ -1,48 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Text;
 
+using Internal.Runtime;
+using Internal.Text;
 using Internal.TypeSystem;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class GCStaticEETypeNode : ObjectNode, ISymbolNode
+    /// <summary>
+    /// Represents a subset of <see cref="EETypeNode"/> that is used to describe GC static field regions for
+    /// types. It only fills out enough pieces of the EEType structure so that the GC can operate on it. Runtime should
+    /// never see these.
+    /// </summary>
+    public class GCStaticEETypeNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int[] _runLengths; // First is offset to first gc field, second is length of gc static run, third is length of non-gc data, etc
-        private int _targetPointerSize;
+        private GCPointerMap _gcMap;
         private TargetDetails _target;
 
-        public GCStaticEETypeNode(bool[] gcDesc, NodeFactory factory)
+        public GCStaticEETypeNode(TargetDetails target, GCPointerMap gcMap)
         {
-            List<int> runLengths = new List<int>();
-            bool encodingGCPointers = false;
-            int currentPointerCount = 0;
-            foreach (bool pointerIsGC in gcDesc)
-            {
-                if (encodingGCPointers == pointerIsGC)
-                {
-                    currentPointerCount++;
-                }
-                else
-                {
-                    runLengths.Add(currentPointerCount * factory.Target.PointerSize);
-                    encodingGCPointers = pointerIsGC;
-                }
-            }
-            runLengths.Add(currentPointerCount);
-            _runLengths = runLengths.ToArray();
-            _targetPointerSize = factory.Target.PointerSize;
-            _target = factory.Target;
+            _gcMap = gcMap;
+            _target = target;
         }
 
-        public override string GetName()
-        {
-            return ((ISymbolNode)this).MangledName;
-        }
+        protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
         public override ObjectNodeSection Section
         {
@@ -55,104 +41,70 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override bool StaticDependenciesAreComputed
+        public override bool StaticDependenciesAreComputed => true;
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append("__GCStaticEEType_").Append(_gcMap.ToString());
+        }
+
+        int ISymbolDefinitionNode.Offset
         {
             get
             {
-                return true;
+                int numSeries = _gcMap.NumSeries;
+                return numSeries > 0 ? ((numSeries * 2) + 1) * _target.PointerSize : 0;
             }
         }
 
-        string ISymbolNode.MangledName
-        {
-            get
-            {
-                StringBuilder nameBuilder = new StringBuilder();
-                nameBuilder.Append(NodeFactory.NameMangler.CompilationUnitPrefix + "__GCStaticEEType_");
-                int totalSize = 0;
-                foreach (int run in _runLengths)
-                {
-                    nameBuilder.Append(run.ToStringInvariant());
-                    nameBuilder.Append("_");
-                    totalSize += run;
-                }
-                nameBuilder.Append(totalSize.ToStringInvariant());
-                nameBuilder.Append("_");
+        int ISymbolNode.Offset => 0;
 
-                return nameBuilder.ToString();
-            }
-        }
-
-        int ISymbolNode.Offset
-        {
-            get
-            {
-                if (NumSeries > 0)
-                {
-                    return _targetPointerSize * ((NumSeries * 2) + 1);
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-        }
-
-        private int NumSeries
-        {
-            get
-            {
-                return (_runLengths.Length - 1) / 2;
-            }
-        }
+        public override bool IsShareable => true;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly)
         {
-            ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory);
-            dataBuilder.Alignment = 16;
-            dataBuilder.DefinedSymbols.Add(this);
+            ObjectDataBuilder dataBuilder = new ObjectDataBuilder(factory, relocsOnly);
+            dataBuilder.RequireInitialPointerAlignment();
+            dataBuilder.AddSymbol(this);
 
-            bool hasPointers = NumSeries > 0;
-            if (hasPointers)
+            // +1 for SyncBlock (in CoreRT static size already includes EEType)
+            Debug.Assert(factory.Target.Abi == TargetAbi.CoreRT || factory.Target.Abi == TargetAbi.CppCodegen);
+            int totalSize = (_gcMap.Size + 1) * _target.PointerSize;
+
+            // We only need to check for containsPointers because ThreadStatics are always allocated
+            // on the GC heap (no matter what "HasGCStaticBase" says).
+            // If that ever changes, we can assume "true" and switch this to an assert.
+
+            bool containsPointers = _gcMap.NumSeries > 0;
+            if (containsPointers)
             {
-                for (int i = ((_runLengths.Length / 2) * 2) - 1; i >= 0; i--)
-                {
-                    if (_targetPointerSize == 4)
-                    {
-                        dataBuilder.EmitInt(_runLengths[i]);
-                    }
-                    else
-                    {
-                        dataBuilder.EmitLong(_runLengths[i]);
-                    }
-                }
-                if (_targetPointerSize == 4)
-                {
-                    dataBuilder.EmitInt(NumSeries);
-                }
-                else
-                {
-                    dataBuilder.EmitLong(NumSeries);
-                }
+                GCDescEncoder.EncodeStandardGCDesc(ref dataBuilder, _gcMap, totalSize, 0);
             }
 
-            int totalSize = 0;
-            foreach (int run in _runLengths)
-            {
-                totalSize += run * _targetPointerSize;
-            }
+            Debug.Assert(dataBuilder.CountBytes == ((ISymbolDefinitionNode)this).Offset);
 
             dataBuilder.EmitShort(0); // ComponentSize is always 0
 
-            if (hasPointers)
-                dataBuilder.EmitShort(0x20); // TypeFlags.HasPointers
-            else
-                dataBuilder.EmitShort(0x00);
+            short flags = 0;
+            if (containsPointers)
+                flags |= (short)EETypeFlags.HasPointersFlag;
 
-            totalSize = Math.Max(totalSize, _targetPointerSize * 3); // minimum GC eetype size is 3 pointers
+            dataBuilder.EmitShort(flags);
+
+            totalSize = Math.Max(totalSize, _target.PointerSize * 3); // minimum GC eetype size is 3 pointers
             dataBuilder.EmitInt(totalSize);
 
+            // Related type: System.Object. This allows storing an instance of this type in an array of objects.
+            dataBuilder.EmitPointerReloc(factory.NecessaryTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.Object)));
+
             return dataBuilder.ToObjectData();
+        }
+
+        public override int ClassCode => 1304929125;
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return _gcMap.CompareTo(((GCStaticEETypeNode)other)._gcMap);
         }
     }
 }

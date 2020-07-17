@@ -1,0 +1,142 @@
+<!--
+
+    Running all 7000 Pri-0 CoreCLR tests would take forever. Exclude down to a set that provides
+    broad coverage and an expected reasonable run time (< 30 minutes)
+
+-->
+<Project DefaultTargets = "GetListOfTestCmds" 
+  xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
+
+  <!-- Tests that fail on non-Windows platforms -->
+  <ItemGroup Condition="'$(XunitTestBinBase)' != '' AND '$(TargetsWindows)' == 'true'">
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GCSettings\InputValidation\InputValidation.*" />
+  </ItemGroup>
+
+  <!-- Tests that pass on all platforms -->
+  <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
+    <IncludeList Include="$(XunitTestBinBase)\baseservices\threading\DeadThreads\DeadThreads\DeadThreads.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Exceptions\Finalization\Finalizer\Finalizer.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect0\Collect0.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect1\Collect1.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GC\CollectionCountTest\CollectionCountTest.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect_fail\Collect_fail.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GC\Collect_neg\Collect_neg.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGeneration\GetGeneration.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGenerationWR\GetGenerationWR.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GC\GetGeneration_fail\GetGeneration_fail.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\AddrOfPinnedObject_neg\AddrOfPinnedObject_neg.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\Alloc_neg2\Alloc_neg2.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\Casting\Casting.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\Free_neg\Free_neg.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\PinObj_neg\PinObj_neg.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\Target_neg\Target_neg.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GCHandle\ToFromIntPtr\ToFromIntPtr.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GCHandleCollector\Count\Count.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\GCHandleCollector\NegTests\NegTests.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\NoGCRegion\NoGC\NoGC.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\multipleWRs\multipleWRs.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\API\WeakReference\multipleWRs_1\multipleWRs_1.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Coverage\LargeObjectAlloc\LargeObjectAlloc.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Coverage\LargeObjectAlloc2\LargeObjectAlloc2.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedCollect\PinnedCollect.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedHandle\PinnedHandle.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedMany\PinnedMany.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedMultiple\PinnedMultiple.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Features\Pinning\PinningOther\PinnedObject\PinnedObject.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\gettotalmemory\gettotalmemory.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\LargeMemory\Regressions\largearraytest\largearraytest.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\LargeMemory\Regressions\pressureoverflow\pressureoverflow.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-beta1\149926\149926\149926.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-beta1\289745\289745\289745.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-beta1\289745\302560\302560.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-beta2\426480\426480\426480.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-beta2\445488\445488\445488.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-beta2\452950\452950\452950.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-beta2\460373\460373\460373.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Regressions\v2.0-rtm\494226\494226\494226.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\BinTree\thdtree\thdtree.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\BinTree\thdtreegrowingobj\thdtreegrowingobj.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\BinTree\thdtreelivingobj\thdtreelivingobj.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\arrcpy\arrcpy.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\gcvariant\gcvariant.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\gcvariant2\gcvariant2.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\gcvariant3\gcvariant3.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\gcvariant4\gcvariant4.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\variantint\variantint.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\Boxing\variantlinklist\variantlinklist.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\FinalizeTimeout\FinalizeTimeout\FinalizeTimeout.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCBench\gcbench\gcbench.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\GCStress\gcstress\gcstress.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\LeakWheel\leakwheel\leakwheel.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\MinLeakGen\minleakgen\minleakgen.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\muldimjagary\muldimjagary\muldimjagary.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\NDPin\ndpin\ndpin.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\NDPin\ndpinfinal\ndpinfinal.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\RanCollect\rancollect\rancollect.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\Resurrection\continue\continue.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\Rootmem\rootmem\rootmem.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\StringCreator\stringcreator\stringcreator.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\THDChaos\thdchaos\thdchaos.*" />
+    <IncludeList Include="$(XunitTestBinBase)\GC\Scenarios\THDList\thdlist\thdlist.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\calli\calli.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\InlineThrow\InlineThrow.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\opt\Inline\tests\mathfunc\mathfunc.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\opt\LocAlloc\inloop\inloop.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\opt\LocAlloc\localloc\localloc.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\opt\perf\doublealign\Arrays\Arrays.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\opt\Types\Equality\Equality.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\AbsGeneric_r\AbsGeneric_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\AbsSqrt_r\AbsSqrt_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\AddingSequence_r\AddingSequence_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\BitwiseOperations_r\BitwiseOperations_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\BoxUnbox_ro\BoxUnbox_ro.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\CircleInConvex_r\CircleInConvex_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\CreateGeneric_r\CreateGeneric_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\CtorFromArray_r\CtorFromArray_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\Ctors_r\Ctors_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\DivSignedUnsignedTest_r\DivSignedUnsignedTest_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\Matrix4x4_r\Matrix4x4_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\MinMax_r\MinMax_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\Mul_ro\Mul_ro.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\SqrtGeneric_r\SqrtGeneric_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\Vector3_r\Vector3_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\VectorAbs_r\VectorAbs_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\JIT\SIMD\VectorArrayInit_r\VectorArrayInit_r.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\AbstractBase01\AbstractBase01.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\AbstractBase02\AbstractBase02.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\AbstractBase03\AbstractBase03.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\AbstractBase05\AbstractBase05.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\AbstractBase06\AbstractBase06.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\AbstractBase07\AbstractBase07.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedBaseClass01\NestedBaseClass01.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedBaseClass02\NestedBaseClass02.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedBaseClass03\NestedBaseClass03.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedBaseClass04\NestedBaseClass04.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedBaseClass05\NestedBaseClass05.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedBaseClass06\NestedBaseClass06.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedClass01\NestedClass01.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedClass03\NestedClass03.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedInterface01\NestedInterface01.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedInterface02\NestedInterface02.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedInterface03\NestedInterface03.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedInterface04\NestedInterface04.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedInterface05\NestedInterface05.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedInterface06\NestedInterface06.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedInterface07\NestedInterface07.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedInterface08\NestedInterface08.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedStruct01\NestedStruct01.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Instantiation\Positive\NestedStruct03\NestedStruct03.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Layout\General\Base01b_seq_ser\Base01b_seq_ser.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\Unbox005\Unbox005.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\generics\Variance\IL\Unbox006\Unbox006.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowInlinedStatic\CctorThrowInlinedStatic.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowLDFTNStaticMethod\CctorThrowLDFTNStaticMethod.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowMethodAccess\CctorThrowMethodAccess.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowStaticField\CctorThrowStaticField.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\CctorThrowStaticFieldBFI\CctorThrowStaticFieldBFI.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\TypeLoadInitExcep\TypeLoadInitExcep.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\TypeLoadInitExcepBFI\TypeLoadInitExcepBFI.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CctorsWithSideEffects\UntrustedCodeBFI\UntrustedCodeBFI.*" />
+    <IncludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeInitialization\CircularCctors\CircularCctorFourThreadsBFI\CircularCctorFourThreadsBFI.*" />
+  </ItemGroup>
+</Project>

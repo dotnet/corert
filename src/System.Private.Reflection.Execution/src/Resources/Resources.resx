@@ -181,10 +181,10 @@
     <value>Multidimensional arrays of rank {0} are not supported on this runtime.</value>
   </data>
   <data name="Object_NotInvokable" xml:space="preserve">
-    <value>This object cannot be invoked because it was metadata-enabled for browsing only: '{0}' For more information, please visit  http://go.microsoft.com/fwlink/?LinkID=616867</value>
+    <value>This object cannot be invoked because no code was generated for it: '{0}'.</value>
   </data>
   <data name="MakeGenericMethod_NoMetadata" xml:space="preserve">
-    <value>MakeGenericMethod() cannot create this generic method instantiation because the instantiation was not metadata-enabled: '{0}' For more information, please visit http://go.microsoft.com/fwlink/?LinkID=616868</value>
+    <value>MakeGenericMethod() cannot create this generic method instantiation because no code was generated for it: '{0}'.</value>
   </data>
   <data name="PlatformNotSupported_CannotInvokeDelegateCtor" xml:space="preserve">
     <value>Dynamic invocation of delegate constructors is not supported on this runtime.</value>
@@ -201,13 +201,10 @@
   <data name="Argument_ConstraintFailed" xml:space="preserve">
     <value>'{0}', on '{1}' violates the constraint of type '{2}'.</value>
   </data>
-  <data name="NotSupported_OpenType" xml:space="preserve">
-    <value>Cannot create arrays of open type. </value>
-  </data>
-  <data name="PlatformNotSupported_PointerArray" xml:space="preserve">
-    <value>Arrays of pointer types are not supported on this platform.</value>
-  </data>
   <data name="PlatformNotSupported_GetMethodInfoForStubDelegate" xml:space="preserve">
     <value>Obtaining a MethodInfo of a reflection-constructed delegate to a virtual method is not supported on this platform.</value>
+  </data>
+  <data name="Argument_ImplementIComparable" xml:space="preserve">
+    <value>At least one object must implement IComparable.</value>
   </data>
 </root>

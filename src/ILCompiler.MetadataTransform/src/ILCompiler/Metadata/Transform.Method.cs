@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -158,18 +157,14 @@ namespace ILCompiler.Metadata
             {
                 CallingConvention = GetSignatureCallingConvention(signature),
                 GenericParameterCount = signature.GenericParameterCount,
-                ReturnType = new ReturnTypeSignature
-                {
-                    // TODO: CustomModifiers
-                    Type = HandleType(signature.ReturnType)
-                },
+                ReturnType = HandleType(signature.ReturnType),
                 // TODO-NICE: VarArgParameters
             };
 
             result.Parameters.Capacity = signature.Length;
             for (int i = 0; i < signature.Length; i++)
             {
-                result.Parameters.Add(HandleParameterTypeSignature(signature[i]));
+                result.Parameters.Add(HandleType(signature[i]));
             }
 
             return result;

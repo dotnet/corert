@@ -1,0 +1,46 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <BaseLinePackageDependencies>false</BaseLinePackageDependencies>
+    <PackagePlatforms>x64;</PackagePlatforms>
+    <PreventImplementationReference>true</PreventImplementationReference>
+    <RestorePackages>true</RestorePackages>
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
+    <!-- Mark this package as a lineup (meta-) package -->
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
+    <!-- Override this property so that the package name won't look like runtime.[RID].[TFM].[ID] -->
+    <PackageTargetRuntime></PackageTargetRuntime>
+  </PropertyGroup>
+  
+  <!-- The package references are used to generate a runtimes.json for the meta-package-->
+  <ItemGroup>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=win-x64</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=linux-x64</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=linux-musl-x64</AdditionalProperties>
+    </ProjectReference>
+    <ProjectReference Include="TargetSpecific\Microsoft.DotNet.ILCompiler.pkgproj">
+      <AdditionalProperties>%(ProjectReference.AdditionalProperties);PackageTargetRuntime=osx-x64</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <File Include="$(PackageSourceDirectory)\BuildIntegration\*">
+      <TargetPath>build</TargetPath>
+    </File>
+
+    <!-- This assembly is needed so the build tasks can be resolved and run from the metapackage -->
+    <File Include="$(BaseOutputPath)\$(OSPlatformConfig)\tools\\netstandard\\*">
+      <TargetPath>tools\netstandard</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\src\dir.targets" />
+  <Target Name="GetPackageDependencies"/>
+</Project>

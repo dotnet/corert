@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: daccess.h
 //
@@ -536,11 +535,11 @@
 
 #include "safemath.h"
 
-#ifdef _TARGET_AMD64_
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
 typedef UInt64 UIntTarget;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 typedef UInt32 UIntTarget;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 typedef UInt32 UIntTarget;
 #else
 #error unexpected target architecture
@@ -609,10 +608,10 @@ typedef struct _DacGlobals
     ULONG fn__ThreadpoolMgr__AsyncCallbackCompletion;
     ULONG fn__ThreadpoolMgr__AsyncTimerCallbackCompletion;
     ULONG fn__DACNotifyCompilationFinished;
-#ifdef _X86_ 
+#ifdef HOST_X86 
     ULONG fn__NativeDelayFixupAsmStub;
     ULONG fn__NativeDelayFixupAsmStubRet;
-#endif // _X86_
+#endif // HOST_X86
     ULONG fn__PInvokeCalliReturnFromCall;
     ULONG fn__NDirectGenericStubReturnFromCall;
     ULONG fn__DllImportForDelegateGenericStubReturnFromCall;
@@ -1038,17 +1037,17 @@ public:
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
     }
-#if (!defined (_X86_) && !defined(_SPARC_) && !defined(_ARM_)) || (defined(_X86_) && defined(__APPLE__)) 
+#if (!defined (HOST_X86) && !defined(_SPARC_) && !defined(HOST_ARM)) || (defined(HOST_X86) && defined(__APPLE__)) 
     DPtrType operator+(unsigned int val)
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
     }
-#endif // (!defined (_X86_) && !defined(_SPARC_) && !defined(_ARM_)) || (defined(_X86_) && defined(__APPLE__))
+#endif // (!defined (HOST_X86) && !defined(_SPARC_) && !defined(HOST_ARM)) || (defined(HOST_X86) && defined(__APPLE__))
     DPtrType operator+(int val)
     {
         return DPtrType(m_addr + val * sizeof(type));
     }
-#ifndef PLATFORM_UNIX // for now, everything else is 32 bit
+#ifndef TARGET_UNIX // for now, everything else is 32 bit
     DPtrType operator+(unsigned long val)
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
@@ -1057,8 +1056,8 @@ public:
     {
         return DPtrType(m_addr + val * sizeof(type));
     }
-#endif // !PLATFORM_UNIX // for now, everything else is 32 bit
-#if !defined(_ARM_) && !defined(_X86_)
+#endif // !TARGET_UNIX // for now, everything else is 32 bit
+#if !defined(HOST_ARM) && !defined(HOST_X86)
     DPtrType operator+(IntNative val)
     {
         return DPtrType(m_addr + val * sizeof(type));
@@ -1089,12 +1088,12 @@ public:
     {
         return DPtrType(m_addr - val * sizeof(type));
     }
-#if !defined (_X86_) && !defined(_SPARC_) && !defined(_ARM_)
+#if !defined (HOST_X86) && !defined(_SPARC_) && !defined(HOST_ARM)
     DPtrType operator-(unsigned int val)
     {
         return DPtrType(m_addr - val * sizeof(type));
     }
-#endif // !defined (_X86_) && !defined(_SPARC_) && !defined(_ARM_)
+#endif // !defined (HOST_X86) && !defined(_SPARC_) && !defined(HOST_ARM)
     DPtrType operator-(int val)
     {
         return DPtrType(m_addr - val * sizeof(type));
@@ -1937,7 +1936,7 @@ typedef __VoidPtr PTR_CVOID;
 #define PTR_READ(addr, size) \
     DacInstantiateTypeByAddress(addr, size, true)
 
-// This value is used to intiailize target pointers to NULL.  We want this to be TADDR type
+// This value is used to initialize target pointers to NULL.  We want this to be TADDR type
 // (as opposed to, say, __TPtrBase) so that it can be used in the non-explicit ctor overloads,
 // eg. as an argument default value.
 // We can't always just use NULL because that's 0 which (in C++) can be any integer or pointer
@@ -2161,9 +2160,9 @@ typedef void** PTR_PTR_VOID;
 #define S16PTR(type) type*
 #define S16PTRMAX(type, maxChars) type*
 
-#ifndef GCENV_INCLUDED
+#ifndef __GCENV_BASE_INCLUDED__
 #define PTR_TO_TADDR(ptr) (reinterpret_cast<TADDR>(ptr))
-#endif // GCENV_INCLUDED
+#endif // __GCENV_BASE_INCLUDED__
 #define GFN_TADDR(name) (reinterpret_cast<TADDR>(&(name)))
 
 #define GVAL_ADDR(g) (&(g))
@@ -2302,7 +2301,6 @@ inline Tgt dac_cast(Src src)
 //
 //----------------------------------------------------------------------------
 
-#if defined(DACCESS_COMPILE) || !defined(GCENV_INCLUDED)
 #define SPTR_DECL(type, var) _SPTR_DECL(type*, PTR_##type, var)
 #define SPTR_IMPL(type, cls, var) _SPTR_IMPL(type*, PTR_##type, cls, var)
 #define SPTR_IMPL_INIT(type, cls, var, init) _SPTR_IMPL_INIT(type*, PTR_##type, cls, var, init)
@@ -2311,7 +2309,6 @@ inline Tgt dac_cast(Src src)
 #define GPTR_DECL(type, var) _GPTR_DECL(type*, PTR_##type, var)
 #define GPTR_IMPL(type, var) _GPTR_IMPL(type*, PTR_##type, var)
 #define GPTR_IMPL_INIT(type, var, init) _GPTR_IMPL_INIT(type*, PTR_##type, var, init)
-#endif // DACCESS_COMPILE || !GCENV_INCLUDED
 
 // If you want to marshal a single instance of an ArrayDPtr over to the host and
 // return a pointer to it, you can use this function.  However, this is unsafe because

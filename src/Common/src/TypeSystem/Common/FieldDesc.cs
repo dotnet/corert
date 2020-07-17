@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -9,9 +8,9 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
-    public abstract partial class FieldDesc
+    public abstract partial class FieldDesc : TypeSystemEntity
     {
-        public readonly static FieldDesc[] EmptyFields = new FieldDesc[0];
+        public static readonly FieldDesc[] EmptyFields = new FieldDesc[0];
 
         public override int GetHashCode()
         {
@@ -32,11 +31,6 @@ namespace Internal.TypeSystem
             {
                 return null;
             }
-        }
-
-        public abstract TypeSystemContext Context
-        {
-            get;
         }
 
         public abstract DefType OwningType
@@ -79,6 +73,14 @@ namespace Internal.TypeSystem
         public virtual FieldDesc GetTypicalFieldDefinition()
         {
             return this;
+        }
+
+        public bool IsTypicalFieldDefinition
+        {
+            get
+            {
+                return GetTypicalFieldDefinition() == this;
+            }
         }
 
         public virtual FieldDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)

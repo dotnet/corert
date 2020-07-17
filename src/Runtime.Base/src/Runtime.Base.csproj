@@ -1,90 +1,34 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <ProjectGuid>{BE95C560-B508-4588-8907-F9FC5BC1A0CF}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>Runtime.Base</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ExcludeDefaultReferences>true</ExcludeDefaultReferences>
     <IsCoreAssembly>true</IsCoreAssembly>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!--
-      Need to avoid target platform being empty because that would drag in an mscorlib design-time
-      facade into the references and break us.
-    -->
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetPlatformIdentifier>Portable</TargetPlatformIdentifier>
-    <TargetFrameworkIdentifier>.NETPortable</TargetFrameworkIdentifier>
-    <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
-    <TargetFrameworkMonikerDisplayName>.NET Portable Subset</TargetFrameworkMonikerDisplayName>
-    <ImplicitlyExpandTargetFramework>false</ImplicitlyExpandTargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- The properties use amd64 as their platform string, we want to keep in sync with those, so set Platform appropriately,
-         though still use the 'x64' output path -->
-    <Platform Condition=" '$(Platform)' == 'x64' ">amd64</Platform>
-  </PropertyGroup>
-
-  <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <PlatformTarget>x86</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' ">
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' ">
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|arm' ">
-    <PlatformTarget>arm</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|arm' ">
-    <PlatformTarget>arm</PlatformTarget>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
+    <EnableFxCopAnalyzers>false</EnableFxCopAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DefineConstants>FEATURE_GC_STRESS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Platform)' == 'amd64'">
-    <DefineConstants>AMD64;BIT64;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'x86'">
-    <DefineConstants>X86;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
-    <DefineConstants>ARM;FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+    <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)' == 'arm64'">
-    <DefineConstants>ARM64;BIT64;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(IsProjectNLibrary)' != 'true'">
-    <DefineConstants>CORERT;$(DefineConstants)</DefineConstants>
+  <PropertyGroup Condition="'$(Platform)' == 'armel'">
+    <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="System\Nullable.cs" />
     <Compile Include="System\Object.cs" />
     <Compile Include="System\Runtime\CachedInterfaceDispatch.cs" />
-    <Compile Include="System\Runtime\CompilerServices\StackOnlyAttribute.cs" />
+    <Compile Include="System\Runtime\CompilerServices\IsByRefLikeAttribute.cs" />
     <Compile Include="System\Runtime\DispatchResolve.cs" />
     <Compile Include="System\Runtime\GCStress.cs" />
-    <Compile Include="System\Runtime\BinderIntrinsics.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Array.cs" />
@@ -101,12 +45,14 @@
     <Compile Include="System\RuntimeHandles.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\String.cs" />
+    <Compile Include="System\ThrowHelpers.cs" />
     <Compile Include="System\Void.cs" />
     <Compile Include="System\Diagnostics\ConditionalAttribute.cs" />
     <Compile Include="System\Diagnostics\Debug.cs" />
+    <Compile Include="System\Diagnostics\Eval.cs" />
     <Compile Include="System\Runtime\__Finalizer.cs" />
     <Compile Include="System\Runtime\CalliIntrinsics.cs" />
-    <Compile Include="System\Runtime\EEType.cs" />
+    <Compile Include="System\Runtime\EEType.Runtime.cs" />
     <Compile Include="System\Runtime\EETypePtr.cs" />
     <Compile Include="System\Runtime\ExceptionHandling.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
@@ -115,34 +61,58 @@
     <Compile Include="System\Runtime\RuntimeExports.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\StackFrameIterator.cs" />
+    <Compile Include="System\Runtime\ThunkPool.cs" />
     <Compile Include="System\Runtime\TypeCast.cs" />
+    <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\ICastable.cs" />
     <Compile Include="System\Runtime\CompilerServices\IsVolatile.cs" />
     <Compile Include="System\Runtime\CompilerServices\ManuallyManagedAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\MethodImplAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <Compile Include="System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnmanagedType.cs" />
     <Compile Include="System\Runtime\InteropServices\CallingConvention.cs" />
     <Compile Include="System\Runtime\InteropServices\CharSet.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\FieldOffsetAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\GCHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\GCHandleType.cs" />
     <Compile Include="System\Runtime\InteropServices\LayoutKind.cs" />
     <Compile Include="System\Runtime\InteropServices\McgIntrinsicsAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\NativeCallableAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnmanagedCallersOnlyAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\OutAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\StructLayoutAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
     <Compile Include="RhBaseName.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Runtime\CompilerServices\Unsafe.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\src\Internal\Runtime\EEType.Constants.cs" >
       <Link>Common\EEType.Constants.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\EEType.cs" >
+      <Link>Common\EEType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\RuntimeConstants.cs">
+      <Link>Common\RuntimeConstants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\TransitionBlock.cs">
+      <Link>Common\TransitionBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs" >
+      <Link>Common\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\Internal\Runtime\TypeManagerHandle.cs" >
+      <Link>Common\TypeManagerHandle.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
+    <Compile Condition="'$(Platform)'!='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Full\AsmOffsets.cs" />
+    <Compile Condition="'$(Platform)'=='wasm'" Include="$(BaseIntermediateOutputPath)\Native\$(BinDirOSGroup).$(BinDirPlatform).$(BinDirConfiguration)\Runtime\Portable\AsmOffsetsPortable.cs" />
+    <Compile Condition="'$(Platform)'=='wasm'" Include="System\Runtime\ExceptionHandling.wasm.cs" />
+    <Compile Condition="'$(Platform)'=='wasm'" Include="System\Runtime\StackFrameIterator.wasm.cs" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

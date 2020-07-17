@@ -1,25 +1,40 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
 using Internal.TypeSystem;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace Internal.IL
 {
-    public sealed class InstantiatedMethodIL : MethodIL
+    public sealed partial class InstantiatedMethodIL : MethodIL
     {
+        private MethodDesc _method;
         private MethodIL _methodIL;
         private Instantiation _typeInstantiation;
         private Instantiation _methodInstantiation;
 
-        public InstantiatedMethodIL(MethodIL methodIL, Instantiation typeInstantiation, Instantiation methodInstantiation)
+        public InstantiatedMethodIL(MethodDesc owningMethod, MethodIL methodIL)
         {
+            Debug.Assert(methodIL.GetMethodILDefinition() == methodIL);
+            Debug.Assert(owningMethod.HasInstantiation || owningMethod.OwningType.HasInstantiation);
+            Debug.Assert(owningMethod.GetTypicalMethodDefinition() == methodIL.OwningMethod);
+            
             _methodIL = methodIL;
+            _method = owningMethod;
 
-            _typeInstantiation = typeInstantiation;
-            _methodInstantiation = methodInstantiation;
+            _typeInstantiation = owningMethod.OwningType.Instantiation;
+            _methodInstantiation = owningMethod.Instantiation;
+        }
+
+        public override MethodDesc OwningMethod
+        {
+            get
+            {
+                return _method;
+            }
         }
 
         public override byte[] GetILBytes()
@@ -27,9 +42,12 @@ namespace Internal.IL
             return _methodIL.GetILBytes();
         }
 
-        public override int GetMaxStack()
+        public override int MaxStack
         {
-            return _methodIL.GetMaxStack();
+            get
+            {
+                return _methodIL.MaxStack;
+            }
         }
 
         public override ILExceptionRegion[] GetExceptionRegions()
@@ -37,9 +55,12 @@ namespace Internal.IL
             return _methodIL.GetExceptionRegions();
         }
 
-        public override bool GetInitLocals()
+        public override bool IsInitLocals
         {
-            return _methodIL.GetInitLocals();
+            get
+            {
+                return _methodIL.IsInitLocals;
+            }
         }
 
         public override LocalVariableDefinition[] GetLocals()
@@ -98,6 +119,11 @@ namespace Internal.IL
 
 
             return o;
+        }
+
+        public override MethodIL GetMethodILDefinition()
+        {
+            return _methodIL;
         }
     }
 }

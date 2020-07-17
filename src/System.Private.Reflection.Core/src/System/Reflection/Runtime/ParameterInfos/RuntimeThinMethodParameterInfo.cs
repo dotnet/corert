@@ -1,17 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using global::System;
-using global::System.Reflection;
-using global::System.Diagnostics;
-using global::System.Collections.Generic;
-using global::System.Reflection.Runtime.General;
+using System;
+using System.Reflection;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Reflection.Runtime.General;
 
-using global::Internal.Reflection.Core;
-using global::Internal.Reflection.Core.NonPortable;
-
-using global::Internal.Metadata.NativeFormat;
+using Internal.Reflection.Core;
 
 namespace System.Reflection.Runtime.ParameterInfos
 {
@@ -21,8 +17,8 @@ namespace System.Reflection.Runtime.ParameterInfos
     //
     internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
     {
-        private RuntimeThinMethodParameterInfo(MethodBase member, int position, ReflectionDomain reflectionDomain, MetadataReader reader, Handle typeHandle, TypeContext typeContext)
-            : base(member, position, reflectionDomain, reader, typeHandle, typeContext)
+        private RuntimeThinMethodParameterInfo(MethodBase member, int position, QSignatureTypeHandle qualifiedParameterTypeHandle, TypeContext typeContext)
+            : base(member, position, qualifiedParameterTypeHandle, typeContext)
         {
         }
 
@@ -52,12 +48,22 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
+        public sealed override object RawDefaultValue
+        {
+            get
+            {
+                // Returning "null" matches the desktop behavior, though this is inconsistent with the DBNull/Missing values
+                // returned by non-return ParameterInfo's without default values. 
+                return null;
+            }
+        }
+
         public sealed override bool HasDefaultValue
         {
             get
             {
-                // COMPAT: Desktop actually returns true here, but that behavior makes no sense.
-                return false;
+                // Compat: returning "true" makes no sense but this is how it's always been.
+                return true;
             }
         }
 
@@ -66,6 +72,14 @@ namespace System.Reflection.Runtime.ParameterInfos
             get
             {
                 return null;
+            }
+        }
+
+        public sealed override int MetadataToken
+        {
+            get
+            {
+                return 0x08000000; // nil ParamDef token
             }
         }
     }

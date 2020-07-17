@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 namespace System.Runtime.InteropServices
@@ -11,21 +10,11 @@ namespace System.Runtime.InteropServices
     /// </summary>
     class MissingInteropDataException : Exception
     {
-        public Type MissingType { get; private set; }
-
-        public MissingInteropDataException(string message) : base(message) { }
-#if ENABLE_WINRT
-        public MissingInteropDataException(string resourceFormat, Type pertainantType)
-           : base(SR.Format(resourceFormat,
-           Internal.Reflection.Execution.PayForPlayExperience.MissingMetadataExceptionCreator.ComputeUsefulPertainantIfPossible(pertainantType)))
+        public Type MissingType { get; private set; }        
+        public MissingInteropDataException(string resourceFormat, Type pertainantType): 
+            base(SR.Format(resourceFormat, pertainantType.ToString()))
         {
             MissingType = pertainantType;
         }
-#else
-        public MissingInteropDataException(string resourceFormat, Type pertainantType)
-        {
-            MissingType = pertainantType;
-        }
-#endif //ENABLE_WINRT
     }
 }

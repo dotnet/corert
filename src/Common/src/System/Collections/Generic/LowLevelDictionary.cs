@@ -1,15 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
-
-// NOTE ON FIELD RENAMES:
-// This type is inspected internally by .NET Native Debugger components. ANY changes to field names
-// (including private and nested public fields) are considered a breaking change and should not be done without
-// similar changes to those debugger components at the same time.
 
 namespace System.Collections.Generic
 {
@@ -29,27 +23,17 @@ namespace System.Collections.Generic
 #if TYPE_LOADER_IMPLEMENTATION
     [System.Runtime.CompilerServices.ForceDictionaryLookups]
 #endif
-    internal class LowLevelDictionary<TKey, TValue>
+    internal class LowLevelDictionary<TKey, TValue> where TKey : IEquatable<TKey>
     {
         private const int DefaultSize = 17;
 
         public LowLevelDictionary()
-            : this(DefaultSize, new DefaultComparer<TKey>())
+            : this(DefaultSize)
         {
         }
 
         public LowLevelDictionary(int capacity)
-            : this(capacity, new DefaultComparer<TKey>())
         {
-        }
-
-        public LowLevelDictionary(IEqualityComparer<TKey> comparer) : this(DefaultSize, comparer)
-        {
-        }
-
-        public LowLevelDictionary(int capacity, IEqualityComparer<TKey> comparer)
-        {
-            _comparer = comparer;
             Clear(capacity);
         }
 
@@ -66,7 +50,7 @@ namespace System.Collections.Generic
             get
             {
                 if (key == null)
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
 
                 Entry entry = Find(key);
                 if (entry == null)
@@ -76,7 +60,7 @@ namespace System.Collections.Generic
             set
             {
                 if (key == null)
-                    throw new ArgumentNullException("key");
+                    throw new ArgumentNullException(nameof(key));
 
                 _version++;
                 Entry entry = Find(key);
@@ -91,7 +75,7 @@ namespace System.Collections.Generic
         {
             value = default(TValue);
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             Entry entry = Find(key);
             if (entry != null)
             {
@@ -104,7 +88,7 @@ namespace System.Collections.Generic
         public void Add(TKey key, TValue value)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             Entry entry = Find(key);
             if (entry != null)
                 throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
@@ -122,13 +106,13 @@ namespace System.Collections.Generic
         public bool Remove(TKey key)
         {
             if (key == null)
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             int bucket = GetBucket(key);
             Entry prev = null;
             Entry entry = _buckets[bucket];
             while (entry != null)
             {
-                if (_comparer.Equals(key, entry.m_key))
+                if (key.Equals(entry.m_key))
                 {
                     if (prev == null)
                     {
@@ -164,7 +148,7 @@ namespace System.Collections.Generic
             Entry entry = _buckets[bucket];
             while (entry != null)
             {
-                if (_comparer.Equals(key, entry.m_key))
+                if (key.Equals(entry.m_key))
                     return entry;
 
                 entry = entry.m_next;
@@ -219,7 +203,7 @@ namespace System.Collections.Generic
 
         private int GetBucket(TKey key, int numBuckets = 0)
         {
-            int h = _comparer.GetHashCode(key);
+            int h = key.GetHashCode();
             h &= 0x7fffffff;
             return (h % (numBuckets == 0 ? _buckets.Length : numBuckets));
         }
@@ -238,29 +222,6 @@ namespace System.Collections.Generic
         private Entry[] _buckets;
         private int _numEntries;
         private int _version;
-        private IEqualityComparer<TKey> _comparer;
-
-        // This comparator is used if no comparator is supplied. It emulates the behavior of EqualityComparer<T>.Default.
-#if TYPE_LOADER_IMPLEMENTATION
-        [System.Runtime.CompilerServices.ForceDictionaryLookups]
-#endif
-        private sealed class DefaultComparer<T> : IEqualityComparer<T>
-        {
-            public bool Equals(T x, T y)
-            {
-                if (x == null)
-                    return y == null;
-                IEquatable<T> iequatable = x as IEquatable<T>;
-                if (iequatable != null)
-                    return iequatable.Equals(y);
-                return ((object)x).Equals(y);
-            }
-
-            public int GetHashCode(T obj)
-            {
-                return ((object)obj).GetHashCode();
-            }
-        }
 
 #if TYPE_LOADER_IMPLEMENTATION
         [System.Runtime.CompilerServices.ForceDictionaryLookups]
@@ -339,7 +300,7 @@ namespace System.Collections.Generic
     /// <summary>
     /// LowLevelDictionary when enumeration is needed
     /// </summary>
-    internal sealed class LowLevelDictionaryWithIEnumerable<TKey, TValue> : LowLevelDictionary<TKey, TValue>, IEnumerable<KeyValuePair<TKey, TValue>>
+    internal sealed class LowLevelDictionaryWithIEnumerable<TKey, TValue> : LowLevelDictionary<TKey, TValue>, IEnumerable<KeyValuePair<TKey, TValue>> where TKey : IEquatable<TKey>
     {
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {

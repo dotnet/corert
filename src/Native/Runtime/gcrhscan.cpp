@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 #include "common.h"
 
 #include "gcenv.h"
-#include "gcscan.h"
-#include "gc.h"
+#include "gcheaputilities.h"
 #include "objecthandle.h"
+
+#include "gcenv.ee.h"
 
 #include "PalRedhawkCommon.h"
 
@@ -21,12 +21,16 @@
 
 #include "shash.h"
 #include "RWLock.h"
-#include "module.h"
 #include "RuntimeInstance.h"
 #include "threadstore.h"
+#include "threadstore.inl"
+#include "thread.inl"
 
+#include "DebuggerHook.h"
 
 #ifndef DACCESS_COMPILE
+
+void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppUpperBound, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
 
 void EnumAllStaticGCRefs(EnumGcRefCallbackFunc * fn, EnumGcRefScanContext * sc)
 {
@@ -39,6 +43,13 @@ void EnumAllStaticGCRefs(EnumGcRefCallbackFunc * fn, EnumGcRefScanContext * sc)
  
 void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, int max_gen, EnumGcRefScanContext * sc)
 {
+    DebuggerProtectedBufferListNode* cursor = DebuggerHook::s_debuggerProtectedBuffers;
+    while (cursor != nullptr)
+    {
+        GcEnumObjectsConservatively((PTR_PTR_Object)cursor->address, (PTR_PTR_Object)(cursor->address + cursor->size), fn, sc);
+        cursor = cursor->next;
+    }
+
     // STRESS_LOG1(LF_GCROOTS, LL_INFO10, "GCScan: Phase = %s\n", sc->promotion ? "promote" : "relocate");
 
     FOREACH_THREAD(pThread)
@@ -51,7 +62,7 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
         // @TODO: it is very bizarre that this IsThreadUsingAllocationContextHeap takes a copy of the
         // allocation context instead of a reference or a pointer to it. This seems very wasteful given how
         // large the alloc_context is.
-        if (!GCHeap::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(), 
+        if (!GCHeapUtilities::GetGCHeap()->IsThreadUsingAllocationContextHeap(pThread->GetAllocContext(), 
                                                                      sc->thread_number))
         {
             // STRESS_LOG2(LF_GC|LF_GCROOTS, LL_INFO100, "{ Scan of Thread %p (ID = %x) declined by this heap\n", 
@@ -77,10 +88,10 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
 
     sc->thread_under_crawl = NULL;
 
-    if ((!GCHeap::IsServerHeap() || sc->thread_number == 0) ||(condemned == max_gen && sc->promotion))
+    if ((!GCHeapUtilities::IsServerHeap() || sc->thread_number == 0) ||(condemned == max_gen && sc->promotion))
     {
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
-        sc->dwEtwRootKind = kEtwGCRootStatic;
+        sc->dwEtwRootKind = kEtwGCRootKindHandle;
 #endif 
         EnumAllStaticGCRefs(fn, sc);
     }
@@ -88,14 +99,11 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
 
 void GCToEEInterface::GcEnumAllocContexts (enum_alloc_context_func* fn, void* param)
 {
-    if (GCHeap::UseAllocationContexts())
+    FOREACH_THREAD(thread)
     {
-        FOREACH_THREAD(thread)
-        {
-            (*fn) (thread->GetAllocContext(), param);
-        }
-        END_FOREACH_THREAD
+        (*fn) (thread->GetAllocContext(), param);
     }
+    END_FOREACH_THREAD
 }
 
 #endif //!DACCESS_COMPILE

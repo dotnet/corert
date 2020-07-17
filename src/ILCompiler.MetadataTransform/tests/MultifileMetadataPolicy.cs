@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -41,13 +40,18 @@ namespace MetadataTransformTests
 
         public bool IsBlocked(MetadataType typeDef)
         {
-            if (typeDef.Name == "ICastable")
+            if (typeDef.Name == "IBlockedInterface")
                 return true;
 
             if (typeDef.HasCustomAttribute("System.Runtime.CompilerServices", "__BlockReflectionAttribute"))
                 return true;
 
             return false;
+        }
+
+        public bool IsBlocked(MethodDesc method)
+        {
+            return IsBlocked((MetadataType)method.OwningType);
         }
     }
 }

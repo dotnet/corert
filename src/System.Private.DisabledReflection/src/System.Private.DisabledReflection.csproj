@@ -1,0 +1,27 @@
+﻿<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AssemblyName>System.Private.DisabledReflection</AssemblyName>
+    <AssemblyVersion>5.0.0.0</AssemblyVersion>
+    <OutputType>Library</OutputType>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
+    <ProjectGuid>{845DD249-B054-41E7-9E8D-99C12F992AE8}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\src\System\Collections\Concurrent\ConcurrentUnifierW.cs">
+      <Link>System\Collections\Concurrent\ConcurrentUnifierW.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\src\System\Collections\HashHelpers.cs">
+      <Link>System\Collections\HashHelpers.cs</Link>
+    </Compile>
+    <Compile Include="Internal\Reflection\ReflectionCoreCallbacksImplementation.cs" />
+    <Compile Include="Internal\Reflection\ReflectionExecutionDomainCallbacksImplementation.cs" />
+    <Compile Include="Internal\Reflection\RuntimeAssembly.cs" />
+    <Compile Include="Internal\Reflection\RuntimeTypeInfo.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

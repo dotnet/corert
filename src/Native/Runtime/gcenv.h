@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+#ifndef __GCENV_H__
+#define __GCENV_H__
+
 #define FEATURE_PREMORTEM_FINALIZATION
 
 #ifdef _MSC_VER
@@ -8,12 +10,17 @@
 #pragma warning( disable: 4127 )  // conditional expression is constant -- common in GC
 #endif
 
+#include <stdlib.h>
+#include <stdint.h>
+#include <assert.h>
+#include <cstddef>
+#include <string.h>
+
 #include "sal.h"
 #include "gcenv.structs.h"
-#include "gcenv.os.h"
 #include "gcenv.interlocked.h"
 #include "gcenv.base.h"
-#include "gcenv.ee.h"
+#include "gcenv.os.h"
 
 #include "Crst.h"
 #include "event.h"
@@ -29,14 +36,18 @@
 #include "gcrhinterface.h"
 #include "gcenv.interlocked.inl"
 
-#ifdef FEATURE_ETW
+#include "slist.h"
+#include "RWLock.h"
+#include "shash.h"
+#include "TypeManager.h"
+#include "RuntimeInstance.h"
+#include "eetype.inl"
+#include "volatile.h"
 
-    // @TODO: ETW update required -- placeholders
-    #define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) 0
-    #define FireEtwGCGlobalHeapHistory_V2(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure) 0
-    #define FireEtwGCMarkWithType(HeapNum, ClrInstanceID, Type, Bytes) {HeapNum;ClrInstanceID;Type;Bytes;}
-    #define FireEtwPinPlugAtGCTime(PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID) 0
-    #define FireEtwGCTriggered(Reason, ClrInstanceID) 0
+#include "gcenv.inl"
+
+#include "stressLog.h"
+#ifdef FEATURE_ETW
 
     #ifndef _INC_WINDOWS
         typedef void* LPVOID;
@@ -60,6 +71,7 @@
 #endif // FEATURE_ETW
 
 #define MAX_LONGPATH 1024
+#define LOG(x)
 
 #ifndef YieldProcessor
 #define YieldProcessor PalYieldProcessor
@@ -137,12 +149,6 @@ public:
         HEAPVERIFY_DEEP_ON_COMPACT  = 0x80    // Performs deep object verfication only on compacting GCs.
     };
 
-    typedef enum {
-        CONFIG_SYSTEM,
-        CONFIG_APPLICATION,
-        CONFIG_SYSTEMONLY
-    } ConfigSearch;
-
     enum  GCStressFlags {
         GCSTRESS_NONE               = 0,
         GCSTRESS_ALLOC              = 1,    // GC on all allocs and 'easy' places
@@ -160,39 +166,10 @@ public:
         m_gcStressMode = GCSTRESS_NONE;
     }
 
-    uint32_t ShouldInjectFault(uint32_t faultType) const { UNREFERENCED_PARAMETER(faultType); return FALSE; }
-   
-    int     GetHeapVerifyLevel();
-    bool    IsHeapVerifyEnabled()                 { return GetHeapVerifyLevel() != 0; }
-
     GCStressFlags GetGCStressLevel()        const { return (GCStressFlags) m_gcStressMode; }
     void    SetGCStressLevel(int val)             { m_gcStressMode = (UInt8) val;}
-    bool    IsGCStressMix()                 const { return false; }
 
-    int     GetGCtraceStart()               const { return 0; }
-    int     GetGCtraceEnd  ()               const { return 1000000000; }
-    int     GetGCtraceFac  ()               const { return 0; }
-    int     GetGCprnLvl    ()               const { return 0; }
-    bool    IsGCBreakOnOOMEnabled()         const { return false; }
-#ifdef CORERT
-    // CORERT-TODO: remove this
-    //              https://github.com/dotnet/corert/issues/913
-    int     GetGCgen0size  ()               const { return 100 * 1024 * 1024; }
-#else
-    int     GetGCgen0size  ()               const { return 0; }
-#endif
-    void    SetGCgen0size  (int iSize)            { UNREFERENCED_PARAMETER(iSize); }
-    int     GetSegmentSize ()               const { return 0; }
-    void    SetSegmentSize (int iSize)            { UNREFERENCED_PARAMETER(iSize); }
-    int     GetGCconcurrent();
-    void    SetGCconcurrent(int val)              { UNREFERENCED_PARAMETER(val); }
-    int     GetGCLatencyMode()              const { return 1; }
-    int     GetGCForceCompact()             const { return 0; }
-    int     GetGCRetainVM ()                const { return 0; }
-    int     GetGCTrimCommit()               const { return 0; }
-    int     GetGCLOHCompactionMode()        const { return 0; }
-
-    bool    GetGCAllowVeryLargeObjects ()   const { return false; }
+    bool    GetGCAllowVeryLargeObjects ()   const { return true; }
 
     // We need conservative GC enabled for some edge cases around ICastable support. This doesn't have much
     // impact, it just makes the GC slightly more flexible in dealing with interior references (e.g. we can
@@ -202,59 +179,21 @@ public:
 };
 extern EEConfig* g_pConfig;
 
-#ifdef VERIFY_HEAP
-class SyncBlockCache;
-
-extern SyncBlockCache g_sSyncBlockCache;
-
-class SyncBlockCache
-{
-public:
-    static SyncBlockCache *GetSyncBlockCache() { return &g_sSyncBlockCache; }
-    void GCWeakPtrScan(void *pCallback, uintptr_t pCtx, int dummy)
-    {
-        UNREFERENCED_PARAMETER(pCallback);
-        UNREFERENCED_PARAMETER(pCtx);
-        UNREFERENCED_PARAMETER(dummy);
-    }
-    void GCDone(uint32_t demoting, int max_gen)
-    {
-        UNREFERENCED_PARAMETER(demoting);
-        UNREFERENCED_PARAMETER(max_gen);
-    }
-    void VerifySyncTableEntry() {}
-};
-
-#endif // VERIFY_HEAP
-
-//
-// -----------------------------------------------------------------------------------------------------------
-//
-// Support for shutdown finalization, which is off by default but can be enabled by the class library.
-//
-
-// If true runtime shutdown will attempt to finalize all finalizable objects (even those still rooted).
-extern bool g_fPerformShutdownFinalization;
-
-// Time to wait (in milliseconds) for the above finalization to complete before giving up and proceeding with
-// shutdown. Can specify INFINITE for no timeout. 
-extern UInt32 g_uiShutdownFinalizationTimeout;
-
-// Flag set to true once we've begun shutdown (and before shutdown finalization begins). This is exported to
-// the class library so that managed code can tell when it is safe to access other objects from finalizers.
-extern bool g_fShutdownHasStarted;
-
-
-
-
 EXTERN_C UInt32 _tls_index;
 inline UInt16 GetClrInstanceId()
 {
     return (UInt16)_tls_index;
 }
 
-class GCHeap;
-typedef DPTR(GCHeap) PTR_GCHeap;
+class IGCHeap;
+typedef DPTR(IGCHeap) PTR_IGCHeap;
 typedef DPTR(uint32_t) PTR_uint32_t;
 
 enum CLRDataEnumMemoryFlags : int;
+
+/* _TRUNCATE */
+#if !defined (_TRUNCATE)
+#define _TRUNCATE ((size_t)-1)
+#endif  /* !defined (_TRUNCATE) */
+
+#endif // __GCENV_H__

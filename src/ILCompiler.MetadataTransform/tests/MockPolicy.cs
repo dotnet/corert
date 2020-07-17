@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using ILCompiler.Metadata;
@@ -15,17 +14,20 @@ namespace MetadataTransformTests
         private Func<FieldDesc, bool> _fieldGeneratesMetadata;
 
         private Func<MetadataType, bool> _isBlockedType;
+        private Func<MetadataType, ModuleDesc> _moduleOfType;
 
         public MockPolicy(
             Func<MetadataType, bool> typeGeneratesMetadata,
             Func<MethodDesc, bool> methodGeneratesMetadata = null,
             Func<FieldDesc, bool> fieldGeneratesMetadata = null,
-            Func<MetadataType, bool> isBlockedType = null)
+            Func<MetadataType, bool> isBlockedType = null,
+            Func<MetadataType, ModuleDesc> moduleOfType = null)
         {
             _typeGeneratesMetadata = typeGeneratesMetadata;
             _methodGeneratesMetadata = methodGeneratesMetadata;
             _fieldGeneratesMetadata = fieldGeneratesMetadata;
             _isBlockedType = isBlockedType;
+            _moduleOfType = moduleOfType;
         }
 
         public bool GeneratesMetadata(MethodDesc methodDef)
@@ -52,6 +54,11 @@ namespace MetadataTransformTests
             if (_isBlockedType != null)
                 return _isBlockedType(typeDef);
             return false;
+        }
+
+        public bool IsBlocked(MethodDesc method)
+        {
+            return IsBlocked((MetadataType)method.OwningType);
         }
     }
 }

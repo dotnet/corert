@@ -1,0 +1,37 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props"/>
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ILCompiler</RootNamespace>
+    <AssemblyName>ILCompiler.Build.Tasks</AssemblyName>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/tools/netstandard</OutputPath>
+    <!-- Workaround for https://github.com/dotnet/corert/issues/6306 -->
+    <SkipSigning>true</SkipSigning>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ComputeManagedAssembliesToCompileToNative.cs" />
+    <Compile Include="DesktopCompatibleTask.cs" />
+    <Compile Include="DumpNativeResources.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build.Framework">
+      <Version>15.3.409</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Build.Utilities.Core">
+      <Version>15.3.409</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.Metadata">
+      <Version>$(SystemReflectionMetadataVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\..\packages\system.reflection.metadata\1.4.3\lib\netstandard1.1\System.Reflection.Metadata.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\..\packages\system.collections.immutable\1.3.2\lib\netstandard1.0\System.Collections.Immutable.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

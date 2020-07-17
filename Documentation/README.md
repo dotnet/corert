@@ -1,12 +1,17 @@
 # Introduction to CoreRT Repo
 
-This is the repo for CoreRT, the .NET Core runtime optimized for AOT (Ahead of Time) compilation scenarios. This project is in early stages of its development.  [The high-level engineering plan](high-level-engineering-plan.md) lists major parts that needs to come together for it to become a complete runtime for .NET Core.
+This is the repo for CoreRT, the .NET Core runtime optimized for AOT (Ahead of Time) compilation scenarios. This project is in early stages of its development.
 
-## Contributing
+## Architecture
 
-*We follow the [.NET Core Contribution Guidelines](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing.md).*
+- [Intro to .NET Native and CoreRT](intro-to-corert.md)
 
-- [Prerequisites](prerequisites-for-building.md)
+## Developer Guide
+
+- [Prerequisites for building](prerequisites-for-building.md)
 - [How to build and run from the Command Line](how-to-build-and-run-ilcompiler-in-console-shell-prompt.md)
-- [How to build and run from Visual Studio](how-to-build-and-run-ilcompiler-in-visual-studio-2015.md)
+- [How to build and run from Visual Studio](how-to-build-and-run-ilcompiler-in-visual-studio.md)
+- [How to build and run from VSCode](how-to-build-and-run-ilcompiler-in-vscode.md)
 - [How to run tests](how-to-run-tests.md)
+- [Cross Compilation for ARM on Linux](cross-building.md)
+- [How to Build WebAssembly](how-to-build-WebAssembly.md)
