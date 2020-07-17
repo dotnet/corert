@@ -35207,7 +35207,7 @@ HRESULT GCHeap::Initialize()
             {
                 return E_INVALIDARG;
             }
-            else if ((percent_of_mem_poh < 0) || (percent_of_mem_poh >= 100))
+            else if (percent_of_mem_poh >= 100)
             {
                 return E_INVALIDARG;
             }
