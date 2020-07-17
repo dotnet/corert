@@ -214,14 +214,76 @@ COOP_PINVOKE_HELPER(Int64, RhGetAllocatedBytesForCurrentThread, ())
     return currentAllocated;
 }
 
-COOP_PINVOKE_HELPER(void, RhGetMemoryInfo, (
-    UInt64* highMemLoadThresholdBytes, UInt64* totalAvailableMemoryBytes,
-    UInt64* lastRecordedMemLoadBytes, UInt32* lastRecordedMemLoadPct,
-    size_t* lastRecordedHeapSizeBytes, size_t* lastRecordedFragmentationBytes))
+struct RH_GC_GENERATION_INFO
 {
-    return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(highMemLoadThresholdBytes, totalAvailableMemoryBytes,
-                                                       lastRecordedMemLoadBytes, lastRecordedMemLoadPct,
-                                                       lastRecordedHeapSizeBytes, lastRecordedFragmentationBytes);
+    UInt64 sizeBefore;
+    UInt64 fragmentationBefore;
+    UInt64 sizeAfter;
+    UInt64 fragmentationAfter;
+};
+
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
+#include "pshpack4.h"
+#ifdef _MSC_VER 
+#pragma warning(push)
+#pragma warning(disable:4121) // alignment of a member was sensitive to packing
+#endif
+#endif
+struct RH_GH_MEMORY_INFO
+{
+public:
+    UInt64 highMemLoadThresholdBytes;
+    UInt64 totalAvailableMemoryBytes;
+    UInt64 lastRecordedMemLoadBytes;
+    UInt64 lastRecordedHeapSizeBytes;
+    UInt64 lastRecordedFragmentationBytes;
+    UInt64 totalCommittedBytes;
+    UInt64 promotedBytes;
+    UInt64 pinnedObjectCount;
+    UInt64 finalizationPendingCount;
+    UInt64 index;
+    UInt32 generation;
+    UInt32 pauseTimePercent;
+    UInt8 isCompaction;
+    UInt8 isConcurrent;
+    RH_GC_GENERATION_INFO generationInfo0;
+    RH_GC_GENERATION_INFO generationInfo1;
+    RH_GC_GENERATION_INFO generationInfo2;
+    RH_GC_GENERATION_INFO generationInfo3;
+    RH_GC_GENERATION_INFO generationInfo4;
+    UInt64 pauseDuration0;
+    UInt64 pauseDuration1;
+};
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+#include "poppack.h"
+#endif
+
+COOP_PINVOKE_HELPER(void, RhGetMemoryInfo, (RH_GH_MEMORY_INFO* pData, int kind))
+{
+    UInt64* genInfoRaw = (UInt64*)&(pData->generationInfo0);
+    UInt64* pauseInfoRaw = (UInt64*)&(pData->pauseDuration0);
+
+    return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(
+        &(pData->highMemLoadThresholdBytes),
+        &(pData->totalAvailableMemoryBytes),
+        &(pData->lastRecordedMemLoadBytes),
+        &(pData->lastRecordedHeapSizeBytes),
+        &(pData->lastRecordedFragmentationBytes),
+        &(pData->totalCommittedBytes),
+        &(pData->promotedBytes),
+        &(pData->pinnedObjectCount),
+        &(pData->finalizationPendingCount),
+        &(pData->index),
+        &(pData->generation),
+        &(pData->pauseTimePercent),
+        (bool*)&(pData->isCompaction),
+        (bool*)&(pData->isConcurrent),
+        genInfoRaw,
+        pauseInfoRaw,
+        kind);
 }
 
 COOP_PINVOKE_HELPER(Int64, RhGetTotalAllocatedBytes, ())
