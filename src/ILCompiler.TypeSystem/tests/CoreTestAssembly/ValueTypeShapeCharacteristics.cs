@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -43,29 +42,29 @@ namespace ValueTypeShapeCharacteristics
         SimpleHfaDoubleStruct field4;
     }
 
-    struct NonHfaEmptyStruct
+    struct NonHAEmptyStruct
     {
     }
 
-    struct NonHfaStruct
+    struct NonHAStruct
     {
         float field1;
         int field2;
     }
 
-    struct NonHfaMixedStruct
+    struct NonHAMixedStruct
     {
         float field1;
         double field2;
     }
 
-    struct NonHfaCompositeStruct
+    struct NonHACompositeStruct
     {
         SimpleHfaDoubleStruct field1;
         SimpleHfaFloatStruct field2;
     }
 
-    struct NonHfaStructWithManyFields
+    struct NonHAStructWithManyFields
     {
         float field1;
         float field2;

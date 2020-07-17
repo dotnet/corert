@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -20,11 +19,6 @@ namespace Internal.TypeSystem
         {
             // This should never be called
             throw new NotSupportedException();
-        }
-
-        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
-        {
-            return null;
         }
 
         public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)

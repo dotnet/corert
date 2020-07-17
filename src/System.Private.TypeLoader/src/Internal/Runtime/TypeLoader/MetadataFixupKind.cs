@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace Internal.Runtime.TypeLoader
 {
@@ -14,8 +13,8 @@ namespace Internal.Runtime.TypeLoader
         TypeSize = 0x4,
         AllocateObject = 0x5,
         DefaultConstructor = 0x6,
-        TlsIndex = 0x7,
-        TlsOffset = 0x8,
+        // unused = 0x7,
+        // unused = 0x8,
         IsInst = 0x9,
         CastClass = 0xa,
         AllocateArray = 0xb,

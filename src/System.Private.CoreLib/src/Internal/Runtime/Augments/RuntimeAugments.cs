@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //Internal.Runtime.Augments
 //-------------------------------------------------
@@ -376,6 +375,11 @@ namespace Internal.Runtime.Augments
 
             IntPtr ptrValue = Unsafe.As<byte, IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
             return Pointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
+        }
+
+        public static unsafe object GetThreadStaticBase(IntPtr cookie)
+        {
+            return ThreadStatics.GetThreadStaticBaseForType(*(TypeManagerSlot**)cookie, (int)*((IntPtr*)(cookie) + 1));
         }
 
         public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);

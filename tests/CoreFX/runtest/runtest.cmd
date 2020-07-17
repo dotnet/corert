@@ -63,10 +63,6 @@ if not defined VS%__VSProductVersion%COMNTOOLS goto NoVS
 set __VSToolsRoot=!VS%__VSProductVersion%COMNTOOLS!
 if %__VSToolsRoot:~-1%==\ set "__VSToolsRoot=%__VSToolsRoot:~0,-1%"
 
-:: Set the environment for the  build- VS cmd prompt
-echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
-call                                 "%__VSToolsRoot%\VsDevCmd.bat"
-
 if not defined VSINSTALLDIR (
     echo %__MsgPrefix%Error: runtest.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
     exit /b 1

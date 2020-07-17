@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -62,17 +61,19 @@ namespace ILCompiler.DependencyAnalysis
                 if (field.IsLiteral || field.HasRva)
                     continue;
 
-                FieldTableFlags flags;
-                if (field.IsThreadStatic)
-                {
-                    flags = FieldTableFlags.ThreadStatic | FieldTableFlags.FieldOffsetEncodedDirectly;
-                }
-                else if (field.IsStatic)
-                {
-                    flags = FieldTableFlags.Static;
+                // CppCodegen: implement thread statics
+                if (factory.Target.Abi == TargetAbi.CppCodegen && field.IsThreadStatic)
+                    continue;
 
-                    if (field.HasGCStaticBase)
-                        flags |= FieldTableFlags.IsGcSection;
+                FieldTableFlags flags;
+                if (field.IsStatic)
+                {
+                    if (field.IsThreadStatic)
+                        flags = FieldTableFlags.ThreadStatic;
+                    else if (field.HasGCStaticBase)
+                        flags = FieldTableFlags.GCStatic;
+                    else
+                        flags = FieldTableFlags.NonGCStatic;
 
                     if (field.OwningType.HasInstantiation)
                         flags |= FieldTableFlags.FieldOffsetEncodedDirectly;
@@ -122,10 +123,8 @@ namespace ILCompiler.DependencyAnalysis
                     switch (flags & FieldTableFlags.StorageClass)
                     {
                         case FieldTableFlags.ThreadStatic:
-                            // TODO: CoreRT
-                            continue;
-
-                        case FieldTableFlags.Static:
+                        case FieldTableFlags.GCStatic:
+                        case FieldTableFlags.NonGCStatic:
                             {
                                 if (field.OwningType.HasInstantiation)
                                 {
@@ -135,19 +134,21 @@ namespace ILCompiler.DependencyAnalysis
                                 {
                                     MetadataType metadataType = (MetadataType)field.OwningType;
 
-                                    ISymbolNode staticsNode = field.HasGCStaticBase ?
-                                        factory.TypeGCStaticsSymbol(metadataType) :
-                                        factory.TypeNonGCStaticsSymbol(metadataType);
+                                    ISymbolNode staticsNode;
+                                    if (field.IsThreadStatic)
+                                        staticsNode = factory.TypeThreadStaticIndex(metadataType);
+                                    else if (field.HasGCStaticBase)
+                                        staticsNode = factory.TypeGCStaticsSymbol(metadataType);
+                                    else
+                                        staticsNode = factory.TypeNonGCStaticsSymbol(metadataType);
 
-                                    if (!field.HasGCStaticBase)
+                                    if (!field.IsThreadStatic && !field.HasGCStaticBase)
                                     {
                                         uint index = _externalReferences.GetIndex(staticsNode, field.Offset.AsInt);
                                         vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
                                     }
-                                    else if (factory.Target.Abi == TargetAbi.CoreRT || factory.Target.Abi == TargetAbi.CppCodegen)
+                                    else
                                     {
-                                        Debug.Assert(field.HasGCStaticBase);
-
                                         uint index = _externalReferences.GetIndex(staticsNode);
                                         vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant(index));
                                         vertex = writer.GetTuple(vertex, writer.GetUnsignedConstant((uint)(field.Offset.AsInt)));

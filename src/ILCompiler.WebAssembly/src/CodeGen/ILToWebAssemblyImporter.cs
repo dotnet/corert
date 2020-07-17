@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -153,7 +152,9 @@ namespace Internal.IL
                 _ehInfoNode = new EHInfoNode(_mangledName);
             }
             int curRegion = 0;
-            foreach (ILExceptionRegion region in ilExceptionRegions.OrderBy(region => region.TryOffset))
+            foreach (ILExceptionRegion region in ilExceptionRegions.OrderBy(region => region.TryOffset)
+                .ThenByDescending(region => region.TryLength)  // outer regions with the same try offset as inner region first - they will have longer lengths, // WASMTODO, except maybe an inner of try {} catch {} which could still be a problem
+                .ThenBy(region => region.HandlerOffset))
             {
                 _exceptionRegions[curRegion++] = new ExceptionRegion
                                                  {
@@ -257,6 +258,8 @@ namespace Internal.IL
             if (_exceptionRegions.Length > 0)
             {
                 _spilledExpressions.Add(new SpilledExpressionEntry(StackValueKind.ObjRef, "ExceptionSlot", GetWellKnownType(WellKnownType.Object), 0, this));
+                // clear any uncovered object references for GC.Collect
+                ImportCallMemset(LoadVarAddress(0, LocalVarKind.Temp, out TypeDesc _, prologBuilder), 0, LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)_pointerSize), prologBuilder);
                 // and a slot for the generic context if present
                 if (FuncletsRequireHiddenContext())
                 {
@@ -596,11 +599,16 @@ namespace Internal.IL
         /// </summary>
         private ExceptionRegion GetCurrentTryRegion()
         {
+            return GetTryRegion(_currentOffset);
+        }
+
+        private ExceptionRegion GetTryRegion(int offset)
+        {
             // Iterate backwards to find the most nested region
             for (int i = _exceptionRegions.Length - 1; i >= 0; i--)
             {
                 ILExceptionRegion region = _exceptionRegions[i].ILRegion;
-                if (IsOffsetContained(_currentOffset - 1, region.TryOffset, region.TryLength))
+                if (IsOffsetContained(offset - 1, region.TryOffset, region.TryLength))
                 {
                     return _exceptionRegions[i];
                 }
@@ -2863,7 +2871,7 @@ namespace Internal.IL
 
             var arguments = new StackEntry[] { new ExpressionEntry(StackValueKind.ObjRef, "managedPtr", managedPtr),
                                                  new ExpressionEntry(StackValueKind.Int32, "idxStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, 0xFFFFFFFFu, false)), 
-                                                 new ExpressionEntry(StackValueKind.Int32, "idxTryLandingStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)tryRegion.ILRegion.TryOffset, false)),
+                                                 new ExpressionEntry(StackValueKind.Int32, "idxCurrentBlockStart", LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (ulong)_currentBasicBlock.StartOffset, false)),
                                                  new ExpressionEntry(StackValueKind.NativeInt, "shadowStack", _currentFunclet.GetParam(0)),
                                                  new ExpressionEntry(StackValueKind.ByRef, "refFrameIter", ehInfoIterator),
                                                  new ExpressionEntry(StackValueKind.ByRef, "tryRegionIdx", tryRegionIdx),
@@ -2917,6 +2925,7 @@ namespace Internal.IL
 
             if (_leaveTargets != null)
             {
+                LLVMBasicBlockRef switchReturnBlock = default;
                 foreach (var leaveTarget in _leaveTargets)
                 {
                     var targetBlock = _basicBlocks[leaveTarget];
@@ -2925,6 +2934,27 @@ namespace Internal.IL
                     {
                         @switch.AddCase(BuildConstInt32(targetBlock.StartOffset), GetLLVMBasicBlockForBlock(targetBlock));
                     }
+                    else
+                    {
+
+                        // leave destination is in a different funclet, this happens when an exception is thrown/rethrown from inside a catch handler and the throw is not directly in a try handler
+                        // In this case we need to return out of this funclet to get back to the containing funclet.  Logic checks we are actually in a catch funclet as opposed to a finally or the main function funclet
+                        ExceptionRegion currentRegion = GetTryRegion(_currentBasicBlock.StartOffset);
+                        if (currentRegion != null && _currentBasicBlock.StartOffset >= currentRegion.ILRegion.HandlerOffset && _currentBasicBlock.StartOffset < currentRegion.ILRegion.HandlerOffset + currentRegion.ILRegion.HandlerLength
+                            && currentRegion.ILRegion.Kind == ILExceptionRegionKind.Catch)
+                        {
+                            if (switchReturnBlock == default)
+                            {
+                                switchReturnBlock = _currentFunclet.AppendBasicBlock("SwitchReturn");
+                            }
+                            @switch.AddCase(BuildConstInt32(targetBlock.StartOffset), switchReturnBlock);
+                        }
+                    }
+                }
+                if (switchReturnBlock != default)
+                {
+                    landingPadBuilder.PositionAtEnd(switchReturnBlock);
+                    landingPadBuilder.BuildRet(landingPadBuilder.BuildLoad(leaveDestination, "loadLeaveDest"));
                 }
             }
 
@@ -3133,6 +3163,7 @@ namespace Internal.IL
             LLVMValueRef shadowStack = builder.BuildLoad(shadowStackPtr, "ShadowStack");
             int curOffset = 0;
             curOffset = PadNextOffset(method.Signature.ReturnType, curOffset);
+            ImportCallMemset(shadowStack, 0, curOffset, builder); // clear any uncovered object references for GC.Collect
             LLVMValueRef calleeFrame = builder.BuildGEP(shadowStack, new LLVMValueRef[] { BuildConstInt32(curOffset) }, "calleeFrame");
 
             List<LLVMValueRef> llvmArgs = new List<LLVMValueRef>();
@@ -5219,10 +5250,11 @@ namespace Internal.IL
             while (i >= 0)
             {
                 int tryStart = _exceptionRegions[i].ILRegion.TryOffset;
+                int tryLength = _exceptionRegions[i].ILRegion.TryLength;
                 for (var j = 0; j < _exceptionRegions.Length; j++)
                 {
                     ExceptionRegion exceptionRegion = _exceptionRegions[j];
-                    if (exceptionRegion.ILRegion.TryOffset != tryStart) continue;
+                    if (exceptionRegion.ILRegion.TryOffset != tryStart || exceptionRegion.ILRegion.TryLength != tryLength) continue;
                     //                if (i > 0)
                     //                {
                     //                    ExceptionRegion previousClause = _exceptionRegions[i - 1];
@@ -5259,8 +5291,7 @@ namespace Internal.IL
 
                     builder.EmitCompressedUInt((uint)exceptionRegion.ILRegion.TryOffset);
 
-                    uint tryLength = (uint)exceptionRegion.ILRegion.TryLength;
-                    builder.EmitCompressedUInt((tryLength << 2) | (uint)clauseKind);
+                    builder.EmitCompressedUInt(((uint)tryLength << 2) | (uint)clauseKind);
 
                     RelocType rel = (_compilation.NodeFactory.Target.IsWindows)
                         ? RelocType.IMAGE_REL_BASED_ABSOLUTE

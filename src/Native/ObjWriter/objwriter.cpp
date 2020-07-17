@@ -4,7 +4,6 @@
 //
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -143,7 +142,7 @@ bool ObjectWriter::Init(llvm::StringRef ObjectFilePath, const char* tripleName) 
   Streamer = (MCObjectStreamer *)TheTarget->createMCObjectStreamer(
       TheTriple, *OutContext, *AsmBackend, *OS, CodeEmitter, *SubtargetInfo,
       RelaxAll,
-      /*IncrementalLinkerCompatible*/ true,
+      /*IncrementalLinkerCompatible*/ false,
       /*DWARFMustBeAtTheEnd*/ false);
   if (!Streamer)
     return error("no object streamer for target " + TripleName);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -31,6 +30,10 @@ internal class Program
         TestTryCatch.Run();
         TestBadClass.Run();
         TestRefs.Run();
+        TestDelegate.Run();
+        TestInitFromOtherClass.Run();
+        TestInitFromOtherClassDouble.Run();
+        TestDelegateToOtherClass.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -516,6 +519,125 @@ class TestRefs
         Assert.AreEqual(42, s_value1.Value);
         Assert.AreEqual(100, s_value2.Value);
         Assert.AreEqual(3.14, s_doubleValue.Value);
+    }
+}
+
+class TestDelegate
+{
+    static Func<int> s_delegate = GetVal;
+
+    static int GetVal() => 42;
+
+    static Func<int> s_lambda = () => 2020;
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestDelegate));
+        Assert.AreEqual(42, s_delegate());
+        Assert.AreEqual(2020, s_lambda());
+    }
+}
+
+class TestInitFromOtherClass
+{
+    class OtherClass
+    {
+        public static readonly int IntValue = 456;
+        public static readonly string StringValue = "Hello";
+        public static readonly object ObjectValue = new object();
+    }
+
+    static int s_intValue = OtherClass.IntValue;
+    static string s_stringValue = OtherClass.StringValue;
+    static object s_objectValue = OtherClass.ObjectValue;
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestInitFromOtherClass));
+        Assert.AreEqual(OtherClass.IntValue, s_intValue);
+        Assert.AreSame(OtherClass.StringValue, s_stringValue);
+        Assert.AreSame(OtherClass.ObjectValue, s_objectValue);
+    }
+}
+
+class TestInitFromOtherClassDouble
+{
+    class OtherClass
+    {
+        public static readonly int IntValue = 456;
+        public static readonly string StringValue = "Hello";
+        public static readonly object ObjectValue = new object();
+    }
+
+    class OtherClassDouble
+    {
+        public static readonly int IntValue = OtherClass.IntValue;
+        public static readonly string StringValue = OtherClass.StringValue;
+        public static readonly object ObjectValue = OtherClass.ObjectValue;
+    }
+
+    static int s_intValue = OtherClassDouble.IntValue;
+    static string s_stringValue = OtherClassDouble.StringValue;
+    static object s_objectValue = OtherClassDouble.ObjectValue;
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestInitFromOtherClassDouble));
+        Assert.AreEqual(OtherClass.IntValue, s_intValue);
+        Assert.AreSame(OtherClass.StringValue, s_stringValue);
+        Assert.AreSame(OtherClass.ObjectValue, s_objectValue);
+    }
+}
+
+
+class TestDelegateToOtherClass
+{
+    static Func<int> s_getCookie = OtherClass.s_otherclass.GetCookie;
+    static Func<Type> s_getStringType = OtherClass.s_otherString.GetType;
+    static Func<int> s_getCookieDoubleIndirect = OtherClass.s_getCookie;
+    static Func<Type> s_getStringTypeDoubleIndirect = OtherClass.s_getStringType;
+    static Func<int> s_getCookieIndirected = OtherClass.s_otherclassFromYetAnother.GetCookie;
+    static Func<Type> s_getStringTypeIndirected = OtherClass.s_otherStringFromYetAnother.GetType;
+
+    class OtherClass
+    {
+        int _cookie;
+        public static readonly OtherClass s_otherclass = new OtherClass(4040);
+        public static readonly string s_otherString = "1";
+        public static readonly Func<int> s_getCookie = YetAnotherClass.s_otherclass.GetCookie;
+        public static readonly Func<Type> s_getStringType = YetAnotherClass.s_otherString.GetType;
+        public static readonly OtherClass s_otherclassFromYetAnother = YetAnotherClass.s_otherclass;
+        public static readonly string s_otherStringFromYetAnother = YetAnotherClass.s_otherString;
+        public OtherClass(int cookie) { _cookie = cookie; }
+        public int GetCookie() => _cookie;
+    }
+
+    class YetAnotherClass
+    {
+        public static readonly OtherClass s_otherclass = new OtherClass(1010);
+        public static readonly string s_otherString = "1";
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(TestDelegateToOtherClass));
+
+        Assert.AreEqual(4040, s_getCookie());
+        Assert.AreSame(OtherClass.s_otherclass, s_getCookie.Target);
+        Assert.AreSame(typeof(string), s_getStringType());
+        Assert.AreSame(OtherClass.s_otherString, s_getStringType.Target);
+
+        Assert.AreEqual(1010, s_getCookieDoubleIndirect());
+        Assert.AreSame(YetAnotherClass.s_otherclass, s_getCookieDoubleIndirect.Target);
+        Assert.AreSame(typeof(string), s_getStringTypeDoubleIndirect());
+        Assert.AreSame(YetAnotherClass.s_otherString, s_getStringTypeDoubleIndirect.Target);
+        Assert.AreSame(OtherClass.s_getCookie, s_getCookieDoubleIndirect);
+        Assert.AreSame(OtherClass.s_getStringType, s_getStringTypeDoubleIndirect);
+
+        Assert.AreEqual(1010, s_getCookieIndirected());
+        Assert.AreSame(YetAnotherClass.s_otherclass, s_getCookieIndirected.Target);
+        Assert.AreSame(typeof(string), s_getStringTypeIndirected());
+        Assert.AreSame(YetAnotherClass.s_otherString, s_getStringTypeIndirected.Target);
     }
 }
 

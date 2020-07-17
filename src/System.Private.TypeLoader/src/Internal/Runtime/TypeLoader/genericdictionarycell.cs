@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 using System;
@@ -536,42 +535,6 @@ namespace Internal.Runtime.TypeLoader
                 if (result == IntPtr.Zero)
                     result = RuntimeAugments.GetFallbackDefaultConstructor();
                 return result;
-            }
-        }
-
-        private class TlsIndexCell : GenericDictionaryCell
-        {
-            internal TypeDesc Type;
-
-            override internal void Prepare(TypeBuilder builder)
-            {
-                if (Type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    Environment.FailFast("Unable to compute static field locations for a canonical type.");
-
-                builder.RegisterForPreparation(Type);
-            }
-
-            override unsafe internal IntPtr Create(TypeBuilder builder)
-            {
-                return TypeLoaderEnvironment.Instance.TryGetTlsIndexDictionaryCellForType(builder.GetRuntimeTypeHandle(Type));
-            }
-        }
-
-        private class TlsOffsetCell : GenericDictionaryCell
-        {
-            internal TypeDesc Type;
-
-            override internal void Prepare(TypeBuilder builder)
-            {
-                if (Type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                    Environment.FailFast("Unable to compute static field locations for a canonical type.");
-
-                builder.RegisterForPreparation(Type);
-            }
-
-            override unsafe internal IntPtr Create(TypeBuilder builder)
-            {
-                return TypeLoaderEnvironment.Instance.TryGetTlsOffsetDictionaryCellForType(builder.GetRuntimeTypeHandle(Type));
             }
         }
 
@@ -1422,24 +1385,6 @@ namespace Internal.Runtime.TypeLoader
                     }
                     break;
 
-                case MetadataFixupKind.TlsIndex:
-                    {
-                        var type = metadata.GetType(token);
-                        TypeLoaderLogger.WriteLine("TlsIndex on: " + type.ToString());
-
-                        cell = new TlsIndexCell { Type = type };
-                    }
-                    break;
-
-                case MetadataFixupKind.TlsOffset:
-                    {
-                        var type = metadata.GetType(token);
-                        TypeLoaderLogger.WriteLine("TlsOffset on: " + type.ToString());
-
-                        cell = new TlsOffsetCell { Type = type };
-                    }
-                    break;
-
                 case MetadataFixupKind.UnboxingStubMethod:
                     {
                         var method = metadata.GetMethod(token);
@@ -1761,24 +1706,6 @@ namespace Internal.Runtime.TypeLoader
                     }
                     break;
 
-                case FixupSignatureKind.TlsIndex:
-                    {
-                        var type = nativeLayoutInfoLoadContext.GetType(ref parser);
-                        TypeLoaderLogger.WriteLine("TlsIndex on: " + type.ToString());
-
-                        cell = new TlsIndexCell { Type = type };
-                    }
-                    break;
-
-                case FixupSignatureKind.TlsOffset:
-                    {
-                        var type = nativeLayoutInfoLoadContext.GetType(ref parser);
-                        TypeLoaderLogger.WriteLine("TlsOffset on: " + type.ToString());
-
-                        cell = new TlsOffsetCell { Type = type };
-                    }
-                    break;
-
                 case FixupSignatureKind.Method:
                     {
                         RuntimeSignature methodSig;
@@ -1897,6 +1824,7 @@ namespace Internal.Runtime.TypeLoader
                     break;
 
                 case FixupSignatureKind.NotYetSupported:
+                case FixupSignatureKind.ThreadStaticIndex:
                     TypeLoaderLogger.WriteLine("Valid dictionary entry, but not yet supported by the TypeLoader!");
                     throw new TypeBuilder.MissingTemplateException();
 

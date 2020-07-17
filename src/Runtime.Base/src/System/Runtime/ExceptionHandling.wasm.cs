@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Runtime;
@@ -38,7 +37,7 @@ namespace System.Runtime
         }
 
         // TODO: temporary to try things out, when working look to see how to refactor with FindFirstPassHandler
-        private static bool FindFirstPassHandlerWasm(object exception, uint idxStart, uint idxTryLandingStart /* the start IL idx of the try region for the landing pad, will use in place of PC */, 
+        private static bool FindFirstPassHandlerWasm(object exception, uint idxStart, uint idxCurrentBlockStart /* the start IL idx of the current block for the landing pad, will use in place of PC */, 
             void* shadowStack, ref EHClauseIterator clauseIter, out uint tryRegionIdx, out byte* pHandler)
         {
             pHandler = (byte*)0;
@@ -75,7 +74,7 @@ namespace System.Runtime
                 EHClauseIterator.RhEHClauseKindWasm clauseKind = ehClause._clauseKind;
                 if (((clauseKind != EHClauseIterator.RhEHClauseKindWasm.RH_EH_CLAUSE_TYPED) &&
                      (clauseKind != EHClauseIterator.RhEHClauseKindWasm.RH_EH_CLAUSE_FILTER))
-                    || !ehClause.ContainsCodeOffset(idxTryLandingStart))
+                    || !ehClause.ContainsCodeOffset(idxCurrentBlockStart))
                 {
                     continue;
                 }

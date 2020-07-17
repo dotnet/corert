@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 
@@ -42,14 +41,14 @@ namespace Internal.Runtime
     public enum FieldTableFlags : uint
     {
         Instance = 0x00,
-        Static = 0x01,
-        ThreadStatic = 0x02,
+        NonGCStatic = 0x01,
+        GCStatic = 0x02,
+        ThreadStatic = 0x03,
 
         StorageClass = 0x03,
 
         IsUniversalCanonicalEntry = 0x04,
         HasMetadataHandle = 0x08,
-        IsGcSection = 0x10,
         FieldOffsetEncodedDirectly = 0x20,
         IsAnyCanonicalEntry = 0x40
     }

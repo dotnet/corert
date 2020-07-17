@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Diagnostics;
@@ -356,6 +356,8 @@ internal static class Program
 
         TestStackTrace();
 
+        TestJavascriptCall();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -394,7 +396,36 @@ internal static class Program
             PrintString("GC Collection Count " + i.ToString() + " ");
             PrintLine(GC.CollectionCount(i).ToString());
         }
+        if(!TestObjectRefInUncoveredShadowStackSlot())
+        {
+            FailTest("struct Child1 alive unexpectedly");
+
+        }
         EndTest(true);
+    }
+
+    private static WeakReference childRef;
+    // This test is to catch where slots are allocated on the shadow stack uncovering object references that were there previously.
+    // If this happens in the call to GC.Collect, which at the time of writing allocate 12 bytes in the call, 3 slots, then any objects that were in those 
+    // 3 slots will not be collected as they will now be (back) in the range of bottom of stack -> top of stack.
+    private static unsafe bool TestObjectRefInUncoveredShadowStackSlot()
+    {
+        CreateObjectRefsInShadowStack();
+        GC.Collect();
+        return !childRef.IsAlive;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe void CreateObjectRefsInShadowStack()
+    {
+        var child = new Child();
+        Child c1, c2, c3;  // 3 more locals to cover give a bit more resiliency to the test, in case of slots being added or removed in the RhCollect calls
+        c1 = c2 = c3 = child;
+        childRef = new WeakReference(child);
+    }
+
+    public class Child
+    {
     }
 
     private static unsafe void TestBoxUnboxDifferentSizes()
@@ -1384,6 +1415,8 @@ internal static class Program
         TestFilter();
 
         TestFilterNested();
+
+        TestCatchAndThrow();
     }
 
     private static void TestTryCatchNoException()
@@ -1594,6 +1627,32 @@ internal static class Program
         }
         PrintLine(exceptionFlowSequence);
         EndTest(exceptionFlowSequence == @"In middle catchRunning outer filterIn outer catchRunning inner filterIn inner catch");
+    }
+
+    private static void TestCatchAndThrow()
+    {
+        StartTest("Test catch and throw different exception");
+        int caught = 0;
+        try
+        {
+            try
+            {
+                throw new Exception("first");
+            }
+            catch
+            {
+                caught += 1;
+                throw new Exception("second");
+            }
+        }
+        catch(Exception e)
+        {
+            if(e.Message == "second")
+            {
+                caught += 10;
+            }
+        }
+        EndTest(caught == 11);
     }
 
     static bool Print(string s)
@@ -2315,6 +2374,15 @@ internal static class Program
 #endif
     }
 
+    static void TestJavascriptCall()
+    {
+        StartTest("Test Javascript call");
+
+        IntPtr resultPtr = JSInterop.InternalCalls.InvokeJSUnmarshalled(out string exception, "Answer", IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+        EndTest(resultPtr.ToInt32() == 42);
+    }
+
     static ushort ReadUInt16()
     {
         // something with MSB set
@@ -2329,6 +2397,20 @@ internal static class Program
 
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
+}
+
+namespace JSInterop
+{
+    internal static class InternalCalls
+    {
+        [DllImport("*", EntryPoint = "corert_wasm_invoke_js_unmarshalled")]
+        private static extern IntPtr InvokeJSUnmarshalledInternal(string js, int length, IntPtr p1, IntPtr p2, IntPtr p3, out string exception);
+
+        public static IntPtr InvokeJSUnmarshalled(out string exception, string js, IntPtr p1, IntPtr p2, IntPtr p3)
+        {
+            return InvokeJSUnmarshalledInternal(js, js.Length, p1, p2, p3, out exception);
+        }
+    }
 }
 
 public class ClassForNre
