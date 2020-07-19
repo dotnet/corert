@@ -167,7 +167,7 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.jmp:
                         throw new NotImplementedException();
                     case ILOpcode.call:
-                        InterpretCall(reader.ReadILToken());
+                        InterpretCall((MethodDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.calli:
                         throw new NotImplementedException();
@@ -313,7 +313,7 @@ namespace Internal.Runtime.Interpreter
                         InterpretLoadConstant((string)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.newobj:
-                        InterpretNewObj(reader.ReadILToken());
+                        InterpretNewObj((MethodDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.castclass:
                         throw new NotImplementedException();
@@ -327,12 +327,12 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.throw_:
                         throw new NotImplementedException();
                     case ILOpcode.ldfld:
-                        InterpretLoadField(reader.ReadILToken());
+                        InterpretLoadField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.ldflda:
                         throw new NotImplementedException();
                     case ILOpcode.stfld:
-                        InterpretStoreField(reader.ReadILToken());
+                        InterpretStoreField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.ldsfld:
                         throw new NotImplementedException();
@@ -375,7 +375,7 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.box:
                         throw new NotImplementedException();
                     case ILOpcode.newarr:
-                        InterpretNewArray(reader.ReadILToken());
+                        InterpretNewArray((TypeDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.ldlen:
                         InterpretLoadLength();
@@ -406,10 +406,10 @@ namespace Internal.Runtime.Interpreter
                         InterpretStoreElement(opcode);
                         break;
                     case ILOpcode.ldelem:
-                        InterpretLoadElement(reader.ReadILToken());
+                        InterpretLoadElement((TypeDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.stelem:
-                        InterpretStoreElement(reader.ReadILToken());
+                        InterpretStoreElement((TypeDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.unbox_any:
                         throw new NotImplementedException();
@@ -2125,7 +2125,7 @@ again:
             }
         }
 
-        private void InterpretNewArray(int token)
+        private void InterpretNewArray(TypeDesc elementType)
         {
             int length = 0;
             StackItem stackItem = PopWithValidation();
@@ -2145,9 +2145,9 @@ again:
 
             Debug.Assert(length >= 0);
 
-            TypeDesc arrayType = ((TypeDesc)_methodIL.GetObject(token)).MakeArrayType();
+            TypeDesc arrayType = elementType.MakeArrayType();
 
-            // TODO: Add support for arbitrary  non-primitive types
+            // TODO: Add support for arbitrary non-primitive types
             Array array = RuntimeAugments.NewArray(arrayType.GetRuntimeTypeHandle(), length);
 
             _stack.Push(StackItem.FromObjectRef(array));
@@ -2218,7 +2218,7 @@ again:
             }
         }
 
-        private void InterpretStoreElement(int token)
+        private void InterpretStoreElement(TypeDesc elementType)
         {
             StackItem valueItem = PopWithValidation();
             StackItem indexItem = PopWithValidation();
@@ -2244,7 +2244,6 @@ again:
                     break;
             }
 
-            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
 again:
@@ -2368,7 +2367,7 @@ again:
             }
         }
 
-        private void InterpretLoadElement(int token)
+        private void InterpretLoadElement(TypeDesc elementType)
         {
             StackItem indexItem = PopWithValidation();
             Array array = (Array)PopWithValidation().AsObjectRef();
@@ -2392,7 +2391,6 @@ again:
                     break;
             }
 
-            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
 again:
@@ -2604,15 +2602,12 @@ getvar:
             }
         }
 
-        private void InterpretCall(int token)
+        private void InterpretCall(MethodDesc method)
         {
-            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
-
             MethodSignature signature = method.Signature;
-            int nSignature = signature.Length;
-
             TypeDesc owningType = method.OwningType;
             TypeDesc returnType = signature.ReturnType;
+            int nSignature = signature.Length;
 
             if (signature.Length > _stack.Count)
                 ThrowHelper.ThrowInvalidProgramException();
@@ -2667,11 +2662,9 @@ getvar:
                 _stack.Push(callInfo.ReturnValue);
         }
         
-        private unsafe void InterpretNewObj(int token)
+        private unsafe void InterpretNewObj(MethodDesc method)
         {
-            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
             TypeDesc owningType = method.OwningType;
-
             MethodSignature signature = method.Signature;
             int nSignature = signature.Length;
 
@@ -2735,9 +2728,8 @@ getvar:
             _stack.Push(StackItem.FromObjectRef(@this));
         }
 
-        public void InterpretLoadField(int token)
+        public void InterpretLoadField(FieldDesc field)
         {
-            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
             TypeDesc fieldType = field.FieldType;
 
             if (field.OwningType.IsValueType)
@@ -2811,9 +2803,8 @@ setstackitem:
             }
         }
 
-        public void InterpretStoreField(int token)
+        public void InterpretStoreField(FieldDesc field)
         {
-            FieldDesc field = (FieldDesc)_methodIL.GetObject(token);
             TypeDesc fieldType = field.FieldType;
 
             if (field.OwningType.IsValueType)
