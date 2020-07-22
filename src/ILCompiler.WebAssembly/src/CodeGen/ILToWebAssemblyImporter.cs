@@ -1072,7 +1072,7 @@ namespace Internal.IL
             TypeDesc varType;
             StackEntry toStore = _stack.Pop();
             LLVMValueRef varAddress = LoadVarAddress(index, argument ? LocalVarKind.Argument : LocalVarKind.Local, out varType);
-            CastingStore(varAddress, toStore, varType, $"Variable{index}_");
+            CastingStore(varAddress, toStore, varType, false, $"Variable{index}_");
         }
 
         private void ImportStoreHelper(LLVMValueRef toStore, LLVMTypeRef valueType, LLVMValueRef basePtr, uint offset, string name = null, LLVMBuilderRef builder = default(LLVMBuilderRef))
@@ -1104,10 +1104,75 @@ namespace Internal.IL
             return CastIfNecessary(source, LLVMTypeRef.CreatePointer(GetLLVMTypeForTypeDesc(type), 0), (name ?? "") + type.ToString());
         }
 
-        private void CastingStore(LLVMValueRef address, StackEntry value, TypeDesc targetType, string targetName = null)
+        private void CastingStore(LLVMValueRef address, StackEntry value, TypeDesc targetType, bool withBarrier, string targetName = null)
         {
-            var typedStoreLocation = CastToPointerToTypeDesc(address, targetType, targetName);
-            _builder.BuildStore(value.ValueAsType(targetType, _builder), typedStoreLocation);
+            if (withBarrier && targetType.IsGCPointer)
+            {
+                CallRuntime(_method.Context, "InternalCalls", "RhpAssignRef", new StackEntry[]
+                {
+                    new ExpressionEntry(StackValueKind.Int32, "address", address), value
+                });
+            }
+            else
+            {
+                var typedStoreLocation = CastToPointerToTypeDesc(address, targetType, targetName);
+                var llvmValue = value.ValueAsType(targetType, _builder);
+                if (withBarrier && IsStruct(targetType))
+                {
+                    StoreStruct(address, llvmValue, targetType, typedStoreLocation);
+                }
+                else
+                {
+                    _builder.BuildStore(llvmValue, typedStoreLocation);
+                }
+            }
+        }
+
+        private static bool IsStruct(TypeDesc typeDesc)
+        {
+            return typeDesc.IsValueType && !typeDesc.IsPrimitive && !typeDesc.IsEnum;
+        }
+
+        private void StoreStruct(LLVMValueRef address, LLVMValueRef llvmValue, TypeDesc targetType, LLVMValueRef typedStoreLocation, bool childStruct = false)
+        {
+            foreach (FieldDesc f in targetType.GetFields())
+            {
+                if (f.IsStatic) continue;
+                if (IsStruct(f.FieldType) && llvmValue.TypeOf.IsPackedStruct)
+                {
+                    LLVMValueRef targetAddress = _builder.BuildGEP(address, new[] { BuildConstInt32(f.Offset.AsInt) });
+                    uint index = LLVMSharpInterop.ElementAtOffset(_compilation.TargetData, llvmValue.TypeOf, (ulong)f.Offset.AsInt);
+                    LLVMValueRef fieldValue = _builder.BuildExtractValue(llvmValue, index);
+                    //recurse into struct
+                    StoreStruct(targetAddress, fieldValue, f.FieldType, CastToPointerToTypeDesc(targetAddress, f.FieldType), true);
+                }
+                else if (f.FieldType.IsGCPointer)
+                {
+                    LLVMValueRef targetAddress = _builder.BuildGEP(address, new[] {BuildConstInt32(f.Offset.AsInt)});
+                    LLVMValueRef fieldValue;
+                    if (llvmValue.TypeOf.IsPackedStruct)
+                    {
+                        uint index = LLVMSharpInterop.ElementAtOffset(_compilation.TargetData, llvmValue.TypeOf, (ulong) f.Offset.AsInt);
+                        fieldValue = _builder.BuildExtractValue(llvmValue, index);
+                        Debug.Assert(fieldValue.TypeOf.Kind == LLVMTypeKind.LLVMPointerTypeKind, "expected an LLVM pointer type");
+                    }
+                    else
+                    {
+                        // single field IL structs are not LLVM structs
+                        fieldValue = llvmValue;
+                    }
+                    CallRuntime(_method.Context, "InternalCalls", "RhpAssignRef",
+                        new StackEntry[]
+                        {
+                            new ExpressionEntry(StackValueKind.Int32, "targetAddress", targetAddress),
+                            new ExpressionEntry(StackValueKind.ObjRef, "sourceAddress", fieldValue)
+                        });
+                }
+            }
+            if (!childStruct)
+            {
+                _builder.BuildStore(llvmValue, typedStoreLocation); // just copy all the fields again for simplicity, if all the fields where set using RhpAssignRef then a possible optimisation would be to skip this line
+            }
         }
 
         private LLVMValueRef CastIfNecessary(LLVMValueRef source, LLVMTypeRef valueType, string name = null, bool unsigned = false)
@@ -3578,7 +3643,6 @@ namespace Internal.IL
         {
             var pointer = _stack.Pop();
             Debug.Assert(pointer is ExpressionEntry || pointer is ConstantEntry);
-            var expressionPointer = pointer as ExpressionEntry;
             if (type == null)
             {
                 type = GetWellKnownType(WellKnownType.Object);
@@ -3600,19 +3664,36 @@ namespace Internal.IL
             StackEntry destinationPointer = _stack.Pop();
             LLVMValueRef typedValue;
             LLVMValueRef typedPointer;
+            bool requireWriteBarrier;
 
             if (type != null)
             {
-                typedValue = value.ValueAsType(type, _builder);
                 typedPointer = destinationPointer.ValueAsType(type.MakePointerType(), _builder);
+                typedValue = value.ValueAsType(type, _builder);
+                if (IsStruct(type))
+                {
+                    StoreStruct(typedPointer, typedValue, type, typedPointer);
+                    return;
+                }
+                requireWriteBarrier = type.IsGCPointer;
             }
             else
             {
                 typedPointer = destinationPointer.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0), _builder);
                 typedValue = value.ValueAsInt32(_builder, false);
+                requireWriteBarrier = (value is ExpressionEntry) && !((ExpressionEntry)value).RawLLVMValue.IsNull && value.Type.IsGCPointer;
             }
-
-            _builder.BuildStore(typedValue, typedPointer);
+            if (requireWriteBarrier)
+            {
+                CallRuntime(_method.Context, "InternalCalls", "RhpAssignRef", new StackEntry[]
+                {
+                    new ExpressionEntry(StackValueKind.Int32, "typedPointer", typedPointer), value
+                });
+            }
+            else
+            {
+                _builder.BuildStore(typedValue, typedPointer);
+            }
         }
 
         private void ImportBinaryOperation(ILOpcode opcode)
@@ -4720,7 +4801,7 @@ namespace Internal.IL
             StackEntry valueEntry = _stack.Pop();
 
             LLVMValueRef fieldAddress = GetFieldAddress(runtimeDeterminedField, field, isStatic);
-            CastingStore(fieldAddress, valueEntry, field.FieldType);
+            CastingStore(fieldAddress, valueEntry, field.FieldType, true);
         }
 
         // Loads symbol address. Address is represented as a i32*
@@ -4936,7 +5017,7 @@ namespace Internal.IL
             StackEntry arrayReference = _stack.Pop();
             var nullSafeElementType = elementType ?? GetWellKnownType(WellKnownType.Object);
             LLVMValueRef elementAddress = GetElementAddress(index.ValueAsInt32(_builder, true), arrayReference.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder), nullSafeElementType);
-            CastingStore(elementAddress, value, nullSafeElementType);
+            CastingStore(elementAddress, value, nullSafeElementType, true);
         }
 
         private void ImportLoadLength()
