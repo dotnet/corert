@@ -1104,9 +1104,9 @@ namespace Internal.IL
             return CastIfNecessary(source, LLVMTypeRef.CreatePointer(GetLLVMTypeForTypeDesc(type), 0), (name ?? "") + type.ToString());
         }
 
-        private void CastingStore(LLVMValueRef address, StackEntry value, TypeDesc targetType, bool withBarrier, string targetName = null)
+        private void CastingStore(LLVMValueRef address, StackEntry value, TypeDesc targetType, bool withGCBarrier, string targetName = null)
         {
-            if (withBarrier && targetType.IsGCPointer)
+            if (withGCBarrier && targetType.IsGCPointer)
             {
                 CallRuntime(_method.Context, "InternalCalls", "RhpAssignRef", new StackEntry[]
                 {
@@ -1117,7 +1117,7 @@ namespace Internal.IL
             {
                 var typedStoreLocation = CastToPointerToTypeDesc(address, targetType, targetName);
                 var llvmValue = value.ValueAsType(targetType, _builder);
-                if (withBarrier && IsStruct(targetType))
+                if (withGCBarrier && IsStruct(targetType))
                 {
                     StoreStruct(address, llvmValue, targetType, typedStoreLocation);
                 }
@@ -1135,6 +1135,7 @@ namespace Internal.IL
 
         private void StoreStruct(LLVMValueRef address, LLVMValueRef llvmValue, TypeDesc targetType, LLVMValueRef typedStoreLocation, bool childStruct = false)
         {
+            // TODO: if this is used for anything multithreaded, this foreach and the subsequent BuildStore are susceptible to a race condition 
             foreach (FieldDesc f in targetType.GetFields())
             {
                 if (f.IsStatic) continue;
