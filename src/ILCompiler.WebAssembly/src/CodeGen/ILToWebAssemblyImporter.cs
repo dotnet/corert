@@ -1172,7 +1172,7 @@ namespace Internal.IL
             }
             if (!childStruct)
             {
-                _builder.BuildStore(llvmValue, typedStoreLocation); // just copy all the fields again for simplicity, if all the fields where set using RhpAssignRef then a possible optimisation would be to skip this line
+                _builder.BuildStore(llvmValue, typedStoreLocation); // just copy all the fields again for simplicity, if all the fields were set using RhpAssignRef then a possible optimisation would be to skip this line
             }
         }
 
