@@ -671,7 +671,7 @@ namespace Internal.JitInterface
 
                             RelocType rel = (_compilation.NodeFactory.Target.IsWindows) ?
                                 RelocType.IMAGE_REL_BASED_ABSOLUTE :
-                                RelocType.IMAGE_REL_BASED_REL32;
+                                RelocType.IMAGE_REL_BASED_RELPTR32;
 
                             if (_compilation.NodeFactory.Target.Abi == TargetAbi.Jit)
                                 rel = RelocType.IMAGE_REL_BASED_REL32;

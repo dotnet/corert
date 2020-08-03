@@ -18,7 +18,8 @@ namespace ILCompiler.DependencyAnalysis
             if (_id == ReadyToRunHelperId.DelegateCtor)
                 return encoder.TargetRegister.Arg2;
             else
-                return encoder.TargetRegister.Arg0;        }
+                return encoder.TargetRegister.Arg0;
+        }
 
         protected void EmitDictionaryLookup(NodeFactory factory, ref ARM64Emitter encoder, Register context, Register result, GenericLookupResult lookup, bool relocsOnly)
         {
@@ -43,6 +44,10 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 case GenericLookupResultReferenceType.ConditionalIndirect:
+                    // Test result, 0x1
+                    // JEQ L1
+                    // mov result, [result-1]
+                    // L1:
                     throw new NotImplementedException();
 
                 default:
@@ -73,13 +78,15 @@ namespace ILCompiler.DependencyAnalysis
                         else
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
-                            int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target);
-                            encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg0, ((short)(factory.Target.PointerSize - cctorContextSize)));
-                            encoder.EmitCMP(encoder.TargetRegister.Arg1, 1);
+                            encoder.EmitMOV(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0);
+                            //encoder.EmitSUB(encoder.TargetRegister.Arg3, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
+                            encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, (short)factory.Target.PointerSize);
+                            encoder.EmitCMP(encoder.TargetRegister.Arg2, 1);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
-                            encoder.EmitSUB(encoder.TargetRegister.Arg0, ((byte)(cctorContextSize)));
+                            encoder.EmitMOV(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg3);
+
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
                         }
                     }
@@ -105,14 +112,14 @@ namespace ILCompiler.DependencyAnalysis
                             GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(target);
                             EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg2, nonGcRegionLookup, relocsOnly);
 
-                            int cctorContextSize = NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target);
-                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, ((short)(factory.Target.PointerSize - cctorContextSize)));
+                            encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
+                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, (short)factory.Target.PointerSize);
                             encoder.EmitCMP(encoder.TargetRegister.Arg3, 1);
                             encoder.EmitRETIfEqual();
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitMOV(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2);
-                            encoder.EmitSUB(encoder.TargetRegister.Arg0, cctorContextSize);
+
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
                         }
                     }
@@ -199,7 +206,9 @@ namespace ILCompiler.DependencyAnalysis
                     break;
 
                 default:
-                    throw new NotImplementedException();
+                    encoder.EmitINT3();
+                    Console.WriteLine("Misiing R2R for {0}", Id.ToString());
+                    break;
             }
         }
 

@@ -121,7 +121,9 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         {
             if (immediate >= 0)
             {
-                Builder.EmitUInt((uint)(0b1_1_0_100010_0_000000000000_00000_00000u | immediate << 12) | ((uint)reg << 5) | (uint)reg);
+                Debug.Assert(immediate % 4 == 0);
+
+                Builder.EmitUInt((uint)(0b1_1_0_100010_0_000000000000_00000_00000u | immediate << 10) | ((uint)reg << 5) | (uint)reg);
             }
             else
             {
@@ -163,6 +165,16 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         {
             Builder.EmitUInt(0b11010100_001_1111111111111111_000_0_0);
         }
+
+        public void EmitINT3(uint id)
+        {
+            Builder.EmitUInt(0b11010100_001_1111111111111111_000_0_0);
+            Builder.EmitUInt((uint)(0b0_00101_00000000000000000000000000u | ((uint)4)));
+            Builder.EmitUInt(0xdeadc0de);
+            Builder.EmitUInt(id);
+            Builder.EmitUInt(0xdeadc0de);
+        }
+
 
         public void EmitJmpToAddrMode(ref AddrMode addrMode)
         {
