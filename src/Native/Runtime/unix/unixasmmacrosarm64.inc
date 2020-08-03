@@ -137,3 +137,70 @@ C_FUNC(\Name):
         br \reg
 
 .endm
+
+#define xip0 x16
+#define xip1 x17
+#define xpr x18
+
+.macro PREPARE_INLINE_GETTHREAD
+.global tls_CurrentThread 
+.endm
+
+.macro INLINE_GETTHREAD target
+    mrs	\target, tpidr_el0
+    add	\target, \target, #:tprel_hi12:tls_CurrentThread, lsl #12
+	add	\target, \target, #:tprel_lo12_nc:tls_CurrentThread
+.endm
+
+.macro EXPORT_POINTER_TO_ADDRESS Name
+
+1:
+
+        .data
+        .align      8
+C_FUNC(\Name):
+        .word       1b
+        .global     C_FUNC(\Name)
+        .text
+.endm
+
+// Note: these must match the defs in PInvokeTransitionFrameFlags
+PTFF_SAVE_SP            = 0x00000400
+PTFF_SAVE_ALL_PRESERVED = 0x000003FF  // NOTE: x19-x28
+
+DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
+
+.macro PUSH_COOP_PINVOKE_FRAME trashReg
+
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-0x80      // Push down stack pointer and store FP and LR
+
+    // 0x10 bytes reserved for Thread* and flags
+
+    // Save callee saved registers
+    PROLOG_SAVE_REG_PAIR   x19, x20, #0x20
+    PROLOG_SAVE_REG_PAIR   x21, x22, #0x30
+    PROLOG_SAVE_REG_PAIR   x23, x24, #0x40
+    PROLOG_SAVE_REG_PAIR   x25, x26, #0x50
+    PROLOG_SAVE_REG_PAIR   x27, x28, #0x60
+
+    // Save the value of SP before stack allocation to the last slot in the frame (slot #15)
+    add                    \trashReg, sp, #0x80
+    str                    \trashReg, [sp, #0x70]
+
+    // Record the bitmask of saved registers in the frame (slot #3)
+    mov                    \trashReg, #DEFAULT_FRAME_SAVE_FLAGS
+    str                    \trashReg, [sp, #0x18]
+
+    mov  \trashReg, sp
+.endm
+
+// Pop the frame and restore register state preserved by PUSH_COOP_PINVOKE_FRAME
+.macro POP_COOP_PINVOKE_FRAME
+
+    EPILOG_RESTORE_REG_PAIR   x19, x20, #0x20
+    EPILOG_RESTORE_REG_PAIR   x21, x22, #0x30
+    EPILOG_RESTORE_REG_PAIR   x23, x24, #0x40
+    EPILOG_RESTORE_REG_PAIR   x25, x26, #0x50
+    EPILOG_RESTORE_REG_PAIR   x27, x28, #0x60
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #0x80
+.endm
