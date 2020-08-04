@@ -1061,6 +1061,7 @@ namespace Internal.IL
                 case TypeFlags.ByRef:
                     return StackValueKind.ByRef;
                 case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
                     return StackValueKind.NativeInt;
                 default:
                     return StackValueKind.Unknown;
@@ -1285,6 +1286,8 @@ namespace Internal.IL
 
                 case TypeFlags.Pointer:
                     return LLVMTypeRef.CreatePointer(type.GetParameterType().IsVoid ? LLVMTypeRef.Int8 : GetLLVMTypeForTypeDesc(type.GetParameterType()), 0);
+                case TypeFlags.FunctionPointer:
+                    return LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
 
                 case TypeFlags.Int64:
                 case TypeFlags.UInt64:
