@@ -51,13 +51,6 @@ TSF_Attached_Bit                = 0
 TSF_SuppressGcStress_Bit        = 3
 TSF_DoNotTriggerGc_Bit          = 4
 
-// Bit position for the flags above, to be used with tbz / tbnz instructions
-TrapThreadsFlags_AbortInProgress_Bit = 0
-TrapThreadsFlags_TrapThreads_Bit     = 1
-
-// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-STATUS_REDHAWK_THREAD_ABORT      = 0x43
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // RhpWaitForSuspend -- rare path for RhpPInvoke and RhpReversePInvokeReturn

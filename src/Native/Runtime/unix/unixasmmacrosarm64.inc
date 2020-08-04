@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "AsmOffsets.inc"
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
@@ -152,6 +154,21 @@ C_FUNC(\Name):
 	add	\target, \target, #:tprel_lo12_nc:tls_CurrentThread
 .endm
 
+.macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
+    //
+    // Thread::Unhijack()
+    //
+    ldr         \trashReg1, [\threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    cbz         \trashReg1, 0f
+
+    ldr         \trashReg2, [\threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    str         \trashReg1, [\trashReg2]
+    str         xzr, [\threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    str         xzr, [\threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+0:
+.endm
+
+
 .macro EXPORT_POINTER_TO_ADDRESS Name
 
 1:
@@ -204,3 +221,22 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
     EPILOG_RESTORE_REG_PAIR   x27, x28, #0x60
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #0x80
 .endm
+
+//
+// CONSTANTS -- INTEGER
+//
+#define TSF_Attached                    0x01
+#define TSF_SuppressGcStress            0x08
+#define TSF_DoNotTriggerGc              0x10
+
+// Bit position for the flags above, to be used with tbz / tbnz instructions
+TrapThreadsFlags_AbortInProgress_Bit = 0
+TrapThreadsFlags_TrapThreads_Bit     = 1
+
+// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
+#define STATUS_REDHAWK_THREAD_ABORT     0x43
+
+// These must match the TrapThreadsFlags enum
+#define TrapThreadsFlags_None            0
+#define TrapThreadsFlags_AbortInProgress 1
+#define TrapThreadsFlags_TrapThreads     2

@@ -11,40 +11,6 @@
     .extern RhpCidResolve
     .extern RhpUniversalTransition_DebugStepTailCall
 
-    .macro GET_TLS_DISPATCH_CELL
-        brk 1
-/*
-        ldr         x9, =_tls_index
-        ldr         w9, [x9]
-        ldr         xip1, [xpr, #__tls_array]
-        ldr         xip1, [xip1, x9, lsl #3]
-        ldr         x9, =SECTIONREL_t_TLS_DispatchCell
-        ldr         x9, [x9]
-        ldr         xip1, [xip1, x9]
-*/
-    .endm
-
-    .macro SET_TLS_DISPATCH_CELL
-        // xip1 : Value to be assigned to the TLS variable
-        brk 1
-/*
-        ldr         x9, =_tls_index
-        ldr         w9, [x9]
-        ldr         x10, [xpr, #__tls_array]
-        ldr         x10, [x10, x9, lsl #3]
-        ldr         x9, =SECTIONREL_t_TLS_DispatchCell
-        ldr         x9, [x9]
-        str         xip1, [x10, x9]
-*/
-    .endm
-
-/* TODO
-SECTIONREL_t_TLS_DispatchCell
-        DCD t_TLS_DispatchCell
-        RELOC 8, t_TLS_DispatchCell      ;; SECREL
-        DCD 0
-*/
-
     // Macro that generates code to check a single cache entry.
     .macro CHECK_CACHE_ENTRY entry
         // Check a single entry in the cache.
@@ -59,29 +25,6 @@ SECTIONREL_t_TLS_DispatchCell
         br      x9
 0:
     .endm
-
-
-    LEAF_ENTRY RhpCastableObjectDispatch_CommonStub, _TEXT
-        // Custom calling convention:
-        //      xip0 has pointer to the current thunks data block
-
-        // store dispatch cell address in thread static
-        ldr     xip1, [xip0]
-        SET_TLS_DISPATCH_CELL
-
-        // Now load the target address and jump to it.
-        ldr     x9, [xip0, #8]
-        br      x9
-    LEAF_END RhpCastableObjectDispatch_CommonStub, _TEXT
-
-    LEAF_ENTRY RhpTailCallTLSDispatchCell, _TEXT
-        // Load the dispatch cell out of the TLS variable
-        GET_TLS_DISPATCH_CELL
-
-        // Tail call to the target of the dispatch cell, preserving the cell address in xip1
-        ldr     x9, [xip1]
-        br      x9
-    LEAF_END RhpTailCallTLSDispatchCell, _TEXT
 
 //
 // Macro that generates a stub consuming a cache with the given number of entries.
