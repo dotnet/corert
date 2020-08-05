@@ -181,21 +181,10 @@ COOP_PINVOKE_HELPER(String *, RhNewString, (EEType * pArrayEEType, int numElemen
 
 #endif
 #if defined(USE_PORTABLE_HELPERS)
-struct RawEEType // TODO: defined in common.h
-{
-    uint16_t    m_componentSize;
-    uint16_t    m_flags;
-    uint32_t    m_baseSize;
-    MethodTable* m_pBaseType;
-    uint16_t    m_usNumVtableSlots;
-    uint16_t    m_usNumInterfaces;
-    uint32_t    m_uHashCode;
-};
-
-// dummy object for aligning next allocation to 8 that supports Methodtable GetBaseSize (12),HasComponentSize (false)
-static struct RawEEType dummy12ByteEEType = { 0, 0, 12, NULL, 0, 0, 0 };
-
 #if defined(HOST_ARM) || defined(HOST_WASM)
+
+GPTR_DECL(EEType, g_pFreeObjectEEType);
+
 COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (EEType* pEEType))
 {
     Object * pObject = nullptr;
@@ -226,7 +215,7 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (EEType* pEEType))
         if (requiresPadding)
         {
             Object* dummy = (Object*)result;
-            dummy->set_EEType((EEType*)&dummy12ByteEEType);
+            dummy->set_EEType(g_pFreeObjectEEType);
             result += 12;
         }
         pObject = (Object*)result;
@@ -313,7 +302,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (EEType * pArrayEEType, int numE
         if (requiresAlignObject)
         {
             Object* dummy = (Object*)result;
-            dummy->set_EEType((EEType *)&dummy12ByteEEType);
+            dummy->set_EEType(g_pFreeObjectEEType);
             result += 12;
         }
         pObject = (Array*)result;
