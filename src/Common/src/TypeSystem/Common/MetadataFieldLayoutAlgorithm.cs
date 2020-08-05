@@ -663,6 +663,7 @@ namespace Internal.TypeSystem
                 while (minAlign.AsInt < cumulativeInstanceFieldPos.AsInt)
                     minAlign = new LayoutInt(minAlign.AsInt * 2);
             }
+
             SizeAndAlignment instanceByteSizeAndAlignment;
             var instanceSizeAndAlignment = ComputeInstanceSize(type, cumulativeInstanceFieldPos, minAlign, 0/* specified field size unused */, out instanceByteSizeAndAlignment);
 
