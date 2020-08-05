@@ -287,7 +287,7 @@ namespace Internal.TypeSystem
                 case TargetArchitecture.ARM64:
                     return new LayoutInt(8);
                 case TargetArchitecture.X86:
-                    return new LayoutInt(Math.Max(4, fieldAlignment.AsInt));
+                    return new LayoutInt(4);
                 default:
                     throw new NotSupportedException();
             }
