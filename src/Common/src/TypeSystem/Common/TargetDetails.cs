@@ -274,7 +274,8 @@ namespace Internal.TypeSystem
             switch (Architecture)
             {
                 case TargetArchitecture.ARM:
-                    // ARM supports two alignments for objects on the GC heap (4 byte and 8 byte)
+                case TargetArchitecture.Wasm32:
+                    // ARM & Wasm32 support two alignments for objects on the GC heap (4 byte and 8 byte)
                     if (fieldAlignment.IsIndeterminate)
                         return LayoutInt.Indeterminate;
 
@@ -286,8 +287,7 @@ namespace Internal.TypeSystem
                 case TargetArchitecture.ARM64:
                     return new LayoutInt(8);
                 case TargetArchitecture.X86:
-                case TargetArchitecture.Wasm32:
-                    return new LayoutInt(4);
+                    return new LayoutInt(Math.Max(4, fieldAlignment.AsInt));
                 default:
                     throw new NotSupportedException();
             }
