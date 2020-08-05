@@ -87,7 +87,9 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFast, (EEType* pEEType))
     return pObject;
 }
 
-#define GC_ALLOC_FINALIZE 0x1 // TODO: Defined in gc.h
+#define GC_ALLOC_FINALIZE    0x1 // TODO: Defined in gc.h
+#define GC_ALLOC_ALIGN8_BIAS 0x4 // TODO: Defined in gc.h
+#define GC_ALLOC_ALIGN8      0x8 // TODO: Defined in gc.h
 
 COOP_PINVOKE_HELPER(Object *, RhpNewFinalizable, (EEType* pEEType))
 {
@@ -179,7 +181,7 @@ COOP_PINVOKE_HELPER(String *, RhNewString, (EEType * pArrayEEType, int numElemen
 
 #endif
 #if defined(USE_PORTABLE_HELPERS)
-struct RawEEType
+struct RawEEType // TODO: defined in common.h
 {
     uint16_t    m_componentSize;
     uint16_t    m_flags;
@@ -188,19 +190,6 @@ struct RawEEType
     uint16_t    m_usNumVtableSlots;
     uint16_t    m_usNumInterfaces;
     uint32_t    m_uHashCode;
-};
-
-enum GC_ALLOC_FLAGS
-{
-    GC_ALLOC_NO_FLAGS = 0,
-    GC_ALLOC_FINALIZE = 1,
-    GC_ALLOC_CONTAINS_REF = 2,
-    GC_ALLOC_ALIGN8_BIAS = 4,
-    GC_ALLOC_ALIGN8 = 8,
-    GC_ALLOC_ZEROING_OPTIONAL = 16,
-    GC_ALLOC_LARGE_OBJECT_HEAP = 32,
-    GC_ALLOC_PINNED_OBJECT_HEAP = 64,
-    GC_ALLOC_USER_OLD_HEAP = GC_ALLOC_LARGE_OBJECT_HEAP | GC_ALLOC_PINNED_OBJECT_HEAP,
 };
 
 // dummy object for aligning next allocation to 8 that supports Methodtable GetBaseSize (12),HasComponentSize (false)
