@@ -390,6 +390,7 @@ bool UnixNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
             // https://github.com/dotnet/corert/issues/972
             Int32 typeRelAddr = *((PTR_Int32&)pEnumState->pEHInfo);
             pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(pEnumState->pEHInfo + typeRelAddr);
+            pEnumState->pEHInfo += 4;
         }
         break;
     case EH_CLAUSE_FAULT:
