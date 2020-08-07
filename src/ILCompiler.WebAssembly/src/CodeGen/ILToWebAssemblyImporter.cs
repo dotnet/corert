@@ -3814,8 +3814,8 @@ namespace Internal.IL
                         break;
 
                     case ILOpcode.add_ovf:
-                        Debug.Assert(type.Category == TypeFlags.Int32 || type.Category == TypeFlags.Int64);
-                        if (type.Category == TypeFlags.Int32)
+                        Debug.Assert(type.Category == TypeFlags.Int32 || type.Category == TypeFlags.Int64 || type.Category == TypeFlags.Char);
+                        if (type.Category == TypeFlags.Int32 || type.Category == TypeFlags.Char)
                         {
                             BuildAddOverflowChecksForSize(ref AddOvf32Function, left, right, LLVMTypeRef.Int32, BuildConstInt32(int.MaxValue), BuildConstInt32(int.MinValue), true);
                         }
