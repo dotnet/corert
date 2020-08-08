@@ -2288,6 +2288,9 @@ internal static class Program
 
         TestUnsignedLongSubOvf();
 
+        TestUnsignedIntMulOvf();
+
+        TestUnsignedLongMulOvf();
     }
 
     private static void TestSignedLongAddOvf()
@@ -2577,6 +2580,66 @@ internal static class Program
         if (!thrown)
         {
             FailTest("exception not thrown for unsigned i64 addition of positive number");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestUnsignedIntMulOvf()
+    {
+        StartTest("Test uint multiple overflows");
+        bool thrown;
+        uint op32l = 10;
+        uint op32r = 20;
+        if (checked(op32l * op32r) != 200)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op32l = 2;
+        op32r = (uint.MaxValue >> 1) + 1;
+        thrown = false;
+        try
+        {
+            uint res = checked(op32l * op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for unsigned i32 multiply of numbers");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestUnsignedLongMulOvf()
+    {
+        StartTest("Test ulong multiple overflows");
+        bool thrown;
+        ulong op64l = 10;
+        ulong op64r = 20;
+        if (checked(op64l * op64r) != 200L)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op64l = 2;
+        op64r = (ulong.MaxValue >> 1) + 1;
+        thrown = false;
+        try
+        {
+            ulong res = checked(op64l * op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for unsigned i64 multiply of numbers");
             return;
         }
         PassTest();

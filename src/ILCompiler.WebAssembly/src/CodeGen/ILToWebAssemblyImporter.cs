@@ -3827,8 +3827,8 @@ namespace Internal.IL
                         result = _builder.BuildAdd(left, right, "add");
                         break;
                     case ILOpcode.add_ovf_un:
-                        Debug.Assert(type.Category == TypeFlags.UInt32 || type.Category == TypeFlags.Int32 || type.Category == TypeFlags.UInt64 || type.Category == TypeFlags.Int64 || type.Category == TypeFlags.Pointer);
-                        if (type.Category == TypeFlags.UInt32 || type.Category == TypeFlags.Int32 || type.Category == TypeFlags.Pointer)
+                        Debug.Assert(type.Category == TypeFlags.UInt32 || type.Category == TypeFlags.Int32 || type.Category == TypeFlags.UInt64 || type.Category == TypeFlags.Int64 || type.Category == TypeFlags.Pointer || type.Category == TypeFlags.UIntPtr);
+                        if (type.Category == TypeFlags.UInt32 || type.Category == TypeFlags.Int32 || type.Category == TypeFlags.Pointer || type.Category == TypeFlags.UIntPtr)
                         {
                             BuildAddOverflowChecksForSize(ref AddOvfUn32Function, left, right, LLVMTypeRef.Int32, BuildConstUInt32(uint.MaxValue), BuildConstInt32(0), false);
                         }
@@ -3853,8 +3853,8 @@ namespace Internal.IL
                         result = _builder.BuildSub(left, right, "sub");
                         break;
                     case ILOpcode.sub_ovf_un:
-                        Debug.Assert(type.Category == TypeFlags.UInt32 || type.Category == TypeFlags.Int32 || type.Category == TypeFlags.UInt64 || type.Category == TypeFlags.Int64 || type.Category == TypeFlags.Pointer);
-                        if (type.Category == TypeFlags.UInt32 || type.Category == TypeFlags.Int32 || type.Category == TypeFlags.Pointer)
+                        Debug.Assert(type.Category == TypeFlags.UInt32 || type.Category == TypeFlags.Int32 || type.Category == TypeFlags.UInt64 || type.Category == TypeFlags.Int64 || type.Category == TypeFlags.Pointer || type.Category == TypeFlags.UIntPtr);
+                        if (type.Category == TypeFlags.UInt32 || type.Category == TypeFlags.Int32 || type.Category == TypeFlags.Pointer || type.Category == TypeFlags.UIntPtr)
                         {
                             BuildSubOverflowChecksForSize(ref SubOvfUn32Function, left, right, LLVMTypeRef.Int32, BuildConstUInt32(uint.MaxValue), BuildConstInt32(0), false);
                         }
@@ -3865,9 +3865,20 @@ namespace Internal.IL
 
                         result = _builder.BuildSub(left, right, "sub");
                         break;
+                    case ILOpcode.mul_ovf_un:
+                        Debug.Assert(type.Category == TypeFlags.UInt32 || type.Category == TypeFlags.Int32 || type.Category == TypeFlags.UInt64 || type.Category == TypeFlags.Int64 || type.Category == TypeFlags.Pointer || type.Category == TypeFlags.UIntPtr);
+                        if (type.Category == TypeFlags.UInt32 || type.Category == TypeFlags.Int32 || type.Category == TypeFlags.Pointer || type.Category == TypeFlags.UIntPtr)
+                        {
+                            BuildMulOverflowChecksForSize(ref MulOvfUn32Function, left, right, LLVMTypeRef.Int32, BuildConstUInt32(uint.MaxValue), BuildConstInt32(0), false);
+                        }
+                        else
+                        {
+                            BuildMulOverflowChecksForSize(ref MulOvfUn64Function, left, right, LLVMTypeRef.Int64, BuildConstUInt64(ulong.MaxValue), BuildConstInt64(0), false);
+                        }
+                        result = _builder.BuildMul(left, right, "mul");
+                        break;
                     // TODO: Overflow checks
                     case ILOpcode.mul_ovf:
-                    case ILOpcode.mul_ovf_un:
                         result = _builder.BuildMul(left, right, "mul");
                         break;
 
@@ -3908,6 +3919,23 @@ namespace Internal.IL
                 builder.BuildCondBr(gtZeroCmp, thenBlock, elseBlock);
                 builder.PositionAtEnd(thenBlock);
             }
+            ovfBlock = llvmCheckFunction.AppendBasicBlock("ovfBlock");
+            noOvfBlock = llvmCheckFunction.AppendBasicBlock("noOvfBlock");
+            return llvmCheckFunction;
+        }
+
+        LLVMValueRef StartMulOverflowCheckFunction(LLVMTypeRef sizeTypeRef, bool signed,
+            string throwFuncName, out LLVMValueRef leftOp, out LLVMValueRef rightOp, out LLVMBuilderRef builder, 
+            out LLVMBasicBlockRef ovfBlock, out LLVMBasicBlockRef noOvfBlock)
+        {
+            LLVMValueRef llvmCheckFunction = Module.AddFunction(throwFuncName,
+                LLVMTypeRef.CreateFunction(LLVMTypeRef.Void,
+                    new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), sizeTypeRef, sizeTypeRef }, false));
+            leftOp = llvmCheckFunction.GetParam(1);
+            rightOp = llvmCheckFunction.GetParam(2);
+            builder = Context.CreateBuilder();
+            var block = llvmCheckFunction.AppendBasicBlock("Block");
+            builder.PositionAtEnd(block);
             ovfBlock = llvmCheckFunction.AppendBasicBlock("ovfBlock");
             noOvfBlock = llvmCheckFunction.AppendBasicBlock("noOvfBlock");
             return llvmCheckFunction;
@@ -3971,6 +3999,40 @@ namespace Internal.IL
                     // a - b overflows when b is negative if  a > max + b
                     BuildOverflowCheck(builder, rightOp, LLVMIntPredicate.LLVMIntSGT, maxValue, leftOp, ovfBlock, noOvfBlock, LLVMOpcode.LLVMAdd);
                 }
+                builder.PositionAtEnd(opBlock);
+                builder.BuildRetVoid();
+            }
+
+            LLVMBasicBlockRef nextInstrBlock = default;
+            CallOrInvoke(false, _builder, GetCurrentTryRegion(), llvmCheckFunction, new List<LLVMValueRef> { GetShadowStack(), left, right }, ref nextInstrBlock);
+        }
+
+        void BuildMulOverflowChecksForSize(ref LLVMValueRef llvmCheckFunction, LLVMValueRef left, LLVMValueRef right, LLVMTypeRef sizeTypeRef, LLVMValueRef maxValue, LLVMValueRef minValue, bool signed)
+        {
+            if (llvmCheckFunction.Handle == IntPtr.Zero)
+            {
+                // create function name for each of the 4 combinations signed/unsigned, 32/64 bit
+                string throwFuncName = "corert.throwovf" + (signed ? "mul" : "unmul") + (sizeTypeRef.IntWidth == 32 ? "32" : "64");
+                llvmCheckFunction = StartMulOverflowCheckFunction(sizeTypeRef, signed, throwFuncName, out LLVMValueRef leftOp, out LLVMValueRef rightOp, out LLVMBuilderRef builder, 
+                    out LLVMBasicBlockRef ovfBlock, out LLVMBasicBlockRef noOvfBlock);
+                // a > int.MaxValue / b
+                BuildOverflowCheck(builder, leftOp, signed ? LLVMIntPredicate.LLVMIntSGT : LLVMIntPredicate.LLVMIntUGT, maxValue, rightOp, ovfBlock, noOvfBlock, LLVMOpcode.LLVMUDiv);
+
+                builder.PositionAtEnd(ovfBlock);
+
+                ThrowException(builder, "ThrowHelpers", "ThrowOverflowException", llvmCheckFunction);
+
+                builder.PositionAtEnd(noOvfBlock);
+                LLVMBasicBlockRef opBlock = llvmCheckFunction.AppendBasicBlock("opBlock");
+                builder.BuildBr(opBlock);
+
+                //TODO: signed multiplication
+                // if (signed)
+                // {
+                //     builder.PositionAtEnd(elseBlock);
+                //     //  a < int.MinValue - b
+                //     BuildOverflowCheck(builder, leftOp, LLVMIntPredicate.LLVMIntSLT, minValue, rightOp, ovfBlock, noOvfBlock, LLVMOpcode.LLVMSub);
+                // }
                 builder.PositionAtEnd(opBlock);
                 builder.BuildRetVoid();
             }
