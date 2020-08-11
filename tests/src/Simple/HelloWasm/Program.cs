@@ -2272,6 +2272,8 @@ internal static class Program
 
     static void TestIntOverflows()
     {
+        TestCharInOvf();
+
         TestSignedIntAddOvf();
 
         TestSignedLongAddOvf();
@@ -2327,6 +2329,21 @@ internal static class Program
             return;
         }
         EndTest(true);
+    }
+
+    private static void TestCharInOvf()
+    {
+        // Just checks the compiler can handle the char type
+        // This was failing for https://github.com/dotnet/corert/blob/f542d97f26e87f633310e67497fb01dad29987a5/src/System.Private.CoreLib/shared/System/Environment.Unix.cs#L111
+        StartTest("Test char add overflows");
+        char opChar = '1';
+        int op32r = 2;
+        if (checked(opChar + op32r) != 51)
+        {
+            FailTest("No overflow for char failed"); // check not always throwing an exception
+            return;
+        }
+        PassTest();
     }
 
     private static void TestSignedIntAddOvf()
