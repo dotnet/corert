@@ -2293,6 +2293,10 @@ internal static class Program
         TestUnsignedIntMulOvf();
 
         TestUnsignedLongMulOvf();
+
+        TestSignedIntMulOvf();
+
+        TestSignedLongMulOvf();
     }
 
     private static void TestSignedLongAddOvf()
@@ -2604,7 +2608,7 @@ internal static class Program
 
     private static void TestUnsignedIntMulOvf()
     {
-        StartTest("Test uint multiple overflows");
+        StartTest("Test uint multiply overflows");
         bool thrown;
         uint op32l = 10;
         uint op32r = 20;
@@ -2629,12 +2633,28 @@ internal static class Program
             FailTest("exception not thrown for unsigned i32 multiply of numbers");
             return;
         }
+        op32l = 0;
+        op32r = 0; // check does a division so make sure this case is handled
+        thrown = false;
+        try
+        {
+            uint res = checked(op32l * op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (thrown)
+        {
+            FailTest("exception not thrown for unsigned i32 multiply of zeros");
+            return;
+        }
         PassTest();
     }
 
     private static void TestUnsignedLongMulOvf()
     {
-        StartTest("Test ulong multiple overflows");
+        StartTest("Test ulong multiply overflows");
         bool thrown;
         ulong op64l = 10;
         ulong op64r = 20;
@@ -2657,6 +2677,148 @@ internal static class Program
         if (!thrown)
         {
             FailTest("exception not thrown for unsigned i64 multiply of numbers");
+            return;
+        }
+        op64l = 0;
+        op64r = 0; // check does a division so make sure this case is handled
+        thrown = false;
+        try
+        {
+            ulong res = checked(op64l * op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (thrown)
+        {
+            FailTest("exception not thrown for unsigned i64 multiply of zeros");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestSignedIntMulOvf()
+    {
+        StartTest("Test int multiply overflows");
+        bool thrown;
+        int op32l = 10;
+        int op32r = -20;
+        if (checked(op32l * op32r) != -200)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op32l = 2;
+        op32r = (int.MaxValue >> 1) + 1;
+        thrown = false;
+        try
+        {
+            int res = checked(op32l * op32r);
+            PrintLine("should have overflow but was " + res.ToString());
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i32 multiply overflow");
+            return;
+        }
+        op32l = 2;
+        op32r = (int.MinValue >> 1) - 1;
+        thrown = false;
+        try
+        {
+            int res = checked(op32l * op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i32 multiply underflow");
+            return;
+        }
+        op32l = 0;
+        op32r = 0; // check does a division so make sure this case is handled
+        thrown = false;
+        try
+        {
+            int res = checked(op32l * op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (thrown)
+        {
+            FailTest("exception not thrown for signed i32 multiply of zeros");
+            return;
+        }
+
+        PassTest();
+    }
+
+    private static void TestSignedLongMulOvf()
+    {
+        StartTest("Test long multiply overflows");
+        bool thrown;
+        long op64l = 10;
+        long op64r = -20;
+        if (checked(op64l * op64r) != -200)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op64l = 2;
+        op64r = (long.MaxValue >> 1) + 1;
+        thrown = false;
+        try
+        {
+            long res = checked(op64l * op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i64 multiply overflow");
+            return;
+        }
+        op64l = 2;
+        op64r = (long.MinValue >> 1) - 1;
+        thrown = false;
+        try
+        {
+            long res = checked(op64l * op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i64 multiply underflow");
+            return;
+        }
+        op64l = 0;
+        op64r = 0; // check does a division so make sure this case is handled
+        thrown = false;
+        try
+        {
+            long res = checked(op64l * op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (thrown)
+        {
+            FailTest("exception not thrown for signed i64 multiply of zeros");
             return;
         }
         PassTest();
