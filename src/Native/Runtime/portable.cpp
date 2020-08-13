@@ -181,14 +181,14 @@ COOP_PINVOKE_HELPER(String *, RhNewString, (EEType * pArrayEEType, int numElemen
 
 #endif
 #if defined(USE_PORTABLE_HELPERS)
-#if defined(HOST_ARM) || defined(HOST_WASM)
+#if defined(FEATURE_64BIT_ALIGNMENT)
 
 GPTR_DECL(EEType, g_pFreeObjectEEType);
 
 COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (EEType* pEEType))
 {
     Object * pObject = nullptr;
-    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    /* Not reachable as finalizable types are never align8 */ ASSERT_UNCONDITIONALLY("NYI");
     return pObject;
 }
 
@@ -240,7 +240,6 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (EEType* pEEType))
 COOP_PINVOKE_HELPER(Object*, RhpNewFastMisalign, (EEType* pEEType))
 {
     size_t size = pEEType->get_BaseSize();
-    size = (size + 7) & ~7;
     Object* pObject = (Object*)RhpGcAlloc(pEEType, GC_ALLOC_ALIGN8_BIAS, size, NULL);
     if (pObject == nullptr)
     {
