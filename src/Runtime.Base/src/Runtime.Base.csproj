@@ -21,6 +21,9 @@
   <PropertyGroup Condition="'$(Platform)' == 'armel'">
     <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'wasm'">
+    <DefineConstants>FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="System\Nullable.cs" />
