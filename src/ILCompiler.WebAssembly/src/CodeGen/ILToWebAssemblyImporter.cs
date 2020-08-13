@@ -4953,9 +4953,18 @@ namespace Internal.IL
             else
             {
                 arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(runtimeDeterminedArrayType, true), eeTypeDesc), sizeOfArray };
-                //TODO: call GetNewArrayHelperForType from JitHelper.cs (needs refactoring)
             }
-            PushNonNull(CallRuntime(_compilation.TypeSystemContext, InternalCalls, "RhpNewArray", arguments, runtimeDeterminedArrayType));
+            var helper = GetNewArrayHelperForType(runtimeDeterminedArrayType);
+            PushNonNull(CallRuntime(_compilation.TypeSystemContext, InternalCalls, helper, arguments, runtimeDeterminedArrayType));
+        }
+
+        //TODO: copy of the same method in JitHelper.cs but that is internal
+        public static string GetNewArrayHelperForType(TypeDesc type)
+        {
+            if (type.RequiresAlign8())
+                return "RhpNewArrayAlign8";
+        
+            return "RhpNewArray";
         }
 
         LLVMValueRef GetGenericContext()
