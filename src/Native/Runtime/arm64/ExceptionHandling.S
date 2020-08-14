@@ -53,8 +53,7 @@
         // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
         // of method. However, this method needs to be able to change fp before calling funclet.
         // This is required to access locals in funclet.
-        // TODO PROLOG_SAVE_REG_PAIR_NO_FP fp,lr, #-0x60!
-        PROLOG_SAVE_REG_PAIR_INDEXED fp,lr, #-0x60
+        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp,lr, #-0x60
         PROLOG_SAVE_REG_PAIR x19, x20, #0x10
         PROLOG_SAVE_REG_PAIR x21, x22, #0x20
         PROLOG_SAVE_REG_PAIR x23, x24, #0x30
