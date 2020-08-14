@@ -55,7 +55,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public int Offset => 0;
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
-        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
+        public override ObjectNodeSection Section
+        {
+            get
+            {
+                if (_identity.Context.Target.IsWindows)
+                    return ObjectNodeSection.ReadOnlyDataSection;
+                else
+                    return ObjectNodeSection.DataSection;
+            }
+        }
         public override bool IsShareable => false;
         public override bool StaticDependenciesAreComputed => true;
 
