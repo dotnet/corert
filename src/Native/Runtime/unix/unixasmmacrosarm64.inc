@@ -71,6 +71,11 @@ C_FUNC(\Name):
         .endif
 .endm
 
+.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ofs
+        stp \reg1, \reg2, [sp, \ofs]!
+.endm
+
+
 .macro EPILOG_RESTORE_REG reg, ofs
         ldr \reg, [sp, \ofs]
 .endm
@@ -144,14 +149,19 @@ C_FUNC(\Name):
 #define xip1 x17
 #define xpr x18
 
+.macro INLINE_GET_TLS_VAR target, var
+    mrs	\target, tpidr_el0
+    add	\target, \target, #:tprel_hi12:\var, lsl #12
+	add	\target, \target, #:tprel_lo12_nc:\var
+.endm
+
+
 .macro PREPARE_INLINE_GETTHREAD
 .global tls_CurrentThread 
 .endm
 
 .macro INLINE_GETTHREAD target
-    mrs	\target, tpidr_el0
-    add	\target, \target, #:tprel_hi12:tls_CurrentThread, lsl #12
-	add	\target, \target, #:tprel_lo12_nc:tls_CurrentThread
+    INLINE_GET_TLS_VAR \target, tls_CurrentThread
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
