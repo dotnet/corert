@@ -165,13 +165,9 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.ResolveVirtualFunction:
                     {
+                        // Not tested
                         encoder.EmitINT3();
 
-                        //ARMDebug.EmitHelperNYIAssert(factory, ref encoder, ReadyToRunHelperId.ResolveVirtualFunction);
-                        /*
-                       ***
-                       NOT TESTED!!!
-                       ***
                         MethodDesc targetMethod = (MethodDesc)Target;
                         if (targetMethod.OwningType.IsInterface)
                         {
@@ -193,7 +189,6 @@ namespace ILCompiler.DependencyAnalysis
                                             ((short)(EETypeNode.GetVTableOffset(factory.Target.PointerSize) + (slot * factory.Target.PointerSize))));
                             encoder.EmitRET();
                         }
-                        */
                     }
                     break;
 
