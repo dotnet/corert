@@ -56,9 +56,23 @@ namespace ILCompiler
 
             string id = InstructionSetSupport.GetHardwareIntrinsicId(method.Context.Target.Architecture, method.OwningType);
 
-            Debug.Assert(method.Context.Target.Architecture == TargetArchitecture.X64
-                || method.Context.Target.Architecture == TargetArchitecture.X86);
-            int flag = XArchIntrinsicConstants.FromHardwareIntrinsicId(id);
+            int flag = 0;
+
+            switch (method.Context.Target.Architecture)
+            {
+                case TargetArchitecture.X86:
+                case TargetArchitecture.X64:
+                    flag = XArchIntrinsicConstants.FromHardwareIntrinsicId(id);
+                    break;
+
+                case TargetArchitecture.ARM64:
+                    flag = Arm64IntrinsicConstants.FromHardwareIntrinsicId(id);
+                    break;
+
+                default:
+                    Debug.Fail("Unsupported Architecture");
+                    break;
+            }
 
             var emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
@@ -75,12 +89,22 @@ namespace ILCompiler
 
         public static int GetRuntimeRequiredIsaFlags(InstructionSetSupport instructionSetSupport)
         {
-            Debug.Assert(instructionSetSupport.Architecture == TargetArchitecture.X64 ||
-                instructionSetSupport.Architecture == TargetArchitecture.X86);
-            return XArchIntrinsicConstants.FromInstructionSetFlags(instructionSetSupport.SupportedFlags);
+            switch (instructionSetSupport.Architecture)
+            {
+                case TargetArchitecture.X86:
+                case TargetArchitecture.X64:
+                    return XArchIntrinsicConstants.FromInstructionSetFlags(instructionSetSupport.SupportedFlags);
+
+                case TargetArchitecture.ARM64:
+                    return Arm64IntrinsicConstants.FromInstructionSetFlags(instructionSetSupport.SupportedFlags);
+
+                default:
+                    Debug.Fail("Unsupported Architecture");
+                    return 0;
+            }
         }
 
-        // Keep this enumeration in sync with startup.cpp in the native runtime.
+        // Keep these enumerations in sync with startup.cpp in the native runtime.
         private static class XArchIntrinsicConstants
         {
             // SSE and SSE2 are baseline ISAs - they're always available
@@ -159,6 +183,69 @@ namespace ILCompiler
                         InstructionSet.X64_X86Base => 0,
                         InstructionSet.X64_X86Base_X64 => 0,
 
+                        _ => throw new NotSupportedException()
+                    };
+                }
+
+                return result;
+            }
+        }
+
+        private static class Arm64IntrinsicConstants
+        {
+            public const int ArmBase = 0x0001;
+            public const int ArmBase_Arm64 = 0x0002;
+            public const int AdvSimd = 0x0004;
+            public const int AdvSimd_Arm64 = 0x0008;
+            public const int Aes = 0x0010;
+            public const int Crc32 = 0x0020;
+            public const int Crc32_Arm64 = 0x0040;
+            public const int Sha1 = 0x0080;
+            public const int Sha256 = 0x0100;
+            public const int Atomics = 0x0200;
+            public const int Vector64 = 0x0400;
+            public const int Vector128 = 0x0800;
+
+            public static int FromHardwareIntrinsicId(string id)
+            {
+                return id switch
+                {
+                    "ArmBase" => ArmBase,
+                    "ArmBase_Arm64" => ArmBase_Arm64,
+                    "AdvSimd" => AdvSimd,
+                    "AdvSimd_Arm64" => AdvSimd_Arm64,
+                    "Aes" => Aes,
+                    "Crc32" => Crc32,
+                    "Crc32_Arm64" => Crc32_Arm64,
+                    "Sha1" => Sha1,
+                    "Sha256" => Sha256,
+                    "Atomics" => Atomics,
+                    "Vector64" => Vector64,
+                    "Vector128" => Vector128,
+               _ => throw new NotSupportedException(),
+                };
+            }
+
+            public static int FromInstructionSetFlags(InstructionSetFlags instructionSets)
+            {
+                int result = 0;
+
+                foreach (InstructionSet instructionSet in instructionSets)
+                {
+                    result |= instructionSet switch
+                    {
+                        InstructionSet.ARM64_ArmBase => ArmBase,
+                        InstructionSet.ARM64_ArmBase_Arm64 => ArmBase_Arm64,
+                        InstructionSet.ARM64_AdvSimd => AdvSimd,
+                        InstructionSet.ARM64_AdvSimd_Arm64 => AdvSimd_Arm64,
+                        InstructionSet.ARM64_Aes => Aes,
+                        InstructionSet.ARM64_Crc32 => Crc32,
+                        InstructionSet.ARM64_Crc32_Arm64 => Crc32_Arm64,
+                        InstructionSet.ARM64_Sha1 => Sha1,
+                        InstructionSet.ARM64_Sha256 => Sha256,
+                        InstructionSet.ARM64_Atomics => Atomics,
+                        InstructionSet.ARM64_Vector64 => Vector64,
+                        InstructionSet.ARM64_Vector128 => Vector128,
                         _ => throw new NotSupportedException()
                     };
                 }

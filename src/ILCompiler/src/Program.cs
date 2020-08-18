@@ -403,6 +403,14 @@ namespace ILCompiler
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
                 }
             }
+            else if (_targetArchitecture == TargetArchitecture.ARM64)
+            {
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("crc");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha1");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+            }
 
             optimisticInstructionSetSupportBuilder.ComputeInstructionSetFlags(out var optimisticInstructionSet, out _,
                 (string specifiedInstructionSet, string impliedInstructionSet) => throw new NotSupportedException());
