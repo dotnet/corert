@@ -17,6 +17,7 @@ namespace ILCompiler
     {
         internal WebAssemblyCodegenConfigProvider Options { get; }
         internal LLVMModuleRef Module { get; }
+        internal LLVMTargetDataRef TargetData { get; }
         public new WebAssemblyCodegenNodeFactory NodeFactory { get; }
         internal LLVMDIBuilderRef DIBuilder { get; }
         internal Dictionary<string, DebugMetadata> DebugMetadataMap { get; }
@@ -32,7 +33,7 @@ namespace ILCompiler
         {
             NodeFactory = nodeFactory;
             LLVMModuleRef m = LLVMModuleRef.CreateWithName("netscripten");
-            m.Target = "wasm32-unknown-unknown-wasm";
+            m.Target = "wasm32-unknown-emscripten";
             // https://llvm.org/docs/LangRef.html#langref-datalayout
             // e litte endian, mangled names
             // m:e ELF mangling 
@@ -41,8 +42,8 @@ namespace ILCompiler
             // n:32:64 native widths
             // S128 natural alignment of stack
             m.DataLayout = "e-m:e-p:32:32-i64:64-n32:64-S128";
-            Module = m; 
-
+            Module = m;
+            TargetData = m.CreateExecutionEngine().TargetData;
             Options = options;
             DIBuilder = Module.CreateDIBuilder();
             DebugMetadataMap = new Dictionary<string, DebugMetadata>();

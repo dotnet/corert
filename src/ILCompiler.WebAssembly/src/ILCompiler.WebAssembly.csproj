@@ -40,6 +40,7 @@
     </Compile>
     <Compile Include="CodeGen\DebugMetadata.cs" />
     <Compile Include="CodeGen\ILToWebAssemblyImporter_Statics.cs" />
+    <Compile Include="CodeGen\LLVMSharpInterop.cs" />
     <Compile Include="CodeGen\WebAssemblyObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EHInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RawMainMethodRootProvider.cs" />
