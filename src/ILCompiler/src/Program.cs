@@ -786,8 +786,8 @@ namespace ILCompiler
                         "EETypes", "scanned", "compiled", type => !(type.GetTypeDefinition() is EcmaType));
                 }
 
-               // if (scanningFail)
-               //     throw new Exception("Scanning failure");
+                if (scanningFail)
+                    throw new Exception("Scanning failure");
             }
 
             if (debugInfoProvider is IDisposable)
