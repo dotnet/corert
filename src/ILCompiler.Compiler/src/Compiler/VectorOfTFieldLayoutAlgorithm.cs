@@ -64,6 +64,17 @@ namespace ILCompiler
 
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
+            if (type.Context.Target.Architecture == TargetArchitecture.ARM64 &&
+                            type.Instantiation[0].IsPrimitiveNumeric)
+            {
+                return type.InstanceFieldSize.AsInt switch
+                {
+                    8 => ValueTypeShapeCharacteristics.Vector64Aggregate,
+                    16 => ValueTypeShapeCharacteristics.Vector128Aggregate,
+                    _ => ValueTypeShapeCharacteristics.None
+                };
+            }
+
             return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
         }
 

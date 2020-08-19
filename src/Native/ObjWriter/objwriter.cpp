@@ -50,6 +50,7 @@
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Support/Win64EH.h"
 #include "llvm/Target/TargetMachine.h"
+#include "..\..\..\lib\Target\AArch64\MCTargetDesc\AArch64MCExpr.h"
 
 using namespace llvm;
 using namespace llvm::codeview;
@@ -309,7 +310,13 @@ void ObjectWriter::SetCodeSectionAttribute(const char *SectionName,
 }
 
 void ObjectWriter::EmitAlignment(int ByteAlignment) {
-  Streamer->EmitValueToAlignment(ByteAlignment, 0x90 /* Nop */);
+  int64_t fillValue = 0x90; //x86 nop
+
+  if (TMachine->getTargetTriple().getArch() == llvm::Triple::ArchType::aarch64) {
+    fillValue = 0; // ARM64 bad
+  }
+
+  Streamer->EmitValueToAlignment(ByteAlignment, fillValue);
 }
 
 void ObjectWriter::EmitBlob(int BlobSize, const char *Blob) {
@@ -333,15 +340,28 @@ void ObjectWriter::EmitSymbolDef(const char *SymbolName, bool global) {
     Streamer->EmitSymbolAttribute(Sym, MCSA_Local);
   }
 
+  Triple TheTriple = TMachine->getTargetTriple();
+
   // A Thumb2 function symbol should be marked with an appropriate ELF
   // attribute to make later computation of a relocation address value correct
-  if (GetTriple().getArch() == Triple::thumb &&
-      GetTriple().getObjectFormat() == Triple::ELF &&
+
+  if (TheTriple.getObjectFormat() == Triple::ELF &&
       Streamer->getCurrentSectionOnly()->getKind().isText()) {
-    Streamer->EmitSymbolAttribute(Sym, MCSA_ELF_TypeFunction);
+      switch (TheTriple.getArch()) {
+        case Triple::thumb:
+        case Triple::aarch64:
+          Streamer->EmitSymbolAttribute(Sym, MCSA_ELF_TypeFunction);
+          break;
+
+        default:
+          break;
+    }
   }
 
-  Streamer->EmitLabel(Sym);
+  if (Sym->isUndefined())
+  {
+    Streamer->EmitLabel(Sym);
+  }
 }
 
 const MCSymbolRefExpr *
@@ -352,6 +372,8 @@ ObjectWriter::GetSymbolRefExpr(const char *SymbolName,
   Assembler->registerSymbol(*T);
   return MCSymbolRefExpr::create(T, Kind, *OutContext);
 }
+
+
 
 unsigned ObjectWriter::GetDFSize() {
   return Streamer->getOrCreateDataFragment()->getContents().size();
@@ -398,15 +420,16 @@ int ObjectWriter::EmitSymbolRef(const char *SymbolName,
   case RelocType::IMAGE_REL_BASED_DIR64:
     Size = 8;
     break;
-  case RelocType::IMAGE_REL_BASED_REL32:
+  case RelocType::IMAGE_REL_BASED_REL32: {
     Size = 4;
-    IsPCRel = true;	
+    IsPCRel = true;
     if (ObjFileInfo->getObjectFileType() == ObjFileInfo->IsELF) {
-        // PLT is valid only for code symbols,
-        // but there shouldn't be references to global data symbols
-        Kind = MCSymbolRefExpr::VK_PLT;
+      // PLT is valid only for code symbols,
+      // but there shouldn't be references to global data symbols
+      Kind = MCSymbolRefExpr::VK_PLT;
     }
     break;
+  }
   case RelocType::IMAGE_REL_BASED_RELPTR32:
     Size = 4;
     IsPCRel = true;
@@ -422,6 +445,25 @@ int ObjectWriter::EmitSymbolRef(const char *SymbolName,
   case RelocType::IMAGE_REL_BASED_THUMB_BRANCH24: {
     const MCExpr *TargetExpr = GenTargetExpr(SymbolName, Kind, Delta);
     EmitRelocDirective(GetDFSize(), "R_ARM_THM_JUMP24", TargetExpr);
+    return 4;
+  }
+  case RelocType::IMAGE_REL_BASED_ARM64_BRANCH26: {
+    const MCExpr *TargetExpr = GenTargetExpr(SymbolName, Kind, Delta);
+    EmitRelocDirective(GetDFSize(), "R_AARCH64_JUMP26", TargetExpr);
+    return 4;
+  }
+  case RelocType::IMAGE_REL_BASED_ARM64_PAGEBASE_REL21: {
+    const MCExpr *TargetExpr = GenTargetExpr(SymbolName, Kind, Delta);
+    TargetExpr =
+        AArch64MCExpr::create(TargetExpr, AArch64MCExpr::VK_CALL, *OutContext);
+    EmitRelocDirective(GetDFSize(), "R_AARCH64_ADR_PREL_LO21", TargetExpr);
+    return 4;
+  }
+  case RelocType::IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A: {
+    const MCExpr *TargetExpr = GenTargetExpr(SymbolName, Kind, Delta);
+    TargetExpr =
+        AArch64MCExpr::create(TargetExpr, AArch64MCExpr::VK_LO12, *OutContext);
+    EmitRelocDirective(GetDFSize(), "R_AARCH64_ADD_ABS_LO12_NC", TargetExpr);
     return 4;
   }
   }
@@ -509,6 +551,11 @@ void ObjectWriter::EmitCFICode(int Offset, const char *Blob) {
     assert(CfiCode->Offset == 0 &&
            "Unexpected Offset Value for OpDefCfaRegister");
     Streamer->EmitCFIDefCfaRegister(CfiCode->DwarfReg);
+    break;
+  case CFI_DEF_CFA:
+    assert(CfiCode->Offset != 0 &&
+           "Unexpected Offset Value for OpDefCfa");
+    Streamer->EmitCFIDefCfa(CfiCode->DwarfReg, CfiCode->Offset);
     break;
   default:
     assert(false && "Unrecognized CFI");
