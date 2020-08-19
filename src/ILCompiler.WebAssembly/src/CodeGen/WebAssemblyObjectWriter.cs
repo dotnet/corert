@@ -272,6 +272,14 @@ namespace ILCompiler.DependencyAnalysis
             },
             "returnValue");
 
+            LLVMValueRef RhpReversePInvokeReturn2 = Module.GetNamedFunction("RhpReversePInvokeReturn2");
+            LLVMTypeRef reversePInvokeFunctionType = LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(reversePInvokeFrameType, 0) }, false);
+            if (RhpReversePInvoke2.Handle == IntPtr.Zero)
+            {
+                RhpReversePInvokeReturn2 = Module.AddFunction("RhpReversePInvokeReturn2", reversePInvokeFunctionType);
+            }
+            builder.BuildCall(RhpReversePInvokeReturn2, new LLVMValueRef[] { reversePinvokeFrame }, "");
+
             builder.BuildRet(mainReturn);
             mainFunc.Linkage = LLVMLinkage.LLVMExternalLinkage;
         }

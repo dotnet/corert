@@ -208,13 +208,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetMemoryInfo")]
-        internal static extern void RhGetMemoryInfo(out ulong highMemLoadThresholdBytes,
-                                                    out ulong totalAvailableMemoryBytes,
-                                                    out ulong lastRecordedMemLoadBytes,
-                                                    out uint lastRecordedMemLoadPct,
-                                                    // The next two are size_t
-                                                    out UIntPtr lastRecordedHeapSizeBytes,
-                                                    out UIntPtr lastRecordedFragmentationBytes);
+        internal static extern void RhGetMemoryInfo(out GCMemoryInfoData info, GCKind kind);
 
         [DllImport(RuntimeLibrary, ExactSpelling = true)]
         internal static unsafe extern void RhAllocateNewArray(IntPtr pArrayEEType, uint numElements, uint flags, void* pResult);
