@@ -51,8 +51,7 @@ namespace Internal.JitInterface
             CFI_DEF_CFA               // Take address from register and add offset to it.
         };
 
-        //internal const string JitLibrary = "clrjitilc";
-        internal const string JitLibrary = "protononjit";
+        internal const string JitLibrary = "clrjitilc";
 
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
