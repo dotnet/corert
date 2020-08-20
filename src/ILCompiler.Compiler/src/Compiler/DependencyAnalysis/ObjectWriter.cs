@@ -857,8 +857,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 foreach (var name in nodes)
                 {
-                    
-
                     _sb.Clear();
                     AppendExternCPrefix(_sb);
                     name.AppendMangledName(_nodeFactory.NameMangler, _sb);
