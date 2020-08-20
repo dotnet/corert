@@ -166,16 +166,6 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             Builder.EmitUInt(0b11010100_001_1111111111111111_000_0_0);
         }
 
-        public void EmitINT3(uint id)
-        {
-            Builder.EmitUInt(0b11010100_001_1111111111111111_000_0_0);
-            Builder.EmitUInt((uint)(0b0_00101_00000000000000000000000000u | ((uint)4)));
-            Builder.EmitUInt(0xdeadc0de);
-            Builder.EmitUInt(id);
-            Builder.EmitUInt(0xdeadc0de);
-        }
-
-
         public void EmitJmpToAddrMode(ref AddrMode addrMode)
         {
             throw new NotImplementedException();
