@@ -2603,7 +2603,11 @@ namespace Internal.JitInterface
         {
             // Slow tailcalls are not supported yet
             // https://github.com/dotnet/runtime/issues/35423
+#if READYTORUN
             throw new NotImplementedException(nameof(getTailCallHelpers));
+#else
+            return false;
+#endif
         }
 
         private byte[] _code;

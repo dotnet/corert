@@ -36,7 +36,6 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
-
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(EEType *pEEType, UInt32 uFlags, UIntNative cbSize, void * pTransitionFrame);
 EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpPublishObject(void* pObject, UIntNative cbSize);
 
@@ -88,7 +87,9 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFast, (EEType* pEEType))
     return pObject;
 }
 
-#define GC_ALLOC_FINALIZE 0x1 // TODO: Defined in gc.h
+#define GC_ALLOC_FINALIZE    0x1 // TODO: Defined in gc.h
+#define GC_ALLOC_ALIGN8_BIAS 0x4 // TODO: Defined in gc.h
+#define GC_ALLOC_ALIGN8      0x8 // TODO: Defined in gc.h
 
 COOP_PINVOKE_HELPER(Object *, RhpNewFinalizable, (EEType* pEEType))
 {
@@ -180,36 +181,149 @@ COOP_PINVOKE_HELPER(String *, RhNewString, (EEType * pArrayEEType, int numElemen
 
 #endif
 #if defined(USE_PORTABLE_HELPERS)
+#if defined(FEATURE_64BIT_ALIGNMENT)
 
-#ifdef HOST_ARM
+GPTR_DECL(EEType, g_pFreeObjectEEType);
+
 COOP_PINVOKE_HELPER(Object *, RhpNewFinalizableAlign8, (EEType* pEEType))
 {
     Object * pObject = nullptr;
-    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
-    return pObject;
-}
-
-COOP_PINVOKE_HELPER(Object *, RhpNewFastMisalign, (EEType* pEEType))
-{
-    Object * pObject = nullptr;
-    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    /* Not reachable as finalizable types are never align8 */ ASSERT_UNCONDITIONALLY("UNREACHABLE");
     return pObject;
 }
 
 COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (EEType* pEEType))
 {
-    Object * pObject = nullptr;
-    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    ASSERT(pEEType->RequiresAlign8());
+    ASSERT(!pEEType->HasFinalizer());
+
+    Thread* pCurThread = ThreadStore::GetCurrentThread();
+    gc_alloc_context* acontext = pCurThread->GetAllocContext();
+    Object* pObject;
+
+    size_t size = pEEType->get_BaseSize();
+    size = (size + (sizeof(UIntNative) - 1)) & ~(sizeof(UIntNative) - 1);
+
+    UInt8* result = acontext->alloc_ptr;
+
+    int requiresPadding = ((uint32_t)result) & 7;
+    if (requiresPadding) size += 12;
+    UInt8* advance = result + size;
+    if (advance <= acontext->alloc_limit)
+    {
+        acontext->alloc_ptr = advance;
+        if (requiresPadding)
+        {
+            Object* dummy = (Object*)result;
+            dummy->set_EEType(g_pFreeObjectEEType);
+            result += 12;
+        }
+        pObject = (Object*)result;
+        pObject->set_EEType(pEEType);
+
+        return pObject;
+    }
+
+    pObject = (Object*)RhpGcAlloc(pEEType, GC_ALLOC_ALIGN8, size, NULL);
+    if (pObject == nullptr)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
+    }
+    pObject->set_EEType(pEEType);
+
+    if (size >= RH_LARGE_OBJECT_SIZE)
+        RhpPublishObject(pObject, size);
+
+    return pObject;
+}
+
+COOP_PINVOKE_HELPER(Object*, RhpNewFastMisalign, (EEType* pEEType))
+{
+    size_t size = pEEType->get_BaseSize();
+    Object* pObject = (Object*)RhpGcAlloc(pEEType, GC_ALLOC_ALIGN8_BIAS, size, NULL);
+    if (pObject == nullptr)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
+    }
+    pObject->set_EEType(pEEType);
+
+    if (size >= RH_LARGE_OBJECT_SIZE)
+        RhpPublishObject(pObject, size);
+
     return pObject;
 }
 
 COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (EEType * pArrayEEType, int numElements))
 {
-    Array * pObject = nullptr;
-    /* TODO */ ASSERT_UNCONDITIONALLY("NYI");
+    ASSERT_MSG(pArrayEEType->RequiresAlign8(), "RhpNewArrayAlign8 called for a type that is not aligned 8");
+
+    Thread* pCurThread = ThreadStore::GetCurrentThread();
+    gc_alloc_context* acontext = pCurThread->GetAllocContext();
+    Array* pObject;
+
+    if (numElements < 0)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+    }
+
+    size_t size;
+
+    UInt32 baseSize = pArrayEEType->get_BaseSize();
+#ifndef HOST_64BIT
+    // if the element count is <= 0x10000, no overflow is possible because the component size is
+    // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
+    if (numElements > 0x10000)
+    {
+        // Perform the size computation using 64-bit integeres to detect overflow
+        uint64_t size64 = (uint64_t)baseSize + ((uint64_t)numElements * (uint64_t)pArrayEEType->get_ComponentSize());
+        size64 = (size64 + (sizeof(UIntNative) - 1)) & ~(sizeof(UIntNative) - 1);
+
+        size = (size_t)size64;
+        if (size != size64)
+        {
+            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+        }
+    }
+    else
+#endif // !HOST_64BIT
+    {
+        size = (size_t)baseSize + ((size_t)numElements * (size_t)pArrayEEType->get_ComponentSize());
+        size = ALIGN_UP(size, sizeof(UIntNative));
+    }
+    UInt8* result = acontext->alloc_ptr;
+    int requiresAlignObject = ((uint32_t)result) & 7;
+    if (requiresAlignObject) size += 12;
+
+    UInt8* advance = result + size;
+    if (advance <= acontext->alloc_limit)
+    {
+        acontext->alloc_ptr = advance;
+        if (requiresAlignObject)
+        {
+            Object* dummy = (Object*)result;
+            dummy->set_EEType(g_pFreeObjectEEType);
+            result += 12;
+        }
+        pObject = (Array*)result;
+        pObject->set_EEType(pArrayEEType);
+        pObject->InitArrayLength((UInt32)numElements);
+        return pObject;
+    }
+
+    pObject = (Array*)RhpGcAlloc(pArrayEEType, GC_ALLOC_ALIGN8, size, NULL);
+    if (pObject == nullptr)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw OOM
+    }
+    pObject->set_EEType(pArrayEEType);
+    pObject->InitArrayLength((UInt32)numElements);
+
+    if (size >= RH_LARGE_OBJECT_SIZE)
+        RhpPublishObject(pObject, size);
+
     return pObject;
 }
-#endif
+#endif // defined(HOST_ARM) || defined(HOST_WASM)
 
 COOP_PINVOKE_HELPER(void, RhpInitialDynamicInterfaceDispatch, ())
 {
