@@ -169,7 +169,6 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
        // restore registers that DWARF says were saved
       R newRegisters = registers;
       pint_t returnAddress = 0;
-      pint_t returnAddressLocation = 0;
       const int lastReg = R::lastDwarfRegNum();
       assert(static_cast<int>(CFI_Parser<A>::kMaxRegisterNumber) >= lastReg &&
              "register range too large");
@@ -178,14 +177,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
       for (int i = 0; i <= lastReg; ++i) {
         if (prolog.savedRegisters[i].location !=
             CFI_Parser<A>::kRegisterUnused) {
-          if (i == (int)cieInfo.returnAddressRegister) {
-            returnAddress = getSavedRegister(addressSpace, registers, cfa,
-                                             prolog.savedRegisters[i],
-                                             returnAddressLocation);
-
-            newRegisters.setRegister(i, returnAddress, returnAddressLocation);
-          }
-          else if (registers.validFloatRegister(i))
+          if (registers.validFloatRegister(i))
             newRegisters.setFloatRegister(
                 i, getSavedFloatRegister(addressSpace, registers, cfa,
                                          prolog.savedRegisters[i]));
@@ -193,6 +185,12 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
             newRegisters.setVectorRegister(
                 i, getSavedVectorRegister(addressSpace, registers, cfa,
                                           prolog.savedRegisters[i]));
+          else if (i == (int)cieInfo.returnAddressRegister) {
+            pint_t dummyLocation;
+            returnAddress = getSavedRegister(addressSpace, registers, cfa,
+                                             prolog.savedRegisters[i],
+                                             dummyLocation);
+          }
           else if (registers.validRegister(i)) {
             pint_t value;
             pint_t location;
@@ -274,7 +272,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
 
       // Return address is address after call site instruction, so setting IP to
       // that does simualates a return.
-      newRegisters.setIP(returnAddress, returnAddressLocation);
+      newRegisters.setIP(returnAddress, 0);
 
       // Simulate the step by replacing the register set with the new ones.
       registers = newRegisters;
