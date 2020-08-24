@@ -68,7 +68,7 @@ namespace System.Threading
         /// particularly in situations where related objects are being canceled concurrently.
         /// </para>
         /// </remarks>
-        public bool IsCancellationRequested => _source != null && _source.IsCancellationRequested;
+        public bool IsCancellationRequested => _source is CancellationTokenSource _tmp && _tmp.IsCancellationRequested;
 
         /// <summary>
         /// Gets whether this token is capable of being in the canceled state.
