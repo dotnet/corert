@@ -350,6 +350,6 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         ret
 0:
         // passing transition frame pointer in x0
-        b         RhpWaitForGC
+        b         C_FUNC(RhpWaitForGC2)
 LEAF_END RhpPInvokeReturn, _TEXT
 
