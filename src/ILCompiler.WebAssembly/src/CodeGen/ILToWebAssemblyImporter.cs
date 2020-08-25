@@ -2503,6 +2503,26 @@ namespace Internal.IL
                         return true;
                     }
                     break;
+                case "DefaultConstructorOf":
+                    if (metadataType.Namespace == "System" && metadataType.Name == "Activator" && method.Instantiation.Length == 1)
+                    {
+                        if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                        {
+                            var ctorRef = CallGenericHelper(ReadyToRunHelperId.DefaultConstructor, runtimeDeterminedMethod.Instantiation[0]);
+                            PushExpression(StackValueKind.Int32, "ctor", ctorRef, GetWellKnownType(WellKnownType.IntPtr));
+                        }
+                        else
+                        {
+                            IMethodNode methodNode = (IMethodNode)_compilation.ComputeConstantLookup(ReadyToRunHelperId.DefaultConstructor, method.Instantiation[0]);
+                            _dependencies.Add(methodNode);
+
+                            MethodDesc ctor = methodNode.Method;
+                            PushExpression(StackValueKind.Int32, "ctor", LLVMFunctionForMethod(ctor, ctor, null, false, null, ctor, out bool _, out LLVMValueRef _, out LLVMValueRef _), GetWellKnownType(WellKnownType.IntPtr));
+                        }
+
+                        return true;
+                    }
+                    break;
             }
 
             return false;
