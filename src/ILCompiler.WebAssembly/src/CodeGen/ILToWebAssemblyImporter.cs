@@ -3044,7 +3044,6 @@ namespace Internal.IL
         {
             if (CxaEndCatchFunction == default)
             {
-                // takes the exception structure and returns the c++ exception, defined by emscripten
                 CxaEndCatchFunction = Module.AddFunction("__cxa_end_catch", LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { }, false));
             }
             return CxaEndCatchFunction;
