@@ -53,7 +53,7 @@ namespace System.Diagnostics
         internal string ToString(TraceFormat traceFormat)
         {
             if (traceFormat == TraceFormat.Normal && _builder.ToString().EndsWith(Environment.NewLine))
-                _builder.Length -= Environment.NewLine.Length;
+                return _builder.ToString().Substring(0, _builder.Length - Environment.NewLine.Length);
 
             return _builder.ToString();
         }
