@@ -2921,7 +2921,8 @@ namespace Internal.IL
                 BuildFinallyFunclet(Module);
             }
 
-            var exPtr = landingPadBuilder.BuildExtractValue(pad, 0, "ex");
+            // __cxa_begin catch to get the c++ exception object, must be paired with __cxa_end_catch (http://libcxxabi.llvm.org/spec.html)
+            var exPtr = landingPadBuilder.BuildCall(GetCxaBeginCatchFunction(), new LLVMValueRef[] { landingPadBuilder.BuildExtractValue(pad, 0, "ex") });
 
             // unwrap managed, cast to 32bit pointer from 8bit personality signature pointer
             var ex32Ptr = landingPadBuilder.BuildPointerCast(exPtr, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0));
@@ -2973,6 +2974,8 @@ namespace Internal.IL
             landingPadBuilder.BuildCondBr(noCatch, secondPassBlock, foundCatchBlock);
 
             landingPadBuilder.PositionAtEnd(foundCatchBlock);
+            // finished with the c++ exception
+            landingPadBuilder.BuildCall(GetCxaEndCatchFunction(), new LLVMValueRef[] { });
 
             LLVMValueRef[] callCatchArgs = new LLVMValueRef[]
                                   {
@@ -3044,6 +3047,26 @@ namespace Internal.IL
             landingPadBuilder.Dispose();
 
             return landingPad;
+        }
+
+        LLVMValueRef GetCxaBeginCatchFunction()
+        {
+            if (CxaBeginCatchFunction == default)
+            {
+                // takes the exception structure and returns the c++ exception, defined by emscripten
+                CxaBeginCatchFunction = Module.AddFunction("__cxa_begin_catch", LLVMTypeRef.CreateFunction(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 
+                    new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)}, false));
+            }
+            return CxaBeginCatchFunction;
+        }
+
+        LLVMValueRef GetCxaEndCatchFunction()
+        {
+            if (CxaEndCatchFunction == default)
+            {
+                CxaEndCatchFunction = Module.AddFunction("__cxa_end_catch", LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { }, false));
+            }
+            return CxaEndCatchFunction;
         }
 
         private void AddMethodReference(MethodDesc method)

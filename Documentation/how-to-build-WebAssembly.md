@@ -3,7 +3,7 @@
 ## Build WebAssembly on Windows ##
 
 1. Install Emscripten by following the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html). 
-2. Follow the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#updating-the-sdk) to update Emscripten to 1.39.19 ```./emsdk install 1.39.19``` followed by ```./emsdk activate 1.39.19```
+2. Follow the instructions [here](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#updating-the-sdk) to update Emscripten to 2.0.1 ```./emsdk install 2.0.0``` followed by ```./emsdk activate 2.0.0```
 3. Install [Firefox](https://www.getfirefox.com) (for testing).
 3. Get CoreRT set up by following the [Visual Studio instructions](how-to-build-and-run-ilcompiler-in-visual-studio.md).
 4. Build the WebAssembly runtime by running ```build.cmd wasm``` from the repo root.
