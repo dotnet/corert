@@ -10,9 +10,9 @@ git checkout c1f0ad9
 powershell -NoProfile -NoLogo -ExecutionPolicy ByPass -command "& """%~dp0update-machine-certs.ps1""" %*"
 
 rem Use the python that is downloaded to native-tools explicitly as its not on the path
-call "%1"\..\native-tools\bin\python3 emsdk.py install 2.0.1
+call "%1"\..\native-tools\bin\python3 emsdk.py install 2.0.0
 if %errorlevel% NEQ 0 goto fail
-call emsdk activate 2.0.1
+call emsdk activate 2.0.0
 if %errorlevel% NEQ 0 goto fail
 
 exit /b 0
