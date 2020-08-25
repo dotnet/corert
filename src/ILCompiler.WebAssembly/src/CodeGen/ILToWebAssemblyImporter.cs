@@ -2517,7 +2517,7 @@ namespace Internal.IL
                             _dependencies.Add(methodNode);
 
                             MethodDesc ctor = methodNode.Method;
-                            PushExpression(StackValueKind.Int32, "eeType", LLVMFunctionForMethod(ctor, ctor, null, false, null, ctor, out bool _, out LLVMValueRef _, out LLVMValueRef _), GetWellKnownType(WellKnownType.IntPtr));
+                            PushExpression(StackValueKind.Int32, "ctor", LLVMFunctionForMethod(ctor, ctor, null, false, null, ctor, out bool _, out LLVMValueRef _, out LLVMValueRef _), GetWellKnownType(WellKnownType.IntPtr));
                         }
 
                         return true;
