@@ -33,5 +33,17 @@ namespace Internal.TypeSystem.Interop
                 return comparer.CompareWithinClass(OwningType, otherMethod.OwningType);
             }
         }
+
+        partial class InlineArrayField
+        {
+            protected internal override int ClassCode => 1542668652;
+
+            protected internal override int CompareToImpl(FieldDesc other, TypeSystemComparer comparer)
+            {
+                var otherField = (InlineArrayField)other;
+
+                return comparer.CompareWithinClass(OwningType, otherField.OwningType);
+            }
+        }
     }
 }
