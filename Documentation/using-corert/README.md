@@ -7,3 +7,4 @@ In that area contains list of topics which describe how to use CoreRT on your pr
 - [Reflection Free Mode](reflection-free-mode.md)
 - [Reflection In AOT](reflection-in-aot-mode.md)
 - [Troubleshooting](troubleshooting-corert.md)
+- [RD.xml Documentation](rd-xml-format.md)

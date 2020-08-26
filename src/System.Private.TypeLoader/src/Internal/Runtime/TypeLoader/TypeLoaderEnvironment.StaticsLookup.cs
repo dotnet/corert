@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 using System;
@@ -217,6 +216,37 @@ namespace Internal.Runtime.TypeLoader
 
 
         #region Thread Statics
+        /// <summary>
+        /// Get a pointer to a pointer to the thread static field data of a type. This function works for all generic types
+        /// </summary>
+        public IntPtr TryGetThreadStaticFieldData(RuntimeTypeHandle runtimeTypeHandle)
+        {
+            unsafe
+            {
+                // Non-generic, non-dynamic static data is found via the FieldAccessMap
+                EEType* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
+                // Non-generic, non-dynamic types need special handling.
+                Debug.Assert(typeAsEEType->IsDynamicType || typeAsEEType->IsGeneric);
+            }
+
+            // Search hashtable for static entry
+            ExternalReferencesTable staticInfoLookup;
+            var parser = GetStaticInfo(runtimeTypeHandle, out staticInfoLookup);
+            if (!parser.IsNull)
+            {
+                var index = parser.GetUnsignedForBagElementKind(BagElementKind.ThreadStaticIndex);
+
+                return index.HasValue ? staticInfoLookup.GetIntPtrFromIndex(index.Value) : IntPtr.Zero;
+            }
+
+            // Not found in hashtable... must be a dynamically created type
+            Debug.Assert(!runtimeTypeHandle.IsDynamicType());
+            // Not yet implemented...
+
+            // Type has no GC statics
+            return IntPtr.Zero;
+        }
+
         public int TryGetThreadStaticsSizeForDynamicType(int index, out int numTlsCells)
         {
             Debug.Assert((index & DynamicTypeTlsOffsetFlag) == DynamicTypeTlsOffsetFlag);
@@ -269,26 +299,6 @@ namespace Internal.Runtime.TypeLoader
 
                 _threadStaticsLock.Release();
             }
-        }
-
-        public unsafe IntPtr TryGetTlsIndexDictionaryCellForType(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            IntPtr result;
-            if ((result = TryGetTlsIndexDictionaryCellForStaticType(runtimeTypeHandle)) == IntPtr.Zero)
-                if ((result = TryGetTlsIndexDictionaryCellForDynamicType(runtimeTypeHandle)) == IntPtr.Zero)
-                    return IntPtr.Zero;
-
-            return result;
-        }
-
-        public IntPtr TryGetTlsOffsetDictionaryCellForType(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            IntPtr result;
-            if ((result = TryGetTlsOffsetDictionaryCellForStaticType(runtimeTypeHandle)) == IntPtr.Zero)
-                if ((result = TryGetTlsOffsetDictionaryCellForDynamicType(runtimeTypeHandle)) == IntPtr.Zero)
-                    return IntPtr.Zero;
-
-            return result;
         }
         #endregion
 
@@ -351,78 +361,6 @@ namespace Internal.Runtime.TypeLoader
         private unsafe IntPtr TryCreateDictionaryCellWithValue(uint value)
         {
             return PermanentAllocatedMemoryBlobs.GetPointerToUInt(value);
-        }
-
-
-        public unsafe bool TryGetThreadStaticStartOffset(RuntimeTypeHandle runtimeTypeHandle, out int threadStaticsStartOffset)
-        {
-            threadStaticsStartOffset = -1;
-
-            if (runtimeTypeHandle.IsDynamicType())
-            {
-                // Specific TLS storage is allocated for each dynamic type. There is no starting offset since it's not a 
-                // TLS storage block shared by multiple types.
-                threadStaticsStartOffset = 0;
-                return true;
-            }
-            else
-            {
-                IntPtr ptrToTlsOffset = TryGetTlsOffsetDictionaryCellForStaticType(runtimeTypeHandle);
-                if (ptrToTlsOffset == IntPtr.Zero)
-                    return false;
-
-                threadStaticsStartOffset = *(int*)ptrToTlsOffset;
-                return true;
-            }
-        }
-
-        private IntPtr TryGetTlsIndexDictionaryCellForStaticType(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            // Search hashtable for static entry
-            ExternalReferencesTable staticsInfoLookup;
-            var parser = GetStaticInfo(runtimeTypeHandle, out staticsInfoLookup);
-            if (!parser.IsNull)
-            {
-                var index = parser.GetUnsignedForBagElementKind(BagElementKind.ThreadStaticIndex);
-                return index.HasValue ? staticsInfoLookup.GetIntPtrFromIndex(index.Value) : IntPtr.Zero;
-            }
-
-            return IntPtr.Zero;
-        }
-
-        private IntPtr TryGetTlsOffsetDictionaryCellForStaticType(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            // Search hashtable for static entry
-            ExternalReferencesTable staticsInfoLookup;
-            var parser = GetStaticInfo(runtimeTypeHandle, out staticsInfoLookup);
-            if (!parser.IsNull)
-            {
-                var index = parser.GetUnsignedForBagElementKind(BagElementKind.ThreadStaticOffset);
-                return index.HasValue ? staticsInfoLookup.GetIntPtrFromIndex(index.Value) : IntPtr.Zero;
-            }
-
-            return IntPtr.Zero;
-        }
-
-        private IntPtr TryGetTlsIndexDictionaryCellForDynamicType(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            // Use TLS index of 0 for dynamic types (the index won't really be used)
-            Debug.Assert(runtimeTypeHandle.IsDynamicType());
-            return TryCreateDictionaryCellWithValue(0);
-        }
-
-        private IntPtr TryGetTlsOffsetDictionaryCellForDynamicType(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            Debug.Assert(runtimeTypeHandle.IsDynamicType());
-
-            using (LockHolder.Hold(_threadStaticsLock))
-            {
-                uint offsetValue;
-                if (_dynamicGenericsThreadStatics.TryGetValue(runtimeTypeHandle, out offsetValue))
-                    return TryCreateDictionaryCellWithValue(offsetValue);
-            }
-
-            return IntPtr.Zero;
         }
         #endregion
     }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using global::System;
 using global::System.Reflection;
@@ -1319,7 +1318,8 @@ namespace Internal.Reflection.Execution
                 return null;
             }
 
-            switch (fieldAccessMetadata.Flags & FieldTableFlags.StorageClass)
+            FieldTableFlags fieldBase = fieldAccessMetadata.Flags & FieldTableFlags.StorageClass;
+            switch (fieldBase)
             {
                 case FieldTableFlags.Instance:
                     {
@@ -1335,27 +1335,31 @@ namespace Internal.Reflection.Execution
                                     fieldAccessMetadata.Offset + fieldOffsetDelta, declaringTypeHandle, fieldTypeHandle);
                     }
 
-                case FieldTableFlags.Static:
+                case FieldTableFlags.NonGCStatic:
+                case FieldTableFlags.GCStatic:
+                case FieldTableFlags.ThreadStatic:
                     {
                         int fieldOffset;
                         IntPtr staticsBase;
-                        bool isGcStatic = ((fieldAccessMetadata.Flags & FieldTableFlags.IsGcSection) != 0);
 
                         if (RuntimeAugments.IsGenericType(declaringTypeHandle))
                         {
                             unsafe
                             {
                                 fieldOffset = fieldAccessMetadata.Offset;
-                                staticsBase = isGcStatic ?
-                                    *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetGcStaticFieldData(declaringTypeHandle) :
-                                    *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldData(declaringTypeHandle);
+                                staticsBase = fieldBase switch
+                                {
+                                    FieldTableFlags.GCStatic => *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetGcStaticFieldData(declaringTypeHandle),
+                                    FieldTableFlags.NonGCStatic => *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldData(declaringTypeHandle),
+                                    _ => *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetThreadStaticFieldData(declaringTypeHandle),
+                                };
                             }
                         }
                         else
                         {
                             Debug.Assert((fieldAccessMetadata.Flags & FieldTableFlags.IsUniversalCanonicalEntry) == 0);
 
-                            if (isGcStatic)
+                            if (fieldBase != FieldTableFlags.NonGCStatic)
                             {
                                 fieldOffset = fieldAccessMetadata.Offset;
                                 staticsBase = fieldAccessMetadata.Cookie;
@@ -1372,34 +1376,10 @@ namespace Internal.Reflection.Execution
                         IntPtr cctorContext = TryGetStaticClassConstructionContext(declaringTypeHandle);
 
                         return RuntimeAugments.IsValueType(fieldTypeHandle) ?
-                            (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle) :
+                            (FieldAccessor)new ValueTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, fieldBase, fieldTypeHandle) :
                             RuntimeAugments.IsUnmanagedPointerType(fieldTypeHandle) ?
-                                (FieldAccessor)new PointerTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle) :
-                                (FieldAccessor)new ReferenceTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, isGcStatic, fieldTypeHandle);
-                    }
-
-                case FieldTableFlags.ThreadStatic:
-                    {
-                        return RuntimeAugments.IsValueType(fieldTypeHandle) ?
-                            (FieldAccessor)new ValueTypeFieldAccessorForThreadStaticFields(
-                                TryGetStaticClassConstructionContext(declaringTypeHandle), 
-                                declaringTypeHandle, 
-                                (int)fieldAccessMetadata.Cookie,
-                                fieldAccessMetadata.Offset,
-                                fieldTypeHandle) :
-                            RuntimeAugments.IsUnmanagedPointerType(fieldTypeHandle) ?
-                                (FieldAccessor)new PointerTypeFieldAccessorForThreadStaticFields(
-                                    TryGetStaticClassConstructionContext(declaringTypeHandle),
-                                    declaringTypeHandle,
-                                    (int)fieldAccessMetadata.Cookie,
-                                    fieldAccessMetadata.Offset,
-                                    fieldTypeHandle) :
-                                (FieldAccessor)new ReferenceTypeFieldAccessorForThreadStaticFields(
-                                    TryGetStaticClassConstructionContext(declaringTypeHandle), 
-                                    declaringTypeHandle,
-                                    (int)fieldAccessMetadata.Cookie,
-                                    fieldAccessMetadata.Offset,
-                                    fieldTypeHandle);
+                                (FieldAccessor)new PointerTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, fieldBase, fieldTypeHandle) :
+                                (FieldAccessor)new ReferenceTypeFieldAccessorForStaticFields(cctorContext, staticsBase, fieldOffset, fieldBase, fieldTypeHandle);
                     }
             }
 

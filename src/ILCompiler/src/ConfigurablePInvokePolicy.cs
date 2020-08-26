@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.IL;
 using Internal.TypeSystem;
@@ -71,7 +70,8 @@ namespace ILCompiler
             else
             {
                 // Account for System.Private.CoreLib.Native / System.Globalization.Native / System.Native / etc
-                return importModule.StartsWith("libSystem.");
+                // TODO: Remove "System." prefix - temporary workaround for https://github.com/dotnet/corert/issues/8241
+                return importModule.StartsWith("libSystem.") || importModule.StartsWith("System.");
             }
         }
     }

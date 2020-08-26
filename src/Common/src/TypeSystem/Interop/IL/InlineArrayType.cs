@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -11,7 +10,7 @@ using System.Threading;
 
 namespace Internal.TypeSystem.Interop
 {
-    internal partial class InlineArrayType : MetadataType
+    internal sealed partial class InlineArrayType : MetadataType
     {
         public MetadataType ElementType
         {
@@ -133,7 +132,8 @@ namespace Internal.TypeSystem.Interop
         }
 
         private InteropStateManager _interopStateManager;
-        private MethodDesc [] _methods;
+        private MethodDesc[] _methods;
+        private FieldDesc[] _fields;
 
         public InlineArrayType(ModuleDesc owningModule, MetadataType elementType, uint length, InteropStateManager interopStateManager)
         {
@@ -251,13 +251,25 @@ namespace Internal.TypeSystem.Interop
             return _methods[(int)kind];
         }
 
+        private void InitializeFields()
+        {
+            // The inline array will inherit alignment from the dummy field
+            FieldDesc[] fields = new FieldDesc[] {
+                new InlineArrayField(this)
+            };
 
+            Interlocked.CompareExchange(ref _fields, fields, null);
+        }
         public override IEnumerable<FieldDesc> GetFields()
         {
-            return Array.Empty<FieldDesc>();
+            if (_fields == null)
+            {
+                InitializeFields();
+            }
+            return _fields;
         }
 
-        private partial class InlineArrayMethod : ILStubMethod
+        private sealed partial class InlineArrayMethod : ILStubMethod
         {
             private InlineArrayType _owningType;
             private InlineArrayMethodKind _kind;
@@ -375,7 +387,93 @@ namespace Internal.TypeSystem.Interop
 
                 codeStream.Emit(ILOpcode.ret);
                 return emitter.Link(this);
+            }
+        }
 
+        private sealed partial class InlineArrayField : FieldDesc
+        {
+            private InlineArrayType _owningType;
+
+            public override TypeSystemContext Context
+            {
+                get
+                {
+                    return _owningType.Context;
+                }
+            }
+
+            public override TypeDesc FieldType
+            {
+                get
+                {
+                    return _owningType.ElementType;
+                }
+            }
+
+            public override bool HasRva
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
+            public override bool IsInitOnly
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
+            public override bool IsLiteral
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
+            public override bool IsStatic
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
+            public override bool IsThreadStatic
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
+            public override DefType OwningType
+            {
+                get
+                {
+                    return _owningType;
+                }
+            }
+
+            public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
+            {
+                return false;
+            }
+
+            public override string Name
+            {
+                get
+                {
+                    return "InlineArrayField";
+                }
+            }
+
+            public InlineArrayField(InlineArrayType owningType)
+            {
+                _owningType = owningType;
             }
         }
     }

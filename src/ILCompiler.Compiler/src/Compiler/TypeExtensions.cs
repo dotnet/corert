@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Internal.IL;
@@ -203,11 +202,11 @@ namespace ILCompiler
 
         /// <summary>
         /// Determines whether an object of type '<paramref name="type"/>' requires 8-byte alignment on 
-        /// 32bit ARM architectures.
+        /// 32bit ARM or 32bit Wasm architectures.
         /// </summary>
         public static bool RequiresAlign8(this TypeDesc type)
         {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
+            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.Wasm32)
             {
                 return false;
             }

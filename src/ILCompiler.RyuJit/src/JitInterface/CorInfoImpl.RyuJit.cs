@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -90,12 +89,15 @@ namespace Internal.JitInterface
                 lookup.lookupKind.needsRuntimeLookup = true;
                 lookup.runtimeLookup.signature = null;
 
-                MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-
                 // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                 // to abort the inlining attempt anyway.
-                if (contextMethod != MethodBeingCompiled)
+                if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
+                {
+                    lookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
                     return;
+                }
+
+                MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
 
                 GenericDictionaryLookup genericLookup = _compilation.ComputeGenericLookup(contextMethod, helperId, entity);
 
@@ -128,6 +130,7 @@ namespace Internal.JitInterface
                     {
                         lookup.runtimeLookup.offset1 = IntPtr.Zero;
                     }
+                    lookup.runtimeLookup.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
                     lookup.runtimeLookup.testForFixup = false; // TODO: this will be needed in true multifile
                     lookup.runtimeLookup.testForNull = false;
                     lookup.runtimeLookup.indirectFirstOffset = false;
@@ -1034,6 +1037,18 @@ namespace Internal.JitInterface
             return _compilation.NodeFactory.MethodEntrypoint(method, isUnboxingThunk);
         }
 
+        private static bool IsTypeSpecForTypicalInstantiation(TypeDesc t)
+        {
+            Instantiation inst = t.Instantiation;
+            for (int i = 0; i < inst.Length; i++)
+            {
+                var arg = inst[i] as SignatureTypeVariable;
+                if (arg == null || arg.Index != i)
+                    return false;
+            }
+            return true;
+        }
+
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
 #if DEBUG
@@ -1133,6 +1148,20 @@ namespace Internal.JitInterface
             {
                 pResult->contextHandle = contextFromType(exactType);
                 pResult->exactContextNeedsRuntimeLookup = exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
+
+                // Use main method as the context as long as the methods are called on the same type
+                if (pResult->exactContextNeedsRuntimeLookup &&
+                    pResolvedToken.tokenContext == contextFromMethodBeingCompiled() &&
+                    constrainedType == null &&
+                    exactType == MethodBeingCompiled.OwningType)
+                {
+                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token);
+                    if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
+                    {
+                        pResult->contextHandle = contextFromMethodBeingCompiled();
+                    }
+                }
             }
 
             //
@@ -1188,12 +1217,16 @@ namespace Internal.JitInterface
 
                     // Do not bother computing the runtime lookup if we are inlining. The JIT is going
                     // to abort the inlining attempt anyway.
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod == MethodBeingCompiled)
+                    if (pResolvedToken.tokenContext == contextFromMethodBeingCompiled())
                     {
+                        MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
                         pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(contextMethod);
                         pResult->codePointerOrStubLookup.lookupKind.runtimeLookupFlags = (ushort)ReadyToRunHelperId.MethodEntry;
                         pResult->codePointerOrStubLookup.lookupKind.runtimeLookupArgs = (void*)ObjectToHandle(GetRuntimeDeterminedObjectForToken(ref pResolvedToken));
+                    }
+                    else
+                    {
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
                     }
                 }
                 else
@@ -1763,9 +1796,10 @@ namespace Internal.JitInterface
 
                     // Don't try to compute the runtime lookup if we're inlining. The JIT is going to abort the inlining
                     // attempt anyway.
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod == MethodBeingCompiled)
+                    if (pResolvedToken.tokenContext == contextFromMethodBeingCompiled())
                     {
+                        MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+
                         FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
 
                         ReadyToRunHelperId helperId;

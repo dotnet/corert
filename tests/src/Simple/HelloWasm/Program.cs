@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -21,6 +21,11 @@ internal static class Program
     internal static bool Success;
     private static unsafe int Main(string[] args)
     {
+        var x = new StructWithObjRefs
+        {
+            C1 = null,
+            C2 = null,
+        };
         Success = true;
         PrintLine("Starting " + 1);
 
@@ -353,6 +358,10 @@ internal static class Program
 
         TestIntOverflows();
 
+        TestJavascriptCall();
+
+        TestDefaultConstructorOf();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -391,7 +400,252 @@ internal static class Program
             PrintString("GC Collection Count " + i.ToString() + " ");
             PrintLine(GC.CollectionCount(i).ToString());
         }
-        EndTest(true);
+        
+        if (!TestObjectRefInUncoveredShadowStackSlot())
+        {
+            FailTest("struct Child1 alive unexpectedly");
+        }
+            
+        if (!TestRhpAssignRefWithClassInStructGC())
+        {
+            FailTest();
+            return;
+        }
+
+        EndTest(TestGeneration2Rooting());
+    }
+
+    private static Parent aParent;
+    private static ParentOfStructWithObjRefs aParentOfStructWithObjRefs;
+    private static WeakReference childRef;
+
+    private static unsafe bool TestRhpAssignRefWithClassInStructGC()
+    {
+        bool result = true;
+
+        var parentRef = CreateParentWithStruct();
+        result &= BumpToGen(parentRef, 1);
+        result &= BumpToGen(parentRef, 2);
+
+        StoreChildInC1();
+        GC.Collect(1);
+        PrintLine("GC finished");
+
+        if (!childRef.IsAlive)
+        {
+            PrintLine("Child died unexpectedly");
+            result = false;
+        }
+
+        KillParentWithStruct();
+        GC.Collect();
+        if (childRef.IsAlive)
+        {
+            PrintLine("Child alive unexpectedly");
+            result = false;
+        }
+        if (parentRef.IsAlive)
+        {
+            PrintLine("Parent of struct Child1 alive unexpectedly");
+            result = false;
+        }
+        return result;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool BumpToGen(WeakReference reference, int expectedGeneration)
+    {
+        GC.Collect();
+        var target = reference.Target;
+        if (target == null)
+        {
+            PrintLine("WeakReference died unexpectedly");
+            return false;
+        }
+        if (GC.GetGeneration(target) is { } actualGeneration && actualGeneration != expectedGeneration)
+        {
+            PrintLine("WeakReference is in gen " + actualGeneration + " instead of " + expectedGeneration);
+            return false;
+        }
+        return true;
+    }
+
+    private static bool TestGeneration2Rooting()
+    {
+        var parent = CreateParent();
+        GC.Collect(); // parent moves to gen1
+        GC.Collect(); // parent moves to gen2
+        if (!CheckParentGeneration()) return false;
+
+        // store our children in the gen2 object
+        var child1 = StoreProperty();
+        var child2 = StoreField();
+
+        KillParent(); // even though we kill the parent, it should survive as we do not collect gen2
+        GC.Collect(1);
+
+        // the parent should have kept the children alive
+        bool parentAlive = parent.IsAlive;
+        bool child1Alive = child1.IsAlive;
+        bool child2Alive = child2.IsAlive;
+        if (!parentAlive)
+        {
+            PrintLine("Parent died unexpectedly");
+            return false;
+        }
+
+        if (!child1Alive)
+        {
+            PrintLine("Child1 died unexpectedly");
+            return false;
+        }
+
+        if (!child2Alive)
+        {
+            PrintLine("Child2 died unexpectedly");
+            return false;
+        }
+
+        // Test struct assignment keeps fields alive
+        var parentRef = CreateParentWithStruct();
+        GC.Collect(); // move parent to gen1
+        GC.Collect(); // move parent to gen2
+        StoreChildInC1(); // store ephemeral object in gen 2 object via struct assignment
+        KillParentWithStruct();
+        GC.Collect(1);
+
+        if (childRef.IsAlive)
+        {
+            PrintLine("Child1 gen:" + GC.GetGeneration(childRef.Target));
+        }
+
+        if (!childRef.IsAlive)
+        {
+            PrintLine("struct Child1 died unexpectedly");
+            return false;
+        }
+        if (!parentRef.IsAlive)
+        {
+            PrintLine("parent of struct Child1 died unexpectedly");
+            return false;
+        }
+
+        return true;
+    }
+
+    class ParentOfStructWithObjRefs
+    {
+        internal StructWithObjRefs StructWithObjRefs;
+    }
+
+    struct StructWithObjRefs
+    {
+        internal Child C1;
+        internal Child C2;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static WeakReference CreateParent()
+    {
+        var parent = new Parent();
+        aParent = parent;
+        return new WeakReference(parent);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static WeakReference CreateStruct()
+    {
+        var parent = new Parent();
+        aParent = parent;
+        return new WeakReference(parent);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void KillParent()
+    {
+        aParent = null;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool CheckParentGeneration()
+    {
+        int actualGen = GC.GetGeneration(aParent);
+        if (actualGen != 2)
+        {
+            PrintLine("Parent Object is not in expected generation 2 but in " + actualGen);
+            return false;
+        }
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static WeakReference StoreProperty()
+    {
+        var child = new Child();
+        aParent.Child1 = child;
+        return new WeakReference(child);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static WeakReference StoreField()
+    {
+        var child = new Child();
+        aParent.Child2 = child;
+        return new WeakReference(child);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    unsafe static WeakReference CreateParentWithStruct()
+    {
+        var parent = new ParentOfStructWithObjRefs();
+        aParentOfStructWithObjRefs = parent;
+        return new WeakReference(parent);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void KillParentWithStruct()
+    {
+        aParentOfStructWithObjRefs = null;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe void StoreChildInC1()
+    {
+        var child = new Child();
+        aParentOfStructWithObjRefs.StructWithObjRefs = new StructWithObjRefs
+        {
+            C1 = child,
+        };
+        childRef = new WeakReference(child);
+    }
+
+    public class Parent
+    {
+        public Child Child1 { get; set; }
+        public Child Child2;
+    }
+
+    public class Child
+    {
+    }
+
+    // This test is to catch where slots are allocated on the shadow stack uncovering object references that were there previously.
+    // If this happens in the call to GC.Collect, which at the time of writing allocate 12 bytes in the call, 3 slots, then any objects that were in those 
+    // 3 slots will not be collected as they will now be (back) in the range of bottom of stack -> top of stack.
+    private static unsafe bool TestObjectRefInUncoveredShadowStackSlot()
+    {
+        CreateObjectRefsInShadowStack();
+        GC.Collect();
+        return !childRef.IsAlive;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static unsafe void CreateObjectRefsInShadowStack()
+    {
+        var child = new Child();
+        Child c1, c2, c3;  // 3 more locals to cover give a bit more resiliency to the test, in case of slots being added or removed in the RhCollect calls
+        c1 = c2 = c3 = child;
+        childRef = new WeakReference(child);
     }
 
     private static unsafe void TestBoxUnboxDifferentSizes()
@@ -2050,6 +2304,8 @@ internal static class Program
 
     static void TestIntOverflows()
     {
+        TestCharInOvf();
+
         TestSignedIntAddOvf();
 
         TestSignedLongAddOvf();
@@ -2105,6 +2361,21 @@ internal static class Program
             return;
         }
         EndTest(true);
+    }
+
+    private static void TestCharInOvf()
+    {
+        // Just checks the compiler can handle the char type
+        // This was failing for https://github.com/dotnet/corert/blob/f542d97f26e87f633310e67497fb01dad29987a5/src/System.Private.CoreLib/shared/System/Environment.Unix.cs#L111
+        StartTest("Test char add overflows");
+        char opChar = '1';
+        int op32r = 2;
+        if (checked(opChar + op32r) != 51)
+        {
+            FailTest("No overflow for char failed"); // check not always throwing an exception
+            return;
+        }
+        PassTest();
     }
 
     private static void TestSignedIntAddOvf()
@@ -2360,6 +2631,22 @@ internal static class Program
         PassTest();
     }
 
+    static void TestJavascriptCall()
+    {
+        StartTest("Test Javascript call");
+
+        IntPtr resultPtr = JSInterop.InternalCalls.InvokeJSUnmarshalled(out string exception, "Answer", IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+        EndTest(resultPtr.ToInt32() == 42);
+    }
+
+    static void TestDefaultConstructorOf()
+    {
+        StartTest("Test DefaultConstructorOf");
+        var c = Activator.CreateInstance<ClassForNre>();
+        EndTest(c != null);
+    }
+
     static ushort ReadUInt16()
     {
         // something with MSB set
@@ -2374,6 +2661,20 @@ internal static class Program
 
     [DllImport("*")]
     private static unsafe extern int printf(byte* str, byte* unused);
+}
+
+namespace JSInterop
+{
+    internal static class InternalCalls
+    {
+        [DllImport("*", EntryPoint = "corert_wasm_invoke_js_unmarshalled")]
+        private static extern IntPtr InvokeJSUnmarshalledInternal(string js, int length, IntPtr p1, IntPtr p2, IntPtr p3, out string exception);
+
+        public static IntPtr InvokeJSUnmarshalled(out string exception, string js, IntPtr p1, IntPtr p2, IntPtr p3)
+        {
+            return InvokeJSUnmarshalledInternal(js, js.Length, p1, p2, p3, out exception);
+        }
+    }
 }
 
 public class ClassForNre

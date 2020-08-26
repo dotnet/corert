@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
 
@@ -39,11 +38,6 @@ namespace Internal.IL.Stubs
     partial class DelegateInvokeInstanceClosedOverGenericMethodThunk
     {
         protected internal override int ClassCode => -354480633;
-    }
-
-    partial class DelegateReversePInvokeThunk
-    {
-        protected internal override int ClassCode => -1626386052;
     }
 
     partial class DelegateInvokeObjectArrayThunk

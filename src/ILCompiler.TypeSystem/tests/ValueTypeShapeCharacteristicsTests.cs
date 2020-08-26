@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.TypeSystem;
 
@@ -10,10 +9,11 @@ namespace TypeSystemTests
 {
     public class ValueTypeShapeCharacteristicsTests
     {
+        const ValueTypeShapeCharacteristics Float32Aggregate = ValueTypeShapeCharacteristics.Float32Aggregate;
+        const ValueTypeShapeCharacteristics Float64Aggregate = ValueTypeShapeCharacteristics.Float64Aggregate;
+
         TestTypeSystemContext _context;
         ModuleDesc _testModule;
-        DefType _singleType;
-        DefType _doubleType;
 
         public ValueTypeShapeCharacteristicsTests()
         {
@@ -22,69 +22,69 @@ namespace TypeSystemTests
             _context.SetSystemModule(systemModule);
 
             _testModule = systemModule;
-
-            _singleType = _context.GetWellKnownType(WellKnownType.Single);
-            _doubleType = _context.GetWellKnownType(WellKnownType.Double);
         }
 
         [Fact]
         public void TestHfaPrimitives()
         {
-            Assert.True(_singleType.IsHfa);
-            Assert.Equal(_singleType, _singleType.HfaElementType);
+            DefType singleType = _context.GetWellKnownType(WellKnownType.Single);
+            DefType doubleType = _context.GetWellKnownType(WellKnownType.Double);
+
+            Assert.True(singleType.IsHomogeneousAggregate);
+            Assert.Equal(Float32Aggregate, singleType.ValueTypeShapeCharacteristics);
             
-            Assert.True(_doubleType.IsHfa);
-            Assert.Equal(_doubleType, _doubleType.HfaElementType);
+            Assert.True(doubleType.IsHomogeneousAggregate);
+            Assert.Equal(Float64Aggregate, doubleType.ValueTypeShapeCharacteristics);
         }
 
         [Fact]
         public void TestSimpleHfa()
         {
             var simpleHfaFloatStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "SimpleHfaFloatStruct");
-            Assert.True(simpleHfaFloatStruct.IsHfa);
-            Assert.Equal(_singleType, simpleHfaFloatStruct.HfaElementType);
+            Assert.True(simpleHfaFloatStruct.IsHomogeneousAggregate);
+            Assert.Equal(Float32Aggregate, simpleHfaFloatStruct.ValueTypeShapeCharacteristics);
 
             var simpleHfaFloatStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics", "SimpleHfaFloatStructWithManyFields");
-            Assert.True(simpleHfaFloatStructWithManyFields.IsHfa);
-            Assert.Equal(_singleType, simpleHfaFloatStructWithManyFields.HfaElementType);
+            Assert.True(simpleHfaFloatStructWithManyFields.IsHomogeneousAggregate);
+            Assert.Equal(Float32Aggregate, simpleHfaFloatStructWithManyFields.ValueTypeShapeCharacteristics);
 
             var simpleHfaDoubleStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "SimpleHfaDoubleStruct");
-            Assert.True(simpleHfaDoubleStruct.IsHfa);
-            Assert.Equal(_doubleType, simpleHfaDoubleStruct.HfaElementType);
+            Assert.True(simpleHfaDoubleStruct.IsHomogeneousAggregate);
+            Assert.Equal(Float64Aggregate, simpleHfaDoubleStruct.ValueTypeShapeCharacteristics);
         }
 
         [Fact]
         public void TestCompositeHfa()
         {
             var compositeHfaFloatStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "CompositeHfaFloatStruct");
-            Assert.True(compositeHfaFloatStruct.IsHfa);
-            Assert.Equal(_singleType, compositeHfaFloatStruct.HfaElementType);
+            Assert.True(compositeHfaFloatStruct.IsHomogeneousAggregate);
+            Assert.Equal(Float32Aggregate, compositeHfaFloatStruct.ValueTypeShapeCharacteristics);
 
             var compositeHfaDoubleStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "CompositeHfaDoubleStruct");
-            Assert.True(compositeHfaDoubleStruct.IsHfa);
-            Assert.Equal(_doubleType, compositeHfaDoubleStruct.HfaElementType);
+            Assert.True(compositeHfaDoubleStruct.IsHomogeneousAggregate);
+            Assert.Equal(Float64Aggregate, compositeHfaDoubleStruct.ValueTypeShapeCharacteristics);
         }
 
         [Fact]
         public void TestHfaNegative()
         {
-            var nonHfaEmptyStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaEmptyStruct");
-            Assert.False(nonHfaEmptyStruct.IsHfa);
+            var nonHAEmptyStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAEmptyStruct");
+            Assert.False(nonHAEmptyStruct.IsHomogeneousAggregate);
 
-            var nonHfaStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaStruct");
-            Assert.False(nonHfaStruct.IsHfa);
+            var nonHAStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAStruct");
+            Assert.False(nonHAStruct.IsHomogeneousAggregate);
 
-            var nonHfaMixedStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaMixedStruct");
-            Assert.False(nonHfaMixedStruct.IsHfa);
+            var nonHAMixedStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAMixedStruct");
+            Assert.False(nonHAMixedStruct.IsHomogeneousAggregate);
 
-            var nonHfaCompositeStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaCompositeStruct");
-            Assert.False(nonHfaCompositeStruct.IsHfa);
+            var nonHACompositeStruct = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHACompositeStruct");
+            Assert.False(nonHACompositeStruct.IsHomogeneousAggregate);
 
-            var nonHfaStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHfaStructWithManyFields");
-            Assert.False(nonHfaStructWithManyFields.IsHfa);
+            var nonHAStructWithManyFields = _testModule.GetType("ValueTypeShapeCharacteristics", "NonHAStructWithManyFields");
+            Assert.False(nonHAStructWithManyFields.IsHomogeneousAggregate);
 
             var objectType = _context.GetWellKnownType(WellKnownType.Object);
-            Assert.False(objectType.IsHfa);
+            Assert.False(objectType.IsHomogeneousAggregate);
         }
     }
 }

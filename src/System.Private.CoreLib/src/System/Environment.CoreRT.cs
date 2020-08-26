@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
@@ -56,7 +55,7 @@ namespace System
         {
             // TODO: shut down threading etc.
 
-#if !TARGET_WASM // WASMTODO
+#if !TARGET_WASM // WASMTODO Be careful what happens here as if the code has called emscripten_set_main_loop then the main loop method will normally be called repeatedly after this method
             AppContext.OnProcessExit();
 #endif
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -10,24 +9,22 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class SettableReadOnlyDataBlob : ObjectNode, ISymbolDefinitionNode
+    public class MethodReadOnlyDataNode : ObjectNode, ISymbolDefinitionNode
     {
-        private Utf8String _name;
-        private ObjectNodeSection _section;
+        private MethodDesc _owningMethod;
         private ObjectData _data;
 
-        public SettableReadOnlyDataBlob(Utf8String name, ObjectNodeSection section)
+        public MethodReadOnlyDataNode(MethodDesc owningMethod)
         {
-            _name = name;
-            _section = section;
+            _owningMethod = owningMethod;
         }
 
-        public override ObjectNodeSection Section => _section;
+        public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;
         public override bool StaticDependenciesAreComputed => _data != null;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(_name);
+            sb.Append("__readonlydata_" + nameMangler.GetMangledMethodName(_owningMethod));
         }
         public int Offset => 0;
         public override bool IsShareable => true;
@@ -50,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _name.CompareTo(((SettableReadOnlyDataBlob)other)._name);
+            return comparer.Compare(_owningMethod, ((MethodReadOnlyDataNode)other)._owningMethod);
         }
 #endif
     }

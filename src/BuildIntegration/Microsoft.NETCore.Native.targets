@@ -10,7 +10,6 @@ This file defines the steps in the build process for native AOT compilation.
 
 Licensed to the .NET Foundation under one or more agreements.
 The .NET Foundation licenses this file to you under the MIT license.
-See the LICENSE file in the project root for more information.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -38,8 +37,8 @@ See the LICENSE file in the project root for more information.
 
   <PropertyGroup>
     <NativeObjectExt Condition="'$(TargetOS)' == 'Windows_NT'">.obj</NativeObjectExt>
-    <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT'">.o</NativeObjectExt>
-    <NativeObjectExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</NativeObjectExt>
+    <NativeObjectExt Condition="'$(TargetOS)' != 'Windows_NT' or '$(NativeCodeGen)' == 'wasm'">.o</NativeObjectExt>
+    <LlvmObjectExt Condition="'$(NativeCodeGen)' == 'wasm'">.bc</LlvmObjectExt>
 
     <LibFileExt Condition="'$(TargetOS)' == 'Windows_NT'">.lib</LibFileExt>
     <LibFileExt Condition="'$(TargetOS)' != 'Windows_NT'">.a</LibFileExt>
@@ -62,6 +61,7 @@ See the LICENSE file in the project root for more information.
     <ExportsFileExt Condition="'$(TargetOS)' == 'Windows_NT'">.def</ExportsFileExt>
     <ExportsFileExt Condition="'$(TargetOS)' != 'Windows_NT'">.exports</ExportsFileExt>
     
+    <LlvmObject Condition="'$(NativeCodeGen)' == 'wasm'">$(NativeIntermediateOutputPath)$(TargetName)$(LlvmObjectExt)</LlvmObject>
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
     <ExportsFile Condition="$(NativeLib) == 'Shared' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
@@ -71,7 +71,7 @@ See the LICENSE file in the project root for more information.
 
     <LinkNativeDependsOn Condition="$(NativeCodeGen) == ''">IlcCompile</LinkNativeDependsOn>
     <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'cpp'">CppCompile</LinkNativeDependsOn>
-    <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'wasm'">IlcCompile</LinkNativeDependsOn>
+    <LinkNativeDependsOn Condition="$(NativeCodeGen) == 'wasm'">WasmObject</LinkNativeDependsOn>
 
     <FrameworkLibPath Condition="'$(FrameworkLibPath)' == ''">$(NativeOutputPath)</FrameworkLibPath>
     <FrameworkObjPath Condition="'$(FrameworkObjPath)' == ''">$(NativeIntermediateOutputPath)</FrameworkObjPath>
@@ -276,6 +276,26 @@ See the LICENSE file in the project root for more information.
 
   </Target>
 
+  <Target Name="WasmObject"
+      Inputs="$(LlvmObject)"
+      Outputs="$(NativeObject)"
+      DependsOnTargets="IlcCompile;GenerateResFile"
+      Condition="'$(NativeCodeGen)' == 'wasm'">
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(NativeBinary)))" />
+
+    <PropertyGroup>
+      <EmccArgs>&quot;$(LlvmObject)&quot; -c -o &quot;$(NativeObject)&quot; -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s DISABLE_EXCEPTION_CATCHING=0</EmccArgs>
+      <EmccArgs Condition="'$(Configuration)'=='Release'">$(EmccArgs) -O2</EmccArgs>
+      <EmccArgs Condition="'$(Configuration)'=='Debug'">$(EmccArgs) -g3</EmccArgs>
+    </PropertyGroup>
+    
+    <Exec Command="&quot;$(EMSDK)/upstream/emscripten/emcc.bat&quot; $(EmccArgs)" Condition="'$(EMSDK)' != '' and '$(OS)' == 'Windows_NT'" />
+    <Exec Command="&quot;$(EMSDK)/upstream/emscripten/emcc&quot; $(EmccArgs)" Condition="'$(EMSDK)' != '' and '$(OS)' != 'Windows_NT'" />
+    <Message Text="Emscripten not found, not linking WebAssembly. To enable WebAssembly linking, install Emscripten and ensure the EMSDK environment variable points to the directory containing upstream/emscripten/emcc.bat"
+             Condition="'$(EMSDK)' == ''" />
+  </Target>
+
   <Target Name="LinkNative"
       Inputs="$(NativeObject);@(NativeLibrary)"
       Outputs="$(NativeBinary)"
@@ -313,8 +333,8 @@ See the LICENSE file in the project root for more information.
     <Exec Command="$(CppLibCreator)  @&quot;$(NativeIntermediateOutputPath)lib.rsp&quot;" Condition="'$(OS)' == 'Windows_NT' and '$(NativeLib)' == 'Static' and '$(NativeCodeGen)' != 'wasm'" />
     
     <PropertyGroup>
-      <EmccArgs>&quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s DISABLE_EXCEPTION_CATCHING=0 --emrun </EmccArgs>
-      <EmccArgs Condition="'$(Platform)'=='wasm'">$(EmccArgs) &quot;$(IlcPath)/sdk/libPortableRuntime.a&quot; &quot;$(IlcPath)/sdk/libbootstrappercpp.a&quot; &quot;$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a&quot; </EmccArgs>
+      <EmccArgs>&quot;$(NativeObject)&quot; -o &quot;$(NativeBinary)&quot; -s ALLOW_MEMORY_GROWTH=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s DISABLE_EXCEPTION_CATCHING=0 --emrun </EmccArgs>
+      <EmccArgs Condition="'$(Platform)'=='wasm'">$(EmccArgs) &quot;$(IlcPath)/sdk/libPortableRuntime.a&quot; &quot;$(IlcPath)/sdk/libbootstrappercpp.a&quot; &quot;$(IlcPath)/sdk/libSystem.Private.CoreLib.Native.a&quot; $(EmccExtraArgs)</EmccArgs>
       <EmccArgs Condition="'$(Configuration)'=='Release'">$(EmccArgs) -O2 -flto</EmccArgs>
       <EmccArgs Condition="'$(Configuration)'=='Debug'">$(EmccArgs) -g3</EmccArgs>
     </PropertyGroup>

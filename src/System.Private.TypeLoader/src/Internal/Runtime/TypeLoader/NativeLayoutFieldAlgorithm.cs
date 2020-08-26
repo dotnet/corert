@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Internal.TypeSystem;
@@ -432,101 +431,89 @@ namespace Internal.Runtime.TypeLoader
             alignment = fieldDefType.InstanceFieldAlignment;
         }
 
-        public unsafe override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
+        public unsafe override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
-            if (type.Context.Target.Architecture == TargetArchitecture.ARM)
+            // Use this constant to make the code below more laconic
+            const ValueTypeShapeCharacteristics NotHA = ValueTypeShapeCharacteristics.None;
+
+            Debug.Assert(type.IsValueType);
+
+            TargetArchitecture targetArch = type.Context.Target.Architecture;
+            if ((targetArch != TargetArchitecture.ARM) && (targetArch != TargetArchitecture.ARM64))
+                return NotHA;
+
+            if (!type.IsValueType)
+                return NotHA;
+
+            // There is no reason to compute the entire field layout for the HA type/flag if
+            // the template type is not a universal generic type (information stored in rare flags on the EEType)
+            TypeDesc templateType = type.ComputeTemplate(false);
+            if (templateType != null && !templateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
             {
-                if (!type.IsValueType)
-                    return null;
+                EEType* pEETemplate = templateType.GetRuntimeTypeHandle().ToEETypePtr();
+                if (!pEETemplate->IsHFA)
+                    return NotHA;
 
-                // There is no reason to compute the entire field layout for the HFA type/flag if
-                // the template type is not a universal generic type (information stored in rare flags on the EEType)
-                TypeDesc templateType = type.ComputeTemplate(false);
-                if (templateType != null && !templateType.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                {
-                    EEType* pEETemplate = templateType.GetRuntimeTypeHandle().ToEETypePtr();
-                    if (!pEETemplate->IsHFA)
-                        return null;
-
-                    if (pEETemplate->RequiresAlign8)
-                        return type.Context.GetWellKnownType(WellKnownType.Double);
-                    else
-                        return type.Context.GetWellKnownType(WellKnownType.Single);
-                }
-
-                // Once this is done, the NativeLayoutFields on the type are initialized
-                EnsureFieldLayoutLoadedForGenericType((DefType)type);
-                Debug.Assert(type.NativeLayoutFields != null);
-
-                // Empty types are not HFA
-                if (type.NativeLayoutFields.Length == 0)
-                    return null;
-
-                DefType currentHfaElementType = null;
-
-                for (int i = 0; i < type.NativeLayoutFields.Length; i++)
-                {
-                    TypeDesc fieldType = type.NativeLayoutFields[i].FieldType;
-                    if (type.NativeLayoutFields[i].FieldStorage != NativeFormat.FieldStorage.Instance)
-                        continue;
-
-                    DefType fieldDefType = fieldType as DefType;
-
-                    // HFA types cannot contain non-HFA types
-                    if (fieldDefType == null || !fieldDefType.IsHfa)
-                        return null;
-
-                    Debug.Assert(fieldDefType.HfaElementType != null);
-
-                    if (currentHfaElementType == null)
-                        currentHfaElementType = fieldDefType.HfaElementType;
-                    else if (currentHfaElementType != fieldDefType.HfaElementType)
-                        return null; // If the field doesn't have the same HFA type as the one we've looked at before, the type cannot be HFA
-                }
-
-                // If we didn't find any instance fields, then this can't be an HFA type
-                if (currentHfaElementType == null)
-                    return null;
-
-                // Note that we check the total size, but do not perform any checks on number of fields:
-                // - Type of fields can be HFA valuetype itself
-                // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
-                //   the valuetype is HFA and explicitly specified size
-                int maxSize = currentHfaElementType.InstanceFieldSize.AsInt * currentHfaElementType.Context.Target.MaximumHfaElementCount;
-                if (type.InstanceFieldSize.AsInt > maxSize)
-                    return null;
-
-                return currentHfaElementType;
+                if (pEETemplate->RequiresAlign8)
+                    return ValueTypeShapeCharacteristics.Float64Aggregate;
+                else
+                    return ValueTypeShapeCharacteristics.Float32Aggregate;
             }
-            else
+
+            // Once this is done, the NativeLayoutFields on the type are initialized
+            EnsureFieldLayoutLoadedForGenericType((DefType)type);
+            Debug.Assert(type.NativeLayoutFields != null);
+
+            // Empty types are not HA
+            if (type.NativeLayoutFields.Length == 0)
+                return NotHA;
+
+            // Find the common HA element type if any
+            ValueTypeShapeCharacteristics haResultType = NotHA;
+
+            for (int i = 0; i < type.NativeLayoutFields.Length; i++)
             {
-                Debug.Assert(
-                    type.Context.Target.Architecture == TargetArchitecture.X86 ||
-                    type.Context.Target.Architecture == TargetArchitecture.X64);
+                TypeDesc fieldType = type.NativeLayoutFields[i].FieldType;
+                if (type.NativeLayoutFields[i].FieldStorage != NativeFormat.FieldStorage.Instance)
+                    continue;
 
-                return null;
+                // If a field isn't a DefType, then this type cannot be a HA type
+                if (!(fieldType is DefType fieldDefType))
+                    return NotHA;
+
+                // HA types cannot contain non-HA types
+                ValueTypeShapeCharacteristics haFieldType = fieldDefType.ValueTypeShapeCharacteristics & ValueTypeShapeCharacteristics.AggregateMask;
+                if (haFieldType == NotHA)
+                    return NotHA;
+
+                if (haResultType == NotHA)
+                    haResultType = haFieldType;
+                else if (haResultType != haFieldType)
+                    return NotHA; // If the field doesn't have the same HA type as the one we've looked at before, the type cannot be HA
             }
-        }
 
-        public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
-        {
-            if (type.Context.Target.Architecture == TargetArchitecture.ARM)
+            // If we didn't find any instance fields, then this can't be a HA type
+            if (haResultType == NotHA)
+                return NotHA;
+
+            int haElementSize = haResultType switch
             {
-                if (!type.IsValueType || ComputeHomogeneousFloatAggregateElementType(type) == null)
-                {
-                    return ValueTypeShapeCharacteristics.None;
-                }
+                ValueTypeShapeCharacteristics.Float32Aggregate => 4,
+                ValueTypeShapeCharacteristics.Float64Aggregate => 8,
+                ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
+                ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
+                _ => throw new ArgumentOutOfRangeException()
+            };
 
-                return ValueTypeShapeCharacteristics.HomogenousFloatAggregate;
-            }
-            else
-            {
-                Debug.Assert(
-                    type.Context.Target.Architecture == TargetArchitecture.X86 ||
-                    type.Context.Target.Architecture == TargetArchitecture.X64);
+            // Note that we check the total size, but do not perform any checks on number of fields:
+            // - Type of fields can be HA valuetype itself
+            // - Managed C++ HFA valuetypes have just one <alignment member> of type float to signal that 
+            //   the valuetype is HFA and explicitly specified size
+            int maxSize = haElementSize * type.Context.Target.MaxHomogeneousAggregateElementCount;
+            if (type.InstanceFieldSize.AsInt > maxSize)
+                return NotHA;
 
-                return ValueTypeShapeCharacteristics.None;
-            }
+            return haResultType;
         }
     }
 }

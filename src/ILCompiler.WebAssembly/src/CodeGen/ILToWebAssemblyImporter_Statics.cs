@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -112,6 +111,8 @@ namespace Internal.IL
         static LLVMValueRef DebugtrapFunction = default(LLVMValueRef);
         static LLVMValueRef TrapFunction = default(LLVMValueRef);
         static LLVMValueRef DoNothingFunction = default(LLVMValueRef);
+        static LLVMValueRef CxaBeginCatchFunction = default(LLVMValueRef);
+        static LLVMValueRef CxaEndCatchFunction = default(LLVMValueRef);
         static LLVMValueRef RhpThrowEx = default(LLVMValueRef);
         static LLVMValueRef RhpCallCatchFunclet = default(LLVMValueRef);
         static LLVMValueRef LlvmCatchFunclet = default(LLVMValueRef);

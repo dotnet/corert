@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -135,14 +134,9 @@ namespace ILCompiler.DependencyAnalysis
                     return new NativeLayoutIsInstGenericDictionarySlotNode(_factory, type);
                 });
 
-                _tlsIndex_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutTlsIndexGenericDictionarySlotNode>(type =>
+                _threadStaticIndex_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutThreadStaticBaseIndexDictionarySlotNode>(type =>
                 {
-                    return new NativeLayoutTlsIndexGenericDictionarySlotNode(_factory, type);
-                });
-
-                _tlsOffset_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutTlsOffsetGenericDictionarySlotNode>(type =>
-                {
-                    return new NativeLayoutTlsOffsetGenericDictionarySlotNode(_factory, type);
+                    return new NativeLayoutThreadStaticBaseIndexDictionarySlotNode(_factory, type);
                 });
 
                 _defaultConstructor_GenericDictionarySlots = new NodeCache<TypeDesc, NativeLayoutDefaultConstructorGenericDictionarySlotNode>(type =>
@@ -274,6 +268,12 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     GenericParameterDesc genericParameter = ((RuntimeDeterminedType)type).RuntimeDeterminedDetailsType;
                     type = _factory.TypeSystemContext.GetSignatureVariable(genericParameter.Index, method: (genericParameter.Kind == GenericParameterKind.Method));
+                }
+
+                if (type.Category == TypeFlags.FunctionPointer)
+                {
+                    // Pretend for now it's an IntPtr, may need to be revisited depending on https://github.com/dotnet/runtime/issues/11354
+                    type = _factory.TypeSystemContext.GetWellKnownType(WellKnownType.IntPtr);
                 }
 
                 return _typeSignatures.GetOrAdd(type);
@@ -525,16 +525,10 @@ namespace ILCompiler.DependencyAnalysis
                 return _isInst_GenericDictionarySlots.GetOrAdd(type);
             }
 
-            private NodeCache<TypeDesc, NativeLayoutTlsIndexGenericDictionarySlotNode> _tlsIndex_GenericDictionarySlots;
-            public NativeLayoutTlsIndexGenericDictionarySlotNode TlsIndexDictionarySlot(TypeDesc type)
+            private NodeCache<TypeDesc, NativeLayoutThreadStaticBaseIndexDictionarySlotNode> _threadStaticIndex_GenericDictionarySlots;
+            public NativeLayoutThreadStaticBaseIndexDictionarySlotNode ThreadStaticBaseIndexDictionarySlotNode(TypeDesc type)
             {
-                return _tlsIndex_GenericDictionarySlots.GetOrAdd(type);
-            }
-
-            private NodeCache<TypeDesc, NativeLayoutTlsOffsetGenericDictionarySlotNode> _tlsOffset_GenericDictionarySlots;
-            public NativeLayoutTlsOffsetGenericDictionarySlotNode TlsOffsetDictionarySlot(TypeDesc type)
-            {
-                return _tlsOffset_GenericDictionarySlots.GetOrAdd(type);
+                return _threadStaticIndex_GenericDictionarySlots.GetOrAdd(type);
             }
 
             private NodeCache<TypeDesc, NativeLayoutDefaultConstructorGenericDictionarySlotNode> _defaultConstructor_GenericDictionarySlots;

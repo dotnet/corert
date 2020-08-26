@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Runtime;
@@ -63,8 +62,7 @@ namespace System
         protected const int ClosedInstanceThunkOverGenericMethod = 3; // This may not exist
         protected const int DelegateInvokeThunk = 4;
         protected const int OpenInstanceThunk = 5;        // This may not exist
-        protected const int ReversePinvokeThunk = 6;       // This may not exist
-        protected const int ObjectArrayThunk = 7;         // This may not exist
+        protected const int ObjectArrayThunk = 6;         // This may not exist
 
         //
         // If the thunk does not exist, the function will return IntPtr.Zero.
@@ -146,17 +144,6 @@ namespace System
 
                 return m_functionPointer;
             }
-        }
-
-        // @todo: Not an api but some NativeThreadPool code still depends on it.
-        internal IntPtr GetNativeFunctionPointer()
-        {
-            if (GetThunk(ReversePinvokeThunk) != m_functionPointer)
-            {
-                throw new InvalidOperationException("GetNativeFunctionPointer may only be used on a reverse pinvoke delegate");
-            }
-
-            return m_extraFunctionPointerOrData;
         }
 
         // This function is known to the IL Transformer.
@@ -257,68 +244,12 @@ namespace System
         }
 
         // This function is known to the compiler backend.
-        protected void InitializeClosedStaticWithoutThunk(object firstParameter, IntPtr functionPointer)
-        {
-            m_extraFunctionPointerOrData = functionPointer;
-            m_helperObject = firstParameter;
-            m_functionPointer = GetThunk(ClosedStaticThunk);
-            m_firstParameter = this;
-        }
-
-        // This function is known to the compiler backend.
         protected void InitializeOpenStaticThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
         {
             // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
             m_firstParameter = this;
             m_functionPointer = functionPointerThunk;
             m_extraFunctionPointerOrData = functionPointer;
-        }
-
-        // This function is known to the compiler backend.
-        protected void InitializeOpenStaticWithoutThunk(object firstParameter, IntPtr functionPointer)
-        {
-            // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
-            m_firstParameter = this;
-            m_functionPointer = GetThunk(OpenStaticThunk);
-            m_extraFunctionPointerOrData = functionPointer;
-        }
-
-        // This function is known to the compiler backend.
-        protected void InitializeReversePInvokeThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
-        {
-            // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
-            m_firstParameter = this;
-            m_functionPointer = functionPointerThunk;
-            m_extraFunctionPointerOrData = functionPointer;
-        }
-
-        // This function is known to the compiler backend.
-        protected void InitializeReversePInvokeWithoutThunk(object firstParameter, IntPtr functionPointer)
-        {
-            // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
-            m_firstParameter = this;
-            m_functionPointer = GetThunk(ReversePinvokeThunk);
-            m_extraFunctionPointerOrData = functionPointer;
-        }
-
-        // This function is known to the compiler backend.
-        protected void InitializeOpenInstanceThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
-        {
-            // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
-            m_firstParameter = this;
-            m_functionPointer = functionPointerThunk;
-            OpenMethodResolver instanceMethodResolver = new OpenMethodResolver(default(RuntimeTypeHandle), functionPointer, default(GCHandle), 0);
-            m_extraFunctionPointerOrData = instanceMethodResolver.ToIntPtr();
-        }
-
-        // This function is known to the compiler backend.
-        protected void InitializeOpenInstanceWithoutThunk(object firstParameter, IntPtr functionPointer, IntPtr functionPointerThunk)
-        {
-            // This sort of delegate is invoked by calling the thunk function pointer with the arguments to the delegate + a reference to the delegate object itself.
-            m_firstParameter = this;
-            m_functionPointer = GetThunk(OpenInstanceThunk);
-            OpenMethodResolver instanceMethodResolver = new OpenMethodResolver(default(RuntimeTypeHandle), functionPointer, default(GCHandle), 0);
-            m_extraFunctionPointerOrData = instanceMethodResolver.ToIntPtr();
         }
 
         protected void InitializeOpenInstanceThunkDynamic(IntPtr functionPointer, IntPtr functionPointerThunk)

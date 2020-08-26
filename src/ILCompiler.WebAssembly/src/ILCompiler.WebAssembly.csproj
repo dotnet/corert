@@ -19,7 +19,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\ILCompiler.DependencyAnalysisFramework\src\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\..\ILCompiler.MetadataTransform\src\ILCompiler.MetadataTransform.csproj" />
-    <ProjectReference Include="..\..\ILCompiler.MetadataWriter\src\ILCompiler.MetadataWriter.csproj" />
     <ProjectReference Include="..\..\ILCompiler.TypeSystem\src\ILCompiler.TypeSystem.csproj" />
     <ProjectReference Include="..\..\ILCompiler.Compiler\src\ILCompiler.Compiler.csproj" />
   </ItemGroup>
@@ -41,6 +40,7 @@
     </Compile>
     <Compile Include="CodeGen\DebugMetadata.cs" />
     <Compile Include="CodeGen\ILToWebAssemblyImporter_Statics.cs" />
+    <Compile Include="CodeGen\LLVMSharpInterop.cs" />
     <Compile Include="CodeGen\WebAssemblyObjectWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EHInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\RawMainMethodRootProvider.cs" />

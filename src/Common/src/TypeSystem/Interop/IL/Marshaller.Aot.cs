@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -878,6 +877,16 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreNativeValue(codeStream);
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            throw new NotSupportedException();
+        }
+
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
+        {
+            throw new NotSupportedException();
         }
     }
 }
