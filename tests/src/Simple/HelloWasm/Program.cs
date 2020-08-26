@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Diagnostics;
 
 #if TARGET_WINDOWS
 using CpObj;
@@ -357,6 +358,8 @@ internal static class Program
 #endif
 
         TestIntOverflows();
+
+        TestStackTrace();
 
         TestJavascriptCall();
 
@@ -1637,6 +1640,8 @@ internal static class Program
         TestFilterNested();
 
         TestCatchAndThrow();
+
+        TestRethrow();
     }
 
     private static void TestTryCatchNoException()
@@ -1847,6 +1852,32 @@ internal static class Program
         }
         PrintLine(exceptionFlowSequence);
         EndTest(exceptionFlowSequence == @"In middle catchRunning outer filterIn outer catchRunning inner filterIn inner catch");
+    }
+
+    private static void TestRethrow()
+    {
+        StartTest("Test rethrow");
+        int caught = 0;
+        try
+        {
+            try
+            {
+                throw new Exception("first");
+            }
+            catch
+            {
+                caught++;
+                throw;
+            }
+        }
+        catch(Exception e)
+        {
+            if (e.Message == "first")
+            {
+                caught++;
+            }
+        }
+        EndTest(caught == 2);
     }
 
     private static void TestCatchAndThrow()
@@ -2824,6 +2855,16 @@ internal static class Program
             return;
         }
         PassTest();
+    }
+
+    private static unsafe void TestStackTrace()
+    {
+        StartTest("Test StackTrace");
+#if DEBUG
+        EndTest(new StackTrace().ToString().Contains("TestStackTrace"));
+#else
+        EndTest(new StackTrace().ToString().Contains("wasm-function"));
+#endif
     }
 
     static void TestJavascriptCall()
