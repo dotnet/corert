@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Diagnostics;
 
 #if TARGET_WINDOWS
 using CpObj;
@@ -357,6 +358,8 @@ internal static class Program
 #endif
 
         TestIntOverflows();
+
+        TestStackTrace();
 
         TestJavascriptCall();
 
@@ -2599,6 +2602,16 @@ internal static class Program
             return;
         }
         PassTest();
+    }
+
+    private static unsafe void TestStackTrace()
+    {
+        StartTest("Test StackTrace");
+#if DEBUG
+        EndTest(new StackTrace().ToString().Contains("TestStackTrace"));
+#else
+        EndTest(new StackTrace().ToString().Contains("wasm-function"));
+#endif
     }
 
     static void TestJavascriptCall()
