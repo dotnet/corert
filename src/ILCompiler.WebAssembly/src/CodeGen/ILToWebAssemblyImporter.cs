@@ -4071,40 +4071,6 @@ namespace Internal.IL
             CallOrInvoke(false, _builder, GetCurrentTryRegion(), llvmCheckFunction, new LLVMValueRef[] { GetShadowStack(), left, right }, ref nextInstrBlock);
         }
 
-        private LLVMValueRef CallLlvmAbs(LLVMBuilderRef builder, LLVMValueRef operand, LLVMTypeRef sizeTypeRef)
-        {
-            // TODO: There is an LLVM intrinsic for this but couldn't make it work (llvm.abs.i32 or llvm.abs.i64)
-            bool is32 = sizeTypeRef.IntWidth == 32;
-            LLVMValueRef llvmAbsFunction = is32 ? Abs32Function : Abs64Function;
-            if (llvmAbsFunction.Handle == IntPtr.Zero)
-            {
-                llvmAbsFunction = Module.AddFunction("corert.abs" + sizeTypeRef.IntWidth,
-                    LLVMTypeRef.CreateFunction(sizeTypeRef, new LLVMTypeRef[] { sizeTypeRef }, false));
-                LLVMValueRef opParam = llvmAbsFunction.GetParam(0);
-                LLVMBuilderRef absBuilder = Context.CreateBuilder();
-                var block = llvmAbsFunction.AppendBasicBlock("Block");
-                absBuilder.PositionAtEnd(block); 
-                LLVMBasicBlockRef thenBlock = llvmAbsFunction.AppendBasicBlock("negBlock");
-                LLVMBasicBlockRef elseBlock = llvmAbsFunction.AppendBasicBlock("posBlock");
-                var ltZeroCmp = absBuilder.BuildICmp(LLVMIntPredicate.LLVMIntSLT, opParam, LLVMValueRef.CreateConstInt(sizeTypeRef, 0));
-                absBuilder.BuildCondBr(ltZeroCmp, thenBlock, elseBlock);
-                absBuilder.PositionAtEnd(thenBlock);
-                var negate = absBuilder.BuildNeg(opParam);
-                absBuilder.BuildRet(negate);
-                absBuilder.PositionAtEnd(elseBlock);
-                absBuilder.BuildRet(opParam);
-                if (is32)
-                {
-                    Abs32Function = llvmAbsFunction;
-                }
-                else
-                {
-                    Abs64Function = llvmAbsFunction;
-                }
-            }
-            return builder.BuildCall(llvmAbsFunction, new[] {operand}, "abs");
-        }
-
         private void BuildOverflowCheck(LLVMBuilderRef builder, LLVMValueRef compOperand, LLVMIntPredicate predicate,
             LLVMValueRef limitValueRef, LLVMValueRef limitOperand, LLVMBasicBlockRef ovfBlock,
             LLVMBasicBlockRef noOvfBlock, LLVMOpcode opCode)
