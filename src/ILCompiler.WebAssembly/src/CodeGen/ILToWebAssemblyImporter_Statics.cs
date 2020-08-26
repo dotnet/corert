@@ -111,6 +111,8 @@ namespace Internal.IL
         static LLVMValueRef DebugtrapFunction = default(LLVMValueRef);
         static LLVMValueRef TrapFunction = default(LLVMValueRef);
         static LLVMValueRef DoNothingFunction = default(LLVMValueRef);
+        static LLVMValueRef CxaBeginCatchFunction = default(LLVMValueRef);
+        static LLVMValueRef CxaEndCatchFunction = default(LLVMValueRef);
         static LLVMValueRef RhpThrowEx = default(LLVMValueRef);
         static LLVMValueRef RhpCallCatchFunclet = default(LLVMValueRef);
         static LLVMValueRef LlvmCatchFunclet = default(LLVMValueRef);

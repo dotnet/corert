@@ -363,6 +363,8 @@ internal static class Program
 
         TestJavascriptCall();
 
+        TestDefaultConstructorOf();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -2619,6 +2621,13 @@ internal static class Program
         IntPtr resultPtr = JSInterop.InternalCalls.InvokeJSUnmarshalled(out string exception, "Answer", IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
 
         EndTest(resultPtr.ToInt32() == 42);
+    }
+
+    static void TestDefaultConstructorOf()
+    {
+        StartTest("Test DefaultConstructorOf");
+        var c = Activator.CreateInstance<ClassForNre>();
+        EndTest(c != null);
     }
 
     static ushort ReadUInt16()

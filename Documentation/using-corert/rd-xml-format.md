@@ -6,7 +6,7 @@ An rd.xml file can be supplemented to help ILCompiler find types that should be 
 
 Minimal Rd.xml configuration
 
-```
+```xml
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Application>
     <Assembly Name="mscorlib" />
@@ -25,7 +25,7 @@ There 3 forms how assembly can be configured
 - Module metadata and selected types.
 
 Module metadata only just need simple `<Assembly>` tag with short name of the assembly.
-```
+```xml
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Application>
     <Assembly Name="mscorlib" />
@@ -34,7 +34,7 @@ Module metadata only just need simple `<Assembly>` tag with short name of the as
 ```
 
 All types in the assembly require adding `Dynamic` attribute with value `Required All`. *NOTE*: This is the only available value for this attribute.
-```
+```xml
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Application>
     <Assembly Name="mscorlib" Dynamic="Required All" />
@@ -45,7 +45,7 @@ Note that if you have generic types in the assembly, then specific instantiation
 then you should include these instantiation using nested `<Type>` tag.
 
 Module metadata and selected types option based on module metadata only mode with added `<Type>` tags inside `<Assembly>`.
-```
+```xml
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Application>
     <Assembly Name="MonoGame.Framework">
@@ -61,12 +61,12 @@ Type directive provides a way to specify what types are needed. Developer has tw
 - Select which methods should be rooted.
 
 Take all type methods:
-```
+```xml
 <Type Name="Microsoft.Xna.Framework.Content.ListReader`1[[System.Char,mscorlib]]" Dynamic="Required All" />
 ```
 
 Example how specify typenames
-```
+```c#
 // just int
 System.Int32
 // string[]
@@ -83,13 +83,13 @@ System.Collections.Generic.Dictionary`2[[System.Int32,System.Private.CoreLib],[S
 
 Note that it likely does not make sense to have generic type to be placed here, since code generated over specific instantiation of the generic type.
 Example of invalid scenario:
-```
+```c#
 // List<T>
 System.Collections.Generic.List`1
 ```
 
 To select which methods should be rooted add nested `<Method>` tags.
-```
+```xml
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Application>
     <Assembly Name="System.Private.CoreLib">
@@ -102,7 +102,7 @@ To select which methods should be rooted add nested `<Method>` tags.
 ```
 
 Alternatively you can specify optional `<Parameter>` tag, if you want only specific overload. For example:
-```
+```xml
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Application>
     <Assembly Name="System.Private.CoreLib">
@@ -117,7 +117,7 @@ Alternatively you can specify optional `<Parameter>` tag, if you want only speci
 ```
 
 or if you want instantiate generic method you can pass `<GenericArgument>`.
-```
+```xml
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Application>
     <Assembly Name="System.Private.CoreLib">
