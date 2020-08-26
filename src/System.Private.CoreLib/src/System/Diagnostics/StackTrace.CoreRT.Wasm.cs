@@ -52,10 +52,11 @@ namespace System.Diagnostics
 
         internal string ToString(TraceFormat traceFormat)
         {
-            if (traceFormat == TraceFormat.Normal && _builder.ToString().EndsWith(Environment.NewLine))
-                return _builder.ToString().Substring(0, _builder.Length - Environment.NewLine.Length);
+            var stackTraceString = _builder.ToString();
+            if (traceFormat == TraceFormat.Normal && stackTraceString.EndsWith(Environment.NewLine))
+                return stackTraceString.Substring(0, stackTraceString.Length - Environment.NewLine.Length);
 
-            return _builder.ToString();
+            return stackTraceString;
         }
     }
 }
