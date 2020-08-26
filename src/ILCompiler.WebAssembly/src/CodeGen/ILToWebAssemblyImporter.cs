@@ -4404,7 +4404,10 @@ namespace Internal.IL
 
         private void ImportRethrow()
         {
-            EmitTrapCall();
+            // rethrows can only occur from a catch handler in which case there should be an exception slot
+            Debug.Assert(_spilledExpressions.Count > 0 && _spilledExpressions[0].Name == "ExceptionSlot");
+
+            ThrowOrRethrow(_spilledExpressions[0]);
         }
 
         private void ImportSizeOf(int token)
@@ -4451,6 +4454,11 @@ namespace Internal.IL
         {
             var exceptionObject = _stack.Pop();
 
+            ThrowOrRethrow(exceptionObject);
+        }
+
+        void ThrowOrRethrow(StackEntry exceptionObject)
+        {
             if (RhpThrowEx.Handle.Equals(IntPtr.Zero))
             {
                 RhpThrowEx = Module.AddFunction("RhpThrowEx", LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }, false));
@@ -5390,7 +5398,6 @@ namespace Internal.IL
 //            }
 
             builder.EmitCompressedUInt((uint)totalClauses);
-
             // Iterate backwards to emit the innermost first, but within a try region go forwards to get the first matching catch type
             int i = _exceptionRegions.Length - 1;
             while (i >= 0)
