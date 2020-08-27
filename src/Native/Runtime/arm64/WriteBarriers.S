@@ -252,7 +252,7 @@ CmpXchgRetry:
         stlxr   w9, x1, [x0]
         cbnz    w9, CmpXchgRetry
 
-                // We have successfully updated the value of the objectref so now we need a GC write barrier.
+        // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         // already correctly set up.
 
