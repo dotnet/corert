@@ -3928,9 +3928,9 @@ namespace Internal.IL
             PushExpression(kind, "binop", result, type);
         }
 
-        LLVMValueRef BuildArithmeticOperationWithOverflowCheck(LLVMValueRef left, LLVMValueRef right, string mulOp, LLVMTypeRef intType)
+        LLVMValueRef BuildArithmeticOperationWithOverflowCheck(LLVMValueRef left, LLVMValueRef right, string arithmeticOp, LLVMTypeRef intType)
         {
-            LLVMValueRef mulFunction = GetOrCreateLLVMFunction("llvm." + mulOp + ".with.overflow." + (intType == LLVMTypeRef.Int32 ? "i32" : "i64"), LLVMTypeRef.CreateFunction(
+            LLVMValueRef mulFunction = GetOrCreateLLVMFunction("llvm." + arithmeticOp + ".with.overflow." + (intType == LLVMTypeRef.Int32 ? "i32" : "i64"), LLVMTypeRef.CreateFunction(
                 LLVMTypeRef.CreateStruct(new[] { intType, LLVMTypeRef.Int1}, false), new[] { intType, intType }));
             LLVMValueRef mulRes = _builder.BuildCall(mulFunction, new[] {left, right});
             var overflow = _builder.BuildExtractValue(mulRes, 1);
