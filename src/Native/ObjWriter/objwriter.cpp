@@ -359,10 +359,7 @@ void ObjectWriter::EmitSymbolDef(const char *SymbolName, bool global) {
     }
   }
 
-  if (Sym->isUndefined())
-  {
-    Streamer->EmitLabel(Sym);
-  }
+  Streamer->EmitLabel(Sym);
 }
 
 const MCSymbolRefExpr *
