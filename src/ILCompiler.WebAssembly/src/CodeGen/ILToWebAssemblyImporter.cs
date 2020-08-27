@@ -763,9 +763,6 @@ namespace Internal.IL
                     ReadOnlySpan<LLVMMetadataRef>.Empty, LLVMDIFlags.LLVMDIFlagZero);
 
                 uint lineNumber = (uint) _debugInformation.GetSequencePoints().FirstOrDefault().LineNumber;
-                // var debugFunction = _compilation.DIBuilder.CreateFunction(debugMetadata.File, "CreateDebugLocation", "CreateDebugLocation",
-                //     debugMetadata.File,
-                //     lineNumber, functionMetaType, 1, 1, lineNumber, 0, 0);
                 _debugFunction = _compilation.DIBuilder.CreateFunction(debugMetadata.File, _method.Name, _method.Name,
                     debugMetadata.File,
                     lineNumber, functionMetaType, 1, 1, lineNumber, 0, 0);
