@@ -13,7 +13,6 @@ using ILCompiler.Compiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.WebAssembly;
 using Internal.IL.Stubs;
-using Internal.Text;
 using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
@@ -415,6 +414,18 @@ namespace Internal.IL
                 && (!_method.IsStaticConstructor && _method.Signature.IsStatic || _method.IsConstructor || (_thisType.IsValueType && !_method.Signature.IsStatic))
                 && _compilation.HasLazyStaticConstructor(metadataType))
             {
+                if(_debugInformation != null)
+                {
+                    // set the location for the call to EnsureClassConstructorRun
+                    // LLVM can't process empty string file names
+                    var curSequencePoint = GetSequencePoint(0 /* offset for the prolog? */);
+                    if (!string.IsNullOrWhiteSpace(curSequencePoint.Document))
+                    {
+                        DebugMetadata debugMetadata = GetOrCreateDebugMetadata(curSequencePoint);
+                        LLVMMetadataRef currentLine = CreateDebugFunctionAndDiLocation(debugMetadata, curSequencePoint);
+                        prologBuilder.CurrentDebugLocation = Context.MetadataAsValue(currentLine);
+                    }
+                }
                 TriggerCctor(metadataType, prologBuilder);
             }
 
@@ -729,65 +740,76 @@ namespace Internal.IL
         {
             if (_debugInformation != null)
             {
-                bool foundSequencePoint = false;
-                ILSequencePoint curSequencePoint = default;
-                foreach (var sequencePoint in _debugInformation.GetSequencePoints() ?? Enumerable.Empty<ILSequencePoint>())
-                {
-                    if (sequencePoint.Offset == _currentOffset)
-                    {
-                        curSequencePoint = sequencePoint;
-                        foundSequencePoint = true;
-                        break;
-                    }
-                    else if (sequencePoint.Offset < _currentOffset)
-                    {
-                        curSequencePoint = sequencePoint;
-                        foundSequencePoint = true;
-                    }
-                }
-
-                if (!foundSequencePoint)
-                {
-                    return;
-                }
+                ILSequencePoint curSequencePoint = GetSequencePoint(_currentOffset);
 
                 // LLVM can't process empty string file names
-                if (String.IsNullOrWhiteSpace(curSequencePoint.Document))
+                if (string.IsNullOrWhiteSpace(curSequencePoint.Document))
                 {
                     return;
                 }
 
-                DebugMetadata debugMetadata;
-                if (!_compilation.DebugMetadataMap.TryGetValue(curSequencePoint.Document, out debugMetadata))
-                {
-                    string fullPath = curSequencePoint.Document;
-                    string fileName = Path.GetFileName(fullPath);
-                    string directory = Path.GetDirectoryName(fullPath) ?? String.Empty;
-                    LLVMMetadataRef fileMetadata = _compilation.DIBuilder.CreateFile(fileName, directory);
+                DebugMetadata debugMetadata = GetOrCreateDebugMetadata(curSequencePoint);
 
-                    // todo: get the right value for isOptimized
-                    LLVMMetadataRef compileUnitMetadata = _compilation.DIBuilder.CreateCompileUnit(LLVMDWARFSourceLanguage.LLVMDWARFSourceLanguageC,
-                        fileMetadata, "ILC", 0 /* Optimized */, String.Empty, 1, String.Empty, LLVMDWARFEmissionKind.LLVMDWARFEmissionFull, 0, 0, 0);
-                    Module.AddNamedMetadataOperand("llvm.dbg.cu", compileUnitMetadata);
-
-                    debugMetadata = new DebugMetadata(fileMetadata, compileUnitMetadata);
-                    _compilation.DebugMetadataMap[fileName] = debugMetadata;
-                }
-
-                if (_debugFunction.Handle == IntPtr.Zero)
-                {
-                    LLVMMetadataRef functionMetaType = _compilation.DIBuilder.CreateSubroutineType(debugMetadata.File, ReadOnlySpan<LLVMMetadataRef>.Empty,  LLVMDIFlags.LLVMDIFlagZero);
-                    
-                    uint lineNumber = (uint)_debugInformation.GetSequencePoints().FirstOrDefault().LineNumber;
-                    var debugFunction = _compilation.DIBuilder.CreateFunction(debugMetadata.File, "CreateDebugLocation", "CreateDebugLocation",
-                        debugMetadata.File,
-                        lineNumber, functionMetaType, 1, 1, lineNumber, 0, 0);
-                    _debugFunction = _compilation.DIBuilder.CreateFunction(debugMetadata.File, _method.Name, _method.Name, debugMetadata.File,
-                        lineNumber, functionMetaType, 1, 1, lineNumber, 0, 0);
-                }
-                LLVMMetadataRef currentLine = Context.CreateDebugLocation((uint)curSequencePoint.LineNumber, 0, _debugFunction, default(LLVMMetadataRef));
+                LLVMMetadataRef currentLine = CreateDebugFunctionAndDiLocation(debugMetadata, curSequencePoint);
                 _builder.CurrentDebugLocation = Context.MetadataAsValue(currentLine);
             }
+        }
+
+        LLVMMetadataRef CreateDebugFunctionAndDiLocation(DebugMetadata debugMetadata, ILSequencePoint sequencePoint)
+        {
+            if (_debugFunction.Handle == IntPtr.Zero)
+            {
+                LLVMMetadataRef functionMetaType = _compilation.DIBuilder.CreateSubroutineType(debugMetadata.File,
+                    ReadOnlySpan<LLVMMetadataRef>.Empty, LLVMDIFlags.LLVMDIFlagZero);
+
+                uint lineNumber = (uint) _debugInformation.GetSequencePoints().FirstOrDefault().LineNumber;
+                _debugFunction = _compilation.DIBuilder.CreateFunction(debugMetadata.File, _method.Name, _method.Name,
+                    debugMetadata.File,
+                    lineNumber, functionMetaType, 1, 1, lineNumber, 0, 0);
+                LLVMSharpInterop.DISetSubProgram(_llvmFunction, _debugFunction);
+            }
+            return Context.CreateDebugLocation((uint)sequencePoint.LineNumber, 0, _debugFunction, default(LLVMMetadataRef));
+        }
+
+        ILSequencePoint GetSequencePoint(int offset)
+        {
+            ILSequencePoint curSequencePoint = default;
+            foreach (var sequencePoint in _debugInformation.GetSequencePoints() ?? Enumerable.Empty<ILSequencePoint>())
+            {
+                if (offset <= sequencePoint.Offset) // take the first sequence point in case we need to make a call to RhNewObject before the first matching sequence point
+                {
+                    curSequencePoint = sequencePoint;
+                    break;
+                }
+                if (sequencePoint.Offset < offset)
+                {
+                    curSequencePoint = sequencePoint;
+                }
+            }
+            return curSequencePoint;
+        }
+
+        DebugMetadata GetOrCreateDebugMetadata(ILSequencePoint curSequencePoint)
+        {
+            DebugMetadata debugMetadata;
+            if (!_compilation.DebugMetadataMap.TryGetValue(curSequencePoint.Document, out debugMetadata))
+            {
+                string fullPath = curSequencePoint.Document;
+                string fileName = Path.GetFileName(fullPath);
+                string directory = Path.GetDirectoryName(fullPath) ?? String.Empty;
+                LLVMMetadataRef fileMetadata = _compilation.DIBuilder.CreateFile(fileName, directory);
+
+                // todo: get the right value for isOptimized
+                LLVMMetadataRef compileUnitMetadata = _compilation.DIBuilder.CreateCompileUnit(
+                    LLVMDWARFSourceLanguage.LLVMDWARFSourceLanguageC,
+                    fileMetadata, "ILC", 0 /* Optimized */, String.Empty, 1, String.Empty,
+                    LLVMDWARFEmissionKind.LLVMDWARFEmissionFull, 0, 0, 0);
+                Module.AddNamedMetadataOperand("llvm.dbg.cu", compileUnitMetadata);
+
+                debugMetadata = new DebugMetadata(fileMetadata, compileUnitMetadata);
+                _compilation.DebugMetadataMap[fileName] = debugMetadata;
+            }
+            return debugMetadata;
         }
 
         private void EndImportingInstruction()
@@ -2885,6 +2907,11 @@ namespace Internal.IL
             _landingPads[landingPadKey] = landingPad;
 
             LLVMBuilderRef landingPadBuilder = Context.CreateBuilder();
+            if (_debugFunction.Handle != IntPtr.Zero)
+            {
+                // we need a location if going to call something, e.g. InitFromEhInfo and the call could be inlined, this is an LLVM requirement
+                landingPadBuilder.CurrentDebugLocation = _builder.CurrentDebugLocation;
+            }
             landingPadBuilder.PositionAtEnd(landingPad);
             LLVMValueRef pad = landingPadBuilder.BuildLandingPad(GxxPersonalityType, GxxPersonality, 1, "");
             pad.AddClause(LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)));
