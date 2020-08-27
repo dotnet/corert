@@ -465,8 +465,8 @@ PopExInfoLoop:
 DonePopping:
         str         x3, [x1, #OFFSETOF__Thread__m_pExInfoStackHead]     // store the new head on the Thread
 
-        adrp x3, RhpTrapThreads
-        add	x3, x3, :lo12:RhpTrapThreads
+        PREPARE_EXTERNAL_VAR RhpTrapThreads, x3 
+
         ldr         w3, [x3]
         tbz         x3, #TrapThreadsFlags_AbortInProgress_Bit, NoAbort
 

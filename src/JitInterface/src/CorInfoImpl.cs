@@ -2708,6 +2708,10 @@ namespace Internal.JitInterface
             _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
         }
 
+        // Get the CFI data in the same shape as clang/LLVM generated one. This improves the compatibility with libunwind and other unwind solutions
+        // - Combine in one single block for the whole prolog instead of one CFI block per assembler instruction
+        // - Store CFA definition first
+        // - Store all used registers in ascending order
         private byte[] CompressARM64CFI(byte[] blobData)
         {
             if (blobData == null || blobData.Length == 0)
@@ -2818,7 +2822,6 @@ namespace Internal.JitInterface
                             cfiWriter.Write((byte)CFI_OPCODE.CFI_DEF_CFA);
                             cfiWriter.Write((short)31); 
                             cfiWriter.Write(spOffset);
-                            //storeOffset = -spOffset;
                         }
                     }
 

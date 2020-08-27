@@ -4,8 +4,6 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-#define __tls_array 0
-
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
     .extern RhpCidResolve

@@ -1904,7 +1904,7 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
     // If there is dwarf unwind info, look there next.
 #if defined(_LIBUNWIND_USE_ONLY_DWARF_INDEX)
-      if (sects.dwarf_index_section != 0) {
+    if (sects.dwarf_index_section != 0) {
 #else
     if (sects.dwarf_section != 0) {
 #endif

@@ -189,18 +189,14 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 // On exit:
 //   x1 : trashed
 //   x9 : trashed
-    LEAF_ENTRY RhpCheckedAssignRef, _TEXT
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+ LEAF_ENTRY RhpCheckedAssignRef, _TEXT
     ALTERNATE_ENTRY RhpCheckedAssignRefX1
-    ALTERNATE_ENTRY RhpCheckedAssignRefX1AVLocation
 
-        stlr    x1, [x0]
-        
-        INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1, 9, x1
-        
-        ret
+        mov     x14, x0                     ; x14 = dst
+        mov     x15, x1                     ; x15 = val
+        b       RhpCheckedAssignRefArm64
 
-    LEAF_END RhpCheckedAssignRef, _TEXT
+LEAF_END RhpCheckedAssignRef, _TEXT
 
 // RhpAssignRef(Object** dst, Object* src)
 //
@@ -213,18 +209,14 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 // On exit:
 //  x1 : trashed
 //  x9 : trashed
-    LEAF_ENTRY RhpAssignRef, _TEXT
-    ALTERNATE_ENTRY RhpAssignRefAVLocation
+LEAF_ENTRY RhpAssignRef, _TEXT
     ALTERNATE_ENTRY RhpAssignRefX1
-    ALTERNATE_ENTRY RhpAssignRefX1AVLocation
 
-        stlr    x1, [x0]
- 
-        INSERT_UNCHECKED_WRITE_BARRIER_CORE x0, x1, 9, x1
- 
-        ret
+        mov     x14, x0                     ; x14 = dst
+        mov     x15, x1                     ; x15 = val
+        b       RhpAssignRefArm64
 
-    LEAF_END RhpAssignRef, _TEXT
+LEAF_END RhpAssignRef, _TEXT
 
 // Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 // successful updates. 
@@ -260,7 +252,7 @@ CmpXchgRetry:
         stlxr   w9, x1, [x0]
         cbnz    w9, CmpXchgRetry
 
-        // We have successfully updated the value of the objectref so now we need a GC write barrier.
+                // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         // already correctly set up.
 
@@ -269,6 +261,7 @@ CmpXchgRetry:
 CmpXchgNoUpdate:
         // x10 still contains the original value.
         mov     x0, x10
+        ArmInterlockedOperationBarrier
         ret     lr
 
     LEAF_END RhpCheckedLockCmpXchg, _TEXT
@@ -309,11 +302,14 @@ ExchangeRetry:
 
         // x10 still contains the original value.
         mov     x0, x10
+        ArmInterlockedOperationBarrier
         ret
 
     LEAF_END RhpCheckedXchg, _TEXT
 
 LEAF_ENTRY RhpAssignRefArm64, _TEXT
+    ALTERNATE_ENTRY RhpAssignRefAVLocation
+    ALTERNATE_ENTRY RhpAssignRefX1AVLocation
         stlr    x15, [x14]
  
         INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15, 12, X14
@@ -333,6 +329,8 @@ LEAF_END RhpAssignRefArm64, _TEXT
 //   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 LEAF_ENTRY RhpCheckedAssignRefArm64, _TEXT
+    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+    ALTERNATE_ENTRY RhpCheckedAssignRefX1AVLocation
 
         stlr    x15, [x14]
         

@@ -8,40 +8,7 @@
 .global RhpTrapThreads
 
 // Note: these must match the defs in PInvokeTransitionFrameFlags defined in rhbinder.h
-PTFF_SAVE_X19           = 0x00000001
-PTFF_SAVE_X20           = 0x00000002
-PTFF_SAVE_X21           = 0x00000004
-PTFF_SAVE_X22           = 0x00000008
-PTFF_SAVE_X23           = 0x00000010
-PTFF_SAVE_X24           = 0x00000020
-PTFF_SAVE_X25           = 0x00000040
-PTFF_SAVE_X26           = 0x00000080
-PTFF_SAVE_X27           = 0x00000100
-PTFF_SAVE_X28           = 0x00000200
 PTFF_SAVE_SP            = 0x00000400
-PTFF_SAVE_ALL_PRESERVED = 0x000003FF  // NOTE: x19-x28
-PTFF_SAVE_X0            = 0x00000800
-PTFF_SAVE_X1            = 0x00001000
-PTFF_SAVE_X2            = 0x00002000
-PTFF_SAVE_X3            = 0x00004000
-PTFF_SAVE_X4            = 0x00008000
-PTFF_SAVE_X5            = 0x00010000
-PTFF_SAVE_X6            = 0x00020000
-PTFF_SAVE_X7            = 0x00040000
-PTFF_SAVE_X8            = 0x00080000
-PTFF_SAVE_X9            = 0x00100000
-PTFF_SAVE_X10           = 0x00200000
-PTFF_SAVE_X11           = 0x00400000
-PTFF_SAVE_X12           = 0x00800000
-PTFF_SAVE_X13           = 0x01000000
-PTFF_SAVE_X14           = 0x02000000
-PTFF_SAVE_X15           = 0x04000000
-PTFF_SAVE_X16           = 0x08000000
-PTFF_SAVE_X17           = 0x10000000
-PTFF_SAVE_X18           = 0x20000000
-PTFF_SAVE_ALL_SCRATCH   = 0x3FFFF800  // NOTE: X0-X18
-PTFF_SAVE_FP            = 0x40000000
-PTFF_SAVE_LR            = 0x80000000
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
 PTFF_THREAD_ABORT_BIT   = 36
@@ -151,8 +118,8 @@ Done:
 
         PROLOG_SAVE_REG_PAIR_INDEXED    fp, lr, #-0x10
 
-        adrp x10, RhpTrapThreads
-        add	x10, x10, :lo12:RhpTrapThreads
+        PREPARE_EXTERNAL_VAR RhpTrapThreads, x10
+
         ldr         w10, [x10]
         tbz         x10, #TrapThreadsFlags_TrapThreads_Bit, NoWait
         bl          RhpWaitForGCNoAbort
@@ -214,8 +181,8 @@ ThreadAttached:
         str         xzr, [x10, #OFFSETOF__Thread__m_pTransitionFrame] 
         dmb         ish
 
-        adrp x11, RhpTrapThreads
-        add	x11, x11, :lo12:RhpTrapThreads
+        PREPARE_EXTERNAL_VAR RhpTrapThreads, x11
+
         ldr         w11, [x11]
         tbnz        x11, #TrapThreadsFlags_TrapThreads_Bit, TrapThread
 
@@ -327,8 +294,8 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         str     x10, [x0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
         str     x0, [x10, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        adrp x9, RhpTrapThreads
-        add	x9, x9, :lo12:RhpTrapThreads
+        PREPARE_EXTERNAL_VAR RhpTrapThreads, x9
+
         ldr     w9, [x9]
         cbnz    w9, InvokeRareTrapThread  // TrapThreadsFlags_None = 0
         ret
@@ -343,8 +310,8 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         mov         x10, 0
         str         x10, [x9, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        adrp x9, RhpTrapThreads
-        add	x9, x9, :lo12:RhpTrapThreads
+        PREPARE_EXTERNAL_VAR RhpTrapThreads, x9
+
         ldr     w9, [x9]
         cbnz    w9, 0f  // TrapThreadsFlags_None = 0
         ret

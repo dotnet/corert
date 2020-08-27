@@ -247,6 +247,15 @@ __SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
 0
     MEND
 
+;; ---------------------------------------------------------------------------- -
+;;
+;; Macro to add a memory barrier. Equal to __sync_synchronize().
+;;
+
+    MACRO ArmInterlockedOperationBarrier
+        dmb ish
+    MEND
+
 ;; -----------------------------------------------------------------------------
 ;;
 ;; Macro used from unmanaged helpers called from managed code where the helper does not transition immediately

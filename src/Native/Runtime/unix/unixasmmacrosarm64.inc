@@ -24,6 +24,11 @@ C_FUNC(\Name):
 C_FUNC(\Name):
 .endm
 
+.macro LABELED_RETURN_ADDRESS Name
+        .global C_FUNC(\Name)
+C_FUNC(\Name):
+.endm
+
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
         .type \Name, %function
@@ -37,8 +42,9 @@ C_FUNC(\Name):
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        ldr \HelperReg, [pc, #C_FUNC(\Name)@GOTPCREL]
-.endm
+        adrp \HelperReg, C_FUNC(\Name)
+        add	\HelperReg, \HelperReg, :lo12:C_FUNC(\Name)
+.endm 
 
 .macro PROLOG_STACK_ALLOC Size
         sub sp, sp, \Size
@@ -152,7 +158,7 @@ C_FUNC(\Name):
 .macro INLINE_GET_TLS_VAR target, var
     mrs	\target, tpidr_el0
     add	\target, \target, #:tprel_hi12:\var, lsl #12
-	add	\target, \target, #:tprel_lo12_nc:\var
+    add	\target, \target, #:tprel_lo12_nc:\var
 .endm
 
 
@@ -162,6 +168,10 @@ C_FUNC(\Name):
 
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR \target, tls_CurrentThread
+.endm
+
+.macro  ArmInterlockedOperationBarrier
+    dmb ish
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
@@ -232,12 +242,16 @@ DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #0x80
 .endm
 
+// Bit position for the flags above, to be used with tbz / tbnz instructions
+PTFF_THREAD_ABORT_BIT = 36
+
 //
 // CONSTANTS -- INTEGER
 //
 #define TSF_Attached                    0x01
 #define TSF_SuppressGcStress            0x08
 #define TSF_DoNotTriggerGc              0x10
+#define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
 TrapThreadsFlags_AbortInProgress_Bit = 0

@@ -310,10 +310,11 @@ void ObjectWriter::SetCodeSectionAttribute(const char *SectionName,
 }
 
 void ObjectWriter::EmitAlignment(int ByteAlignment) {
-  int64_t fillValue = 0x90; //x86 nop
+  int64_t fillValue = 0;
 
-  if (TMachine->getTargetTriple().getArch() == llvm::Triple::ArchType::aarch64) {
-    fillValue = 0; // ARM64 bad
+  if (TMachine->getTargetTriple().getArch() == llvm::Triple::ArchType::x86 ||
+      TMachine->getTargetTriple().getArch() == llvm::Triple::ArchType::x86_64) {
+    fillValue = 0x90; // x86 nop
   }
 
   Streamer->EmitValueToAlignment(ByteAlignment, fillValue);

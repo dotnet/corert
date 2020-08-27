@@ -6,8 +6,6 @@
 
 // GC type flags
 GC_ALLOC_FINALIZE               = 1
-GC_ALLOC_ALIGN8_BIAS            = 4
-GC_ALLOC_ALIGN8                 = 8
 
 //
 // Rename fields of nested structs
