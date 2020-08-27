@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "AsmOffsets.inc"
+
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
@@ -22,6 +24,11 @@ C_FUNC(\Name):
 C_FUNC(\Name):
 .endm
 
+.macro LABELED_RETURN_ADDRESS Name
+        .global C_FUNC(\Name)
+C_FUNC(\Name):
+.endm
+
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
         .type \Name, %function
@@ -35,8 +42,9 @@ C_FUNC(\Name):
 .endm
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
-        ldr \HelperReg, [pc, #C_FUNC(\Name)@GOTPCREL]
-.endm
+        adrp \HelperReg, C_FUNC(\Name)
+        add	\HelperReg, \HelperReg, :lo12:C_FUNC(\Name)
+.endm 
 
 .macro PROLOG_STACK_ALLOC Size
         sub sp, sp, \Size
@@ -68,6 +76,11 @@ C_FUNC(\Name):
         mov fp, sp
         .endif
 .endm
+
+.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ofs
+        stp \reg1, \reg2, [sp, \ofs]!
+.endm
+
 
 .macro EPILOG_RESTORE_REG reg, ofs
         ldr \reg, [sp, \ofs]
@@ -137,3 +150,117 @@ C_FUNC(\Name):
         br \reg
 
 .endm
+
+#define xip0 x16
+#define xip1 x17
+#define xpr x18
+
+.macro INLINE_GET_TLS_VAR target, var
+    mrs	\target, tpidr_el0
+    add	\target, \target, #:tprel_hi12:\var, lsl #12
+    add	\target, \target, #:tprel_lo12_nc:\var
+.endm
+
+
+.macro PREPARE_INLINE_GETTHREAD
+.global tls_CurrentThread 
+.endm
+
+.macro INLINE_GETTHREAD target
+    INLINE_GET_TLS_VAR \target, tls_CurrentThread
+.endm
+
+.macro  ArmInterlockedOperationBarrier
+    dmb ish
+.endm
+
+.macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2
+    //
+    // Thread::Unhijack()
+    //
+    ldr         \trashReg1, [\threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+    cbz         \trashReg1, 0f
+
+    ldr         \trashReg2, [\threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    str         \trashReg1, [\trashReg2]
+    str         xzr, [\threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
+    str         xzr, [\threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+0:
+.endm
+
+
+.macro EXPORT_POINTER_TO_ADDRESS Name
+
+1:
+
+        .data
+        .align      8
+C_FUNC(\Name):
+        .word       1b
+        .global     C_FUNC(\Name)
+        .text
+.endm
+
+// Note: these must match the defs in PInvokeTransitionFrameFlags
+PTFF_SAVE_SP            = 0x00000400
+PTFF_SAVE_ALL_PRESERVED = 0x000003FF  // NOTE: x19-x28
+
+DEFAULT_FRAME_SAVE_FLAGS = PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
+
+.macro PUSH_COOP_PINVOKE_FRAME trashReg
+
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-0x80      // Push down stack pointer and store FP and LR
+
+    // 0x10 bytes reserved for Thread* and flags
+
+    // Save callee saved registers
+    PROLOG_SAVE_REG_PAIR   x19, x20, #0x20
+    PROLOG_SAVE_REG_PAIR   x21, x22, #0x30
+    PROLOG_SAVE_REG_PAIR   x23, x24, #0x40
+    PROLOG_SAVE_REG_PAIR   x25, x26, #0x50
+    PROLOG_SAVE_REG_PAIR   x27, x28, #0x60
+
+    // Save the value of SP before stack allocation to the last slot in the frame (slot #15)
+    add                    \trashReg, sp, #0x80
+    str                    \trashReg, [sp, #0x70]
+
+    // Record the bitmask of saved registers in the frame (slot #3)
+    mov                    \trashReg, #DEFAULT_FRAME_SAVE_FLAGS
+    str                    \trashReg, [sp, #0x18]
+
+    mov  \trashReg, sp
+.endm
+
+// Pop the frame and restore register state preserved by PUSH_COOP_PINVOKE_FRAME
+.macro POP_COOP_PINVOKE_FRAME
+
+    EPILOG_RESTORE_REG_PAIR   x19, x20, #0x20
+    EPILOG_RESTORE_REG_PAIR   x21, x22, #0x30
+    EPILOG_RESTORE_REG_PAIR   x23, x24, #0x40
+    EPILOG_RESTORE_REG_PAIR   x25, x26, #0x50
+    EPILOG_RESTORE_REG_PAIR   x27, x28, #0x60
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #0x80
+.endm
+
+// Bit position for the flags above, to be used with tbz / tbnz instructions
+PTFF_THREAD_ABORT_BIT = 36
+
+//
+// CONSTANTS -- INTEGER
+//
+#define TSF_Attached                    0x01
+#define TSF_SuppressGcStress            0x08
+#define TSF_DoNotTriggerGc              0x10
+#define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
+
+// Bit position for the flags above, to be used with tbz / tbnz instructions
+TrapThreadsFlags_AbortInProgress_Bit = 0
+TrapThreadsFlags_TrapThreads_Bit     = 1
+
+// This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
+#define STATUS_REDHAWK_THREAD_ABORT     0x43
+
+// These must match the TrapThreadsFlags enum
+#define TrapThreadsFlags_None            0
+#define TrapThreadsFlags_AbortInProgress 1
+#define TrapThreadsFlags_TrapThreads     2

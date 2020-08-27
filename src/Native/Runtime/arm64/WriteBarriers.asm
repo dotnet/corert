@@ -271,6 +271,7 @@ CmpXchgRetry
 CmpXchgNoUpdate
         ;; x10 still contains the original value.
         mov     x0, x10
+        ArmInterlockedOperationBarrier
         ret     lr
 
     LEAF_END RhpCheckedLockCmpXchg
@@ -311,6 +312,7 @@ ExchangeRetry
 
         ;; x10 still contains the original value.
         mov     x0, x10
+        ArmInterlockedOperationBarrier
         ret
 
     LEAF_END RhpCheckedXchg
