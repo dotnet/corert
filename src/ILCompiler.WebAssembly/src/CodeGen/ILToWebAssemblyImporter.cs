@@ -13,7 +13,6 @@ using ILCompiler.Compiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.WebAssembly;
 using Internal.IL.Stubs;
-using Internal.Text;
 using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL
@@ -415,6 +414,18 @@ namespace Internal.IL
                 && (!_method.IsStaticConstructor && _method.Signature.IsStatic || _method.IsConstructor || (_thisType.IsValueType && !_method.Signature.IsStatic))
                 && _compilation.HasLazyStaticConstructor(metadataType))
             {
+                if(_debugInformation != null)
+                {
+                    // set the location for the call to EnsureClassConstructorRun
+                    // LLVM can't process empty string file names
+                    var curSequencePoint = GetSequencePoint(0 /* offset for the prolog? */);
+                    if (!string.IsNullOrWhiteSpace(curSequencePoint.Document))
+                    {
+                        DebugMetadata debugMetadata = GetOrCreateDebugMetadata(curSequencePoint);
+                        LLVMMetadataRef currentLine = CreateDebugFunctionAndDiLocation(debugMetadata, curSequencePoint);
+                        prologBuilder.CurrentDebugLocation = Context.MetadataAsValue(currentLine);
+                    }
+                }
                 TriggerCctor(metadataType, prologBuilder);
             }
 
@@ -729,65 +740,76 @@ namespace Internal.IL
         {
             if (_debugInformation != null)
             {
-                bool foundSequencePoint = false;
-                ILSequencePoint curSequencePoint = default;
-                foreach (var sequencePoint in _debugInformation.GetSequencePoints() ?? Enumerable.Empty<ILSequencePoint>())
-                {
-                    if (sequencePoint.Offset == _currentOffset)
-                    {
-                        curSequencePoint = sequencePoint;
-                        foundSequencePoint = true;
-                        break;
-                    }
-                    else if (sequencePoint.Offset < _currentOffset)
-                    {
-                        curSequencePoint = sequencePoint;
-                        foundSequencePoint = true;
-                    }
-                }
-
-                if (!foundSequencePoint)
-                {
-                    return;
-                }
+                ILSequencePoint curSequencePoint = GetSequencePoint(_currentOffset);
 
                 // LLVM can't process empty string file names
-                if (String.IsNullOrWhiteSpace(curSequencePoint.Document))
+                if (string.IsNullOrWhiteSpace(curSequencePoint.Document))
                 {
                     return;
                 }
 
-                DebugMetadata debugMetadata;
-                if (!_compilation.DebugMetadataMap.TryGetValue(curSequencePoint.Document, out debugMetadata))
-                {
-                    string fullPath = curSequencePoint.Document;
-                    string fileName = Path.GetFileName(fullPath);
-                    string directory = Path.GetDirectoryName(fullPath) ?? String.Empty;
-                    LLVMMetadataRef fileMetadata = _compilation.DIBuilder.CreateFile(fileName, directory);
+                DebugMetadata debugMetadata = GetOrCreateDebugMetadata(curSequencePoint);
 
-                    // todo: get the right value for isOptimized
-                    LLVMMetadataRef compileUnitMetadata = _compilation.DIBuilder.CreateCompileUnit(LLVMDWARFSourceLanguage.LLVMDWARFSourceLanguageC,
-                        fileMetadata, "ILC", 0 /* Optimized */, String.Empty, 1, String.Empty, LLVMDWARFEmissionKind.LLVMDWARFEmissionFull, 0, 0, 0);
-                    Module.AddNamedMetadataOperand("llvm.dbg.cu", compileUnitMetadata);
-
-                    debugMetadata = new DebugMetadata(fileMetadata, compileUnitMetadata);
-                    _compilation.DebugMetadataMap[fileName] = debugMetadata;
-                }
-
-                if (_debugFunction.Handle == IntPtr.Zero)
-                {
-                    LLVMMetadataRef functionMetaType = _compilation.DIBuilder.CreateSubroutineType(debugMetadata.File, ReadOnlySpan<LLVMMetadataRef>.Empty,  LLVMDIFlags.LLVMDIFlagZero);
-                    
-                    uint lineNumber = (uint)_debugInformation.GetSequencePoints().FirstOrDefault().LineNumber;
-                    var debugFunction = _compilation.DIBuilder.CreateFunction(debugMetadata.File, "CreateDebugLocation", "CreateDebugLocation",
-                        debugMetadata.File,
-                        lineNumber, functionMetaType, 1, 1, lineNumber, 0, 0);
-                    _debugFunction = _compilation.DIBuilder.CreateFunction(debugMetadata.File, _method.Name, _method.Name, debugMetadata.File,
-                        lineNumber, functionMetaType, 1, 1, lineNumber, 0, 0);
-                }
-                LLVMMetadataRef currentLine = Context.CreateDebugLocation((uint)curSequencePoint.LineNumber, 0, _debugFunction, default(LLVMMetadataRef));
+                LLVMMetadataRef currentLine = CreateDebugFunctionAndDiLocation(debugMetadata, curSequencePoint);
                 _builder.CurrentDebugLocation = Context.MetadataAsValue(currentLine);
             }
+        }
+
+        LLVMMetadataRef CreateDebugFunctionAndDiLocation(DebugMetadata debugMetadata, ILSequencePoint sequencePoint)
+        {
+            if (_debugFunction.Handle == IntPtr.Zero)
+            {
+                LLVMMetadataRef functionMetaType = _compilation.DIBuilder.CreateSubroutineType(debugMetadata.File,
+                    ReadOnlySpan<LLVMMetadataRef>.Empty, LLVMDIFlags.LLVMDIFlagZero);
+
+                uint lineNumber = (uint) _debugInformation.GetSequencePoints().FirstOrDefault().LineNumber;
+                _debugFunction = _compilation.DIBuilder.CreateFunction(debugMetadata.File, _method.Name, _method.Name,
+                    debugMetadata.File,
+                    lineNumber, functionMetaType, 1, 1, lineNumber, 0, 0);
+                LLVMSharpInterop.DISetSubProgram(_llvmFunction, _debugFunction);
+            }
+            return Context.CreateDebugLocation((uint)sequencePoint.LineNumber, 0, _debugFunction, default(LLVMMetadataRef));
+        }
+
+        ILSequencePoint GetSequencePoint(int offset)
+        {
+            ILSequencePoint curSequencePoint = default;
+            foreach (var sequencePoint in _debugInformation.GetSequencePoints() ?? Enumerable.Empty<ILSequencePoint>())
+            {
+                if (offset <= sequencePoint.Offset) // take the first sequence point in case we need to make a call to RhNewObject before the first matching sequence point
+                {
+                    curSequencePoint = sequencePoint;
+                    break;
+                }
+                if (sequencePoint.Offset < offset)
+                {
+                    curSequencePoint = sequencePoint;
+                }
+            }
+            return curSequencePoint;
+        }
+
+        DebugMetadata GetOrCreateDebugMetadata(ILSequencePoint curSequencePoint)
+        {
+            DebugMetadata debugMetadata;
+            if (!_compilation.DebugMetadataMap.TryGetValue(curSequencePoint.Document, out debugMetadata))
+            {
+                string fullPath = curSequencePoint.Document;
+                string fileName = Path.GetFileName(fullPath);
+                string directory = Path.GetDirectoryName(fullPath) ?? String.Empty;
+                LLVMMetadataRef fileMetadata = _compilation.DIBuilder.CreateFile(fileName, directory);
+
+                // todo: get the right value for isOptimized
+                LLVMMetadataRef compileUnitMetadata = _compilation.DIBuilder.CreateCompileUnit(
+                    LLVMDWARFSourceLanguage.LLVMDWARFSourceLanguageC,
+                    fileMetadata, "ILC", 0 /* Optimized */, String.Empty, 1, String.Empty,
+                    LLVMDWARFEmissionKind.LLVMDWARFEmissionFull, 0, 0, 0);
+                Module.AddNamedMetadataOperand("llvm.dbg.cu", compileUnitMetadata);
+
+                debugMetadata = new DebugMetadata(fileMetadata, compileUnitMetadata);
+                _compilation.DebugMetadataMap[fileName] = debugMetadata;
+            }
+            return debugMetadata;
         }
 
         private void EndImportingInstruction()
@@ -2503,6 +2525,26 @@ namespace Internal.IL
                         return true;
                     }
                     break;
+                case "DefaultConstructorOf":
+                    if (metadataType.Namespace == "System" && metadataType.Name == "Activator" && method.Instantiation.Length == 1)
+                    {
+                        if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
+                        {
+                            var ctorRef = CallGenericHelper(ReadyToRunHelperId.DefaultConstructor, runtimeDeterminedMethod.Instantiation[0]);
+                            PushExpression(StackValueKind.Int32, "ctor", ctorRef, GetWellKnownType(WellKnownType.IntPtr));
+                        }
+                        else
+                        {
+                            IMethodNode methodNode = (IMethodNode)_compilation.ComputeConstantLookup(ReadyToRunHelperId.DefaultConstructor, method.Instantiation[0]);
+                            _dependencies.Add(methodNode);
+
+                            MethodDesc ctor = methodNode.Method;
+                            PushExpression(StackValueKind.Int32, "ctor", LLVMFunctionForMethod(ctor, ctor, null, false, null, ctor, out bool _, out LLVMValueRef _, out LLVMValueRef _), GetWellKnownType(WellKnownType.IntPtr));
+                        }
+
+                        return true;
+                    }
+                    break;
             }
 
             return false;
@@ -2762,7 +2804,7 @@ namespace Internal.IL
                 // then
                 builder.PositionAtEnd(notFatBranch);
                 ExceptionRegion currentTryRegion = GetCurrentTryRegion();
-                LLVMValueRef notFatReturn = CallOrInvoke(fromLandingPad, builder, currentTryRegion, fn, llvmArgs, ref nextInstrBlock);
+                LLVMValueRef notFatReturn = CallOrInvoke(fromLandingPad, builder, currentTryRegion, fn, llvmArgs.ToArray(), ref nextInstrBlock);
                 builder.BuildBr(endifBlock);
 
                 // else
@@ -2770,7 +2812,7 @@ namespace Internal.IL
                 var fnWithDict = builder.BuildCast(LLVMOpcode.LLVMBitCast, fn, LLVMTypeRef.CreatePointer(GetLLVMSignatureForMethod(runtimeDeterminedMethod.Signature, true), 0), "fnWithDict");
                 var dictDereffed = builder.BuildLoad(builder.BuildLoad( dict, "l1"), "l2");
                 llvmArgs.Insert(needsReturnSlot ? 2 : 1, dictDereffed);
-                LLVMValueRef fatReturn = CallOrInvoke(fromLandingPad, builder, currentTryRegion, fnWithDict, llvmArgs, ref nextInstrBlock);
+                LLVMValueRef fatReturn = CallOrInvoke(fromLandingPad, builder, currentTryRegion, fnWithDict, llvmArgs.ToArray(), ref nextInstrBlock);
                 builder.BuildBr(endifBlock);
 
                 // endif
@@ -2786,7 +2828,7 @@ namespace Internal.IL
             }
             else
             {
-                llvmReturn = CallOrInvoke(fromLandingPad, builder, GetCurrentTryRegion(), fn, llvmArgs, ref nextInstrBlock);
+                llvmReturn = CallOrInvoke(fromLandingPad, builder, GetCurrentTryRegion(), fn, llvmArgs.ToArray(), ref nextInstrBlock);
             }
 
             if (!returnType.IsVoid)
@@ -2809,23 +2851,21 @@ namespace Internal.IL
         }
 
         LLVMValueRef CallOrInvoke(bool fromLandingPad, LLVMBuilderRef builder, ExceptionRegion currentTryRegion,
-            LLVMValueRef fn, List<LLVMValueRef> llvmArgs, ref LLVMBasicBlockRef nextInstrBlock)
+            LLVMValueRef fn, LLVMValueRef[] llvmArgs, ref LLVMBasicBlockRef nextInstrBlock)
         {
             LLVMValueRef retVal;
             if (currentTryRegion == null || fromLandingPad) // not handling exceptions that occur in the LLVM landing pad determining the EH handler 
             {
-                retVal = builder.BuildCall(fn, llvmArgs.ToArray(), string.Empty);
+                retVal = builder.BuildCall(fn, llvmArgs, string.Empty);
             }
             else
             {
                 nextInstrBlock = _currentFunclet.AppendBasicBlock(String.Format("Try{0:X}", _currentOffset));
 
-                retVal = builder.BuildInvoke(fn, llvmArgs.ToArray(),
+                retVal = builder.BuildInvoke(fn, llvmArgs,
                     nextInstrBlock, GetOrCreateLandingPad(currentTryRegion), string.Empty);
 
-                _curBasicBlock = nextInstrBlock;
-                _currentBasicBlock.LLVMBlocks.Add(_curBasicBlock);
-                _currentBasicBlock.LastInternalBlock = _curBasicBlock;
+                AddInternalBasicBlock(nextInstrBlock);
                 builder.PositionAtEnd(_curBasicBlock);
             }
             return retVal;
@@ -2867,6 +2907,11 @@ namespace Internal.IL
             _landingPads[landingPadKey] = landingPad;
 
             LLVMBuilderRef landingPadBuilder = Context.CreateBuilder();
+            if (_debugFunction.Handle != IntPtr.Zero)
+            {
+                // we need a location if going to call something, e.g. InitFromEhInfo and the call could be inlined, this is an LLVM requirement
+                landingPadBuilder.CurrentDebugLocation = _builder.CurrentDebugLocation;
+            }
             landingPadBuilder.PositionAtEnd(landingPad);
             LLVMValueRef pad = landingPadBuilder.BuildLandingPad(GxxPersonalityType, GxxPersonality, 1, "");
             pad.AddClause(LLVMValueRef.CreateConstPointerNull(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)));
@@ -2901,7 +2946,8 @@ namespace Internal.IL
                 BuildFinallyFunclet(Module);
             }
 
-            var exPtr = landingPadBuilder.BuildExtractValue(pad, 0, "ex");
+            // __cxa_begin catch to get the c++ exception object, must be paired with __cxa_end_catch (http://libcxxabi.llvm.org/spec.html)
+            var exPtr = landingPadBuilder.BuildCall(GetCxaBeginCatchFunction(), new LLVMValueRef[] { landingPadBuilder.BuildExtractValue(pad, 0, "ex") });
 
             // unwrap managed, cast to 32bit pointer from 8bit personality signature pointer
             var ex32Ptr = landingPadBuilder.BuildPointerCast(exPtr, LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0));
@@ -2953,6 +2999,8 @@ namespace Internal.IL
             landingPadBuilder.BuildCondBr(noCatch, secondPassBlock, foundCatchBlock);
 
             landingPadBuilder.PositionAtEnd(foundCatchBlock);
+            // finished with the c++ exception
+            landingPadBuilder.BuildCall(GetCxaEndCatchFunction(), new LLVMValueRef[] { });
 
             LLVMValueRef[] callCatchArgs = new LLVMValueRef[]
                                   {
@@ -3024,6 +3072,26 @@ namespace Internal.IL
             landingPadBuilder.Dispose();
 
             return landingPad;
+        }
+
+        LLVMValueRef GetCxaBeginCatchFunction()
+        {
+            if (CxaBeginCatchFunction == default)
+            {
+                // takes the exception structure and returns the c++ exception, defined by emscripten
+                CxaBeginCatchFunction = Module.AddFunction("__cxa_begin_catch", LLVMTypeRef.CreateFunction(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 
+                    new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)}, false));
+            }
+            return CxaBeginCatchFunction;
+        }
+
+        LLVMValueRef GetCxaEndCatchFunction()
+        {
+            if (CxaEndCatchFunction == default)
+            {
+                CxaEndCatchFunction = Module.AddFunction("__cxa_end_catch", LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { }, false));
+            }
+            return CxaEndCatchFunction;
         }
 
         private void AddMethodReference(MethodDesc method)
@@ -3811,58 +3879,66 @@ namespace Internal.IL
                         Debug.Assert(CanPerformSignedOverflowOperations(op1.Kind));
                         if (Is32BitStackValue(op1.Kind))
                         {
-                            BuildAddOverflowChecksForSize(ref AddOvf32Function, left, right, LLVMTypeRef.Int32, BuildConstInt32(int.MaxValue), BuildConstInt32(int.MinValue), true);
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "sadd", LLVMTypeRef.Int32);
                         }
                         else
                         {
-                            BuildAddOverflowChecksForSize(ref AddOvf64Function, left, right, LLVMTypeRef.Int64, BuildConstInt64(long.MaxValue), BuildConstInt64(long.MinValue), true);
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "sadd", LLVMTypeRef.Int64);
                         }
-
-                        result = _builder.BuildAdd(left, right, "add");
                         break;
                     case ILOpcode.add_ovf_un:
                         Debug.Assert(CanPerformUnsignedOverflowOperations(op1.Kind));
                         if (Is32BitStackValue(op1.Kind))
                         {
-                            BuildAddOverflowChecksForSize(ref AddOvfUn32Function, left, right, LLVMTypeRef.Int32, BuildConstUInt32(uint.MaxValue), BuildConstInt32(0), false);
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "uadd", LLVMTypeRef.Int32);
                         }
                         else
                         {
-                            BuildAddOverflowChecksForSize(ref AddOvfUn64Function, left, right, LLVMTypeRef.Int64, BuildConstUInt64(ulong.MaxValue), BuildConstInt64(0), false);
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "uadd", LLVMTypeRef.Int64);
                         }
-
-                        result = _builder.BuildAdd(left, right, "add");
                         break;
                     case ILOpcode.sub_ovf:
                         Debug.Assert(CanPerformSignedOverflowOperations(op1.Kind));
                         if (Is32BitStackValue(op1.Kind))
                         {
-                            BuildSubOverflowChecksForSize(ref SubOvf32Function, left, right, LLVMTypeRef.Int32, BuildConstInt32(int.MaxValue), BuildConstInt32(int.MinValue), true);
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "ssub", LLVMTypeRef.Int32);
                         }
                         else
                         {
-                            BuildSubOverflowChecksForSize(ref SubOvf64Function, left, right, LLVMTypeRef.Int64, BuildConstInt64(long.MaxValue), BuildConstInt64(long.MinValue), true);
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "ssub", LLVMTypeRef.Int64);
                         }
-
-                        result = _builder.BuildSub(left, right, "sub");
                         break;
                     case ILOpcode.sub_ovf_un:
                         Debug.Assert(CanPerformUnsignedOverflowOperations(op1.Kind));
                         if (Is32BitStackValue(op1.Kind))
                         {
-                            BuildSubOverflowChecksForSize(ref SubOvfUn32Function, left, right, LLVMTypeRef.Int32, BuildConstUInt32(uint.MaxValue), BuildConstInt32(0), false);
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "usub", LLVMTypeRef.Int32);
                         }
                         else
                         {
-                            BuildSubOverflowChecksForSize(ref SubOvfUn64Function, left, right, LLVMTypeRef.Int64, BuildConstUInt64(ulong.MaxValue), BuildConstInt64(0), false);
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "usub", LLVMTypeRef.Int64);
                         }
-
-                        result = _builder.BuildSub(left, right, "sub");
                         break;
-                    // TODO: Overflow checks
-                    case ILOpcode.mul_ovf:
                     case ILOpcode.mul_ovf_un:
-                        result = _builder.BuildMul(left, right, "mul");
+                        Debug.Assert(CanPerformUnsignedOverflowOperations(op1.Kind));
+                        if (Is32BitStackValue(op1.Kind))
+                        {
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "umul", LLVMTypeRef.Int32);
+                        }
+                        else
+                        {
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "umul", LLVMTypeRef.Int64);
+                        }
+                        break;
+                    case ILOpcode.mul_ovf:
+                        if (Is32BitStackValue(op1.Kind))
+                        {
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "smul", LLVMTypeRef.Int32);
+                        }
+                        else
+                        {
+                            result = BuildArithmeticOperationWithOverflowCheck(left, right, "smul", LLVMTypeRef.Int64);
+                        }
                         break;
 
                     default:
@@ -3879,6 +3955,32 @@ namespace Internal.IL
             PushExpression(kind, "binop", result, type);
         }
 
+        LLVMValueRef BuildArithmeticOperationWithOverflowCheck(LLVMValueRef left, LLVMValueRef right, string arithmeticOp, LLVMTypeRef intType)
+        {
+            LLVMValueRef mulFunction = GetOrCreateLLVMFunction("llvm." + arithmeticOp + ".with.overflow." + (intType == LLVMTypeRef.Int32 ? "i32" : "i64"), LLVMTypeRef.CreateFunction(
+                LLVMTypeRef.CreateStruct(new[] { intType, LLVMTypeRef.Int1}, false), new[] { intType, intType }));
+            LLVMValueRef mulRes = _builder.BuildCall(mulFunction, new[] {left, right});
+            var overflow = _builder.BuildExtractValue(mulRes, 1);
+            LLVMBasicBlockRef overflowBlock = _currentFunclet.AppendBasicBlock("ovf");
+            LLVMBasicBlockRef noOverflowBlock = _currentFunclet.AppendBasicBlock("no_ovf");
+            _builder.BuildCondBr(overflow, overflowBlock, noOverflowBlock);
+            
+            _builder.PositionAtEnd(overflowBlock);
+            CallOrInvokeThrowException(_builder, "ThrowHelpers", "ThrowOverflowException");
+            
+            _builder.PositionAtEnd(noOverflowBlock);
+            LLVMValueRef result = _builder.BuildExtractValue(mulRes, 0);
+            AddInternalBasicBlock(noOverflowBlock);
+            return result;
+        }
+
+        void AddInternalBasicBlock(LLVMBasicBlockRef basicBlock)
+        {
+            _curBasicBlock = basicBlock;
+            _currentBasicBlock.LLVMBlocks.Add(_curBasicBlock);
+            _currentBasicBlock.LastInternalBlock = _curBasicBlock;
+        }
+
         bool CanPerformSignedOverflowOperations(StackValueKind kind)
         {
             return kind == StackValueKind.Int32 || kind == StackValueKind.Int64;
@@ -3893,108 +3995,6 @@ namespace Internal.IL
         bool Is32BitStackValue(StackValueKind kind)
         {
             return kind == StackValueKind.Int32 || kind == StackValueKind.ByRef ||  kind == StackValueKind.ObjRef || kind == StackValueKind.NativeInt;
-        }
-
-        LLVMValueRef StartOverflowCheckFunction(LLVMTypeRef sizeTypeRef, bool signed,
-            string throwFuncName, out LLVMValueRef leftOp, out LLVMValueRef rightOp, out LLVMBuilderRef builder, out LLVMBasicBlockRef elseBlock,
-            out LLVMBasicBlockRef ovfBlock, out LLVMBasicBlockRef noOvfBlock)
-        {
-            LLVMValueRef llvmCheckFunction = Module.AddFunction(throwFuncName,
-                LLVMTypeRef.CreateFunction(LLVMTypeRef.Void,
-                    new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), sizeTypeRef, sizeTypeRef }, false));
-            leftOp = llvmCheckFunction.GetParam(1);
-            rightOp = llvmCheckFunction.GetParam(2);
-            builder = Context.CreateBuilder();
-            var block = llvmCheckFunction.AppendBasicBlock("Block");
-            builder.PositionAtEnd(block);
-            elseBlock = default;
-            if (signed) // signed ops need a separate test for the right side being negative
-            {
-                var gtZeroCmp = builder.BuildICmp(LLVMIntPredicate.LLVMIntSGT, rightOp,
-                    LLVMValueRef.CreateConstInt(sizeTypeRef, 0, false));
-                LLVMBasicBlockRef thenBlock = llvmCheckFunction.AppendBasicBlock("posOvfBlock");
-                elseBlock = llvmCheckFunction.AppendBasicBlock("negOvfBlock");
-                builder.BuildCondBr(gtZeroCmp, thenBlock, elseBlock);
-                builder.PositionAtEnd(thenBlock);
-            }
-            ovfBlock = llvmCheckFunction.AppendBasicBlock("ovfBlock");
-            noOvfBlock = llvmCheckFunction.AppendBasicBlock("noOvfBlock");
-            return llvmCheckFunction;
-        }
-
-        void BuildAddOverflowChecksForSize(ref LLVMValueRef llvmCheckFunction, LLVMValueRef left, LLVMValueRef right, LLVMTypeRef sizeTypeRef, LLVMValueRef maxValue, LLVMValueRef minValue, bool signed)
-        {
-            if (llvmCheckFunction.Handle == IntPtr.Zero)
-            {
-                // create function name for each of the 4 combinations signed/unsigned, 32/64 bit
-                string throwFuncName = "corert.throwovf" + (signed ? "add" : "unadd") + (sizeTypeRef.IntWidth == 32 ? "32" : "64");
-                llvmCheckFunction = StartOverflowCheckFunction(sizeTypeRef, signed, throwFuncName, out LLVMValueRef leftOp, out LLVMValueRef rightOp, out LLVMBuilderRef builder, out LLVMBasicBlockRef elseBlock, 
-                    out LLVMBasicBlockRef ovfBlock, out LLVMBasicBlockRef noOvfBlock);
-                // a > int.MaxValue - b
-                BuildOverflowCheck(builder, leftOp, signed ? LLVMIntPredicate.LLVMIntSGT : LLVMIntPredicate.LLVMIntUGT, maxValue, rightOp, ovfBlock, noOvfBlock, LLVMOpcode.LLVMSub);
-
-                builder.PositionAtEnd(ovfBlock);
-
-                ThrowException(builder, "ThrowHelpers", "ThrowOverflowException", llvmCheckFunction);
-
-                builder.PositionAtEnd(noOvfBlock);
-                LLVMBasicBlockRef opBlock = llvmCheckFunction.AppendBasicBlock("opBlock");
-                builder.BuildBr(opBlock);
-
-                if (signed)
-                {
-                    builder.PositionAtEnd(elseBlock);
-                    //  a < int.MinValue - b
-                    BuildOverflowCheck(builder, leftOp, LLVMIntPredicate.LLVMIntSLT, minValue, rightOp, ovfBlock, noOvfBlock, LLVMOpcode.LLVMSub);
-                }
-                builder.PositionAtEnd(opBlock);
-                builder.BuildRetVoid();
-            }
-
-            LLVMBasicBlockRef nextInstrBlock = default;
-            CallOrInvoke(false, _builder, GetCurrentTryRegion(), llvmCheckFunction, new List<LLVMValueRef> { GetShadowStack(), left, right }, ref nextInstrBlock);
-        }
-
-        void BuildSubOverflowChecksForSize(ref LLVMValueRef llvmCheckFunction, LLVMValueRef left, LLVMValueRef right, LLVMTypeRef sizeTypeRef, LLVMValueRef maxValue, LLVMValueRef minValue, bool signed)
-        {
-            if (llvmCheckFunction.Handle == IntPtr.Zero)
-            {
-                // create function name for each of the 4 combinations signed/unsigned, 32/64 bit
-                string throwFuncName = "corert.throwovf" + (signed ? "sub" : "unsub") + (sizeTypeRef.IntWidth == 32 ? "32" : "64");
-                llvmCheckFunction = StartOverflowCheckFunction(sizeTypeRef, signed, throwFuncName, out LLVMValueRef leftOp, out LLVMValueRef rightOp, out LLVMBuilderRef builder, out LLVMBasicBlockRef elseBlock, 
-                    out LLVMBasicBlockRef ovfBlock, out LLVMBasicBlockRef noOvfBlock);
-                // a < Min + b is overflow for unsigned 
-                BuildOverflowCheck(builder, leftOp, signed ? LLVMIntPredicate.LLVMIntSLT : LLVMIntPredicate.LLVMIntULT, minValue, rightOp, ovfBlock, noOvfBlock, LLVMOpcode.LLVMAdd);
-
-                builder.PositionAtEnd(ovfBlock);
-
-                ThrowException(builder, "ThrowHelpers", "ThrowOverflowException", llvmCheckFunction);
-
-                builder.PositionAtEnd(noOvfBlock);
-                LLVMBasicBlockRef opBlock = llvmCheckFunction.AppendBasicBlock("opBlock");
-                builder.BuildBr(opBlock);
-
-                if (signed)
-                {
-                    builder.PositionAtEnd(elseBlock);
-                    // a - b overflows when b is negative if  a > max + b
-                    BuildOverflowCheck(builder, rightOp, LLVMIntPredicate.LLVMIntSGT, maxValue, leftOp, ovfBlock, noOvfBlock, LLVMOpcode.LLVMAdd);
-                }
-                builder.PositionAtEnd(opBlock);
-                builder.BuildRetVoid();
-            }
-
-            LLVMBasicBlockRef nextInstrBlock = default;
-            CallOrInvoke(false, _builder, GetCurrentTryRegion(), llvmCheckFunction, new List<LLVMValueRef> { GetShadowStack(), left, right }, ref nextInstrBlock);
-        }
-
-        private void BuildOverflowCheck(LLVMBuilderRef builder, LLVMValueRef compOperand, LLVMIntPredicate predicate,
-            LLVMValueRef limitValueRef, LLVMValueRef limitOperand, LLVMBasicBlockRef ovfBlock,
-            LLVMBasicBlockRef noOvfBlock, LLVMOpcode opCode)
-        {
-            LLVMValueRef sub = builder.BuildBinOp(opCode, limitValueRef, limitOperand);
-            LLVMValueRef ovfTest = builder.BuildICmp(predicate, compOperand, sub);
-            builder.BuildCondBr(ovfTest, ovfBlock, noOvfBlock);
         }
 
         private TypeDesc WidenBytesAndShorts(TypeDesc type)
@@ -4361,7 +4361,10 @@ namespace Internal.IL
 
         private void ImportRethrow()
         {
-            EmitTrapCall();
+            // rethrows can only occur from a catch handler in which case there should be an exception slot
+            Debug.Assert(_spilledExpressions.Count > 0 && _spilledExpressions[0].Name == "ExceptionSlot");
+
+            ThrowOrRethrow(_spilledExpressions[0]);
         }
 
         private void ImportSizeOf(int token)
@@ -4408,6 +4411,11 @@ namespace Internal.IL
         {
             var exceptionObject = _stack.Pop();
 
+            ThrowOrRethrow(exceptionObject);
+        }
+
+        void ThrowOrRethrow(StackEntry exceptionObject)
+        {
             if (RhpThrowEx.Handle.Equals(IntPtr.Zero))
             {
                 RhpThrowEx = Module.AddFunction("RhpThrowEx", LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }, false));
@@ -4491,7 +4499,7 @@ namespace Internal.IL
             }
 
             LLVMBasicBlockRef nextInstrBlock = default;
-            CallOrInvoke(false, _builder, GetCurrentTryRegion(), NullRefFunction, new List<LLVMValueRef> { GetShadowStack(), entry }, ref nextInstrBlock);
+            CallOrInvoke(false, _builder, GetCurrentTryRegion(), NullRefFunction, new LLVMValueRef[] { GetShadowStack(), entry }, ref nextInstrBlock);
         }
 
         private void ThrowCkFinite(LLVMValueRef value, int size, ref LLVMValueRef llvmCheckFunction)
@@ -4534,16 +4542,33 @@ namespace Internal.IL
             }
 
             LLVMBasicBlockRef nextInstrBlock = default;
-            CallOrInvoke(false, _builder, GetCurrentTryRegion(), llvmCheckFunction, new List<LLVMValueRef> { GetShadowStack(), value }, ref nextInstrBlock);
+            CallOrInvoke(false, _builder, GetCurrentTryRegion(), llvmCheckFunction, new LLVMValueRef[] { GetShadowStack(), value }, ref nextInstrBlock);
         }
 
         private void ThrowException(LLVMBuilderRef builder, string helperClass, string helperMethodName, LLVMValueRef throwingFunction)
         {
+            LLVMValueRef fn = GetHelperLlvmMethod(helperClass, helperMethodName);
+            builder.BuildCall(fn, new LLVMValueRef[] {throwingFunction.GetParam(0) }, string.Empty);
+            builder.BuildUnreachable();
+        }
+
+        /// <summary>
+        /// Calls or invokes the call to throwing the exception so it can be caught in the caller
+        /// </summary>
+        private void CallOrInvokeThrowException(LLVMBuilderRef builder, string helperClass, string helperMethodName)
+        {
+            LLVMValueRef fn = GetHelperLlvmMethod(helperClass, helperMethodName);
+            LLVMBasicBlockRef nextInstrBlock = default;
+            CallOrInvoke(false, builder, GetCurrentTryRegion(), fn, new LLVMValueRef[] {GetShadowStack()},  ref nextInstrBlock);
+            builder.BuildUnreachable();
+        }
+
+        LLVMValueRef GetHelperLlvmMethod(string helperClass, string helperMethodName)
+        {
             MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("Internal.Runtime.CompilerHelpers", helperClass);
             MethodDesc helperMethod = helperType.GetKnownMethod(helperMethodName, null);
             LLVMValueRef fn = LLVMFunctionForMethod(helperMethod, helperMethod, null, false, null, null, out bool hasHiddenParam, out LLVMValueRef dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
-            builder.BuildCall(fn, new LLVMValueRef[] {throwingFunction.GetParam(0) }, string.Empty);
-            builder.BuildUnreachable();
+            return fn;
         }
 
         private LLVMValueRef GetInstanceFieldAddress(StackEntry objectEntry, FieldDesc field)
@@ -5347,7 +5372,6 @@ namespace Internal.IL
 //            }
 
             builder.EmitCompressedUInt((uint)totalClauses);
-
             // Iterate backwards to emit the innermost first, but within a try region go forwards to get the first matching catch type
             int i = _exceptionRegions.Length - 1;
             while (i >= 0)
