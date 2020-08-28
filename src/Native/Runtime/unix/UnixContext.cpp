@@ -301,7 +301,7 @@ bool GetUnwindProcInfo(PCODE ip, unw_proc_info_t *procInfo)
 #elif HOST_ARM
     ((uint32_t*)(unwContext.data))[15] = ip;
 #elif HOST_ARM64
-    ((uint32_t*)(unwContext.data))[32] = ip;
+    unwContext.data[32] = ip;
 #elif HOST_WASM
     ASSERT(false);
 #elif HOST_X86
@@ -618,7 +618,7 @@ bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* ls
 
     assert((procInfo.start_ip <= controlPC) && (controlPC < procInfo.end_ip));
 
-#if defined(HOST_ARM) || defined(HOST_ARM64)
+#if defined(HOST_ARM)
     // libunwind fills by reference not by value for ARM
     *lsda = *((UIntNative *)procInfo.lsda);
 #else
