@@ -81,7 +81,7 @@ RhpNewFast_RarePath
 
         ;; If the object is bigger than RH_LARGE_OBJECT_SIZE, we must publish it to the BGC
         ldr         w1, [x19, #OFFSETOF__EEType__m_uBaseSize]
-        movk        x2, #(RH_LARGE_OBJECT_SIZE & 0xFFFF)
+        movz        x2, #(RH_LARGE_OBJECT_SIZE & 0xFFFF)
         movk        x2, #(RH_LARGE_OBJECT_SIZE >> 16), lsl #16
         cmp         x1, x2
         blo         New_SkipPublish
@@ -261,7 +261,7 @@ ArraySizeOverflow
         str         x20, [x0, #OFFSETOF__Array__m_Length]
 
         ;; If the object is bigger than RH_LARGE_OBJECT_SIZE, we must publish it to the BGC
-        movk        x2, #(RH_LARGE_OBJECT_SIZE & 0xFFFF)
+        movz        x2, #(RH_LARGE_OBJECT_SIZE & 0xFFFF)
         movk        x2, #(RH_LARGE_OBJECT_SIZE >> 16), lsl #16
         cmp         x21, x2
         blo         NewArray_SkipPublish
