@@ -14,16 +14,9 @@
 // shadow heap contains only valid copies of real heap values or INVALIDGCVALUE.
 #ifdef WRITE_BARRIER_CHECK  
 
-// TODO
+    .global     $g_GCShadow
+    .global     $g_GCShadowEnd
 
-    SETALIAS    g_GCShadow, ?g_GCShadow@@3PEAEEA
-    SETALIAS    g_GCShadowEnd, ?g_GCShadowEnd@@3PEAEEA
-    EXTERN      $g_GCShadow
-    EXTERN      $g_GCShadowEnd
-
-INVALIDGCVALUE  EQU 0xCCCCCCCD
-
-    MACRO
         // On entry:
         //  $destReg: location to be updated
         //  $refReg: objectref to be stored
@@ -32,34 +25,34 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         //  x9,x10: trashed
         //  other registers are preserved
         //
-        UPDATE_GC_SHADOW $destReg, $refReg
+        .macro UPDATE_GC_SHADOW destReg, refReg
 
         // If g_GCShadow is 0, don't perform the check.
-        adrp    x9, $g_GCShadow
-        ldr     x9, [x9, $g_GCShadow]
-        cbz     x9, %ft1
+        PREPARE_EXTERNAL_VAR g_GCShadow, X9
+        ldr     x9, [x9]
+        cbz     x9, 1f
 
-        // Save $destReg since we're about to modify it (and we need the original value both within the macro and
+        // Save destReg since we're about to modify it (and we need the original value both within the macro and
         // once we exit the macro).
-        mov     x10, $destReg
+        mov     x10, \destReg
 
-        // Transform $destReg into the equivalent address in the shadow heap.
-        adrp    x9, g_lowest_address
-        ldr     x9, [x9, g_lowest_address]
-        subs    $destReg, $destReg, x9
-        blt     %ft0
+        // Transform destReg into the equivalent address in the shadow heap.
+        PREPARE_EXTERNAL_VAR g_lowest_address, X9
+        ldr     x9, [x9]
+        subs    \destReg, \destReg, x9
+        blt     0f
 
-        adrp    x9, $g_GCShadow
-        ldr     x9, [x9, $g_GCShadow]
-        add     $destReg, $destReg, x9
+        PREPARE_EXTERNAL_VAR g_GCShadow, X9
+        ldr     x9, [x9]
+        add     \destReg, \destReg, x9
 
-        adrp    x9, $g_GCShadowEnd
-        ldr     x9, [x9, $g_GCShadowEnd]
-        cmp     $destReg, x9
-        bgt     %ft0
+        PREPARE_EXTERNAL_VAR g_GCShadowEnd, X9
+        ldr     x9, [x9]
+        cmp     \destReg, x9
+        bgt     0f
 
         // Update the shadow heap.
-        str     $refReg, [$destReg]
+        str     \refReg, [\destReg]
 
         // The following read must be strongly ordered wrt to the write we have just performed in order to
         // prevent race conditions.
@@ -68,20 +61,21 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         // Now check that the real heap location still contains the value we just wrote into the shadow heap.
         mov     x9, x10
         ldr     x9, [x9]
-        cmp     x9, $refReg
-        beq     %ft0
+        cmp     x9, \refReg
+        beq     0f
 
-        // Someone went and updated the real heap. We need to invalidate the shadow location since we can not
+        // Someone went and updated the real heap. We need to invalidate INVALIDGCVALUE the shadow location since we can not
         // guarantee whose shadow update won.
-        MOVL64  x9, INVALIDGCVALUE, 0
-        str     x9, [$destReg]
+        movz x9, (INVALIDGCVALUE & 0xFFFF) // #0xcccd
+        movk x9, ((INVALIDGCVALUE >> 16) & 0xFFFF), LSL #16
+        str     x9, [\destReg]
 
-0
-        // Restore original $destReg value
-        mov     $destReg, x10
+0:
+        // Restore original destReg value
+        mov     \destReg, x10
 
-1
-    MEND
+1:
+    .endm
 
 #else // WRITE_BARRIER_CHECK
 
@@ -113,24 +107,34 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         // we are in a debug build and write barrier checking has been enabled).
         UPDATE_GC_SHADOW \destReg, \refReg
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        // Update the write watch table if necessary
+        PREPARE_EXTERNAL_VAR g_write_watch_table, x\trash
+        ldr     x\trash, [x\trash]
+        cbz  x\trash, 2f
+        add  x\trash, x\trash, \destReg, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
+        ldrb w17, [x\trash]
+        cbnz x17, 2f
+        mov  w17, #0xFF
+        strb w17, [x\trash]
+#endif
+
+2:
         // We can skip the card table write if the reference is to
         // an object not on the epehemeral segment.
-        adrp    x\trash, g_ephemeral_low
-        add	    x\trash, x\trash, :lo12:g_ephemeral_low
+        PREPARE_EXTERNAL_VAR g_ephemeral_low, x\trash
         ldr     x\trash, [x\trash]
         cmp     \refReg, x\trash
         blt     0f
 
-        adrp    x\trash, g_ephemeral_high
-        add	    x\trash, x\trash, :lo12:g_ephemeral_high
+        PREPARE_EXTERNAL_VAR g_ephemeral_high, x\trash
         ldr     x\trash, [x\trash]
         cmp     \refReg, x\trash
         bge     0f
 
         // Set this objects card, if it has not already been set.
 
-        adrp    x\trash, g_card_table
-        add	    x\trash, x\trash, :lo12:g_card_table
+        PREPARE_EXTERNAL_VAR g_card_table, x\trash
         ldr     x\trash, [x\trash]
         add     \trash2, x\trash, \destReg, lsr #11
 
@@ -142,6 +146,20 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 
         mov     x\trash, 0xFF
         strb    w\trash, [\trash2]
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        // Check if we need to update the card bundle table
+        PREPARE_EXTERNAL_VAR g_card_bundle_table, x\trash
+        ldr     x\trash, [x\trash]
+        add  \trash2, x\trash, \destReg, lsr #21
+        ldrb w\trash, [\trash2]
+        cmp  x\trash, 0xFF
+        beq  0f
+
+        mov  x\trash, 0xFF
+        strb w\trash, [\trash2]
+#endif
+
 0:
         // Exit label
     .endm
@@ -159,14 +177,13 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 
         // The "check" of this checked write barrier - is destReg
         // within the heap? if no, early out.
-        adrp    x\trash, g_lowest_address
-        add	    x\trash, x\trash, :lo12:g_lowest_address
+        
+        PREPARE_EXTERNAL_VAR g_lowest_address, x\trash
         ldr     x\trash, [x\trash]
         cmp     \destReg, x\trash
         blt     0f
 
-        adrp    x\trash, g_highest_address
-        add	    x\trash, x\trash, :lo12:g_highest_address
+        PREPARE_EXTERNAL_VAR g_highest_address, x\trash
         ldr     x\trash, [x\trash]
         cmp     \destReg, x\trash
         bgt     0f

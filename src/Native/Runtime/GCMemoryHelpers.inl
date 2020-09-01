@@ -7,6 +7,18 @@
 // Unmanaged GC memory helpers
 //
 
+#if defined(HOST_64BIT)
+static const int card_byte_shift = 11;
+static const int card_bundle_byte_shift = 21;
+#else
+static const int card_byte_shift = 10;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+#error Manually managed card bundles are currently only implemented for AMD64.
+#endif
+#endif
+
+
 // This function fills a piece of memory in a GC safe way.  It makes the guarantee
 // that it will fill memory in at least pointer sized chunks whenever possible.
 // Unaligned memory at the beginning and remaining bytes at the end are written bytewise.
@@ -154,6 +166,38 @@ FORCEINLINE void InlineWriteBarrier(void * dst, void * ref)
     }
 }
 
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+extern "C" uint32_t* g_card_bundle_table;
+#endif // FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+extern "C" bool g_sw_ww_enabled_for_gc_heap;
+extern "C" uint8_t* g_write_watch_table;
+
+static const int SoftwareWriteWatchAddressToTableByteIndexShift = 12;
+
+// In accordance with the SoftwareWriteWatch scheme, marks a range of addresses
+// as dirty, starting at the given address and with the given length.
+inline static void SoftwareWriteWatchSetDirtyRegion(void* address, size_t length)
+{
+    // We presumably have just memcopied something to this address, so it can't be null.
+    assert(address != nullptr);
+
+    // The "base index" is the first index in the SWW table that covers the target
+    // region of memory.
+    size_t base_index = reinterpret_cast<size_t>(address) >> SoftwareWriteWatchAddressToTableByteIndexShift;
+
+    // The "end_index" is the last index in the SWW table that covers the target
+    // region of memory.
+    uint8_t* end_pointer = reinterpret_cast<uint8_t*>(address) + length - 1;
+    size_t end_index = reinterpret_cast<size_t>(end_pointer) >> SoftwareWriteWatchAddressToTableByteIndexShift;
+
+    // We'll mark the entire region of memory as dirty by memseting all entries in
+    // the SWW table between the start and end indexes.
+    memset(&g_write_watch_table[base_index], ~0, end_index - base_index + 1);
+}
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
 FORCEINLINE void InlineCheckedWriteBarrier(void * dst, void * ref)
 {
     // if the dst is outside of the heap (unboxed value classes) then we
@@ -220,6 +264,13 @@ FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, size_t cbMemSize)
 
 #endif // WRITE_BARRIER_CHECK
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    if (g_sw_ww_enabled_for_gc_heap)
+    {
+        SoftwareWriteWatchSetDirtyRegion(pMemStart, cbMemSize);
+    }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
     // Compute the starting card address and the number of bytes to write (groups of 8 cards). We could try
     // for further optimization here using aligned 32-bit writes but there's some overhead in setup required
     // and additional complexity. It's not clear this is warranted given that a single byte of card table
@@ -251,5 +302,24 @@ FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, size_t cbMemSize)
         clumpCount--;
     }
     while (clumpCount != 0);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    size_t startBundleByte = startAddress >> card_bundle_byte_shift;
+    size_t endBundleByte = (endAddress + (1 << card_bundle_byte_shift) - 1) >> card_bundle_byte_shift;
+    size_t bundleByteCount = endBundleByte - startBundleByte;
+
+    uint8_t* pBundleByte = ((uint8_t*)VolatileLoadWithoutBarrier(&g_card_bundle_table)) + startBundleByte;
+
+    do
+    {
+        if (*pBundleByte != 0xFF)
+        {
+            *pBundleByte = 0xFF;
+        }
+
+        pBundleByte++;
+        bundleByteCount--;
+    } while (bundleByteCount != 0);
+#endif
 }
 #endif // DACCESS_COMPILE
