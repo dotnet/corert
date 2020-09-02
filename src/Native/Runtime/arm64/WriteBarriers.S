@@ -28,8 +28,7 @@
         .macro UPDATE_GC_SHADOW destReg, refReg
 
         // If g_GCShadow is 0, don't perform the check.
-        PREPARE_EXTERNAL_VAR g_GCShadow, X9
-        ldr     x9, [x9]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadow, X9
         cbz     x9, 1f
 
         // Save destReg since we're about to modify it (and we need the original value both within the macro and
@@ -37,17 +36,14 @@
         mov     x10, \destReg
 
         // Transform destReg into the equivalent address in the shadow heap.
-        PREPARE_EXTERNAL_VAR g_lowest_address, X9
-        ldr     x9, [x9]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, X9
         subs    \destReg, \destReg, x9
         blt     0f
 
-        PREPARE_EXTERNAL_VAR g_GCShadow, X9
-        ldr     x9, [x9]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadow, X9
         add     \destReg, \destReg, x9
 
-        PREPARE_EXTERNAL_VAR g_GCShadowEnd, X9
-        ldr     x9, [x9]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadowEnd, X9
         cmp     \destReg, x9
         bgt     0f
 
@@ -109,8 +105,8 @@
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Update the write watch table if necessary
-        PREPARE_EXTERNAL_VAR g_write_watch_table, x\trash
-        ldr  x\trash, [x\trash]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_write_watch_table, x\trash
+
         cbz  x\trash, 2f
         add  x\trash, x\trash, \destReg, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
         ldrb w17, [x\trash]
@@ -122,20 +118,17 @@
 2:
         // We can skip the card table write if the reference is to
         // an object not on the epehemeral segment.
-        PREPARE_EXTERNAL_VAR g_ephemeral_low, x\trash
-        ldr     x\trash, [x\trash]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, x\trash
         cmp     \refReg, x\trash
         blt     0f
 
-        PREPARE_EXTERNAL_VAR g_ephemeral_high, x\trash
-        ldr     x\trash, [x\trash]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x\trash
         cmp     \refReg, x\trash
         bge     0f
 
         // Set this objects card, if it has not already been set.
 
-        PREPARE_EXTERNAL_VAR g_card_table, x\trash
-        ldr     x\trash, [x\trash]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_card_table, x\trash
         add     \trash2, x\trash, \destReg, lsr #11
 
         // Check that this card has not already been written. Avoiding useless writes is a big win on
@@ -149,8 +142,7 @@
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Check if we need to update the card bundle table
-        PREPARE_EXTERNAL_VAR g_card_bundle_table, x\trash
-        ldr     x\trash, [x\trash]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_card_bundle_table, x\trash
         add  \trash2, x\trash, \destReg, lsr #21
         ldrb w\trash, [\trash2]
         cmp  x\trash, 0xFF
@@ -178,13 +170,11 @@
         // The "check" of this checked write barrier - is destReg
         // within the heap? if no, early out.
         
-        PREPARE_EXTERNAL_VAR g_lowest_address, x\trash
-        ldr     x\trash, [x\trash]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x\trash
         cmp     \destReg, x\trash
         blt     0f
 
-        PREPARE_EXTERNAL_VAR g_highest_address, x\trash
-        ldr     x\trash, [x\trash]
+        PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x\trash
         cmp     \destReg, x\trash
         bgt     0f
 

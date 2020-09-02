@@ -40,8 +40,7 @@ POINTER_SIZE = 0x08
     // IntPtr RhGetCommonStubAddress()
     //
     LEAF_ENTRY RhGetCommonStubAddress, _TEXT
-        adrp x0, RhCommonStub
-        add	x0, x0, :lo12:RhCommonStub
+        PREPARE_EXTERNAL_VAR RhCommonStub, x0
         ret
     LEAF_END RhGetCommonStubAddress, _TEXT
 

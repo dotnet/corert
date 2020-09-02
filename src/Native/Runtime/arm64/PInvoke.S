@@ -118,9 +118,8 @@ Done:
 
         PROLOG_SAVE_REG_PAIR_INDEXED    fp, lr, #-0x10
 
-        PREPARE_EXTERNAL_VAR RhpTrapThreads, x10
+        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 10
 
-        ldr         w10, [x10]
         tbz         x10, #TrapThreadsFlags_TrapThreads_Bit, NoWait
         bl          RhpWaitForGCNoAbort
 NoWait:
@@ -181,9 +180,8 @@ ThreadAttached:
         str         xzr, [x10, #OFFSETOF__Thread__m_pTransitionFrame] 
         dmb         ish
 
-        PREPARE_EXTERNAL_VAR RhpTrapThreads, x11
+        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 11
 
-        ldr         w11, [x11]
         tbnz        x11, #TrapThreadsFlags_TrapThreads_Bit, TrapThread
 
         ret
@@ -294,9 +292,8 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         str     x10, [x0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
         str     x0, [x10, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        PREPARE_EXTERNAL_VAR RhpTrapThreads, x9
+        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 9
 
-        ldr     w9, [x9]
         cbnz    w9, InvokeRareTrapThread  // TrapThreadsFlags_None = 0
         ret
 
@@ -310,9 +307,8 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
         mov         x10, 0
         str         x10, [x9, #OFFSETOF__Thread__m_pTransitionFrame]
 
-        PREPARE_EXTERNAL_VAR RhpTrapThreads, x9
+        PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 9
 
-        ldr     w9, [x9]
         cbnz    w9, 0f  // TrapThreadsFlags_None = 0
         ret
 0:

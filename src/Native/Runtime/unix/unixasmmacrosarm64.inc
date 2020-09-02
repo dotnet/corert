@@ -46,6 +46,17 @@ C_FUNC(\Name):
         add	\HelperReg, \HelperReg, :lo12:C_FUNC(\Name)
 .endm 
 
+.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
+        adrp \HelperReg, C_FUNC(\Name)
+        ldr	\HelperReg, [\HelperReg, :lo12:C_FUNC(\Name)]
+.endm 
+
+.macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
+        adrp x\HelperReg, C_FUNC(\Name)
+        ldr	w\HelperReg, [x\HelperReg, :lo12:C_FUNC(\Name)]
+.endm 
+
+
 .macro PROLOG_STACK_ALLOC Size
         sub sp, sp, \Size
         .cfi_adjust_cfa_offset \Size

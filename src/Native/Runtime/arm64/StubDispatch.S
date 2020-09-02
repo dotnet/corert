@@ -99,8 +99,7 @@
         // Calling convention of the universal thunk is:
         //  xip0: contains target address for the thunk to call
         //  xip1: contains parameter of the thunks target
-        adrp xip0, RhpCidResolve
-        add	xip0, xip0, :lo12:RhpCidResolve
+        PREPARE_EXTERNAL_VAR RhpCidResolve, xip0
         mov xip1, x11
         b       RhpUniversalTransition_DebugStepTailCall
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
