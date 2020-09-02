@@ -14,7 +14,7 @@ static const int card_bundle_byte_shift = 21;
 static const int card_byte_shift = 10;
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-#error Manually managed card bundles are currently only implemented for AMD64.
+#error Manually managed card bundles are currently only implemented for 64 bit hosts.
 #endif
 #endif
 

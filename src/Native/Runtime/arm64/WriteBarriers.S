@@ -110,7 +110,7 @@
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Update the write watch table if necessary
         PREPARE_EXTERNAL_VAR g_write_watch_table, x\trash
-        ldr     x\trash, [x\trash]
+        ldr  x\trash, [x\trash]
         cbz  x\trash, 2f
         add  x\trash, x\trash, \destReg, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
         ldrb w17, [x\trash]
