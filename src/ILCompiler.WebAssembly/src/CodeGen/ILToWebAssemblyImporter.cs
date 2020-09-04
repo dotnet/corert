@@ -4980,7 +4980,15 @@ namespace Internal.IL
                 arguments = new StackEntry[] { new LoadExpressionEntry(StackValueKind.ValueType, "eeType", GetEETypePointerForTypeDesc(runtimeDeterminedArrayType, true), eeTypeDesc), sizeOfArray };
             }
             var helper = GetNewArrayHelperForType(runtimeDeterminedArrayType);
-            PushNonNull(CallRuntime(_compilation.TypeSystemContext, InternalCalls, helper, arguments, runtimeDeterminedArrayType));
+            var res = CallRuntime(_compilation.TypeSystemContext, InternalCalls, helper, arguments, runtimeDeterminedArrayType);
+            int spillIndex = _spilledExpressions.Count;
+            SpilledExpressionEntry spillEntry = new SpilledExpressionEntry(StackValueKind.ObjRef, "newarray" + _currentOffset, runtimeDeterminedArrayType, spillIndex, this);
+            _spilledExpressions.Add(spillEntry);
+            LLVMValueRef addrOfValueType = LoadVarAddress(spillIndex, LocalVarKind.Temp, out TypeDesc unused);
+            var typedAddress = CastIfNecessary(_builder, addrOfValueType, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0));
+            _builder.BuildStore(res.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder), typedAddress);
+
+            PushNonNull(spillEntry);
         }
 
         //TODO: copy of the same method in JitHelper.cs but that is internal
