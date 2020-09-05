@@ -351,9 +351,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 byte[] currentObjectData = Data;
                 var intPtrType = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0);
-                var intType = LLVMTypeRef.Int32;
-
-                var int8PtrType = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
 
                 for (int i = 0; i < countOfPointerSizedElements; i++)
                 {
@@ -368,12 +365,7 @@ namespace ILCompiler.DependencyAnalysis
                     else
                     {
                         int value = BitConverter.ToInt32(currentObjectData, curOffset);
-                        var nullptr = LLVMValueRef.CreateConstPointerNull(int8PtrType);
-                        var dataVal = LLVMValueRef.CreateConstInt(intType, (uint)value, false);
-                        var ptrValAsInt8Ptr = LLVMValueRef.CreateConstGEP(nullptr, new LLVMValueRef[] { dataVal });
-
-                        var ptrValue = LLVMValueRef.CreateConstBitCast(ptrValAsInt8Ptr, intPtrType);
-                        entries.Add(ptrValue);
+                        entries.Add(LLVMValueRef.CreateConstIntToPtr(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)value, false), LLVMTypeRef.CreatePointer(LLVMTypeRef.Int32, 0)));
                     }
                 }
 
