@@ -209,7 +209,68 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
     return pThunksSection;
 }
 
-#else // FEATURE_RX_THUNKS
+// FEATURE_RX_THUNKS
+#elif FEATURE_FIXED_POOL_THUNKS
+
+// This thread local variable is used for delegate marshalling
+DECLSPEC_THREAD intptr_t tls_thunkData;
+
+extern "C" uintptr_t g_pThunkData;
+uintptr_t g_pThunkData = NULL;
+
+#include "gcenv.os.h"
+
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockCount, ());
+COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
+COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ());
+COOP_PINVOKE_HELPER(void*, RhpGetThunkDataBlockAddress, (void* addr));
+COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* addr));
+
+EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+{
+    static int nextThunkDataMapping = 0;
+
+    int thunkBlocksPerMapping = RhpGetNumThunkBlocksPerMapping();
+    int thunkBlockSize = RhpGetThunkBlockSize();
+    int blockCount = RhpGetThunkBlockCount();
+
+    ASSERT(blockCount % thunkBlocksPerMapping == 0)
+
+    int thunkDataMappingSize = thunkBlocksPerMapping * thunkBlockSize;
+    int thunkDataMappingCount = blockCount / thunkBlocksPerMapping;
+
+    if (nextThunkDataMapping == thunkDataMappingCount)
+    {
+        return NULL;
+    }
+
+    if (g_pThunkData == NULL)
+    {
+        int thunkDataSize = thunkDataMappingSize * thunkDataMappingCount;
+
+        g_pThunkData = (uintptr_t)GCToOSInterface::VirtualReserve(thunkDataSize, 4096, VirtualReserveFlags::None);
+
+        if (g_pThunkData == NULL)
+        {
+            return NULL;
+        }
+    }
+
+    void* pThunkDataBlock = (int8_t*)g_pThunkData + nextThunkDataMapping * thunkDataMappingSize;
+    nextThunkDataMapping++;
+
+    if (!GCToOSInterface::VirtualCommit(pThunkDataBlock, thunkDataMappingSize))
+    {
+        return NULL;
+    }
+
+    void* pThunks = RhpGetThunkStubsBlockAddress(pThunkDataBlock);
+    ASSERT(RhpGetThunkDataBlockAddress(pThunks) == pThunkDataBlock);
+
+    return pThunks;
+}
+
+#else // FEATURE_FIXED_POOL_THUNKS
 
 COOP_PINVOKE_HELPER(void*, RhpGetThunksBase, ());
 COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
