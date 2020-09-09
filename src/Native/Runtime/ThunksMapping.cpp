@@ -215,10 +215,9 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
 // This thread local variable is used for delegate marshalling
 DECLSPEC_THREAD intptr_t tls_thunkData;
 
-extern "C" uintptr_t g_pThunkData;
-uintptr_t g_pThunkData = NULL;
-
-#include "gcenv.os.h"
+// This is used by the thunk code to find the stub data for the called thunk slot
+extern "C" uintptr_t g_pThunkStubData;
+uintptr_t g_pThunkStubData = NULL;
 
 COOP_PINVOKE_HELPER(int, RhpGetThunkBlockCount, ());
 COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ());
@@ -244,25 +243,26 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
         return NULL;
     }
 
-    if (g_pThunkData == NULL)
+    if (g_pThunkStubData == NULL)
     {
         int thunkDataSize = thunkDataMappingSize * thunkDataMappingCount;
 
-        g_pThunkData = (uintptr_t)GCToOSInterface::VirtualReserve(thunkDataSize, 4096, VirtualReserveFlags::None);
+        g_pThunkStubData = (uintptr_t)PalVirtualAlloc(NULL, thunkDataSize, MEM_RESERVE, PAGE_READWRITE);
 
-        if (g_pThunkData == NULL)
+        if (g_pThunkStubData == NULL)
         {
             return NULL;
         }
     }
 
-    void* pThunkDataBlock = (int8_t*)g_pThunkData + nextThunkDataMapping * thunkDataMappingSize;
-    nextThunkDataMapping++;
+    void* pThunkDataBlock = (int8_t*)g_pThunkStubData + nextThunkDataMapping * thunkDataMappingSize;
 
-    if (!GCToOSInterface::VirtualCommit(pThunkDataBlock, thunkDataMappingSize))
+    if (PalVirtualAlloc(pThunkDataBlock, thunkDataMappingSize, MEM_COMMIT, PAGE_READWRITE) == NULL)
     {
         return NULL;
     }
+
+    nextThunkDataMapping++;
 
     void* pThunks = RhpGetThunkStubsBlockAddress(pThunkDataBlock);
     ASSERT(RhpGetThunkDataBlockAddress(pThunks) == pThunkDataBlock);
