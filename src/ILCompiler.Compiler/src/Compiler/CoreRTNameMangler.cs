@@ -528,6 +528,12 @@ namespace ILCompiler
                     // Method on an instantiated type
                     utf8MangledName = GetUnqualifiedMangledMethodName(typicalMethodDefinition);
                 }
+                else if (method is CompilerTypeSystemContext.ValueTypeInstanceMethodWithHiddenParameter)
+                {
+                    utf8MangledName = GetUnqualifiedMangledMethodName(
+                        ((CompilerTypeSystemContext.ValueTypeInstanceMethodWithHiddenParameter)method)
+                        .MethodRepresented);
+                }
                 else if (method is IPrefixMangledMethod)
                 {
                     utf8MangledName = GetPrefixMangledMethodName((IPrefixMangledMethod)method);
