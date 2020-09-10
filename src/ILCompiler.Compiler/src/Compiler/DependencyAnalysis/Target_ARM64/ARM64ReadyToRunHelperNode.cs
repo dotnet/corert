@@ -55,8 +55,7 @@ namespace ILCompiler.DependencyAnalysis
                         else
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
-                            encoder.EmitMOV(encoder.TargetRegister.Arg3, encoder.TargetRegister.Result);
-                            encoder.EmitSUB(encoder.TargetRegister.Arg3, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
+                            encoder.EmitSUB(encoder.TargetRegister.Arg3, encoder.TargetRegister.Result, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
                             encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, (short)factory.Target.PointerSize);
                             encoder.EmitCMP(encoder.TargetRegister.Arg2, 1);
                             encoder.EmitRETIfEqual();
@@ -90,7 +89,11 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
-                            // TODO: performance optimization - inline the check verifying whether we need to trigger the cctor
+
+                            encoder.EmitLDR(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg2, (short)factory.Target.PointerSize);
+                            encoder.EmitCMP(encoder.TargetRegister.Arg3, 1);
+                            encoder.EmitJE(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                         }
                     }

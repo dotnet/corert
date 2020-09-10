@@ -18,10 +18,6 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         public TargetRegisterMap TargetRegister;
 
         // Assembly stub creation api. TBD, actually make this general purpose
-        public void EmitMOV(Register regDst, ref AddrMode memory)
-        {
-            throw new NotImplementedException();
-        }
 
         public void EmitMOV(Register regDst, Register regSrc)
         {
@@ -84,21 +80,6 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             }
         }
 
-        public void EmitLEAQ(Register reg, ISymbolNode symbol, int delta = 0)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void EmitLEA(Register reg, ref AddrMode addrMode)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void EmitCMP(ref AddrMode addrMode, sbyte immediate)
-        {
-            throw new NotImplementedException();
-        }
-
         public void EmitCMP(Register reg, sbyte immediate)
         {
             if (immediate >= 0)
@@ -131,6 +112,21 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             }
         }
 
+        public void EmitSUB(Register regDst, Register regSrc, int immediate)
+        {
+            if (immediate >= 0)
+            {
+                Debug.Assert(immediate % 4 == 0);
+
+                Builder.EmitUInt((uint)(0b1_1_0_100010_0_000000000000_00000_00000u | immediate << 10) | ((uint)regSrc << 5) | (uint)regDst);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+
         public void EmitJMP(ISymbolNode symbol)
         {
             if (symbol.RepresentsIndirectionCell)
@@ -149,10 +145,7 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             else
             {
                 Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ARM64_BRANCH26);
-                Builder.EmitByte(0);
-                Builder.EmitByte(0);
-                Builder.EmitByte(0);
-                Builder.EmitByte(0x14);
+                Builder.EmitUInt(0x14000000);
             }
         }
 
@@ -166,11 +159,6 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             Builder.EmitUInt(0b11010100_001_1111111111111111_000_0_0);
         }
 
-        public void EmitJmpToAddrMode(ref AddrMode addrMode)
-        {
-            throw new NotImplementedException();
-        }
-
         public void EmitRET()
         {
             Builder.EmitUInt(0b11010110_0_1_0_11111_00000_0_11110_00000);
@@ -180,6 +168,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         {
             Builder.EmitUInt(0b01010100_0000000000000000010_0_0001u);
             EmitRET();
+        }
+
+        public void EmitJE(ISymbolNode symbol)
+        {
+            uint offset = symbol.RepresentsIndirectionCell ? 6u : 2u;
+
+            Builder.EmitUInt(0b01010100_0000000000000000000_0_0001u | offset << 5);
+                
+            EmitJMP(symbol);
         }
 
         private bool InSignedByteRange(int i)

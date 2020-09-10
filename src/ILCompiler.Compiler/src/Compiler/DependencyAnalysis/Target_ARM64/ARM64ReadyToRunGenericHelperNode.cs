@@ -78,8 +78,7 @@ namespace ILCompiler.DependencyAnalysis
                         else
                         {
                             // We need to trigger the cctor before returning the base. It is stored at the beginning of the non-GC statics region.
-                            encoder.EmitMOV(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0);
-                            encoder.EmitSUB(encoder.TargetRegister.Arg3, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
+                            encoder.EmitSUB(encoder.TargetRegister.Arg3, encoder.TargetRegister.Arg0, NonGCStaticsNode.GetClassConstructorContextStorageSize(factory.Target, target));
                             encoder.EmitLDR(encoder.TargetRegister.Arg2, encoder.TargetRegister.Arg3, (short)factory.Target.PointerSize);
                             encoder.EmitCMP(encoder.TargetRegister.Arg2, 1);
                             encoder.EmitRETIfEqual();

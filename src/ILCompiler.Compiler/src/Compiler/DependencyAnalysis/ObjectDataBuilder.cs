@@ -303,6 +303,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                    Debug.Assert(delta == 0);
                     // Do not vacate space for this kind of relocation, because
                     // the space is embedded in the instruction.
                     break;                    
