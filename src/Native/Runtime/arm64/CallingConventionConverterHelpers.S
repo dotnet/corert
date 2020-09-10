@@ -52,10 +52,10 @@ POINTER_SIZE = 0x08
     // void CallingConventionConverter_GetStubs(IntPtr *returnVoidStub, IntPtr *returnIntegerStub, IntPtr *commonCallingStub)
     //
     LEAF_ENTRY CallingConventionConverter_GetStubs, _TEXT
-        ldr     x12, =CallingConventionConverter_ReturnThunk
+        PREPARE_EXTERNAL_VAR CallingConventionConverter_ReturnThunk, x12
         str     x12, [x0] // ARM doesn't need different return thunks.
         str     x12, [x1]
-        ldr     x12, =__jmpstub__CallingConventionConverter_CommonCallingStub
+        PREPARE_EXTERNAL_VAR __jmpstub__CallingConventionConverter_CommonCallingStub, x12
         str     x12, [x2]
         ret
     LEAF_END CallingConventionConverter_GetStubs, _TEXT
