@@ -365,6 +365,8 @@ internal static class Program
 
         TestDefaultConstructorOf();
 
+        TestStructUnboxOverload();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -2881,6 +2883,30 @@ internal static class Program
         StartTest("Test DefaultConstructorOf");
         var c = Activator.CreateInstance<ClassForNre>();
         EndTest(c != null);
+    }
+
+    internal struct LargeArrayBuilder<T>
+    {
+        private readonly int _maxCapacity;
+
+        public LargeArrayBuilder(bool initialize)
+            : this(maxCapacity: int.MaxValue)
+        {
+        }
+
+        public LargeArrayBuilder(int maxCapacity)
+            : this()
+        {
+            _maxCapacity = maxCapacity;
+        }
+    }
+
+    static void TestStructUnboxOverload()
+    {
+        StartTest("Test DefaultConstructorOf");
+        var s = new LargeArrayBuilder<string>(true);
+        var s2 = new LargeArrayBuilder<string>(1);
+        EndTest(true); // testing compilation 
     }
 
     static ushort ReadUInt16()
