@@ -1342,3 +1342,169 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
+
+#if defined (HOST_ARM64)
+
+#if HAVE_AUXV_HWCAP_H
+#include <sys/auxv.h>
+#include <asm/hwcap.h>
+#endif
+
+// Based on PAL_GetJitCpuCapabilityFlags from CoreCLR (jitsupport.cpp)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
+{
+    *flags = 0;
+
+#if HAVE_AUXV_HWCAP_H
+    unsigned long hwCap = getauxval(AT_HWCAP);
+
+    // HWCAP_* flags are introduced by ARM into the Linux kernel as new extensions are published.
+    // For a given kernel, some of these flags may not be present yet.
+    // Use ifdef for each to allow for compilation with any vintage kernel.
+    // From a single binary distribution perspective, compiling with latest kernel asm/hwcap.h should
+    // include all published flags.  Given flags are merged to kernel and published before silicon is
+    // available, using the latest kernel for release should be sufficient.
+    *flags |= ARM64IntrinsicConstants_ArmBase;
+    *flags |= ARM64IntrinsicConstants_ArmBase_Arm64;
+
+#ifdef HWCAP_AES
+    if (hwCap & HWCAP_AES)
+        *flags |= ARM64IntrinsicConstants_Aes;
+#endif
+#ifdef HWCAP_ATOMICS
+    if (hwCap & HWCAP_ATOMICS)
+        *flags |= ARM64IntrinsicConstants_Atomics;
+#endif
+#ifdef HWCAP_CRC32
+    if (hwCap & HWCAP_CRC32)
+        *flags |= ARM64IntrinsicConstants_Crc32;
+#endif
+#ifdef HWCAP_DCPOP
+//    if (hwCap & HWCAP_DCPOP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_ASIMDDP
+//    if (hwCap & HWCAP_ASIMDDP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_FCMA
+//    if (hwCap & HWCAP_FCMA)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_FP
+//    if (hwCap & HWCAP_FP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_FPHP
+//    if (hwCap & HWCAP_FPHP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_JSCVT
+//    if (hwCap & HWCAP_JSCVT)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_LRCPC
+//    if (hwCap & HWCAP_LRCPC)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_PMULL
+//    if (hwCap & HWCAP_PMULL)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_SHA1
+    if (hwCap & HWCAP_SHA1)
+        *flags |= ARM64IntrinsicConstants_Sha1;
+#endif
+#ifdef HWCAP_SHA2
+    if (hwCap & HWCAP_SHA2)
+        *flags |= ARM64IntrinsicConstants_Sha256;
+#endif
+#ifdef HWCAP_SHA512
+//    if (hwCap & HWCAP_SHA512)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_SHA3
+//    if (hwCap & HWCAP_SHA3)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_ASIMD
+    if (hwCap & HWCAP_ASIMD)
+    {
+        *flags |= ARM64IntrinsicConstants_AdvSimd;
+        *flags |= ARM64IntrinsicConstants_AdvSimd_Arm64;
+    }
+#endif
+#ifdef HWCAP_ASIMDRDM
+//    if (hwCap & HWCAP_ASIMDRDM)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_ASIMDHP
+//    if (hwCap & HWCAP_ASIMDHP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_SM3
+//    if (hwCap & HWCAP_SM3)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_SM4
+//    if (hwCap & HWCAP_SM4)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_SVE
+//    if (hwCap & HWCAP_SVE)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+
+#ifdef AT_HWCAP2
+    unsigned long hwCap2 = getauxval(AT_HWCAP2);
+
+#ifdef HWCAP2_DCPODP
+//    if (hwCap2 & HWCAP2_DCPODP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVE2
+//    if (hwCap2 & HWCAP2_SVE2)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVEAES
+//    if (hwCap2 & HWCAP2_SVEAES)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVEPMULL
+//    if (hwCap2 & HWCAP2_SVEPMULL)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVEBITPERM
+//    if (hwCap2 & HWCAP2_SVEBITPERM)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVESHA3
+//    if (hwCap2 & HWCAP2_SVESHA3)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVESM4
+//    if (hwCap2 & HWCAP2_SVESM4)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_FLAGM2
+//    if (hwCap2 & HWCAP2_FLAGM2)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_FRINT
+//    if (hwCap2 & HWCAP2_FRINT)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+
+#endif // AT_HWCAP2
+
+#else // !HAVE_AUXV_HWCAP_H
+    // Every ARM64 CPU should support SIMD and FP
+    // If the OS have no function to query for CPU capabilities we set just these
+
+    *flags |= ARM64IntrinsicConstants_ArmBase;
+    *flags |= ARM64IntrinsicConstants_ArmBase_Arm64;
+    *flags |= ARM64IntrinsicConstants_AdvSimd;
+    *flags |= ARM64IntrinsicConstants_AdvSimd_Arm64;
+#endif // HAVE_AUXV_HWCAP_H
+}
+#endif
