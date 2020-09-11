@@ -853,8 +853,6 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalIsAvxEnabled();
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 
 #if defined(HOST_ARM64)
-// Should match the constants defined in the compiler in HardwareIntrinsicHelpers.Aot.cs
-enum ARM64IntrinsicConstants
 {
     ARM64IntrinsicConstants_ArmBase = 0x0001, 
     ARM64IntrinsicConstants_ArmBase_Arm64 = 0x0002,
