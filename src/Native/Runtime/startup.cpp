@@ -156,27 +156,6 @@ static void CheckForPalFallback()
 
 #ifndef USE_PORTABLE_HELPERS
 
-#if defined(HOST_X86) || defined(HOST_AMD64)
-// Should match the constants defined in the compiler in HardwareIntrinsicHelpers.Aot.cs
-enum XArchIntrinsicConstants
-{
-    XArchIntrinsicConstants_Aes = 0x0001,
-    XArchIntrinsicConstants_Pclmulqdq = 0x0002,
-    XArchIntrinsicConstants_Sse3 = 0x0004,
-    XArchIntrinsicConstants_Ssse3 = 0x0008,
-    XArchIntrinsicConstants_Sse41 = 0x0010,
-    XArchIntrinsicConstants_Sse42 = 0x0020,
-    XArchIntrinsicConstants_Popcnt = 0x0040,
-    XArchIntrinsicConstants_Avx = 0x0080,
-    XArchIntrinsicConstants_Fma = 0x0100,
-    XArchIntrinsicConstants_Avx2 = 0x0200,
-    XArchIntrinsicConstants_Bmi1 = 0x0400,
-    XArchIntrinsicConstants_Bmi2 = 0x0800,
-    XArchIntrinsicConstants_Lzcnt = 0x1000,
-};
-
-#endif
-
 bool DetectCPUFeatures()
 {
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
