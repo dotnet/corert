@@ -239,6 +239,7 @@
     <Compile Include="System\Delegate.DefaultParameters.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.CoreRT.cs" />
+    <Compile Include="System\Exception.CoreRT.Wasm.cs" Condition="'$(Platform)'=='wasm'"/>
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\EETypePtr.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
