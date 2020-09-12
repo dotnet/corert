@@ -20,6 +20,8 @@
 #define THUNK_SIZE  12
 #elif TARGET_ARM
 #define THUNK_SIZE  20
+#elif TARGET_ARM64
+#define THUNK_SIZE  16
 #else
 #define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause RhpGetNumThunksPerBlock to return 0
 #endif
@@ -102,7 +104,9 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
 
     // Note: On secure linux systems, we can't add execute permissions to a mapped virtual memory if it was not created 
     // with execute permissions in the first place. This is why we create the virtual section with RX permissions, then
-    // reduce it to RW for the data section and RX for the stubs section after generating the stubs instructions.
+    // reduce it to RW for the data section. For the stubs section we need to increase to RWX to generate the stubs
+    // instructions. After this we go back to RX for the stubs section before the stubs are used and should not be
+    // changed anymore.
     void * pNewMapping = PalVirtualAlloc(NULL, THUNKS_MAP_SIZE * 2, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
         return NULL;
@@ -192,6 +196,25 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
             *((UInt16*)pCurrentThunkAddress) = 0xbf00;
             pCurrentThunkAddress += 2;
 
+#elif TARGET_ARM64
+
+            //adr      xip0, <delta PC to thunk data address>
+            //ldr      xip1, [xip0, <delta to get to last qword in data page>]
+            //br       xip1
+            //brk      0xf000 //Stubs need to be 16 byte aligned therefore we fill with a break here
+
+            int delta = pCurrentDataAddress - pCurrentThunkAddress;
+            *((UInt32*)pCurrentThunkAddress) = 0x10000010 | (((delta & 0x03) << 29) | (((delta & 0x1FFFFC) >> 2) << 5));
+            pCurrentThunkAddress += 4;
+
+            *((UInt32*)pCurrentThunkAddress) = 0xF9400211 | (((OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2)) / 8) << 10);
+            pCurrentThunkAddress += 4;
+
+            *((UInt32*)pCurrentThunkAddress) = 0xD61F0220;
+            pCurrentThunkAddress += 4;
+
+            *((UInt32*)pCurrentThunkAddress) = 0xD43E0000;
+            pCurrentThunkAddress += 4;
 #else
             UNREFERENCED_PARAMETER(pCurrentDataAddress);
             UNREFERENCED_PARAMETER(pCurrentThunkAddress);
