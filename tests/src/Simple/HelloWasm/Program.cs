@@ -6,6 +6,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
+using System.Collections;
 using System.Reflection;
 using System.Diagnostics;
 
@@ -366,6 +367,8 @@ internal static class Program
         TestDefaultConstructorOf();
 
         TestStructUnboxOverload();
+
+        TestGetSystemArrayEEType();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -2906,6 +2909,16 @@ internal static class Program
         StartTest("Test DefaultConstructorOf");
         var s = new LargeArrayBuilder<string>(true);
         var s2 = new LargeArrayBuilder<string>(1);
+        EndTest(true); // testing compilation 
+    }
+
+    static void TestGetSystemArrayEEType()
+    {
+        StartTest("Test can call GetSystemArrayEEType through CalliIntrinsic");
+        IList e = new string[] { "1" };
+        foreach (string s in e)
+        {
+        }
         EndTest(true); // testing compilation 
     }
 
