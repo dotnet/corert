@@ -199,7 +199,7 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
 #elif TARGET_ARM64
 
             //adr      xip0, <delta PC to thunk data address>
-            //ldr      xip1, [xip0, <delta to get to last dword in data page>]
+            //ldr      xip1, [xip0, <delta to get to last qword in data page>]
             //br       xip1
             //brk      0xf000 //Stubs need to be 16 byte aligned therefore we fill with a break here
 
