@@ -497,7 +497,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
 
 #if defined(HOST_ARM64)
 
-#include "PalARM64IntrinsicConstants.h"
+#include "IntrinsicConstants.h"
 
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 {
