@@ -13,11 +13,15 @@ namespace Internal.Runtime
     {
         internal EEType* GetArrayEEType()
         {
+#if INPLACE_RUNTIME
+            return EETypePtr.EETypePtrOf<Array>().ToPointer();
+#else
             fixed (EEType* pThis = &this)
             {
                 IntPtr pGetArrayEEType = (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType(new IntPtr(pThis), ClassLibFunctionId.GetSystemArrayEEType);
                 return (EEType*)CalliIntrinsics.Call<IntPtr>(pGetArrayEEType);
             }
+#endif
         }
 
         internal Exception GetClasslibException(ExceptionIDs id)
