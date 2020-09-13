@@ -316,9 +316,10 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (EEType * pArrayEEType, int numE
     }
     UInt8* result = acontext->alloc_ptr;
     int requiresAlignObject = ((uint32_t)result) & 7;
-    if (requiresAlignObject) size += 12;
+    size_t paddedSize = size;
+    if (requiresAlignObject) paddedSize += 12;
 
-    UInt8* advance = result + size;
+    UInt8* advance = result + paddedSize;
     if (advance <= acontext->alloc_limit)
     {
         acontext->alloc_ptr = advance;
