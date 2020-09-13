@@ -370,6 +370,8 @@ internal static class Program
 
         TestGetSystemArrayEEType();
 
+        TestBoolCompare();
+
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
         System.Diagnostics.Debugger.Break();
@@ -2920,6 +2922,14 @@ internal static class Program
         {
         }
         EndTest(true); // testing compilation 
+    }
+
+    static void TestBoolCompare()
+    {
+        StartTest("Test Bool.Equals");
+        bool expected = true;
+        bool actual = true;
+        EndTest(expected.Equals(actual));
     }
 
     static ushort ReadUInt16()
