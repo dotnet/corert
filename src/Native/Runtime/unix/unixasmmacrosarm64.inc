@@ -172,13 +172,96 @@ C_FUNC(\Name):
     add	\target, \target, #:tprel_lo12_nc:\var
 .endm
 
-
-.macro PREPARE_INLINE_GETTHREAD
-.global tls_CurrentThread 
-.endm
-
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR \target, tls_CurrentThread
+.endm
+
+.macro GETTHREAD_ETLS_1
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-32           // ;; Push down stack pointer and store FP and LR
+    str         x0,  [sp, #0x10]
+
+    bl RhpGetThread
+    mov x1, x0
+
+    ldr         x0,  [sp, #0x10]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #32
+.endm
+
+.macro GETTHREAD_ETLS_2
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-32           // ;; Push down stack pointer and store FP and LR
+    stp         x0, x1, [sp, #0x10]
+
+    bl RhpGetThread
+    mov x2, x0
+
+    ldp         x0, x1, [sp, #0x10]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #32
+.endm
+
+.macro GETTHREAD_ETLS_3
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-48           // ;; Push down stack pointer and store FP and LR
+    stp         x0, x1, [sp, #0x10]
+    str         x2,  [sp, #0x20]
+
+    bl RhpGetThread
+    mov x3, x0
+
+    ldp         x0, x1, [sp, #0x10]
+    ldr         x2,  [sp, #0x20]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #48
+.endm
+
+.macro GETTHREAD_ETLS_5
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-64           // ;; Push down stack pointer and store FP and LR
+    stp         x0, x1, [sp, #0x10]
+    stp         x2, x3, [sp, #0x20]
+    str         x4,  [sp, #0x30]
+
+    bl RhpGetThread
+    mov x5, x0
+
+    ldp         x0, x1, [sp, #0x10]
+    ldp         x2, x3, [sp, #0x20]
+    ldr         x4,  [sp, #0x30]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #64
+.endm
+
+.macro GETTHREAD_ETLS_10
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-96           // ;; Push down stack pointer and store FP and LR
+    stp         x0, x1, [sp, #0x10]
+    stp         x2, x3, [sp, #0x20]
+    stp         x4, x5, [sp, #0x30]
+    stp         x6, x7, [sp, #0x40]
+    stp         x8, x9, [sp, #0x50]
+
+    bl RhpGetThread
+    mov x10, x0
+
+    ldp         x0, x1, [sp, #0x10]
+    ldp         x2, x3, [sp, #0x20]
+    ldp         x4, x5, [sp, #0x30]
+    ldp         x6, x7, [sp, #0x40]
+    ldp         x8, x9, [sp, #0x50]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #96
+.endm
+
+.macro GETTHUNKDATA_ETLS_9
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-96           // ;; Push down stack pointer and store FP and LR
+    stp         x0, x1, [sp, #0x10]
+    stp         x2, x3, [sp, #0x20]
+    stp         x4, x5, [sp, #0x30]
+    stp         x6, x7, [sp, #0x40]
+    stp         x8, xip0, [sp, #0x50]
+
+    bl RhpGetThunkData
+    mov x9, x0
+
+    ldp         x0, x1, [sp, #0x10]
+    ldp         x2, x3, [sp, #0x20]
+    ldp         x4, x5, [sp, #0x30]
+    ldp         x6, x7, [sp, #0x40]
+    ldp         x8, xip0, [sp, #0x50]
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #96
 .endm
 
 .macro  ArmInterlockedOperationBarrier

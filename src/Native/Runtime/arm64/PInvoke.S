@@ -153,7 +153,12 @@ NoAbort:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     LEAF_ENTRY RhpReversePInvoke, _TEXT
 
-        INLINE_GETTHREAD x10    // x10 = Thread
+#ifdef FEATURE_EMULATED_TLS
+        GETTHREAD_ETLS_10
+#else
+        INLINE_GETTHREAD x10
+#endif
+
         str         x10, [x9, #8]    // save Thread pointer for RhpReversePInvokeReturn
 
         // x9 = reverse pinvoke frame
@@ -287,8 +292,13 @@ NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         str     x9, [x0, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
 
         // get TLS global variable address
-        // r0 = GetThread()
+
+#ifdef FEATURE_EMULATED_TLS
+        GETTHREAD_ETLS_10
+#else
         INLINE_GETTHREAD x10
+#endif
+
         str     x10, [x0, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
         str     x0, [x10, #OFFSETOF__Thread__m_pTransitionFrame]
 

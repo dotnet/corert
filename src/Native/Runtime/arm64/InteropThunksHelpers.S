@@ -21,7 +21,11 @@ POINTER_SIZE = 0x08
         // Custom calling convention:
         //      xip0 pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
 
+#ifdef FEATURE_EMULATED_TLS
+        GETTHUNKDATA_ETLS_9
+#else
         INLINE_GET_TLS_VAR x9, tls_thunkData
+#endif
        
         // x9  = base address of TLS data
         // xip0 = address of context cell in thunk's data
@@ -45,6 +49,7 @@ POINTER_SIZE = 0x08
     LEAF_END RhGetCommonStubAddress, _TEXT
 
 
+#ifndef FEATURE_EMULATED_TLS
     //
     // IntPtr RhGetCurrentThunkContext()
     //
@@ -57,3 +62,4 @@ POINTER_SIZE = 0x08
         ret
 
     LEAF_END RhGetCurrentThunkContext, _TEXT
+#endif //FEATURE_EMULATED_TLS
