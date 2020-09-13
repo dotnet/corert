@@ -234,10 +234,6 @@ EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
 
 // FEATURE_RX_THUNKS
 #elif FEATURE_FIXED_POOL_THUNKS
-
-// This thread local variable is used for delegate marshalling
-DECLSPEC_THREAD intptr_t tls_thunkData;
-
 // This is used by the thunk code to find the stub data for the called thunk slot
 extern "C" uintptr_t g_pThunkStubData;
 uintptr_t g_pThunkStubData = NULL;
