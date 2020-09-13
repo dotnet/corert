@@ -4054,6 +4054,7 @@ namespace Internal.IL
             if (enumCleanTargetType != null && targetType.IsPrimitive)
             {
                 if (enumCleanTargetType.IsWellKnownType(WellKnownType.Byte) ||
+                    enumCleanTargetType.IsWellKnownType(WellKnownType.Boolean) ||
                     enumCleanTargetType.IsWellKnownType(WellKnownType.Char) ||
                     enumCleanTargetType.IsWellKnownType(WellKnownType.UInt16) ||
                     enumCleanTargetType.IsWellKnownType(WellKnownType.UInt32) ||
@@ -4145,7 +4146,7 @@ namespace Internal.IL
                 }
             }
 
-            PushExpression(StackValueKind.Int32, "cmpop", result, GetWellKnownType(WellKnownType.SByte));
+            PushExpression(StackValueKind.Int32, "cmpop", result, GetWellKnownType(WellKnownType.UInt32));
         }
 
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
