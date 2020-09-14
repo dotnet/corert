@@ -2174,6 +2174,8 @@ inline const char *Registers_arm64::getRegisterName(int regNum) {
   }
 }
 
+inline void Registers_arm64::jumpto() {}
+
 inline bool Registers_arm64::validFloatRegister(int regNum) const {
   if (regNum < UNW_ARM64_D0)
     return false;
