@@ -413,6 +413,18 @@ EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     0,                                  // all other fields are initialized by zeroes
 };
 
+#ifdef FEATURE_EMULATED_TLS
+
+// When there is no full TLS support it might be emulated by the compiler
+// In this case we need a C function that allows the assembler code to ask for the correct value for the current thread
+
+EXTERN_C ThreadBuffer* RhpGetThread()
+{
+    return &tls_CurrentThread;
+}
+
+#endif // FEATURE_EMULATED_TLS
+
 #endif // !DACCESS_COMPILE
 
 #ifdef _WIN32
