@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Reflection;
 using System.Diagnostics;
+using System.Collections.Specialized;
 
 #if TARGET_WINDOWS
 using CpObj;
@@ -449,39 +450,43 @@ internal static class Program
     }
 
     class F4 { internal int i; }
-    class F2Plus4 { internal short s; internal int i; }
     class F8 { internal long l; }
     class F2Plus8 { internal short s; internal long l; }
+    class CDisp : IDisposable  { public void Dispose() { } }
+    struct StructF48 { internal int i1; internal long l2; }
     private static bool TestCreateDifferentObjects()
     {
-        var mr = new MiniRandom(57);
+        var mr = new MiniRandom(257);
         var keptObjects = new object[100];
-        for (var i = 0; i < 10000; i++)
+        for (var i = 0; i < 1000000; i++)
         {
             var r = mr.Next();
             object o;
-            switch (r % 7)
+            switch (r % 8)
             {
                 case 0:
                     o = new F4 { i = 1, };
                     break;
                 case 1:
-                    o = new F2Plus4 { i = 2, s = 3 };
-                    break;
-                case 2:
                     o = new F8 { l = 4 };
                     break;
-                case 3:
+                case 2:
                     o = new F2Plus8 { l = 5, s = 6 };
                     break;
-                case 4:
+                case 3:
                     o = i.ToString();
                     break;
-                case 5:
+                case 4:
                     o = new long[10000];
                     break;
-                case 6:
+                case 5:
                     o = new int[10000];
+                    break;
+                case 6:
+                    o = new StructF48 { i1 = 7, l2 = 8 };
+                    break;
+                case 7:
+                    o = new CDisp();
                     break;
                 default:
                     o = null;

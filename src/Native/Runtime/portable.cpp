@@ -207,8 +207,9 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (EEType* pEEType))
     UInt8* result = acontext->alloc_ptr;
 
     int requiresPadding = ((uint32_t)result) & 7;
-    if (requiresPadding) size += 12;
-    UInt8* advance = result + size;
+    size_t paddedSize = size;
+    if (requiresPadding) paddedSize += 12;
+    UInt8* advance = result + paddedSize;
     if (advance <= acontext->alloc_limit)
     {
         acontext->alloc_ptr = advance;
@@ -247,8 +248,9 @@ COOP_PINVOKE_HELPER(Object*, RhpNewFastMisalign, (EEType* pEEType))
     UInt8* result = acontext->alloc_ptr;
 
     int requiresPadding = (((uint32_t)result) & 7) != 4;
-    if (requiresPadding) size += 12;
-    UInt8* advance = result + size;
+    size_t paddedSize = size;
+    if (requiresPadding) paddedSize += 12;
+    UInt8* advance = result + paddedSize;
     if (advance <= acontext->alloc_limit)
     {
         acontext->alloc_ptr = advance;
