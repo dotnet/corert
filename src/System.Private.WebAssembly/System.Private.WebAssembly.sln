@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30413.136
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreRT.WebAssembly.MonoBridge", "CoreRT.WebAssembly.MonoBridge.csproj", "{A47FF380-20A6-4A59-8B92-E8C9E73B13D2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.WebAssembly", "System.Private.WebAssembly.csproj", "{A47FF380-20A6-4A59-8B92-E8C9E73B13D2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

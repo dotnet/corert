@@ -1874,12 +1874,12 @@ namespace Internal.IL
             {
                 var metadataType = callee.OwningType as MetadataType;
                 // See https://github.com/dotnet/runtime/blob/9ba9a300a08170c8170ea52981810f41fad68cf0/src/mono/wasm/runtime/driver.c#L400-L407
-                // Mono have these InternalCall methods in different namespaces but just mapping them to CoreRT.WebAssembly.MonoBridge.
+                // Mono have these InternalCall methods in different namespaces but just mapping them to System.Private.WebAssembly.
                 if (metadataType != null && (metadataType.Namespace == "WebAssembly.JSInterop" && metadataType.Name == "InternalCalls" || metadataType.Namespace == "WebAssembly" && metadataType.Name == "Runtime"))
                 {
                     var coreRtJsInternalCallsType = _compilation.TypeSystemContext
-                        .GetModuleForSimpleName("CoreRT.WebAssembly.MonoBridge")
-                        .GetKnownType("CoreRT.WebAssembly.MonoBridge", "InternalCalls");
+                        .GetModuleForSimpleName("System.Private.WebAssembly")
+                        .GetKnownType("System.Private.WebAssembly", "InternalCalls");
                     callee = coreRtJsInternalCallsType.GetMethod(callee.Name, callee.Signature);
                 }
             }

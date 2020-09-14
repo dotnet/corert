@@ -3,7 +3,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace CoreRT.WebAssembly.MonoBridge
+namespace System.Private.WebAssembly
 {
     // Provides end points for the hard coded mappings in ILToWebAssemblyImporter.cs that provide a drop in replacement for mono InternalCall methods.  There are 4 :
     // https://github.com/dotnet/runtime/blob/9ba9a300a08170c8170ea52981810f41fad68cf0/src/mono/wasm/runtime/driver.c#L400-L407
@@ -27,7 +27,7 @@ namespace CoreRT.WebAssembly.MonoBridge
         public static IntPtr InvokeJSUnmarshalled(out string exception, string js, IntPtr p1, IntPtr p2, IntPtr p3)
         {
             // convention : if the methodId is known, then js is null and p1 is the method id
-            return CoreRT.WebAssembly.MonoBridge.InternalCalls.InvokeJSUnmarshalledInternal(js, js?.Length ?? 0, p1, p2, p3, out exception);
+            return System.Private.WebAssembly.InternalCalls.InvokeJSUnmarshalledInternal(js, js?.Length ?? 0, p1, p2, p3, out exception);
         }
 
         //TODO:
