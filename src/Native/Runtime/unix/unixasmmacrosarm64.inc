@@ -21,16 +21,19 @@ C_FUNC(\Name):
 
 .macro ALTERNATE_ENTRY Name
         .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
 C_FUNC(\Name):
 .endm
 
 .macro LABELED_RETURN_ADDRESS Name
         .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
 C_FUNC(\Name):
 .endm
 
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
         .type \Name, %function
 C_FUNC(\Name):
         .cfi_startproc
@@ -271,8 +274,9 @@ C_FUNC(\Name):
         .data
         .align      8
 C_FUNC(\Name):
-        .word       1b
+        .quad       1b
         .global     C_FUNC(\Name)
+        .hidden     C_FUNC(\Name)
         .text
 .endm
 
