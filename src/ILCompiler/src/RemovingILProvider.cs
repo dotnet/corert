@@ -185,7 +185,7 @@ namespace ILCompiler
                     }
 
                     // Make sure that there are no ICU dependencies left
-                    if (method.IsPInvoke && method.GetPInvokeMethodMetadata().Module == "System.Globalization.Native")
+                    if (method.IsPInvoke && method.GetPInvokeMethodMetadata().Module == "libSystem.Globalization.Native")
                     {
                         return RemoveAction.ConvertToThrow;
                     }
