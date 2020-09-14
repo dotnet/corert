@@ -490,12 +490,10 @@ COOP_PINVOKE_HELPER(Int64, RhpLockCmpXchg64, (Int64 * location, Int64 value, Int
 
 #endif // USE_PORTABLE_HELPERS
 
-#if !defined(HOST_ARM64)
 COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
 {
     PalMemoryBarrier();
 }
-#endif
 
 #if defined(USE_PORTABLE_HELPERS)
 EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
