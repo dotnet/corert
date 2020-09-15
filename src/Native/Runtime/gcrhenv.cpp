@@ -1169,6 +1169,10 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 #endif // FEATURE_EVENT_TRACE
 }
 
+#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && (!defined(TARGET_ARM64) || !defined(TARGET_UNIX))
+#error FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is only implemented for ARM64 and UNIX
+#endif
+
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
     // CoreRT doesn't patch the write barrier like CoreCLR does, but it
@@ -1197,6 +1201,14 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(args->card_bundle_table != nullptr);
         g_card_bundle_table = args->card_bundle_table;
 #endif
+
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        if (g_sw_ww_enabled_for_gc_heap && (args->write_watch_table != nullptr))
+        {
+            assert(args->is_runtime_suspended);
+            g_write_watch_table = args->write_watch_table;
+        }
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
         // IMPORTANT: managed heap segments may surround unmanaged/stack segments. In such cases adding another managed 
         //     heap segment may put a stack/unmanaged write inside the new heap range. However the old card table would 
@@ -1251,14 +1263,35 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_card_bundle_table = args->card_bundle_table;
 #endif
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        assert(g_write_watch_table == nullptr);
+        g_write_watch_table = args->write_watch_table;
+#endif
+
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
         g_ephemeral_low = args->ephemeral_low;
         g_ephemeral_high = args->ephemeral_high;
         return;
     case WriteBarrierOp::SwitchToWriteWatch:
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
+        assert(args->write_watch_table != nullptr);
+        g_write_watch_table = args->write_watch_table;
+        g_sw_ww_enabled_for_gc_heap = true;
+#else
+        assert(!"should never be called without FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP");
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        break;
+
     case WriteBarrierOp::SwitchToNonWriteWatch:
-        assert(!"CoreRT does not have an implementation of non-OS WriteWatch");
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        assert(args->is_runtime_suspended && "the runtime must be suspended here!");
+        g_write_watch_table = nullptr;
+        g_sw_ww_enabled_for_gc_heap = false;
+#else
+        assert(!"should never be called without FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP");
+#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         return;
     default:
         assert(!"Unknokwn WriteBarrierOp enum");
