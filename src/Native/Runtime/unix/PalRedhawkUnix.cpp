@@ -648,8 +648,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
         }
     }
 
-
-
     return st == 0;
 }
 
