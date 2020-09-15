@@ -618,21 +618,9 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
 
-    static const int NormalPriority = 0;
-    static const int HighestPriority = -20;
-
     // TODO: Figure out which scheduler to use, the default one doesn't seem to
     // support per thread priorities.
-#if 0
-    sched_param params;
-    memset(&params, 0, sizeof(params));
 
-    params.sched_priority = highPriority ? HighestPriority : NormalPriority;
-
-    // Set the priority of the thread
-    st = pthread_attr_setschedparam(&attrs, &params);
-    ASSERT(st == 0);
-#endif
     // Create the thread as detached, that means not joinable
     st = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
     ASSERT(st == 0);
@@ -642,6 +630,28 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
 
     int st2 = pthread_attr_destroy(&attrs);
     ASSERT(st2 == 0);
+
+    if (highPriority && st == 0)
+    {
+        int policy = SCHED_RR;
+        int maxPriority = sched_get_priority_max(policy);
+
+        if (maxPriority > 0)
+        {
+            maxPriority = maxPriority * 9 / 10;
+
+            sched_param params;
+            memset(&params, 0, sizeof(sched_param));
+
+            params.sched_priority = maxPriority;
+
+            // This can fail if the process has not enough privileges to change the scheduler.
+            // But there is nothing we can do so no error check is needed.
+            pthread_setschedparam(threadId, policy, &params);
+        }
+    }
+
+
 
     return st == 0;
 }

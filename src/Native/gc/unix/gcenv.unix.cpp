@@ -1033,8 +1033,38 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 //  true if the priority boost was successful, false otherwise.
 bool GCToOSInterface::BoostThreadPriority()
 {
-    // [LOCALGC TODO] Thread priority for unix
-    return false;
+    pthread_t thread = pthread_self();
+
+    int policy;
+    sched_param param;
+
+    if (pthread_getschedparam(thread, &policy, &param) != 0)
+    {
+        return false;
+    }
+
+    int max = sched_get_priority_max(policy);
+
+    if (max <= 0)
+    {
+        policy = SCHED_RR;
+
+        max = sched_get_priority_max(policy);
+
+        if (max <= 0)
+        {
+            return  false;
+        }
+    }
+
+    max = max * 9 / 10;
+
+    if (param.sched_priority >= max)
+    {
+        return false;
+    }
+
+    return (pthread_setschedparam(thread, policy, &param) == 0);
 }
 
 // Set the set of processors enabled for GC threads for the current process based on config specified affinity mask and set
