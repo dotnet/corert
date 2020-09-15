@@ -618,9 +618,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
 
-    // TODO: Figure out which scheduler to use, the default one doesn't seem to
-    // support per thread priorities.
-
     // Create the thread as detached, that means not joinable
     st = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
     ASSERT(st == 0);
