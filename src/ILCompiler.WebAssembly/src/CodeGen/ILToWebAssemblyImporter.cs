@@ -1869,6 +1869,21 @@ namespace Internal.IL
                 }
             }
 
+            // Hard coded InternalCall mappings for mono interoperability
+            if (callee.IsInternalCall)
+            {
+                var metadataType = callee.OwningType as MetadataType;
+                // See https://github.com/dotnet/runtime/blob/9ba9a300a08170c8170ea52981810f41fad68cf0/src/mono/wasm/runtime/driver.c#L400-L407
+                // Mono have these InternalCall methods in different namespaces but just mapping them to System.Private.WebAssembly.
+                if (metadataType != null && (metadataType.Namespace == "WebAssembly.JSInterop" && metadataType.Name == "InternalCalls" || metadataType.Namespace == "WebAssembly" && metadataType.Name == "Runtime"))
+                {
+                    var coreRtJsInternalCallsType = _compilation.TypeSystemContext
+                        .GetModuleForSimpleName("System.Private.WebAssembly")
+                        .GetKnownType("System.Private.WebAssembly", "InternalCalls");
+                    callee = coreRtJsInternalCallsType.GetMethod(callee.Name, callee.Signature);
+                }
+            }
+
             if (callee.IsRawPInvoke() || (callee.IsInternalCall && callee.HasCustomAttribute("System.Runtime", "RuntimeImportAttribute")))
             {
                 ImportRawPInvoke(callee);
