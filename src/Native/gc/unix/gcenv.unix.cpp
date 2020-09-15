@@ -1064,6 +1064,8 @@ bool GCToOSInterface::BoostThreadPriority()
         return false;
     }
 
+    param.sched_priority = max;
+
     return (pthread_setschedparam(thread, policy, &param) == 0);
 }
 
