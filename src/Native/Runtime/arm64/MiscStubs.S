@@ -76,7 +76,7 @@ RhpCheckCctor__SlowPath:
     NESTED_ENTRY RhpCheckCctor2__SlowPath, _TEXT, NoHandler
 
         // Need to preserve x0, x1 and lr across helper call. fp is also pushed to keep the stack 16 byte aligned.
-        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, #-0x20
+        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -0x20
         stp     x0, x1, [sp, #0x10]
 
         // Call a C++ helper to retrieve the address of the classlib callback. The caller's return address is
@@ -91,7 +91,7 @@ RhpCheckCctor__SlowPath:
         // frames).
         mov     x12, x0
         ldp     x0, x1, [sp, #0x10]
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #0x20
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 0x20
         // tail-call the class lib cctor check function. This function is required to return its first
         // argument, so that x0 can be preserved.
         br x12

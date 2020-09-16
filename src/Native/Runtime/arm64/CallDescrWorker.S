@@ -14,8 +14,8 @@
 //void RhCallDescrWorker(CallDescrData * pCallDescrData);
     NESTED_ENTRY RhCallDescrWorker, _TEXT, NoHandler
 
-        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-32
-        PROLOG_SAVE_REG_PAIR   x19, x20, #16
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32
+        PROLOG_SAVE_REG_PAIR   x19, x20, 16
 
         // Save the value of SP before we start pushing any arguments
         mov     x20, sp
@@ -133,8 +133,8 @@ LReturnDone:
         // Restore the value of SP
         mov     sp, x20
 
-        EPILOG_RESTORE_REG_PAIR x19, x20, #16
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #32
+        EPILOG_RESTORE_REG_PAIR x19, x20, 16
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
         EPILOG_RETURN
 
     NESTED_END RhCallDescrWorker
