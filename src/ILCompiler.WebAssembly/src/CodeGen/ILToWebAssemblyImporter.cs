@@ -2894,7 +2894,7 @@ namespace Internal.IL
             var destStruct = GetLLVMTypeForTypeDesc(actualReturnType).Undef;
             for (uint elemNo = 0; elemNo < llvmReturn.TypeOf.StructElementTypesCount; elemNo++)
             {
-                var elemValRef = _builder.BuildExtractValue(llvmReturn, 0, "ex" + elemNo);
+                var elemValRef = _builder.BuildExtractValue(llvmReturn, elemNo, "ex" + elemNo);
                 destStruct = _builder.BuildInsertValue(destStruct, elemValRef, elemNo, "st" + elemNo);
             }
             return new ExpressionEntry(stackValueKind, calleeName, destStruct, actualReturnType);

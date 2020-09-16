@@ -1367,7 +1367,7 @@ internal static class Program
         var values = new string[1];
         // testing that the generic return value type from the function can be stored in a concrete type
         values = values.AsSpan(0, 1).ToArray();
-        PassTest();
+        EndTest(values.Length == 1);
     }
 
     private static void TestCallToGenericInterfaceMethod()
