@@ -88,6 +88,14 @@ C_FUNC(\Name):
         stp \reg1, \reg2, [sp, \ofs]!
         .ifc \reg1, fp
         mov fp, sp
+
+        .cfi_def_cfa 29, 16
+
+        .ifc \reg2, lr
+        .cfi_offset 30, -8
+        .endif
+
+        .cfi_offset 29, -16
         .endif
 .endm
 

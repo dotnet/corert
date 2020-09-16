@@ -61,6 +61,10 @@
         PROLOG_SAVE_REG_PAIR x27, x28, #0x50
         mov fp, sp
 
+        .cfi_def_cfa 29, 16
+        .cfi_offset 30, -8
+        .cfi_offset 29, -16
+
         .if \extraStackSize != 0
             PROLOG_STACK_ALLOC \extraStackSize
         .endif
