@@ -130,18 +130,7 @@ static const int tccMicroSecondsToNanoSeconds = 1000;
 static uint32_t g_dwPALCapabilities;
 static UInt32 g_cNumProcs = 0;
 
-// HACK: the gcenv.h declares OS_PAGE_SIZE as a call instead of a constant, but we need a constant
-#undef OS_PAGE_SIZE
-#define OS_PAGE_SIZE 0x1000
-
-// Helper memory page used by the FlushProcessWriteBuffers
-static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)));
-
-// Mutex to make the FlushProcessWriteBuffersMutex thread safe
-pthread_mutex_t g_flushProcessWriteBuffersMutex;
-
 bool QueryLogicalProcessorCount();
-bool InitializeFlushProcessWriteBuffers();
 
 extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
 {
@@ -427,10 +416,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     }
 #endif
 
-    if (!InitializeFlushProcessWriteBuffers())
-    {
-        return false;
-    }
 #ifndef USE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
     {
@@ -1180,53 +1165,9 @@ bool InitializeSystemInfo()
     return true;
 }
 
-// This function initializes data structures needed for the FlushProcessWriteBuffers
-// Return:
-//  true if it succeeded, false otherwise
-bool InitializeFlushProcessWriteBuffers()
-{
-    // Verify that the s_helperPage is really aligned to the g_SystemInfo.dwPageSize
-    ASSERT((((size_t)g_helperPage) & (OS_PAGE_SIZE - 1)) == 0);
-
-    // Locking the page ensures that it stays in memory during the two mprotect
-    // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
-    // those calls, they would not have the expected effect of generating IPI.
-    int status = mlock(g_helperPage, OS_PAGE_SIZE);
-
-    if (status != 0)
-    {
-        return false;
-    }
-
-    status = pthread_mutex_init(&g_flushProcessWriteBuffersMutex, NULL);
-    if (status != 0)
-    {
-        munlock(g_helperPage, OS_PAGE_SIZE);
-    }
-
-    return status == 0;
-}
-
 extern "C" void FlushProcessWriteBuffers()
 {
-    int status = pthread_mutex_lock(&g_flushProcessWriteBuffersMutex);
-    FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
-
-    // Changing a helper memory page protection from read / write to no access
-    // causes the OS to issue IPI to flush TLBs on all processors. This also
-    // results in flushing the processor buffers.
-    status = mprotect(g_helperPage, OS_PAGE_SIZE, PROT_READ | PROT_WRITE);
-    FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
-
-    // Ensure that the page is dirty before we change the protection so that
-    // we prevent the OS from skipping the global TLB flush.
-    __sync_add_and_fetch((size_t*)g_helperPage, 1);
-
-    status = mprotect(g_helperPage, OS_PAGE_SIZE, PROT_NONE);
-    FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
-
-    status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
-    FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
+    GCToOSInterface::FlushProcessWriteBuffers();
 }
 
 static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
