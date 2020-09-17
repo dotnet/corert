@@ -31,7 +31,7 @@ TSF_DoNotTriggerGc_Bit          = 4
     NESTED_ENTRY RhpWaitForSuspend, _TEXT, NoHandler
 
         // FP and LR registers
-        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-0xA0            // Push down stack pointer and store FP and LR
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -0xA0            // Push down stack pointer and store FP and LR
 
         // Need to save argument registers x0-x7 and the return buffer register x8
         // Also save x9 which may be used for saving indirect call target
@@ -63,7 +63,7 @@ TSF_DoNotTriggerGc_Bit          = 4
         ldp            x8, x9, [sp, #0x50]
 
         // Restore FP and LR registers, and free the allocated stack block
-        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #0xA0
+        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0xA0
         EPILOG_RETURN
 
     NESTED_END RhpWaitForSuspend, _TEXT
@@ -81,7 +81,7 @@ TSF_DoNotTriggerGc_Bit          = 4
     NESTED_ENTRY RhpWaitForGCNoAbort, _TEXT, NoHandler
 
         // FP and LR registers
-        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-0x40            // Push down stack pointer and store FP and LR
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -0x40            // Push down stack pointer and store FP and LR
 
         // Save the integer return registers, as well as the floating return registers
         stp         x0, x1, [sp, #0x10]
@@ -99,7 +99,7 @@ Done:
         ldp         x0, x1, [sp, #0x10]
         ldp         d0, d1, [sp, #0x20]
         ldp         d2, d3, [sp, #0x30]
-        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #0x40
+        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x40
         EPILOG_RETURN
 
     NESTED_END RhpWaitForGCNoAbort
@@ -116,7 +116,7 @@ Done:
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
 
-        PROLOG_SAVE_REG_PAIR_INDEXED    fp, lr, #-0x10
+        PROLOG_SAVE_REG_PAIR_INDEXED    fp, lr, -0x10
 
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 10
 
@@ -127,13 +127,13 @@ NoWait:
         ldr         x10, [x9, #OFFSETOF__PInvokeTransitionFrame__m_Flags]
         tbz         x10, #PTFF_THREAD_ABORT_BIT, NoAbort
 
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 0x10
         mov w0, #STATUS_REDHAWK_THREAD_ABORT
         mov x1, lr          // hijack target address as exception PC
         b RhpThrowHwEx        
 
 NoAbort:
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 0x10
         EPILOG_RETURN
 
     NESTED_END RhpWaitForGC, _TEXT
@@ -153,7 +153,7 @@ NoAbort:
     NESTED_ENTRY RhpReversePInvokeAttachOrTrapThread, _TEXT, NoHandler
 
         // FP and LR registers
-        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-0xA0            // Push down stack pointer and store FP and LR
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -0xA0            // Push down stack pointer and store FP and LR
 
         // Need to save argument registers x0-x7 and the return buffer register x8 (twice for 16B alignment)
         stp         x0, x1, [sp, #0x10]
@@ -185,7 +185,7 @@ NoAbort:
         ldr         x8, [sp, #0x50] 
 
         // Restore FP and LR registers, and free the allocated stack block
-        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #0xA0
+        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0xA0
         EPILOG_RETURN
 
     NESTED_END RhpReversePInvokeTrapThread

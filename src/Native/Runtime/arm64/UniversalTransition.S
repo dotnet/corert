@@ -92,7 +92,7 @@
     NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
 
         // FP and LR registers
-        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, #-STACK_SIZE           // ;; Push down stack pointer and store FP and LR
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -STACK_SIZE           // ;; Push down stack pointer and store FP and LR
 
         // Floating point registers
         stp         d0, d1, [sp, #(FLOAT_ARG_OFFSET       )]
@@ -141,7 +141,7 @@
         ldr         x8,      [sp, #(ARGUMENT_REGISTERS_OFFSET + 0x40)]
 
         // Restore FP and LR registers, and free the allocated stack block
-        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, #STACK_SIZE
+        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, STACK_SIZE
 
         // Tailcall to the target address.
         // TODO EPILOG_NOP

@@ -24,19 +24,20 @@
             // TODO PROLOG_PUSH_MACHINE_FRAME
         .else
             PROLOG_STACK_ALLOC 0x50
+            .cfi_adjust_cfa_offset 0x50
             stp x3, lr, [sp]   // x3 is the SP and lr is the IP of the fault site 
         .endif
         stp d8, d9, [sp, #0x10]
         stp d10, d11, [sp, #0x20]
         stp d12, d13, [sp, #0x30]
         stp d14, d15, [sp, #0x40]
-        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, #-0x70
+        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -0x70
         stp xzr, xzr, [sp, #0x10] // locations reserved for return value, not used for exception handling
-        PROLOG_SAVE_REG_PAIR x19, x20, #0x20
-        PROLOG_SAVE_REG_PAIR x21, x22, #0x30
-        PROLOG_SAVE_REG_PAIR x23, x24, #0x40
-        PROLOG_SAVE_REG_PAIR x25, x26, #0x50
-        PROLOG_SAVE_REG_PAIR x27, x28, #0x60
+        PROLOG_SAVE_REG_PAIR x19, x20, 0x20
+        PROLOG_SAVE_REG_PAIR x21, x22, 0x30
+        PROLOG_SAVE_REG_PAIR x23, x24, 0x40
+        PROLOG_SAVE_REG_PAIR x25, x26, 0x50
+        PROLOG_SAVE_REG_PAIR x27, x28, 0x60
         // } end PAL_LIMITED_CONTEXT
  
         PROLOG_STACK_ALLOC STACKSIZEOF_ExInfo 
@@ -53,13 +54,14 @@
         // sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
         // of method. However, this method needs to be able to change fp before calling funclet.
         // This is required to access locals in funclet.
-        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp,lr, #-0x60
-        PROLOG_SAVE_REG_PAIR x19, x20, #0x10
-        PROLOG_SAVE_REG_PAIR x21, x22, #0x20
-        PROLOG_SAVE_REG_PAIR x23, x24, #0x30
-        PROLOG_SAVE_REG_PAIR x25, x26, #0x40
-        PROLOG_SAVE_REG_PAIR x27, x28, #0x50
+        PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED fp,lr, -0x60
+        PROLOG_SAVE_REG_PAIR x19, x20, 0x10
+        PROLOG_SAVE_REG_PAIR x21, x22, 0x20
+        PROLOG_SAVE_REG_PAIR x23, x24, 0x30
+        PROLOG_SAVE_REG_PAIR x25, x26, 0x40
+        PROLOG_SAVE_REG_PAIR x27, x28, 0x50
         mov fp, sp
+        .cfi_def_cfa_register fp
 
         .if \extraStackSize != 0
             PROLOG_STACK_ALLOC \extraStackSize
@@ -78,12 +80,12 @@
             EPILOG_STACK_FREE \extraStackSize
         .endif
 
-        EPILOG_RESTORE_REG_PAIR x19, x20, #0x10
-        EPILOG_RESTORE_REG_PAIR x21, x22, #0x20
-        EPILOG_RESTORE_REG_PAIR x23, x24, #0x30
-        EPILOG_RESTORE_REG_PAIR x25, x26, #0x40
-        EPILOG_RESTORE_REG_PAIR x27, x28, #0x50
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, #0x60
+        EPILOG_RESTORE_REG_PAIR x19, x20, 0x10
+        EPILOG_RESTORE_REG_PAIR x21, x22, 0x20
+        EPILOG_RESTORE_REG_PAIR x23, x24, 0x30
+        EPILOG_RESTORE_REG_PAIR x25, x26, 0x40
+        EPILOG_RESTORE_REG_PAIR x27, x28, 0x50
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 0x60
    .endm
 
 
@@ -199,6 +201,26 @@
 
 
 
+#ifdef FEATURE_EMULATED_TLS
+// All these exception handling functions have their own stack frame.
+// To avoid creating more than one frame per function we encapsulate these ETLS helper in own functions
+
+    NESTED_ENTRY RhpGetThreadETLS1, _TEXT, NoHandler
+        GETTHREAD_ETLS_1
+        ret
+    NESTED_END RhpGetThreadETLS1, _TEXT
+
+    NESTED_ENTRY RhpGetThreadETLS2, _TEXT, NoHandler
+        GETTHREAD_ETLS_2
+        ret
+    NESTED_END RhpGetThreadETLS2, _TEXT
+
+    NESTED_ENTRY RhpGetThreadETLS5, _TEXT, NoHandler
+        GETTHREAD_ETLS_5
+        ret
+    NESTED_END RhpGetThreadETLS5, _TEXT
+#endif
+
 #define rsp_offsetof_ExInfo  0
 #define rsp_offsetof_Context STACKSIZEOF_ExInfo
 
@@ -216,7 +238,7 @@
 
         // x2 = GetThread()
 #ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_2
+        bl RhpGetThreadETLS2
 #else
         INLINE_GETTHREAD x2
 #endif
@@ -264,7 +286,7 @@
 
         // x2 = GetThread()
 #ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_2
+        bl RhpGetThreadETLS2
 #else
         INLINE_GETTHREAD x2
 #endif
@@ -358,7 +380,7 @@ NotHijacked:
 
         // x2 = GetThread()
 #ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_2
+        bl RhpGetThreadETLS2
 #else
         INLINE_GETTHREAD x2
 #endif
@@ -421,7 +443,7 @@ NotHijacked:
         // clear the DoNotTriggerGc flag, trashes x4-x6
         //
 #ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_5
+        bl RhpGetThreadETLS5
 #else
         INLINE_GETTHREAD x5
 #endif
@@ -464,7 +486,7 @@ ClearSuccess_Catch:
 // @TODO: add debug-only validation code for ExInfo pop
 
 #ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_1
+        bl RhpGetThreadETLS1
 #else
         INLINE_GETTHREAD x1
 #endif
@@ -538,7 +560,7 @@ NoAbort:
         // clear the DoNotTriggerGc flag, trashes x2-x4
         //
 #ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_2
+        bl RhpGetThreadETLS2
 #else
         INLINE_GETTHREAD x2
 #endif
@@ -580,7 +602,7 @@ ClearSuccess:
         // set the DoNotTriggerGc flag, trashes x1-x3
         //
 #ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_2
+        bl RhpGetThreadETLS2
 #else
         INLINE_GETTHREAD x2
 #endif
