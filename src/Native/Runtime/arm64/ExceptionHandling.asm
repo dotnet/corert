@@ -400,7 +400,7 @@ NotHijacked
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     NESTED_ENTRY RhpCallCatchFunclet
 
-        ALLOC_CALL_FUNCLET_FRAME 0x60
+        ALLOC_CALL_FUNCLET_FRAME 0x70 // Size needs to be equal with ExceptionHandling.S variant of this function
         stp d8, d9,   [sp, #0x00]
         stp d10, d11, [sp, #0x10]
         stp d12, d13, [sp, #0x20]
@@ -505,7 +505,7 @@ NoAbort
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     NESTED_ENTRY RhpCallFinallyFunclet
 
-        ALLOC_CALL_FUNCLET_FRAME 0x50
+        ALLOC_CALL_FUNCLET_FRAME 0x60 // Size needs to be equal with ExceptionHandling.S variant of this function
         stp d8, d9,   [sp, #0x00]
         stp d10, d11, [sp, #0x10]
         stp d12, d13, [sp, #0x20]
@@ -579,7 +579,7 @@ SetSuccess
         ldp         d12, d13, [sp, #0x20]
         ldp         d14, d15, [sp, #0x30]
 
-        FREE_CALL_FUNCLET_FRAME 0x50
+        FREE_CALL_FUNCLET_FRAME 0x60
         EPILOG_RETURN
 
     NESTED_END RhpCallFinallyFunclet

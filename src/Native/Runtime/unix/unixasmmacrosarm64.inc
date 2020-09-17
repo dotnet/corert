@@ -209,17 +209,6 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 32
 .endm
 
-.macro GETTHREAD_ETLS_2
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32           // ;; Push down stack pointer and store FP and LR
-    stp         x0, x1, [sp, #0x10]
-
-    bl RhpGetThread
-    mov x2, x0
-
-    ldp         x0, x1, [sp, #0x10]
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 32
-.endm
-
 .macro GETTHREAD_ETLS_3
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -48           // ;; Push down stack pointer and store FP and LR
     stp         x0, x1, [sp, #0x10]
@@ -231,21 +220,6 @@ C_FUNC(\Name):
     ldp         x0, x1, [sp, #0x10]
     ldr         x2,  [sp, #0x20]
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 48
-.endm
-
-.macro GETTHREAD_ETLS_5
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -64           // ;; Push down stack pointer and store FP and LR
-    stp         x0, x1, [sp, #0x10]
-    stp         x2, x3, [sp, #0x20]
-    str         x4,  [sp, #0x30]
-
-    bl RhpGetThread
-    mov x5, x0
-
-    ldp         x0, x1, [sp, #0x10]
-    ldp         x2, x3, [sp, #0x20]
-    ldr         x4,  [sp, #0x30]
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 64
 .endm
 
 .macro GETTHUNKDATA_ETLS_9

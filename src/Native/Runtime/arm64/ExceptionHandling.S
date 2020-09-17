@@ -199,27 +199,12 @@
 #endif // _DEBUG
     .endm
 
-
-
-#ifdef FEATURE_EMULATED_TLS
-// All these exception handling functions have their own stack frame.
-// To avoid creating more than one frame per function we encapsulate these ETLS helper in own functions
-
-    NESTED_ENTRY RhpGetThreadETLS1, _TEXT, NoHandler
-        GETTHREAD_ETLS_1
-        ret
-    NESTED_END RhpGetThreadETLS1, _TEXT
-
-    NESTED_ENTRY RhpGetThreadETLS2, _TEXT, NoHandler
-        GETTHREAD_ETLS_2
-        ret
-    NESTED_END RhpGetThreadETLS2, _TEXT
-
-    NESTED_ENTRY RhpGetThreadETLS5, _TEXT, NoHandler
-        GETTHREAD_ETLS_5
-        ret
-    NESTED_END RhpGetThreadETLS5, _TEXT
-#endif
+.macro GetThreadX2
+    stp x0, x1, [sp, -16]!
+    bl RhpGetThread
+    mov x2, x0
+    ldp x0, x1, [sp], 16
+.endm
 
 #define rsp_offsetof_ExInfo  0
 #define rsp_offsetof_Context STACKSIZEOF_ExInfo
@@ -236,12 +221,7 @@
 
         ALLOC_THROW_FRAME HARDWARE_EXCEPTION
 
-        // x2 = GetThread()
-#ifdef FEATURE_EMULATED_TLS
-        bl RhpGetThreadETLS2
-#else
-        INLINE_GETTHREAD x2
-#endif
+        GetThreadX2
 
         add         x1, sp, #rsp_offsetof_ExInfo                    // x1 <- ExInfo*
         str         xzr, [x1, #OFFSETOF__ExInfo__m_exception]       // pExInfo->m_exception = null
@@ -284,12 +264,7 @@
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
-        // x2 = GetThread()
-#ifdef FEATURE_EMULATED_TLS
-        bl RhpGetThreadETLS2
-#else
-        INLINE_GETTHREAD x2
-#endif
+        GetThreadX2
 
         // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic.  So the return 
         // address could have been hijacked when we were in that C# code and we must remove the hijack and
@@ -378,12 +353,7 @@ NotHijacked:
 
         ALLOC_THROW_FRAME SOFTWARE_EXCEPTION
 
-        // x2 = GetThread()
-#ifdef FEATURE_EMULATED_TLS
-        bl RhpGetThreadETLS2
-#else
-        INLINE_GETTHREAD x2
-#endif
+        GetThreadX2
 
         add         x1, sp, #rsp_offsetof_ExInfo                    // x1 <- ExInfo*
         str         xzr, [x1, #OFFSETOF__ExInfo__m_exception]       // pExInfo->m_exception = null
@@ -427,26 +397,31 @@ NotHijacked:
 
     NESTED_ENTRY RhpCallCatchFunclet, _TEXT, NoHandler
 
-        ALLOC_CALL_FUNCLET_FRAME 0x60
+        ALLOC_CALL_FUNCLET_FRAME 0x70 // Size needs to be equal with ExceptionHandling.asm variant of this function
         stp d8, d9,   [sp, #0x00]
         stp d10, d11, [sp, #0x10]
         stp d12, d13, [sp, #0x20]
         stp d14, d15, [sp, #0x30]
-        stp x0, x2,   [sp, #0x40]  // x0, x2 & x3 are saved so we have the exception object, REGDISPLAY and 
-        stp x3, xzr,  [sp, #0x50]  // ExInfo later, xzr makes space for the local "is_not_handling_thread_abort"
+        stp x0, x1,   [sp, #0x40] // x0 to x3 are stored to restore them anytime
+        stp x2, x3,   [sp, #0x50] 
+        str xzr,      [sp, #0x60] // xzr makes space for the local "is_not_handling_thread_abort"; last qword will store the thread obj  
 
-#define rsp_offset_is_not_handling_thread_abort 0x58
-#define rsp_offset_x2 0x48
-#define rsp_offset_x3 0x50
+#define rsp_offset_is_not_handling_thread_abort 0x60
+#define rsp_offset_x0 0x40
+#define rsp_offset_x1 0x48
+#define rsp_offset_x2 0x50
+#define rsp_offset_x3 0x58
+#define rsp_CatchFunclet_offset_thread 0x68
 
         //
         // clear the DoNotTriggerGc flag, trashes x4-x6
         //
-#ifdef FEATURE_EMULATED_TLS
-        bl RhpGetThreadETLS5
-#else
-        INLINE_GETTHREAD x5
-#endif
+
+        bl RhpGetThread
+        str x0, [sp, rsp_CatchFunclet_offset_thread]
+        mov x5,x0
+        ldp x0, x1,   [sp, #0x40]
+        ldp x2, x3,   [sp, #0x50]
 
         ldr         x4, [x5, #OFFSETOF__Thread__m_threadAbortException]
         sub         x4, x4, x0
@@ -485,11 +460,7 @@ ClearSuccess_Catch:
 
 // @TODO: add debug-only validation code for ExInfo pop
 
-#ifdef FEATURE_EMULATED_TLS
-        bl RhpGetThreadETLS1
-#else
-        INLINE_GETTHREAD x1
-#endif
+        ldr x1, [sp, rsp_CatchFunclet_offset_thread]
 
         // We must unhijack the thread at this point because the section of stack where the hijack is applied
         // may go dead.  If it does, then the next time we try to unhijack the thread, it will corrupt the stack.
@@ -539,14 +510,15 @@ NoAbort:
 
     NESTED_ENTRY RhpCallFinallyFunclet, _TEXT, NoHandler
 
-        ALLOC_CALL_FUNCLET_FRAME 0x50
+        ALLOC_CALL_FUNCLET_FRAME 0x60 // Size needs to be equal with ExceptionHandling.asm variant of this function
         stp d8, d9,   [sp, #0x00]
         stp d10, d11, [sp, #0x10]
         stp d12, d13, [sp, #0x20]
         stp d14, d15, [sp, #0x30]
-        stp x0, x1,   [sp, #0x40]   // x1 is saved so we have the REGDISPLAY later, x0 is just alignment padding
+        stp x0, x1,   [sp, #0x40]   // x0 and x1 are saved so we have them later
 
 #define rsp_offset_x1 0x48
+#define rsp_FinallyFunclet_offset_thread 0x50
 
         
         // We want to suppress hijacking between invocations of subsequent finallys.  We do this because we
@@ -559,11 +531,11 @@ NoAbort:
         //
         // clear the DoNotTriggerGc flag, trashes x2-x4
         //
-#ifdef FEATURE_EMULATED_TLS
-        bl RhpGetThreadETLS2
-#else
-        INLINE_GETTHREAD x2
-#endif
+
+        bl RhpGetThread
+        str x0, [sp, rsp_FinallyFunclet_offset_thread]
+        mov x2, x0
+        ldp x0, x1, [sp, #0x40]
 
         add         x12, x2, #OFFSETOF__Thread__m_ThreadStateFlags
 
@@ -601,11 +573,8 @@ ClearSuccess:
         //
         // set the DoNotTriggerGc flag, trashes x1-x3
         //
-#ifdef FEATURE_EMULATED_TLS
-        bl RhpGetThreadETLS2
-#else
-        INLINE_GETTHREAD x2
-#endif
+
+        ldr x2, [sp, rsp_FinallyFunclet_offset_thread]
 
         add         x12, x2, #OFFSETOF__Thread__m_ThreadStateFlags
 SetRetry:
@@ -621,7 +590,7 @@ SetSuccess:
         ldp         d12, d13, [sp, #0x20]
         ldp         d14, d15, [sp, #0x30]
 
-        FREE_CALL_FUNCLET_FRAME 0x50
+        FREE_CALL_FUNCLET_FRAME 0x60
         EPILOG_RETURN
 
     NESTED_END RhpCallFinallyFunclet, _Text
