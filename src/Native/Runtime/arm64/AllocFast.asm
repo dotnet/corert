@@ -112,8 +112,8 @@ NewOutOfMemory
 ;;  x1 == element/character count
     LEAF_ENTRY RhNewString
         ;; Make sure computing the overall allocation size won't overflow
-        ;; TODO: this should be actually MAX_STRING_LENGTH
-        mov         x2, 0x7FFFFFFF
+        movz        x2, #(MAX_STRING_LENGTH & 0xFFFF)
+        movk        x2, #(MAX_STRING_LENGTH >> 16), lsl #16
         cmp         x1, x2
         bhi         StringSizeOverflow
 
