@@ -6,7 +6,8 @@
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section
         .ifnc \Handler, NoHandler
-        .cfi_personality 0, C_FUNC(\Handler) // 0 == DW_EH_PE_absptr
+        .cfi_personality 0x1b, C_FUNC(\Handler) // 0x1b == DW_EH_PE_pcrel | DW_EH_PE_sdata4
+        // @TODO: Check if we have systems that use indirect personality 0x9b == DW_EH_PE_indirect | DW_EH_PE_pcrel | DW_EH_PE_sdata4
         .endif
 .endm
 
@@ -71,6 +72,7 @@ C_FUNC(\Name):
 
 .macro EPILOG_STACK_RESTORE
         mov sp, fp
+        .cfi_restore sp
 .endm
 
 .macro PROLOG_SAVE_REG reg, ofs
@@ -84,6 +86,7 @@ C_FUNC(\Name):
         .cfi_rel_offset \reg2, \ofs + 8
         .ifc \reg1, fp
         mov fp, sp
+        .cfi_def_cfa_register fp
         .endif
 .endm
 
