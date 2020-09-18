@@ -4,7 +4,6 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-
 //
 // Set the Thread state and wait for a GC to complete.
 //
@@ -15,11 +14,9 @@
 //  x4: thread pointer
 //  All other registers trashed
 //
-
     .global RhpWaitForGCNoAbort
 
     .macro WaitForGCCompletion
-
         ldr         w2, [x4, #OFFSETOF__Thread__m_ThreadStateFlags]
         tst         w2, #TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC
         bne         0f
@@ -39,8 +36,8 @@
         PUSH_COOP_PINVOKE_FRAME x0
 
 #if FEATURE_EMULATED_TLS
-        bl RhpGetThread
-        mov x4, x0
+        bl          RhpGetThread
+        mov         x4, x0
 #else
         INLINE_GETTHREAD x4
 #endif
