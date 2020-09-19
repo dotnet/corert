@@ -18,6 +18,7 @@
 #include <sal.h>
 #include <stdarg.h>
 #include "gcenv.structs.h"
+#include "IntrinsicConstants.h"
 
 #ifndef PAL_REDHAWK_INCLUDED
 #define PAL_REDHAWK_INCLUDED
@@ -851,6 +852,10 @@ REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI getextcpuid(uint32_t arg1, uint32_t ar
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport();
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalIsAvxEnabled();
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
+
+#if defined(HOST_ARM64)
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags);
+#endif //defined(HOST_ARM64)
 
 #include "PalRedhawkInline.h"
 

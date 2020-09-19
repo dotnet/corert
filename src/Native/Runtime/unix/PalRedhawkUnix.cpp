@@ -130,18 +130,7 @@ static const int tccMicroSecondsToNanoSeconds = 1000;
 static uint32_t g_dwPALCapabilities;
 static UInt32 g_cNumProcs = 0;
 
-// HACK: the gcenv.h declares OS_PAGE_SIZE as a call instead of a constant, but we need a constant
-#undef OS_PAGE_SIZE
-#define OS_PAGE_SIZE 0x1000
-
-// Helper memory page used by the FlushProcessWriteBuffers
-static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)));
-
-// Mutex to make the FlushProcessWriteBuffersMutex thread safe
-pthread_mutex_t g_flushProcessWriteBuffersMutex;
-
 bool QueryLogicalProcessorCount();
-bool InitializeFlushProcessWriteBuffers();
 
 extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, UInt32 arg3)
 {
@@ -427,10 +416,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     }
 #endif
 
-    if (!InitializeFlushProcessWriteBuffers())
-    {
-        return false;
-    }
 #ifndef USE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
     {
@@ -477,6 +462,18 @@ thread_local TlsDestructionMonitor tls_destructionMonitor;
 
 // This thread local variable is used for delegate marshalling
 DECLSPEC_THREAD intptr_t tls_thunkData;
+
+#ifdef FEATURE_EMULATED_TLS
+EXTERN_C intptr_t* RhpGetThunkData()
+{
+    return &tls_thunkData;
+}
+
+EXTERN_C intptr_t RhGetCurrentThunkContext()
+{
+    return tls_thunkData;
+}
+#endif //FEATURE_EMULATED_TLS
 
 // Attach thread to PAL. 
 // It can be called multiple times for the same thread.
@@ -1168,53 +1165,9 @@ bool InitializeSystemInfo()
     return true;
 }
 
-// This function initializes data structures needed for the FlushProcessWriteBuffers
-// Return:
-//  true if it succeeded, false otherwise
-bool InitializeFlushProcessWriteBuffers()
-{
-    // Verify that the s_helperPage is really aligned to the g_SystemInfo.dwPageSize
-    ASSERT((((size_t)g_helperPage) & (OS_PAGE_SIZE - 1)) == 0);
-
-    // Locking the page ensures that it stays in memory during the two mprotect
-    // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
-    // those calls, they would not have the expected effect of generating IPI.
-    int status = mlock(g_helperPage, OS_PAGE_SIZE);
-
-    if (status != 0)
-    {
-        return false;
-    }
-
-    status = pthread_mutex_init(&g_flushProcessWriteBuffersMutex, NULL);
-    if (status != 0)
-    {
-        munlock(g_helperPage, OS_PAGE_SIZE);
-    }
-
-    return status == 0;
-}
-
 extern "C" void FlushProcessWriteBuffers()
 {
-    int status = pthread_mutex_lock(&g_flushProcessWriteBuffersMutex);
-    FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
-
-    // Changing a helper memory page protection from read / write to no access
-    // causes the OS to issue IPI to flush TLBs on all processors. This also
-    // results in flushing the processor buffers.
-    status = mprotect(g_helperPage, OS_PAGE_SIZE, PROT_READ | PROT_WRITE);
-    FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
-
-    // Ensure that the page is dirty before we change the protection so that
-    // we prevent the OS from skipping the global TLB flush.
-    __sync_add_and_fetch((size_t*)g_helperPage, 1);
-
-    status = mprotect(g_helperPage, OS_PAGE_SIZE, PROT_NONE);
-    FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
-
-    status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
-    FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
+    GCToOSInterface::FlushProcessWriteBuffers();
 }
 
 static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
@@ -1342,3 +1295,169 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
+
+#if defined (HOST_ARM64)
+
+#if HAVE_AUXV_HWCAP_H
+#include <sys/auxv.h>
+#include <asm/hwcap.h>
+#endif
+
+// Based on PAL_GetJitCpuCapabilityFlags from CoreCLR (jitsupport.cpp)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
+{
+    *flags = 0;
+
+#if HAVE_AUXV_HWCAP_H
+    unsigned long hwCap = getauxval(AT_HWCAP);
+
+    // HWCAP_* flags are introduced by ARM into the Linux kernel as new extensions are published.
+    // For a given kernel, some of these flags may not be present yet.
+    // Use ifdef for each to allow for compilation with any vintage kernel.
+    // From a single binary distribution perspective, compiling with latest kernel asm/hwcap.h should
+    // include all published flags.  Given flags are merged to kernel and published before silicon is
+    // available, using the latest kernel for release should be sufficient.
+    *flags |= ARM64IntrinsicConstants_ArmBase;
+    *flags |= ARM64IntrinsicConstants_ArmBase_Arm64;
+
+#ifdef HWCAP_AES
+    if (hwCap & HWCAP_AES)
+        *flags |= ARM64IntrinsicConstants_Aes;
+#endif
+#ifdef HWCAP_ATOMICS
+    if (hwCap & HWCAP_ATOMICS)
+        *flags |= ARM64IntrinsicConstants_Atomics;
+#endif
+#ifdef HWCAP_CRC32
+    if (hwCap & HWCAP_CRC32)
+        *flags |= ARM64IntrinsicConstants_Crc32;
+#endif
+#ifdef HWCAP_DCPOP
+//    if (hwCap & HWCAP_DCPOP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_ASIMDDP
+//    if (hwCap & HWCAP_ASIMDDP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_FCMA
+//    if (hwCap & HWCAP_FCMA)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_FP
+//    if (hwCap & HWCAP_FP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_FPHP
+//    if (hwCap & HWCAP_FPHP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_JSCVT
+//    if (hwCap & HWCAP_JSCVT)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_LRCPC
+//    if (hwCap & HWCAP_LRCPC)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_PMULL
+//    if (hwCap & HWCAP_PMULL)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_SHA1
+    if (hwCap & HWCAP_SHA1)
+        *flags |= ARM64IntrinsicConstants_Sha1;
+#endif
+#ifdef HWCAP_SHA2
+    if (hwCap & HWCAP_SHA2)
+        *flags |= ARM64IntrinsicConstants_Sha256;
+#endif
+#ifdef HWCAP_SHA512
+//    if (hwCap & HWCAP_SHA512)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_SHA3
+//    if (hwCap & HWCAP_SHA3)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_ASIMD
+    if (hwCap & HWCAP_ASIMD)
+    {
+        *flags |= ARM64IntrinsicConstants_AdvSimd;
+        *flags |= ARM64IntrinsicConstants_AdvSimd_Arm64;
+    }
+#endif
+#ifdef HWCAP_ASIMDRDM
+//    if (hwCap & HWCAP_ASIMDRDM)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_ASIMDHP
+//    if (hwCap & HWCAP_ASIMDHP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_SM3
+//    if (hwCap & HWCAP_SM3)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_SM4
+//    if (hwCap & HWCAP_SM4)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP_SVE
+//    if (hwCap & HWCAP_SVE)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+
+#ifdef AT_HWCAP2
+    unsigned long hwCap2 = getauxval(AT_HWCAP2);
+
+#ifdef HWCAP2_DCPODP
+//    if (hwCap2 & HWCAP2_DCPODP)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVE2
+//    if (hwCap2 & HWCAP2_SVE2)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVEAES
+//    if (hwCap2 & HWCAP2_SVEAES)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVEPMULL
+//    if (hwCap2 & HWCAP2_SVEPMULL)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVEBITPERM
+//    if (hwCap2 & HWCAP2_SVEBITPERM)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVESHA3
+//    if (hwCap2 & HWCAP2_SVESHA3)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_SVESM4
+//    if (hwCap2 & HWCAP2_SVESM4)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_FLAGM2
+//    if (hwCap2 & HWCAP2_FLAGM2)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+#ifdef HWCAP2_FRINT
+//    if (hwCap2 & HWCAP2_FRINT)
+//        *flags |= ARM64IntrinsicConstants_???;
+#endif
+
+#endif // AT_HWCAP2
+
+#else // !HAVE_AUXV_HWCAP_H
+    // Every ARM64 CPU should support SIMD and FP
+    // If the OS have no function to query for CPU capabilities we set just these
+
+    *flags |= ARM64IntrinsicConstants_ArmBase;
+    *flags |= ARM64IntrinsicConstants_ArmBase_Arm64;
+    *flags |= ARM64IntrinsicConstants_AdvSimd;
+    *flags |= ARM64IntrinsicConstants_AdvSimd_Arm64;
+#endif // HAVE_AUXV_HWCAP_H
+}
+#endif

@@ -1,5 +1,5 @@
 diff --git a/include/llvm/MC/MCObjectStreamer.h b/include/llvm/MC/MCObjectStreamer.h
-index 7c1189e..d1d77c9 100644
+index 7c1189e46ab..d1d77c97311 100644
 --- a/include/llvm/MC/MCObjectStreamer.h
 +++ b/include/llvm/MC/MCObjectStreamer.h
 @@ -101,6 +101,11 @@ public:
@@ -15,7 +15,7 @@ index 7c1189e..d1d77c9 100644
    /// can change its size during relaxation.
    virtual void EmitInstToFragment(const MCInst &Inst, const MCSubtargetInfo &);
 diff --git a/include/llvm/MC/MCStreamer.h b/include/llvm/MC/MCStreamer.h
-index 5390e79..5b258e7 100644
+index 5390e794242..5b258e76787 100644
 --- a/include/llvm/MC/MCStreamer.h
 +++ b/include/llvm/MC/MCStreamer.h
 @@ -115,6 +115,7 @@ public:
@@ -37,7 +37,7 @@ index 5390e79..5b258e7 100644
    /// method uses .byte directives instead of .ascii or .asciz for readability.
    virtual void EmitBinaryData(StringRef Data);
 diff --git a/lib/MC/MCObjectStreamer.cpp b/lib/MC/MCObjectStreamer.cpp
-index 174397e..ef7161f 100644
+index 174397e2739..ef7161fb56c 100644
 --- a/lib/MC/MCObjectStreamer.cpp
 +++ b/lib/MC/MCObjectStreamer.cpp
 @@ -122,7 +122,7 @@ void MCObjectStreamer::EmitCFISections(bool EH, bool Debug) {
@@ -68,7 +68,7 @@ index 174397e..ef7161f 100644
    // We need to create a local symbol to avoid relocations.
    Frame.Begin = getContext().createTempSymbol();
 diff --git a/lib/MC/MCStreamer.cpp b/lib/MC/MCStreamer.cpp
-index 2bfb9a6..a710098 100644
+index 2bfb9a63eed..a710098e798 100644
 --- a/lib/MC/MCStreamer.cpp
 +++ b/lib/MC/MCStreamer.cpp
 @@ -830,6 +830,7 @@ void MCStreamer::EmitTBSSSymbol(MCSection *Section, MCSymbol *Symbol,
@@ -79,8 +79,56 @@ index 2bfb9a6..a710098 100644
  void MCStreamer::EmitBinaryData(StringRef Data) { EmitBytes(Data); }
  void MCStreamer::EmitValueImpl(const MCExpr *Value, unsigned Size, SMLoc Loc) {
    visitUsedExpr(*Value);
+diff --git a/lib/Target/AArch64/MCTargetDesc/AArch64AsmBackend.cpp b/lib/Target/AArch64/MCTargetDesc/AArch64AsmBackend.cpp
+index 2bd0cbf9f7c..e7643d5f66d 100644
+--- a/lib/Target/AArch64/MCTargetDesc/AArch64AsmBackend.cpp
++++ b/lib/Target/AArch64/MCTargetDesc/AArch64AsmBackend.cpp
+@@ -41,6 +41,15 @@ public:
+     return AArch64::NumTargetFixupKinds;
+   }
+ 
++ Optional<MCFixupKind> getFixupKind(StringRef Name) const {
++    return StringSwitch<Optional<MCFixupKind>>(Name)
++       .Case("R_AARCH64_JUMP26", (MCFixupKind)AArch64::fixup_aarch64_pcrel_call26)
++       .Case("R_AARCH64_ADR_PREL_LO21",(MCFixupKind)AArch64::fixup_aarch64_pcrel_adrp_imm21)
++       .Case("R_AARCH64_ADD_ABS_LO12_NC", (MCFixupKind)AArch64::fixup_aarch64_add_imm12)
++        .Default(MCAsmBackend::getFixupKind(Name));
++  }
++  
++
+   const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override {
+     const static MCFixupKindInfo Infos[AArch64::NumTargetFixupKinds] = {
+         // This table *must* be in the order that the fixup_* kinds are defined
+@@ -126,6 +135,7 @@ static unsigned getFixupKindNumBytes(unsigned Kind) {
+   case AArch64::fixup_aarch64_pcrel_call26:
+   case FK_Data_4:
+   case FK_SecRel_4:
++  case FK_PCRel_4:
+     return 4;
+ 
+   case FK_Data_8:
+@@ -222,6 +232,7 @@ static uint64_t adjustFixupValue(const MCFixup &Fixup, uint64_t Value,
+   case FK_Data_8:
+   case FK_SecRel_2:
+   case FK_SecRel_4:
++  case FK_PCRel_4:
+     return Value;
+   }
+ }
+diff --git a/lib/Target/AArch64/MCTargetDesc/AArch64ELFObjectWriter.cpp b/lib/Target/AArch64/MCTargetDesc/AArch64ELFObjectWriter.cpp
+index 89c3e5b4c76..ba105365d74 100644
+--- a/lib/Target/AArch64/MCTargetDesc/AArch64ELFObjectWriter.cpp
++++ b/lib/Target/AArch64/MCTargetDesc/AArch64ELFObjectWriter.cpp
+@@ -129,6 +129,7 @@ unsigned AArch64ELFObjectWriter::getRelocType(MCContext &Ctx,
+     case FK_Data_2:
+       return R_CLS(PREL16);
+     case FK_Data_4:
++    case FK_PCRel_4:
+       return R_CLS(PREL32);
+     case FK_Data_8:
+       if (IsILP32) {
 diff --git a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
-index a77df7a..e1aa752 100644
+index a77df7a2598..e1aa7526f9b 100644
 --- a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
 +++ b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.cpp
 @@ -48,6 +48,14 @@ public:
@@ -118,7 +166,7 @@ index a77df7a..e1aa752 100644
      return 2;
    case FK_SecRel_4:
 diff --git a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
-index 0237496..01676a0 100644
+index 02374966daf..01676a01683 100644
 --- a/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
 +++ b/lib/Target/ARM/MCTargetDesc/ARMAsmBackend.h
 @@ -36,6 +36,7 @@ public:
@@ -130,7 +178,7 @@ index 0237496..01676a0 100644
  
    bool shouldForceRelocation(const MCAssembler &Asm, const MCFixup &Fixup,
 diff --git a/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp b/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
-index 59f31be..9b95598 100644
+index 59f31be69d5..9b95598f99f 100644
 --- a/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
 +++ b/lib/Target/ARM/MCTargetDesc/ARMELFObjectWriter.cpp
 @@ -103,6 +103,9 @@ unsigned ARMELFObjectWriter::GetRelocTypeInner(const MCValue &Target,
@@ -144,7 +192,7 @@ index 59f31be..9b95598 100644
      case ARM::fixup_arm_uncondbl:
        switch (Modifier) {
 diff --git a/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp b/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
-index 93f4006..81e4caa 100644
+index 93f4006cee8..108e9c51e13 100644
 --- a/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
 +++ b/lib/Target/ARM/MCTargetDesc/ARMELFStreamer.cpp
 @@ -396,6 +396,7 @@ private:
@@ -245,7 +293,7 @@ index 93f4006..81e4caa 100644
                                     const SmallVectorImpl<uint8_t> &Opcodes) {
    FlushPendingOffset();
 diff --git a/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp b/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
-index 4a94318..f4f5aa1 100644
+index 4a943187ab6..f4f5aa11bf8 100644
 --- a/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
 +++ b/lib/Target/ARM/MCTargetDesc/ARMTargetStreamer.cpp
 @@ -61,6 +61,7 @@ void ARMTargetStreamer::emitMovSP(unsigned Reg, int64_t Offset) {}
@@ -257,7 +305,7 @@ index 4a94318..f4f5aa1 100644
                                        const SmallVectorImpl<uint8_t> &Opcodes) {
  }
 diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
-index b654b8c..58d2515 100644
+index b654b8c5cb8..58d25159af8 100644
 --- a/tools/CMakeLists.txt
 +++ b/tools/CMakeLists.txt
 @@ -46,6 +46,7 @@ add_llvm_external_project(clang)

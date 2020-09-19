@@ -577,7 +577,7 @@ namespace Internal.IL
             LLVMTypeRef origLLVMType = ILImporter.GetLLVMTypeForTypeDesc(Type);
             LLVMValueRef value = _importer.LoadTemp(LocalIndex, origLLVMType);
 
-            return ILImporter.CastIfNecessary(builder, value, type);
+            return ILImporter.CastIfNecessary(builder, value, type, unsigned: !signExtend);
         }
 
         public override StackEntry Duplicate(LLVMBuilderRef builder)

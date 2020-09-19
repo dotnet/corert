@@ -833,7 +833,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     {
         // RhpCallCatchFunclet puts a couple of extra things on the stack that aren't put there by the other two
         // thunks, but we don't need to know what they are here, so we just skip them.
-        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 4 : 2;
+        SP += EQUALS_RETURN_ADDRESS(m_ControlPC, RhpCallCatchFunclet2) ? 6 : 4;
 
         // Save the preserved regs portion of the REGDISPLAY across the unwind through the C# EH dispatch code.
         m_funcletPtrs.pX19  = m_RegDisplay.pX19;

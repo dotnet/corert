@@ -49,7 +49,7 @@ EXTERN_C bool g_fHasFastFxsave = false;
 CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
 // This field is inspected from the generated code to determine what intrinsics are available.
 EXTERN_C int g_cpuFeatures = 0;
 // This field is defined in the generated code and sets the ISA expectations.
@@ -155,26 +155,11 @@ static void CheckForPalFallback()
 }
 
 #ifndef USE_PORTABLE_HELPERS
-// Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
-enum XArchIntrinsicConstants
-{
-    XArchIntrinsicConstants_Aes = 0x0001,
-    XArchIntrinsicConstants_Pclmulqdq = 0x0002,
-    XArchIntrinsicConstants_Sse3 = 0x0004,
-    XArchIntrinsicConstants_Ssse3 = 0x0008,
-    XArchIntrinsicConstants_Sse41 = 0x0010,
-    XArchIntrinsicConstants_Sse42 = 0x0020,
-    XArchIntrinsicConstants_Popcnt = 0x0040,
-    XArchIntrinsicConstants_Avx = 0x0080,
-    XArchIntrinsicConstants_Fma = 0x0100,
-    XArchIntrinsicConstants_Avx2 = 0x0200,
-    XArchIntrinsicConstants_Bmi1 = 0x0400,
-    XArchIntrinsicConstants_Bmi2 = 0x0800,
-    XArchIntrinsicConstants_Lzcnt = 0x1000,
-};
 
 bool DetectCPUFeatures()
 {
+#if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
+
 #if defined(HOST_X86) || defined(HOST_AMD64)
     
     unsigned char buffer[16];
@@ -293,12 +278,17 @@ bool DetectCPUFeatures()
             g_cpuFeatures |= XArchIntrinsicConstants_Lzcnt;
         }
     }
+#endif // HOST_X86 || HOST_AMD64
+
+#if defined(HOST_ARM64)
+    PAL_GetCpuCapabilityFlags (&g_cpuFeatures);
+#endif
 
     if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
     {
         return false;
     }
-#endif // HOST_X86 || HOST_AMD64
+#endif // HOST_X86 || HOST_AMD64 || HOST_ARM64
 
     return true;
 }

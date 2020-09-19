@@ -169,6 +169,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
        // restore registers that DWARF says were saved
       R newRegisters = registers;
       pint_t returnAddress = 0;
+      pint_t returnAddressLocation = 0;
       const int lastReg = R::lastDwarfRegNum();
       assert(static_cast<int>(CFI_Parser<A>::kMaxRegisterNumber) >= lastReg &&
              "register range too large");
@@ -186,10 +187,12 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
                 i, getSavedVectorRegister(addressSpace, registers, cfa,
                                           prolog.savedRegisters[i]));
           else if (i == (int)cieInfo.returnAddressRegister) {
-            pint_t dummyLocation;
             returnAddress = getSavedRegister(addressSpace, registers, cfa,
                                              prolog.savedRegisters[i],
-                                             dummyLocation);
+                                             returnAddressLocation);
+            if (registers.validRegister(i)) {
+              newRegisters.setRegister(i, returnAddress, returnAddressLocation);
+            }
           }
           else if (registers.validRegister(i)) {
             pint_t value;
@@ -272,7 +275,7 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
 
       // Return address is address after call site instruction, so setting IP to
       // that does simualates a return.
-      newRegisters.setIP(returnAddress, 0);
+      newRegisters.setIP(returnAddress, returnAddressLocation);
 
       // Simulate the step by replacing the register set with the new ones.
       registers = newRegisters;

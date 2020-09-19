@@ -413,6 +413,11 @@ EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     0,                                  // all other fields are initialized by zeroes
 };
 
+EXTERN_C ThreadBuffer* RhpGetThread()
+{
+    return &tls_CurrentThread;
+}
+
 #endif // !DACCESS_COMPILE
 
 #ifdef _WIN32

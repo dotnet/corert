@@ -56,14 +56,6 @@ function print_info_from_core_file {
     fi
 }
 
-function download_dumpling_script {
-    echo "Downloading latest version of dumpling script."
-    wget "https://dumpling.azurewebsites.net/api/client/dumpling.py"
-
-    local dumpling_script="dumpling.py"
-    chmod +x $dumpling_script
-}
-
 function upload_core_file_to_dumpling {
     local core_file_name=$1
     local paths_to_add=$2
@@ -75,11 +67,7 @@ function upload_core_file_to_dumpling {
     touch ./$dumpling_file
 
     if [ ! -x $dumpling_script ]; then
-        download_dumpling_script
-    fi
-
-    if [ ! -x $dumpling_script ]; then
-        echo "Failed to download dumpling script. Dump cannot be uploaded."
+        echo "Dumpling script not found. Dump cannot be uploaded."
         return
     fi
 

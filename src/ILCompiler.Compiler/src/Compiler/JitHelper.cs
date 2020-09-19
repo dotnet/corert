@@ -62,13 +62,13 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.WriteBarrier:
-                    mangledName = "RhpAssignRef";
+                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpAssignRefArm64" : "RhpAssignRef";
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier:
-                    mangledName = "RhpCheckedAssignRef";
+                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpCheckedAssignRefArm64" : "RhpCheckedAssignRef";
                     break;
                 case ReadyToRunHelper.ByRefWriteBarrier:
-                    mangledName = "RhpByRefAssignRef";
+                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
                     mangledName = "RhpAssignRefEAX";

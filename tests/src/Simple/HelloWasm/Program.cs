@@ -6,7 +6,9 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
+using System.Collections;
 using System.Reflection;
+using System.Diagnostics;
 
 #if TARGET_WINDOWS
 using CpObj;
@@ -358,7 +360,17 @@ internal static class Program
 
         TestIntOverflows();
 
+        TestStackTrace();
+
         TestJavascriptCall();
+
+        TestDefaultConstructorOf();
+
+        TestStructUnboxOverload();
+
+        TestGetSystemArrayEEType();
+
+        TestBoolCompare();
 
         // This test should remain last to get other results before stopping the debugger
         PrintLine("Debugger.Break() test: Ok if debugger is open and breaks.");
@@ -1355,7 +1367,7 @@ internal static class Program
         var values = new string[1];
         // testing that the generic return value type from the function can be stored in a concrete type
         values = values.AsSpan(0, 1).ToArray();
-        PassTest();
+        EndTest(values.Length == 1);
     }
 
     private static void TestCallToGenericInterfaceMethod()
@@ -1635,6 +1647,8 @@ internal static class Program
         TestFilterNested();
 
         TestCatchAndThrow();
+
+        TestRethrow();
     }
 
     private static void TestTryCatchNoException()
@@ -1845,6 +1859,32 @@ internal static class Program
         }
         PrintLine(exceptionFlowSequence);
         EndTest(exceptionFlowSequence == @"In middle catchRunning outer filterIn outer catchRunning inner filterIn inner catch");
+    }
+
+    private static void TestRethrow()
+    {
+        StartTest("Test rethrow");
+        int caught = 0;
+        try
+        {
+            try
+            {
+                throw new Exception("first");
+            }
+            catch
+            {
+                caught++;
+                throw;
+            }
+        }
+        catch(Exception e)
+        {
+            if (e.Message == "first")
+            {
+                caught++;
+            }
+        }
+        EndTest(caught == 2);
     }
 
     private static void TestCatchAndThrow()
@@ -2272,6 +2312,8 @@ internal static class Program
 
     static void TestIntOverflows()
     {
+        TestCharInOvf();
+
         TestSignedIntAddOvf();
 
         TestSignedLongAddOvf();
@@ -2288,6 +2330,13 @@ internal static class Program
 
         TestUnsignedLongSubOvf();
 
+        TestUnsignedIntMulOvf();
+
+        TestUnsignedLongMulOvf();
+
+        TestSignedIntMulOvf();
+
+        TestSignedLongMulOvf();
     }
 
     private static void TestSignedLongAddOvf()
@@ -2327,6 +2376,21 @@ internal static class Program
             return;
         }
         EndTest(true);
+    }
+
+    private static void TestCharInOvf()
+    {
+        // Just checks the compiler can handle the char type
+        // This was failing for https://github.com/dotnet/corert/blob/f542d97f26e87f633310e67497fb01dad29987a5/src/System.Private.CoreLib/shared/System/Environment.Unix.cs#L111
+        StartTest("Test char add overflows");
+        char opChar = '1';
+        int op32r = 2;
+        if (checked(opChar + op32r) != 51)
+        {
+            FailTest("No overflow for char failed"); // check not always throwing an exception
+            return;
+        }
+        PassTest();
     }
 
     private static void TestSignedIntAddOvf()
@@ -2582,6 +2646,234 @@ internal static class Program
         PassTest();
     }
 
+    private static void TestUnsignedIntMulOvf()
+    {
+        StartTest("Test uint multiply overflows");
+        bool thrown;
+        uint op32l = 10;
+        uint op32r = 20;
+        if (checked(op32l * op32r) != 200)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op32l = 2;
+        op32r = (uint.MaxValue >> 1) + 1;
+        thrown = false;
+        try
+        {
+            uint res = checked(op32l * op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for unsigned i32 multiply of numbers");
+            return;
+        }
+        op32l = 0;
+        op32r = 0; // check does a division so make sure this case is handled
+        thrown = false;
+        try
+        {
+            uint res = checked(op32l * op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (thrown)
+        {
+            FailTest("exception not thrown for unsigned i32 multiply of zeros");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestUnsignedLongMulOvf()
+    {
+        StartTest("Test ulong multiply overflows");
+        bool thrown;
+        ulong op64l = 10;
+        ulong op64r = 20;
+        if (checked(op64l * op64r) != 200L)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op64l = 2;
+        op64r = (ulong.MaxValue >> 1) + 1;
+        thrown = false;
+        try
+        {
+            ulong res = checked(op64l * op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for unsigned i64 multiply of numbers");
+            return;
+        }
+        op64l = 0;
+        op64r = 0; // check does a division so make sure this case is handled
+        thrown = false;
+        try
+        {
+            ulong res = checked(op64l * op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (thrown)
+        {
+            FailTest("exception not thrown for unsigned i64 multiply of zeros");
+            return;
+        }
+        PassTest();
+    }
+
+    private static void TestSignedIntMulOvf()
+    {
+        StartTest("Test int multiply overflows");
+        bool thrown;
+        int op32l = 10;
+        int op32r = -20;
+        if (checked(op32l * op32r) != -200)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op32l = 2;
+        op32r = (int.MaxValue >> 1) + 1;
+        thrown = false;
+        try
+        {
+            int res = checked(op32l * op32r);
+            PrintLine("should have overflow but was " + res.ToString());
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i32 multiply overflow");
+            return;
+        }
+        op32l = 2;
+        op32r = (int.MinValue >> 1) - 1;
+        thrown = false;
+        try
+        {
+            int res = checked(op32l * op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i32 multiply underflow");
+            return;
+        }
+        op32l = 0;
+        op32r = 0; // check does a division so make sure this case is handled
+        thrown = false;
+        try
+        {
+            int res = checked(op32l * op32r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (thrown)
+        {
+            FailTest("exception not thrown for signed i32 multiply of zeros");
+            return;
+        }
+
+        PassTest();
+    }
+
+    private static void TestSignedLongMulOvf()
+    {
+        StartTest("Test long multiply overflows");
+        bool thrown;
+        long op64l = 10;
+        long op64r = -20;
+        if (checked(op64l * op64r) != -200)
+        {
+            FailTest("No overflow failed"); // check not always throwing an exception
+            return;
+        }
+        op64l = 2;
+        op64r = (long.MaxValue >> 1) + 1;
+        thrown = false;
+        try
+        {
+            long res = checked(op64l * op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i64 multiply overflow");
+            return;
+        }
+        op64l = 2;
+        op64r = (long.MinValue >> 1) - 1;
+        thrown = false;
+        try
+        {
+            long res = checked(op64l * op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (!thrown)
+        {
+            FailTest("exception not thrown for signed i64 multiply underflow");
+            return;
+        }
+        op64l = 0;
+        op64r = 0; // check does a division so make sure this case is handled
+        thrown = false;
+        try
+        {
+            long res = checked(op64l * op64r);
+        }
+        catch (OverflowException)
+        {
+            thrown = true;
+        }
+        if (thrown)
+        {
+            FailTest("exception not thrown for signed i64 multiply of zeros");
+            return;
+        }
+        PassTest();
+    }
+
+    private static unsafe void TestStackTrace()
+    {
+        StartTest("Test StackTrace");
+#if DEBUG
+        EndTest(new StackTrace().ToString().Contains("TestStackTrace"));
+#else
+        EndTest(new StackTrace().ToString().Contains("wasm-function"));
+#endif
+    }
+
     static void TestJavascriptCall()
     {
         StartTest("Test Javascript call");
@@ -2589,6 +2881,55 @@ internal static class Program
         IntPtr resultPtr = JSInterop.InternalCalls.InvokeJSUnmarshalled(out string exception, "Answer", IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
 
         EndTest(resultPtr.ToInt32() == 42);
+    }
+
+    static void TestDefaultConstructorOf()
+    {
+        StartTest("Test DefaultConstructorOf");
+        var c = Activator.CreateInstance<ClassForNre>();
+        EndTest(c != null);
+    }
+
+    internal struct LargeArrayBuilder<T>
+    {
+        private readonly int _maxCapacity;
+
+        public LargeArrayBuilder(bool initialize)
+            : this(maxCapacity: int.MaxValue)
+        {
+        }
+
+        public LargeArrayBuilder(int maxCapacity)
+            : this()
+        {
+            _maxCapacity = maxCapacity;
+        }
+    }
+
+    static void TestStructUnboxOverload()
+    {
+        StartTest("Test DefaultConstructorOf");
+        var s = new LargeArrayBuilder<string>(true);
+        var s2 = new LargeArrayBuilder<string>(1);
+        EndTest(true); // testing compilation 
+    }
+
+    static void TestGetSystemArrayEEType()
+    {
+        StartTest("Test can call GetSystemArrayEEType through CalliIntrinsic");
+        IList e = new string[] { "1" };
+        foreach (string s in e)
+        {
+        }
+        EndTest(true); // testing compilation 
+    }
+
+    static void TestBoolCompare()
+    {
+        StartTest("Test Bool.Equals");
+        bool expected = true;
+        bool actual = true;
+        EndTest(expected.Equals(actual));
     }
 
     static ushort ReadUInt16()

@@ -1040,10 +1040,10 @@ namespace ILCompiler.DependencyAnalysis
                     // Build symbol definition map.
                     objectWriter.BuildSymbolDefinitionMap(node, nodeContents.DefinedSymbols);
 
-                    // The DWARF CFI unwind is implemented for AMD64 & ARM32 only.
+                    // The DWARF CFI unwind is only implemented for some architectures.
                     TargetArchitecture tarch = factory.Target.Architecture;
                     if (!factory.Target.IsWindows &&
-                        (tarch == TargetArchitecture.X64 || tarch == TargetArchitecture.ARM))
+                        (tarch == TargetArchitecture.X64 || tarch == TargetArchitecture.ARM || tarch == TargetArchitecture.ARM64))
                         objectWriter.BuildCFIMap(factory, node);
 
                     // Build debug location map
@@ -1089,17 +1089,24 @@ namespace ILCompiler.DependencyAnalysis
                             }
                             int size = objectWriter.EmitSymbolReference(reloc.Target, (int)delta, reloc.RelocType);
 
-                            // Emit a copy of original Thumb2 instruction that came from RyuJIT
-                            if (reloc.RelocType == RelocType.IMAGE_REL_BASED_THUMB_MOV32 ||
-                                reloc.RelocType == RelocType.IMAGE_REL_BASED_THUMB_BRANCH24)
+                            // Emit a copy of original Thumb2/ARM64 instruction that came from RyuJIT
+
+                            switch (reloc.RelocType)
                             {
-                                unsafe
-                                {
-                                    fixed (void* location = &nodeContents.Data[i])
+                                case RelocType.IMAGE_REL_BASED_THUMB_MOV32:
+                                case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
+                                case RelocType.IMAGE_REL_BASED_ARM64_BRANCH26:
+                                case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
+                                    unsafe
                                     {
-                                        objectWriter.EmitBytes((IntPtr)location, size);
+                                        fixed (void* location = &nodeContents.Data[i])
+                                        {
+                                            objectWriter.EmitBytes((IntPtr)location, size);
+                                        }
                                     }
-                                }
+                                    break;
                             }
 
                             // Update nextRelocIndex/Offset

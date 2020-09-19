@@ -195,6 +195,7 @@
     <Compile Include="System\Diagnostics\StackFrame.CoreRT.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
     <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
+    <Compile Include="System\Diagnostics\StackTrace.CoreRT.Wasm.cs" Condition="'$(Platform)'=='wasm'"/>
     <Compile Include="System\Enum.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.cs" />
     <Compile Include="System\GC.cs" />
@@ -495,6 +496,7 @@
     <DefineConstants>INPLACE_RUNTIME;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(Platform)' == 'arm'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(Platform)' == 'armel'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(Platform)' == 'wasm'">FEATURE_64BIT_ALIGNMENT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
     <Compile Include="..\..\Runtime.Base\src\System\Diagnostics\Eval.cs">

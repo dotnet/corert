@@ -1474,6 +1474,8 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(pint_t pc,
   typename CFI_Parser<A>::CIE_Info cieInfo;
   bool foundFDE = false;
   bool foundInCache = false;
+
+#ifndef _LIBUNWIND_USE_ONLY_DWARF_INDEX
   // If compact encoding table gave offset into dwarf section, go directly there
   if (fdeSectionOffsetHint != 0) {
     foundFDE = CFI_Parser<A>::findFDE(_addressSpace, pc, sects.dwarf_section,
@@ -1481,6 +1483,8 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(pint_t pc,
                                     sects.dwarf_section + fdeSectionOffsetHint,
                                     &fdeInfo, &cieInfo);
   }
+#endif
+
 #if defined(_LIBUNWIND_SUPPORT_DWARF_INDEX)
   if (!foundFDE && (sects.dwarf_index_section != 0)) {
     foundFDE = EHHeaderParser<A>::findFDE(
@@ -1488,6 +1492,8 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(pint_t pc,
         (uint32_t)sects.dwarf_index_section_length, &fdeInfo, &cieInfo);
   }
 #endif
+
+#ifndef _LIBUNWIND_USE_ONLY_DWARF_INDEX
   if (!foundFDE) {
     // otherwise, search cache of previously found FDEs.
     pint_t cachedFDE = DwarfFDECache<A>::findFDE(sects.dso_base, pc);
@@ -1505,6 +1511,7 @@ bool UnwindCursor<A, R>::getInfoFromDwarfSection(pint_t pc,
                                       (uint32_t)sects.dwarf_section_length, 0,
                                       &fdeInfo, &cieInfo);
   }
+#endif
   if (foundFDE) {
     typename CFI_Parser<A>::PrologInfo prolog;
     if (CFI_Parser<A>::parseFDEInstructions(_addressSpace, fdeInfo, cieInfo, pc,
@@ -1896,7 +1903,11 @@ void UnwindCursor<A, R>::setInfoBasedOnIPRegister(bool isReturnAddress) {
 
 #if defined(_LIBUNWIND_SUPPORT_DWARF_UNWIND)
     // If there is dwarf unwind info, look there next.
+#if defined(_LIBUNWIND_USE_ONLY_DWARF_INDEX)
+    if (sects.dwarf_index_section != 0) {
+#else
     if (sects.dwarf_section != 0) {
+#endif
       if (this->getInfoFromDwarfSection(pc, sects)) {
         // found info in dwarf, done
         return;
