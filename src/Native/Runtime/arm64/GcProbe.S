@@ -4,27 +4,7 @@
 #include <unixasmmacros.inc>
 #include "AsmOffsets.inc"
 
-//
-// Set the Thread state and wait for a GC to complete.
-//
-// Register state on entry:
-//  x4: thread pointer
-//  
-// Register state on exit:
-//  x4: thread pointer
-//  All other registers trashed
-//
-    .global RhpWaitForGCNoAbort
-
-    .macro WaitForGCCompletion
-        ldr         w2, [x4, #OFFSETOF__Thread__m_ThreadStateFlags]
-        tst         w2, #TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC
-        bne         0f
-
-        ldr         x9, [x4, #OFFSETOF__Thread__m_pHackPInvokeTunnel]
-        bl          RhpWaitForGCNoAbort
-0:
-    .endm
+    .global RhpGcPoll2
 
     LEAF_ENTRY RhpGcPoll
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 0
@@ -34,21 +14,7 @@
 
     NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME x0
-
-#if FEATURE_EMULATED_TLS
-        bl          RhpGetThread
-        mov         x4, x0
-#else
-        INLINE_GETTHREAD x4
-#endif
-
-        str         x4, [sp, #OFFSETOF__PInvokeTransitionFrame__m_pThread]
-
-        // Unhijack this thread, if necessary.
-        INLINE_THREAD_UNHIJACK x4, x0, x1       // trashes x0, x1
-
-        WaitForGCCompletion
-
+        bl RhpGcPoll2
         POP_COOP_PINVOKE_FRAME
         ret
     NESTED_END RhpGcPollRare
