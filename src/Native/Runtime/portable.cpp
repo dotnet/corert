@@ -148,7 +148,17 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArray, (EEType * pArrayEEType, int numElement
     }
 
     UInt8* result = acontext->alloc_ptr;
+#ifdef HOST_64BIT
     UInt8* advance = result + size;
+#else
+    uint64_t advance64 = (uint64_t)result + (uint64_t)size;
+    size_t advance32 = (size_t)advance64;
+    if (advance32 != advance64)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+    }
+    UInt8* advance = (UInt8*)advance32;
+#endif // HOST_64BIT
     if (advance <= acontext->alloc_limit)
     {
         acontext->alloc_ptr = advance;
@@ -208,8 +218,31 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (EEType* pEEType))
 
     int requiresPadding = ((uint32_t)result) & 7;
     size_t paddedSize = size;
-    if (requiresPadding) paddedSize += 12;
+    if (requiresPadding) 
+    {
+#ifdef HOST_64BIT
+        paddedSize += 12;
+#else
+        uint64_t paddedSize64 = (uint64_t)paddedSize + (uint64_t)12;
+        paddedSize = (size_t)paddedSize64;
+        if (paddedSize != paddedSize64)
+        {
+            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+        }
+#endif // HOST_64BIT
+    }
+
+#ifdef HOST_64BIT
     UInt8* advance = result + paddedSize;
+#else
+    uint64_t advance64 = (uint64_t)result + (uint64_t)paddedSize;
+    size_t advance32 = (size_t)advance64;
+    if (advance32 != advance64)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+    }
+    UInt8* advance = (UInt8*)advance32;
+#endif // HOST_64BIT
     if (advance <= acontext->alloc_limit)
     {
         acontext->alloc_ptr = advance;
@@ -217,7 +250,7 @@ COOP_PINVOKE_HELPER(Object *, RhpNewFastAlign8, (EEType* pEEType))
         {
             Object* dummy = (Object*)result;
             dummy->set_EEType(g_pFreeObjectEEType);
-            result += 12;
+            result += 12; // if result + paddedSize was ok, then cant overflow
         }
         pObject = (Object*)result;
         pObject->set_EEType(pEEType);
@@ -249,8 +282,30 @@ COOP_PINVOKE_HELPER(Object*, RhpNewFastMisalign, (EEType* pEEType))
 
     int requiresPadding = (((uint32_t)result) & 7) != 4;
     size_t paddedSize = size;
-    if (requiresPadding) paddedSize += 12;
+    if (requiresPadding) 
+    {
+#ifdef HOST_64BIT
+        paddedSize += 12;
+#else
+        uint64_t paddedSize64 = (uint64_t)paddedSize + (uint64_t)12;
+        paddedSize = (size_t)paddedSize64;
+        if (paddedSize != paddedSize64)
+        {
+            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+        }
+#endif // HOST_64BIT
+    }
+#ifdef HOST_64BIT
     UInt8* advance = result + paddedSize;
+#else
+    uint64_t advance64 = (uint64_t)result + (uint64_t)paddedSize;
+    size_t advance32 = (size_t)advance64;
+    if (advance32 != advance64)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+    }
+    UInt8* advance = (UInt8*)advance32;
+#endif // HOST_64BIT
     if (advance <= acontext->alloc_limit)
     {
         acontext->alloc_ptr = advance;
@@ -258,7 +313,7 @@ COOP_PINVOKE_HELPER(Object*, RhpNewFastMisalign, (EEType* pEEType))
         {
             Object* dummy = (Object*)result;
             dummy->set_EEType(g_pFreeObjectEEType);
-            result += 12;
+            result += 12; // if result + paddedSize was ok, then cant overflow
         }
         pObject = (Object*)result;
         pObject->set_EEType(pEEType);
@@ -319,9 +374,30 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (EEType * pArrayEEType, int numE
     UInt8* result = acontext->alloc_ptr;
     int requiresAlignObject = ((uint32_t)result) & 7;
     size_t paddedSize = size;
-    if (requiresAlignObject) paddedSize += 12;
-
+    if (requiresAlignObject) 
+    {
+#ifdef HOST_64BIT
+        paddedSize += 12;
+#else
+        uint64_t paddedSize64 = (uint64_t)paddedSize + (uint64_t)12;
+        paddedSize = (size_t)paddedSize64;
+        if (paddedSize != paddedSize64)
+        {
+            ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+        }
+#endif // HOST_64BIT
+    }
+#ifdef HOST_64BIT
     UInt8* advance = result + paddedSize;
+#else
+    uint64_t advance64 = (uint64_t)result + (uint64_t)paddedSize;
+    size_t advance32 = (size_t)advance64;
+    if (advance32 != advance64)
+    {
+        ASSERT_UNCONDITIONALLY("NYI");  // TODO: Throw overflow
+    }
+    UInt8* advance = (UInt8*)advance32;
+#endif // HOST_64BIT
     if (advance <= acontext->alloc_limit)
     {
         acontext->alloc_ptr = advance;
@@ -329,7 +405,7 @@ COOP_PINVOKE_HELPER(Array *, RhpNewArrayAlign8, (EEType * pArrayEEType, int numE
         {
             Object* dummy = (Object*)result;
             dummy->set_EEType(g_pFreeObjectEEType);
-            result += 12;
+            result += 12; // if result + paddedSize was ok, then cant overflow
         }
         pObject = (Array*)result;
         pObject->set_EEType(pArrayEEType);
