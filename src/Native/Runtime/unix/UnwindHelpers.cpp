@@ -528,7 +528,7 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
     return true;
 }
 
-#endif !TARGET_ARM64
+#endif //!TARGET_ARM64
 
 bool UnwindHelpers::StepFrame(MethodInfo* pMethodInfo, REGDISPLAY *regs)
 {
