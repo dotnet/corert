@@ -18,7 +18,7 @@
 #include "UnwindHelpers.h"
 
 // libunwind headers
-#ifndef TARGET_64
+#ifndef TARGET_ARM64
 #include <libunwind.h>
 #endif
 #include <src/config.h>
