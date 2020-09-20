@@ -610,6 +610,7 @@ namespace ILCompiler.DependencyAnalysis
                 int end = frameInfo.EndOffset;
                 int len = frameInfo.BlobData.Length;
                 byte[] blob = frameInfo.BlobData;
+                byte[] unwindData = frameInfo.UnwindData;
 
                 ObjectNodeSection lsdaSection = LsdaSection;
                 if (ShouldShareSymbol(node))
@@ -625,6 +626,7 @@ namespace ILCompiler.DependencyAnalysis
                 FrameInfoFlags flags = frameInfo.Flags;
                 flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
                 flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
+                flags |= unwindData != null ? FrameInfoFlags.HasUnwindInfo : 0;
 
                 EmitIntValue((byte)flags, 1);
 
@@ -649,6 +651,11 @@ namespace ILCompiler.DependencyAnalysis
                     EmitSymbolRef(_sb.Clear().Append("_ehInfo").Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_RELPTR32);
                 }
 
+                if (unwindData != null)
+                {
+                    EmitSymbolRef(_sb.Clear().Append("_uwInfo").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_RELPTR32);
+                }
+
                 if (gcInfo != null)
                 {
                     EmitBlob(gcInfo);
@@ -660,11 +667,19 @@ namespace ILCompiler.DependencyAnalysis
                     // TODO: Place EHInfo into different section for better locality
                     Debug.Assert(ehInfo.Alignment == 1);
                     Debug.Assert(ehInfo.DefinedSymbols.Length == 0);
-                    EmitSymbolDef(_sb /* ehInfo */);
+                    EmitSymbolDef(_sb.Clear().Append("_ehInfo").Append(_currentNodeZeroTerminatedName));
                     EmitBlobWithRelocs(ehInfo.Data, ehInfo.Relocs);
                     ehInfo = null;
                 }
 
+                if (unwindData != null)
+                {
+                    // TODO: Place unwind into different section for better locality?
+                    EmitSymbolDef(_sb.Clear().Append("_uwInfo").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName));
+                    EmitBlob(unwindData);
+                }
+
+                // Store the CFI data for the debugger even if we have or own unwinder for the target
                 // For Unix, we build CFI blob map for each offset.
                 Debug.Assert(len % CfiCodeSize == 0);
 

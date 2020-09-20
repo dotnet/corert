@@ -14,6 +14,7 @@ namespace ILCompiler.DependencyAnalysis
         HasEHInfo           = 0x04,
         ReversePInvoke      = 0x08,
         HasAssociatedData   = 0x10,
+        HasUnwindInfo       = 0x20
     }
 
     public struct FrameInfo
@@ -22,13 +23,15 @@ namespace ILCompiler.DependencyAnalysis
         public readonly int StartOffset;
         public readonly int EndOffset;
         public readonly byte[] BlobData;
+        public readonly byte[] UnwindData;
 
-        public FrameInfo(FrameInfoFlags flags, int startOffset, int endOffset, byte[] blobData)
+        public FrameInfo(FrameInfoFlags flags, int startOffset, int endOffset, byte[] blobData, byte[] unwindData)
         {
             Flags = flags;
             StartOffset = startOffset;
             EndOffset = endOffset;
             BlobData = blobData;
+            UnwindData = unwindData;
         }
     }
 

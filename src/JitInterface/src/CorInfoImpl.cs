@@ -51,7 +51,8 @@ namespace Internal.JitInterface
             CFI_DEF_CFA               // Take address from register and add offset to it.
         };
 
-        internal const string JitLibrary = "clrjitilc";
+        //internal const string JitLibrary = "clrjitilc";
+        internal const string JitLibrary = "protononjit";
 
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
@@ -2692,6 +2693,7 @@ namespace Internal.JitInterface
             }
 
             byte[] blobData = new byte[unwindSize];
+            byte[] unwindData = null;
 
             for (uint i = 0; i < unwindSize; i++)
             {
@@ -2702,18 +2704,20 @@ namespace Internal.JitInterface
 
             if (target.Architecture == TargetArchitecture.ARM64 && target.OperatingSystem == TargetOS.Linux)
             {
-                blobData = CompressARM64CFI(blobData);
+                blobData = CompressARM64CFI(blobData, out unwindData);
             }
 
-            _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+            _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData, unwindData);
         }
 
         // Get the CFI data in the same shape as clang/LLVM generated one. This improves the compatibility with libunwind and other unwind solutions
         // - Combine in one single block for the whole prolog instead of one CFI block per assembler instruction
         // - Store CFA definition first
         // - Store all used registers in ascending order
-        private byte[] CompressARM64CFI(byte[] blobData)
+        private byte[] CompressARM64CFI(byte[] blobData, out byte[] unwindData)
         {
+            unwindData = null;
+
             if (blobData == null || blobData.Length == 0)
             {
                 return blobData;
@@ -2792,9 +2796,14 @@ namespace Internal.JitInterface
                 }
             }
 
+            ArrayBuilder<byte> unwind = new ArrayBuilder<byte>();
+
             using (MemoryStream cfiStream = new MemoryStream())
             {
                 int storeOffset = 0;
+
+                int unwindRegister = 0;
+                int unwindOffset = 0;
 
                 using (BinaryWriter cfiWriter = new BinaryWriter(cfiStream))
                 {
@@ -2805,6 +2814,9 @@ namespace Internal.JitInterface
                         cfiWriter.Write(cfaRegister);
                         cfiWriter.Write(cfaOffset);
                         storeOffset = cfaOffset;
+
+                        unwindRegister = cfaRegister;
+                        unwindOffset = cfaOffset;
                     }
                     else
                     {
@@ -2814,6 +2826,9 @@ namespace Internal.JitInterface
                             cfiWriter.Write((byte)CFI_OPCODE.CFI_ADJUST_CFA_OFFSET);
                             cfiWriter.Write((short)-1);
                             cfiWriter.Write(cfaOffset);
+
+                            unwindRegister = 31;
+                            unwindOffset = cfaOffset;
                         }
 
                         if (spOffset != 0)
@@ -2822,20 +2837,67 @@ namespace Internal.JitInterface
                             cfiWriter.Write((byte)CFI_OPCODE.CFI_DEF_CFA);
                             cfiWriter.Write((short)31); 
                             cfiWriter.Write(spOffset);
+
+                            unwindRegister = 31;
+                            unwindOffset = spOffset;
                         }
                     }
+
+                    Debug.Assert(unwindRegister >= 0 && unwindRegister <= 31);
+                    Debug.Assert(unwindOffset % 8 == 0);
+                    Debug.Assert(unwindOffset >= 0);
+
+                    unwindOffset /= 8;
+
+                    Debug.Assert(unwindOffset <= ushort.MaxValue);
+
+                    unwind.Add((byte)unwindRegister);
+                    unwind.Add((byte)(unwindOffset & 0xFF));
+                    unwind.Add((byte)((unwindOffset >> 8) & 0xFF));
 
                     for (int i = registerOffset.Length - 1; i >= 0; i--)
                     {
                         if (registerOffset[i] != int.MinValue)
                         {
+                            unwindRegister = i;
+                            unwindOffset = registerOffset[i] + storeOffset;
+
                             cfiWriter.Write((byte)codeOffset);
                             cfiWriter.Write((byte)CFI_OPCODE.CFI_REL_OFFSET);
-                            cfiWriter.Write((short)i);
-                            cfiWriter.Write(registerOffset[i] + storeOffset);
+                            cfiWriter.Write((short)unwindRegister);
+                            cfiWriter.Write(unwindOffset);
+
+                            Debug.Assert(unwindOffset % 8 == 0);
+                            Debug.Assert(unwindOffset >= 0);
+
+                            // X0 - X31
+                            if (unwindRegister >= 0 && unwindRegister < 32)
+                            {
+                            }
+                            // D8 - D16
+                            else if (unwindRegister >= 72 && unwindRegister < 81)
+                            {
+                                unwindRegister -= 40;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+
+                            unwindOffset /= 8;
+
+                            Debug.Assert(unwindOffset <= ushort.MaxValue);
+
+                            unwind.Add((byte)unwindRegister);
+
+                            unwind.Add((byte)(unwindOffset & 0xFF));
+                            unwind.Add((byte)((unwindOffset >> 8) & 0xFF));
                         }
                     }
                 }
+
+                unwind.Add(0xFF);
+                unwindData = unwind.ToArray();
 
                 return cfiStream.ToArray();
             }
