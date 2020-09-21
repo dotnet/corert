@@ -985,11 +985,6 @@ EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
     Thread* pThread = ThreadStore::GetCurrentThread();
     pFrame->m_pThread = pThread;
 
-    if (pThread->IsSuppressGcStressSet() || pThread->IsDoNotTriggerGcSet())
-    {
-        return;
-    }
-
     RhpWaitForGC2(pFrame);
 }
 
