@@ -67,5 +67,5 @@ public:
 
     PTR_VOID GetOsModuleHandle();
 
-    static PTR_VOID GetMethodUnwindInfo(MethodInfo* pMethodInfo);
+    static PTR_VOID GetMethodUnwindInfo(MethodInfo* pMethodInfo, int8_t& mode);
 };

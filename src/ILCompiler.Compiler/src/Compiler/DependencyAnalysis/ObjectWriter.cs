@@ -626,7 +626,18 @@ namespace ILCompiler.DependencyAnalysis
                 FrameInfoFlags flags = frameInfo.Flags;
                 flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
                 flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
-                flags |= unwindData != null ? FrameInfoFlags.HasUnwindInfo : 0;
+
+                if (unwindData != null)
+                {
+                    if (unwindData.Length == 2)
+                    {
+                        flags |= FrameInfoFlags.HasCompactUnwindInfo;
+                    }
+                    else
+                    {
+                        flags |= FrameInfoFlags.HasFullUnwindInfo;
+                    }
+                }
 
                 EmitIntValue((byte)flags, 1);
 
@@ -653,7 +664,14 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (unwindData != null)
                 {
-                    EmitSymbolRef(_sb.Clear().Append("_uwInfo").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    if (unwindData.Length == 2)
+                    {
+                        EmitBlob(unwindData);
+                    }
+                    else
+                    {
+                        EmitSymbolRef(_sb.Clear().Append("_uwInfo").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    }
                 }
 
                 if (gcInfo != null)
@@ -672,7 +690,7 @@ namespace ILCompiler.DependencyAnalysis
                     ehInfo = null;
                 }
 
-                if (unwindData != null)
+                if (unwindData != null && unwindData.Length > 2)
                 {
                     // TODO: Place unwind into different section for better locality?
                     EmitSymbolDef(_sb.Clear().Append("_uwInfo").Append(i.ToStringInvariant()).Append(_currentNodeZeroTerminatedName));
@@ -682,7 +700,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Store the CFI data for the debugger even if we have or own unwinder for the target
                 // For Unix, we build CFI blob map for each offset.
                 Debug.Assert(len % CfiCodeSize == 0);
-
+                
                 // Record start/end of frames which shouldn't be overlapped.
                 _offsetToCfiStart.Add(start);
                 _offsetToCfiEnd.Add(end);

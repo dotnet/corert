@@ -12,5 +12,8 @@ class UnwindHelpers
 public:
     static bool StepFrame(MethodInfo* pMethodInfo, REGDISPLAY *regs);
 
+#ifdef TARGET_ARM64
     static bool StepFrame(REGDISPLAY* regs, PTR_VOID unwindInfo);
+    static bool StepFrameCompact(REGDISPLAY* regs, PTR_VOID unwindInfo);
+#endif
 };

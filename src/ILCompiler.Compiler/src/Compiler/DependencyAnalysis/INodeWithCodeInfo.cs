@@ -8,13 +8,14 @@ namespace ILCompiler.DependencyAnalysis
     [Flags]
     public enum FrameInfoFlags
     {
-        Handler             = 0x01,
-        Filter              = 0x02,
+        Handler              = 0x01,
+        Filter               = 0x02,
 
-        HasEHInfo           = 0x04,
-        ReversePInvoke      = 0x08,
-        HasAssociatedData   = 0x10,
-        HasUnwindInfo       = 0x20
+        HasEHInfo            = 0x04,
+        ReversePInvoke       = 0x08,
+        HasAssociatedData    = 0x10,
+        HasFullUnwindInfo    = 0x20,
+        HasCompactUnwindInfo = 0x40
     }
 
     public struct FrameInfo

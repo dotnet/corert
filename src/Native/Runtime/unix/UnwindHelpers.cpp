@@ -533,10 +533,17 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 bool UnwindHelpers::StepFrame(MethodInfo* pMethodInfo, REGDISPLAY *regs)
 {
 #ifdef TARGET_ARM64
-    PTR_VOID pUnwindInfo = UnixNativeCodeManager::GetMethodUnwindInfo(pMethodInfo);
+    int8_t mode;
+
+    PTR_VOID pUnwindInfo = UnixNativeCodeManager::GetMethodUnwindInfo(pMethodInfo, mode);
 
     if (pUnwindInfo != NULL)
     {
+        if (mode == 0)
+        {
+            return StepFrameCompact(regs, pUnwindInfo);
+        }
+
         return StepFrame(regs, pUnwindInfo);
     }
 
@@ -603,6 +610,48 @@ bool UnwindHelpers::StepFrame(REGDISPLAY* regs, PTR_VOID unwindInfo)
         }
     }
     
+    regs->SetAddrOfIP(regs->pLR);
+    regs->SetIP(*regs->GetAddrOfIP());
+
+    return true;
+}
+
+bool UnwindHelpers::StepFrameCompact(REGDISPLAY* regs, PTR_VOID unwindInfo)
+{
+    // Encoding
+    // FSSR RRRO OOOO OOOO
+    // F = Frame type 0 = FP ; 1 = SP
+    // O = CFA offset / 8
+    // R = number of additional registers X19 - X28
+    // S = Offset for FP/LR / 8
+
+    uint16_t code = *(uint16_t*)unwindInfo;
+    uint32_t cfaOffset = (code & 0x1F) * 8;
+    int regCount = (code >> 9) & 0xF;
+    int frameOffset = ((code >> 13) & 0x3) * 8;
+    uint8_t* baseLocation;
+
+    if ((code & 0x8000) == 0x8000)
+    {
+        baseLocation = (uint8_t*)regs->GetSP();
+    }
+    else
+    {
+        baseLocation = (uint8_t*)*regs->pFP;
+    }
+
+    PTR_UIntNative regLocation = (PTR_UIntNative)baseLocation + (-8 + cfaOffset - regCount * 8);
+
+    for (int i = 0; i < regCount; i++)
+    {
+        (&regs->pX0)[19 + i] = regLocation++;
+    }
+
+    regs->pFP = (PTR_UIntNative)(baseLocation + frameOffset);
+    regs->pLR = (PTR_UIntNative)(baseLocation + frameOffset + 8);
+
+    regs->SetSP((UIntNative)baseLocation + cfaOffset);
+
     regs->SetAddrOfIP(regs->pLR);
     regs->SetIP(*regs->GetAddrOfIP());
 

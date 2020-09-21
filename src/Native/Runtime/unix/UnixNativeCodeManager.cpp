@@ -24,10 +24,11 @@
 #define UBF_FUNC_KIND_HANDLER   0x01
 #define UBF_FUNC_KIND_FILTER    0x02
 
-#define UBF_FUNC_HAS_EHINFO             0x04
-#define UBF_FUNC_REVERSE_PINVOKE        0x08
-#define UBF_FUNC_HAS_ASSOCIATED_DATA    0x10
-#define UBF_FUNC_HAS_UNWIND_INFO        0x20
+#define UBF_FUNC_HAS_EHINFO              0x04
+#define UBF_FUNC_REVERSE_PINVOKE         0x08
+#define UBF_FUNC_HAS_ASSOCIATED_DATA     0x10
+#define UBF_FUNC_HAS_FULL_UNWIND_INFO    0x20
+#define UBF_FUNC_HAS_COMPACT_UNWIND_INFO 0x40
 
 struct UnixNativeMethodInfo
 {
@@ -145,8 +146,11 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
 
-    if ((unwindBlockFlags & UBF_FUNC_HAS_UNWIND_INFO) != 0)
+    if ((unwindBlockFlags & UBF_FUNC_HAS_FULL_UNWIND_INFO) != 0)
         p += sizeof(int32_t);
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_COMPACT_UNWIND_INFO) != 0)
+        p += sizeof(int16_t);
 
     UInt32 codeOffset = (UInt32)(PINSTRToPCODE(dac_cast<TADDR>(safePointAddress)) - PINSTRToPCODE(dac_cast<TADDR>(pNativeMethodInfo->pMethodStartAddress)));
 
@@ -196,8 +200,11 @@ UIntNative UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Metho
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
 
-        if ((unwindBlockFlags & UBF_FUNC_HAS_UNWIND_INFO) != 0)
+        if ((unwindBlockFlags & UBF_FUNC_HAS_FULL_UNWIND_INFO) != 0)
             p += sizeof(int32_t);
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_COMPACT_UNWIND_INFO) != 0)
+            p += sizeof(int16_t);
 
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
@@ -256,8 +263,11 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
 
-        if ((unwindBlockFlags & UBF_FUNC_HAS_UNWIND_INFO) != 0)
+        if ((unwindBlockFlags & UBF_FUNC_HAS_FULL_UNWIND_INFO) != 0)
             p += sizeof(int32_t);
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_COMPACT_UNWIND_INFO) != 0)
+            p += sizeof(int16_t);
 
         GcInfoDecoder decoder(GCInfoToken(p), DECODE_REVERSE_PINVOKE_VAR);
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
@@ -455,14 +465,14 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(p + *dac_cast<PTR_Int32>(p));
 }
 
-PTR_VOID UnixNativeCodeManager::GetMethodUnwindInfo(MethodInfo* pMethodInfo)
+PTR_VOID UnixNativeCodeManager::GetMethodUnwindInfo(MethodInfo* pMethodInfo, int8_t& mode)
 {
     UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)pMethodInfo;
 
     PTR_UInt8 p = pNativeMethodInfo->pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
-    if ((unwindBlockFlags & UBF_FUNC_HAS_UNWIND_INFO) == 0)
+    if (unwindBlockFlags & (UBF_FUNC_HAS_FULL_UNWIND_INFO | UBF_FUNC_HAS_COMPACT_UNWIND_INFO) == 0)
         return NULL;
 
     if (pNativeMethodInfo->pLSDA != pNativeMethodInfo->pMainLSDA)
@@ -476,6 +486,13 @@ PTR_VOID UnixNativeCodeManager::GetMethodUnwindInfo(MethodInfo* pMethodInfo)
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_COMPACT_UNWIND_INFO) != 0)
+    {
+        mode = 0;
+        return p;
+    }
+        
+    mode = 1;
     return dac_cast<PTR_VOID>(p + *dac_cast<PTR_Int32>(p));
 }
 
