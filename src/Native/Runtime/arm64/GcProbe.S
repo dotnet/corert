@@ -8,7 +8,7 @@
 
     LEAF_ENTRY RhpGcPoll
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, 0
-        tbnz        x0, #TrapThreadsFlags_TrapThreads_Bit, RhpGcPollRare
+        cbnz    w0, RhpGcPollRare // TrapThreadsFlags_None = 0
         ret
     LEAF_END RhpGcPoll
 
