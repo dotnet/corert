@@ -472,7 +472,7 @@ PTR_VOID UnixNativeCodeManager::GetMethodUnwindInfo(MethodInfo* pMethodInfo, int
     PTR_UInt8 p = pNativeMethodInfo->pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
-    if (unwindBlockFlags & (UBF_FUNC_HAS_FULL_UNWIND_INFO | UBF_FUNC_HAS_COMPACT_UNWIND_INFO) == 0)
+    if ((unwindBlockFlags & (UBF_FUNC_HAS_FULL_UNWIND_INFO | UBF_FUNC_HAS_COMPACT_UNWIND_INFO)) == 0)
         return NULL;
 
     if (pNativeMethodInfo->pLSDA != pNativeMethodInfo->pMainLSDA)
