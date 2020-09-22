@@ -20,8 +20,8 @@
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         .if \exceptionType == HARDWARE_EXCEPTION
             sub sp,sp,#0x50
+            .cfi_adjust_cfa_offset 0x50
             stp x3, x1, [sp]   // x3 is the SP and x1 is the IP of the fault site 
-            // TODO PROLOG_PUSH_MACHINE_FRAME
         .else
             PROLOG_STACK_ALLOC 0x50
             .cfi_adjust_cfa_offset 0x50
@@ -169,7 +169,7 @@
 // regdisplayReg - register pointing to the REGDISPLAY structure
    .macro TRASH_PRESERVED_REGISTERS_STORAGE regdisplayReg
 
-#if 0 // def _DEBUG  // @TODO: temporarily removed because trashing the frame pointer breaks the debugger
+#if _DEBUG
         movz        x3, #0xbaad, LSL #48
         movk        x3, #0xdeed, LSL #32
         movk        x3, #0xbaad, LSL #16
@@ -458,7 +458,27 @@ ClearSuccess_Catch:
 
         ldr         x2, [sp, #rsp_offset_x2]                    // x2 <- REGDISPLAY*
 
-// @TODO: add debug-only validation code for ExInfo pop
+#ifdef _DEBUG
+        // Call into some C++ code to validate the pop of the ExInfo.  We only do this in debug because we 
+        // have to spill all the preserved registers and then refill them after the call.
+
+        str         x0, [sp, rsp_offset_x0]
+
+        SAVE_PRESERVED_REGISTERS x2
+
+        ldr         x0, [sp, rsp_CatchFunclet_offset_thread]    // x0 <- Thread*
+        ldr         x1, [sp, #rsp_offset_x3]                    // x1 <- current ExInfo*
+        ldr         x2, [x2, #OFFSETOF__REGDISPLAY__SP]         // x2 <- resume SP value
+        bl          RhpValidateExInfoPop
+
+        ldr         x2, [sp, rsp_offset_x2]                             // x2 <- REGDISPLAY*
+
+        RESTORE_PRESERVED_REGISTERS x2
+
+        ldr         x0, [sp, rsp_offset_x0]                             // reload resume IP
+#endif
+
+        ldr         x1, [sp, rsp_CatchFunclet_offset_thread]
 
         ldr x1, [sp, rsp_CatchFunclet_offset_thread]
 

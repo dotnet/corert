@@ -979,6 +979,15 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
     PalSetLastError(lastErrorOnEntry);
 }
 
+// Standard calling convention variant and actual implementation for RhpGcPoll
+EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+    pFrame->m_pThread = pThread;
+
+    RhpWaitForGC2(pFrame);
+}
+
 void Thread::PushExInfo(ExInfo * pExInfo)
 {
     ValidateExInfoStack();
