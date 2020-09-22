@@ -4,11 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using Internal.IL;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
-using Internal.Runtime.CompilerHelpers;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
@@ -2747,41 +2745,58 @@ getvar:
             }
             else if (fieldType.IsPointer)
             {
-                // TODO: Add support for ByRef to StackItem
-                throw new NotImplementedException();
+                fieldValue = RuntimeAugments.LoadPointerTypeField(instance, field.Offset.AsInt, fieldType.GetRuntimeTypeHandle());
             }
             else
             {
                 fieldValue = RuntimeAugments.LoadReferenceTypeField(instance, field.Offset.AsInt);
             }
 
+            Debug.Assert(fieldValue != null);
+
 setstackitem:
             switch (fieldType.Category)
             {
                 case TypeFlags.Boolean:
+                    _stack.Push(StackItem.FromInt32((bool)fieldValue ? 1 : 0));
+                    break;
                 case TypeFlags.Char:
+                    _stack.Push(StackItem.FromInt32((char)fieldValue));
+                    break;
                 case TypeFlags.SByte:
+                    _stack.Push(StackItem.FromInt32((sbyte)fieldValue));
+                    break;
                 case TypeFlags.Byte:
+                    _stack.Push(StackItem.FromInt32((byte)fieldValue));
+                    break;
                 case TypeFlags.Int16:
+                    _stack.Push(StackItem.FromInt32((short)fieldValue));
+                    break;
                 case TypeFlags.UInt16:
+                    _stack.Push(StackItem.FromInt32((ushort)fieldValue));
+                    break;
                 case TypeFlags.Int32:
-                case TypeFlags.UInt32:
-                    Debug.Assert(fieldValue != null);
                     _stack.Push(StackItem.FromInt32((int)fieldValue));
                     break;
+                case TypeFlags.UInt32:
+                    _stack.Push(StackItem.FromInt32((int)((uint)fieldValue)));
+                    break;
                 case TypeFlags.Int64:
-                case TypeFlags.UInt64:
-                    Debug.Assert(fieldValue != null);
                     _stack.Push(StackItem.FromInt64((long)fieldValue));
                     break;
+                case TypeFlags.UInt64:
+                    _stack.Push(StackItem.FromInt64((long)((ulong)fieldValue)));
+                    break;
                 case TypeFlags.IntPtr:
-                case TypeFlags.UIntPtr:
-                    Debug.Assert(fieldValue != null);
                     _stack.Push(StackItem.FromNativeInt((IntPtr)fieldValue));
                     break;
+                case TypeFlags.UIntPtr:
+                    _stack.Push(StackItem.FromNativeInt((IntPtr)((UIntPtr)fieldValue).ToPointer()));
+                    break;
                 case TypeFlags.Single:
+                    _stack.Push(StackItem.FromDouble((float)fieldValue));
+                    break;
                 case TypeFlags.Double:
-                    Debug.Assert(fieldValue != null);
                     _stack.Push(StackItem.FromDouble((double)fieldValue));
                     break;
                 case TypeFlags.ValueType:
@@ -2818,16 +2833,64 @@ setstackitem:
             switch (fieldValueItem.Kind)
             {
                 case StackValueKind.Int32:
-                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValueItem.AsInt32(), fieldType.GetRuntimeTypeHandle());
+                    object intValue = fieldValueItem.AsInt32();
+
+                    switch (fieldType.Category)
+                    {
+                        case TypeFlags.Boolean:
+                            intValue = fieldValueItem.AsInt32() != 0;
+                            break;
+                        case TypeFlags.Char:
+                            intValue = (char)fieldValueItem.AsInt32();
+                            break;
+                        case TypeFlags.SByte:
+                            intValue = (sbyte)fieldValueItem.AsInt32();
+                            break;
+                        case TypeFlags.Byte:
+                            intValue = (byte)fieldValueItem.AsInt32();
+                            break;
+                        case TypeFlags.Int16:
+                            intValue = (short)fieldValueItem.AsInt32();
+                            break;
+                        case TypeFlags.UInt16:
+                            intValue = (ushort)fieldValueItem.AsInt32();
+                            break;
+                        case TypeFlags.UInt32:
+                            intValue = (uint)fieldValueItem.AsInt32();
+                            break;
+                    }
+
+                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, intValue, fieldType.GetRuntimeTypeHandle());
                     break;
                 case StackValueKind.Int64:
-                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValueItem.AsInt64(), fieldType.GetRuntimeTypeHandle());
+                    object longValue = fieldValueItem.AsInt64();
+
+                    if (fieldType.Category == TypeFlags.UInt64)
+                    {
+                        longValue = (ulong)fieldValueItem.AsInt64();
+                    }
+
+                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, longValue, fieldType.GetRuntimeTypeHandle());
                     break;
                 case StackValueKind.NativeInt:
-                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValueItem.AsNativeInt(), fieldType.GetRuntimeTypeHandle());
+                    object nativeIntValue = fieldValueItem.AsNativeInt();
+
+                    if (fieldType.Category == TypeFlags.UIntPtr)
+                    {
+                        nativeIntValue = (UIntPtr)fieldValueItem.AsNativeInt().ToPointer();
+                    }
+
+                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, nativeIntValue, fieldType.GetRuntimeTypeHandle());
                     break;
                 case StackValueKind.Float:
-                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, (float)fieldValueItem.AsDouble(), fieldType.GetRuntimeTypeHandle());
+                    object doubleValue = fieldValueItem.AsDouble();
+
+                    if (fieldType.Category == TypeFlags.Single)
+                    {
+                        doubleValue = (float)fieldValueItem.AsDouble();
+                    }
+
+                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, doubleValue, fieldType.GetRuntimeTypeHandle());
                     break;
                 case StackValueKind.ValueType:
                     RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValueItem.AsValueType(), fieldType.GetRuntimeTypeHandle());
