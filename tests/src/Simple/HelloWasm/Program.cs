@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Reflection;
 using System.Diagnostics;
+using System.Collections.Specialized;
 
 #if TARGET_WINDOWS
 using CpObj;
@@ -386,7 +387,7 @@ internal static class Program
 
         var genOfNewObject = GC.GetGeneration(new object());
         PrintLine("Generation of new object " + genOfNewObject.ToString());
-        if(genOfNewObject != 0)
+        if (genOfNewObject != 0)
         {
             FailTest("Gen of new object was " + genOfNewObject);
             return;
@@ -399,13 +400,18 @@ internal static class Program
             FailTest("object alive when has no references");
             return;
         }
-        // create enough arrays to go over 5GB which should force older arrays to get collected
-        // use array of size 1MB, then iterate 5*1024 times
-        for(var i = 0; i < 5 * 1024; i++)
+        for (var i = 0; i < 3; i++)
         {
-            var a = new int[256 * 1024]; // ints are 4 bytes so this is 1MB
+            PrintString("GC Collection Count " + i.ToString() + " ");
+            PrintLine(GC.CollectionCount(i).ToString());
         }
-        for(var i = 0; i < 3; i++)
+        if(!TestCreateDifferentObjects())
+        {
+            FailTest("Failed test for creating/collecting different objects");
+        }
+        GC.Collect();
+        GC.Collect();
+        for (var i = 0; i < 3; i++)
         {
             PrintString("GC Collection Count " + i.ToString() + " ");
             PrintLine(GC.CollectionCount(i).ToString());
@@ -423,6 +429,72 @@ internal static class Program
         }
 
         EndTest(TestGeneration2Rooting());
+    }
+
+    struct MiniRandom
+    {
+        private uint _val;
+
+        public MiniRandom(uint seed)
+        {
+            _val = seed;
+        }
+
+        public uint Next()
+        {
+            _val ^= (_val << 13);
+            _val ^= (_val >> 7);
+            _val ^= (_val << 17);
+            return _val;
+        }
+    }
+
+    class F4 { internal int i; }
+    class F8 { internal long l; }
+    class F2Plus8 { internal short s; internal long l; }
+    class CDisp : IDisposable  { public void Dispose() { } }
+    struct StructF48 { internal int i1; internal long l2; }
+    private static bool TestCreateDifferentObjects()
+    {
+        var mr = new MiniRandom(257);
+        var keptObjects = new object[100];
+        for (var i = 0; i < 1000000; i++)
+        {
+            var r = mr.Next();
+            object o;
+            switch (r % 8)
+            {
+                case 0:
+                    o = new F4 { i = 1, };
+                    break;
+                case 1:
+                    o = new F8 { l = 4 };
+                    break;
+                case 2:
+                    o = new F2Plus8 { l = 5, s = 6 };
+                    break;
+                case 3:
+                    o = i.ToString();
+                    break;
+                case 4:
+                    o = new long[10000];
+                    break;
+                case 5:
+                    o = new int[10000];
+                    break;
+                case 6:
+                    o = new StructF48 { i1 = 7, l2 = 8 };
+                    break;
+                case 7:
+                    o = new CDisp();
+                    break;
+                default:
+                    o = null;
+                    break;
+            }
+            keptObjects[r % 100] = o;
+        }
+        return true;
     }
 
     private static Parent aParent;
