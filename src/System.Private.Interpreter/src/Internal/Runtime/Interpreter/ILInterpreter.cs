@@ -10,15 +10,31 @@ using Internal.Runtime.CallInterceptor;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
-
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.Runtime.Interpreter
 {
     internal unsafe class ILInterpreter
     {
+        // Statics are pre-allocated in a readonly segment of the native executable at compile time,
+        // allocate our own static regions for assemblies loaded at run time.
+
+        private static readonly StaticsRegionHashTable s_nonGcStaticsRegion = new StaticsRegionHashTable(StaticsKind.NonGcStatics);
+
+        private static readonly StaticsRegionHashTable s_GcStaticsRegion = new StaticsRegionHashTable(StaticsKind.GcStatics);
+
+        private static readonly StaticsRegionHashTable s_threadNonGcStaticsRegion = new StaticsRegionHashTable(StaticsKind.ThreadNonGcStatics);
+
+        private static readonly StaticsRegionHashTable s_threadGcStaticsRegion = new StaticsRegionHashTable(StaticsKind.ThreadGcStatics);
+
+        // End allocate static regions
+
         private readonly MethodDesc _method;
+
         private readonly MethodIL _methodIL;
+
         private readonly TypeSystemContext _context;
+
         private readonly LowLevelStack<StackItem> _stack;
 
         private StackItem[] _locals;
@@ -325,19 +341,21 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.throw_:
                         throw new NotImplementedException();
                     case ILOpcode.ldfld:
-                        InterpretLoadField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
+                        InterpretLoadInstanceField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.ldflda:
                         throw new NotImplementedException();
                     case ILOpcode.stfld:
-                        InterpretStoreField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
+                        InterpretStoreInstanceField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.ldsfld:
-                        throw new NotImplementedException();
+                        InterpretLoadStaticField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
+                        break;
                     case ILOpcode.ldsflda:
                         throw new NotImplementedException();
                     case ILOpcode.stsfld:
-                        throw new NotImplementedException();
+                        InterpretStoreStaticField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
+                        break;
                     case ILOpcode.stobj:
                         throw new NotImplementedException();
                     case ILOpcode.conv_ovf_i1_un:
@@ -2726,34 +2744,8 @@ getvar:
             _stack.Push(StackItem.FromObjectRef(@this));
         }
 
-        public void InterpretLoadField(FieldDesc field)
+        private void PushFieldValue(TypeDesc fieldType, object fieldValue)
         {
-            TypeDesc fieldType = field.FieldType;
-
-            if (field.OwningType.IsValueType)
-            {
-                // TODO: Add support for value types
-                throw new NotImplementedException();
-            }
-
-            var instance = PopWithValidation().AsObjectRef();
-            object fieldValue = default;
-
-            if (fieldType.IsValueType)
-            {
-                fieldValue = RuntimeAugments.LoadValueTypeField(instance, field.Offset.AsInt, fieldType.GetRuntimeTypeHandle());
-            }
-            else if (fieldType.IsPointer)
-            {
-                fieldValue = RuntimeAugments.LoadPointerTypeField(instance, field.Offset.AsInt, fieldType.GetRuntimeTypeHandle());
-            }
-            else
-            {
-                fieldValue = RuntimeAugments.LoadReferenceTypeField(instance, field.Offset.AsInt);
-            }
-
-            Debug.Assert(fieldValue != null);
-
 setstackitem:
             switch (fieldType.Category)
             {
@@ -2818,7 +2810,7 @@ setstackitem:
             }
         }
 
-        public void InterpretStoreField(FieldDesc field)
+        private void InterpretLoadInstanceField(FieldDesc field)
         {
             TypeDesc fieldType = field.FieldType;
 
@@ -2828,83 +2820,183 @@ setstackitem:
                 throw new NotImplementedException();
             }
 
-            StackItem fieldValueItem = PopWithValidation();
             var instance = PopWithValidation().AsObjectRef();
+            var fieldValue = default(Object);
+
+            if (fieldType.IsValueType)
+            {
+                fieldValue = RuntimeAugments.LoadValueTypeField(instance, field.Offset.AsInt, fieldType.GetRuntimeTypeHandle());
+            }
+            else if (fieldType.IsPointer)
+            {
+                fieldValue = RuntimeAugments.LoadPointerTypeField(instance, field.Offset.AsInt, fieldType.GetRuntimeTypeHandle());
+            }
+            else
+            {
+                fieldValue = RuntimeAugments.LoadReferenceTypeField(instance, field.Offset.AsInt);
+            }
+
+            PushFieldValue(fieldType, fieldValue);
+        }
+
+        private void InterpretLoadStaticField(FieldDesc field)
+        {
+            TypeDesc fieldType = field.FieldType;
+
+            if (field.OwningType.IsValueType)
+            {
+                // TODO: Add support for value types
+                throw new NotImplementedException();
+            }
+
+            var ecmaType = field.OwningType as EcmaType;
+            var staticsBase = IntPtr.Zero;
+            var fieldValue = default(Object);
+
+            if (ecmaType == null)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                // Field owning type is in a dynamically loaded assembly,
+                // select the appropriate interpreter statics region
+                StaticsRegionHashTable region = field switch
+                {
+                    { HasGCStaticBase: false, IsThreadStatic: false } => s_nonGcStaticsRegion,
+                    { HasGCStaticBase: false, IsThreadStatic: true } => s_threadNonGcStaticsRegion,
+                    { HasGCStaticBase: true, IsThreadStatic: false } => s_GcStaticsRegion,
+                    { HasGCStaticBase: true, IsThreadStatic: true } => s_threadGcStaticsRegion,
+                };
+
+                staticsBase = region.GetOrCreateValue(ecmaType).Base;
+            }
+
+            if (fieldType.IsValueType)
+            {
+                fieldValue = RuntimeAugments.LoadValueTypeField((IntPtr)(staticsBase + field.Offset.AsInt), fieldType.GetRuntimeTypeHandle());
+            }
+            else if (fieldType.IsPointer)
+            {
+                fieldValue = RuntimeAugments.LoadPointerTypeField((IntPtr)(staticsBase + field.Offset.AsInt), fieldType.GetRuntimeTypeHandle());
+            }
+            else
+            {
+                fieldValue = RuntimeAugments.LoadReferenceTypeField((IntPtr)(staticsBase + field.Offset.AsInt));
+            }
+
+            PushFieldValue(fieldType, fieldValue);
+        }
+
+        private object PopFieldValue(TypeDesc fieldType)
+        {
+            StackItem fieldValueItem = PopWithValidation();
+            object fieldValue = default;
+
             switch (fieldValueItem.Kind)
             {
                 case StackValueKind.Int32:
-                    object intValue = fieldValueItem.AsInt32();
-
-                    switch (fieldType.Category)
+                    fieldValue = fieldType.Category switch
                     {
-                        case TypeFlags.Boolean:
-                            intValue = fieldValueItem.AsInt32() != 0;
-                            break;
-                        case TypeFlags.Char:
-                            intValue = (char)fieldValueItem.AsInt32();
-                            break;
-                        case TypeFlags.SByte:
-                            intValue = (sbyte)fieldValueItem.AsInt32();
-                            break;
-                        case TypeFlags.Byte:
-                            intValue = (byte)fieldValueItem.AsInt32();
-                            break;
-                        case TypeFlags.Int16:
-                            intValue = (short)fieldValueItem.AsInt32();
-                            break;
-                        case TypeFlags.UInt16:
-                            intValue = (ushort)fieldValueItem.AsInt32();
-                            break;
-                        case TypeFlags.UInt32:
-                            intValue = (uint)fieldValueItem.AsInt32();
-                            break;
-                    }
-
-                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, intValue, fieldType.GetRuntimeTypeHandle());
+                        TypeFlags.Boolean => fieldValueItem.AsInt32() != 0,
+                        TypeFlags.Char => (char)fieldValueItem.AsInt32(),
+                        TypeFlags.SByte => (sbyte)fieldValueItem.AsInt32(),
+                        TypeFlags.Byte => (byte)fieldValueItem.AsInt32(),
+                        TypeFlags.Int16 => (short)fieldValueItem.AsInt32(),
+                        TypeFlags.UInt16 => (ushort)fieldValueItem.AsInt32(),
+                        TypeFlags.UInt32 => (uint)fieldValueItem.AsInt32(),
+                        _ => fieldValueItem.AsInt32(),
+                    };
                     break;
                 case StackValueKind.Int64:
-                    object longValue = fieldValueItem.AsInt64();
-
-                    if (fieldType.Category == TypeFlags.UInt64)
-                    {
-                        longValue = (ulong)fieldValueItem.AsInt64();
-                    }
-
-                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, longValue, fieldType.GetRuntimeTypeHandle());
+                    fieldValue = fieldValueItem.AsInt64();
+                    fieldValue = fieldType.Category == TypeFlags.UInt64 ? (ulong)fieldValueItem.AsInt64() : fieldValue;
                     break;
                 case StackValueKind.NativeInt:
-                    object nativeIntValue = fieldValueItem.AsNativeInt();
-
-                    if (fieldType.Category == TypeFlags.UIntPtr)
-                    {
-                        nativeIntValue = (UIntPtr)fieldValueItem.AsNativeInt().ToPointer();
-                    }
-
-                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, nativeIntValue, fieldType.GetRuntimeTypeHandle());
+                    fieldValue = fieldValueItem.AsNativeInt();
+                    fieldValue = fieldType.Category == TypeFlags.UIntPtr ? (UIntPtr)fieldValueItem.AsNativeInt().ToPointer() : fieldValue;
                     break;
                 case StackValueKind.Float:
-                    object doubleValue = fieldValueItem.AsDouble();
-
-                    if (fieldType.Category == TypeFlags.Single)
-                    {
-                        doubleValue = (float)fieldValueItem.AsDouble();
-                    }
-
-                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, doubleValue, fieldType.GetRuntimeTypeHandle());
-                    break;
-                case StackValueKind.ValueType:
-                    RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValueItem.AsValueType(), fieldType.GetRuntimeTypeHandle());
+                    fieldValue = fieldValueItem.AsDouble();
+                    fieldValue = fieldType.Category == TypeFlags.Single ? (float)fieldValueItem.AsDouble() : fieldValue;
                     break;
                 case StackValueKind.ObjRef:
-                    RuntimeAugments.StoreReferenceTypeField(instance, field.Offset.AsInt, fieldValueItem.AsObjectRef());
+                    fieldValue = fieldValueItem.AsObjectRef();
+                    break;
+                case StackValueKind.ValueType:
+                    fieldValue = fieldValueItem.AsValueType();
                     break;
                 case StackValueKind.ByRef:
-                    // TODO: Add support for ByRef to StackItem
-                    throw new NotImplementedException();
-                case StackValueKind.Unknown:
                 default:
-                    ThrowHelper.ThrowInvalidProgramException();
-                    break;
+                    throw new NotImplementedException();
+            }
+
+            return fieldValue;
+        }
+
+        public void InterpretStoreInstanceField(FieldDesc field)
+        {
+            TypeDesc fieldType = field.FieldType;
+
+            if (field.OwningType.IsValueType)
+            {
+                // TODO: Add support for value types
+                throw new NotImplementedException();
+            }
+
+            var fieldValue = PopFieldValue(fieldType);
+            var instance = PopWithValidation().AsObjectRef();
+
+            if (fieldType.IsValueType)
+            {
+                RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValue, fieldType.GetRuntimeTypeHandle());
+            }
+            else
+            {
+                RuntimeAugments.StoreReferenceTypeField(instance, field.Offset.AsInt, fieldValue);
+            }
+        }
+
+        private void InterpretStoreStaticField(FieldDesc field)
+        {
+            TypeDesc fieldType = field.FieldType;
+
+            if (field.OwningType.IsValueType)
+            {
+                // TODO: Add support for value types
+                throw new NotImplementedException();
+            }
+
+            var staticsBase = IntPtr.Zero;
+            var fieldValue = PopFieldValue(fieldType);
+            var ecmaType = field.OwningType as EcmaType;
+
+            if (ecmaType == null)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                // Field owning type is in a dynamically loaded assembly,
+                // select the appropriate interpreter statics region
+                StaticsRegionHashTable region = field switch
+                {
+                    { HasGCStaticBase: false, IsThreadStatic: false } => s_nonGcStaticsRegion,
+                    { HasGCStaticBase: false, IsThreadStatic: true } => s_threadNonGcStaticsRegion,
+                    { HasGCStaticBase: true, IsThreadStatic: false } => s_GcStaticsRegion,
+                    { HasGCStaticBase: true, IsThreadStatic: true } => s_threadGcStaticsRegion,
+                };
+
+                staticsBase = region.GetOrCreateValue(ecmaType).Base;
+            }
+
+            if (fieldType.IsValueType)
+            {
+                RuntimeAugments.StoreValueTypeField((IntPtr)(staticsBase + field.Offset.AsInt), fieldValue, fieldType.GetRuntimeTypeHandle());
+            }
+            else
+            {
+                RuntimeAugments.StoreReferenceTypeField((IntPtr)(staticsBase + field.Offset.AsInt), fieldValue);
             }
         }
     }
