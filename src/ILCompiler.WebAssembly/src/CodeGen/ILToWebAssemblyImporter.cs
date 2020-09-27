@@ -4167,7 +4167,7 @@ namespace Internal.IL
 
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
         {
-            //TODO checkOverflow - r_un & r_4
+            //TODO checkOverflow - r_un & r_4, i & i_un
             StackEntry value = _stack.Pop();
             TypeDesc destType = GetWellKnownType(wellKnownType);
 
