@@ -11,6 +11,7 @@ using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.NativeFormat;
 
 namespace Internal.Runtime.Interpreter
 {
@@ -2822,19 +2823,14 @@ setstackitem:
 
             var instance = PopWithValidation().AsObjectRef();
             var fieldValue = default(Object);
+            var fieldOffset = field.Offset.AsInt;
 
-            if (fieldType.IsValueType)
+            fieldValue = fieldType switch
             {
-                fieldValue = RuntimeAugments.LoadValueTypeField(instance, field.Offset.AsInt, fieldType.GetRuntimeTypeHandle());
-            }
-            else if (fieldType.IsPointer)
-            {
-                fieldValue = RuntimeAugments.LoadPointerTypeField(instance, field.Offset.AsInt, fieldType.GetRuntimeTypeHandle());
-            }
-            else
-            {
-                fieldValue = RuntimeAugments.LoadReferenceTypeField(instance, field.Offset.AsInt);
-            }
+                { IsValueType: true } => RuntimeAugments.LoadValueTypeField(instance, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(instance, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                _ => RuntimeAugments.LoadReferenceTypeField(instance, field.Offset.AsInt),
+            };
 
             PushFieldValue(fieldType, fieldValue);
         }
@@ -2842,6 +2838,7 @@ setstackitem:
         private void InterpretLoadStaticField(FieldDesc field)
         {
             TypeDesc fieldType = field.FieldType;
+            Object fieldValue = default;
 
             if (field.OwningType.IsValueType)
             {
@@ -2849,15 +2846,7 @@ setstackitem:
                 throw new NotImplementedException();
             }
 
-            var ecmaType = field.OwningType as EcmaType;
-            var staticsBase = IntPtr.Zero;
-            var fieldValue = default(Object);
-
-            if (ecmaType == null)
-            {
-                throw new NotImplementedException();
-            }
-            else
+            if (field.OwningType is EcmaType ecmaType)
             {
                 // Field owning type is in a dynamically loaded assembly,
                 // select the appropriate interpreter statics region
@@ -2869,20 +2858,61 @@ setstackitem:
                     { HasGCStaticBase: true, IsThreadStatic: true } => s_threadGcStaticsRegion,
                 };
 
-                staticsBase = region.GetOrCreateValue(ecmaType).Base;
-            }
+                var fieldOffset = field.Offset.AsInt;
+                var staticsBase = region.GetOrCreateValue(ecmaType).Base;
 
-            if (fieldType.IsValueType)
-            {
-                fieldValue = RuntimeAugments.LoadValueTypeField((IntPtr)(staticsBase + field.Offset.AsInt), fieldType.GetRuntimeTypeHandle());
-            }
-            else if (fieldType.IsPointer)
-            {
-                fieldValue = RuntimeAugments.LoadPointerTypeField((IntPtr)(staticsBase + field.Offset.AsInt), fieldType.GetRuntimeTypeHandle());
+                fieldValue = fieldType switch
+                {
+                    { IsValueType: true } => RuntimeAugments.LoadValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldType.GetRuntimeTypeHandle()),
+                    { IsPointer: true } => RuntimeAugments.LoadPointerTypeField((IntPtr)(staticsBase + fieldOffset), fieldType.GetRuntimeTypeHandle()),
+                    _ => RuntimeAugments.LoadReferenceTypeField((IntPtr)(staticsBase + fieldOffset)),
+                };
             }
             else
             {
-                fieldValue = RuntimeAugments.LoadReferenceTypeField((IntPtr)(staticsBase + field.Offset.AsInt));
+                // Statics information for field is present in native executable,
+                // use runtime methods to retreive statics region
+                var fieldOffset = 0;
+                var staticsBase = IntPtr.Zero;
+                NativeFormatField nativeFormatField = field as NativeFormatField;
+
+                Debug.Assert(nativeFormatField != null);
+
+                TypeLoaderEnvironment.TryGetFieldAccessMetadata(
+                    nativeFormatField.MetadataReader,
+                    nativeFormatField.OwningType.GetRuntimeTypeHandle(),
+                    nativeFormatField.Handle,
+                    out FieldAccessMetadata fieldAccessMetadata);
+
+                FieldTableFlags fieldFlags = fieldAccessMetadata.Flags & FieldTableFlags.StorageClass;
+                if (fieldFlags == FieldTableFlags.NonGCStatic)
+                {
+                    fieldOffset = 0;
+                    staticsBase = fieldAccessMetadata.Cookie;
+
+                    fieldValue = fieldType switch
+                    {
+                        { IsValueType: true } => RuntimeAugments.LoadValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldType.GetRuntimeTypeHandle()),
+                        { IsPointer: true } => RuntimeAugments.LoadPointerTypeField((IntPtr)(staticsBase + fieldOffset), fieldType.GetRuntimeTypeHandle()),
+                        _ => RuntimeAugments.LoadReferenceTypeField((IntPtr)(staticsBase + fieldOffset)),
+                    };
+                }
+                else
+                {
+                    fieldOffset = fieldAccessMetadata.Offset;
+                    staticsBase = fieldAccessMetadata.Cookie;
+
+                    object staticsRegion = fieldFlags == FieldTableFlags.GCStatic ?
+                            RuntimeAugments.LoadReferenceTypeField(*(IntPtr*)staticsBase) :
+                            RuntimeAugments.GetThreadStaticBase(staticsBase);
+
+                    fieldValue = fieldType switch
+                    {
+                        { IsValueType: true } => RuntimeAugments.LoadValueTypeField(staticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                        { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(staticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                        _ => RuntimeAugments.LoadReferenceTypeField(staticsRegion, fieldOffset),
+                    };
+                }
             }
 
             PushFieldValue(fieldType, fieldValue);
@@ -2946,14 +2976,19 @@ setstackitem:
 
             var fieldValue = PopFieldValue(fieldType);
             var instance = PopWithValidation().AsObjectRef();
+            var fieldOffset = field.Offset.AsInt;
 
             if (fieldType.IsValueType)
             {
-                RuntimeAugments.StoreValueTypeField(instance, field.Offset.AsInt, fieldValue, fieldType.GetRuntimeTypeHandle());
+                RuntimeAugments.StoreValueTypeField(instance, fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
+            }
+            else if (fieldType.IsPointer)
+            {
+                RuntimeAugments.StoreValueTypeField(instance, fieldOffset, fieldValue, typeof(IntPtr).TypeHandle);
             }
             else
             {
-                RuntimeAugments.StoreReferenceTypeField(instance, field.Offset.AsInt, fieldValue);
+                RuntimeAugments.StoreReferenceTypeField(instance, fieldOffset, fieldValue);
             }
         }
 
@@ -2967,15 +3002,9 @@ setstackitem:
                 throw new NotImplementedException();
             }
 
-            var staticsBase = IntPtr.Zero;
             var fieldValue = PopFieldValue(fieldType);
-            var ecmaType = field.OwningType as EcmaType;
 
-            if (ecmaType == null)
-            {
-                throw new NotImplementedException();
-            }
-            else
+            if (field.OwningType is EcmaType ecmaType)
             {
                 // Field owning type is in a dynamically loaded assembly,
                 // select the appropriate interpreter statics region
@@ -2987,16 +3016,79 @@ setstackitem:
                     { HasGCStaticBase: true, IsThreadStatic: true } => s_threadGcStaticsRegion,
                 };
 
-                staticsBase = region.GetOrCreateValue(ecmaType).Base;
-            }
+                var staticsBase = region.GetOrCreateValue(ecmaType).Base;
+                var fieldOffset = field.Offset.AsInt;
 
-            if (fieldType.IsValueType)
-            {
-                RuntimeAugments.StoreValueTypeField((IntPtr)(staticsBase + field.Offset.AsInt), fieldValue, fieldType.GetRuntimeTypeHandle());
+                if (fieldType.IsValueType)
+                {
+                    RuntimeAugments.StoreValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue, fieldType.GetRuntimeTypeHandle());
+                }
+                else if (fieldType.IsPointer)
+                {
+                    RuntimeAugments.StoreValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue, typeof(IntPtr).TypeHandle);
+                }
+                else
+                {
+                    RuntimeAugments.StoreReferenceTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue);
+                }
             }
             else
             {
-                RuntimeAugments.StoreReferenceTypeField((IntPtr)(staticsBase + field.Offset.AsInt), fieldValue);
+                // Statics information for field is present in native executable,
+                // use runtime methods to retreive statics region
+                var fieldOffset = 0;
+                var staticsBase = IntPtr.Zero;
+                NativeFormatField nativeFormatField = field as NativeFormatField;
+
+                Debug.Assert(nativeFormatField != null);
+
+                TypeLoaderEnvironment.TryGetFieldAccessMetadata(
+                    nativeFormatField.MetadataReader,
+                    nativeFormatField.OwningType.GetRuntimeTypeHandle(),
+                    nativeFormatField.Handle,
+                    out FieldAccessMetadata fieldAccessMetadata);
+
+                FieldTableFlags fieldFlags = fieldAccessMetadata.Flags & FieldTableFlags.StorageClass;
+                if (fieldFlags == FieldTableFlags.NonGCStatic)
+                {
+                    fieldOffset = 0;
+                    staticsBase = fieldAccessMetadata.Cookie;
+
+                    if (fieldType.IsValueType)
+                    {
+                        RuntimeAugments.StoreValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue, fieldType.GetRuntimeTypeHandle());
+                    }
+                    else if (fieldType.IsPointer)
+                    {
+                        RuntimeAugments.StoreValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue, typeof(IntPtr).TypeHandle);
+                    }
+                    else
+                    {
+                        RuntimeAugments.StoreReferenceTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue);
+                    }
+                }
+                else
+                {
+                    fieldOffset = fieldAccessMetadata.Offset;
+                    staticsBase = fieldAccessMetadata.Cookie;
+
+                    object staticsRegion = fieldFlags == FieldTableFlags.GCStatic ?
+                            RuntimeAugments.LoadReferenceTypeField(*(IntPtr*)staticsBase) :
+                            RuntimeAugments.GetThreadStaticBase(staticsBase);
+
+                    if (fieldType.IsValueType)
+                    {
+                        RuntimeAugments.StoreValueTypeField(staticsRegion, fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
+                    }
+                    else if (fieldType.IsPointer)
+                    {
+                        RuntimeAugments.StoreValueTypeField(staticsRegion, fieldOffset, fieldValue, typeof(IntPtr).TypeHandle);
+                    }
+                    else
+                    {
+                        RuntimeAugments.StoreReferenceTypeField(staticsRegion, fieldOffset, fieldValue);
+                    }
+                }
             }
         }
     }
