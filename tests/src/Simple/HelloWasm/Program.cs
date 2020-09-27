@@ -2409,6 +2409,459 @@ internal static class Program
         TestSignedIntMulOvf();
 
         TestSignedLongMulOvf();
+
+        TestSignedToSignedNativeIntConvOvf();
+
+        TestUnsignedToSignedNativeIntConvOvf();
+
+        TestSignedToUnsignedNativeIntConvOvf();
+
+        TestI1ConvOvf();
+
+        TestUnsignedI1ConvOvf();
+
+        TestI2ConvOvf();
+
+        TestUnsignedI2ConvOvf();
+
+        TestI4ConvOvf();
+
+        TestUnsignedI4ConvOvf();
+
+        TestI8ConvOvf();
+
+        TestUnsignedI8ConvOvf();
+    }
+
+    private static void TestSignedToSignedNativeIntConvOvf()
+    {
+        // TODO: when use of nint is available
+    }
+
+    private static void TestUnsignedToSignedNativeIntConvOvf()
+    {
+        // TODO: when use of nuint is available
+    }
+
+    private static unsafe void TestSignedToUnsignedNativeIntConvOvf()
+    {
+        StartTest("Test unsigned native int Conv_Ovf"); // TODO : wasm64
+        int thrown = 0;
+        long i = 1;
+        void * converted;
+        checked { converted = (void *)i; }
+        if (converted != new IntPtr(1).ToPointer()) FailTest("Test unsigned native int Conv_Ovf conversion failed");
+        try
+        {
+            i = uint.MaxValue + 1L;
+            checked { converted = (void *)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            i = -1;
+            checked { converted = (void *)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        if (thrown != 2) FailTest("Test unsigned native int Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
+        EndTest(true);
+
+    }
+
+    private static void TestI1ConvOvf()
+    {
+        StartTest("Test I1 Conv_Ovf");
+        int thrown = 0;
+        int i = 1;
+        float f = 127.9F;
+        sbyte converted;
+        checked { converted = (sbyte)i; }
+        if (converted != 1) FailTest("Test I1 Conv_Ovf conversion failed" + converted.ToString());
+        checked { converted = (sbyte)(-1); }
+        checked { converted = (sbyte)f; }
+        checked { converted = (sbyte)((float)-128.5F); }
+        try
+        {
+            i = sbyte.MaxValue + 1;
+            checked { converted = (sbyte)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            i = sbyte.MinValue - 1;
+            checked { converted = (sbyte)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (float)(sbyte.MaxValue + 1);
+            checked { converted = (sbyte)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (float)(sbyte.MinValue - 1);
+            checked { converted = (sbyte)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        if (thrown != 4) FailTest("Test I1 Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
+        EndTest(true);
+    }
+
+    private static void TestUnsignedI1ConvOvf()
+    {
+        StartTest("Test unsigned I1 Conv_Ovf");
+        int thrown = 0;
+        int i = 1;
+        float f = 255.9F;
+        byte converted;
+        checked { converted = (byte)i; }
+        if (converted != 1) FailTest("Test unsigned I1 Conv_Ovf conversion failed" + converted.ToString());
+        checked { converted = (byte)f; }
+        try
+        {
+            i = byte.MaxValue + 1;
+            checked { converted = (byte)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            i = -1;
+            checked { converted = (byte)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (float)(byte.MaxValue + 1);
+            checked { converted = (byte)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = -1f;
+            checked { converted = (byte)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        if (thrown != 4) FailTest("Test unsigned I1 Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
+        EndTest(true);
+    }
+
+    private static void TestI2ConvOvf()
+    {
+        StartTest("Test I2 Conv_Ovf");
+        int thrown = 0;
+        int i = 1;
+        float f = 32767.9F;
+        Int16 converted;
+        checked { converted = (Int16)i; }
+        if (converted != 1) FailTest("Test I2 Conv_Ovf conversion failed" + converted.ToString());
+        checked { converted = (Int16)(-1); }
+        checked { converted = (Int16)f; }
+        checked { converted = (Int16)((float)-32768.5F); }
+        try
+        {
+            i = Int16.MaxValue + 1;
+            checked { converted = (Int16)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            i = Int16.MinValue - 1;
+            checked { converted = (Int16)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (float)(Int16.MaxValue + 1);
+            checked { converted = (Int16)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (float)(Int16.MinValue - 1);
+            checked { converted = (Int16)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        if (thrown != 4) FailTest("Test I2 Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
+        EndTest(true);
+    }
+
+    private static void TestUnsignedI2ConvOvf()
+    {
+        StartTest("Test unsigned I2 Conv_Ovf");
+        int thrown = 0;
+        int i = 1;
+        float f = 65535.9F;
+        UInt16 converted;
+        checked { converted = (UInt16)i; }
+        if (converted != 1) FailTest("Test unsigned I2 Conv_Ovf conversion failed" + converted.ToString());
+        checked { converted = (UInt16)f; }
+        try
+        {
+            i = UInt16.MaxValue + 1;
+            checked { converted = (UInt16)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            i = -1;
+            checked { converted = (UInt16)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            short s = -1; // test overflow check is not reliant on different widths
+            checked { converted = (UInt16)s; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (float)(UInt16.MaxValue + 1);
+            checked { converted = (UInt16)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = -1f;
+            checked { converted = (UInt16)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        if (thrown != 5) FailTest("Test unsigned I2 Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
+        EndTest(true);
+    }
+
+    private static void TestI4ConvOvf()
+    {
+        StartTest("Test I4 Conv_Ovf");
+        int thrown = 0;
+        long i = 1;
+        double f = 2147483647.9d;
+        int converted;
+        checked { converted = (int)i; }
+        if (converted != 1) FailTest("Test I4 Conv_Ovf conversion failed" + converted.ToString());
+        checked { converted = (int)(-1); }
+        checked { converted = (int)f; }
+        checked { converted = (int)((double)-2147483648.9d); }
+        try
+        {
+            i = int.MaxValue + 1L;
+            checked { converted = (int)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            i = int.MinValue - 1L;
+            checked { converted = (int)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (double)(int.MaxValue + 1L);
+            checked { converted = (int)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (double)(int.MinValue - 1L);
+            checked { converted = (int)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        if (thrown != 4) FailTest("Test I4 Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
+        EndTest(true);
+    }
+
+    private static void TestUnsignedI4ConvOvf()
+    {
+        StartTest("Test unsigned I4 Conv_Ovf");
+        int thrown = 0;
+        long i = 1;
+        double f = 4294967294.9d;
+        uint converted;
+        checked { converted = (uint)i; }
+        if (converted != 1) FailTest("Test unsigned I4 Conv_Ovf conversion failed" + converted.ToString());
+        checked { converted = (uint)f; }
+        try
+        {
+            i = uint.MaxValue + 1L;
+            checked { converted = (uint)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            i = -1;
+            checked { converted = (uint)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (double)(uint.MaxValue + 1L);
+            checked { converted = (uint)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = -1d;
+            checked { converted = (uint)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        if (thrown != 4) FailTest("Test unsigned I4 Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
+        EndTest(true);
+    }
+
+    private static void TestI8ConvOvf()
+    {
+        StartTest("Test I8 Conv_Ovf");
+        int thrown = 0;
+        long i = 1;
+        double f = 9223372036854774507.9d; /// not a precise check
+        long converted;
+        checked { converted = (long)i; }
+        if (converted != 1) FailTest("Test I8 Conv_Ovf conversion failed" + converted.ToString());
+        checked { converted = (long)(-1); }
+        checked { converted = (long)f; }
+        checked { converted = (long)((double)-9223372036854776508d); } // not a precise check
+        try
+        {
+            f = (double)(long.MaxValue) + 1000d; // need to get into the next representable double
+            checked { converted = (int)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (double)(long.MinValue) - 1000d; // need to get into the next representable double
+            checked { converted = (long)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        if (thrown != 2) FailTest("Test I8 Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
+        EndTest(true);
+    }
+
+    private static void TestUnsignedI8ConvOvf()
+    {
+        StartTest("Test unsigned I8 Conv_Ovf");
+        int thrown = 0;
+        long i = 1;
+        double f = 18446744073709540015.9d; // not a precise check
+        ulong converted;
+        checked { converted = (ulong)i; }
+        if (converted != 1) FailTest("Test unsigned I8 Conv_Ovf conversion failed" + converted.ToString());
+        checked { converted = (ulong)f; }
+        try
+        {
+            i = -1;
+            checked { converted = (ulong)i; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = (double)(ulong.MaxValue) + 1000d; // need to get into the next representable double
+            checked { converted = (ulong)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
+            f = -1d;
+            checked { converted = (ulong)f; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        if (thrown != 3) FailTest("Test unsigned I8 Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
+        EndTest(true);
     }
 
     private static void TestSignedLongAddOvf()

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -4166,14 +4167,206 @@ namespace Internal.IL
 
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
         {
-            //TODO checkOverflow
+            //TODO checkOverflow - r_un & r_4
             StackEntry value = _stack.Pop();
             TypeDesc destType = GetWellKnownType(wellKnownType);
 
             // Load the value and then convert it instead of using ValueAsType to avoid loading the incorrect size
             LLVMValueRef loadedValue = value.ValueAsType(value.Type, _builder);
+
+            if (checkOverflow)
+            {
+                Debug.Assert(destType is EcmaType);
+                BuildConvOverflow(loadedValue, (EcmaType)destType, wellKnownType, unsigned, value.Type);
+            }
+
             LLVMValueRef converted = CastIfNecessary(loadedValue, GetLLVMTypeForTypeDesc(destType), value.Name(), wellKnownType == WellKnownType.UInt64 /* unsigned is always false, so check for the type explicitly */);
             PushExpression(GetStackValueKind(destType), "conv", converted, destType);
+        }
+
+        private bool IsLlvmReal(LLVMTypeRef llvmTypeRef)
+        {
+            return llvmTypeRef == LLVMTypeRef.Float || llvmTypeRef == LLVMTypeRef.Double;
+        }
+
+        void BuildConvOverflow(LLVMValueRef loadedValue, EcmaType destType, WellKnownType destWellKnownType, bool unsigned, TypeDesc sourceType)
+        {
+            ulong maxValue = 0;
+            long minValue = 0;
+            switch (destWellKnownType)
+            {
+                case WellKnownType.Byte:
+                    maxValue = byte.MaxValue;
+                    break;
+                case WellKnownType.SByte:
+                    maxValue = (ulong)sbyte.MaxValue;
+                    minValue = sbyte.MinValue;
+                    break;
+                case WellKnownType.UInt16:
+                    maxValue = ushort.MaxValue;
+                    break;
+                case WellKnownType.Int16:
+                    maxValue = (ulong)short.MaxValue;
+                    minValue = short.MinValue;
+                    break;
+                case WellKnownType.UInt32:
+                case WellKnownType.UIntPtr: // TODO : 64bit.
+                    maxValue = uint.MaxValue;
+                    break;
+                case WellKnownType.Int32:
+                    maxValue = int.MaxValue;
+                    minValue = int.MinValue;
+                    break;
+                case WellKnownType.UInt64:
+                    maxValue = ulong.MaxValue;
+                    break;
+                case WellKnownType.Int64:
+                    maxValue = long.MaxValue;
+                    minValue = long.MinValue;
+                    break;
+            }
+            if (unsigned)
+            {
+                BuildPositiveConvChecks(loadedValue, unsigned, maxValue, sourceType, destType);
+            }
+            else
+            {
+                // for signed overflow, first check for postive or negative and then test appropriately.
+                LLVMValueRef posTest;
+                if (IsLlvmReal(loadedValue.TypeOf))
+                {
+                    posTest = _builder.BuildFCmp(LLVMRealPredicate.LLVMRealUGE, loadedValue, LLVMValueRef.CreateConstReal(loadedValue.TypeOf, 0)); // TODO: NaN/Infinity?
+                }
+                else
+                {
+                    posTest = _builder.BuildICmp(LLVMIntPredicate.LLVMIntSGE, loadedValue, LLVMValueRef.CreateConstInt(loadedValue.TypeOf, 0));
+                }
+                LLVMBasicBlockRef positiveBlock = _currentFunclet.AppendBasicBlock("ovf_chk");
+                LLVMBasicBlockRef negativeBlock = _currentFunclet.AppendBasicBlock("unf_chk");
+                LLVMBasicBlockRef endChecks = _currentFunclet.AppendBasicBlock("end_chks");
+                _builder.BuildCondBr(posTest, positiveBlock, negativeBlock);
+                _builder.PositionAtEnd(positiveBlock);
+                BuildPositiveConvChecks(loadedValue, unsigned, maxValue, sourceType, destType);
+                _builder.BuildBr(endChecks);
+
+                _builder.PositionAtEnd(negativeBlock);
+                BuildNegativeConvChecks(loadedValue, minValue, destType);
+                _builder.BuildBr(endChecks);
+                _builder.PositionAtEnd(endChecks);
+                AddInternalBasicBlock(endChecks);
+            }
+        }
+
+        void BuildPositiveConvChecks(LLVMValueRef loadedValue, bool unsigned, ulong maxValue, TypeDesc sourceType, EcmaType destType)
+        {
+            var mask = LLVMValueRef.CreateConstInt(loadedValue.TypeOf, maxValue);
+            if (IsLlvmReal(loadedValue.TypeOf))
+            {
+                var cmp = _builder.BuildFCmp(LLVMRealPredicate.LLVMRealUGE, loadedValue, MinimumPositiveFailingDouble(loadedValue.TypeOf, maxValue + 1, destType)); // >= max + 1 as rounds to 0, e.g. 127.9 is allowed in sbyte
+                LLVMBasicBlockRef overflowBlock = _currentFunclet.AppendBasicBlock("ovff");
+                LLVMBasicBlockRef noOverflowBlock = _currentFunclet.AppendBasicBlock("no_ovff");
+                _builder.BuildCondBr(cmp, overflowBlock, noOverflowBlock);
+
+                _builder.PositionAtEnd(overflowBlock);
+                CallOrInvokeThrowException(_builder, "ThrowHelpers", "ThrowOverflowException");
+                _builder.PositionAtEnd(noOverflowBlock);
+                AddInternalBasicBlock(noOverflowBlock);
+                if (unsigned)
+                {
+                    // add check for negative real
+                    var cmpNeg = _builder.BuildFCmp(LLVMRealPredicate.LLVMRealULE, loadedValue, LLVMValueRef.CreateConstReal(loadedValue.TypeOf, -1)); // use <= -1 as conv truncates to 0
+                    LLVMBasicBlockRef underflowBlock = _currentFunclet.AppendBasicBlock("uvff");
+                    LLVMBasicBlockRef noUnderflowBlock = _currentFunclet.AppendBasicBlock("no_uvff");
+                    _builder.BuildCondBr(cmpNeg, underflowBlock, noUnderflowBlock);
+
+                    _builder.PositionAtEnd(underflowBlock);
+                    CallOrInvokeThrowException(_builder, "ThrowHelpers", "ThrowOverflowException");
+                    _builder.PositionAtEnd(noUnderflowBlock);
+                    AddInternalBasicBlock(noUnderflowBlock);
+                }
+            }
+            else
+            {
+                LLVMValueRef cmp;
+                //special case same width signed -> unsigned, can just check for negative values
+                if (unsigned && (loadedValue.TypeOf.IntWidth >> 3) == destType.InstanceFieldSize.AsInt && 
+                    (sourceType == GetWellKnownType(WellKnownType.Int16)
+                    || sourceType == GetWellKnownType(WellKnownType.Int32)
+                    || sourceType == GetWellKnownType(WellKnownType.Int64)))
+                {
+                    cmp = _builder.BuildICmp(LLVMIntPredicate.LLVMIntSLT, loadedValue, LLVMValueRef.CreateConstInt(loadedValue.TypeOf, 0));
+                }
+                else
+                {
+                    var overflowBits = _builder.BuildNot(mask);
+                    var check = _builder.BuildAnd(overflowBits, loadedValue);
+                    cmp = _builder.BuildICmp(LLVMIntPredicate.LLVMIntNE, LLVMValueRef.CreateConstInt(loadedValue.TypeOf, 0), check);
+                }
+
+                LLVMBasicBlockRef overflowBlock = _currentFunclet.AppendBasicBlock("ovf");
+                LLVMBasicBlockRef noOverflowBlock = _currentFunclet.AppendBasicBlock("no_ovf");
+                _builder.BuildCondBr(cmp, overflowBlock, noOverflowBlock);
+
+                _builder.PositionAtEnd(overflowBlock);
+                CallOrInvokeThrowException(_builder, "ThrowHelpers", "ThrowOverflowException");
+                _builder.PositionAtEnd(noOverflowBlock);
+                AddInternalBasicBlock(noOverflowBlock);
+            }
+        }
+
+        private void BuildNegativeConvChecks(LLVMValueRef loadedValue, long minValue, EcmaType destType)
+        {
+            var mask = LLVMValueRef.CreateConstInt(loadedValue.TypeOf, (ulong)minValue);
+            if (IsLlvmReal(loadedValue.TypeOf))
+            {
+                var cmp = _builder.BuildFCmp(LLVMRealPredicate.LLVMRealULE, loadedValue, MaximumNegativeFailingDouble(loadedValue.TypeOf, minValue - 1, destType));  // <= min - 1 as rounds to 0, e.g. -128.9 is allowed in sbyte
+                LLVMBasicBlockRef overflowBlock = _currentFunclet.AppendBasicBlock("unff");
+                LLVMBasicBlockRef noOverflowBlock = _currentFunclet.AppendBasicBlock("no_unff");
+                _builder.BuildCondBr(cmp, overflowBlock, noOverflowBlock);
+            
+                _builder.PositionAtEnd(overflowBlock);
+                CallOrInvokeThrowException(_builder, "ThrowHelpers", "ThrowOverflowException");
+                _builder.PositionAtEnd(noOverflowBlock);
+                AddInternalBasicBlock(noOverflowBlock);
+            }
+            else
+            {
+                var overflowBits = _builder.BuildNot(mask);
+                var check = _builder.BuildXor(overflowBits, loadedValue); // for no overflow the mask will clear all values and the result should be all 0s
+                var cmp = _builder.BuildICmp(LLVMIntPredicate.LLVMIntNE, LLVMValueRef.CreateConstInt(loadedValue.TypeOf, 0), check);
+                LLVMBasicBlockRef overflowBlock = _currentFunclet.AppendBasicBlock("unf");
+                LLVMBasicBlockRef noOverflowBlock = _currentFunclet.AppendBasicBlock("no_unf");
+                _builder.BuildCondBr(cmp, overflowBlock, noOverflowBlock);
+
+                _builder.PositionAtEnd(overflowBlock);
+                CallOrInvokeThrowException(_builder, "ThrowHelpers", "ThrowOverflowException");
+                _builder.PositionAtEnd(noOverflowBlock);
+                AddInternalBasicBlock(noOverflowBlock);
+            }
+        }
+
+        private LLVMValueRef MinimumPositiveFailingDouble(LLVMTypeRef llvmTypeRef, double maxValue, EcmaType destType)
+        {
+            if (destType.InstanceFieldSize.AsInt < 8)
+            {
+                return LLVMValueRef.CreateConstReal(llvmTypeRef, maxValue); // these sizes can be represented in doubles accurately
+            }
+            if (destType == GetWellKnownType(WellKnownType.Int64))
+            {
+                return LLVMValueRef.CreateConstBitCast(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0x43E0000000000000), llvmTypeRef);
+            }
+            Debug.Assert(destType == GetWellKnownType(WellKnownType.UInt64));
+            return LLVMValueRef.CreateConstBitCast(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0x43F0000000000000), llvmTypeRef);
+        }
+
+        private LLVMValueRef MaximumNegativeFailingDouble(LLVMTypeRef llvmTypeRef, double minValue, EcmaType destType)
+        {
+            if (destType.InstanceFieldSize.AsInt < 8)
+            {
+                return LLVMValueRef.CreateConstReal(llvmTypeRef, minValue); // these sizes can be represented in doubles accurately
+            }
+            Debug.Assert(destType == GetWellKnownType(WellKnownType.Int64));
+            return LLVMValueRef.CreateConstBitCast(LLVMValueRef.CreateConstInt(LLVMTypeRef.Int64, 0xC3E0000000000000), llvmTypeRef);
         }
 
         private void ImportUnaryOperation(ILOpcode opCode)
