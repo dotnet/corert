@@ -18,17 +18,8 @@ namespace Internal.Runtime.Interpreter
     internal unsafe class ILInterpreter
     {
         // Statics are pre-allocated in a readonly segment of the native executable at compile time,
-        // allocate our own static regions for assemblies loaded at run time.
-
-        private static readonly StaticsRegionHashTable s_nonGcStaticsRegion = new StaticsRegionHashTable(StaticsKind.NonGcStatics);
-
-        private static readonly StaticsRegionHashTable s_GcStaticsRegion = new StaticsRegionHashTable(StaticsKind.GcStatics);
-
-        private static readonly StaticsRegionHashTable s_threadNonGcStaticsRegion = new StaticsRegionHashTable(StaticsKind.ThreadNonGcStatics);
-
-        private static readonly StaticsRegionHashTable s_threadGcStaticsRegion = new StaticsRegionHashTable(StaticsKind.ThreadGcStatics);
-
-        // End allocate static regions
+        // allocate our own static regions for types in assemblies loaded at run time.
+        private static readonly StaticsRegionHashTable s_staticsRegionMapping = new StaticsRegionHashTable();
 
         private readonly MethodDesc _method;
 
@@ -2850,23 +2841,25 @@ setstackitem:
             {
                 // Field owning type is in a dynamically loaded assembly,
                 // select the appropriate interpreter statics region
-                StaticsRegionHashTable region = field switch
-                {
-                    { HasGCStaticBase: false, IsThreadStatic: false } => s_nonGcStaticsRegion,
-                    { HasGCStaticBase: false, IsThreadStatic: true } => s_threadNonGcStaticsRegion,
-                    { HasGCStaticBase: true, IsThreadStatic: false } => s_GcStaticsRegion,
-                    { HasGCStaticBase: true, IsThreadStatic: true } => s_threadGcStaticsRegion,
-                };
-
                 var fieldOffset = field.Offset.AsInt;
-                var staticsBase = region.GetOrCreateValue(ecmaType).Base;
-
-                fieldValue = fieldType switch
+                var staticsRegion = s_staticsRegionMapping.GetOrCreateValue(ecmaType);
+                var staticsBase = field switch
                 {
-                    { IsValueType: true } => RuntimeAugments.LoadValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldType.GetRuntimeTypeHandle()),
-                    { IsPointer: true } => RuntimeAugments.LoadPointerTypeField((IntPtr)(staticsBase + fieldOffset), fieldType.GetRuntimeTypeHandle()),
-                    _ => RuntimeAugments.LoadReferenceTypeField((IntPtr)(staticsBase + fieldOffset)),
+                    { HasGCStaticBase: false, IsThreadStatic: false } => staticsRegion.NonGcStaticsBase,
+                    { HasGCStaticBase: false, IsThreadStatic: true } => staticsRegion.ThreadStaticsBase,
+                    { HasGCStaticBase: true, IsThreadStatic: false } => staticsRegion.GcStaticsBase,
+                    { HasGCStaticBase: true, IsThreadStatic: true } => staticsRegion.ThreadStaticsBase,
                 };
+
+                fixed (byte* address = staticsBase)
+                {
+                    fieldValue = fieldType switch
+                    {
+                        { IsValueType: true } => RuntimeAugments.LoadValueTypeField((IntPtr)address + fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                        { IsPointer: true } => RuntimeAugments.LoadPointerTypeField((IntPtr)address + fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                        _ => RuntimeAugments.LoadReferenceTypeField((IntPtr)address + fieldOffset),
+                    };
+                }
             }
             else
             {
@@ -3008,28 +3001,30 @@ setstackitem:
             {
                 // Field owning type is in a dynamically loaded assembly,
                 // select the appropriate interpreter statics region
-                StaticsRegionHashTable region = field switch
+                var fieldOffset = field.Offset.AsInt;
+                var staticsRegion = s_staticsRegionMapping.GetOrCreateValue(ecmaType);
+                var staticsBase = field switch
                 {
-                    { HasGCStaticBase: false, IsThreadStatic: false } => s_nonGcStaticsRegion,
-                    { HasGCStaticBase: false, IsThreadStatic: true } => s_threadNonGcStaticsRegion,
-                    { HasGCStaticBase: true, IsThreadStatic: false } => s_GcStaticsRegion,
-                    { HasGCStaticBase: true, IsThreadStatic: true } => s_threadGcStaticsRegion,
+                    { HasGCStaticBase: false, IsThreadStatic: false } => staticsRegion.NonGcStaticsBase,
+                    { HasGCStaticBase: false, IsThreadStatic: true } => staticsRegion.ThreadStaticsBase,
+                    { HasGCStaticBase: true, IsThreadStatic: false } => staticsRegion.GcStaticsBase,
+                    { HasGCStaticBase: true, IsThreadStatic: true } => staticsRegion.ThreadStaticsBase,
                 };
 
-                var staticsBase = region.GetOrCreateValue(ecmaType).Base;
-                var fieldOffset = field.Offset.AsInt;
-
-                if (fieldType.IsValueType)
+                fixed (byte* address = staticsBase)
                 {
-                    RuntimeAugments.StoreValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue, fieldType.GetRuntimeTypeHandle());
-                }
-                else if (fieldType.IsPointer)
-                {
-                    RuntimeAugments.StoreValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue, typeof(IntPtr).TypeHandle);
-                }
-                else
-                {
-                    RuntimeAugments.StoreReferenceTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue);
+                    if (fieldType.IsValueType)
+                    {
+                        RuntimeAugments.StoreValueTypeField((IntPtr)address + fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
+                    }
+                    else if (fieldType.IsPointer)
+                    {
+                        RuntimeAugments.StoreValueTypeField((IntPtr)address + fieldOffset, fieldValue, typeof(IntPtr).TypeHandle);
+                    }
+                    else
+                    {
+                        RuntimeAugments.StoreReferenceTypeField((IntPtr)address + fieldOffset, fieldValue);
+                    }
                 }
             }
             else

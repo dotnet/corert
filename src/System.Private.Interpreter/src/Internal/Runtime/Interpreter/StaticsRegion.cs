@@ -2,36 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace Internal.Runtime.Interpreter
 {
-    internal enum StaticsKind { NonGcStatics, GcStatics, ThreadNonGcStatics, ThreadGcStatics }
-
     internal class StaticsRegion
     {
         public DefType OwningType { get; private set; }
 
-        public IntPtr Base { get; private set; }
+        public byte[] NonGcStaticsBase { get; private set; }
 
-        public StaticsRegion(DefType type, int size)
+        public byte[] GcStaticsBase { get; private set; }
+
+        public byte[] ThreadStaticsBase { get; private set; }
+
+        public StaticsRegion(DefType type, ComputedStaticFieldLayout layout)
         {
             OwningType = type;
-            Base = Marshal.AllocHGlobal(size);
+            NonGcStaticsBase = new byte[layout.NonGcStatics.Size.AsInt];
+            GcStaticsBase = new byte[layout.GcStatics.Size.AsInt];
+            ThreadStaticsBase = new byte[layout.ThreadNonGcStatics.Size.AsInt + layout.ThreadGcStatics.Size.AsInt];
         }
     }
 
     internal class StaticsRegionHashTable : LockFreeReaderHashtable<EcmaType, StaticsRegion>
     {
-        private readonly StaticsKind _staticsKind;
-
-        public StaticsRegionHashTable(StaticsKind staticsKind)
-        {
-            _staticsKind = staticsKind;
-        }
-
         protected override bool CompareKeyToValue(EcmaType key, StaticsRegion value)
         {
             return key == value.OwningType;
@@ -46,13 +42,7 @@ namespace Internal.Runtime.Interpreter
         {
             var fieldLayoutAlgorithm = key.Context.GetLayoutAlgorithmForType(key);
             var layout = fieldLayoutAlgorithm.ComputeStaticFieldLayout(key, StaticLayoutKind.StaticRegionSizes);
-            return _staticsKind switch
-            {
-                StaticsKind.GcStatics => new StaticsRegion(key, layout.GcStatics.Size.AsInt),
-                StaticsKind.ThreadGcStatics => new StaticsRegion(key, layout.ThreadGcStatics.Size.AsInt),
-                StaticsKind.ThreadNonGcStatics => new StaticsRegion(key, layout.ThreadNonGcStatics.Size.AsInt),
-                _ => new StaticsRegion(key, layout.NonGcStatics.Size.AsInt),
-            };
+            return new StaticsRegion(key, layout);
         }
 
         protected override int GetKeyHashCode(EcmaType key)
