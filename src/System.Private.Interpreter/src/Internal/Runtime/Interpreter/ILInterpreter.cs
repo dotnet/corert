@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Internal.IL;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
@@ -85,6 +86,15 @@ namespace Internal.Runtime.Interpreter
 
         public void InterpretMethod(ref CallInterceptorArgs callInterceptorArgs)
         {
+            if (_method.OwningType.HasStaticConstructor && _method.Name != ".cctor")
+            {
+                StaticsRegion staticsRegion = s_staticsRegionMapping.GetOrCreateValue(_method.OwningType as EcmaType);
+                fixed (StaticClassConstructionContext* cctorContext = &staticsRegion.StaticConstructorContext)
+                {
+                    RuntimeAugments.EnsureClassConstructorRun((IntPtr)cctorContext);
+                }
+            }
+
             _callInterceptorArgs = callInterceptorArgs;
             ILReader reader = new ILReader(_methodIL.GetILBytes());
 

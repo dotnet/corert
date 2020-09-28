@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using Internal.Runtime.Augments;
+using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -9,20 +13,29 @@ namespace Internal.Runtime.Interpreter
 {
     internal class StaticsRegion
     {
-        public DefType OwningType { get; private set; }
+        public readonly EcmaType OwningType;
 
-        public byte[] NonGcStaticsBase { get; private set; }
+        public readonly StaticClassConstructionContext StaticConstructorContext;
 
-        public byte[] GcStaticsBase { get; private set; }
+        public readonly byte[] NonGcStaticsBase;
 
-        public byte[] ThreadStaticsBase { get; private set; }
+        public readonly byte[] GcStaticsBase;
 
-        public StaticsRegion(DefType type, ComputedStaticFieldLayout layout)
+        public readonly byte[] ThreadStaticsBase;
+
+        public StaticsRegion(EcmaType type, ComputedStaticFieldLayout layout)
         {
             OwningType = type;
             NonGcStaticsBase = new byte[layout.NonGcStatics.Size.AsInt];
             GcStaticsBase = new byte[layout.GcStatics.Size.AsInt];
             ThreadStaticsBase = new byte[layout.ThreadNonGcStatics.Size.AsInt + layout.ThreadGcStatics.Size.AsInt];
+
+            if (RuntimeAugments.HasCctor(type.GetRuntimeTypeHandle()))
+            {
+                TypeLoaderEnvironment.TryGetMethodAddressFromMethodDesc(type.GetStaticConstructor(), out IntPtr methodAddress, out _, out TypeLoaderEnvironment.MethodAddressType foundAddressType);
+                Debug.Assert(methodAddress != IntPtr.Zero && foundAddressType == TypeLoaderEnvironment.MethodAddressType.Exact);
+                StaticConstructorContext = new StaticClassConstructionContext { cctorMethodAddress = methodAddress };
+            }
         }
     }
 
@@ -30,7 +43,7 @@ namespace Internal.Runtime.Interpreter
     {
         protected override bool CompareKeyToValue(EcmaType key, StaticsRegion value)
         {
-            return key == value.OwningType;
+            return key.GetFullName() == value.OwningType.GetFullName();
         }
 
         protected override bool CompareValueToValue(StaticsRegion value1, StaticsRegion value2)
