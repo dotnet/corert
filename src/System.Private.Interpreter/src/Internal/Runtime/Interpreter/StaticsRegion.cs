@@ -43,7 +43,7 @@ namespace Internal.Runtime.Interpreter
     {
         protected override bool CompareKeyToValue(EcmaType key, StaticsRegion value)
         {
-            return key.GetFullName() == value.OwningType.GetFullName();
+            return GetFullyQualifiedTypeName(key) == GetFullyQualifiedTypeName(value.OwningType);
         }
 
         protected override bool CompareValueToValue(StaticsRegion value1, StaticsRegion value2)
@@ -66,6 +66,12 @@ namespace Internal.Runtime.Interpreter
         protected override int GetValueHashCode(StaticsRegion value)
         {
             return value.GetHashCode();
+        }
+
+        protected string GetFullyQualifiedTypeName(EcmaType type)
+        {
+            string module = type.Module.ToString() ?? string.Empty;
+            return $"{module}!{type.GetFullName()}";
         }
     }
 }
