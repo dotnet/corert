@@ -4856,7 +4856,7 @@ namespace Internal.IL
             StackEntry valueEntry = _stack.Pop();
 
             LLVMValueRef fieldAddress = GetFieldAddress(runtimeDeterminedField, field, isStatic);
-            CastingStore(fieldAddress, valueEntry, field.FieldType, true);
+            CastingStore(fieldAddress, valueEntry, field.FieldType, !isStatic);
         }
 
         // Loads symbol address. Address is represented as a i32*
