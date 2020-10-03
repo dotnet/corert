@@ -255,7 +255,7 @@ namespace Internal.Runtime.CompilerHelpers
             const double two64 = 2.0 * 2147483648.0 * 4294967296.0;
 
             // Note that this expression also works properly for val = NaN case
-            if (val < two64)
+            if (val > -1.0 && val < two64)
                 return unchecked((ulong)val);
 
             return ThrowULngOvf();

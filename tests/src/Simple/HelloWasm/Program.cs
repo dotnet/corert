@@ -2803,6 +2803,15 @@ internal static class Program
         checked { converted = (long)((double)-9223372036854776508d); } // not a precise check
         try
         {
+            ulong ul = long.MaxValue + (ulong)1;
+            checked { converted = (int)ul; }
+        }
+        catch (OverflowException)
+        {
+            thrown++;
+        }
+        try
+        {
             f = (double)(long.MaxValue) + 1000d; // need to get into the next representable double
             checked { converted = (int)f; }
         }
@@ -2812,14 +2821,14 @@ internal static class Program
         }
         try
         {
-            f = (double)(long.MinValue) - 1000d; // need to get into the next representable double
+            f = (double)(long.MinValue) - 2000d; // need to get into the next representable double
             checked { converted = (long)f; }
         }
         catch (OverflowException)
         {
             thrown++;
         }
-        if (thrown != 2) FailTest("Test I8 Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
+        if (thrown != 3) FailTest("Test I8 Conv_Ovf not all cases were thrown  " + thrown.ToString()); ;
         EndTest(true);
     }
 
@@ -2844,7 +2853,7 @@ internal static class Program
         }
         try
         {
-            f = (double)(ulong.MaxValue) + 1000d; // need to get into the next representable double
+            f = (double)(ulong.MaxValue) + 2000d; // need to get into the next representable double
             checked { converted = (ulong)f; }
         }
         catch (OverflowException)
