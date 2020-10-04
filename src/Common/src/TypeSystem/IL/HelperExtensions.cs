@@ -20,9 +20,16 @@ namespace Internal.IL
 
         public static MethodDesc GetHelperEntryPoint(this TypeSystemContext context, string typeName, string methodName)
         {
-            MetadataType helperType = context.GetHelperType(typeName);
-            MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
-            return helperMethod;
+            try
+            {
+                MetadataType helperType = context.GetHelperType(typeName);
+                MethodDesc helperMethod = helperType.GetKnownMethod(methodName, null);
+                return helperMethod;
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new InvalidOperationException($"Cannot find type {typeName} to obtain compiler helper method {methodName}", ex);
+            }
         }
 
         /// <summary>
