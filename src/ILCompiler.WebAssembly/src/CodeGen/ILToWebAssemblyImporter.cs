@@ -3835,21 +3835,6 @@ namespace Internal.IL
                     case ILOpcode.rem:
                         result = _builder.BuildFRem(left, right, "frem");
                         break;
-
-                    // TODO: Overflow checks
-                    case ILOpcode.add_ovf:
-                    case ILOpcode.add_ovf_un:
-                        result = _builder.BuildFAdd(left, right, "fadd");
-                        break;
-                    case ILOpcode.sub_ovf:
-                    case ILOpcode.sub_ovf_un:
-                        result = _builder.BuildFSub(left, right, "fsub");
-                        break;
-                    case ILOpcode.mul_ovf:
-                    case ILOpcode.mul_ovf_un:
-                        result = _builder.BuildFMul(left, right, "fmul");
-                        break;
-
                     default:
                         throw new InvalidOperationException(); // Should be unreachable
                 }
