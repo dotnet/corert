@@ -668,15 +668,15 @@ namespace Internal.Runtime.TypeLoader
                 if (isGeneric)
                 {
                     genericComposition = MemoryHelpers.AllocateMemory(EEType.GetGenericCompositionSize(arity, pEEType->HasGenericVariance));
-                    pEEType->SetGenericComposition(genericComposition);
+                    pEEType->SetGenericComposition(genericComposition);                    
+                }
 
-                    if (state.NonGcDataSize > 0)
-                    {
-                        nonGcStaticData = MemoryHelpers.AllocateMemory(state.NonGcDataSize);
-                        MemoryHelpers.Memset(nonGcStaticData, state.NonGcDataSize, 0);
-                        Debug.Assert(nonGCStaticDataOffset <= state.NonGcDataSize);
-                        pEEType->DynamicNonGcStaticsData = (IntPtr)((byte*)nonGcStaticData + nonGCStaticDataOffset);
-                    }
+                if (state.NonGcDataSize > 0)
+                {
+                    nonGcStaticData = MemoryHelpers.AllocateMemory(state.NonGcDataSize);
+                    MemoryHelpers.Memset(nonGcStaticData, state.NonGcDataSize, 0);
+                    Debug.Assert(nonGCStaticDataOffset <= state.NonGcDataSize);
+                    pEEType->DynamicNonGcStaticsData = (IntPtr)((byte*)nonGcStaticData + nonGCStaticDataOffset);
                 }
 
                 if (!isGenericEETypeDef && state.ThreadDataSize != 0)

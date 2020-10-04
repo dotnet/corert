@@ -2840,9 +2840,9 @@ setstackitem:
                 var fieldOffset = field.Offset.AsInt;
                 var staticsBase = field switch
                 {
-                    { HasGCStaticBase: false, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldData(field.OwningType.GetRuntimeTypeHandle()),
+                    { HasGCStaticBase: false, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
                     { HasGCStaticBase: false, IsThreadStatic: true } => IntPtr.Zero,
-                    { HasGCStaticBase: true, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetGcStaticFieldData(field.OwningType.GetRuntimeTypeHandle()),
+                    { HasGCStaticBase: true, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
                     { HasGCStaticBase: true, IsThreadStatic: true } => IntPtr.Zero,
                 };
 
@@ -3015,9 +3015,9 @@ setstackitem:
                 var fieldOffset = field.Offset.AsInt;
                 var staticsBase = field switch
                 {
-                    { HasGCStaticBase: false, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldData(field.OwningType.GetRuntimeTypeHandle()),
+                    { HasGCStaticBase: false, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
                     { HasGCStaticBase: false, IsThreadStatic: true } => IntPtr.Zero,
-                    { HasGCStaticBase: true, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetGcStaticFieldData(field.OwningType.GetRuntimeTypeHandle()),
+                    { HasGCStaticBase: true, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
                     { HasGCStaticBase: true, IsThreadStatic: true } => IntPtr.Zero,
                 };
 
