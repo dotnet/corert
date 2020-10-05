@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -4150,14 +4151,135 @@ namespace Internal.IL
 
         private void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned)
         {
-            //TODO checkOverflow
+            //TODO checkOverflow - r_un & r_4, i & i_un
             StackEntry value = _stack.Pop();
             TypeDesc destType = GetWellKnownType(wellKnownType);
 
             // Load the value and then convert it instead of using ValueAsType to avoid loading the incorrect size
             LLVMValueRef loadedValue = value.ValueAsType(value.Type, _builder);
-            LLVMValueRef converted = CastIfNecessary(loadedValue, GetLLVMTypeForTypeDesc(destType), value.Name(), wellKnownType == WellKnownType.UInt64 /* unsigned is always false, so check for the type explicitly */);
-            PushExpression(GetStackValueKind(destType), "conv", converted, destType);
+
+            ExpressionEntry expressionEntry;
+            if (checkOverflow)
+            {
+                Debug.Assert(destType is EcmaType);
+                if (IsLlvmReal(loadedValue.TypeOf))
+                {
+                    expressionEntry = BuildConvOverflowFromReal(value, loadedValue, (EcmaType)destType, wellKnownType, unsigned, value.Type);
+                }
+                else
+                {
+                    expressionEntry = BuildConvOverflow(value.Name(), loadedValue, (EcmaType)destType, wellKnownType, unsigned, value.Type);
+                }
+            }
+            else
+            {
+                LLVMValueRef converted = CastIfNecessary(loadedValue, GetLLVMTypeForTypeDesc(destType), value.Name(), wellKnownType == WellKnownType.UInt64 /* unsigned is always false, so check for the type explicitly */);
+                expressionEntry = new ExpressionEntry(GetStackValueKind(destType), "conv", converted, destType);
+            }
+            _stack.Push(expressionEntry);
+        }
+
+        private bool IsLlvmReal(LLVMTypeRef llvmTypeRef)
+        {
+            return llvmTypeRef == LLVMTypeRef.Float || llvmTypeRef == LLVMTypeRef.Double;
+        }
+
+        ExpressionEntry BuildConvOverflowFromReal(StackEntry value, LLVMValueRef loadedValue, EcmaType destType, WellKnownType destWellKnownType, bool unsigned, TypeDesc sourceType)
+        {
+            //TODO: single overflow checks extend to doubles - this could be more efficient
+            if (value.Type == GetWellKnownType(WellKnownType.Single))
+            {
+                value = new ExpressionEntry(StackValueKind.Float, "dbl", _builder.BuildFPExt(loadedValue, LLVMTypeRef.Double), GetWellKnownType(WellKnownType.Double));
+            }
+            switch (destWellKnownType)
+            {
+                case WellKnownType.Byte:
+                case WellKnownType.SByte:
+                case WellKnownType.Int16:
+                case WellKnownType.UInt16:
+                    var intExpression = CallRuntime("Internal.Runtime.CompilerHelpers", _method.Context, "MathHelpers", "Dbl2IntOvf", new[] {value});
+                    return BuildConvOverflow(value.Name(), intExpression.ValueForStackKind(StackValueKind.Int32, _builder, false), destType, destWellKnownType, unsigned, sourceType);
+                case WellKnownType.Int32:
+                    return CallRuntime("Internal.Runtime.CompilerHelpers", _method.Context, "MathHelpers", "Dbl2IntOvf", new[] { value });
+                case WellKnownType.UInt32:
+                case WellKnownType.UIntPtr: // TODO : 64bit.
+                    return CallRuntime("Internal.Runtime.CompilerHelpers", _method.Context, "MathHelpers", "Dbl2UIntOvf", new[] { value });
+                case WellKnownType.Int64:
+                    return CallRuntime("Internal.Runtime.CompilerHelpers", _method.Context, "MathHelpers", "Dbl2LngOvf", new[] { value });
+                case WellKnownType.UInt64:
+                    return CallRuntime("Internal.Runtime.CompilerHelpers", _method.Context, "MathHelpers", "Dbl2ULngOvf", new[] { value });
+                default:
+                    throw new InvalidProgramException("Unsupported destination for singled/double overflow check");
+            }
+        }
+
+        ExpressionEntry BuildConvOverflow(string name, LLVMValueRef loadedValue, EcmaType destType, WellKnownType destWellKnownType, bool unsigned, TypeDesc sourceType)
+        {
+            ulong maxValue = 0;
+            long minValue = 0;
+            switch (destWellKnownType)
+            {
+                case WellKnownType.Byte:
+                    maxValue = byte.MaxValue;
+                    break;
+                case WellKnownType.SByte:
+                    maxValue = (ulong)sbyte.MaxValue;
+                    minValue = sbyte.MinValue;
+                    break;
+                case WellKnownType.UInt16:
+                    maxValue = ushort.MaxValue;
+                    break;
+                case WellKnownType.Int16:
+                    maxValue = (ulong)short.MaxValue;
+                    minValue = short.MinValue;
+                    break;
+                case WellKnownType.UInt32:
+                case WellKnownType.UIntPtr: // TODO : 64bit.
+                    maxValue = uint.MaxValue;
+                    break;
+                case WellKnownType.Int32:
+                    maxValue = int.MaxValue;
+                    minValue = int.MinValue;
+                    break;
+                case WellKnownType.UInt64:
+                    maxValue = ulong.MaxValue;
+                    break;
+                case WellKnownType.Int64:
+                    maxValue = long.MaxValue;
+                    minValue = long.MinValue;
+                    break;
+            }
+            BuildConvOverflowCheck(loadedValue, unsigned, maxValue, minValue, sourceType, destType);
+            LLVMValueRef converted = CastIfNecessary(loadedValue, GetLLVMTypeForTypeDesc(destType), name, unsigned);
+            return new ExpressionEntry(GetStackValueKind(destType), "conv", converted, destType);
+        }
+
+        private void BuildConvOverflowCheck(LLVMValueRef loadedValue, bool unsigned, ulong maxValue, long minValue, TypeDesc sourceType, EcmaType destType)
+        {
+            var maxDiff = LLVMValueRef.CreateConstInt(loadedValue.TypeOf, maxValue - (ulong)minValue);
+
+            LLVMBasicBlockRef overflowBlock = _currentFunclet.AppendBasicBlock("ovf");
+            LLVMBasicBlockRef noOverflowBlock = _currentFunclet.AppendBasicBlock("no_ovf");
+            LLVMValueRef cmp;
+            //special case same width signed -> unsigned, can just check for negative values
+            if (unsigned && (loadedValue.TypeOf.IntWidth >> 3) == destType.InstanceFieldSize.AsInt && 
+                (sourceType == GetWellKnownType(WellKnownType.Int16)
+                || sourceType == GetWellKnownType(WellKnownType.Int32)
+                || sourceType == GetWellKnownType(WellKnownType.Int64)))
+            {
+                cmp = _builder.BuildICmp(LLVMIntPredicate.LLVMIntSLT, loadedValue, LLVMValueRef.CreateConstInt(loadedValue.TypeOf, 0));
+            }
+            else
+            {
+                var valueDiff = _builder.BuildSub(loadedValue, LLVMValueRef.CreateConstInt(loadedValue.TypeOf, (ulong)minValue));
+                cmp = _builder.BuildICmp(LLVMIntPredicate.LLVMIntUGT, valueDiff, maxDiff);
+            }
+            _builder.BuildCondBr(cmp, overflowBlock, noOverflowBlock);
+
+            _builder.PositionAtEnd(overflowBlock);
+            CallOrInvokeThrowException(_builder, "ThrowHelpers", "ThrowOverflowException");
+            _builder.PositionAtEnd(noOverflowBlock);
+            AddInternalBasicBlock(noOverflowBlock);
         }
 
         private void ImportUnaryOperation(ILOpcode opCode)
