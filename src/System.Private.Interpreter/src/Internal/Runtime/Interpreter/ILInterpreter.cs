@@ -84,6 +84,17 @@ namespace Internal.Runtime.Interpreter
             _callInterceptorArgs = callInterceptorArgs;
             ILReader reader = new ILReader(_methodIL.GetILBytes());
 
+            if (_method.OwningType.HasStaticConstructor && !_method.IsStaticConstructor)
+            {
+                // Method's owning type has a static constructor and we're not trying
+                // to interpret the static constructor itself. Ensure we've run it
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(_method.OwningType.GetRuntimeTypeHandle());
+                if (cctorContext != IntPtr.Zero)
+                {
+                    RuntimeAugments.EnsureClassConstructorRun(cctorContext);
+                }
+            }
+
             while (reader.HasNext)
             {
                 ILOpcode opcode = reader.ReadILOpcode();
@@ -2882,12 +2893,6 @@ setstackitem:
                     nativeFormatField.Handle,
                     out FieldAccessMetadata fieldAccessMetadata);
 
-                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(nativeFormatField.OwningType.GetRuntimeTypeHandle());
-                if (cctorContext != IntPtr.Zero)
-                {
-                    RuntimeAugments.EnsureClassConstructorRun(cctorContext);
-                }
-
                 FieldTableFlags fieldFlags = fieldAccessMetadata.Flags & FieldTableFlags.StorageClass;
                 if (fieldFlags == FieldTableFlags.NonGCStatic)
                 {
@@ -3069,13 +3074,6 @@ setstackitem:
                     nativeFormatField.OwningType.GetRuntimeTypeHandle(),
                     nativeFormatField.Handle,
                     out FieldAccessMetadata fieldAccessMetadata);
-
-
-                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(nativeFormatField.OwningType.GetRuntimeTypeHandle());
-                if (cctorContext != IntPtr.Zero)
-                {
-                    RuntimeAugments.EnsureClassConstructorRun(cctorContext);
-                }
 
                 FieldTableFlags fieldFlags = fieldAccessMetadata.Flags & FieldTableFlags.StorageClass;
                 if (fieldFlags == FieldTableFlags.NonGCStatic)
