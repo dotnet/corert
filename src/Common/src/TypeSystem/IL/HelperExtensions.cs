@@ -28,7 +28,7 @@ namespace Internal.IL
             }
             catch (InvalidOperationException ex)
             {
-                throw new InvalidOperationException($"Cannot find type {typeName} to obtain compiler helper method {methodName}", ex);
+                throw new InvalidOperationException($"Cannot find compiler helper method {methodName} on type {typeName}.", ex);
             }
         }
 
