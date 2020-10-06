@@ -2893,6 +2893,12 @@ setstackitem:
                     nativeFormatField.Handle,
                     out FieldAccessMetadata fieldAccessMetadata);
 
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.GetRuntimeTypeHandle());
+                if (cctorContext != IntPtr.Zero)
+                {
+                    RuntimeAugments.EnsureClassConstructorRun(cctorContext);
+                }
+
                 FieldTableFlags fieldFlags = fieldAccessMetadata.Flags & FieldTableFlags.StorageClass;
                 if (fieldFlags == FieldTableFlags.NonGCStatic)
                 {
@@ -3074,6 +3080,12 @@ setstackitem:
                     nativeFormatField.OwningType.GetRuntimeTypeHandle(),
                     nativeFormatField.Handle,
                     out FieldAccessMetadata fieldAccessMetadata);
+
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.GetRuntimeTypeHandle());
+                if (cctorContext != IntPtr.Zero)
+                {
+                    RuntimeAugments.EnsureClassConstructorRun(cctorContext);
+                }
 
                 FieldTableFlags fieldFlags = fieldAccessMetadata.Flags & FieldTableFlags.StorageClass;
                 if (fieldFlags == FieldTableFlags.NonGCStatic)
