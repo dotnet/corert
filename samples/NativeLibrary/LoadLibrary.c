@@ -9,14 +9,19 @@
 
 #ifdef _WIN32
 #include "windows.h"
-#define symLoad GetProcAddress GetProcAddress
+#define symLoad GetProcAddress
 #else
 #include "dlfcn.h"
+#include <unistd.h>
 #define symLoad dlsym
 #endif
-#include <unistd.h>
+
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifndef F_OK
+#define F_OK    0
+#endif
 
 int callSumFunc(char *path, char *funcName, int a, int b);
 char *callSumStringFunc(char *path, char *funcName, char *a, char *b);
@@ -46,7 +51,7 @@ int callSumFunc(char *path, char *funcName, int firstInt, int secondInt)
 {
     // Call sum function defined in C# shared library
     #ifdef _WIN32
-        HINSTANCE handle = LoadLibrary(path);
+        HINSTANCE handle = LoadLibraryA(path);
     #else
         void *handle = dlopen(path, RTLD_LAZY);
     #endif
@@ -65,7 +70,7 @@ char *callSumStringFunc(char *path, char *funcName, char *firstString, char *sec
 {
     // Library loading
     #ifdef _WIN32
-        HINSTANCE handle = LoadLibrary(path);
+        HINSTANCE handle = LoadLibraryA(path);
     #else
         void *handle = dlopen(path, RTLD_LAZY);
     #endif
