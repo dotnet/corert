@@ -88,7 +88,7 @@ namespace Internal.Runtime.Interpreter
             {
                 // Method's owning type has a static constructor and we're not trying
                 // to interpret the static constructor itself. Ensure we've run it
-                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(_method.OwningType.GetRuntimeTypeHandle());
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(_method.OwningType.RuntimeTypeHandle);
                 if (cctorContext != IntPtr.Zero)
                 {
                     RuntimeAugments.EnsureClassConstructorRun(cctorContext);
@@ -2889,11 +2889,11 @@ setstackitem:
 
                 TypeLoaderEnvironment.TryGetFieldAccessMetadata(
                     nativeFormatField.MetadataReader,
-                    nativeFormatField.OwningType.GetRuntimeTypeHandle(),
+                    nativeFormatField.OwningType.RuntimeTypeHandle,
                     nativeFormatField.Handle,
                     out FieldAccessMetadata fieldAccessMetadata);
 
-                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.GetRuntimeTypeHandle());
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.RuntimeTypeHandle);
                 if (cctorContext != IntPtr.Zero)
                 {
                     RuntimeAugments.EnsureClassConstructorRun(cctorContext);
@@ -2907,8 +2907,8 @@ setstackitem:
 
                     fieldValue = fieldType switch
                     {
-                        { IsValueType: true } => RuntimeAugments.LoadValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldType.GetRuntimeTypeHandle()),
-                        { IsPointer: true } => RuntimeAugments.LoadPointerTypeField((IntPtr)(staticsBase + fieldOffset), fieldType.GetRuntimeTypeHandle()),
+                        { IsValueType: true } => RuntimeAugments.LoadValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldType.RuntimeTypeHandle),
+                        { IsPointer: true } => RuntimeAugments.LoadPointerTypeField((IntPtr)(staticsBase + fieldOffset), fieldType.RuntimeTypeHandle),
                         _ => RuntimeAugments.LoadReferenceTypeField((IntPtr)(staticsBase + fieldOffset)),
                     };
                 }
@@ -2923,8 +2923,8 @@ setstackitem:
 
                     fieldValue = fieldType switch
                     {
-                        { IsValueType: true } => RuntimeAugments.LoadValueTypeField(staticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
-                        { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(staticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                        { IsValueType: true } => RuntimeAugments.LoadValueTypeField(staticsRegion, fieldOffset, fieldType.RuntimeTypeHandle),
+                        { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(staticsRegion, fieldOffset, fieldType.RuntimeTypeHandle),
                         _ => RuntimeAugments.LoadReferenceTypeField(staticsRegion, fieldOffset),
                     };
                 }
@@ -3077,11 +3077,11 @@ setstackitem:
 
                 TypeLoaderEnvironment.TryGetFieldAccessMetadata(
                     nativeFormatField.MetadataReader,
-                    nativeFormatField.OwningType.GetRuntimeTypeHandle(),
+                    nativeFormatField.OwningType.RuntimeTypeHandle,
                     nativeFormatField.Handle,
                     out FieldAccessMetadata fieldAccessMetadata);
 
-                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.GetRuntimeTypeHandle());
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.RuntimeTypeHandle);
                 if (cctorContext != IntPtr.Zero)
                 {
                     RuntimeAugments.EnsureClassConstructorRun(cctorContext);
@@ -3095,7 +3095,7 @@ setstackitem:
 
                     if (fieldType.IsValueType)
                     {
-                        RuntimeAugments.StoreValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue, fieldType.GetRuntimeTypeHandle());
+                        RuntimeAugments.StoreValueTypeField((IntPtr)(staticsBase + fieldOffset), fieldValue, fieldType.RuntimeTypeHandle);
                     }
                     else if (fieldType.IsPointer)
                     {
@@ -3117,7 +3117,7 @@ setstackitem:
 
                     if (fieldType.IsValueType)
                     {
-                        RuntimeAugments.StoreValueTypeField(staticsRegion, fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
+                        RuntimeAugments.StoreValueTypeField(staticsRegion, fieldOffset, fieldValue, fieldType.RuntimeTypeHandle);
                     }
                     else if (fieldType.IsPointer)
                     {
