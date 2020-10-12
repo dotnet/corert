@@ -420,7 +420,11 @@ namespace System.Threading
             }
             catch (OutOfMemoryException)
             {
-
+#if TARGET_UNIX
+                // This should go away once OnThreadExit stops using t_currentThread to signal
+                // shutdown of the thread on Unix.
+                thread._stopped.Set();
+#endif
                 // Terminate the current thread. The creator thread will throw a ThreadStartException.
                 return;
             }
