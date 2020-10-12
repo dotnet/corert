@@ -381,6 +381,7 @@ extern "C" int __managed__Main(int argc, char* argv[]);
 #define CORERT_ENTRYPOINT __managed__Startup
 extern "C" void __managed__Startup();
 #endif // !CORERT_DLL
+extern "C" void RhpManagedShutdown();
 
 static int InitializeRuntime()
 {
@@ -447,6 +448,7 @@ int main(int argc, char* argv[])
         retval = -1;
     }
 #endif
+    RhpManagedShutdown();
     RhpShutdown();
 
     return retval;

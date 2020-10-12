@@ -262,6 +262,7 @@
     <Compile Include="System\Threading\ThreadBooleanCounter.cs" />
     <Compile Include="System\Threading\ThreadPool.CoreRT.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
+    <Compile Include="System\Threading\ThreadStore.cs" />
     <Compile Include="System\Threading\WaitHandle.CoreRT.cs" />
     <Compile Include="System\Type.CoreRT.cs" />
     <Compile Include="System\Type.Internal.cs" />

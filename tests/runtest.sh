@@ -218,8 +218,8 @@ run_coreclr_tests()
         CoreRT_TestSelectionArg=
     fi
 
-    echo python runtest.py -test_native_bin_location ${CoreRT_TestExtRepo}/native/tests -test_location ${CoreRT_TestRoot}/CoreCLR -core_root ${CoreRT_TestExtRepo}/Tests/Core_Root -coreclr_repo_location ${CoreRT_TestRoot}/.. ${CoreRT_TestSelectionArg}    
-    python runtest.py -test_native_bin_location ${CoreRT_TestExtRepo}/native/tests -test_location ${CoreRT_TestRoot}/CoreCLR -core_root ${CoreRT_TestExtRepo}/Tests/Core_Root -coreclr_repo_location ${CoreRT_TestRoot}/.. ${CoreRT_TestSelectionArg}
+    echo python runtest.py -arch ${CoreRT_BuildArch} -build_type ${CoreRT_BuildType} -test_native_bin_location ${CoreRT_TestExtRepo}/native/tests -test_location ${CoreRT_TestRoot}/CoreCLR -core_root ${CoreRT_TestExtRepo}/Tests/Core_Root -coreclr_repo_location ${CoreRT_TestRoot}/.. ${CoreRT_TestSelectionArg}    
+    python runtest.py -arch ${CoreRT_BuildArch} -build_type ${CoreRT_BuildType} -test_native_bin_location ${CoreRT_TestExtRepo}/native/tests -test_location ${CoreRT_TestRoot}/CoreCLR -core_root ${CoreRT_TestExtRepo}/Tests/Core_Root -coreclr_repo_location ${CoreRT_TestRoot}/.. ${CoreRT_TestSelectionArg}
 }
 
 run_corefx_tests()

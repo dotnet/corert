@@ -169,14 +169,20 @@ namespace System.Threading
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_State);
                 }
-                // TODO: Keep a counter of running foregroung threads so we can wait on process exit
+                bool isBackground = GetThreadStateBit(ThreadState.Background);
+                if (value == isBackground) 
+                {
+                    return;
+                }
                 if (value)
                 {
                     SetThreadStateBit(ThreadState.Background);
+                    ThreadStore.DecrementRunningForeground();
                 }
                 else
                 {
                     ClearThreadStateBit(ThreadState.Background);
+                    ThreadStore.IncrementRunningForeground();
                 }
             }
         }
@@ -414,14 +420,12 @@ namespace System.Threading
             }
             catch (OutOfMemoryException)
             {
-#if TARGET_UNIX
-                // This should go away once OnThreadExit stops using t_currentThread to signal
-                // shutdown of the thread on Unix.
-                thread._stopped.Set();
-#endif
+
                 // Terminate the current thread. The creator thread will throw a ThreadStartException.
                 return;
             }
+            
+            ThreadStore.IncrementRunningForeground(thread);
 
             // Report success to the creator thread, which will free threadHandle and _threadStartArg
             thread.ClearThreadStateBit(ThreadState.Unstarted);
@@ -455,6 +459,10 @@ namespace System.Threading
             }
             finally
             {
+                // what if OS thread dies and this block never invokes?
+                // see JoinInternal
+                ThreadStore.DecrementRunningForeground(thread);
+
                 thread.SetThreadStateBit(ThreadState.Stopped);
             }
         }
