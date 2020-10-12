@@ -34,6 +34,10 @@ namespace System.Threading
         // Protects starting the thread and setting its priority
         private Lock _lock;
 
+        private static readonly ManualResetEvent _allDone = new ManualResetEvent(false);
+
+        // main thread started by runtime and we have no chance (?) to increment it elsewhere
+        private static int _foregroundRunningCount = 1;
         private Thread()
         {
             _threadState = (int)ThreadState.Unstarted;
@@ -169,20 +173,21 @@ namespace System.Threading
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_State);
                 }
-                bool isBackground = GetThreadStateBit(ThreadState.Background);
-                if (value == isBackground) 
-                {
-                    return;
-                }
                 if (value)
                 {
-                    SetThreadStateBit(ThreadState.Background);
-                    ThreadStore.DecrementRunningForeground();
+                    bool wasBackground = ((SetThreadStateBit(ThreadState.Background) & (int)ThreadState.Background) != 0);
+                    if (!wasBackground)
+                    {
+                        DecrementRunningForeground();
+                    }
                 }
                 else
                 {
-                    ClearThreadStateBit(ThreadState.Background);
-                    ThreadStore.IncrementRunningForeground();
+                    bool wasBackground = ((ClearThreadStateBit(ThreadState.Background) & (int)ThreadState.Background) != 0);
+                    if (wasBackground)
+                    {
+                        IncrementRunningForeground();
+                    }
                 }
             }
         }
@@ -270,7 +275,7 @@ namespace System.Threading
             return (_threadState & (int)bit) != 0;
         }
 
-        private void SetThreadStateBit(ThreadState bit)
+        private int SetThreadStateBit(ThreadState bit)
         {
             int oldState, newState;
             do
@@ -278,9 +283,10 @@ namespace System.Threading
                 oldState = _threadState;
                 newState = oldState | (int)bit;
             } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
+            return oldState;
         }
 
-        private void ClearThreadStateBit(ThreadState bit)
+        private int ClearThreadStateBit(ThreadState bit)
         {
             int oldState, newState;
             do
@@ -288,6 +294,7 @@ namespace System.Threading
                 oldState = _threadState;
                 newState = oldState & ~(int)bit;
             } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
+            return oldState;
         }
 
         internal void SetWaitSleepJoinState()
@@ -429,7 +436,7 @@ namespace System.Threading
                 return;
             }
             
-            ThreadStore.IncrementRunningForeground(thread);
+            IncrementRunningForeground(thread);
 
             // Report success to the creator thread, which will free threadHandle and _threadStartArg
             thread.ClearThreadStateBit(ThreadState.Unstarted);
@@ -465,7 +472,7 @@ namespace System.Threading
             {
                 // what if OS thread dies and this block never invokes?
                 // see JoinInternal
-                ThreadStore.DecrementRunningForeground(thread);
+                DecrementRunningForeground(thread);
 
                 thread.SetThreadStateBit(ThreadState.Stopped);
             }
@@ -518,6 +525,40 @@ namespace System.Threading
             if ((currentProcessorIdCache & ProcessorIdCacheCountDownMask) == 0)
                 return RefreshCurrentProcessorId();
             return (currentProcessorIdCache >> ProcessorIdCacheShift);
+        }
+
+        internal static void IncrementRunningForeground() 
+        {
+            Interlocked.Increment(ref _foregroundRunningCount);
+        }
+
+        internal static void DecrementRunningForeground() 
+        {
+            if (Interlocked.Decrement(ref _foregroundRunningCount) == 0) 
+            {
+                _allDone.Set();
+            }
+        }
+
+        internal static void IncrementRunningForeground(Thread thread) 
+        {
+            if (!thread.IsBackground) 
+            {
+                IncrementRunningForeground();
+            }
+        }
+
+        internal static void DecrementRunningForeground(Thread thread) 
+        {
+            if (!thread.IsBackground) 
+            {
+                DecrementRunningForeground();
+            }
+        }
+
+        internal static void WaitForForegroundThreads() 
+        {
+            _allDone.WaitOne();
         }
     }
 }

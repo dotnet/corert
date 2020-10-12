@@ -53,7 +53,6 @@ namespace System.Threading
                 int state = currentThread._threadState;
                 if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
                 {
-                    // ThreadStore.DecrementRunningForeground(currentThread);
                     currentThread.SetThreadStateBit(ThreadState.Stopped);
                 }
                 currentThread._stopped.Set();
