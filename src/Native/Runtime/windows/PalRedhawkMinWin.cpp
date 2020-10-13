@@ -135,6 +135,11 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
         ASSERT_UNCONDITIONALLY("Detaching a thread from the wrong fiber");
         RhFailFast();
     }
+    
+    if (g_threadExitCallback != NULL)
+    {
+        g_threadExitCallback();
+    }
 
     FlsSetValue(g_flsIndex, NULL);
     return true;

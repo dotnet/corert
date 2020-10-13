@@ -169,4 +169,11 @@ extern ThreadExitCallback g_threadExitCallback;
 typedef Int32 (*PHARDWARE_EXCEPTION_HANDLER)(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
 #endif
 
+#ifdef TARGET_WINDOWS
+typedef void (__stdcall * ThreadExitCallback)();
+
+extern ThreadExitCallback g_threadExitCallback;
+
+#endif
+
 #endif // __PAL_REDHAWK_COMMON_INCLUDED

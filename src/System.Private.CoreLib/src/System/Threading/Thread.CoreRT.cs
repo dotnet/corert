@@ -36,7 +36,7 @@ namespace System.Threading
 
         // so far the only place we initialize it is `WaitForForegroundThreads`
         // and only in the case when there are running foreground threads 
-        // by the moment of `StartupCodeHelpers.Shutdown()` invocaiton
+        // by the moment of `StartupCodeHelpers.Shutdown()` invocation
         private static ManualResetEvent s_allDone;
 
         private static int s_foregroundRunningCount;
@@ -177,18 +177,16 @@ namespace System.Threading
             set
             {
                 ThreadState state = GetThreadState();
-                bool isDead = (state & (ThreadState.Stopped | ThreadState.Aborted)) != 0;
-                if (isDead)
+                if (IsDead())
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_State);
                 }
-                bool started = (state & ThreadState.Unstarted) == 0;
                 // we changing foreground count only for started threads
-                // on thread start we count it state in `StartThread`
+                // on thread start we count its state in `StartThread`
                 if (value)
                 {
                     bool wasBackground = ((SetThreadStateBit(ThreadState.Background) & (int)ThreadState.Background) != 0);
-                    if (!wasBackground && started)
+                    if (!wasBackground && HasStarted())
                     {
                         DecrementRunningForeground();
                     }
@@ -196,7 +194,7 @@ namespace System.Threading
                 else
                 {
                     bool wasBackground = ((ClearThreadStateBit(ThreadState.Background) & (int)ThreadState.Background) != 0);
-                    if (wasBackground && started)
+                    if (wasBackground && HasStarted())
                     {
                         IncrementRunningForeground();
                     }
@@ -447,11 +445,11 @@ namespace System.Threading
                 // Terminate the current thread. The creator thread will throw a ThreadStartException.
                 return;
             }
-            
-            IncrementRunningForeground(thread);
 
             // Report success to the creator thread, which will free threadHandle and _threadStartArg
             thread.ClearThreadStateBit(ThreadState.Unstarted);
+            
+            IncrementRunningForeground(thread);
 
             if (thread._startCulture != null)
             {
@@ -540,6 +538,14 @@ namespace System.Threading
             Interlocked.Increment(ref s_foregroundRunningCount);
         }
 
+        internal static void IncrementRunningForeground(Thread thread) 
+        {
+            if (!thread.IsBackground) 
+            {
+                IncrementRunningForeground();
+            }
+        }
+
         internal static void DecrementRunningForeground() 
         {
             if (Interlocked.Decrement(ref s_foregroundRunningCount) == 0) 
@@ -547,14 +553,6 @@ namespace System.Threading
                 // Interlocked.Decrement issues full memory barrier 
                 // so most recent write to s_allDone should be visible here
                 s_allDone?.Set();
-            }
-        }
-
-        internal static void IncrementRunningForeground(Thread thread) 
-        {
-            if (!thread.IsBackground) 
-            {
-                IncrementRunningForeground();
             }
         }
 

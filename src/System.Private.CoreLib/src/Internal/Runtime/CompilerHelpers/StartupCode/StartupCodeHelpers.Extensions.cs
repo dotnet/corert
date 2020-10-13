@@ -53,7 +53,6 @@ namespace Internal.Runtime.CompilerHelpers
         // Shuts down the class library and returns the process exit code.
         private static int Shutdown()
         {
-
             Thread.WaitForForegroundThreads();
 
             Environment.ShutdownCore();

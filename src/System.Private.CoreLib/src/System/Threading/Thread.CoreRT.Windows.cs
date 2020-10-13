@@ -30,6 +30,7 @@ namespace System.Threading
 
         private void PlatformSpecificInitialize()
         {
+            RuntimeImports.RhSetThreadExitCallback(AddrofIntrinsics.AddrOf<Action>(OnThreadExit));
         }
 
         // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
@@ -124,6 +125,24 @@ namespace System.Threading
         {
             Debug.Assert(!_osHandle.IsInvalid);
             return Interop.Kernel32.SetThreadPriority(_osHandle, (int)MapToOSPriority(priority));
+        }
+
+        [UnmanagedCallersOnly]
+        private static void OnThreadExit()
+        {
+            Thread currentThread = t_currentThread;
+            if (currentThread != null)
+            {
+                int state = currentThread._threadState;
+                if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
+                {
+                    currentThread.SetThreadStateBit(ThreadState.Stopped);
+                }
+                if ((state & (int)ThreadState.Background) == 0)
+                {
+                    DecrementRunningForeground();
+                }
+            }
         }
 
         private ThreadState GetThreadState()

@@ -535,6 +535,18 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
 
 #endif // TARGET_UNIX
 
+#ifdef TARGET_WINDOWS
+
+// Function to call when a thread is detached from the runtime
+ThreadExitCallback g_threadExitCallback;
+
+COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
+{
+    g_threadExitCallback = (ThreadExitCallback)pCallback;
+}
+
+#endif // TARGET_WINDOWS
+
 COOP_PINVOKE_HELPER(Int32, RhGetProcessCpuCount, ())
 {
     return PalGetProcessCpuCount();
