@@ -39,7 +39,7 @@ namespace System.Threading
         // by the moment of `StartupCodeHelpers.Shutdown()` invocaiton
         private static ManualResetEvent s_allDone;
 
-        private static int _foregroundRunningCount;
+        private static int s_foregroundRunningCount;
         private Thread()
         {
             _threadState = (int)ThreadState.Unstarted;
@@ -92,7 +92,7 @@ namespace System.Threading
             }
             else
             {
-                Interlocked.Increment(ref _foregroundRunningCount);
+                Interlocked.Increment(ref s_foregroundRunningCount);
             }
 
             currentThread._threadState = (int)(state | ThreadState.Running);
@@ -482,10 +482,6 @@ namespace System.Threading
             }
             finally
             {
-                // what if OS thread dies and this block never invokes?
-                // see JoinInternal
-                DecrementRunningForeground(thread);
-
                 thread.SetThreadStateBit(ThreadState.Stopped);
             }
         }
@@ -541,12 +537,12 @@ namespace System.Threading
 
         internal static void IncrementRunningForeground() 
         {
-            Interlocked.Increment(ref _foregroundRunningCount);
+            Interlocked.Increment(ref s_foregroundRunningCount);
         }
 
         internal static void DecrementRunningForeground() 
         {
-            if (Interlocked.Decrement(ref _foregroundRunningCount) == 0) 
+            if (Interlocked.Decrement(ref s_foregroundRunningCount) == 0) 
             {
                 // Interlocked.Decrement issues full memory barrier 
                 // so most recent write to s_allDone should be visible here
@@ -567,7 +563,7 @@ namespace System.Threading
             if (!thread.IsBackground) 
             {
                 DecrementRunningForeground();
-                Debug.Assert(_foregroundRunningCount >= 1, "_foregroundRunningCount is less than 1");
+                Debug.Assert(s_foregroundRunningCount >= 1, "s_foregroundRunningCount is less than 1");
             }
         }
 
@@ -575,8 +571,8 @@ namespace System.Threading
         {         
             Thread.CurrentThread.IsBackground = true;
             // last read/write inside `IsBackground` issues full barrier no matter of logic flow
-            // so we can just read `_foregroundRunningCount`
-            if (_foregroundRunningCount == 0)
+            // so we can just read `s_foregroundRunningCount`
+            if (s_foregroundRunningCount == 0)
             {
                 // current thread is the last foreground thread, so let the runtime finish
                 return;
@@ -587,8 +583,8 @@ namespace System.Threading
                 // ManualResetEvent involves kernel transition 
                 // thus other foreground threads could have their job finished meanwhile
                 // Volatile.Write above issues release barrier 
-                // but we need acquire barrier to observe most recent write to _foregroundRunningCount
-                if (Volatile.Read(ref _foregroundRunningCount) == 0)
+                // but we need acquire barrier to observe most recent write to s_foregroundRunningCount
+                if (Volatile.Read(ref s_foregroundRunningCount) == 0)
                 {
                     return;
                 }

@@ -55,6 +55,10 @@ namespace System.Threading
                 {
                     currentThread.SetThreadStateBit(ThreadState.Stopped);
                 }
+                if ((state & (int)ThreadState.Background) == 0)
+                {
+                    DecrementRunningForeground();
+                }
                 currentThread._stopped.Set();
             }
         }
