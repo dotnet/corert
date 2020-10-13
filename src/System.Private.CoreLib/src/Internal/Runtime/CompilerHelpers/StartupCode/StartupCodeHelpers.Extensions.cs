@@ -54,7 +54,6 @@ namespace Internal.Runtime.CompilerHelpers
         private static int Shutdown()
         {
 
-            Thread.CurrentThread.IsBackground = true;
             Thread.WaitForForegroundThreads();
 
             Environment.ShutdownCore();
