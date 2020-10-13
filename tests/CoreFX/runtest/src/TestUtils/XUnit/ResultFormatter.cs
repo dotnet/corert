@@ -36,7 +36,7 @@ namespace CoreFX.TestUtils.XUnit
             int passed = 0;
             int failed = 0;
             int skipped = 0;
-            ulong timeElapsed = 0;
+            float timeElapsed = 0.0F;
             bool printTotals = false;
 
             foreach (string logFile in logFiles)
@@ -72,9 +72,9 @@ namespace CoreFX.TestUtils.XUnit
                             Int32.TryParse(skippedAttr, out currentSkipped);
 
                             // Get time elapsed
-                            string timeAttr = reader.GetAttribute("time");
-                            ulong currentTime;
-                            UInt64.TryParse(timeAttr, out currentTime);
+                            string timeAttr = reader.GetAttribute("time").Replace("s", "");
+                            float currentTime;
+                            Single.TryParse(timeAttr, out currentTime);
 
                             // Update running total only once current element has been parsed
                             total += currentTotal;
@@ -100,7 +100,7 @@ namespace CoreFX.TestUtils.XUnit
             if (printTotals)
             {
                 Console.WriteLine("=== CoreFX TEST EXECUTION SUMMARY ===: ");
-                Console.WriteLine(String.Format("Total: {0}, Passed: {1}, Failed: {2}, Skipped: {3}", total, passed, failed, timeElapsed));
+                Console.WriteLine(String.Format("Total: {0}, Passed: {1}, Failed: {2}, Skipped: {3}, Time elapsed: {4}", total, passed, failed, skipped, timeElapsed));
                 Console.WriteLine("Detailed logs written to: " + logDir);
             }
         }

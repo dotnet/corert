@@ -37,10 +37,9 @@ namespace System.Threading
         // so far the only place we initialize it is `WaitForForegroundThreads`
         // and only in the case when there are running foreground threads 
         // by the moment of `StartupCodeHelpers.Shutdown()` invocaiton
-        private static ManualResetEvent _allDone;
+        private static ManualResetEvent s_allDone;
 
-        // main thread started by runtime and we have no chance (?) to increment it elsewhere
-        private static int _foregroundRunningCount = 1;
+        private static int _foregroundRunningCount;
         private Thread()
         {
             _threadState = (int)ThreadState.Unstarted;
@@ -90,6 +89,10 @@ namespace System.Threading
             if (currentThread._managedThreadId.Id != System.Threading.ManagedThreadId.IdMainThread)
             {
                 state |= ThreadState.Background;
+            }
+            else
+            {
+                Interlocked.Increment(ref _foregroundRunningCount);
             }
 
             currentThread._threadState = (int)(state | ThreadState.Running);
@@ -546,8 +549,8 @@ namespace System.Threading
             if (Interlocked.Decrement(ref _foregroundRunningCount) == 0) 
             {
                 // Interlocked.Decrement issues full memory barrier 
-                // so most recent write to _allDone should be visible here
-                _allDone?.Set();
+                // so most recent write to s_allDone should be visible here
+                s_allDone?.Set();
             }
         }
 
@@ -570,29 +573,17 @@ namespace System.Threading
 
         internal static void WaitForForegroundThreads() 
         {         
-            Thread current = Thread.CurrentThread;
-            // should be called only from main thread which we expect to be foreground
-            // this code is written in the way oblivious to state of the thread it running on          
-            bool wasBackground = ((current.SetThreadStateBit(ThreadState.Background) & (int)ThreadState.Background) != 0);
-            int threadsRunning;
-            if (wasBackground)
-            {
-                // Interlocked.CompareExchange inside SetThreadStateBit issues full memory barrier
-                // hence no Volatile.Read here
-                threadsRunning = _foregroundRunningCount;
-            }
-            else
-            {
-                threadsRunning = Interlocked.Decrement(ref _foregroundRunningCount);   
-            }
-            if (threadsRunning == 0)
+            Thread.CurrentThread.IsBackground = true;
+            // last read/write inside `IsBackground` issues full barrier no matter of logic flow
+            // so we can just read `_foregroundRunningCount`
+            if (_foregroundRunningCount == 0)
             {
                 // current thread is the last foreground thread, so let the runtime finish
                 return;
             }
             else
             {
-                Volatile.Write(ref _allDone, new ManualResetEvent(false));
+                Volatile.Write(ref s_allDone, new ManualResetEvent(false));
                 // ManualResetEvent involves kernel transition 
                 // thus other foreground threads could have their job finished meanwhile
                 // Volatile.Write above issues release barrier 
@@ -603,7 +594,7 @@ namespace System.Threading
                 }
                 else 
                 {
-                    _allDone.WaitOne();
+                    s_allDone.WaitOne();
                 }
             }
         }
