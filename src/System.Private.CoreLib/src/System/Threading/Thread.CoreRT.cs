@@ -49,6 +49,11 @@ namespace System.Threading
             PlatformSpecificInitialize();
         }
 
+        static Thread()
+        {
+            PlatformSpecificGlobalInitialize();
+        }
+
         private void SetStartHelper(Delegate threadStart, int maxStackSize)
         {
             _threadStart = threadStart;

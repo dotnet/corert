@@ -30,6 +30,10 @@ namespace System.Threading
 
         private void PlatformSpecificInitialize()
         {
+        }
+
+        private static void PlatformSpecificGlobalInitialize()
+        {
             RuntimeImports.RhSetThreadExitCallback(AddrofIntrinsics.AddrOf<Action>(OnThreadExit));
         }
 
