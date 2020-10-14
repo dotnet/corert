@@ -20,10 +20,6 @@ namespace System.Threading
         private void PlatformSpecificInitialize()
         {
             _waitInfo = new WaitSubsystem.ThreadWaitInfo(this);
-        }
-
-        private static void PlatformSpecificGlobalInitialize()
-        {
             RuntimeImports.RhSetThreadExitCallback(AddrofIntrinsics.AddrOf<Action>(OnThreadExit));
         }
 
