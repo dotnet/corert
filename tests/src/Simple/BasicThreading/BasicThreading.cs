@@ -23,7 +23,7 @@ class Program
 
         if (TimerTest.Run() != Pass)
             return Fail;
-        
+
         if (FinalizeTest.Run() != Pass)
             return Fail;
 
@@ -326,6 +326,33 @@ class ThreadTest
         ExpectPassed(nameof(TestNameProperty), 3);
     }
 
+    private static void TestConcurrentIsBackgroundProperty()
+    {
+        int spawnedCount = 10000;
+        Task[] spawned = new Task[spawnedCount];
+
+        for (int i = 0; i < spawnedCount; i++)
+        {
+            ManualResetEventSlim mres = new ManualResetEventSlim(false);
+            var t = new Thread(() => {
+                Thread.CurrentThread.IsBackground = !Thread.CurrentThread.IsBackground;
+                mres.Wait();
+            });
+            s_startedThreads.Add(t);
+            spawned[i] = Task.Factory.StartNew(() => { t.Start(); });
+            Task.Factory.StartNew(() => {
+                Expect(true, "Always true");
+                for (int i = 0; i < 10000; i++)
+                {
+                    t.IsBackground = i % 2 == 0;
+                }
+                mres.Set();
+            });
+        }
+        Task.WaitAll(spawned);
+        ExpectPassed(nameof(TestConcurrentIsBackgroundProperty), spawnedCount);
+    }
+
     private static void TestIsBackgroundProperty()
     {
         // Thread created using Thread.Start
@@ -462,6 +489,8 @@ class ThreadTest
 
         Expect(s_startedThreadCount == threads.Length,
             String.Format("Not all threads completed. Expected: {0}, Actual: {1}", threads.Length, s_startedThreadCount));
+
+        ExpectPassed(nameof(TestStartShutdown), 1);
     }
 
     public static int Run()
@@ -478,6 +507,8 @@ class ThreadTest
 
         TestMaxStackSize();
         TestStartShutdown();
+
+        TestConcurrentIsBackgroundProperty();
 
         return (s_failed == 0) ? Program.Pass : Program.Fail;
     }

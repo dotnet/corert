@@ -126,9 +126,8 @@ namespace System.Threading
                 _name = null;
             }
 
-            if (!GetThreadStateBit(ThreadState.Background))
+            if ((SetThreadStateBit(ThreadState.Background) & (int)ThreadState.Background) == 0)
             {
-                SetThreadStateBit(ThreadState.Background);
                 DecrementRunningForeground();
             }
 
@@ -176,7 +175,6 @@ namespace System.Threading
             }
             set
             {
-                ThreadState state = GetThreadState();
                 if (IsDead())
                 {
                     throw new ThreadStateException(SR.ThreadState_Dead_State);
@@ -185,16 +183,18 @@ namespace System.Threading
                 // on thread start we count its state in `StartThread`
                 if (value)
                 {
-                    bool wasBackground = ((SetThreadStateBit(ThreadState.Background) & (int)ThreadState.Background) != 0);
-                    if (!wasBackground && HasStarted())
+                    int threadState = SetThreadStateBit(ThreadState.Background);
+                    // was foreground and has started
+                    if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted)) == 0)
                     {
                         DecrementRunningForeground();
                     }
                 }
                 else
                 {
-                    bool wasBackground = ((ClearThreadStateBit(ThreadState.Background) & (int)ThreadState.Background) != 0);
-                    if (wasBackground && HasStarted())
+                    int threadState = ClearThreadStateBit(ThreadState.Background);
+                    // was background and has started
+                    if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted)) == (int)ThreadState.Background)
                     {
                         IncrementRunningForeground();
                     }
@@ -447,9 +447,11 @@ namespace System.Threading
             }
 
             // Report success to the creator thread, which will free threadHandle and _threadStartArg
-            thread.ClearThreadStateBit(ThreadState.Unstarted);
-            
-            IncrementRunningForeground(thread);
+            int state = thread.ClearThreadStateBit(ThreadState.Unstarted);
+            if ((state & (int)ThreadState.Background) == 0)
+            {
+                IncrementRunningForeground();
+            }
 
             if (thread._startCulture != null)
             {
