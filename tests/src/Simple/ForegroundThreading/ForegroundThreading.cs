@@ -26,7 +26,7 @@ class ForegroundThreadsWaiter
     {
         new Thread(() =>
         {
-            Thread.Sleep(TimeSpan.FromSeconds(1));
+            Thread.Sleep(TimeSpan.FromSeconds(3));
             Environment.Exit(Program.Pass);
         }).Start();
 
