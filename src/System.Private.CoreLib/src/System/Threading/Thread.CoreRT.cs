@@ -151,16 +151,14 @@ namespace System.Threading
             get
             {
                 // Refresh ThreadState.Stopped bit if necessary
-                ThreadState state = GetThreadState();
-                return (state & (ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0;
+                return ((ThreadState)_threadState & (ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0;
             }
         }
 
         private bool IsDead()
         {
             // Refresh ThreadState.Stopped bit if necessary
-            ThreadState state = GetThreadState();
-            return (state & (ThreadState.Stopped | ThreadState.Aborted)) != 0;
+            return ((ThreadState)_threadState & (ThreadState.Stopped | ThreadState.Aborted)) != 0;
         }
 
         public bool IsBackground
@@ -277,7 +275,7 @@ namespace System.Threading
             }
         }
 
-        public ThreadState ThreadState => (GetThreadState() & PublicThreadStateMask);
+        public ThreadState ThreadState => ((ThreadState)_threadState & PublicThreadStateMask);
 
         private bool GetThreadStateBit(ThreadState bit)
         {
@@ -486,6 +484,19 @@ namespace System.Threading
             }
         }
 
+        private static void StopThread(Thread thread)
+        {
+            int state = thread._threadState;
+            if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
+            {
+                thread.SetThreadStateBit(ThreadState.Stopped);
+            }
+            if ((state & (int)ThreadState.Background) == 0)
+            {
+                DecrementRunningForeground();
+            }
+        }
+
         private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
         {
             if (uiCulture)
@@ -540,14 +551,6 @@ namespace System.Threading
             Interlocked.Increment(ref s_foregroundRunningCount);
         }
 
-        internal static void IncrementRunningForeground(Thread thread) 
-        {
-            if (!thread.IsBackground) 
-            {
-                IncrementRunningForeground();
-            }
-        }
-
         internal static void DecrementRunningForeground() 
         {
             if (Interlocked.Decrement(ref s_foregroundRunningCount) == 0) 
@@ -555,15 +558,6 @@ namespace System.Threading
                 // Interlocked.Decrement issues full memory barrier 
                 // so most recent write to s_allDone should be visible here
                 s_allDone?.Set();
-            }
-        }
-
-        internal static void DecrementRunningForeground(Thread thread) 
-        {
-            if (!thread.IsBackground) 
-            {
-                DecrementRunningForeground();
-                Debug.Assert(s_foregroundRunningCount >= 1, "s_foregroundRunningCount is less than 1");
             }
         }
 
@@ -577,22 +571,15 @@ namespace System.Threading
                 // current thread is the last foreground thread, so let the runtime finish
                 return;
             }
-            else
+            Volatile.Write(ref s_allDone, new ManualResetEvent(false));
+            // other foreground threads could have their job finished meanwhile
+            // Volatile.Write above issues release barrier 
+            // but we need acquire barrier to observe most recent write to s_foregroundRunningCount
+            if (Volatile.Read(ref s_foregroundRunningCount) == 0)
             {
-                Volatile.Write(ref s_allDone, new ManualResetEvent(false));
-                // ManualResetEvent involves kernel transition 
-                // thus other foreground threads could have their job finished meanwhile
-                // Volatile.Write above issues release barrier 
-                // but we need acquire barrier to observe most recent write to s_foregroundRunningCount
-                if (Volatile.Read(ref s_foregroundRunningCount) == 0)
-                {
-                    return;
-                }
-                else 
-                {
-                    s_allDone.WaitOne();
-                }
+                return;
             }
+            s_allDone.WaitOne();
         }
     }
 }

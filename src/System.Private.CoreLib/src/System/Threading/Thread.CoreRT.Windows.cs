@@ -133,35 +133,8 @@ namespace System.Threading
             Thread currentThread = t_currentThread;
             if (currentThread != null)
             {
-                int state = currentThread._threadState;
-                if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
-                {
-                    currentThread.SetThreadStateBit(ThreadState.Stopped);
-                }
-                if ((state & (int)ThreadState.Background) == 0)
-                {
-                    DecrementRunningForeground();
-                }
+                StopThread(currentThread);
             }
-        }
-
-        private ThreadState GetThreadState()
-        {
-            int state = _threadState;
-            // If the thread is marked as alive, check if it has finished execution
-            if ((state & (int)(ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0)
-            {
-                if (JoinInternal(0))
-                {
-                    state = _threadState;
-                    if ((state & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
-                    {
-                        SetThreadStateBit(ThreadState.Stopped);
-                        state = _threadState;
-                    }
-                }
-            }
-            return (ThreadState)state;
         }
 
         private bool JoinInternal(int millisecondsTimeout)

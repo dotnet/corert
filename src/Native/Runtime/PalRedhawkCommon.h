@@ -161,19 +161,11 @@ struct PAL_LIMITED_CONTEXT
 
 void RuntimeThreadShutdown(void* thread);
 
-#ifdef TARGET_UNIX
 typedef void (__fastcall * ThreadExitCallback)();
-
 extern ThreadExitCallback g_threadExitCallback;
 
+#ifdef TARGET_UNIX
 typedef Int32 (*PHARDWARE_EXCEPTION_HANDLER)(UIntNative faultCode, UIntNative faultAddress, PAL_LIMITED_CONTEXT* palContext, UIntNative* arg0Reg, UIntNative* arg1Reg);
-
-#else
-
-typedef void (__stdcall * ThreadExitCallback)();
-
-extern ThreadExitCallback g_threadExitCallback;
-
 #endif
 
 #endif // __PAL_REDHAWK_COMMON_INCLUDED
