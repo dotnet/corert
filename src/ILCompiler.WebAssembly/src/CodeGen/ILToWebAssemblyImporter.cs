@@ -4539,13 +4539,25 @@ namespace Internal.IL
 
         void ThrowOrRethrow(StackEntry exceptionObject)
         {
+            int offset = GetTotalParameterOffset() + GetTotalLocalOffset();
+            LLVMValueRef shadowStack = _builder.BuildGEP(_currentFunclet.GetParam(0),
+                new LLVMValueRef[] { LLVMValueRef.CreateConstInt(LLVMTypeRef.Int32, (uint)offset, false) },
+                String.Empty);
+            LLVMValueRef exSlot = _builder.BuildBitCast(shadowStack, LLVMTypeRef.CreatePointer(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), 0));
+            _builder.BuildStore(exceptionObject.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder), exSlot);
+            LLVMValueRef[] llvmArgs = new LLVMValueRef[] { shadowStack };
+            MetadataType helperType = _compilation.TypeSystemContext.SystemModule.GetKnownType("System", "Exception");
+            MethodDesc helperMethod = helperType.GetKnownMethod("DispatchExWasm", null);
+            LLVMValueRef fn = LLVMFunctionForMethod(helperMethod, helperMethod, null, false, null, null, out bool hasHiddenParam, out LLVMValueRef dictPtrPtrStore, out LLVMValueRef fatFunctionPtr);
+            ExceptionRegion currentExceptionRegion = GetCurrentTryRegion();
+            _builder.BuildCall(fn, llvmArgs, string.Empty);
+
             if (RhpThrowEx.Handle.Equals(IntPtr.Zero))
             {
                 RhpThrowEx = Module.AddFunction("RhpThrowEx", LLVMTypeRef.CreateFunction(LLVMTypeRef.Void, new LLVMTypeRef[] { LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0) }, false));
             }
 
             LLVMValueRef[] args = new LLVMValueRef[] { exceptionObject.ValueAsType(LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0), _builder) };
-            ExceptionRegion currentExceptionRegion = GetCurrentTryRegion();
             if (currentExceptionRegion == null)
             {
                 _builder.BuildCall(RhpThrowEx, args, "");

@@ -22,10 +22,11 @@ namespace System.Diagnostics
             // at S_P_CoreLib_System_Diagnostics_StackTrace__InitializeForCurrentThread (wasm-function[12314]:275)
             // at S_P_CoreLib_System_Diagnostics_StackTrace___ctor_0(wasm-function[12724]:118)
             skipFrames += 2; // METHODS_TO_SKIP is a constant so just change here
+            // at S_P_CoreLib_System_Exception__DispatchExWasm(wasm-function[2360]:39)
 
             fixed (byte* curChar = backtraceBuffer)
             {
-                callstackLen = emscripten_get_callstack(8 /* original source stack if source maps available, not tested */, curChar, backtraceBuffer.Length);
+                callstackLen = emscripten_get_callstack(0, curChar, backtraceBuffer.Length);
             }
             int _numOfFrames = 1;
             int lineStartIx = 0;
