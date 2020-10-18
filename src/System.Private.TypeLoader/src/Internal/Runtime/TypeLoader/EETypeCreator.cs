@@ -630,6 +630,16 @@ namespace Internal.Runtime.TypeLoader
                     // create GC desc
                     if (state.GcDataSize != 0 && state.GcStaticDesc == IntPtr.Zero)
                     {
+                        if (state.GcStaticEEType == IntPtr.Zero)
+                        {
+                            int cbStaticGCDesc;
+                            state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
+                            state.GcStaticEEType = (IntPtr)CreateGcStaticEEType(state, hashCodeOfNewType);
+#if GENERICS_FORCE_USG
+                            TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
+#endif
+                        }
+
                         if (state.GcStaticEEType != IntPtr.Zero)
                         {
                             // CoreRT Abi uses managed heap-allocated GC statics
@@ -641,14 +651,6 @@ namespace Internal.Runtime.TypeLoader
 
                             *((IntPtr*)gcStaticsIndirection) = gcStaticData;
                             pEEType->DynamicGcStaticsData = gcStaticsIndirection;
-                        }
-                        else
-                        {
-                            int cbStaticGCDesc;
-                            state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
-#if GENERICS_FORCE_USG
-                            TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
-#endif
                         }
                     }
 
@@ -722,6 +724,46 @@ namespace Internal.Runtime.TypeLoader
                         MemoryHelpers.FreeMemory(writableDataPtr);
                 }
             }
+        }
+
+        private static EEType* CreateGcStaticEEType(TypeBuilderState state, UInt32 hashCodeOfNewType)
+        {
+            Debug.Assert(state.AllocatedStaticGCDesc);
+            int cbEEType = (int)EEType.GetSizeofEEType(
+                        cVirtuals: 0,
+                        cInterfaces: 0,
+                        fHasFinalizer: false,
+                        fRequiresOptionalFields: false,
+                        fHasSealedVirtuals: false,
+                        fHasGenericInfo: false,
+                        fHasNonGcStatics: false,
+                        fHasGcStatics: false,
+                        fHasThreadStatics: false);
+
+            int baseSize = IntPtr.Size; // sync block
+
+            int* gcStaticDesc = (int*)state.GcStaticDesc;
+            int numSeries = *gcStaticDesc;
+
+            for (int i = 0; i < numSeries; i++)
+            {
+                int size = *(gcStaticDesc + 1);
+                int offset = *(gcStaticDesc + 2);
+
+                baseSize += size;
+                gcStaticDesc = gcStaticDesc + 3;
+            }
+
+            EEType* gcEEType = (EEType*)MemoryHelpers.AllocateMemory(cbEEType);
+            gcEEType->BaseSize = (uint)baseSize;
+            gcEEType->Flags = (ushort)EETypeFlags.IsDynamicTypeFlag | (ushort)EETypeKind.CanonicalEEType;
+            gcEEType->ComponentSize = 0;
+            gcEEType->NumVtableSlots = 0;
+            gcEEType->NumInterfaces = 0;
+            gcEEType->HashCode = hashCodeOfNewType;
+            gcEEType->BaseType = TypeSystemContextFactory.Create().GetWellKnownType(WellKnownType.Object).RuntimeTypeHandle.ToEETypePtr();
+
+            return gcEEType;
         }
 
         private static IntPtr CreateStaticGCDesc(LowLevelList<bool> gcBitfield, out bool allocated, out int cbGCDesc)
