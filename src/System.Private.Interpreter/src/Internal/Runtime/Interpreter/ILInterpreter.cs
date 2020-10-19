@@ -88,7 +88,7 @@ namespace Internal.Runtime.Interpreter
             {
                 // Method's owning type has a static constructor and we're not trying
                 // to interpret the static constructor itself. Ensure we've run it
-                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(_method.OwningType.RuntimeTypeHandle);
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(_method.OwningType.GetRuntimeTypeHandle());
                 if (cctorContext != IntPtr.Zero)
                 {
                     RuntimeAugments.EnsureClassConstructorRun(cctorContext);
@@ -2835,52 +2835,87 @@ setstackitem:
 
         private void InterpretLoadStaticField(FieldDesc field)
         {
-            TypeDesc fieldType = field.FieldType;
-
             if (field.OwningType.IsValueType)
             {
                 // TODO: Add support for value types
                 throw new NotImplementedException();
             }
 
+            var fieldType = field.FieldType;
             var fieldValue = default(object);
-            var fieldOffset = field.Offset.AsInt;
-            var staticsBase = field switch
-            {
-                { HasGCStaticBase: false, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
-                { HasGCStaticBase: false, IsThreadStatic: true } => IntPtr.Zero,
-                { HasGCStaticBase: true, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
-                { HasGCStaticBase: true, IsThreadStatic: true } => IntPtr.Zero,
-            };
+            var fieldOffset = -1;
+            var staticsBase = IntPtr.Zero;
 
-            Debug.Assert(staticsBase != IntPtr.Zero);
-
-            if (!RuntimeAugments.IsDynamicType(field.OwningType.RuntimeTypeHandle))
+            if (!RuntimeAugments.IsDynamicType(field.OwningType.GetRuntimeTypeHandle()))
             {
-                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.RuntimeTypeHandle);
+                NativeFormatField nativeFormatField = field as NativeFormatField;
+
+                Debug.Assert(nativeFormatField != null);
+
+                TypeLoaderEnvironment.TryGetFieldAccessMetadata(
+                    nativeFormatField.MetadataReader,
+                    nativeFormatField.OwningType.GetRuntimeTypeHandle(),
+                    nativeFormatField.Handle,
+                    out FieldAccessMetadata fieldAccessMetadata);
+
+                if (!field.HasGCStaticBase)
+                {
+                    fieldOffset = 0;
+                    staticsBase = fieldAccessMetadata.Cookie;
+                }
+                else
+                {
+                    fieldOffset = fieldAccessMetadata.Offset;
+                    staticsBase = fieldAccessMetadata.Cookie;
+                }
+
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.GetRuntimeTypeHandle());
                 if (cctorContext != IntPtr.Zero)
                 {
                     RuntimeAugments.EnsureClassConstructorRun(cctorContext);
                 }
             }
+            else
+            {
+                fieldOffset = field.Offset.AsInt;
+                staticsBase = field switch
+                {
+                    { HasGCStaticBase: false, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
+                    { HasGCStaticBase: false, IsThreadStatic: true } => IntPtr.Zero,
+                    { HasGCStaticBase: true, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
+                    { HasGCStaticBase: true, IsThreadStatic: true } => IntPtr.Zero,
+                };
+            }
 
-            if (!field.HasGCStaticBase)
+            Debug.Assert(staticsBase != IntPtr.Zero && fieldOffset != -1);
+
+            if (field.IsThreadStatic)
+            {
+                object gcStaticsRegion = RuntimeAugments.GetThreadStaticBase(staticsBase);
+                fieldValue = fieldType switch
+                {
+                    { IsValueType: true } => RuntimeAugments.LoadValueTypeField(gcStaticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                    { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(gcStaticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                    _ => RuntimeAugments.LoadReferenceTypeField(gcStaticsRegion, fieldOffset),
+                };
+            }
+            else if (field.HasGCStaticBase)
+            {
+                object gcStaticsRegion = RuntimeAugments.LoadReferenceTypeField(staticsBase);
+                fieldValue = fieldType switch
+                {
+                    { IsValueType: true } => RuntimeAugments.LoadValueTypeField(gcStaticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                    { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(gcStaticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                    _ => RuntimeAugments.LoadReferenceTypeField(gcStaticsRegion, fieldOffset),
+                };
+            }
+            else
             {
                 fieldValue = fieldType switch
                 {
                     { IsValueType: true } => RuntimeAugments.LoadValueTypeField(staticsBase + fieldOffset, fieldType.GetRuntimeTypeHandle()),
                     { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(staticsBase + fieldOffset, fieldType.GetRuntimeTypeHandle()),
                     _ => RuntimeAugments.LoadReferenceTypeField(staticsBase + fieldOffset),
-                };
-            }
-            else
-            {
-                object staticsRegion = RuntimeAugments.LoadReferenceTypeField(staticsBase);
-                fieldValue = fieldType switch
-                {
-                    { IsValueType: true } => RuntimeAugments.LoadValueTypeField(staticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
-                    { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(staticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
-                    _ => RuntimeAugments.LoadReferenceTypeField(staticsRegion, fieldOffset),
                 };
             }
 
@@ -2963,36 +2998,95 @@ setstackitem:
 
         private void InterpretStoreStaticField(FieldDesc field)
         {
-            TypeDesc fieldType = field.FieldType;
-
             if (field.OwningType.IsValueType)
             {
                 // TODO: Add support for value types
                 throw new NotImplementedException();
             }
 
+            var fieldType = field.FieldType;
             var fieldValue = PopFieldValue(fieldType);
-            var fieldOffset = field.Offset.AsInt;
-            var staticsBase = field switch
-            {
-                { HasGCStaticBase: false, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
-                { HasGCStaticBase: false, IsThreadStatic: true } => IntPtr.Zero,
-                { HasGCStaticBase: true, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
-                { HasGCStaticBase: true, IsThreadStatic: true } => IntPtr.Zero,
-            };
+            var fieldOffset = -1;
+            var staticsBase = IntPtr.Zero;
 
-            Debug.Assert(staticsBase != IntPtr.Zero);
-
-            if (!RuntimeAugments.IsDynamicType(field.OwningType.RuntimeTypeHandle))
+            if (!RuntimeAugments.IsDynamicType(field.OwningType.GetRuntimeTypeHandle()))
             {
-                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.RuntimeTypeHandle);
+                NativeFormatField nativeFormatField = field as NativeFormatField;
+
+                Debug.Assert(nativeFormatField != null);
+
+                TypeLoaderEnvironment.TryGetFieldAccessMetadata(
+                    nativeFormatField.MetadataReader,
+                    nativeFormatField.OwningType.GetRuntimeTypeHandle(),
+                    nativeFormatField.Handle,
+                    out FieldAccessMetadata fieldAccessMetadata);
+
+                if (!field.HasGCStaticBase)
+                {
+                    fieldOffset = 0;
+                    staticsBase = fieldAccessMetadata.Cookie;
+                }
+                else
+                {
+                    fieldOffset = fieldAccessMetadata.Offset;
+                    staticsBase = fieldAccessMetadata.Cookie;
+                }
+
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.GetRuntimeTypeHandle());
                 if (cctorContext != IntPtr.Zero)
                 {
                     RuntimeAugments.EnsureClassConstructorRun(cctorContext);
                 }
             }
+            else
+            {
+                fieldOffset = field.Offset.AsInt;
+                staticsBase = field switch
+                {
+                    { HasGCStaticBase: false, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
+                    { HasGCStaticBase: false, IsThreadStatic: true } => IntPtr.Zero,
+                    { HasGCStaticBase: true, IsThreadStatic: false } => TypeLoaderEnvironment.Instance.TryGetGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle()),
+                    { HasGCStaticBase: true, IsThreadStatic: true } => IntPtr.Zero,
+                };
+            }
 
-            if (!field.HasGCStaticBase)
+            Debug.Assert(staticsBase != IntPtr.Zero && fieldOffset != -1);
+
+            if (field.IsThreadStatic)
+            {
+                object gcStaticsRegion = RuntimeAugments.GetThreadStaticBase(staticsBase);
+
+                if (fieldType.IsValueType)
+                {
+                    RuntimeAugments.StoreValueTypeField(gcStaticsRegion, fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
+                }
+                else if (fieldType.IsPointer)
+                {
+                    RuntimeAugments.StoreValueTypeField(gcStaticsRegion, fieldOffset, fieldValue, typeof(IntPtr).TypeHandle);
+                }
+                else
+                {
+                    RuntimeAugments.StoreReferenceTypeField(gcStaticsRegion, fieldOffset, fieldValue);
+                }
+            }
+            else if (field.HasGCStaticBase)
+            {
+                object gcStaticsRegion = RuntimeAugments.LoadReferenceTypeField(staticsBase);
+
+                if (fieldType.IsValueType)
+                {
+                    RuntimeAugments.StoreValueTypeField(gcStaticsRegion, fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
+                }
+                else if (fieldType.IsPointer)
+                {
+                    RuntimeAugments.StoreValueTypeField(gcStaticsRegion, fieldOffset, fieldValue, typeof(IntPtr).TypeHandle);
+                }
+                else
+                {
+                    RuntimeAugments.StoreReferenceTypeField(gcStaticsRegion, fieldOffset, fieldValue);
+                }
+            }
+            else
             {
                 if (fieldType.IsValueType)
                 {
@@ -3005,23 +3099,6 @@ setstackitem:
                 else
                 {
                     RuntimeAugments.StoreReferenceTypeField(staticsBase + fieldOffset, fieldValue);
-                }
-            }
-            else
-            {
-                object staticsRegion = RuntimeAugments.LoadReferenceTypeField(staticsBase);
-
-                if (fieldType.IsValueType)
-                {
-                    RuntimeAugments.StoreValueTypeField(staticsRegion, fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
-                }
-                else if (fieldType.IsPointer)
-                {
-                    RuntimeAugments.StoreValueTypeField(staticsRegion, fieldOffset, fieldValue, typeof(IntPtr).TypeHandle);
-                }
-                else
-                {
-                    RuntimeAugments.StoreReferenceTypeField(staticsRegion, fieldOffset, fieldValue);
                 }
             }
         }

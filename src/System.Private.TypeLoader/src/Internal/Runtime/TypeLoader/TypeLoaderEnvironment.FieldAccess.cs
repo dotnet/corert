@@ -287,7 +287,6 @@ namespace Internal.Runtime.TypeLoader
             out IntPtr staticsRegionAddress)
         {
             staticsRegionAddress = IntPtr.Zero;
-            byte* comparableStaticRegionAddress = null;
 
             CanonicallyEquivalentEntryLocator canonWrapper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, CanonicalFormKind.Specific);
 
@@ -336,11 +335,11 @@ namespace Internal.Runtime.TypeLoader
                             if (storageClass != FieldTableFlags.GCStatic)
                                 continue;
                             break;
-
                         case FieldAccessStaticDataKind.TLS:
+                            if (storageClass != FieldTableFlags.ThreadStatic)
+                                continue;
+                            break;
                         default:
-                            // TODO! TLS statics
-                            Environment.FailFast("TLS static field access not yet supported");
                             return false;
                     }
 
@@ -359,32 +358,25 @@ namespace Internal.Runtime.TypeLoader
                         entryParser.SkipString();
                     }
 
-                    int cookieOrOffsetOrOrdinal = (int)entryParser.GetUnsigned();
-                    int fieldOffset = (int)externalReferences.GetRvaFromIndex((uint)cookieOrOffsetOrOrdinal);
+                    IntPtr fieldAddress = IntPtr.Zero;
 
-                    IntPtr fieldAddress = RvaToNonGenericStaticFieldAddress(
-                        mappingTableModule.Handle, fieldOffset);
-
-                    if ((comparableStaticRegionAddress == null) || (comparableStaticRegionAddress > fieldAddress.ToPointer()))
+                    if ((entryFlags & FieldTableFlags.FieldOffsetEncodedDirectly) == 0)
                     {
-                        comparableStaticRegionAddress = (byte*)fieldAddress.ToPointer();
+                        fieldAddress = externalReferences.GetAddressFromIndex(entryParser.GetUnsigned());
+                    }
+
+                    if (fieldAddress != IntPtr.Zero)
+                    {
+                        staticsRegionAddress = fieldAddress;
+                        break;
                     }
                 }
 
-                // Static fields for a type can only be found in at most one module
-                if (comparableStaticRegionAddress != null)
+                if (staticsRegionAddress != IntPtr.Zero)
                     break;
             }
 
-            if (comparableStaticRegionAddress != null)
-            {
-                staticsRegionAddress = new IntPtr(comparableStaticRegionAddress);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return staticsRegionAddress != IntPtr.Zero;
         }
 
         /// <summary>

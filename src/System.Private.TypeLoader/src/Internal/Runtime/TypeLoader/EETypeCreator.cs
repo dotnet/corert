@@ -762,6 +762,7 @@ namespace Internal.Runtime.TypeLoader
             gcEEType->NumInterfaces = 0;
             gcEEType->HashCode = hashCodeOfNewType;
             gcEEType->BaseType = TypeSystemContextFactory.Create().GetWellKnownType(WellKnownType.Object).RuntimeTypeHandle.ToEETypePtr();
+            gcEEType->PointerToTypeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(ModuleList.Instance.SystemModule.Handle.GetIntPtrUNSAFE());
 
             return gcEEType;
         }
