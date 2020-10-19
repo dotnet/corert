@@ -131,6 +131,19 @@ namespace Internal.Runtime.TypeLoader
         {
             PInvokeMarshal.MemFree(memoryPtrToFree);
         }
+
+        public static unsafe void Copy(IntPtr source, IntPtr destination, int length)
+        {
+            byte* pSrc = (byte*)source.ToPointer();
+            byte* pDest = (byte*)destination.ToPointer();
+            while (length > 0)
+            {
+                *pDest = *pSrc;
+                pSrc++;
+                pDest++;
+                length--;
+            }
+        }
     }
 
     internal unsafe class EETypeCreator
@@ -634,7 +647,7 @@ namespace Internal.Runtime.TypeLoader
                         {
                             int cbStaticGCDesc;
                             state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
-                            state.GcStaticEEType = (IntPtr)CreateGcStaticEEType(state, hashCodeOfNewType);
+                            state.GcStaticEEType = (IntPtr)CreateGcStaticEEType(state, hashCodeOfNewType, cbStaticGCDesc);
 #if GENERICS_FORCE_USG
                             TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
 #endif
@@ -726,7 +739,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private static EEType* CreateGcStaticEEType(TypeBuilderState state, UInt32 hashCodeOfNewType)
+        private static EEType* CreateGcStaticEEType(TypeBuilderState state, UInt32 hashCodeOfNewType, int cbStaticGCDesc)
         {
             Debug.Assert(state.AllocatedStaticGCDesc);
             int cbEEType = (int)EEType.GetSizeofEEType(
@@ -740,22 +753,13 @@ namespace Internal.Runtime.TypeLoader
                         fHasGcStatics: false,
                         fHasThreadStatics: false);
 
-            int baseSize = IntPtr.Size; // sync block
+            int cbStaticGCDescAligned = MemoryHelpers.AlignUp(cbStaticGCDesc, IntPtr.Size);
+            IntPtr eeTypePtrPlusGCDesc = MemoryHelpers.AllocateMemory(cbStaticGCDescAligned + cbEEType);
 
-            int* gcStaticDesc = (int*)state.GcStaticDesc;
-            int numSeries = *gcStaticDesc;
+            MemoryHelpers.Copy(state.GcStaticDesc, eeTypePtrPlusGCDesc, cbStaticGCDesc);
 
-            for (int i = 0; i < numSeries; i++)
-            {
-                int size = *(gcStaticDesc + 1);
-                int offset = *(gcStaticDesc + 2);
-
-                baseSize += size;
-                gcStaticDesc = gcStaticDesc + 3;
-            }
-
-            EEType* gcEEType = (EEType*)MemoryHelpers.AllocateMemory(cbEEType);
-            gcEEType->BaseSize = (uint)baseSize;
+            EEType* gcEEType = (EEType*)(eeTypePtrPlusGCDesc + cbStaticGCDescAligned);
+            gcEEType->BaseSize = (uint)(state.GcDataSize + IntPtr.Size); // add sync block
             gcEEType->Flags = (ushort)EETypeFlags.IsDynamicTypeFlag | (ushort)EETypeKind.CanonicalEEType;
             gcEEType->ComponentSize = 0;
             gcEEType->NumVtableSlots = 0;
