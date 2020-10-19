@@ -29,7 +29,6 @@
     <Compile Include="Internal\Runtime\Interpreter\StackItem.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Internal\Runtime\Interpreter\StaticsRegion.cs" />
     <Compile Include="Internal\Runtime\Interpreter\ILInterpreter.cs" />
     <Compile Include="Internal\Runtime\Interpreter\InterpreterCallInterceptor.cs" />
     <Compile Include="Internal\Runtime\Interpreter\InterpreterExecutionStrategy.cs" />
