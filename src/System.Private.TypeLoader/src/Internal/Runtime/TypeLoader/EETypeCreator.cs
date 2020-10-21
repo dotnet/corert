@@ -742,8 +742,10 @@ namespace Internal.Runtime.TypeLoader
         private static EEType* CreateGcStaticEEType(TypeBuilderState state, UInt32 hashCodeOfNewType, int cbStaticGCDesc)
         {
             Debug.Assert(state.AllocatedStaticGCDesc);
+
+            ushort numVTableSlots = 3; // Base Object type has 3 vtable slots (Equals, GetHasCode, ToString)
             int cbEEType = (int)EEType.GetSizeofEEType(
-                        cVirtuals: 0,
+                        cVirtuals: numVTableSlots, // Base Object type has 3 vtable slots
                         cInterfaces: 0,
                         fHasFinalizer: false,
                         fRequiresOptionalFields: false,
@@ -753,20 +755,41 @@ namespace Internal.Runtime.TypeLoader
                         fHasGcStatics: false,
                         fHasThreadStatics: false);
 
-            int cbStaticGCDescAligned = MemoryHelpers.AlignUp(cbStaticGCDesc, IntPtr.Size);
-            IntPtr eeTypePtrPlusGCDesc = MemoryHelpers.AllocateMemory(cbStaticGCDescAligned + cbEEType);
+            int cbGCDesc = cbStaticGCDesc * 2;
+            int cbGCDescAligned = MemoryHelpers.AlignUp(cbGCDesc, IntPtr.Size);
+            IntPtr eeTypePtrPlusGCDesc = MemoryHelpers.AllocateMemory(cbGCDescAligned + cbEEType);
 
-            MemoryHelpers.Copy(state.GcStaticDesc, eeTypePtrPlusGCDesc, cbStaticGCDesc);
+            int baseSize = state.GcDataSize;
+            baseSize += IntPtr.Size; // Size of Object base type
+            baseSize += IntPtr.Size; // sync block skew
 
-            EEType* gcEEType = (EEType*)(eeTypePtrPlusGCDesc + cbStaticGCDescAligned);
-            gcEEType->BaseSize = (uint)(state.GcDataSize + IntPtr.Size); // add sync block
+            EEType* gcEEType = (EEType*)(eeTypePtrPlusGCDesc + cbGCDescAligned);
+            gcEEType->BaseSize = (uint)baseSize;
             gcEEType->Flags = (ushort)EETypeFlags.IsDynamicTypeFlag | (ushort)EETypeKind.CanonicalEEType;
             gcEEType->ComponentSize = 0;
-            gcEEType->NumVtableSlots = 0;
+            gcEEType->NumVtableSlots = numVTableSlots;
             gcEEType->NumInterfaces = 0;
             gcEEType->HashCode = hashCodeOfNewType;
-            gcEEType->BaseType = TypeSystemContextFactory.Create().GetWellKnownType(WellKnownType.Object).RuntimeTypeHandle.ToEETypePtr();
-            gcEEType->PointerToTypeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(ModuleList.Instance.SystemModule.Handle.GetIntPtrUNSAFE());
+            gcEEType->BaseType = TypeSystemContextFactory.Create().GetWellKnownType(WellKnownType.Object).GetRuntimeTypeHandle().ToEETypePtr();
+            gcEEType->HasGCPointers = true;
+
+            // Convert static GC desc of type being built to instance GC desc on gcEEType
+            int num = *(int*)state.GcStaticDesc;
+            *((void**)gcEEType - 1) = (void*)num;
+
+            int* staticPtr = (int*)state.GcStaticDesc + 1;
+            void** ptr = (void**)gcEEType - 2;
+
+            while (num > 0)
+            {
+                int size = *staticPtr++;
+                int offset = RuntimeAugments.ObjectHeaderSize + *staticPtr++;
+
+                *ptr-- = (void*)size;
+                *ptr-- = (void*)(offset - baseSize);
+
+                num--;
+            }
 
             return gcEEType;
         }
