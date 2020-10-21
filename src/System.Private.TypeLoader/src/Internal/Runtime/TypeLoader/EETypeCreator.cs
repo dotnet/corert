@@ -743,7 +743,7 @@ namespace Internal.Runtime.TypeLoader
         {
             Debug.Assert(state.AllocatedStaticGCDesc);
 
-            ushort numVTableSlots = 3; // Base Object type has 3 vtable slots (Equals, GetHasCode, ToString)
+            ushort numVTableSlots = 3; // Base Object type has 3 vtable slots (Equals, GetHashCode, ToString)
             int cbEEType = (int)EEType.GetSizeofEEType(
                         cVirtuals: numVTableSlots, // Base Object type has 3 vtable slots
                         cInterfaces: 0,
