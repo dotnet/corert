@@ -86,8 +86,8 @@ namespace Internal.Runtime.Interpreter
 
             if (_method.OwningType.HasStaticConstructor && !_method.IsStaticConstructor)
             {
-                // Method's owning type has a static constructor and we're not trying
-                // to interpret the static constructor itself. Ensure we've run it
+                // Method's owning type has a static constructor and we're not in the process
+                // of interpreting the static constructor itself. Ensure we've run it
                 IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(_method.OwningType.GetRuntimeTypeHandle());
                 if (cctorContext != IntPtr.Zero)
                 {
