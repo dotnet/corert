@@ -217,48 +217,6 @@ namespace Internal.Runtime.TypeLoader
 
         #region Thread Statics
         /// <summary>
-        /// Get a pointer to the thread static field data of a type. This function works for dynamic
-        /// types, reflectable types, and for all generic types
-        /// </summary>
-        public IntPtr TryGetThreadStaticFieldDataDirect(RuntimeTypeHandle runtimeTypeHandle)
-        {
-            unsafe
-            {
-                // Non-generic, non-dynamic static data is found via the FieldAccessMap
-                EEType* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
-                // Non-generic, non-dynamic types need special handling.
-                if (!typeAsEEType->IsDynamicType && !typeAsEEType->IsGeneric)
-                {
-                    //search for the field on the type in the field map which has the lowest offset,
-                    // yet has the the correct type of storage.
-                    IntPtr staticAddress;
-                    if (TryGetStaticFieldBaseFromFieldAccessMap(runtimeTypeHandle, FieldAccessStaticDataKind.TLS, out staticAddress))
-                    {
-                        return staticAddress;
-                    }
-                    else
-                    {
-                        return IntPtr.Zero;
-                    }
-                }
-            }
-
-            // The indirected helper function can be used to find all dynamic types as well as generics
-            IntPtr ptrToStaticFieldData = TryGetThreadStaticFieldData(runtimeTypeHandle);
-            if (ptrToStaticFieldData == IntPtr.Zero)
-            {
-                return IntPtr.Zero;
-            }
-            else
-            {
-                unsafe
-                {
-                    return *(IntPtr*)ptrToStaticFieldData;
-                }
-            }
-        }
-
-        /// <summary>
         /// Get a pointer to a pointer to the thread static field data of a type. This function works for all generic types
         /// </summary>
         public IntPtr TryGetThreadStaticFieldData(RuntimeTypeHandle runtimeTypeHandle)
@@ -282,17 +240,10 @@ namespace Internal.Runtime.TypeLoader
             }
 
             // Not found in hashtable... must be a dynamically created type
-            Debug.Assert(runtimeTypeHandle.IsDynamicType());
-            unsafe
-            {
-                EEType* typeAsEEType = runtimeTypeHandle.ToEETypePtr();
-                if ((typeAsEEType->RareFlags & EETypeRareFlags.IsDynamicTypeWithThreadStatics) != 0)
-                {
-                    return IntPtr.Zero;
-                }
-            }
+            Debug.Assert(!runtimeTypeHandle.IsDynamicType());
+            // Not yet implemented...
 
-            // Type has no GC statics
+            // Type has no thread statics
             return IntPtr.Zero;
         }
 

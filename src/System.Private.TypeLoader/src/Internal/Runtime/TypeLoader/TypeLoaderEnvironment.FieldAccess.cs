@@ -372,6 +372,7 @@ namespace Internal.Runtime.TypeLoader
                     }
                 }
 
+                // Static fields for a type can only be found in at most one module
                 if (staticsRegionAddress != IntPtr.Zero)
                     break;
             }

@@ -10,7 +10,6 @@ using Internal.Runtime.CallInterceptor;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.NativeFormat;
 
 namespace Internal.Runtime.Interpreter
