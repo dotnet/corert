@@ -243,7 +243,7 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(!runtimeTypeHandle.IsDynamicType());
             // Not yet implemented...
 
-            // Type has no thread statics
+            // Type has no GC statics
             return IntPtr.Zero;
         }
 
