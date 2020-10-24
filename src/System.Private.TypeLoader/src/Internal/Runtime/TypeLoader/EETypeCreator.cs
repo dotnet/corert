@@ -131,19 +131,6 @@ namespace Internal.Runtime.TypeLoader
         {
             PInvokeMarshal.MemFree(memoryPtrToFree);
         }
-
-        public static unsafe void Copy(IntPtr source, IntPtr destination, int length)
-        {
-            byte* pSrc = (byte*)source.ToPointer();
-            byte* pDest = (byte*)destination.ToPointer();
-            while (length > 0)
-            {
-                *pDest = *pSrc;
-                pSrc++;
-                pDest++;
-                length--;
-            }
-        }
     }
 
     internal unsafe class EETypeCreator
@@ -653,18 +640,15 @@ namespace Internal.Runtime.TypeLoader
 #endif
                         }
 
-                        if (state.GcStaticEEType != IntPtr.Zero)
-                        {
-                            // CoreRT Abi uses managed heap-allocated GC statics
-                            object obj = RuntimeAugments.NewObject(((EEType*)state.GcStaticEEType)->ToRuntimeTypeHandle());
-                            gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
+                        // CoreRT Abi uses managed heap-allocated GC statics
+                        object obj = RuntimeAugments.NewObject(((EEType*)state.GcStaticEEType)->ToRuntimeTypeHandle());
+                        gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
 
-                            // CoreRT references statics through an extra level of indirection (a table in the image).
-                            gcStaticsIndirection = MemoryHelpers.AllocateMemory(IntPtr.Size);
+                        // CoreRT references statics through an extra level of indirection (a table in the image).
+                        gcStaticsIndirection = MemoryHelpers.AllocateMemory(IntPtr.Size);
 
-                            *((IntPtr*)gcStaticsIndirection) = gcStaticData;
-                            pEEType->DynamicGcStaticsData = gcStaticsIndirection;
-                        }
+                        *((IntPtr*)gcStaticsIndirection) = gcStaticData;
+                        pEEType->DynamicGcStaticsData = gcStaticsIndirection;
                     }
 
                     if (state.ThreadDataSize != 0 && state.ThreadStaticDesc == IntPtr.Zero)
