@@ -4,22 +4,24 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
 using Internal.IL;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CallInterceptor;
 using Internal.Runtime.CompilerServices;
 using Internal.Runtime.TypeLoader;
 using Internal.TypeSystem;
-
+using Internal.TypeSystem.NativeFormat;
 
 namespace Internal.Runtime.Interpreter
 {
     internal unsafe class ILInterpreter
     {
         private readonly MethodDesc _method;
+
         private readonly MethodIL _methodIL;
+
         private readonly TypeSystemContext _context;
+
         private readonly LowLevelStack<StackItem> _stack;
 
         private StackItem[] _locals;
@@ -80,6 +82,17 @@ namespace Internal.Runtime.Interpreter
         {
             _callInterceptorArgs = callInterceptorArgs;
             ILReader reader = new ILReader(_methodIL.GetILBytes());
+
+            if (_method.OwningType.HasStaticConstructor && !_method.IsStaticConstructor)
+            {
+                // Method's owning type has a static constructor and we're not in the process
+                // of interpreting the static constructor itself. Ensure we've run it
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(_method.OwningType.GetRuntimeTypeHandle());
+                if (cctorContext != IntPtr.Zero)
+                {
+                    RuntimeAugments.EnsureClassConstructorRun(cctorContext);
+                }
+            }
 
             while (reader.HasNext)
             {
@@ -166,7 +179,7 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.jmp:
                         throw new NotImplementedException();
                     case ILOpcode.call:
-                        InterpretCall(reader.ReadILToken());
+                        InterpretCall((MethodDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.calli:
                         throw new NotImplementedException();
@@ -312,7 +325,7 @@ namespace Internal.Runtime.Interpreter
                         InterpretLoadConstant((string)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.newobj:
-                        InterpretNewObj(reader.ReadILToken());
+                        InterpretNewObj((MethodDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.castclass:
                         throw new NotImplementedException();
@@ -326,17 +339,21 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.throw_:
                         throw new NotImplementedException();
                     case ILOpcode.ldfld:
-                        throw new NotImplementedException();
+                        InterpretLoadInstanceField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
+                        break;
                     case ILOpcode.ldflda:
                         throw new NotImplementedException();
                     case ILOpcode.stfld:
-                        throw new NotImplementedException();
+                        InterpretStoreInstanceField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
+                        break;
                     case ILOpcode.ldsfld:
-                        throw new NotImplementedException();
+                        InterpretLoadStaticField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
+                        break;
                     case ILOpcode.ldsflda:
                         throw new NotImplementedException();
                     case ILOpcode.stsfld:
-                        throw new NotImplementedException();
+                        InterpretStoreStaticField((FieldDesc)_methodIL.GetObject(reader.ReadILToken()));
+                        break;
                     case ILOpcode.stobj:
                         throw new NotImplementedException();
                     case ILOpcode.conv_ovf_i1_un:
@@ -372,7 +389,7 @@ namespace Internal.Runtime.Interpreter
                     case ILOpcode.box:
                         throw new NotImplementedException();
                     case ILOpcode.newarr:
-                        InterpretNewArray(reader.ReadILToken());
+                        InterpretNewArray((TypeDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.ldlen:
                         InterpretLoadLength();
@@ -403,10 +420,10 @@ namespace Internal.Runtime.Interpreter
                         InterpretStoreElement(opcode);
                         break;
                     case ILOpcode.ldelem:
-                        InterpretLoadElement(reader.ReadILToken());
+                        InterpretLoadElement((TypeDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.stelem:
-                        InterpretStoreElement(reader.ReadILToken());
+                        InterpretStoreElement((TypeDesc)_methodIL.GetObject(reader.ReadILToken()));
                         break;
                     case ILOpcode.unbox_any:
                         throw new NotImplementedException();
@@ -2122,7 +2139,7 @@ again:
             }
         }
 
-        private void InterpretNewArray(int token)
+        private void InterpretNewArray(TypeDesc elementType)
         {
             int length = 0;
             StackItem stackItem = PopWithValidation();
@@ -2142,9 +2159,9 @@ again:
 
             Debug.Assert(length >= 0);
 
-            TypeDesc arrayType = ((TypeDesc)_methodIL.GetObject(token)).MakeArrayType();
+            TypeDesc arrayType = elementType.MakeArrayType();
 
-            // TODO: Add support for arbitrary  non-primitive types
+            // TODO: Add support for arbitrary non-primitive types
             Array array = RuntimeAugments.NewArray(arrayType.GetRuntimeTypeHandle(), length);
 
             _stack.Push(StackItem.FromObjectRef(array));
@@ -2215,7 +2232,7 @@ again:
             }
         }
 
-        private void InterpretStoreElement(int token)
+        private void InterpretStoreElement(TypeDesc elementType)
         {
             StackItem valueItem = PopWithValidation();
             StackItem indexItem = PopWithValidation();
@@ -2241,7 +2258,6 @@ again:
                     break;
             }
 
-            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
 again:
@@ -2365,7 +2381,7 @@ again:
             }
         }
 
-        private void InterpretLoadElement(int token)
+        private void InterpretLoadElement(TypeDesc elementType)
         {
             StackItem indexItem = PopWithValidation();
             Array array = (Array)PopWithValidation().AsObjectRef();
@@ -2389,7 +2405,6 @@ again:
                     break;
             }
 
-            TypeDesc elementType = (TypeDesc)_methodIL.GetObject(token);
             ref byte address = ref RuntimeAugments.GetSzArrayElementAddress(array, index);
 
 again:
@@ -2601,15 +2616,12 @@ getvar:
             }
         }
 
-        private void InterpretCall(int token)
+        private void InterpretCall(MethodDesc method)
         {
-            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
-
             MethodSignature signature = method.Signature;
-            int nSignature = signature.Length;
-
             TypeDesc owningType = method.OwningType;
             TypeDesc returnType = signature.ReturnType;
+            int nSignature = signature.Length;
 
             if (signature.Length > _stack.Count)
                 ThrowHelper.ThrowInvalidProgramException();
@@ -2664,11 +2676,9 @@ getvar:
                 _stack.Push(callInfo.ReturnValue);
         }
         
-        private unsafe void InterpretNewObj(int token)
+        private unsafe void InterpretNewObj(MethodDesc method)
         {
-            MethodDesc method = (MethodDesc)_methodIL.GetObject(token);
             TypeDesc owningType = method.OwningType;
-
             MethodSignature signature = method.Signature;
             int nSignature = signature.Length;
 
@@ -2730,6 +2740,392 @@ getvar:
 
             LocalVariableSet.SetupArbitraryLocalVariableSet(InterpretCallDelegate, ref callInfo, localVariableTypes);
             _stack.Push(StackItem.FromObjectRef(@this));
+        }
+
+        private void PushFieldValue(TypeDesc fieldType, object fieldValue)
+        {
+setstackitem:
+            switch (fieldType.Category)
+            {
+                case TypeFlags.Boolean:
+                    _stack.Push(StackItem.FromInt32((bool)fieldValue ? 1 : 0));
+                    break;
+                case TypeFlags.Char:
+                    _stack.Push(StackItem.FromInt32((char)fieldValue));
+                    break;
+                case TypeFlags.SByte:
+                    _stack.Push(StackItem.FromInt32((sbyte)fieldValue));
+                    break;
+                case TypeFlags.Byte:
+                    _stack.Push(StackItem.FromInt32((byte)fieldValue));
+                    break;
+                case TypeFlags.Int16:
+                    _stack.Push(StackItem.FromInt32((short)fieldValue));
+                    break;
+                case TypeFlags.UInt16:
+                    _stack.Push(StackItem.FromInt32((ushort)fieldValue));
+                    break;
+                case TypeFlags.Int32:
+                    _stack.Push(StackItem.FromInt32((int)fieldValue));
+                    break;
+                case TypeFlags.UInt32:
+                    _stack.Push(StackItem.FromInt32((int)((uint)fieldValue)));
+                    break;
+                case TypeFlags.Int64:
+                    _stack.Push(StackItem.FromInt64((long)fieldValue));
+                    break;
+                case TypeFlags.UInt64:
+                    _stack.Push(StackItem.FromInt64((long)((ulong)fieldValue)));
+                    break;
+                case TypeFlags.IntPtr:
+                    _stack.Push(StackItem.FromNativeInt((IntPtr)fieldValue));
+                    break;
+                case TypeFlags.UIntPtr:
+                    _stack.Push(StackItem.FromNativeInt((IntPtr)((UIntPtr)fieldValue).ToPointer()));
+                    break;
+                case TypeFlags.Single:
+                    _stack.Push(StackItem.FromDouble((float)fieldValue));
+                    break;
+                case TypeFlags.Double:
+                    _stack.Push(StackItem.FromDouble((double)fieldValue));
+                    break;
+                case TypeFlags.ValueType:
+                case TypeFlags.Nullable:
+                    _stack.Push(StackItem.FromValueType((ValueType)fieldValue));
+                    break;
+                case TypeFlags.Enum:
+                    fieldType = fieldType.UnderlyingType;
+                    goto setstackitem;
+                case TypeFlags.Class:
+                case TypeFlags.Interface:
+                case TypeFlags.Array:
+                case TypeFlags.SzArray:
+                    _stack.Push(StackItem.FromObjectRef(fieldValue));
+                    break;
+                default:
+                    // TODO: Support more complex field types
+                    throw new NotImplementedException();
+            }
+        }
+
+        private void InterpretLoadInstanceField(FieldDesc field)
+        {
+            TypeDesc fieldType = field.FieldType;
+
+            if (field.OwningType.IsValueType)
+            {
+                // TODO: Add support for value types
+                throw new NotImplementedException();
+            }
+
+            var instance = PopWithValidation().AsObjectRef();
+            var fieldValue = default(Object);
+            var fieldOffset = field.Offset.AsInt;
+
+            fieldValue = fieldType switch
+            {
+                { IsValueType: true } => RuntimeAugments.LoadValueTypeField(instance, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(instance, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                _ => RuntimeAugments.LoadReferenceTypeField(instance, field.Offset.AsInt),
+            };
+
+            PushFieldValue(fieldType, fieldValue);
+        }
+
+        private void InterpretLoadStaticField(FieldDesc field)
+        {
+            if (field.OwningType.IsValueType)
+            {
+                // TODO: Add support for value types
+                throw new NotImplementedException();
+            }
+
+            var fieldType = field.FieldType;
+            var fieldValue = default(object);
+            var fieldOffset = -1;
+            var staticsBase = IntPtr.Zero;
+
+            if (!RuntimeAugments.IsDynamicType(field.OwningType.GetRuntimeTypeHandle()))
+            {
+                NativeFormatField nativeFormatField = field as NativeFormatField;
+
+                Debug.Assert(nativeFormatField != null);
+
+                TypeLoaderEnvironment.TryGetFieldAccessMetadata(
+                    nativeFormatField.MetadataReader,
+                    nativeFormatField.OwningType.GetRuntimeTypeHandle(),
+                    nativeFormatField.Handle,
+                    out FieldAccessMetadata fieldAccessMetadata);
+
+                if (field.IsThreadStatic)
+                {
+                    fieldOffset = fieldAccessMetadata.Offset;
+                    staticsBase = fieldAccessMetadata.Cookie;
+                }
+                else if (field.HasGCStaticBase)
+                {
+                    fieldOffset = fieldAccessMetadata.Offset;
+                    staticsBase = *(IntPtr*)fieldAccessMetadata.Cookie;
+                }
+                else
+                {
+                    fieldOffset = 0;
+                    staticsBase = fieldAccessMetadata.Cookie;
+                }
+
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.GetRuntimeTypeHandle());
+                if (cctorContext != IntPtr.Zero)
+                {
+                    RuntimeAugments.EnsureClassConstructorRun(cctorContext);
+                }
+            }
+            else
+            {
+                fieldOffset = field.Offset.AsInt;
+
+                if (field.IsThreadStatic)
+                {
+                    // TODO: Thread statics
+                    throw new NotSupportedException();
+                }
+                else if (field.HasGCStaticBase)
+                {
+                    fieldOffset += RuntimeAugments.ObjectHeaderSize;
+                    staticsBase = *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle());
+                }
+                else
+                {
+                    staticsBase = TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle());
+                }
+            }
+
+            Debug.Assert(staticsBase != IntPtr.Zero && fieldOffset != -1);
+
+            if (field.IsThreadStatic)
+            {
+                object threadStaticsRegion = RuntimeAugments.GetThreadStaticBase(staticsBase);
+                fieldValue = fieldType switch
+                {
+                    { IsValueType: true } => RuntimeAugments.LoadValueTypeField(threadStaticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                    { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(threadStaticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                    _ => RuntimeAugments.LoadReferenceTypeField(threadStaticsRegion, fieldOffset),
+                };
+            }
+            else if (field.HasGCStaticBase)
+            {
+                object gcStaticsRegion = RuntimeAugments.LoadReferenceTypeField(staticsBase);
+                fieldValue = fieldType switch
+                {
+                    { IsValueType: true } => RuntimeAugments.LoadValueTypeField(gcStaticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                    { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(gcStaticsRegion, fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                    _ => RuntimeAugments.LoadReferenceTypeField(gcStaticsRegion, fieldOffset),
+                };
+            }
+            else
+            {
+                fieldValue = fieldType switch
+                {
+                    { IsValueType: true } => RuntimeAugments.LoadValueTypeField(staticsBase + fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                    { IsPointer: true } => RuntimeAugments.LoadPointerTypeField(staticsBase + fieldOffset, fieldType.GetRuntimeTypeHandle()),
+                    _ => RuntimeAugments.LoadReferenceTypeField(staticsBase + fieldOffset),
+                };
+            }
+
+            PushFieldValue(fieldType, fieldValue);
+        }
+
+        private object PopFieldValue(TypeDesc fieldType)
+        {
+            StackItem fieldValueItem = PopWithValidation();
+            object fieldValue = default;
+
+            switch (fieldValueItem.Kind)
+            {
+                case StackValueKind.Int32:
+                    fieldValue = fieldType.Category switch
+                    {
+                        TypeFlags.Boolean => fieldValueItem.AsInt32() != 0,
+                        TypeFlags.Char => (char)fieldValueItem.AsInt32(),
+                        TypeFlags.SByte => (sbyte)fieldValueItem.AsInt32(),
+                        TypeFlags.Byte => (byte)fieldValueItem.AsInt32(),
+                        TypeFlags.Int16 => (short)fieldValueItem.AsInt32(),
+                        TypeFlags.UInt16 => (ushort)fieldValueItem.AsInt32(),
+                        TypeFlags.UInt32 => (uint)fieldValueItem.AsInt32(),
+                        _ => fieldValueItem.AsInt32(),
+                    };
+                    break;
+                case StackValueKind.Int64:
+                    fieldValue = fieldValueItem.AsInt64();
+                    fieldValue = fieldType.Category == TypeFlags.UInt64 ? (ulong)fieldValueItem.AsInt64() : fieldValue;
+                    break;
+                case StackValueKind.NativeInt:
+                    fieldValue = fieldValueItem.AsNativeInt();
+                    fieldValue = fieldType.Category == TypeFlags.UIntPtr ? (UIntPtr)fieldValueItem.AsNativeInt().ToPointer() : fieldValue;
+                    break;
+                case StackValueKind.Float:
+                    fieldValue = fieldValueItem.AsDouble();
+                    fieldValue = fieldType.Category == TypeFlags.Single ? (float)fieldValueItem.AsDouble() : fieldValue;
+                    break;
+                case StackValueKind.ObjRef:
+                    fieldValue = fieldValueItem.AsObjectRef();
+                    break;
+                case StackValueKind.ValueType:
+                    fieldValue = fieldValueItem.AsValueType();
+                    break;
+                case StackValueKind.ByRef:
+                default:
+                    throw new NotImplementedException();
+            }
+
+            return fieldValue;
+        }
+
+        public void InterpretStoreInstanceField(FieldDesc field)
+        {
+            TypeDesc fieldType = field.FieldType;
+
+            if (field.OwningType.IsValueType)
+            {
+                // TODO: Add support for value types
+                throw new NotImplementedException();
+            }
+
+            var fieldValue = PopFieldValue(fieldType);
+            var instance = PopWithValidation().AsObjectRef();
+            var fieldOffset = field.Offset.AsInt;
+
+            if (fieldType.IsValueType)
+            {
+                RuntimeAugments.StoreValueTypeField(instance, fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
+            }
+            else if (fieldType.IsPointer)
+            {
+                RuntimeAugments.StoreValueTypeField(instance, fieldOffset, fieldValue, typeof(IntPtr).TypeHandle);
+            }
+            else
+            {
+                RuntimeAugments.StoreReferenceTypeField(instance, fieldOffset, fieldValue);
+            }
+        }
+
+        private void InterpretStoreStaticField(FieldDesc field)
+        {
+            if (field.OwningType.IsValueType)
+            {
+                // TODO: Add support for value types
+                throw new NotImplementedException();
+            }
+
+            var fieldType = field.FieldType;
+            var fieldValue = PopFieldValue(fieldType);
+            var fieldOffset = -1;
+            var staticsBase = IntPtr.Zero;
+
+            if (!RuntimeAugments.IsDynamicType(field.OwningType.GetRuntimeTypeHandle()))
+            {
+                NativeFormatField nativeFormatField = field as NativeFormatField;
+
+                Debug.Assert(nativeFormatField != null);
+
+                TypeLoaderEnvironment.TryGetFieldAccessMetadata(
+                    nativeFormatField.MetadataReader,
+                    nativeFormatField.OwningType.GetRuntimeTypeHandle(),
+                    nativeFormatField.Handle,
+                    out FieldAccessMetadata fieldAccessMetadata);
+
+                if (field.IsThreadStatic)
+                {
+                    fieldOffset = fieldAccessMetadata.Offset;
+                    staticsBase = fieldAccessMetadata.Cookie;
+                }
+                else if (field.HasGCStaticBase)
+                {
+                    fieldOffset = fieldAccessMetadata.Offset;
+                    staticsBase = *(IntPtr*)fieldAccessMetadata.Cookie;
+                }
+                else
+                {
+                    fieldOffset = 0;
+                    staticsBase = fieldAccessMetadata.Cookie;
+                }
+
+                IntPtr cctorContext = TypeLoaderEnvironment.TryGetStaticClassConstructionContext(field.OwningType.GetRuntimeTypeHandle());
+                if (cctorContext != IntPtr.Zero)
+                {
+                    RuntimeAugments.EnsureClassConstructorRun(cctorContext);
+                }
+            }
+            else
+            {
+                fieldOffset = field.Offset.AsInt;
+
+                if (field.IsThreadStatic)
+                {
+                    // TODO: Thread statics
+                    throw new NotSupportedException();
+                }
+                else if (field.HasGCStaticBase)
+                {
+                    fieldOffset += RuntimeAugments.ObjectHeaderSize;
+                    staticsBase = *(IntPtr*)TypeLoaderEnvironment.Instance.TryGetGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle());
+                }
+                else
+                {
+                    staticsBase = TypeLoaderEnvironment.Instance.TryGetNonGcStaticFieldDataDirect(field.OwningType.GetRuntimeTypeHandle());
+                }
+            }
+
+            Debug.Assert(staticsBase != IntPtr.Zero && fieldOffset != -1);
+
+            if (field.IsThreadStatic)
+            {
+                object threadStaticsRegion = RuntimeAugments.GetThreadStaticBase(staticsBase);
+
+                if (fieldType.IsValueType)
+                {
+                    RuntimeAugments.StoreValueTypeField(threadStaticsRegion, fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
+                }
+                else if (fieldType.IsPointer)
+                {
+                    RuntimeAugments.StoreValueTypeField(threadStaticsRegion, fieldOffset, fieldValue, typeof(IntPtr).TypeHandle);
+                }
+                else
+                {
+                    RuntimeAugments.StoreReferenceTypeField(threadStaticsRegion, fieldOffset, fieldValue);
+                }
+            }
+            else if (field.HasGCStaticBase)
+            {
+                object gcStaticsRegion = RuntimeAugments.LoadReferenceTypeField(staticsBase);
+
+                if (fieldType.IsValueType)
+                {
+                    RuntimeAugments.StoreValueTypeField(gcStaticsRegion, fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
+                }
+                else if (fieldType.IsPointer)
+                {
+                    RuntimeAugments.StoreValueTypeField(gcStaticsRegion, fieldOffset, fieldValue, typeof(IntPtr).TypeHandle);
+                }
+                else
+                {
+                    RuntimeAugments.StoreReferenceTypeField(gcStaticsRegion, fieldOffset, fieldValue);
+                }
+            }
+            else
+            {
+                if (fieldType.IsValueType)
+                {
+                    RuntimeAugments.StoreValueTypeField(staticsBase + fieldOffset, fieldValue, fieldType.GetRuntimeTypeHandle());
+                }
+                else if (fieldType.IsPointer)
+                {
+                    RuntimeAugments.StoreValueTypeField(staticsBase + fieldOffset, fieldValue, typeof(IntPtr).TypeHandle);
+                }
+                else
+                {
+                    RuntimeAugments.StoreReferenceTypeField(staticsBase + fieldOffset, fieldValue);
+                }
+            }
         }
     }
 }

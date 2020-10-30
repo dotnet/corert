@@ -630,26 +630,25 @@ namespace Internal.Runtime.TypeLoader
                     // create GC desc
                     if (state.GcDataSize != 0 && state.GcStaticDesc == IntPtr.Zero)
                     {
-                        if (state.GcStaticEEType != IntPtr.Zero)
-                        {
-                            // CoreRT Abi uses managed heap-allocated GC statics
-                            object obj = RuntimeAugments.NewObject(((EEType*)state.GcStaticEEType)->ToRuntimeTypeHandle());
-                            gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
-
-                            // CoreRT references statics through an extra level of indirection (a table in the image).
-                            gcStaticsIndirection = MemoryHelpers.AllocateMemory(IntPtr.Size);
-
-                            *((IntPtr*)gcStaticsIndirection) = gcStaticData;
-                            pEEType->DynamicGcStaticsData = gcStaticsIndirection;
-                        }
-                        else
+                        if (state.GcStaticEEType == IntPtr.Zero)
                         {
                             int cbStaticGCDesc;
                             state.GcStaticDesc = CreateStaticGCDesc(state.StaticGCLayout, out state.AllocatedStaticGCDesc, out cbStaticGCDesc);
+                            state.GcStaticEEType = (IntPtr)CreateGcStaticEEType(state, hashCodeOfNewType, cbStaticGCDesc);
 #if GENERICS_FORCE_USG
                             TestGCDescsForEquality(state.GcStaticDesc, state.NonUniversalStaticGCDesc, cbStaticGCDesc, false);
 #endif
                         }
+
+                        // CoreRT Abi uses managed heap-allocated GC statics
+                        object obj = RuntimeAugments.NewObject(((EEType*)state.GcStaticEEType)->ToRuntimeTypeHandle());
+                        gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
+
+                        // CoreRT references statics through an extra level of indirection (a table in the image).
+                        gcStaticsIndirection = MemoryHelpers.AllocateMemory(IntPtr.Size);
+
+                        *((IntPtr*)gcStaticsIndirection) = gcStaticData;
+                        pEEType->DynamicGcStaticsData = gcStaticsIndirection;
                     }
 
                     if (state.ThreadDataSize != 0 && state.ThreadStaticDesc == IntPtr.Zero)
@@ -668,15 +667,15 @@ namespace Internal.Runtime.TypeLoader
                 if (isGeneric)
                 {
                     genericComposition = MemoryHelpers.AllocateMemory(EEType.GetGenericCompositionSize(arity, pEEType->HasGenericVariance));
-                    pEEType->SetGenericComposition(genericComposition);
+                    pEEType->SetGenericComposition(genericComposition);                    
+                }
 
-                    if (state.NonGcDataSize > 0)
-                    {
-                        nonGcStaticData = MemoryHelpers.AllocateMemory(state.NonGcDataSize);
-                        MemoryHelpers.Memset(nonGcStaticData, state.NonGcDataSize, 0);
-                        Debug.Assert(nonGCStaticDataOffset <= state.NonGcDataSize);
-                        pEEType->DynamicNonGcStaticsData = (IntPtr)((byte*)nonGcStaticData + nonGCStaticDataOffset);
-                    }
+                if (state.NonGcDataSize > 0)
+                {
+                    nonGcStaticData = MemoryHelpers.AllocateMemory(state.NonGcDataSize);
+                    MemoryHelpers.Memset(nonGcStaticData, state.NonGcDataSize, 0);
+                    Debug.Assert(nonGCStaticDataOffset <= state.NonGcDataSize);
+                    pEEType->DynamicNonGcStaticsData = (IntPtr)((byte*)nonGcStaticData + nonGCStaticDataOffset);
                 }
 
                 if (!isGenericEETypeDef && state.ThreadDataSize != 0)
@@ -722,6 +721,61 @@ namespace Internal.Runtime.TypeLoader
                         MemoryHelpers.FreeMemory(writableDataPtr);
                 }
             }
+        }
+
+        private static EEType* CreateGcStaticEEType(TypeBuilderState state, UInt32 hashCodeOfNewType, int cbStaticGCDesc)
+        {
+            Debug.Assert(state.AllocatedStaticGCDesc);
+
+            ushort numVTableSlots = 3; // Base Object type has 3 vtable slots (Equals, GetHashCode, ToString)
+            int cbEEType = (int)EEType.GetSizeofEEType(
+                        cVirtuals: numVTableSlots, // Base Object type has 3 vtable slots
+                        cInterfaces: 0,
+                        fHasFinalizer: false,
+                        fRequiresOptionalFields: false,
+                        fHasSealedVirtuals: false,
+                        fHasGenericInfo: false,
+                        fHasNonGcStatics: false,
+                        fHasGcStatics: false,
+                        fHasThreadStatics: false);
+
+            int cbGCDesc = cbStaticGCDesc * 2;
+            int cbGCDescAligned = MemoryHelpers.AlignUp(cbGCDesc, IntPtr.Size);
+            IntPtr eeTypePtrPlusGCDesc = MemoryHelpers.AllocateMemory(cbGCDescAligned + cbEEType);
+
+            int baseSize = state.GcDataSize;
+            baseSize += IntPtr.Size; // Size of Object base type
+            baseSize += IntPtr.Size; // sync block skew
+
+            EEType* gcEEType = (EEType*)(eeTypePtrPlusGCDesc + cbGCDescAligned);
+            gcEEType->BaseSize = (uint)baseSize;
+            gcEEType->Flags = (ushort)EETypeFlags.IsDynamicTypeFlag | (ushort)EETypeKind.CanonicalEEType;
+            gcEEType->ComponentSize = 0;
+            gcEEType->NumVtableSlots = numVTableSlots;
+            gcEEType->NumInterfaces = 0;
+            gcEEType->HashCode = hashCodeOfNewType;
+            gcEEType->BaseType = TypeSystemContextFactory.Create().GetWellKnownType(WellKnownType.Object).GetRuntimeTypeHandle().ToEETypePtr();
+            gcEEType->HasGCPointers = true;
+
+            // Convert static GC desc of type being built to instance GC desc on gcEEType
+            int num = *(int*)state.GcStaticDesc;
+            *((void**)gcEEType - 1) = (void*)num;
+
+            int* staticPtr = (int*)state.GcStaticDesc + 1;
+            void** ptr = (void**)gcEEType - 2;
+
+            while (num > 0)
+            {
+                int size = *staticPtr++;
+                int offset = RuntimeAugments.ObjectHeaderSize + *staticPtr++;
+
+                *ptr-- = (void*)size;
+                *ptr-- = (void*)(offset - baseSize);
+
+                num--;
+            }
+
+            return gcEEType;
         }
 
         private static IntPtr CreateStaticGCDesc(LowLevelList<bool> gcBitfield, out bool allocated, out int cbGCDesc)

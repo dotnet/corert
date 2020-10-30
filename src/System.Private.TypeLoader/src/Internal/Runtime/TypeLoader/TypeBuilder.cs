@@ -1177,7 +1177,7 @@ namespace Internal.Runtime.TypeLoader
 
             if (state.TemplateType == null)
             {
-                if (!type.HasInstantiation)
+                if (!type.HasInstantiation && !type.RuntimeTypeHandle.IsDynamicType())
                 {
                     // Non-Generic ReadyToRun types in their current state already have their static field region setup
                     // with the class constructor initialized.
@@ -1335,8 +1335,6 @@ namespace Internal.Runtime.TypeLoader
                 FinishInterfaces(type, state);
 
                 FinishTypeDictionary(type, state);
-
-                FinishClassConstructor(type, state);
 
                 // For types that were allocated from universal canonical templates, patch their vtables with
                 // pointers to calling convention conversion thunks
@@ -1564,7 +1562,14 @@ namespace Internal.Runtime.TypeLoader
 
             for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
             {
-                _typesThatNeedTypeHandles[i].SetRuntimeTypeHandleUnsafe(_typesThatNeedTypeHandles[i].GetTypeBuilderState().HalfBakedRuntimeTypeHandle);
+                var typeThatNeedsTypeHandle = _typesThatNeedTypeHandles[i];
+                var stateOfTypeThatNeedsTypeHandle = typeThatNeedsTypeHandle.GetTypeBuilderState();
+
+                typeThatNeedsTypeHandle.SetRuntimeTypeHandleUnsafe(stateOfTypeThatNeedsTypeHandle.HalfBakedRuntimeTypeHandle);
+
+                // Finish class constructor only after assigning the RuntimeTypeHandle, that way,
+                // the MethodEntrypointLookup entry is constructed with the full type information
+                FinishClassConstructor(typeThatNeedsTypeHandle, stateOfTypeThatNeedsTypeHandle);
 
                 TypeLoaderLogger.WriteLine("Successfully Registered type " + _typesThatNeedTypeHandles[i].ToString() + ".");
             }
