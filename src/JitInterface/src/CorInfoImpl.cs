@@ -22,6 +22,7 @@ using Internal.CorConstants;
 
 using ILCompiler;
 using ILCompiler.DependencyAnalysis;
+using System.Threading;
 
 #if READYTORUN
 using System.Reflection.Metadata.Ecma335;
@@ -2692,6 +2693,7 @@ namespace Internal.JitInterface
             }
 
             byte[] blobData = new byte[unwindSize];
+            byte[] unwindData = null;
 
             for (uint i = 0; i < unwindSize; i++)
             {
@@ -2702,18 +2704,21 @@ namespace Internal.JitInterface
 
             if (target.Architecture == TargetArchitecture.ARM64 && target.OperatingSystem == TargetOS.Linux)
             {
-                blobData = CompressARM64CFI(blobData);
+                blobData = CompressARM64CFI(blobData, out unwindData);
             }
 
-            _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData);
+            _frameInfos[_usedFrameInfos++] = new FrameInfo(flags, (int)startOffset, (int)endOffset, blobData, unwindData);
         }
 
         // Get the CFI data in the same shape as clang/LLVM generated one. This improves the compatibility with libunwind and other unwind solutions
         // - Combine in one single block for the whole prolog instead of one CFI block per assembler instruction
         // - Store CFA definition first
         // - Store all used registers in ascending order
-        private byte[] CompressARM64CFI(byte[] blobData)
+
+        private byte[] CompressARM64CFI(byte[] blobData, out byte[] unwindData)
         {
+            unwindData = null;
+
             if (blobData == null || blobData.Length == 0)
             {
                 return blobData;
@@ -2792,9 +2797,15 @@ namespace Internal.JitInterface
                 }
             }
 
+            ArrayBuilder<byte> unwind = new ArrayBuilder<byte>();
+            uint compactCode;
+
             using (MemoryStream cfiStream = new MemoryStream())
             {
                 int storeOffset = 0;
+
+                int unwindRegister = 0;
+                int unwindOffset = 0;
 
                 using (BinaryWriter cfiWriter = new BinaryWriter(cfiStream))
                 {
@@ -2805,6 +2816,9 @@ namespace Internal.JitInterface
                         cfiWriter.Write(cfaRegister);
                         cfiWriter.Write(cfaOffset);
                         storeOffset = cfaOffset;
+
+                        unwindRegister = cfaRegister;
+                        unwindOffset = cfaOffset;
                     }
                     else
                     {
@@ -2814,6 +2828,9 @@ namespace Internal.JitInterface
                             cfiWriter.Write((byte)CFI_OPCODE.CFI_ADJUST_CFA_OFFSET);
                             cfiWriter.Write((short)-1);
                             cfiWriter.Write(cfaOffset);
+
+                            unwindRegister = 31;
+                            unwindOffset = cfaOffset;
                         }
 
                         if (spOffset != 0)
@@ -2822,23 +2839,190 @@ namespace Internal.JitInterface
                             cfiWriter.Write((byte)CFI_OPCODE.CFI_DEF_CFA);
                             cfiWriter.Write((short)31); 
                             cfiWriter.Write(spOffset);
+
+                            unwindRegister = 31;
+                            unwindOffset = spOffset;
                         }
                     }
+
+                    Debug.Assert(unwindRegister >= 0 && unwindRegister <= 31);
+                    Debug.Assert(unwindOffset % 8 == 0);
+                    Debug.Assert(unwindOffset >= 0);
+
+                    compactCode = GenerateARM64CompactUnwindCode(unwindRegister, unwindOffset, registerOffset);
+
+                    unwindOffset /= 8;
+
+                    Debug.Assert(unwindOffset <= ushort.MaxValue);
+
+                    unwind.Add((byte)unwindRegister);
+                    unwind.Add((byte)(unwindOffset & 0xFF));
+                    unwind.Add((byte)((unwindOffset >> 8) & 0xFF));
 
                     for (int i = registerOffset.Length - 1; i >= 0; i--)
                     {
                         if (registerOffset[i] != int.MinValue)
                         {
+                            unwindRegister = i;
+                            unwindOffset = registerOffset[i] + storeOffset;
+
                             cfiWriter.Write((byte)codeOffset);
                             cfiWriter.Write((byte)CFI_OPCODE.CFI_REL_OFFSET);
-                            cfiWriter.Write((short)i);
-                            cfiWriter.Write(registerOffset[i] + storeOffset);
+                            cfiWriter.Write((short)unwindRegister);
+                            cfiWriter.Write(unwindOffset);
+
+                            Debug.Assert(unwindOffset % 8 == 0);
+                            Debug.Assert(unwindOffset >= 0);
+
+                            // X0 - X31
+                            if (unwindRegister >= 0 && unwindRegister < 32)
+                            {
+                            }
+                            // D8 - D16
+                            else if (unwindRegister >= 72 && unwindRegister < 81)
+                            {
+                                unwindRegister -= 40;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+
+                            unwindOffset /= 8;
+
+                            Debug.Assert(unwindOffset <= byte.MaxValue);
+
+                            unwind.Add((byte)unwindRegister);
+
+                            unwind.Add((byte)(unwindOffset & 0xFF));
+                            unwind.Add((byte)((unwindOffset >> 8) & 0xFF));
                         }
                     }
                 }
 
+                if (compactCode != 0)
+                {
+                    unwindData = BitConverter.GetBytes((ushort)compactCode);
+                }
+                else
+                {
+                    unwind.Add(0xFF);
+                    unwindData = unwind.ToArray();
+                }
+
                 return cfiStream.ToArray();
             }
+        }
+
+        uint GenerateARM64CompactUnwindCode (int cfaRegister, int cfaOffset, int[] registerOffsets)
+        {
+            if (cfaOffset >= 512*8)
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < 18; i++)
+            {
+                if (registerOffsets[i] != int.MinValue)
+                {
+                    return 0;
+                }
+            }
+
+            for (int i = 31; i < registerOffsets.Length; i++)
+            {
+                if (registerOffsets[i] != int.MinValue)
+                {
+                    return 0;
+                }
+            }
+
+            uint code = 0;
+
+            code |= (uint)(cfaOffset / 8);
+
+            int regCount = 0;
+            int reg = 19;
+            int lastRegOffset = int.MinValue;
+
+            if (registerOffsets[reg] != int.MinValue)
+            {
+                int offset = registerOffsets[reg];
+                reg++;
+                regCount++;
+
+                for (; reg <= 28; reg++)
+                {
+                    if (registerOffsets[reg] == int.MinValue)
+                        break;
+
+                    if (registerOffsets[reg] != offset + 8)
+                    {
+                        return 0;
+                    }
+
+                    regCount++;
+                    offset = registerOffsets[reg];
+                }
+
+                lastRegOffset = offset;
+            }
+
+            for (; reg <= 28; reg++)
+            {
+                if (registerOffsets[reg] != int.MinValue)
+                {
+                    return 0;
+                }
+            }
+
+            code |= (uint)(regCount << 9);
+
+            switch (cfaRegister)
+            {
+                case 29:
+                    {
+                        if (registerOffsets[29] != -cfaOffset || registerOffsets[30] != -cfaOffset + 8)
+                        {
+                            return 0;
+                        }
+
+                        if (regCount > 0 && lastRegOffset != -8)
+                        {
+                            return 0;
+                        }
+                    }
+                    break;
+
+                case 31:
+                    {
+                        if (regCount > 0 && lastRegOffset + 8 != cfaOffset)
+                        {
+                            return 0;
+                        }
+
+                        if (registerOffsets[29] + 8 != registerOffsets[30])
+                        {
+                            return 0;
+                        }
+
+                        int frameOffset = registerOffsets[29] / 8;
+
+                        if (frameOffset > 3)
+                        {
+                            return 0;
+                        }
+
+                        code |= 0x8000;
+                        code |= (uint)(frameOffset << 13);
+                    }
+                    break;
+
+                default:
+                    return 0;
+            }
+
+            return code;
         }
 
         private void* allocGCInfo(UIntPtr size)

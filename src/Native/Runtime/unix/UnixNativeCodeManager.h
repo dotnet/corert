@@ -66,4 +66,6 @@ public:
     PTR_VOID GetAssociatedData(PTR_VOID ControlPC);
 
     PTR_VOID GetOsModuleHandle();
+
+    static PTR_VOID GetMethodUnwindInfo(MethodInfo* pMethodInfo, int8_t& mode);
 };

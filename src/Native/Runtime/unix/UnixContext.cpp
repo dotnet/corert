@@ -8,6 +8,7 @@
 #include "daccess.h"
 #include "PalRedhawkCommon.h"
 #include "regdisplay.h"
+#include "ICodeManager.h"
 #include "config.h"
 
 #include <libunwind.h>
@@ -630,7 +631,7 @@ bool FindProcInfo(UIntNative controlPC, UIntNative* startAddress, UIntNative* ls
 }
 
 // Virtually unwind stack to the caller of the context specified by the REGDISPLAY
-bool VirtualUnwind(REGDISPLAY* pRegisterSet)
+bool VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* pRegisterSet)
 {
-    return UnwindHelpers::StepFrame(pRegisterSet);
+    return UnwindHelpers::StepFrame(pMethodInfo, pRegisterSet);
 }

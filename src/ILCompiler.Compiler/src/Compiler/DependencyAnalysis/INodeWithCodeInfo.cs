@@ -8,12 +8,14 @@ namespace ILCompiler.DependencyAnalysis
     [Flags]
     public enum FrameInfoFlags
     {
-        Handler             = 0x01,
-        Filter              = 0x02,
+        Handler              = 0x01,
+        Filter               = 0x02,
 
-        HasEHInfo           = 0x04,
-        ReversePInvoke      = 0x08,
-        HasAssociatedData   = 0x10,
+        HasEHInfo            = 0x04,
+        ReversePInvoke       = 0x08,
+        HasAssociatedData    = 0x10,
+        HasFullUnwindInfo    = 0x20,
+        HasCompactUnwindInfo = 0x40
     }
 
     public struct FrameInfo
@@ -22,13 +24,15 @@ namespace ILCompiler.DependencyAnalysis
         public readonly int StartOffset;
         public readonly int EndOffset;
         public readonly byte[] BlobData;
+        public readonly byte[] UnwindData;
 
-        public FrameInfo(FrameInfoFlags flags, int startOffset, int endOffset, byte[] blobData)
+        public FrameInfo(FrameInfoFlags flags, int startOffset, int endOffset, byte[] blobData, byte[] unwindData)
         {
             Flags = flags;
             StartOffset = startOffset;
             EndOffset = endOffset;
             BlobData = blobData;
+            UnwindData = unwindData;
         }
     }
 
