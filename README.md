@@ -1,6 +1,6 @@
 # .NET Core Runtime (CoreRT)
 
-### This is an experimental project. We have no plans to productize it in its current form. More details in [CoreRT future plans](https://github.com/dotnet/corert/issues/7200).
+### This project is superseded by [NativeAOT experiment in dotnet/runtimelab repo]( https://github.com/dotnet/runtimelab/tree/feature/NativeAOT).
 
 This repo contains the .NET Core runtime optimized for ahead of time compilation. The CoreRT compiler can compile a managed .NET Core application into a native (architecture specific) single-file executable that is easy to deploy. It can also produce standalone dynamic or static libraries that can be consumed by applications written in other programming languages. To learn more about CoreRT, see the [intro document](Documentation/intro-to-corert.md).
 
